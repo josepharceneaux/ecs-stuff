@@ -289,13 +289,13 @@ def delete_smartlist(smartlist_id, token, expected_status=(200,)):
     return response.json()
 
 
-def get_smartlist_candidates(smartlist_id, token, expected_status=(200,), candidates_count=None):
+def get_smartlist_candidates(smartlist_id, token, expected_status=(200,), count=None):
     response = send_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % smartlist_id, token)
     print('common_tests : get_smartlist_candidates: ', response.content)
     assert response.status_code in expected_status
     response = response.json()
-    if candidates_count:
-        assert len(response['candidates']) == candidates_count
+    if count:
+        assert len(response['candidates']) == count
     return response
 
 

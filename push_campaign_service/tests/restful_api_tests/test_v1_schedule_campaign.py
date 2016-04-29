@@ -117,37 +117,36 @@ class TestScheduleCampaignUsingPOST(object):
 
     def test_schedule_a_campaign_with_valid_data(self, candidate_first, smartlist_first, campaign_in_db, talent_pool,
                                                  token_first, candidate_device_first):
-
-        retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
-              args=(smartlist_first['id'], token_first), kwargs={'candidates_count': 1})
+        # retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        #       args=(smartlist_first['id'], token_first), kwargs={'count': 1})
         data = generate_campaign_schedule_data()
-        response = schedule_campaign(campaign_in_db['id'], data, token_first,
-                                     expected_status=(codes.OK,))
+        response = schedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.OK,),
+                                     smartlist_id=smartlist_first['id'], candidate_count=1)
         assert 'task_id' in response
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        retry(assert_campaign_blasts, max_sleeptime=60, sleeptime=3, attempts=20,
-              sleepscale=1, retry_exceptions=(AssertionError,), args=(campaign_in_db['id'], token_first))
+        retry(get_blasts, max_sleeptime=60, sleeptime=3, attempts=20, retry_exceptions=(AssertionError,),
+              args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
 
     def test_schedule_a_campaign_with_user_from_same_domain(self, smartlist_same_domain, campaign_data,  talent_pool,
                                                             token_first, token_same_domain,  candidate_device_first):
 
-        retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
-              args=(smartlist_same_domain['id'], token_same_domain), kwargs={'candidates_count': 1})
+        # retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        #       args=(smartlist_same_domain['id'], token_same_domain), kwargs={'count': 1})
 
         data = campaign_data.copy()
         data['smartlist_ids'] = [smartlist_same_domain['id']]
         campaign_id = create_campaign(data, token_first)['id']
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
-        response = schedule_campaign(campaign_id, data, token_same_domain,
-                                     expected_status=(codes.OK,))
+        response = schedule_campaign(campaign_id, data, token_same_domain, expected_status=(codes.OK,),
+                                     smartlist_id=smartlist_same_domain['id'], candidate_count=1)
         assert 'task_id' in response
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        retry(assert_campaign_blasts, max_sleeptime=60, sleeptime=3, attempts=20,
-              sleepscale=1, retry_exceptions=(AssertionError,), args=(campaign_id, token_first))
+        retry(get_blasts, max_sleeptime=60, sleeptime=3, attempts=20, retry_exceptions=(AssertionError,),
+              args=(campaign_id, token_first), kwargs={'count': 1})
 
     def test_schedule_a_campaign_with_user_from_diff_domain(self, token_first, token_second,
                                                             campaign_in_db, smartlist_first, candidate_device_first):
@@ -244,8 +243,8 @@ class TestRescheduleCampaignUsingPUT(object):
     def test_reschedule_campaign_with_valid_data(self, token_first, campaign_in_db, talent_pool, candidate_first,
                                              smartlist_first, schedule_a_campaign):
 
-        retry(assert_campaign_blasts, max_sleeptime=60, sleeptime=3, attempts=20, retry_exceptions=(AssertionError,),
-              args=(campaign_in_db['id'], token_first))
+        retry(get_blasts, max_sleeptime=60, sleeptime=3, attempts=20, retry_exceptions=(AssertionError,),
+              args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
 
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
@@ -255,9 +254,8 @@ class TestRescheduleCampaignUsingPUT(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        retry(assert_campaign_blasts, max_sleeptime=60, sleeptime=3, attempts=20,
-              sleepscale=1, retry_exceptions=(AssertionError,), args=(campaign_in_db['id'], token_first),
-              kwargs={'expected_count': 2})
+        retry(get_blasts, max_sleeptime=60, sleeptime=3, attempts=20, retry_exceptions=(AssertionError,),
+              args=(campaign_in_db['id'], token_first), kwargs={'count': 2})
 
     def test_reschedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,
                                                             campaign_in_db, schedule_a_campaign):

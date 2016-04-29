@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta
 from faker import Faker
+from redo import retry
 from requests import codes
 from push_campaign_service.common.campaign_services.custom_errors import CampaignException
 from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi, CandidateApiUrl
 from push_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from push_campaign_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from push_campaign_service.common.utils.test_utils import (send_request,
-                                                           get_fake_dict)
+                                                           get_fake_dict, get_smartlist_candidates)
 from push_campaign_service.push_campaign_app import logger
 
 fake = Faker()
@@ -170,20 +171,26 @@ def delete_campaigns(data, token, expected_status=(200,)):
     return response.json()
 
 
-def send_campaign(campaign_id, token, expected_status=(200,)):
+def send_campaign(campaign_id, token, expected_status=(200,), smartlist_id=None, candidate_count=None):
+    if smartlist_id and candidate_count:
+        retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+              args=(smartlist_id, token), kwargs={'count': candidate_count})
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_id, token)
     logger.info('tests : send_campaign: %s', response.content)
     assert response.status_code in expected_status
     return response.json()
 
 
-def get_blasts(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,)):
+def get_blasts(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,), count=None):
     query = '?page=%s&per_page=%s' % (page, per_page)
     response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_id + query, token)
     logger.info('tests : get_blasts: %s', response.content)
     print(response.content)
     assert response.status_code in expected_status
-    return response.json()
+    response = response.json()
+    if count:
+        assert len(response['blasts']) == count
+    return response
 
 
 def get_blast(blast_id, campaign_id, token, expected_status=(200,)):
@@ -209,7 +216,10 @@ def get_campaign_sends(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_P
     return response.json()
 
 
-def schedule_campaign(campaign_id, data, token, expected_status=(200,)):
+def schedule_campaign(campaign_id, data, token, expected_status=(200,), smartlist_id=None, candidate_count=None):
+    if smartlist_id and candidate_count:
+        retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+              args=(smartlist_id, token), kwargs={'count': candidate_count})
     logger.info('tests : schedule_campaign: Going to schedule push campaign (id: %s)' % campaign_id)
     response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_id, token, data)
     logger.info('tests : schedule_campaign: %s', response.content)

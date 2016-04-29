@@ -18,9 +18,11 @@ import sys
 import time
 
 # 3rd party imports
+from redo import retry
 from requests import codes
 
 # Application specific imports
+from push_campaign_service.common.utils.test_utils import get_smartlist_candidates
 from push_campaign_service.tests.test_utilities import send_campaign, get_blasts, SLEEP_TIME
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
@@ -56,7 +58,8 @@ class TestSendCampaign(object):
         :param smartlist_first: smartlist object
         """
         # 200 case: Campaign Sent successfully
-        send_campaign(campaign_in_db['id'], token_first, expected_status=(codes.OK,))
+        send_campaign(campaign_in_db['id'], token_first, expected_status=(codes.OK,),
+                      smartlist_id=smartlist_first['id'], candidate_count=1)
 
         # Wait for 20 seconds to run celery which will send campaign and creates blast
         time.sleep(2 * SLEEP_TIME)
@@ -74,7 +77,8 @@ class TestSendCampaign(object):
         :param campaign_in_db: campaign in same domain but created by different user in same domain
         """
         # 200 case: Campaign Sent successfully
-        send_campaign(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,))
+        send_campaign(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,),
+                      smartlist_id=smartlist_first['id'], candidate_count=1)
 
         # Wait for 20 seconds to run celery which will send campaign and creates blast
         time.sleep(2 * SLEEP_TIME)

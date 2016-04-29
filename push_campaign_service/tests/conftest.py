@@ -224,11 +224,9 @@ def schedule_a_campaign(request, smartlist_first, campaign_in_db, token_first):
     :rtype data: dict
     """
     task_id = None
-    retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
-          args=(smartlist_first['id'], token_first), kwargs={'candidates_count': 1})
-    
     data = generate_campaign_schedule_data()
-    task_id = schedule_campaign(campaign_in_db['id'], data, token_first)['task_id']
+    task_id = schedule_campaign(campaign_in_db['id'], data, token_first,
+                                smartlist_id=smartlist_first['id'], candidate_count=1)['task_id']
 
     def fin():
         delete_scheduler_task(task_id, token_first,
@@ -249,13 +247,14 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
     :param candidate_device_first: candidate device dict object
     :return: url_conversion dict object
     """
+    retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+          args=(smartlist_first['id'], token_same_domain), kwargs={'count': 1})
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
     assert response.status_code == codes.OK
-    time.sleep(SLEEP_TIME)  # had to add this as sending process runs on celery
     # get campaign blast
-    response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first)
-    assert response.status_code == codes.OK
-    blasts = response.json()['blasts']
+    response = retry(get_blasts, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                     args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
+    blasts = response['blasts']
     assert len(blasts) == 1
     blast_id = blasts[0]['id']
     # get campaign sends
