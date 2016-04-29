@@ -27,17 +27,14 @@ args = parser.parse_args()
 
 service = vars(args)[SERVICE_NAME][0]
 tag = vars(args)[TAG_NAME][0]
-cluster = vars(args)[CLUSTER_NAME][0]
+cluster = vars(args)[CLUSTER_NAME]
 restart = args.restart
 
 # Check our invocation and derive the AWS service and task definition names from the getTalent service name
-if cluster != 'stage' and cluster != 'prod':
-    print "Bad cluster name: {}".format(cluster)
 if cluster == 'stage':
     service_svc = service
 else:
     service_svc = service + "-svc"
-service_svc = service + '-svc'
 service_td = service + '-td'
 
 
@@ -90,6 +87,9 @@ if restart == 'restart':
 
     response = client.update_service(cluster=cluster, service=service_svc, desiredCount=get_service_desired_count(response),
                                      taskDefinition=task_definition['taskDefinition'], deploymentConfiguration=get_service_deployment(response))
+    if get_http_status(response) != 200:
+        print "Error Updating Service. HTTP Status: {}".format(get_http_status(response))
+        exit(1)
 
 
 # Consider garbage collecting Task Definitions?
