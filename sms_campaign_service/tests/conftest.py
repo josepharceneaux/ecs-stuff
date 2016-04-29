@@ -18,7 +18,7 @@ from sms_campaign_service.common.tests.conftest import \
      sample_client, test_domain, first_group, domain_first, user_first, candidate_first,
      test_domain_2, second_group, domain_second, candidate_second,
      user_same_domain, user_from_diff_domain, access_token_second, talent_pipeline, talent_pool,
-     access_token_other, talent_pool_other, talent_pipeline_other)
+     access_token_other, access_token_same, talent_pool_other, talent_pipeline_other)
 
 # Service specific
 from sms_campaign_service.sms_campaign_app import app
@@ -95,6 +95,15 @@ def valid_header_2(access_token_other):
     to make POST/DELETE requests.
     """
     return _get_auth_header(access_token_other)
+
+
+@pytest.fixture()
+def valid_header_same_domain(access_token_same):
+    """
+    Returns the header (for other user of same domain) containing access token and content-type
+    to make POST/DELETE requests.
+    """
+    return _get_auth_header(access_token_same)
 
 
 @pytest.fixture()
@@ -271,11 +280,19 @@ def sms_campaign_with_no_candidate(request, campaign_valid_data,
 
 
 @pytest.fixture()
-def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data, user_phone_3):
+def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data,
+                                              user_same_domain, valid_header_same_domain,
+                                              user_phone_3,
+                                              smartlist_with_two_candidates):
     """
-    This creates the SMS campaign for sample_user using valid data.
+    This creates the SMS campaign for user_same_domain using valid data, so that we have
+    another campaign in the user_first's domain.
     """
-    test_sms_campaign = _create_sms_campaign(campaign_valid_data, user_phone_3)
+    smartlist_id, _ = smartlist_with_two_candidates
+    campaign_valid_data['smartlist_ids'] = [smartlist_id]
+    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data,
+                                                    valid_header_same_domain,
+                                                    user_same_domain.id)
 
     def fin():
         _delete_campaign(test_sms_campaign)
@@ -420,7 +437,8 @@ def create_campaign_replies(candidate_and_phone_1, sent_campaign, access_token_f
     This hits the endpoint /v1/receive where we add an entry in database
     table "sms_campaign_reply" for first candidate associated with campaign.
     """
-    reply_and_assert_response(sent_campaign, user_phone_1, candidate_and_phone_1[1], access_token_first)
+    reply_and_assert_response(sent_campaign, user_phone_1, candidate_and_phone_1[1],
+                              access_token_first)
 
 
 @pytest.fixture()
@@ -434,11 +452,13 @@ def create_bulk_replies(candidate_and_phone_1, candidate_and_phone_2, sent_campa
     """
     for count in xrange(1, 6):
         reply_and_assert_response(sent_campaign, user_phone_1,
-                                  candidate_and_phone_1[1], access_token_first, count_of_replies=count)
+                                  candidate_and_phone_1[1], access_token_first,
+                                  count_of_replies=count)
 
     for count in xrange(1, 6):
         reply_and_assert_response(sent_campaign, user_phone_1,
-                                  candidate_and_phone_2[1], access_token_first, count_of_replies=count)
+                                  candidate_and_phone_2[1], access_token_first,
+                                  count_of_replies=count)
 
 
 @pytest.fixture()
@@ -707,6 +727,7 @@ def create_sms_campaign_via_api(campaign_data, headers, user_id):
     response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                              headers=headers,
                              data=json.dumps(campaign_data))
+    print response.json()
     campaign_id = assert_campaign_creation(response, user_id, requests.codes.CREATED)
     response = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign_id,
                             headers=headers)
@@ -837,8 +858,9 @@ def _get_candidate_and_phone_tuple(request, sent_campaign_and_blast_ids, access_
                                                        % (sent_campaign_obj['id'], blast_ids[0]),
                                              access_token=access_token_first)
     candidate_ids = candidate_ids_associated_with_campaign(sent_campaign_obj, access_token_first)
-    candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_ids[candidate_index],
-                                          headers=valid_header)
+    candidate_get_response = requests.get(
+        CandidateApiUrl.CANDIDATE % candidate_ids[candidate_index],
+        headers=valid_header)
     json_response = candidate_get_response.json()
     candidate_phone = json_response['candidate']['phones'][0]
 

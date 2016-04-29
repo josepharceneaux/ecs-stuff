@@ -85,6 +85,16 @@ class TestSmsCampaignHTTPGet(object):
         response = requests.get(self.URL, headers=valid_header)
         _assert_counts_and_campaigns(response, count=1)
 
+    def test_get_all_campaigns_in_user_domain(self, valid_header,
+                                              sms_campaign_of_current_user,
+                                              sms_campaign_of_other_user_in_same_domain):
+        """
+        We have created one campaign for user. It should result in OK response and count of campaigns
+        should be 2 as 2 user have created campaign in one domain.
+        """
+        response = requests.get(self.URL, headers=valid_header)
+        _assert_counts_and_campaigns(response, count=2)
+
     def test_get_campaigns_with_paginated_response(self, valid_header, bulk_sms_campaigns):
         """
         Here we test the paginated response of GET call on endpoint /v1/sms-campaigns
