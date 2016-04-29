@@ -285,6 +285,28 @@ def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data, user
 
 
 @pytest.fixture()
+def bulk_sms_campaigns(request, campaign_valid_data, talent_pipeline,
+                       valid_header, smartlist_with_two_candidates, user_phone_1):
+    """
+    This creates the 10 SMS campaign for user_first using valid data.
+    """
+    smartlist_id, _ = smartlist_with_two_candidates
+    campaign_valid_data['smartlist_ids'] = [smartlist_id]
+    test_campaigns = []
+    for _ in xrange(1, 11):
+        campaign_valid_data['name'] = 'bulk_campaigns: %s' % fake.name()
+        test_campaigns.append(create_sms_campaign_via_api(campaign_valid_data, valid_header,
+                                                          talent_pipeline.user.id))
+
+    def fin():
+        for test_sms_campaign in test_campaigns:
+            _delete_campaign(test_sms_campaign)
+
+    request.addfinalizer(fin)
+    return test_campaigns
+
+
+@pytest.fixture()
 def invalid_sms_campaign(request, campaign_valid_data, user_phone_1):
     """
     This creates the SMS campaign for sample_user using valid data.

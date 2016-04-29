@@ -304,11 +304,11 @@ class SmsCampaignBase(CampaignBase):
 
     def get_all_campaigns(self):
         """
-        This gets all the campaigns created by current user
-        :return: all campaigns associated to with user
+        This gets all the campaigns created by all user's in logged in user's domain
+        :return: all campaigns associated to domain of logged-in user
         :rtype: list
         """
-        return self.user_phone.sms_campaigns
+        return SmsCampaign.get_by_domain_id(self.user_phone.user.domain_id)
 
     def pre_process_save_or_update(self, form_data):
         """

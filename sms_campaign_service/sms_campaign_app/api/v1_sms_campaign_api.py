@@ -81,7 +81,7 @@ from flask.ext.restful import Resource
 # Service Specific
 from sms_campaign_service.sms_campaign_app import logger
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaignSend,
-                                                             SmsCampaignReply)
+                                                             SmsCampaignReply, SmsCampaign)
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.handy_functions import (request_from_google_shorten_url_api,
                                                           get_valid_blast_obj)
@@ -168,10 +168,11 @@ class SMSCampaigns(Resource):
                     401 (Unauthorized to access getTalent)
                     500 (Internal Server Error)
         """
+        page, per_page = get_pagination_params(request)
         camp_obj = SmsCampaignBase(request.user.id)
-        # TODO: Add pagination once GET-1141 is resolved
-        all_campaigns = [campaign.to_dict() for campaign in camp_obj.get_all_campaigns()]
-        return dict(campaigns=all_campaigns), requests.codes.OK
+        query = camp_obj.get_all_campaigns()
+        return get_paginated_response('campaigns', query, page, per_page,
+                                      parser=SmsCampaign.to_dict)
 
     def post(self):
         """
