@@ -59,9 +59,9 @@ def run_migrations(logger, db):
     for f in os.listdir(migrations_directory):
         pathname = "{}/{}".format(migrations_directory, f)
         if not os.path.isfile(pathname):
-            raise UnprocessableEntity(error_message="Unexpected non-file found: {}".format(pathname))
+            logger.exception("Unexpected non-file found in migrations directory: {}".format(pathname))
         if invalid_migration_filename(f):
-            raise UnprocessableEntity(error_message="Incorrect migration filename: {}".format(f))
+            logger.exception("Incorrect migration filename: {}".format(f))
 
         files.append(pathname)
 
@@ -81,7 +81,7 @@ def run_migrations(logger, db):
             try:
                 migrations_found = db.session.query(Migration).filter(Migration.name == name).all()
             except Exception as e:
-                logger.error("DB Query Exception: {}".format(e.message))
+                logger.exception("DB Query Exception: {}".format(e.message))
         else:
             Migration.__table__.create(db.engine)
 
@@ -91,7 +91,7 @@ def run_migrations(logger, db):
             try:
                 execfile(f)
             except Exception as e:
-                raise UnprocessableEntity(error_message="Can't execute migration: {}".format(f))
+                logger.exception("Can't execute migration file {}".format(f))
 
             # Record migration processed
             logger.info("Recording {}".format(name))
