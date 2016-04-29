@@ -5,6 +5,8 @@ This module entails candidate sample data functions for testing
 import random
 from random import randrange
 
+# Third party libraries
+import phonenumbers
 from boltons.iterutils import remap
 
 from candidate_service.common.utils.handy_functions import sample_phone_number
@@ -208,17 +210,20 @@ class GenerateCandidateData(object):
         return data
 
     @staticmethod
-    def phones(talent_pool_ids=None, candidate_id=None, phone_id=None):
+    def phones(talent_pool_ids=None, candidate_id=None, phone_id=None, internationalize=False):
         """
         :type talent_pool_ids:  list[int]
+        :param internationalize:  If True, the phone number value will be internationalized, e.g. +14085067789
         :rtype:  dict[list]
         """
+        # Generate phone number
+        value = generate_international_phone_number(fake.boolean()) if internationalize else sample_phone_number()
         data = {'candidates': [
             {
                 'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids},
                 'phones': [
                     {
-                        'id': phone_id, 'label': 'Work', 'value': sample_phone_number(), 'is_default': False
+                        'id': phone_id, 'label': 'Work', 'value': value, 'is_default': False
                     }
                 ]
             }
@@ -378,27 +383,27 @@ def candidate_custom_fields(domain_custom_fields, candidate_id=None):
     return data
 
 
-def candidate_phones(talent_pool, candidate_id=None, phone_id=None):
+def candidate_phones(talent_pool, candidate_id=None, phone_id=None, internationalize=False):
     """
     Sample data for creating Candidate + CandidatePhones
+    :param internationalize:  If True, the phone number value will be internationalized, e.g. +14085067789
     :rtype  dict
     """
+    # Generate phone number
+    value = generate_international_phone_number(fake.boolean()) if internationalize else sample_phone_number()
+
     # Data for adding CandidatePhone to an existing Candidate
     if candidate_id and not phone_id:
-        data = {'candidates': [{'id': candidate_id, 'phones': [
-            {'label': 'home', 'value': sample_phone_number(), 'is_default': True}
-        ]}]}
+        data = {'candidates': [{'id': candidate_id, 'phones': [{'label': 'home', 'value': value, 'is_default': True}]}]}
 
     # Data for updating an existing CandidatePhone
     elif candidate_id and phone_id:
-        data = {'candidates': [{'id': candidate_id, 'phones': [{'id': phone_id, 'label': 'home',
-                                                                'value': sample_phone_number()}]}]}
+        data = {'candidates': [{'id': candidate_id, 'phones': [{'id': phone_id, 'label': 'home', 'value': value}]}]}
 
     # Data for creating Candidate + CandidatePhone
     else:
         data = {'candidates': [
-            {'talent_pool_ids': {'add': [talent_pool.id]},
-             'phones': [{'value': sample_phone_number(), 'label': 'Home'}]}]}
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'phones': [{'value': value, 'label': 'Home'}]}]}
 
     return data
 
@@ -453,3 +458,23 @@ def candidate_social_network(talent_pool):
          'talent_pool_ids': {'add': [talent_pool.id]}}
     ]}
     return data
+
+
+def generate_international_phone_number(extension=False):
+    """
+    Function will generate a valid international phone number
+    :param extension:  If True, phone number will have an extension
+    :rtype:  str
+    """
+    phone_number = '{}'.format(random.randint(1, 9))  # phone number must start with a non-zero value
+    while len(phone_number) < 10:  # phone number must have 10 digits
+        phone_number += str(random.randint(0, 9))
+
+    # Add country code to the beginning of the phone number
+    phone_number = '+' + str(phonenumbers.country_code_for_valid_region(region_code=fake.country_code())) + phone_number
+
+    # Generate and append random extension to phone number
+    if extension:
+        ext = ''.join(map(str, (random.randrange(9) for _ in range(random.randint(2, 3)))))
+        phone_number += ('x' + ext)
+    return phone_number

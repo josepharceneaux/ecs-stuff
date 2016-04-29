@@ -224,7 +224,7 @@ class TestUpdateCandidate(object):
 
 
 class TestUpdateCandidateAddress(object):
-    # TODO Commenting out randomly failing test case so build passes. - basit
+    # TODO Commenting out randomly failing test case so build passes. -OM
     # def test_add_new_candidate_address(self, access_token_first, user_first, talent_pool):
     #     """
     #     Test:   Add a new CandidateAddress to an existing Candidate
@@ -895,8 +895,8 @@ class TestUpdateCandidatePhones(object):
         phones_before_update = get_resp.json()['candidate']['phones']
         phones_count_before_update = len(phones_before_update)
 
-        # Add new email
-        data = GenerateCandidateData.phones([talent_pool.id], candidate_id)
+        # Add new phone
+        data = GenerateCandidateData.phones([talent_pool.id], candidate_id, internationalize=True)
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
 
