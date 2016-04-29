@@ -31,7 +31,7 @@ Delete Multiple Campaigns: /v1/push-campaigns [DELETE]
 import sys
 
 # 3rd party imports
-from requests import codes as HttpStatus
+from requests import codes
 
 # Application specific imports
 from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
@@ -55,7 +55,7 @@ class TestCreateCampaign(object):
         Send request with invalid token and 401 status code is expected
         :param campaign_data: dictionary data for campaign
         """
-        create_campaign(campaign_data, 'invalid_token', expected_status=(HttpStatus.UNAUTHORIZED,))
+        create_campaign(campaign_data, 'invalid_token', expected_status=(codes.UNAUTHORIZED,))
 
     def test_create_campaign_with_invalid_data(self, token_first):
         """
@@ -90,7 +90,7 @@ class TestCreateCampaign(object):
         # Success case. Send a valid data and campaign should be created (201)
         data = campaign_data.copy()
         data['smartlist_ids'] = [smartlist_first['id']]
-        response = create_campaign(data, token_first, expected_status=(HttpStatus.CREATED,))
+        response = create_campaign(data, token_first, expected_status=(codes.CREATED,))
         _id = response['id']
         assert response['message'] == 'Push campaign was created successfully'
         assert response['headers']['Location'] == PushCampaignApiUrl.CAMPAIGN % _id
@@ -108,7 +108,7 @@ class TestGetListOfCampaigns(object):
         We will try to get a list of campaigns with invalid token and
         we are expecting 401 status
         """
-        get_campaigns('invalid_token', expected_status=(HttpStatus.UNAUTHORIZED,))
+        get_campaigns('invalid_token', expected_status=(codes.UNAUTHORIZED,))
 
     # URL: /v1/push-campaigns [GET]
     def test_get_campaigns_pagination(self, token_first, campaigns_for_pagination_test):
@@ -119,15 +119,15 @@ class TestGetListOfCampaigns(object):
         """
         total_count = campaigns_for_pagination_test
         per_page = total_count - 5
-        response = get_campaigns(token_first, per_page=per_page, expected_status=(HttpStatus.OK,))
+        response = get_campaigns(token_first, per_page=per_page, expected_status=(codes.OK,))
         assert len(response['campaigns']) == per_page
 
         per_page = total_count
-        response = get_campaigns(token_first, per_page=per_page, expected_status=(HttpStatus.OK,))
+        response = get_campaigns(token_first, per_page=per_page, expected_status=(codes.OK,))
         assert len(response['campaigns']) == per_page
 
         per_page = MAX_PAGE_SIZE + 1
-        get_campaigns(token_first, per_page=per_page, expected_status=(HttpStatus.BAD_REQUEST,))
+        get_campaigns(token_first, per_page=per_page, expected_status=(codes.BAD_REQUEST,))
 
 
 class TestDeleteMultipleCampaigns(object):
@@ -143,7 +143,7 @@ class TestDeleteMultipleCampaigns(object):
         data = {
             'ids': [campaign_in_db['id']]
         }
-        delete_campaigns(data, 'invalid_token', expected_status=(HttpStatus.UNAUTHORIZED,))
+        delete_campaigns(data, 'invalid_token', expected_status=(codes.UNAUTHORIZED,))
 
     def test_campaigns_delete_with_invalid_data(self, token_first):
         """
@@ -157,7 +157,7 @@ class TestDeleteMultipleCampaigns(object):
         User auth token is valid, but non JSON data provided. It should get bad request error.
         """
         response = send_request('delete', URL, token_first, data={'ids': [1, 2, 3]}, is_json=False)
-        assert response.status_code == HttpStatus.BAD_REQUEST
+        assert response.status_code == codes.BAD_REQUEST
 
     def test_campaigns_delete_with_campaign_ids_in_non_list_form(self, token_first, campaign_in_db):
         """
@@ -166,7 +166,7 @@ class TestDeleteMultipleCampaigns(object):
         It should get bad request error.
         """
         data = {'ids': campaign_in_db['id']}
-        delete_campaigns(data, token_first, expected_status=(HttpStatus.BAD_REQUEST,))
+        delete_campaigns(data, token_first, expected_status=(codes.BAD_REQUEST,))
 
     def test_campaigns_delete_with_invalid_ids(self, token_first):
         """
@@ -174,7 +174,7 @@ class TestDeleteMultipleCampaigns(object):
         We are expecting 400 from this request
         """
         data = {'ids': [0, 'a', 'b']}
-        delete_campaigns(data, token_first, expected_status=(HttpStatus.BAD_REQUEST,))
+        delete_campaigns(data, token_first, expected_status=(codes.BAD_REQUEST,))
 
     def test_campaigns_delete_with_authorized_ids(self, token_first, campaign_in_db):
         """
@@ -184,7 +184,7 @@ class TestDeleteMultipleCampaigns(object):
         :param campaign_in_db: campaign created in fixture
         """
         data = {'ids': [campaign_in_db['id']]}
-        delete_campaigns(data, token_first, expected_status=(HttpStatus.OK,))
+        delete_campaigns(data, token_first, expected_status=(codes.OK,))
 
     def test_campaigns_delete_with_other_user_with_same_domain(self, token_same_domain, campaign_in_db):
         """
@@ -194,7 +194,7 @@ class TestDeleteMultipleCampaigns(object):
         :param campaign_in_db: campaign created by user_first
         """
         data = {'ids': [campaign_in_db['id']]}
-        delete_campaigns(data, token_same_domain, expected_status=(HttpStatus.OK,))
+        delete_campaigns(data, token_same_domain, expected_status=(codes.OK,))
 
     def test_campaigns_delete_with_unauthorized_id(self, token_second, campaign_in_db):
         """
@@ -204,7 +204,7 @@ class TestDeleteMultipleCampaigns(object):
         :param campaign_in_db: campaign created in fixture
         """
         data = {'ids': [campaign_in_db['id']]}
-        delete_campaigns(data, token_second, expected_status=(HttpStatus.FORBIDDEN,))
+        delete_campaigns(data, token_second, expected_status=(codes.FORBIDDEN,))
 
     def test_campaigns_delete_authorized_and_unauthorized_ids(self, token_first, campaign_in_db,
                                                               campaign_in_db_second):
@@ -217,9 +217,9 @@ class TestDeleteMultipleCampaigns(object):
         """
         response = send_request('delete', URL, token_first, data={'ids': [campaign_in_db['id'],
                                                                     campaign_in_db_second['id']]})
-        assert response.status_code == HttpStatus.MULTI_STATUS
+        assert response.status_code == codes.MULTI_STATUS
         data = {'ids': [campaign_in_db['id'], campaign_in_db_second['id']]}
-        delete_campaigns(data, token_first, expected_status=(HttpStatus.MULTI_STATUS,))
+        delete_campaigns(data, token_first, expected_status=(codes.MULTI_STATUS,))
 
     def test_campaigns_delete_with_existing_and_non_existing_ids(self, token_first, campaign_in_db):
         """
@@ -230,7 +230,7 @@ class TestDeleteMultipleCampaigns(object):
         """
         invalid_id = sys.maxint
         data = {'ids': [campaign_in_db['id'], invalid_id]}
-        delete_campaigns(data, token_first, expected_status=(HttpStatus.MULTI_STATUS,))
+        delete_campaigns(data, token_first, expected_status=(codes.MULTI_STATUS,))
 
     def test_campaigns_delete_with_deleted_record(self, token_first, campaign_in_db):
         """
@@ -244,4 +244,4 @@ class TestDeleteMultipleCampaigns(object):
         data = {
             'ids': [campaign_in_db['id']]
         }
-        delete_campaigns(data, token_first, expected_status=(HttpStatus.NOT_FOUND,))
+        delete_campaigns(data, token_first, expected_status=(codes.NOT_FOUND,))

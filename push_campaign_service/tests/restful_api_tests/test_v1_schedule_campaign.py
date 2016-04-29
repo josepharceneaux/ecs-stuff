@@ -40,7 +40,7 @@ import time
 from datetime import datetime
 # 3rd party imports
 from redo import retry
-from requests import codes as HttpStatus
+from requests import codes
 # Application specific imports
 from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
                                                         schedule_campaign, invalid_data_test,
@@ -63,7 +63,7 @@ class TestScheduleCampaignUsingPOST(object):
         # this resource test
         data = generate_campaign_schedule_data()
         campaign_id = campaign_in_db['id']
-        schedule_campaign(campaign_id, data, 'invalid_token', expected_status=(HttpStatus.UNAUTHORIZED,))
+        schedule_campaign(campaign_id, data, 'invalid_token', expected_status=(codes.UNAUTHORIZED,))
 
     def test_schedule_campaign_with_invalid_data(self, token_first, campaign_in_db, smartlist_first):
         invalid_data_test('post', URL % campaign_in_db['id'], token_first)
@@ -72,8 +72,8 @@ class TestScheduleCampaignUsingPOST(object):
         data = generate_campaign_schedule_data()
         # Test with invalid or non-existing id
         non_existing_id = sys.maxint
-        invalid_ids = [(0, HttpStatus.BAD_REQUEST),
-                       (non_existing_id, HttpStatus.NOT_FOUND)]
+        invalid_ids = [(0, codes.BAD_REQUEST),
+                       (non_existing_id, codes.NOT_FOUND)]
         for _id, status_code in invalid_ids:
             schedule_campaign(_id, data, token_first, expected_status=(status_code,))
 
@@ -84,7 +84,7 @@ class TestScheduleCampaignUsingPOST(object):
         """
         data = generate_campaign_schedule_data()
         reschedule_campaign(campaign_in_db['id'], data, token_first,
-                            expected_status=(HttpStatus.FORBIDDEN,))
+                            expected_status=(codes.FORBIDDEN,))
 
     def test_schedule_campaign_with_missing_fields_in_schedule_data(self, token_first, campaign_in_db,
                                                            smartlist_first):
@@ -92,12 +92,12 @@ class TestScheduleCampaignUsingPOST(object):
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         del data['start_datetime']
         schedule_campaign(campaign_in_db['id'], data, token_first,
-                          expected_status=(HttpStatus.BAD_REQUEST,))
+                          expected_status=(codes.BAD_REQUEST,))
 
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         del data['end_datetime']
         response = schedule_campaign(campaign_in_db['id'], data, token_first,
-                                     expected_status=(HttpStatus.BAD_REQUEST,))
+                                     expected_status=(codes.BAD_REQUEST,))
         error = response['error']
         assert 'end_datetime' in error['message']
 
@@ -107,13 +107,13 @@ class TestScheduleCampaignUsingPOST(object):
         start = datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
         schedule_campaign(campaign_in_db['id'], data, token_first,
-                          expected_status=(HttpStatus.BAD_REQUEST,))
+                          expected_status=(codes.BAD_REQUEST,))
 
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         end = datetime.utcnow()
         data['end_datetime'] = str(end)  # Invalid datetime format
         schedule_campaign(campaign_in_db['id'], data, token_first,
-                          expected_status=(HttpStatus.BAD_REQUEST,))
+                          expected_status=(codes.BAD_REQUEST,))
 
     def test_schedule_a_campaign_with_valid_data(self, candidate_first, smartlist_first, campaign_in_db, talent_pool,
                                                  token_first, candidate_device_first):
@@ -122,7 +122,7 @@ class TestScheduleCampaignUsingPOST(object):
               args=(smartlist_first['id'], token_first), kwargs={'candidates_count': 1})
         data = generate_campaign_schedule_data()
         response = schedule_campaign(campaign_in_db['id'], data, token_first,
-                                     expected_status=(HttpStatus.OK,))
+                                     expected_status=(codes.OK,))
         assert 'task_id' in response
         assert 'message' in response
         task_id = response['task_id']
@@ -141,7 +141,7 @@ class TestScheduleCampaignUsingPOST(object):
         campaign_id = create_campaign(data, token_first)['id']
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = schedule_campaign(campaign_id, data, token_same_domain,
-                                     expected_status=(HttpStatus.OK,))
+                                     expected_status=(codes.OK,))
         assert 'task_id' in response
         assert 'message' in response
         task_id = response['task_id']
@@ -160,7 +160,7 @@ class TestScheduleCampaignUsingPOST(object):
         :param campaign_in_db: campaign dict object
         """
         data = generate_campaign_schedule_data()
-        schedule_campaign(campaign_in_db['id'], data, token_second, expected_status=(HttpStatus.FORBIDDEN,))
+        schedule_campaign(campaign_in_db['id'], data, token_second, expected_status=(codes.FORBIDDEN,))
 
 
 class TestRescheduleCampaignUsingPUT(object):
@@ -171,7 +171,7 @@ class TestRescheduleCampaignUsingPUT(object):
         # this resource test
         data = generate_campaign_schedule_data()
         campaign_id = campaign_in_db['id']
-        reschedule_campaign(campaign_id, data, 'invalid_token', expected_status=(HttpStatus.UNAUTHORIZED,))
+        reschedule_campaign(campaign_id, data, 'invalid_token', expected_status=(codes.UNAUTHORIZED,))
 
     def test_reschedule_campaign_with_other_user(self, token_second, campaign_in_db):
         """
@@ -181,7 +181,7 @@ class TestRescheduleCampaignUsingPUT(object):
         """
         data = generate_campaign_schedule_data()
         reschedule_campaign(campaign_in_db['id'], data, token_second,
-                            expected_status=(HttpStatus.FORBIDDEN,))
+                            expected_status=(codes.FORBIDDEN,))
 
     def test_reschedule_campaign_with_invalid_data(self, token_first, campaign_in_db, smartlist_first):
         invalid_data_test('put', URL % campaign_in_db['id'], token_first)
@@ -194,8 +194,8 @@ class TestRescheduleCampaignUsingPUT(object):
         # Test with invalid integer id
         # Test for 404, Schedule a campaign which does not exists or id is invalid
         non_existing_id = sys.maxint
-        invalid_ids = [(0, HttpStatus.BAD_REQUEST),
-                       (non_existing_id, HttpStatus.NOT_FOUND)]
+        invalid_ids = [(0, codes.BAD_REQUEST),
+                       (non_existing_id, codes.NOT_FOUND)]
         for _id, status_code in invalid_ids:
             reschedule_campaign(_id, data, token_first, expected_status=(status_code,))
 
@@ -207,7 +207,7 @@ class TestRescheduleCampaignUsingPUT(object):
         """
         data = schedule_a_campaign
         schedule_campaign(campaign_in_db['id'], data, token_first,
-                          expected_status=(HttpStatus.FORBIDDEN,))
+                          expected_status=(codes.FORBIDDEN,))
 
     def test_reschedule_campaign_with_missing_fields_in_schedule_data(self, token_first, campaign_in_db,
                                                            smartlist_first, schedule_a_campaign):
@@ -216,14 +216,14 @@ class TestRescheduleCampaignUsingPUT(object):
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         del data['start_datetime']
         response = reschedule_campaign(campaign_in_db['id'], data, token_first,
-                                       expected_status=(HttpStatus.BAD_REQUEST,))
+                                       expected_status=(codes.BAD_REQUEST,))
         error = response['error']
         assert 'start_datetime' in error['message']
 
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         del data['end_datetime']
         response = reschedule_campaign(campaign_in_db['id'], data, token_first,
-                                       expected_status=(HttpStatus.BAD_REQUEST,))
+                                       expected_status=(codes.BAD_REQUEST,))
         error = response['error']
         assert 'end_datetime' in error['message']
 
@@ -233,13 +233,13 @@ class TestRescheduleCampaignUsingPUT(object):
         start = datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
         reschedule_campaign(campaign_in_db['id'], data, token_first,
-                            expected_status=(HttpStatus.BAD_REQUEST,))
+                            expected_status=(codes.BAD_REQUEST,))
 
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         end = datetime.utcnow()
         data['end_datetime'] = str(end)  # Invalid datetime format
         reschedule_campaign(campaign_in_db['id'], data, token_first,
-                            expected_status=(HttpStatus.BAD_REQUEST,))
+                            expected_status=(codes.BAD_REQUEST,))
 
     def test_reschedule_campaign_with_valid_data(self, token_first, campaign_in_db, talent_pool, candidate_first,
                                              smartlist_first, schedule_a_campaign):
@@ -264,7 +264,7 @@ class TestRescheduleCampaignUsingPUT(object):
 
         data = generate_campaign_schedule_data()
         reschedule_campaign(campaign_in_db['id'], data, token_same_domain,
-                            expected_status=(HttpStatus.FORBIDDEN,))
+                            expected_status=(codes.FORBIDDEN,))
 
 
 class TestUnscheduleCamapignUsingDELETE(object):
@@ -281,7 +281,7 @@ class TestUnscheduleCamapignUsingDELETE(object):
         # Test with a valid campaign but user is not owner of campaign
         # Here we created campaign with user whose Auth token_first is "token_first"
         # and we have a a test user token_first "test_auth_token" to test ownership
-        unschedule_campaign(campaign_in_db['id'], token_second, expected_status=(HttpStatus.FORBIDDEN,))
+        unschedule_campaign(campaign_in_db['id'], token_second, expected_status=(codes.FORBIDDEN,))
 
     def test_unschedule_campaign_with_other_user_but_same_domain(self, token_same_domain,
                                                                  campaign_in_db):
@@ -290,13 +290,13 @@ class TestUnscheduleCamapignUsingDELETE(object):
         This user should be allowed to unschedule the campaign
         Here we created campaign with user whose Auth token_first is "token_first"
         """
-        unschedule_campaign(campaign_in_db['id'], token_same_domain, expected_status=(HttpStatus.OK,))
+        unschedule_campaign(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,))
 
     def test_unschedule_campaign_with_invalid_campaign_id(self, token_first, campaign_in_db):
         # Test with invalid integer id
         non_existing_id = sys.maxint
-        invalid_ids = [(0, HttpStatus.BAD_REQUEST),
-                       (non_existing_id, HttpStatus.NOT_FOUND)]
+        invalid_ids = [(0, codes.BAD_REQUEST),
+                       (non_existing_id, codes.NOT_FOUND)]
         for _id, status_code in invalid_ids:
             unschedule_campaign(_id, token_first, expected_status=(status_code,))
 
@@ -309,11 +309,11 @@ class TestUnscheduleCamapignUsingDELETE(object):
         :param smartlist_first: smartlist for user_first
         :param schedule_a_campaign: a fixture to schedule a campaign
         """
-        unschedule_campaign(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
+        unschedule_campaign(campaign_in_db['id'], token_first, expected_status=(codes.OK,))
 
 
 def assert_campaign_blasts(campaign_id, token, expected_count=1):
-    response = get_blasts(campaign_id, token, expected_status=(HttpStatus.OK,))
+    response = get_blasts(campaign_id, token, expected_status=(codes.OK,))
     blasts = response['blasts']
     return len(blasts) == expected_count
 

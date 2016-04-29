@@ -15,7 +15,7 @@ Get Campaign's Blast: /v1/push-campaigns/:id/blasts/:id [GET]
 # Standard imports
 import sys
 
-from requests import codes as HttpStatus
+from requests import codes
 
 # Application specific imports
 from push_campaign_service.tests.test_utilities import get_blast
@@ -36,7 +36,7 @@ class TestCampaignBlastById(object):
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
         get_blast(blast_id, campaign_id, 'invalid_token',
-                  expected_status=(HttpStatus.UNAUTHORIZED,))
+                  expected_status=(codes.UNAUTHORIZED,))
 
     def test_get_campaign_blast_with_non_existing_campaign(self, token_first, campaign_blast,
                                                            campaign_in_db):
@@ -51,7 +51,7 @@ class TestCampaignBlastById(object):
         blast_id = campaign_blast['id']
         invalid_campaign_id = sys.maxint
         get_blast(blast_id, invalid_campaign_id, token_first,
-                  expected_status=(HttpStatus.NOT_FOUND,))
+                  expected_status=(codes.NOT_FOUND,))
 
     def test_get_campaign_blast_with_invalid_blast_id(self, token_first, campaign_blast,
                                                       campaign_in_db):
@@ -66,7 +66,7 @@ class TestCampaignBlastById(object):
         invalid_blast_id = sys.maxint
         campaign_id = campaign_in_db['id']
         get_blast(invalid_blast_id, campaign_id, token_first,
-                  expected_status=(HttpStatus.NOT_FOUND,))
+                  expected_status=(codes.NOT_FOUND,))
 
     def test_get_campaign_blast_from_diff_domain(self, token_second, campaign_blast, campaign_in_db):
         """
@@ -79,14 +79,14 @@ class TestCampaignBlastById(object):
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
         get_blast(blast_id, campaign_id, token_second,
-                  expected_status=(HttpStatus.FORBIDDEN,))
+                  expected_status=(codes.FORBIDDEN,))
 
     def test_get_campaign_blast(self, token_first, campaign_blast, campaign_in_db):
         # 200 case: Campaign Blast successfully
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
         response = get_blast(blast_id, campaign_id, token_first,
-                             expected_status=(HttpStatus.OK,))
+                             expected_status=(codes.OK,))
         blast = response['blast']
         assert blast['sends'] == campaign_blast['sends']
         assert blast['clicks'] == campaign_blast['clicks']
@@ -98,7 +98,7 @@ class TestCampaignBlastById(object):
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
         response = get_blast(blast_id, campaign_id, token_same_domain,
-                             expected_status=(HttpStatus.OK,))
+                             expected_status=(codes.OK,))
         blast = response['blast']
         assert blast['sends'] == campaign_blast['sends']
         assert blast['clicks'] == campaign_blast['clicks']

@@ -14,13 +14,12 @@ but user is different.
 """
 import pytest
 import time
-from requests import codes as HttpStatus
+from requests import codes
 
 from ..test_config_manager import load_test_config
-from ..utils.test_utils import get_user, add_roles, \
-    create_candidate, get_candidate, delete_candidate, create_smartlist, delete_smartlist, \
-    delete_talent_pool, create_talent_pools, get_talent_pool, get_talent_pipeline, delete_talent_pipeline, \
-    create_talent_pipelines
+from ..utils.test_utils import (get_user, add_roles, create_candidate, get_candidate, delete_candidate,
+                                create_smartlist, delete_smartlist, delete_talent_pool, create_talent_pools,
+                                get_talent_pool, get_talent_pipeline, delete_talent_pipeline, create_talent_pipelines)
 
 ROLES = ['CAN_ADD_USERS', 'CAN_GET_USERS', 'CAN_DELETE_USERS', 'CAN_ADD_TALENT_POOLS',
          'CAN_GET_TALENT_POOLS', 'CAN_DELETE_TALENT_POOLS', 'CAN_ADD_TALENT_POOLS_TO_GROUP',
@@ -112,7 +111,7 @@ def candidate_first(request, talent_pool, token_first, user_first):
 
     def tear_down():
         delete_candidate(candidate_id, token_first,
-                         expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
+                         expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return candidate
@@ -134,7 +133,7 @@ def candidate_same_domain(request, user_same_domain, talent_pool, token_same_dom
 
     def tear_down():
         delete_candidate(candidate_id, token_same_domain,
-                         expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
+                         expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return candidate
@@ -156,7 +155,7 @@ def candidate_second(request, token_second, talent_pool_second, user_second):
 
     def tear_down():
         delete_candidate(candidate_id, token_second,
-                         expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
+                         expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
 
     # request.addfinalizer(tear_down)
     return candidate
@@ -175,7 +174,7 @@ def talent_pipeline(request, token_first, user_first):
 
     def tear_down():
         delete_talent_pipeline(talent_pipeline_id, token_first,
-                               expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+                               expected_status=(codes.OK, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return talent_pipeline_obj
@@ -202,7 +201,7 @@ def smartlist_first(request, token_first, user_first, candidate_first, talent_po
 
     def tear_down():
         delete_smartlist(smartlist_id, token_first,
-                         expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+                         expected_status=(codes.OK, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return smartlist
@@ -226,7 +225,7 @@ def smartlist_second(request, token_second, user_second, candidate_second, talen
 
     def tear_down():
         delete_smartlist(smartlist_id, token_second,
-                         expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+                         expected_status=(codes.OK, codes.NOT_FOUND))
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -250,7 +249,7 @@ def smartlist_same_domain(request, token_same_domain, user_same_domain, candidat
 
     def tear_down():
         delete_smartlist(smartlist_id, token_same_domain,
-                         expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+                         expected_status=(codes.OK, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return smartlist
@@ -269,7 +268,7 @@ def talent_pool(request, token_first, user_first):
 
     def tear_down():
         delete_talent_pool(talent_pool_id, token_first,
-                           expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+                           expected_status=(codes.OK, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return talent_pool_obj
@@ -287,7 +286,7 @@ def talent_pool_second(request, token_second, user_second):
 
     def tear_down():
         delete_talent_pool(talent_pool_id, token_second,
-                           expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+                           expected_status=(codes.OK, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return talent_pool_obj

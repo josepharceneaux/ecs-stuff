@@ -18,7 +18,7 @@ import sys
 import time
 
 # 3rd party imports
-from requests import codes as HttpStatus
+from requests import codes
 
 # Application specific imports
 from push_campaign_service.tests.test_utilities import get_campaign_sends, SLEEP_TIME
@@ -38,7 +38,7 @@ class TestCampaignSends(object):
         :param campaign_in_db: campaign object
         """
         campaign_id = campaign_in_db['id']
-        get_campaign_sends(campaign_id, 'invalid_token', expected_status=(HttpStatus.UNAUTHORIZED,))
+        get_campaign_sends(campaign_id, 'invalid_token', expected_status=(codes.UNAUTHORIZED,))
 
     def test_get_campaign_sends_for_non_existing_campaign(self, token_first):
         """
@@ -48,7 +48,7 @@ class TestCampaignSends(object):
         """
         # 404 Case, Campaign not found
         invalid_id = sys.maxint
-        get_campaign_sends(invalid_id, token_first, expected_status=(HttpStatus.NOT_FOUND,))
+        get_campaign_sends(invalid_id, token_first, expected_status=(codes.NOT_FOUND,))
 
     def test_get_campaign_sends_from_diff_domain(self, token_second, campaign_in_db):
         """
@@ -58,7 +58,7 @@ class TestCampaignSends(object):
         :param campaign_in_db: campaign object
         """
         # 403 Case, Not authorized
-        get_campaign_sends(campaign_in_db['id'], token_second, expected_status=(HttpStatus.FORBIDDEN,))
+        get_campaign_sends(campaign_in_db['id'], token_second, expected_status=(codes.FORBIDDEN,))
 
     def test_get_campaign_sends_with_diff_user_from_same_domain(self, token_same_domain,
                                                                 campaign_in_db, campaign_blasts):
@@ -68,7 +68,7 @@ class TestCampaignSends(object):
         :param token_same_domain: auth token of another valid user from different domain
         """
         # 403 Case, Not authorized
-        get_campaign_sends(campaign_in_db['id'], token_same_domain, expected_status=(HttpStatus.OK,))
+        get_campaign_sends(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,))
 
     def test_get_campaign_sends_paginated(self, token_first, campaign_in_db, campaign_blasts_pagination):
         """
@@ -83,25 +83,25 @@ class TestCampaignSends(object):
         per_page = blasts_count - 5
         time.sleep(3 * SLEEP_TIME)
         response = get_campaign_sends(campaign_id, token_first, per_page=per_page,
-                                      expected_status=(HttpStatus.OK,))
+                                      expected_status=(codes.OK,))
         assert len(response['sends']) == per_page
 
         response = get_campaign_sends(campaign_id, token_first, page=2, per_page=per_page,
-                                      expected_status=(HttpStatus.OK,))
+                                      expected_status=(codes.OK,))
         assert len(response['sends']) == (blasts_count - per_page)
 
         per_page = blasts_count
         response = get_campaign_sends(campaign_id, token_first, per_page=per_page,
-                                      expected_status=(HttpStatus.OK,))
+                                      expected_status=(codes.OK,))
         assert len(response['sends']) == blasts_count
 
         response = get_campaign_sends(campaign_id, token_first, page=2, per_page=20,
-                                      expected_status=(HttpStatus.OK,))
+                                      expected_status=(codes.OK,))
         assert len(response['sends']) == 0
 
         # set page size greater than max allowed page size, 400 is expected
         per_page = MAX_PAGE_SIZE + 1
         get_campaign_sends(campaign_id, token_first, per_page=per_page,
-                           expected_status=(HttpStatus.BAD_REQUEST,))
+                           expected_status=(codes.BAD_REQUEST,))
 
 

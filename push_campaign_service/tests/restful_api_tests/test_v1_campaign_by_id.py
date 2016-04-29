@@ -32,7 +32,7 @@ Delete a Campaign: /v1/push-campaigns/:id [DELETE]
 import sys
 
 # 3rd party imports
-from requests import codes as HttpStatus
+from requests import codes
 
 # Application specific imports
 from push_campaign_service.tests.test_utilities import (get_campaign,delete_campaign, invalid_value_test,
@@ -139,7 +139,7 @@ class TestUpdateCampaign(object):
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
         campaign_id = campaign_in_db['id']
-        update_campaign(campaign_id, data, token_second, expected_status=(HttpStatus.FORBIDDEN,))
+        update_campaign(campaign_id, data, token_second, expected_status=(codes.FORBIDDEN,))
 
     def test_update_campaign_with_invalid_id(self, token_first, smartlist_first):
         """
@@ -152,7 +152,7 @@ class TestUpdateCampaign(object):
         data['smartlist_ids'] = [smartlist_first['id']]
         invalid_id = sys.maxint
         for _id in [0, invalid_id]:
-            update_campaign(_id, data, token_first, expected_status=(HttpStatus.NOT_FOUND,))
+            update_campaign(_id, data, token_first, expected_status=(codes.NOT_FOUND,))
 
     def test_update_deleted_campaign(self, token_first, campaign_in_db, smartlist_first):
         """
@@ -166,7 +166,7 @@ class TestUpdateCampaign(object):
         delete_campaign(campaign_id, token_first)
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
-        update_campaign(campaign_id, data, token_first, expected_status=(HttpStatus.NOT_FOUND,))
+        update_campaign(campaign_id, data, token_first, expected_status=(codes.NOT_FOUND,))
 
     def test_update_campaign_with_invalid_field(self, token_first, campaign_in_db, smartlist_first):
         """
@@ -181,7 +181,7 @@ class TestUpdateCampaign(object):
         data['invalid_field_name'] = 'Any Value'
         campaign_id = campaign_in_db['id']
         response = update_campaign(campaign_id, data, token_first,
-                                   expected_status=(HttpStatus.BAD_REQUEST,))
+                                   expected_status=(codes.BAD_REQUEST,))
         error = response['error']
         assert error['invalid_field'] == 'invalid_field_name'
 
@@ -211,7 +211,7 @@ class TestUpdateCampaign(object):
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
         campaign_id = campaign_in_db['id']
-        update_campaign(campaign_id, data, token_first, expected_status=(HttpStatus.OK,))
+        update_campaign(campaign_id, data, token_first, expected_status=(codes.OK,))
 
         # Now get campaign from API and compare data.
         json_response = get_campaign(campaign_id, token_first)
@@ -240,7 +240,7 @@ class TestCampaignDeleteById(object):
         non_existing_campaign_id = sys.maxint
         # 404 Case, Campaign not found
         delete_campaign(non_existing_campaign_id, token_first,
-                        expected_status=(HttpStatus.NOT_FOUND,))
+                        expected_status=(codes.NOT_FOUND,))
 
     def test_delete_campaign_with_invalid_id(self, token_first):
         """
@@ -248,7 +248,7 @@ class TestCampaignDeleteById(object):
         :param token_first: auth token_first
         """
         invalid_id = 0
-        delete_campaign(invalid_id, token_first, expected_status=(HttpStatus.BAD_REQUEST,))
+        delete_campaign(invalid_id, token_first, expected_status=(codes.BAD_REQUEST,))
 
     def test_delete_campaign_with_user_from_same_domain(self, token_same_domain, campaign_in_db):
         """
@@ -257,7 +257,7 @@ class TestCampaignDeleteById(object):
         :param token_same_domain: auth token
         :param campaign_in_db: campaign object
         """
-        delete_campaign(campaign_in_db['id'], token_same_domain, expected_status=(HttpStatus.OK,))
+        delete_campaign(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,))
 
     def test_delete_campaign_from_diff_domain(self, token_second, campaign_in_db):
         """
@@ -266,7 +266,7 @@ class TestCampaignDeleteById(object):
         :param token_second: auth token
         :param campaign_in_db: campaign object
         """
-        delete_campaign(campaign_in_db['id'], token_second, expected_status=(HttpStatus.FORBIDDEN,))
+        delete_campaign(campaign_in_db['id'], token_second, expected_status=(codes.FORBIDDEN,))
 
     def test_delete_unscheduled_campaign(self, token_first, campaign_in_db):
         """
@@ -276,7 +276,7 @@ class TestCampaignDeleteById(object):
         :param campaign_in_db: campaign object
         """
         # 200 Case, Campaign not found
-        delete_campaign(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
+        delete_campaign(campaign_in_db['id'], token_first, expected_status=(codes.OK,))
 
     def test_delete_scheduled_campaign(self, token_first, campaign_in_db, schedule_a_campaign):
         """
@@ -285,4 +285,4 @@ class TestCampaignDeleteById(object):
         :param campaign_in_db: campaign object
         :param schedule_a_campaign: fixture to schedule a campaign
         """
-        delete_campaign(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
+        delete_campaign(campaign_in_db['id'], token_first, expected_status=(codes.OK,))

@@ -18,7 +18,7 @@ import sys
 import time
 
 # 3rd party imports
-from requests import codes as HttpStatus
+from requests import codes
 
 # Application specific imports
 from push_campaign_service.tests.test_utilities import send_campaign, get_blasts, SLEEP_TIME
@@ -36,7 +36,7 @@ class TestSendCampaign(object):
         :param campaign_in_db: campaign object
         """
         send_campaign(campaign_in_db['id'], 'invalid_token',
-                      expected_status=(HttpStatus.UNAUTHORIZED,))
+                      expected_status=(codes.UNAUTHORIZED,))
 
     def test_send_campaign_with_non_existing_campaign(self, token_first):
         """
@@ -45,7 +45,7 @@ class TestSendCampaign(object):
         """
         # 404 case. Send a non existing campaign id
         invalid_id = sys.maxint
-        send_campaign(invalid_id, token_first, expected_status=(HttpStatus.NOT_FOUND,))
+        send_campaign(invalid_id, token_first, expected_status=(codes.NOT_FOUND,))
 
     def test_send_a_camapign_with_valid_data(self, token_first, campaign_in_db,
                                              smartlist_first, candidate_device_first):
@@ -56,11 +56,11 @@ class TestSendCampaign(object):
         :param smartlist_first: smartlist object
         """
         # 200 case: Campaign Sent successfully
-        send_campaign(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
+        send_campaign(campaign_in_db['id'], token_first, expected_status=(codes.OK,))
 
         # Wait for 20 seconds to run celery which will send campaign and creates blast
         time.sleep(2 * SLEEP_TIME)
-        response = get_blasts(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
+        response = get_blasts(campaign_in_db['id'], token_first, expected_status=(codes.OK,))
         blasts = response['blasts']
         assert len(blasts) == 1
         assert blasts[0]['sends'] == 1
@@ -74,12 +74,12 @@ class TestSendCampaign(object):
         :param campaign_in_db: campaign in same domain but created by different user in same domain
         """
         # 200 case: Campaign Sent successfully
-        send_campaign(campaign_in_db['id'], token_same_domain, expected_status=(HttpStatus.OK,))
+        send_campaign(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,))
 
         # Wait for 20 seconds to run celery which will send campaign and creates blast
         time.sleep(2 * SLEEP_TIME)
         response = get_blasts(campaign_in_db['id'], token_same_domain,
-                              expected_status=(HttpStatus.OK,))
+                              expected_status=(codes.OK,))
         blasts = response['blasts']
         assert len(blasts) == 1
         assert blasts[0]['sends'] == 1
@@ -87,7 +87,7 @@ class TestSendCampaign(object):
     def test_send_camapign_with_diff_domain(self, token_second, campaign_in_db):
         # try to send a campaign with different domain, we should get 403 error, i.e. user
         # is not allowed to send this campaign
-        send_campaign(campaign_in_db['id'], token_second, expected_status=(HttpStatus.FORBIDDEN,))
+        send_campaign(campaign_in_db['id'], token_second, expected_status=(codes.FORBIDDEN,))
 
     def test_campaign_send_with_multiple_smartlists(self, token_first,
                                                     campaign_in_db_multiple_smartlists):
@@ -98,10 +98,10 @@ class TestSendCampaign(object):
         candidate.
         """
         campaign_id = campaign_in_db_multiple_smartlists['id']
-        send_campaign(campaign_id, token_first, expected_status=(HttpStatus.OK,))
+        send_campaign(campaign_id, token_first, expected_status=(codes.OK,))
         time.sleep(SLEEP_TIME)
         # There should be only one blast for this campaign
-        response = get_blasts(campaign_id, token_first, expected_status=(HttpStatus.OK,))
+        response = get_blasts(campaign_id, token_first, expected_status=(codes.OK,))
         blasts = response['blasts']
         assert len(blasts) == 1
         assert blasts[0]['sends'] == 2
@@ -113,5 +113,5 @@ class TestSendCampaign(object):
         zero blasts or sends.
         """
         campaign_id = campaign_in_db['id']
-        send_campaign(campaign_id, token_first, expected_status=(HttpStatus.BAD_REQUEST,))
+        send_campaign(campaign_id, token_first, expected_status=(codes.BAD_REQUEST,))
 

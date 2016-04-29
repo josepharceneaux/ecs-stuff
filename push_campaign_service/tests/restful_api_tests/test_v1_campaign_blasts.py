@@ -14,7 +14,7 @@ Get Campaign's Blast: /v1/push-campaigns/:id/blasts [GET]
 import sys
 
 # 3rd party imports
-from requests import codes as HttpStatus
+from requests import codes
 
 # Application specific imports
 from push_campaign_service.tests.test_utilities import get_blasts
@@ -30,7 +30,7 @@ class TestCampaignBlasts(object):
         :param campaign_in_db: campaign object
         """
         campaign_id = campaign_in_db['id']
-        get_blasts(campaign_id, 'invalid_token', expected_status=(HttpStatus.UNAUTHORIZED,))
+        get_blasts(campaign_id, 'invalid_token', expected_status=(codes.UNAUTHORIZED,))
 
     def test_get_campaign_blasts_with_invalid_campaign_id(self, token_first):
         """
@@ -38,7 +38,7 @@ class TestCampaignBlasts(object):
         :param token_first: auth token
         """
         invalid_campaign_id = sys.maxint
-        get_blasts(invalid_campaign_id, token_first, expected_status=(HttpStatus.NOT_FOUND,))
+        get_blasts(invalid_campaign_id, token_first, expected_status=(codes.NOT_FOUND,))
 
     def test_get_campaign_blasts(self, token_first, campaign_in_db, campaign_blasts):
         """
@@ -49,7 +49,7 @@ class TestCampaignBlasts(object):
         """
         # 200 case: Campaign Blast successfully
         campaign_id = campaign_in_db['id']
-        response = get_blasts(campaign_id, token_first, expected_status=(HttpStatus.OK,))
+        response = get_blasts(campaign_id, token_first, expected_status=(codes.OK,))
         assert len(response['blasts']) == len(campaign_blasts)
 
     def test_get_campaign_blasts_from_same_domain(self, token_same_domain, campaign_in_db,
@@ -62,7 +62,7 @@ class TestCampaignBlasts(object):
         :param campaign_blasts: campaign blast list
         """
         campaign_id = campaign_in_db['id']
-        response = get_blasts(campaign_id, token_same_domain, expected_status=(HttpStatus.OK,))
+        response = get_blasts(campaign_id, token_same_domain, expected_status=(codes.OK,))
         assert len(response['blasts']) == len(campaign_blasts)
 
     def test_get_campaign_blasts_from_diff_domain(self, token_second, campaign_in_db,
@@ -75,4 +75,4 @@ class TestCampaignBlasts(object):
         :param campaign_blast: campaign blast JSON object
         """
         campaign_id = campaign_in_db['id']
-        get_blasts(campaign_id, token_second, expected_status=(HttpStatus.FORBIDDEN,))
+        get_blasts(campaign_id, token_second, expected_status=(codes.FORBIDDEN,))

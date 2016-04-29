@@ -6,7 +6,7 @@ import json
 from datetime import datetime, timedelta
 from dateutil.parser import parse
 import requests
-from requests import codes as HttpStatus
+from requests import codes
 from faker import Faker
 
 from ..tests.conftest import randomword
@@ -72,7 +72,7 @@ def get_user(user_id, token):
     assert str(user_id).isdigit(), 'user_id must be valid number'
     response = send_request('get', UserServiceApiUrl.USER % user_id, token)
     print('common_tests : get_user: ', response.content)
-    assert response.status_code == HttpStatus.OK
+    assert response.status_code == codes.OK
     return response.json()['user']
 
 
@@ -93,7 +93,7 @@ def refresh_token(data):
             }
     resp = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
     print('common_tests : refresh_token: ', resp.content)
-    assert resp.status_code == HttpStatus.OK
+    assert resp.status_code == codes.OK
     resp = resp.json()
     return resp['access_token']
 
@@ -116,7 +116,7 @@ def get_token(info):
             }
     resp = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
     print('common_tests : get_token: ', resp.content)
-    assert resp.status_code == HttpStatus.OK
+    assert resp.status_code == codes.OK
     resp = resp.json()
     access_token = resp['access_token']
     data.update(resp)
@@ -135,7 +135,7 @@ def unauthorize_test(method, url, data=None):
     """
     response = send_request(method, url, 'invalid_token',  data)
     print('common_tests : unauthorize_test: ', response.content)
-    assert response.status_code == HttpStatus.UNAUTHORIZED
+    assert response.status_code == codes.UNAUTHORIZED
 
 
 def invalid_data_test(method, url, token):
@@ -152,17 +152,17 @@ def invalid_data_test(method, url, token):
     assert token and isinstance(token, basestring), 'token must have a valid string value'
     data = None
     response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == HttpStatus.BAD_REQUEST
+    assert response.status_code == codes.BAD_REQUEST
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == HttpStatus.BAD_REQUEST
+    assert response.status_code == codes.BAD_REQUEST
     data = {}
     response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == HttpStatus.BAD_REQUEST
+    assert response.status_code == codes.BAD_REQUEST
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == HttpStatus.BAD_REQUEST
+    assert response.status_code == codes.BAD_REQUEST
     data = get_fake_dict()
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == HttpStatus.BAD_REQUEST
+    assert response.status_code == codes.BAD_REQUEST
 
 
 def get_fake_dict(key_count=3):
@@ -199,10 +199,10 @@ def add_roles(user_id, roles, token):
         data = {"roles": [role]}
         response = send_request('post', UserServiceApiUrl.USER_ROLES_API % user_id,
                                 token, data=data)
-        # if response.status_code == HttpStatus.BAD_REQUEST:
-        #     assert response.json()['error']['code'] == ErrorCodes.ROLE_ALREADY_EXISTS
-        # else:
-        #     assert response.status_code == HttpStatus.OK
+        if response.status_code == codes.BAD_REQUEST:
+            assert response.json()['error']['code'] == ErrorCodes.ROLE_ALREADY_EXISTS
+        else:
+            assert response.status_code == codes.OK
 
 
 def remove_roles(user_id, roles, token):
@@ -219,7 +219,7 @@ def remove_roles(user_id, roles, token):
     response = send_request('delete', UserServiceApiUrl.USER_ROLES_API % user_id,
                             token, data=data)
     print('common_tests : remove_roles: ', response.content)
-    assert response.status_code in [HttpStatus.OK, HttpStatus.BAD_REQUEST]
+    assert response.status_code in [codes.OK, codes.BAD_REQUEST]
 
 
 def delete_scheduler_task(task_id, token, expected_status=(200,)):

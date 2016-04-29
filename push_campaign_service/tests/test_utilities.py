@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from faker import Faker
-from requests import codes as HttpStatus
+from requests import codes
 from push_campaign_service.common.campaign_services.custom_errors import CampaignException
 from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi, CandidateApiUrl
 from push_campaign_service.common.utils.datetime_utils import DatetimeUtils
@@ -31,7 +31,7 @@ def missing_key_test(data, key, token):
     """
     del data[key]
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
-    assert response.status_code == HttpStatus.BAD_REQUEST
+    assert response.status_code == codes.BAD_REQUEST
     response = response.json()
     error = response['error']
     assert error['code'] == CampaignException.MISSING_REQUIRED_FIELD
@@ -54,7 +54,7 @@ def invalid_value_test(data, key, token, campaign_id):
     data.update(**generate_campaign_data())
     data[key] = ''
     response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_id, token, data)
-    response.status_code == HttpStatus.BAD_REQUEST
+    response.status_code == codes.BAD_REQUEST
     response = response.json()
     error = response['error']
     assert error['field'] == key
@@ -71,17 +71,17 @@ def invalid_data_test(method, url, token):
     """
     data = None
     response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == HttpStatus.BAD_REQUEST
+    assert response.status_code == codes.BAD_REQUEST
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == HttpStatus.BAD_REQUEST
+    assert response.status_code == codes.BAD_REQUEST
     data = {}
     response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == HttpStatus.BAD_REQUEST
+    assert response.status_code == codes.BAD_REQUEST
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == HttpStatus.BAD_REQUEST
+    assert response.status_code == codes.BAD_REQUEST
     data = get_fake_dict()
     response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == HttpStatus.BAD_REQUEST
+    assert response.status_code == codes.BAD_REQUEST
 
 
 def generate_campaign_data():
