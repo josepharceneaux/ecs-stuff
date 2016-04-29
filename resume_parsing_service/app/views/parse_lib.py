@@ -281,8 +281,8 @@ def google_vision_ocr(file_string_io):
         raise InternalServerError('Error in response from candidate service during creation')
     ocr_results = json.loads(google_request.content)
     # Check for errors since even a 'bad' request gives a 200 response. And use Abby in that event.
-    gapi_errors = ocr_results['responses'][0].get('error')
-    if gapi_errors:
+    google_api_errors = ocr_results['responses'][0].get('error')
+    if google_api_errors:
         logger.warn('Error parsing with Google Vision. Trying Abby parse. Param: {}'.format(file_string_io))
         return ocr_image(file_string_io)
     logger.info("google_vision_ocr: Google API response JSON: %s", ocr_results)
