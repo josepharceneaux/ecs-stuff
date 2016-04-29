@@ -14,7 +14,7 @@ MYSQL_LOCAL_URI = 'mysql://talent_web:s!loc976892@localhost/talent_local'
 
 # Staging mysql URI prefix
 # MYSQL_STAGE = 'mysql://talent_web:{}@rds-staging.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_staging'
-MYSQL_STAGE = 'mysql://talent_web:{}@stage-db.gettallent.com/talent_staging'
+MYSQL_STAGE = 'mysql://talent_web:{}@stage-db.gettalent.com/talent_staging'
 
 # Prod mysql URI prefix
 MYSQL_PROD = 'mysql://talent_live:{}@rds-prod.gettalent.com/talent_core'

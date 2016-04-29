@@ -55,7 +55,7 @@ elif env == 'qa':
     OAUTH_ROOT = 'https://secure-webdev.gettalent.com%s'
     OAUTH_AUTHORIZE_URI = OAUTH_ROOT % '/oauth2/authorize'
     OAUTH_TOKEN_URI = OAUTH_ROOT % '/oauth2/token'
-    SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@stage-db.gettallent.com/talent_staging'
+    SQLALCHEMY_DATABASE_URI = 'mysql://talent_web:s!web976892@stage-db.gettalent.com/talent_staging'
     DEBUG = False
 elif env == 'prod':
     ENVIRONMENT = 'prod'
