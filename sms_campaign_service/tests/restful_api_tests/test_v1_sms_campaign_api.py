@@ -440,7 +440,7 @@ class TestSmsCampaignHTTPDelete(object):
         response = requests.delete(self.URL,
                                    headers=valid_header,
                                    data=json.dumps({
-                                       'ids': [sms_campaign_of_other_user_in_same_domain.id,
+                                       'ids': [sms_campaign_of_other_user_in_same_domain['id'],
                                                sms_campaign_of_current_user['id']]
                                    }))
         assert_campaign_delete(response, user_first.id, sms_campaign_of_current_user['id'])
