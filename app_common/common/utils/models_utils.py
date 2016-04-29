@@ -395,7 +395,7 @@ def init_talent_app(app_name):
         try:
             migrations.run_migrations(logger, db)
         except Exception as e:
-            logger.exception("Exception running migrations.")
+            logger.exception("Exception running migrations: {}".format(e.message))
 
         return flask_app, logger
 

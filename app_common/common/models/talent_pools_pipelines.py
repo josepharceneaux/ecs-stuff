@@ -13,6 +13,7 @@ class TalentPool(db.Model):
     domain_id = db.Column(db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), nullable=False)
     user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     name = db.Column(db.String(50), nullable=False)
+    simple_hash = db.Column(db.String(8))
     description = db.Column(db.TEXT)
     added_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_time = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -100,6 +101,12 @@ class TalentPipeline(db.Model):
         from candidate_pool_service.common.models.smartlist import Smartlist
         return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline).\
             filter(TalentPipeline.id == self.id).paginate(page=page, per_page=per_page, error_out=False).items
+
+    def get_email_campaigns_count(self):
+        from candidate_pool_service.common.models.email_campaign import EmailCampaign, EmailCampaignSmartlist
+        from candidate_pool_service.common.models.smartlist import Smartlist
+        return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline).\
+            filter(TalentPipeline.id == self.id).count()
 
     def delete(self):
         db.session.delete(self)

@@ -225,17 +225,7 @@ def format_query(query):
     :param query: Query Strinf
     :return:
     """
-    query = ''.join(map(lambda char: '\%s' % char if char in SPECIAL_CHARS else char, query))
-    if '&&' in query:
-        query = query.replace('&&', '\&&')
-    if '||' in query:
-        query = query.replace('||', '\||')
-    if 'AND' in query:
-        query = query.replace('AND', 'and')
-    if 'OR' in query:
-        query = query.replace('OR', 'or')
-
-    return query
+    return ''.join(map(lambda char: '\%s' % char if char in SPECIAL_CHARS else char, query))
 
 
 def convert_date(key, value):
