@@ -3,12 +3,10 @@ Test cases for Talent Cloud Search functionality
 """
 import time
 from candidate_service.common.tests.conftest import *
-from candidate_service.common.models.candidate import (Candidate, CandidateAddress, CandidateStatus, CandidateSource)
+from candidate_service.common.models.candidate import CandidateStatus
 from candidate_service.candidate_app import db, logger
 from candidate_service.modules.talent_cloud_search import search_candidates, upload_candidate_documents
-from candidate_service.common.models.misc import CustomField, CustomFieldCategory, AreaOfInterest
-from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
-from candidate_service.cloudsearch_constants import SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH
+from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.utils.talent_areas_of_interest import KAISER_PARENT_TO_CHILD_AOIS
 from candidate_service.tests.api.candidate_sample_data import college_majors
 from faker import Faker
@@ -29,15 +27,14 @@ VARIOUS_US_LOCATIONS = (('San Jose', 'CA', '95132'), ('Providence', 'Rhode Islan
 
 
 def populate_candidates(access_token, talent_pool, count=1, first_name=None, middle_name=None,
-                        last_name=None, added_time=True, objective=None,
-                        phone=False, company_name=None, job_title=None, candidate_text_comment=False,
-                        source_id=None, city=False, state=False, zip_code=False, areas_of_interest=None,
-                        school_name=None, major=None, degree_type=None, degree_title=None, university_start_year=False,
-                        university_start_month=False, graduation_year=False, graduation_month=False,
-                        military_branch=False, military_status=False, military_grade=False, military_to_date=False,
-                        military_from_date=False, skills=None, custom_fields_dict=None,
-                        experiences=None, update_now=True):
-
+                        last_name=None, added_time=None, objective=None,
+                        phone=None, company_name=None, job_title=None, candidate_text_comment=None,
+                        source_id=None, city=None, state=None, zip_code=None, areas_of_interest=None,
+                        school_name=None, major=None, degree_type=None, degree_title=None, university_start_year=None,
+                        university_start_month=None, graduation_year=None, graduation_month=None,
+                        military_branch=None, military_status=None, military_grade=None, military_to_date=None,
+                        military_from_date=None, skills=None, custom_fields_dict=None,
+                        experiences=None):
     candidate_ids = []
     for i in range(count):
         full_name = fake.name()
@@ -47,6 +44,7 @@ def populate_candidates(access_token, talent_pool, count=1, first_name=None, mid
             talent_pool_ids=dict(
                 add=[talent_pool.id]
             ),
+            added_datetime=added_time,
             first_name=first_name or parsed_full_name.first,
             middle_name=middle_name or parsed_full_name.middle,
             last_name=last_name or parsed_full_name.last,
@@ -152,37 +150,6 @@ def _assert_search_results(domain_id, search_vars, candidate_ids, wait=True,
     if facets_dict:
         # If facets_dict is present, compare provided facets_dict with facets returned from cloudsearch
         assert compare_dictionaries(response['search_data']['facets'], facets_dict)
-
-
-def _log_bounding_box_and_coordinates(base_location, radius, candidate_ids):
-    """
-    Display bounding box coordinates relative to radius (distance) and coordinates of candidate location
-    :param base_location:
-    :param radius:
-    :param candidate_ids:
-    :return:
-    """
-    distance_in_km = float(radius) / 0.62137
-    coords_dict = get_geocoordinates_bounding(base_location, distance_in_km)
-    top_left_y, top_left_x, bottom_right_y, bottom_right_x = coords_dict['top_left'][0], coords_dict['top_left'][1], \
-                                                             coords_dict['bottom_right'][0], \
-                                                             coords_dict['bottom_right'][1]
-    # Lat = Y Lng = X
-    print "%s miles bounding box coordinates: ['%s,%s','%s,%s']" % (radius, top_left_y, top_left_x, bottom_right_y,
-                                                                    bottom_right_x)
-    if type(candidate_ids) in (int, long):
-        candidate_ids = [candidate_ids]
-    for index, candidate_id in enumerate(candidate_ids, start=1):
-        row = db.session.query(CandidateAddress).filter_by(candidate_id=candidate_id).first()
-        print "Candidate-%s Address: %s, %s, %s. \n cooridnates: %s" % (index, row.city, row.state,
-                                                                        row.zip_code, row.coordinates)
-
-        point = row.coordinates.split(',')
-        statement1 = top_left_x <= float(point[1]) <= bottom_right_x
-        statement2 = top_left_y >= float(point[0]) >= bottom_right_y
-        print "Candidate-%s %s bounding box" % (index, 'lies inside' if statement1 and statement2 else 'not in')
-        print "%s <= %s <= %s = %s" % (top_left_x, point[1], bottom_right_x, statement1)
-        print "%s >= %s >= %s = %s" % (top_left_y, point[0], bottom_right_y, statement2)
 
 
 def create_area_of_interest_facets(db, domain_id):
