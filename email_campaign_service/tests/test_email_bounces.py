@@ -39,24 +39,23 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
                                                 blast_id=email_campaign_blast.id)
         EmailCampaignSend.save(email_campaign_send)
         invalid_email = 'invalid_' + fake.uuid4() + '@gmail.com'
-        email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
+        email = CandidateEmail.get_email_by_candidate_id(candidate_ids[0])
         email.update(address=invalid_email)
         db.session.commit()
         send_campaign_email_to_candidate(campaign, email, candidate_ids[0], email_campaign_blast.id)
-        poll(check_is_bounced, step=3, args=(candidate_ids[0],), timeout=100)
+        poll(check_is_bounced, step=3, args=(email,), timeout=100)
         campaign_blasts = get_blasts_with_polling(campaign, 1, 20)
         campaign_blast = campaign_blasts[0]
         assert campaign_blast.bounces == 1
 
 
-def check_is_bounced(candidate_id):
+def check_is_bounced(email):
     """
-    Returns email address of a specific candidate.
-    :param candidate_id: Candidate id.
-    :return: Email address.
+    Checks if a candidate
+    :param email: candidate email
+    :return: value of is_bounced (0 or 1)
     """
     db.session.commit()
-    email = CandidateEmail.query.filter_by(candidate_id=candidate_id).first()
     return email.is_bounced
 
 
@@ -82,20 +81,20 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
 
         # Update first candidate's email to a valid email, i.e. testing email.
         valid_email = 'gettalentmailtest@gmail.com'
-        email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
+        email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_ids[0])
         email.update(address=valid_email)
 
         # Update second candidate's email to an invalid email, so we can test email bounce
         invalid_email = 'invalid_' + fake.uuid4() + '@gmail.com'
-        email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[1]).first()
+        email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_ids[1])
         email.update(address=invalid_email)
         db.session.commit()
 
         for index in range(count):
-            email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[index]).first()
+            email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_ids[index])
             send_campaign_email_to_candidate(campaign, email, candidate_ids[index], email_campaign_blast.id)
 
-        poll(check_is_bounced, step=3, args=(candidate_ids[1],), timeout=100)
+        poll(check_is_bounced, step=3, args=(email,), timeout=100)
 
         campaign_blasts = campaign.blasts.all()
         assert len(campaign_blasts) == 1

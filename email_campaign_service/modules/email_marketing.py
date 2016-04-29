@@ -7,12 +7,12 @@ This file contains function used by email-campaign-api.
 # Standard Imports
 import re
 import json
-import datetime
 import itertools
 
 # Third Party
 from celery import chord
-from sqlalchemy import and_, desc
+from sqlalchemy import desc
+from datetime import datetime, timedelta
 
 # Service Specific
 from email_campaign_service.modules.validations import get_or_set_valid_value
@@ -132,8 +132,8 @@ def create_email_campaign(user_id, oauth_token, name, subject,
     else:  # It means its a one time Job
         schedule_task_params["task_type"] = SchedulerUtils.ONE_TIME
         schedule_task_params["run_datetime"] = start_datetime if start_datetime else \
-            (datetime.datetime.utcnow() +
-             datetime.timedelta(seconds=10)).strftime("%Y-%m-%d %H:%M:%S")
+            (datetime.utcnow() +
+             timedelta(seconds=10)).strftime("%Y-%m-%d %H:%M:%S")
     schedule_task_params['is_jwt_request'] = True
     # Schedule email campaign; call Scheduler API
     headers = {'Authorization': oauth_token}
@@ -158,20 +158,20 @@ def create_email_campaign(user_id, oauth_token, name, subject,
     return {'id': email_campaign.id}
 
 
-def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
+def send_email_campaign(campaign, new_candidates_only=False):
     """
-    new_candidates_only sends the emails only to candidates who haven't yet
-    received any as part of this campaign.
-
-    :param campaign:    email campaign object
-    :param list_ids: list associated with email campaign if given it will take the ids provided else extract out from email campaign object
-    :param new_candidates_only: If emails need to be sent to new candidates only i.e. to those candidates whom emails were not sent previously
-        If email is sent from client it will not send the actual emails and returns the new html (with url conversions and other replacements)
-    :return:            number of emails sent
+    This function handles the actual sending of email campaign to candidates.
+    Emails are sent to new candidates only if new_candidates_only is true. In case campaign has
+    email_client_id associated with it (in case request came from browser plugins), we don't send
+    actual emails and just send the required fields (new_html, new_text etc) back in response.
+    Otherwise we get candidates from smartlists through celery and also send emails to those
+    candidates via celery.
+    :param campaign: Valid email campaign object.
+    :param new_candidates_only: True if email needs to be sent to those candidates whom emails were not sent previously
     """
+    # gt plugin code starts here.
     if campaign.email_client_id:
         candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(campaign=campaign,
-                                                                               list_ids=list_ids,
                                                                                new_candidates_only=new_candidates_only)
 
         # Check if the smart list has more than 0 candidates
@@ -210,7 +210,7 @@ def send_emails_to_campaign(campaign, list_ids=None, new_candidates_only=False):
             return list_of_new_email_html_or_text
     else:
         # For each candidate, create URL conversions and send the email via Celery task
-        send_campaign_through_celery(campaign, list_ids, new_candidates_only)
+        get_smartlist_candidates_via_celery(campaign, new_candidates_only)
 
 
 def send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_campaign_blast_id,
@@ -231,17 +231,24 @@ def send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_ca
     :type campaign: EmailCampaign
     :type new_candidates_only: bool
     """
+    if not campaign:
+        raise InternalServerError(error_message='Valid email campaign object must be provided')
+    if not candidate_ids_and_emails:
+        raise InternalServerError(error_message='No candidate data provided.')
+    if not blast_params:
+        raise InternalServerError(error_message='Blast Params must be provided.')
+    if not email_campaign_blast_id:
+        raise InternalServerError(error_message='email_campaign_blast_id must be provided.')
     campaign_type = campaign.__tablename__
     callback = post_processing_campaign_sent.subtask((campaign,
                                                       new_candidates_only,
                                                       email_campaign_blast_id,),
                                                      queue=campaign_type)
-    # Here we create list of all tasks and assign a self.celery_error_handler() as a
-    # callback function in case any of the tasks in the list encounter some error.
-    tasks = [send_campaign_to_candidate.subtask(
-        (campaign, Candidate.get_by_id(candidate_id), candidate_address,
-         blast_params, email_campaign_blast_id, blast_datetime),
-        queue=campaign_type) for candidate_id, candidate_address in candidate_ids_and_emails]
+
+    # Here we create list of all tasks.
+    tasks = [send_email_campaign_to_candidate.subtask((campaign, candidate_id, candidate_address,
+             blast_params, email_campaign_blast_id, blast_datetime), link_error=celery_error_handler(
+             campaign_type), queue=campaign_type) for candidate_id, candidate_address in candidate_ids_and_emails]
     # This runs all tasks asynchronously and sets callback function to be hit once all
     # tasks in list finish running without raising any error. Otherwise callback
     # results in failure status.
@@ -252,13 +259,32 @@ def send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_ca
 def post_processing_campaign_sent(celery_result, campaign,
                                   new_candidates_only,
                                   email_campaign_blast_id):
+    """
+    Callback for all celery tasks sending campaign emails to candidates.
+    celery_result would contain the return valuse of all the tasks, we would
+    update the sends count with the number of email sending tasks that were
+    sccessful.
+    :param celery_result: result af all celery tasks
+    :param campaign: Valid email campaign object
+    :param new_candidates_only: True if emails sent to new candidates only
+    :param email_campaign_blast_id: Id of blast object for specified campaign
+    """
+    if not campaign:
+        raise InternalServerError(error_message='Camaign object is not valid')
+    if not email_campaign_blast_id:
+        raise InternalServerError(error_message='email_campaign_blast_id not provided')
     logger.info('celery_result: %s' % celery_result)
     sends = celery_result.count(True)
     _update_blast_sends(email_campaign_blast_id, sends, campaign,  new_candidates_only)
 
 
 @celery_app.task(name='process_campaign_send')
-def process_campaign_send(celery_result, campaign, list_ids, new_candidates_only):
+def process_campaign_send(celery_result, campaign_id, list_ids, new_candidates_only):
+    """
+     Callback after getting candidate data of all smartlists. Results from all the smartlists
+     are present in celery_result and we use that for further processing of the campaign. That includes
+     filtering the results sending actual campaign emails.
+    """
     all_candidate_ids = []
     if not celery_result:
         raise InvalidUsage('No candidate(s) found for smartlist_ids %s.' % list_ids,
@@ -267,9 +293,10 @@ def process_campaign_send(celery_result, campaign, list_ids, new_candidates_only
 
     # gather all candidates from various smartlists
     for candidate_list in celery_result:
-        all_candidate_ids.extend(list(set(candidate_list)))  # Unique candidates
-
-    subscribed_candidate_ids = handle_subscription(campaign, all_candidate_ids, new_candidates_only)
+        all_candidate_ids.extend(candidate_list)  # Unique candidates
+    all_candidate_ids = list(set(all_candidate_ids))
+    campaign = EmailCampaign.get_by_id(campaign_id)
+    subscribed_candidate_ids = get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only)
     candidate_ids_and_emails = get_filtered_email_rows(campaign, subscribed_candidate_ids)
     if candidate_ids_and_emails:
         email_campaign_blast_id, blast_params, blast_datetime = notify_and_get_blast_params(campaign,
@@ -309,48 +336,28 @@ def process_campaign_send(celery_result, campaign, list_ids, new_candidates_only
 #         raise InvalidUsage(error_message)
 
 
-def get_email_campaign_candidate_ids_and_emails(campaign, list_ids=None, new_candidates_only=False):
+def get_email_campaign_candidate_ids_and_emails(campaign, new_candidates_only=False):
     """
     Get candidate ids and email addresses for an email campaign
     :param campaign: Email Campaign Object
-    :param list_ids: Ids of smartlists
     :param new_candidates_only: True if campaign is to be sent only to new candidates.
     :return: Returns array of candidate IDs in the campaign's smartlists.
              Is unique.
     """
+    # Get smartlists of this campaign
+    list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
+                                                                 smartlist_ids_only=True)
     if not list_ids:
-        # Get smartlists of this campaign
-        list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
-                                                                     smartlist_ids_only=True)
-        if not list_ids:
-            raise InvalidUsage('No smartlist is associated with email_campaign(id:%s)' % campaign.id,
-                               error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
+        raise InvalidUsage('No smartlist is associated with email_campaign(id:%s)' % campaign.id,
+                           error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
 
     all_candidate_ids = get_candidates_from_smartlist_for_email_client_id(campaign, list_ids)
 
     if not all_candidate_ids:
         raise InvalidUsage('No candidate(s) found for smartlist_ids %s.' % list_ids,
                            error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
-    subscribed_candidate_ids = handle_subscription(campaign, all_candidate_ids, new_candidates_only)
+    subscribed_candidate_ids = get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only)
     return get_filtered_email_rows(campaign, subscribed_candidate_ids)
-
-
-def get_email_campaign_candidate_ids_and_emails_with_celery(campaign, list_ids=None, new_candidates_only=False):
-    """
-    Get candidates of smartlist through celery task.
-    :param campaign: Email Campaign to be sent.
-    :param list_ids: Ids of smartlists.
-    :param new_candidates_only: True if campaign needs to be sent to new candidates only.
-    :return:
-    """
-    if list_ids is None:
-        # Get smartlists of this campaign
-        list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
-                                                                     smartlist_ids_only=True)
-    if not list_ids:
-        raise InvalidUsage('No smartlist is associated with email_campaign(id:%s)' % campaign.id,
-                           error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
-    get_smartlist_candidates_via_celery(campaign, list_ids, new_candidates_only)
 
 
 def get_candidate_id_email_by_priority(email_info_tuple, email_labels):
@@ -388,7 +395,7 @@ def get_candidate_id_email_by_priority(email_info_tuple, email_labels):
     return candidate_id, email_address
 
 
-def send_campaign_emails_to_candidate(campaign_id, candidate, candidate_address,
+def send_campaign_emails_to_candidate(campaign_id, candidate_id, candidate_address,
                                       blast_params=None, email_campaign_blast_id=None,
                                       blast_datetime=None):
     """
@@ -396,25 +403,26 @@ def send_campaign_emails_to_candidate(campaign_id, candidate, candidate_address,
     email campaigns to candidates' email addresses, otherwise it sends the email campaign to
     'gettalentmailtest@gmail.com' or email id of user.
     :param campaign_id: email campaign id
-    :param candidate: candidate object
+    :param candidate_id: candidate id
     :param candidate_address: candidate email address
     :param blast_params: parameters of email campaign blast
     :param email_campaign_blast_id: id of email campaign blast object
     :param blast_datetime: email campaign blast datetime
     :type campaign_id: int | long
-    :type candidate: Candidate
+    :type candidate_id: int | long
     :type candidate_address: str
     :type blast_params: dict | None
     :type email_campaign_blast_id: int | long | None
     :type blast_datetime: datetime.datetime | None
     """
     campaign = EmailCampaign.get_by_id(campaign_id)
+    candidate = Candidate.get_by_id(candidate_id)
     new_text, new_html, subject, email_campaign_send, blast_params, _ = \
-        get_new_text_html_subject_and_campaign_send(campaign.id, candidate.id,
+        get_new_text_html_subject_and_campaign_send(campaign.id, candidate_id,
                                                     blast_params=blast_params,
                                                     email_campaign_blast_id=email_campaign_blast_id,
                                                     blast_datetime=blast_datetime)
-    logger.info('send_campaign_emails_to_candidate: Candidate id:%s ' % candidate.id)
+    logger.info('send_campaign_emails_to_candidate: Candidate id:%s ' % candidate_id)
     # Only in case of production we should send mails to candidate address else mails will
     # go to test account. To avoid spamming actual email addresses, while testing.
     if not CampaignUtils.IS_DEV:
@@ -442,7 +450,7 @@ def send_campaign_emails_to_candidate(campaign_id, candidate, candidate_address,
                                     email_format='html' if campaign.body_html else 'text')
     except Exception as e:
         # Mark email as bounced
-        _handle_email_sending_error(email_campaign_send, candidate, to_addresses, blast_params,
+        _handle_email_sending_error(email_campaign_send, candidate_id, to_addresses, blast_params,
                                     email_campaign_blast_id, e)
         return False
     # Save SES message ID & request ID
@@ -464,30 +472,30 @@ def send_campaign_emails_to_candidate(campaign_id, candidate, candidate_address,
     return True
 
 
-@celery_app.task(name='send_campaign_to_candidate')
-def send_campaign_to_candidate(campaign, candidate, candidate_address,
-                               blast_params, email_campaign_blast_id, blast_datetime):
+@celery_app.task(name='send_email_campaign_to_candidate')
+def send_email_campaign_to_candidate(campaign, candidate_id, candidate_address,
+                                     blast_params, email_campaign_blast_id, blast_datetime):
     """
     For each candidate, this function is called to send email campaign to candidate.
     :param campaign: email campaign object
-    :param candidate: candidate object
+    :param candidate_id: candidate id
     :param candidate_address: candidate email address
     :param blast_params: parameters of email campaign blast
     :param email_campaign_blast_id: email campaign blast object id.
     :param blast_datetime: email campaign blast datetime
     :type campaign: EmailCampaign
-    :type candidate: Candidate
+    :type candidate_id: int | long
     :type candidate_address: str
     :type blast_params: dict
     :type email_campaign_blast_id: int|long
     :type blast_datetime: datetime.datetime
     """
     with app.app_context():
-        logger.info('sending campaign to candidate(id:%s).' % candidate.id)
+        logger.info('sending campaign to candidate(id:%s).' % candidate_id)
         try:
             result_sent = send_campaign_emails_to_candidate(
                 campaign_id=campaign.id,
-                candidate=candidate,
+                candidate_id=candidate_id,
                 # candidates.find(lambda row: row.id == candidate_id).first(),
                 candidate_address=candidate_address,
                 blast_params=blast_params,
@@ -498,7 +506,7 @@ def send_campaign_to_candidate(campaign, candidate, candidate_address,
         except Exception as error:
             logger.exception('Error while sending email campaign(id:%s) to '
                              'candidate(id:%s). Error is: %s'
-                             % (campaign.id, candidate.id, error.message))
+                             % (campaign.id, candidate_id, error.message))
             db.session.rollback()
             return False
 
@@ -537,7 +545,7 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id,
         email_campaign_blast_id = email_campaign_blast.id
         blast_datetime = email_campaign_blast.sent_datetime
     if not blast_datetime:
-        blast_datetime = datetime.datetime.now()
+        blast_datetime = datetime.utcnow()
     if not blast_params:
         email_campaign_blast = EmailCampaignBlast.query.get(email_campaign_blast_id)
         blast_params = dict(sends=email_campaign_blast.sends, bounces=email_campaign_blast.bounces)
@@ -582,7 +590,7 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id,
     return new_text, new_html, subject, email_campaign_send, blast_params, candidate
 
 
-def _handle_email_sending_error(email_campaign_send, candidate, to_addresses, blast_params,
+def _handle_email_sending_error(email_campaign_send, candidate_id, to_addresses, blast_params,
                                 email_campaign_blast_id, exception):
     """ If failed to send email; Mark email bounced.
     """
@@ -594,7 +602,7 @@ def _handle_email_sending_error(email_campaign_send, candidate, to_addresses, bl
     db.session.commit()
     # Send failure message to email marketing admin, just to notify for verification
     logger.exception("Failed to send marketing email to candidate_id=%s, to_addresses=%s"
-                     % (candidate.id, to_addresses))
+                     % (candidate_id, to_addresses))
 
 
 def update_hit_count(url_conversion):
@@ -602,7 +610,7 @@ def update_hit_count(url_conversion):
         # Increment hit count for email marketing
         new_hit_count = (url_conversion.hit_count or 0) + 1
         url_conversion.hit_count = new_hit_count
-        url_conversion.last_hit_time = datetime.datetime.now()
+        url_conversion.last_hit_time = datetime.utcnow()
         db.session.commit()
         email_campaign_send_url_conversion = EmailCampaignSendUrlConversion.query.filter_by(
             url_conversion_id=url_conversion.id).first()
@@ -715,6 +723,11 @@ def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only):
     :param campaign: EMail Campaign.
     :param new_candidates_only: True if campaign is to be sent to new candidates only.
     """
+    if not blast_id:
+        raise InternalServerError(error_message='Blast Id must be provided')
+    if not campaign:
+        raise InternalServerError(error_message='Valid campaign object must be provided')
+
     blast_obj = EmailCampaignBlast.get_by_id(blast_id)
     blast_obj.update(sends=blast_obj.sends + new_sends)
     # This will be needed later
@@ -773,6 +786,18 @@ def handle_email_bounce(message_id, bounce, emails):
 
 
 def get_candidates_from_smartlist_for_email_client_id(campaign, list_ids):
+    """
+    Get candidates from smartlist in case client id is provided. It is a separate function
+    because in case client id is provided, the candidate retrieving process needs not to
+    be sent on celery.
+    :param campaign: Valid email campaign object.
+    :param list_ids: List of smartlist ids associated with campaign.
+    :return: List of candidate ids.
+    """
+    if not campaign:
+        raise InvalidUsage("Valid email campaign must be provided.")
+    if not list_ids:
+        raise InvalidUsage("Please provide list of smartlist ids.")
     all_candidate_ids = []
     for list_id in list_ids:
         # Get candidates present in smartlist
@@ -788,7 +813,7 @@ def get_candidates_from_smartlist_for_email_client_id(campaign, list_ids):
     return all_candidate_ids
 
 
-def handle_subscription(campaign, all_candidate_ids, new_candidates_only):
+def get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only):
     """
     Takes campaign and all candidate ids as arguments and process them to return
     the ids of subscribed candidates.
@@ -798,14 +823,13 @@ def handle_subscription(campaign, all_candidate_ids, new_candidates_only):
     :return: ids of subscribed candidates
     """
     if campaign.is_subscription:
+        # A subscription campaign is a campaign which needs candidates
+        # to be subscribed to it in order to receive notifications regarding the campaign.
         # If the campaign is a subscription campaign,
-        # only get candidates subscribed to the campaign's frequency
-        subscribed_candidates_rows = CandidateSubscriptionPreference.with_entities(
-            CandidateSubscriptionPreference.candidate_id).filter(
-            and_(CandidateSubscriptionPreference.candidate_id.in_(all_candidate_ids),
-                 CandidateSubscriptionPreference.frequency_id == campaign.frequency_id)).all()
-        subscribed_candidate_ids = [row.candidate_id for row in
-                                    subscribed_candidates_rows]  # Subscribed candidate ids
+        # only get candidates subscribed to the campaign's frequenc
+        # y.
+        subscribed_candidate_ids = CandidateSubscriptionPreference.get_subscribed_candidate_ids(campaign,
+                                                                                                all_candidate_ids)
         if not subscribed_candidate_ids:
             logger.error("No candidates in subscription campaign %s", campaign)
 
@@ -826,9 +850,7 @@ def handle_subscription(campaign, all_candidate_ids, new_candidates_only):
 
     # If only getting candidates that haven't been emailed before...
     if new_candidates_only:
-        already_emailed_candidates = EmailCampaignSend.query.with_entities(
-            EmailCampaignSend.candidate_id).filter_by(campaign_id=campaign.id).all()
-        emailed_candidate_ids = [row.candidate_id for row in already_emailed_candidates]
+        emailed_candidate_ids = EmailCampaignSend.get_already_emailed_candidates(campaign)
 
         # Filter out already emailed candidates from subscribed_candidate_ids, so we have new candidate_ids only
         new_candidate_ids = list(set(subscribed_candidate_ids) - set(emailed_candidate_ids))
@@ -837,28 +859,36 @@ def handle_subscription(campaign, all_candidate_ids, new_candidates_only):
     return subscribed_candidate_ids
 
 
-def get_smartlist_candidates_via_celery(campaign, list_ids, new_candidates_only):
+def get_smartlist_candidates_via_celery(campaign, new_candidates_only):
     """
     Get candidates of given smartlist by creating celery task for each smartlist.
     :param campaign: Email Campiagn
-    :param list_ids: Ids of smartlists
     :param new_candidates_only: True if only new candidates are to be returned.
     :return:
     """
+    if not campaign:
+        raise InternalServerError(error_message='Valid campaign object must be provided.')
+    # Get smartlists of this campaign
+    list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
+                                                                 smartlist_ids_only=True)
+    if not list_ids:
+        raise InvalidUsage('No smartlist is associated with email_campaign(id:%s)' % campaign.id,
+                           error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
     campaign_type = campaign.__tablename__
-    callback = process_campaign_send.subtask((campaign, list_ids, new_candidates_only, ),
-                                             queue=campaign_type)
 
-    # Get candidates present in smartlist
-    # Here we create list of all tasks and assign a self.celery_error_handler() as a
-    # callback function in case any of the tasks in the list encounter some error.
+    # Get candidates present in each smartlist
     tasks = [get_candidates_from_smartlist.subtask(
-        (list_id, campaign, True, campaign.user.id),
-        queue=campaign_type) for list_id in list_ids]
+        (list_id, True, campaign.user.id),
+        link_error=celery_error_handler(
+            campaign_type), queue=campaign_type) for list_id in list_ids]
+
+    # Register function to be called after all candidates are fetched from smartlists
+    callback = process_campaign_send.subtask((campaign.id, list_ids, new_candidates_only, ),
+                                             queue=campaign_type)
     # This runs all tasks asynchronously and sets callback function to be hit once all
     # tasks in list finish running without raising any error. Otherwise callback
     # results in failure status.
-    result = chord(tasks)(callback)
+    chord(tasks)(callback)
 
 
 def get_filtered_email_rows(campaign, subscribed_candidate_ids):
@@ -869,6 +899,11 @@ def get_filtered_email_rows(campaign, subscribed_candidate_ids):
     :param subscribed_candidate_ids: Ids of subscribed candidates.
     :return:
     """
+    if not campaign:
+        raise InternalServerError(error_message='Valid campaign object must be provided')
+    if not subscribed_candidate_ids:
+        raise InternalServerError(error_message='subscribed_candidate_ids must be provided')
+
     # Get candidate emails sorted by updated time and then by candidate_id
     candidate_email_rows = CandidateEmail.query.with_entities(CandidateEmail.candidate_id,
                                                               CandidateEmail.address,
@@ -941,6 +976,10 @@ def notify_and_get_blast_params(campaign, new_candidates_only, candidate_ids_and
     :param candidate_ids_and_emails: Ids and email addresses of candidates.
     :return:
     """
+    if not campaign:
+        raise InternalServerError('Valid campaign object must be provided')
+    if not candidate_ids_and_emails:
+        raise InternalServerError(error_message='Candidate data not provided')
     with app.app_context():
         email_notification_to_admins(
             subject='Marketing batch about to send',
@@ -965,7 +1004,7 @@ def notify_and_get_blast_params(campaign, new_candidates_only, candidate_ids_and
                          'email-campaign(id:%s) batch send. Error is %s'
                          % (campaign.id, error.message))
     # Create the email_campaign_blast for this blast
-    blast_datetime = datetime.datetime.now()
+    blast_datetime = datetime.utcnow()
     email_campaign_blast = EmailCampaignBlast(campaign_id=campaign.id,
                                               sent_datetime=blast_datetime)
     EmailCampaignBlast.save(email_campaign_blast)
@@ -973,11 +1012,11 @@ def notify_and_get_blast_params(campaign, new_candidates_only, candidate_ids_and
     return email_campaign_blast.id, blast_params, blast_datetime
 
 
-def send_campaign_through_celery(campaign, list_ids, new_candidates_only):
+@celery_app.task(name='celery_error_handler')
+def celery_error_handler(uuid):
     """
-    Sends email campaign using celery workers.
-    :param campaign: Email Campaign to be sent.
-    :param list_ids: Ids of smartlists.
-    :param new_candidates_only: True if email campaign needs to be sent to new candidates only.
+    This method is invoked whenever some error occurs.
+    It rollbacks the transaction otherwise it will cause other transactions (if any) to fail.
+    :param uuid:
     """
-    get_email_campaign_candidate_ids_and_emails_with_celery(campaign, list_ids, new_candidates_only)
+    db.session.rollback()

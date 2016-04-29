@@ -28,8 +28,6 @@ from email_campaign_service.common.error_handling import (InvalidUsage, Unproces
 from email_campaign_service.common.routes import (EmailCampaignUrl, EmailCampaignEndpoints,
                                                   HEALTH_CHECK)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
-                                                                  create_email_campaign_smartlists)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailClient)
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
@@ -38,6 +36,9 @@ from email_campaign_service.tests.modules.handy_functions import (assert_valid_c
                                                                   assert_campaign_send,
                                                                   create_email_campaign_via_api,
                                                                   create_data_for_campaign_creation)
+from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
+                                                                  create_email_campaign_smartlists,
+                                                                  create_two_smartlists_with_same_candidate)
 
 
 class TestGetCampaigns(object):
@@ -421,14 +422,16 @@ class TestSendCampaign(object):
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
             self, access_token_first, user_first, campaign_with_valid_candidate):
         """
-        User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates associat template_id=None):ed (with distinct email addresses). Email Campaign should be sent to
-        both candidates.
+        Tests sending a campaign with one smartlist. That smartlist has, in turn,
+        two candidates associated with it. Those candidates have unique email addresses.
+        Campaign emails should be sent to 2 candidates so number of sends should be 2.
         """
+
+        no_of_sends = 2
         campaign = campaign_with_valid_candidate
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_campaign_send(response, campaign, user_first, 2, abort_time_for_sends=150)
+        assert_campaign_send(response, campaign, user_first, no_of_sends, abort_time_for_sends=150)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
             self, access_token_first, user_first, campaign_with_valid_candidate):
@@ -549,6 +552,30 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, 40, abort_time_for_sends=300)
+
+    def test_send_campaign_with_two_smartlists_having_same_candidate(
+            self, access_token_first, user_first, talent_pipeline, email_campaign_of_user_first,
+            assign_roles_to_user_first):
+        """
+        This function creates two smartlists with 1 candidate each, candidate
+        is same in both smartlists and associates them with a campaign.
+        Sends that campaign and tests if email is sent to the candidate only once.
+        :param access_token_first: Access token of user_first
+        :param user_first: Valid user from fist domain
+        :param talent_pipeline: valid talent pipeline
+        :param email_campaign_of_user_first: email campaign associated with user first
+        :param assign_roles_to_user_first: Assign required roles to user of first domain.
+        """
+        smartlist_ids = create_two_smartlists_with_same_candidate(access_token_first,
+                                                                  talent_pipeline,
+                                                                  emails_list=True,
+                                                                  timeout=100)
+        campaign = email_campaign_of_user_first
+        create_email_campaign_smartlists(smartlist_ids=smartlist_ids,
+                                         email_campaign_id=campaign.id)
+        response = requests.post(
+            self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+        assert_campaign_send(response, campaign, user_first, 1, abort_time_for_sends=100)
 
 
 # Test for healthcheck

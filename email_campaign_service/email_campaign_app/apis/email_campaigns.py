@@ -55,7 +55,7 @@ from flask import request, Blueprint, jsonify
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.email_marketing import (create_email_campaign,
-                                                            send_emails_to_campaign,
+                                                            send_email_campaign,
                                                             update_hit_count)
 from email_campaign_service.modules.validations import validate_and_format_request_data
 
@@ -170,7 +170,7 @@ class EmailCampaignSendApi(Resource):
 
         if not campaign.user.domain_id == request.user.domain_id:
             raise ForbiddenError("Email campaign doesn't belongs to user's domain")
-        results_send = send_emails_to_campaign(campaign, new_candidates_only=False)
+        results_send = send_email_campaign(campaign, new_candidates_only=False)
         if campaign.email_client_id:
             if not isinstance(results_send, list):
                 raise InvalidUsage(error_message="Something went wrong, response is not list")

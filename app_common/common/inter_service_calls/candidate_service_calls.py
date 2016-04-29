@@ -99,6 +99,7 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
 
 
 def get_candidate_subscription_preference(candidate_id, user_id):
+    # TODO--add meaningful comment and assert on params
     resp = http_request('get', CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id,
                         headers=create_oauth_headers(user_id=user_id))
     if resp.status_code == ForbiddenError.http_status_code():

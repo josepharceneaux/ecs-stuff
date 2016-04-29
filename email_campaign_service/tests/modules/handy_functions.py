@@ -114,6 +114,37 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
     return smartlist_id, candidate_ids
 
 
+def create_two_smartlists_with_same_candidate(access_token, talent_pipeline, emails_list=True,
+                                    assert_candidates=True, timeout=120, data=None):
+    """
+    Create two smartlists with same candidate in both of them.
+    """
+    if not data:
+        # create candidate
+        data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
+                                         emails_list=emails_list, count=1)
+
+    candidate_id = create_candidates_from_candidate_api(oauth_token=access_token, data=data,
+                                                        return_candidate_ids_only=True)
+    if assert_candidates:
+        time.sleep(10)
+    smartlist_data1 = {'name': fake.word(),
+                       'candidate_ids': candidate_id,
+                       'talent_pipeline_id': talent_pipeline.id}
+    smartlist_data2 = {'name': fake.word(),
+                       'candidate_ids': candidate_id,
+                       'talent_pipeline_id': talent_pipeline.id}
+
+    smartlist_ids = [create_smartlist_from_api(data=smartlist_data1, access_token=access_token)['smartlist']['id'],
+                     create_smartlist_from_api(data=smartlist_data2, access_token=access_token)['smartlist']['id']]
+    if assert_candidates:
+        for smartlist_id in smartlist_ids:
+            assert poll(assert_smartlist_candidates, step=3,
+                        args=(smartlist_id, len(candidate_id), access_token), timeout=timeout), \
+                        'Candidates not found for smartlist(id:%s)' % smartlist_id
+    return smartlist_ids
+
+
 def create_smartlist_with_given_email_candidate(access_token, campaign,
                                                 talent_pipeline, emails_list=True,
                                                 count=1, emails=None):
@@ -165,9 +196,11 @@ def send_campaign(campaign, access_token):
     response = requests.post(EmailCampaignUrl.SEND % campaign.id,
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
-    blasts = get_blasts_with_polling(campaign, 1, 100)
-    if not blasts:
-        raise UnprocessableEntity('blasts not found in given time range.')
+    try:
+        get_blasts_with_polling(campaign, 1, 100)
+    except Exception as e:
+        e.message += '\n Blasts not found in specified time'
+        raise
     return response
 
 
@@ -277,7 +310,7 @@ def assert_and_delete_email(subject):
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False,
                          expected_status=200, abort_time_for_sends=40):
     """
-    This assert that campaign has successfully been sent to candidates and campaign blasts and
+    This asserts that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
     in database table "url_conversion".
     """
@@ -307,7 +340,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         # assert on activity for whole campaign send
         CampaignsTestsHelpers.assert_for_activity(user.id,
                                                   Activity.MessageIds.CAMPAIGN_SEND,
-                                                          campaign.id)
+                                                  campaign.id)
         # TODO: commenting till find exact reason of failing
         # if not email_client:
         #     assert poll(assert_and_delete_email, step=3, args=(campaign.subject,), timeout=60), \
@@ -325,7 +358,12 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
 def get_sends(campaign, blast_index, expected_count):
     """
     This returns all number of sends associated with given blast index of a campaign
+    :param campaign: Valid campaign object.
+    :param blast_index: Index of blast to be retrieved.
+    :param expected_count: Number of sends to be expected.
     """
+    assert campaign, 'Please provide valid campaign object'
+    assert expected_count, 'expected_count must be provided'
     db.session.commit()
     try:
         if campaign.blasts[blast_index].sends >= expected_count:
@@ -339,7 +377,13 @@ def get_sends(campaign, blast_index, expected_count):
 def get_blasts_with_polling(campaign, expected_count, timeout):
     """
     This polls the result of blasts of a campaign for 150s.
+    :param campaign: Valid campaign object.
+    :param expected_count: Number of blasts to be expected.
+    :param timeout: Time period after which to quit trying.
     """
+    assert campaign, 'Please provide valid campaign object.'
+    assert expected_count, 'expected_count must be provided.'
+    assert timeout, 'timeout must be provided'
     return poll(get_blasts, step=3, args=(campaign, expected_count), timeout=timeout)
 
 
@@ -347,6 +391,8 @@ def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_s
     """
     This function asserts the particular blast of given campaign has expected number of sends
     """
+    assert campaign, 'Please provide valid campaign object.'
+    assert expected_count, 'expected_count must be provided'
     sends = poll(get_sends, step=3, args=(campaign, blast_index, expected_count), timeout=abort_time_for_sends)
     assert sends >= expected_count
 

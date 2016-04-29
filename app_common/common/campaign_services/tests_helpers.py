@@ -203,6 +203,7 @@ class CampaignsTestsHelpers(object):
         This asserts that if some data was invalid while sending the campaign,
         campaign sending fails and no blasts are created.
         """
+        # TODO: From the comments above and code below I don't what this method is all about
         assert response.status_code == expected_status
         assert response.json()
         if not email_client:
@@ -455,11 +456,11 @@ def get_blasts(campaign, expected_count):
     """
     This returns all the blasts associated with given campaign.
     :param campaign: Valid campaign object.
-    :param expected_count: How many blasts are expected.
+    :param expected_count: Number of blasts to be expected.
     """
     db.session.commit()
     blasts = campaign.blasts.all()
-    if len(blasts) >= expected_count:
+    if len(blasts) == expected_count:
         return blasts
     else:
         return False

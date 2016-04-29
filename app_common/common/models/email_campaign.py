@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 
 from db import db
 from ..utils.datetime_utils import DatetimeUtils
-from ..error_handling import (ResourceNotFound, ForbiddenError)
+from ..error_handling import (InternalServerError, ResourceNotFound, ForbiddenError)
 
 __author__ = 'jitesh'
 
@@ -197,6 +197,21 @@ class EmailCampaignSend(db.Model):
         """
         assert isinstance(message_id, basestring) and message_id, 'message_id should have a valid value.'
         return cls.query.filter_by(ses_message_id=message_id).first()
+
+    @classmethod
+    def get_already_emailed_candidates(cls, campaign):
+        """
+        Get candidates to whom email for specified campaign has already being sent.
+        :param campaign: Valid campaign object.
+        :return: Ids of candidates to whom email for specified campaign has already being sent.
+        """
+        if not campaign:
+            raise InternalServerError(error_message="Email Campaign object not provided.")
+
+        already_emailed_candidates = cls.query.with_entities(
+            cls.candidate_id).filter_by(campaign_id=campaign.id).all()
+        emailed_candidate_ids = [row.candidate_id for row in already_emailed_candidates]
+        return emailed_candidate_ids
 
 
 class EmailClient(db.Model):

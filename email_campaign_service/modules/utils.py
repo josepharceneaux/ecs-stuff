@@ -15,6 +15,7 @@ from email_campaign_service.email_campaign_app import (logger, celery_app)
 # Common Utils
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import UrlConversion
+from email_campaign_service.common.error_handling import InternalServerError
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
 from email_campaign_service.common.utils.validators import raise_if_not_instance_of
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
@@ -35,14 +36,16 @@ HTML_CLICK_URL_TYPE = 2
 
 
 @celery_app.task(name='get_candidates_from_smartlist')
-def get_candidates_from_smartlist(list_id, campaign, candidate_ids_only=False, user_id=None):
+def get_candidates_from_smartlist(list_id, candidate_ids_only=False, user_id=None):
     """
     Calls inter services method and retrieves the candidates of a smart or dumb list.
     :param list_id: smartlist id.
-    :param campaign: email campaign object
     :param candidate_ids_only: Whether or not to get only ids of candidates
+    :param user_id: Id of user.
     :return:
     """
+    if not list_id:
+        raise InternalServerError(error_message='list_id must be provided')
     candidates = get_candidates_of_smartlist(list_id=list_id, candidate_ids_only=candidate_ids_only,
                                              access_token=None,  user_id=user_id)
     return candidates

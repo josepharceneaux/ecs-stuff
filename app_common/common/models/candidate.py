@@ -348,6 +348,18 @@ class CandidateEmail(db.Model):
         query.update(dict(is_bounced=True), synchronize_session=False)
         db.session.commit()
 
+    @classmethod
+    def get_email_by_candidate_id(cls, candidate_id):
+        """
+        Returns email of specified candidate.
+        :param candidate_id: Id of candidate for which email address is to be retrieved.
+        :return: Candidate Email
+        """
+        if not candidate_id:
+            raise InternalServerError(error_message='candidate_id is mandatory.')
+        email = cls.query.filter_by(candidate_id=candidate_id).first()
+        return email
+
 
 class CandidatePhoto(db.Model):
     __tablename__ = 'candidate_photo'
@@ -1084,6 +1096,22 @@ class CandidateSubscriptionPreference(db.Model):
     @classmethod
     def get_by_candidate_id(cls, candidate_id):
         return cls.query.filter_by(candidate_id=candidate_id).first()
+
+    @classmethod
+    def get_subscribed_candidate_ids(cls, campaign, all_candidate_ids):
+        """
+        Get ids of candidates subscribed to the campaign.
+        :param campaign: Valid campaign object.
+        :param all_candidate_ids: Ids of candidates.
+        :return: List of subscribed candidate ids.
+        """
+        subscribed_candidates_rows = CandidateSubscriptionPreference.with_entities(
+            CandidateSubscriptionPreference.candidate_id).filter(
+            and_(CandidateSubscriptionPreference.candidate_id.in_(all_candidate_ids),
+                 CandidateSubscriptionPreference.frequency_id == campaign.frequency_id)).all()
+        subscribed_candidate_ids = [row.candidate_id for row in
+                                    subscribed_candidates_rows]  # Subscribed candidate ids
+        return subscribed_candidate_ids
 
 
 class CandidateDevice(db.Model):
