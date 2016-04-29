@@ -34,7 +34,7 @@ do
 	echo $push_command
         eval $push_command
     else
-	tag_command="docker tag -f gettalent/${FLASK_STAGE_APPS[$app_index]} ${ecr_registry_url}/gettalent-stage/${FLASK_STAGE_APPS[$app_index]}:${timestamp_tag}"
+	tag_command="docker tag -f gettalent-stage/${FLASK_STAGE_APPS[$app_index]} ${ecr_registry_url}/gettalent-stage/${FLASK_STAGE_APPS[$app_index]}:${timestamp_tag}"
 	echo $tag_command
         eval $tag_command
 

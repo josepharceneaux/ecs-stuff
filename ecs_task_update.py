@@ -89,7 +89,7 @@ if restart == 'restart':
         exit(1)
 
     response = client.update_service(cluster=cluster, service=service_svc, desiredCount=get_service_desired_count(response),
-                                     taskDefinition=task_definition['taskDefinition'], deploymentConfiguration=get_service_deployment(response):)
+                                     taskDefinition=task_definition['taskDefinition'], deploymentConfiguration=get_service_deployment(response))
 
 
 # Consider garbage collecting Task Definitions?
