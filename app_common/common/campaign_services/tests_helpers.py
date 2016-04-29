@@ -460,7 +460,7 @@ def get_blasts(campaign, expected_count):
     """
     db.session.commit()
     blasts = campaign.blasts.all()
-    if len(blasts) == expected_count:
+    if len(blasts) >= expected_count:
         return blasts
     else:
         return False
