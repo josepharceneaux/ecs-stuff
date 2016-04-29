@@ -27,18 +27,18 @@ for app_index in ${!FLASK_STAGE_APPS[@]}
 
 do
     if [ $production ] ; then
-	tag_command="docker tag -f gettalent/${FLASK_APPS[$app_index]}:latest ${ecr_registry_url}/gettalent/${FLASK_APPS[$app_index]}:latest"
+	tag_command="docker tag -f gettalent/${FLASK_STAGE_APPS[$app_index]}:latest ${ecr_registry_url}/gettalent/${FLASK_STAGE_APPS[$app_index]}:latest"
 	echo $tag_command
         eval $tag_command
-	push_command="docker push ${ecr_registry_url}/gettalent/${FLASK_APPS[$app_index]}:latest"
+	push_command="docker push ${ecr_registry_url}/gettalent/${FLASK_STAGE_APPS[$app_index]}:latest"
 	echo $push_command
         eval $push_command
     else
-	tag_command="docker tag -f gettalent/${FLASK_APPS[$app_index]} ${ecr_registry_url}/gettalent-stage/${FLASK_APPS[$app_index]}:${timestamp_tag}"
+	tag_command="docker tag -f gettalent/${FLASK_STAGE_APPS[$app_index]} ${ecr_registry_url}/gettalent-stage/${FLASK_STAGE_APPS[$app_index]}:${timestamp_tag}"
 	echo $tag_command
         eval $tag_command
 
-	push_command="docker push ${ecr_registry_url}/gettalent-stage/${FLASK_APPS[$app_index]}:${timestamp_tag}"
+	push_command="docker push ${ecr_registry_url}/gettalent-stage/${FLASK_STAGE_APPS[$app_index]}:${timestamp_tag}"
 	echo $push_command
         eval $push_command
 
