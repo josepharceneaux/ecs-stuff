@@ -1,3 +1,11 @@
+'''
+Update an ECS task definition to point to a new docker image and potentially restart any services running the task.
+
+Syntax: python ecs_task_update.py <service-name> <tag-name> [ stge | prod ] [ restart ]
+
+This script is intended to be called from Jenkins. Tag is typically the build timestamp.
+'''
+
 import boto3
 import argparse
 
@@ -62,7 +70,7 @@ for definition in task_definition['taskDefinition']['containerDefinitions']:
     definition['image'] = new_image
 
 for definition in task_definition['taskDefinition']['containerDefinitions']:
-    print "Updated container image with: %s" % definition['image']
+    print "Updated container image with: {}".format(definition['image'])
 
 # Create a new revision of the task definition
 try:
@@ -74,8 +82,10 @@ except Exception as e:
     print "Exception {} registering task definition for {}".format(e.message, service)
     exit(1)
 
-print "Task definition %s updated." % service
+print "Task definition for {} updated to revision {}.".format(td['family'], td['revision'])
 
+# Get Amazon Resource Name for potential restart
+new_td_arn = response['taskDefinitionArn']
 
 # Conditionally restart the tasks
 if restart == 'restart':
@@ -86,7 +96,7 @@ if restart == 'restart':
         exit(1)
 
     response = client.update_service(cluster=cluster, service=service_svc, desiredCount=get_service_desired_count(response),
-                                     taskDefinition=task_definition['taskDefinition'], deploymentConfiguration=get_service_deployment(response))
+                                     taskDefinition=new_td_arn, deploymentConfiguration=get_service_deployment(response))
     if get_http_status(response) != 200:
         print "Error Updating Service. HTTP Status: {}".format(get_http_status(response))
         exit(1)
