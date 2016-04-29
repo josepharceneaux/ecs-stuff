@@ -161,7 +161,7 @@ def campaigns_for_pagination_test(request, token_first, smartlist_first, campaig
 
 
 @pytest.fixture()
-def campaign_blast(token_first, campaign_in_db, candidate_device_first):
+def campaign_blast(token_first, campaign_in_db, smartlist_first, candidate_device_first):
     """
     This fixture creates a campaign blast for given campaign by sending a campaign
     :param token_first: authentication token
@@ -169,9 +169,10 @@ def campaign_blast(token_first, campaign_in_db, candidate_device_first):
     :param candidate_device_first: candidate device dict object
     :return: campaign's blast dict object
     """
-    send_campaign(campaign_in_db['id'], token_first)
-    time.sleep(SLEEP_TIME)
-    blasts = get_blasts(campaign_in_db['id'], token_first)['blasts']
+    send_campaign(campaign_in_db['id'], token_first, smartlist_id=smartlist_first['id'], candidate_count=1)
+    response = retry(get_blasts, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                     args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
+    blasts = response['blasts']
     assert len(blasts) == 1
     blast = blasts[0]
     blast['campaign_id'] = campaign_in_db['id']
@@ -179,7 +180,7 @@ def campaign_blast(token_first, campaign_in_db, candidate_device_first):
 
 
 @pytest.fixture()
-def campaign_blasts(campaign_in_db, token_first, candidate_device_first):
+def campaign_blasts(campaign_in_db, token_first, smartlist_first, candidate_device_first):
     """
     This fixture hits Push campaign api to send campaign which in turn creates blast.
     At the end just return list of blasts created
@@ -189,14 +190,14 @@ def campaign_blasts(campaign_in_db, token_first, candidate_device_first):
     """
     blasts_counts = 3
     for num in range(blasts_counts):
-        send_campaign(campaign_in_db['id'], token_first)
+        send_campaign(campaign_in_db['id'], token_first, smartlist_id=smartlist_first['id'], candidate_count=1)
     time.sleep(SLEEP_TIME)
     blasts = get_blasts(campaign_in_db['id'], token_first)['blasts']
     return blasts
 
 
 @pytest.fixture()
-def campaign_blasts_pagination(campaign_in_db, token_first, candidate_device_first):
+def campaign_blasts_pagination(campaign_in_db, token_first, smartlist_first, candidate_device_first):
     """
     This fixture hits Push campaign api to send campaign which in turn creates blast.
     But this time we will create 15 blasts to test pagination results
@@ -207,7 +208,7 @@ def campaign_blasts_pagination(campaign_in_db, token_first, candidate_device_fir
     """
     blasts_counts = 15
     for num in range(blasts_counts):
-        send_campaign(campaign_in_db['id'], token_first)
+        send_campaign(campaign_in_db['id'], token_first, smartlist_id=smartlist_first['id'], candidate_count=1)
     time.sleep(2 * SLEEP_TIME)
     return blasts_counts
 
@@ -248,7 +249,7 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
     :return: url_conversion dict object
     """
     retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
-          args=(smartlist_first['id'], token_same_domain), kwargs={'count': 1})
+          args=(smartlist_first['id'], token_first), kwargs={'count': 1})
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
     assert response.status_code == codes.OK
     # get campaign blast
