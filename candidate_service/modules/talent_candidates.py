@@ -8,6 +8,7 @@ import urlparse
 import dateutil.parser
 import simplejson as json
 import pycountry
+import phonenumbers
 from flask import request
 from datetime import date
 
@@ -40,7 +41,7 @@ from candidate_service.common.error_handling import InvalidUsage, NotFoundError,
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 # Validations
-from candidate_service.common.utils.validators import sanitize_zip_code, is_number, format_phone_number
+from candidate_service.common.utils.validators import sanitize_zip_code, is_number, format_phone_number, parse_phone_number
 from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
@@ -1175,6 +1176,9 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
         if not address_dict:
             continue
 
+        # Cache country code
+        CachedData.country_codes.append(address_dict.get('iso3166_country'))
+
         address_id = address.get('id')
         if address_id:  # Update
 
@@ -1818,18 +1822,30 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         # If there's no label, the first phone's label will be 'Home', rest will be 'Other'
         phone_label = 'Home' if (not phones_has_label and i == 0) else (phone.get('label') or '').strip().title()
         # Format phone number
-        value = phone['value'].strip() if phone.get('value') else None
-        phone_number_dict = format_phone_number(value) if value else None
+        value = (phone.get('value') or '').strip()
+        iso3166_country_code = CachedData.country_codes[0] if CachedData.country_codes else None
+        phone_number_obj = parse_phone_number(value, iso3166_country_code=iso3166_country_code) if value else None
+        """
+        :type phone_number_obj: PhoneNumber
+        """
 
+        # phonenumbers.format() will append "+None" if phone_number_obj.country_code is None
+        if not phone_number_obj.country_code:
+            value = phone_number_obj.national_number
+        else:
+            value = phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164)
+
+        # Clear CachedData's country_codes to prevent aggregating unnecessary data
+        CachedData.country_codes = []
         # if value:
         phone_dict = dict(
-            value=phone_number_dict.get('formatted_number') if phone_number_dict else None,
-            extension=phone_number_dict.get('extension') if phone_number_dict else None,
-            phone_label_id = PhoneLabel.phone_label_id_from_phone_label(phone_label=phone_label),
+            value=value,
+            extension=phone_number_obj.extension if phone_number_obj else None,
+            phone_label_id=PhoneLabel.phone_label_id_from_phone_label(phone_label),
             is_default=is_default
         )
 
-        # Remove empty values
+        # Remove keys with empty values
         phone_dict = {k: v for k, v in phone_dict.items() if v}
 
         # Prevent adding empty records to db
@@ -2211,3 +2227,11 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
 
     candidate.total_months_experience += total_months_experience
     return
+
+
+class CachedData(object):
+    """
+    This class will contain data that may be required by other functions but should be cleared
+      when its data is no longer needed
+    """
+    country_codes = []
