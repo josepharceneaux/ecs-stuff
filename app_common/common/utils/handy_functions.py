@@ -4,7 +4,6 @@ __author__ = 'erikfarmer'
 
 # Standard Imports
 import re
-import time
 import json
 import random
 import string
