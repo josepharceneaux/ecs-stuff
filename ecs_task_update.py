@@ -82,10 +82,10 @@ except Exception as e:
     print "Exception {} registering task definition for {}".format(e.message, service)
     exit(1)
 
+td = response['taskDefinition']
+new_td_arn = td['taskDefinitionArn']
 print "Task definition for {} updated to revision {}.".format(td['family'], td['revision'])
 
-# Get Amazon Resource Name for potential restart
-new_td_arn = response['taskDefinitionArn']
 
 # Conditionally restart the tasks
 if restart == 'restart':
