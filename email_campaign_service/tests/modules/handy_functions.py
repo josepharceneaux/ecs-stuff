@@ -183,7 +183,7 @@ def delete_campaign(campaign):
         pass
 
 
-def send_campaign(campaign, access_token):
+def send_campaign(campaign, access_token, blast_count=1):
     """
     This function sends the campaign via /v1/email-campaigns/:id/send
     timeout is set to be 20s here. One can modify this by passing required value.
@@ -197,7 +197,7 @@ def send_campaign(campaign, access_token):
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
     try:
-        get_blasts_with_polling(campaign, 1, 100)
+        get_blasts_with_polling(campaign, blast_count, 100)
     except Exception as e:
         e.message += '\n Blasts not found in specified time'
         raise
