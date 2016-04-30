@@ -39,8 +39,8 @@ do
 	# Update task definition for this service
 	# python ecs_task_update.py ${app} ${timestamp_tag} prod
     else
-	# Update task definition for this service and restart
-	python ecs_task_update.py ${app} ${timestamp_tag} stage
+	# Update task definition for this service and restart staging services
+	python ecs_task_update.py ${app} ${timestamp_tag} stage restart
     fi
 done
 
