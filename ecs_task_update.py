@@ -89,7 +89,7 @@ new_td_arn = response['taskDefinitionArn']
 
 # Conditionally restart the tasks
 if restart == 'restart':
-    print "Updating service and restarting tasks"
+    print "Updating AWS service for {}".format(service)
     response = client.describe_services(cluster=cluster, services=[ service_svc ])
     if get_http_status(response) != 200:
         print "Error Fetching Service. HTTP Status: {}".format(get_http_status(response))
@@ -101,6 +101,7 @@ if restart == 'restart':
         print "Error Updating Service. HTTP Status: {}".format(get_http_status(response))
         exit(1)
 
+    print "Successfully updated AWS service for {}".format(service)
 
 # Consider garbage collecting Task Definitions?
 
