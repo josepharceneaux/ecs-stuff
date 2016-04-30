@@ -6,8 +6,6 @@ def migrate_sched_jobs():
 
     for job in jobs:
         try:
-            if not job.name == 'run_job':
-                pass
             redis_store.rpush('apscheduler_job_ids:{0}'
                             .format('user_%s' % job.args[0] if job.args and job.args[0] else 'general_%s' % job.name), job.id)
         except Exception as ex:
