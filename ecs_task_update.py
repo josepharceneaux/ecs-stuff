@@ -40,7 +40,7 @@ restart = args.restart
 
 # Check our invocation and derive the AWS service and task definition names from the getTalent service name
 if cluster == 'stage':
-    service_svc = service
+    service_svc = service + "-stage"
 else:
     service_svc = service + "-svc"
 service_td = service + '-td'
@@ -82,6 +82,7 @@ except Exception as e:
     print "Exception {} registering task definition for {}".format(e.message, service)
     exit(1)
 
+
 td = response['taskDefinition']
 new_td_arn = td['taskDefinitionArn']
 print "Task definition for {} updated to revision {}.".format(td['family'], td['revision'])
@@ -89,16 +90,24 @@ print "Task definition for {} updated to revision {}.".format(td['family'], td['
 
 # Conditionally restart the tasks
 if restart == 'restart':
-    print "Updating AWS service for {}".format(service)
-    response = client.describe_services(cluster=cluster, services=[ service_svc ])
-    if get_http_status(response) != 200:
-        print "Error Fetching Service. HTTP Status: {}".format(get_http_status(response))
+    try:
+        response = client.describe_services(cluster=cluster, services=[ service_svc ])
+        if get_http_status(response) != 200:
+            print "Error Fetching Service {} in cluster {}, HTTP Status: {}".format(service_svc, cluster, get_http_status(response))
+            exit(1)
+    except Exception as e:
+        print "Exception {} searching for service description {} in cluster {}".format(e.message, service_svc, cluster)
         exit(1)
 
-    response = client.update_service(cluster=cluster, service=service_svc, desiredCount=get_service_desired_count(response),
-                                     taskDefinition=new_td_arn, deploymentConfiguration=get_service_deployment(response))
-    if get_http_status(response) != 200:
-        print "Error Updating Service. HTTP Status: {}".format(get_http_status(response))
+    try:
+        print "Updating AWS service {} in {} cluster, desired_count = {}".format(service_svc, cluster, get_service_desired_count(response))
+        response = client.update_service(cluster=cluster, service=service_svc, desiredCount=get_service_desired_count(response),
+                                         taskDefinition=new_td_arn, deploymentConfiguration=get_service_deployment(response))
+        if get_http_status(response) != 200:
+            print "Error Updating Service. HTTP Status: {}".format(get_http_status(response))
+            exit(1)
+    except Exception as e:
+        print "Exception {} updating service {}".format(e.message, service_svc)
         exit(1)
 
     print "Successfully updated AWS service for {}".format(service)
