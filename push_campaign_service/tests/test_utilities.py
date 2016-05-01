@@ -201,12 +201,16 @@ def get_blast(blast_id, campaign_id, token, expected_status=(200,)):
     return response.json()
 
 
-def get_blast_sends(blast_id, campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,)):
+def get_blast_sends(blast_id, campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE,
+                    expected_status=(200,), count=None):
     query = '?page=%s&per_page=%s' % (page, per_page)
     response = send_request('get', PushCampaignApiUrl.BLAST_SENDS % (campaign_id, blast_id) + query,
                             token)
     assert response.status_code in expected_status
-    return response.json()
+    response = response.json()
+    if count:
+        assert len(response['sends']) == count
+    return response
 
 
 def get_campaign_sends(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,)):

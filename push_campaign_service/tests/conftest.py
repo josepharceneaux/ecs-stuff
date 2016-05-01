@@ -18,6 +18,7 @@ from faker import Faker
 from redo import retry
 from requests import codes
 
+from push_campaign_service.common.models.misc import Frequency
 from push_campaign_service.common.utils.test_utils import delete_scheduler_task, get_smartlist_candidates
 from push_campaign_service.common.test_config_manager import load_test_config
 from push_campaign_service.common.tests.api_conftest import (token_first, token_same_domain,
@@ -225,7 +226,7 @@ def schedule_a_campaign(request, smartlist_first, campaign_in_db, token_first):
     :rtype data: dict
     """
     task_id = None
-    data = generate_campaign_schedule_data()
+    data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
     task_id = schedule_campaign(campaign_in_db['id'], data, token_first,
                                 smartlist_id=smartlist_first['id'], candidate_count=1)['task_id']
 

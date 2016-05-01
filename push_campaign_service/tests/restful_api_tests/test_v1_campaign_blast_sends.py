@@ -16,6 +16,7 @@ Get Blast Sends: /v1/push-campaigns/:id/blasts/:id/sends [GET]
 import sys
 
 # 3rd party imports
+from redo import retry
 from requests import codes
 
 # Application specific imports
@@ -64,7 +65,7 @@ class TestCampaignBlastSends(object):
         get_blast_sends(invalid_blast_id, campaign_id, token_first,
                         expected_status=(codes.NOT_FOUND,))
 
-    def test_get_campaign_blast_sends(self, token_first, campaign_blast):
+    def test_get_campaign_blast_sends_with_valid_data(self, token_first, campaign_blast):
         """
         Try to get sends with a valid campaign and blast id and we hope that we will get
         200 (OK) response.
@@ -74,8 +75,8 @@ class TestCampaignBlastSends(object):
         # 200 case: Got Campaign Sends successfully
         blast_id = campaign_blast['id']
         campaign_id = campaign_blast['campaign_id']
-        response = get_blast_sends(blast_id, campaign_id, token_first,
-                                   expected_status=(codes.OK,))
+        response = retry(get_blast_sends, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                         args=(blast_id, campaign_id, token_first), kwargs={'count': 1})
         # Since each blast have one send, so total sends will be equal to number of blasts
         assert len(response['sends']) == 1
 
