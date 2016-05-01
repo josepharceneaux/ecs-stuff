@@ -129,6 +129,7 @@ def get_campaigns(token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected
     query = '?page=%s&per_page=%s' % (page, per_page)
     response = send_request('get', PushCampaignApiUrl.CAMPAIGNS + query, token)
     logger.info('tests : get_campaigns: %s', response.content)
+    print('tests : get_campaigns: %s', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -136,6 +137,7 @@ def get_campaigns(token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected
 def get_campaign(campaign_id, token, expected_status=(200,)):
     response = send_request('get', PushCampaignApiUrl.CAMPAIGN % campaign_id, token)
     logger.info('tests : get_campaign: %s', response.content)
+    print('tests : get_campaign: %s', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -143,6 +145,7 @@ def get_campaign(campaign_id, token, expected_status=(200,)):
 def create_campaign(data, token, expected_status=(201,)):
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
     logger.info('tests : create_campaign: %s', response.content)
+    print('tests : create_campaign: %s', response.content)
     assert response.status_code in expected_status
     headers = response.headers
     response = response.json()
@@ -153,6 +156,7 @@ def create_campaign(data, token, expected_status=(201,)):
 def update_campaign(campaign_id, data, token, expected_status=(200, 204)):
     response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_id, token, data)
     logger.info('tests : update_campaign: %s', response.content)
+    print('tests : update_campaign: %s', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -160,6 +164,8 @@ def update_campaign(campaign_id, data, token, expected_status=(200, 204)):
 def delete_campaign(campaign_id, token, expected_status=(200,)):
     response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % campaign_id, token)
     logger.info('tests : delete_campaign: %s', response.content)
+    print('tests : delete_campaign: %s', response.content)
+
     assert response.status_code in expected_status
     return response.json()
 
@@ -167,6 +173,7 @@ def delete_campaign(campaign_id, token, expected_status=(200,)):
 def delete_campaigns(data, token, expected_status=(200,)):
     response = send_request('delete', PushCampaignApiUrl.CAMPAIGNS, token, data=data)
     logger.info('tests : delete_campaigns: %s', response.content)
+    print('tests : delete_campaigns: %s', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -177,6 +184,7 @@ def send_campaign(campaign_id, token, expected_status=(200,), smartlist_id=None,
               args=(smartlist_id, token), kwargs={'count': candidate_count})
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_id, token)
     logger.info('tests : send_campaign: %s', response.content)
+    print('tests : send_campaign: %s', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -185,7 +193,7 @@ def get_blasts(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE
     query = '?page=%s&per_page=%s' % (page, per_page)
     response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_id + query, token)
     logger.info('tests : get_blasts: %s', response.content)
-    print(response.content)
+    print('tests : get_blasts: %s', response.content)
     assert response.status_code in expected_status
     response = response.json()
     if count:
@@ -216,6 +224,8 @@ def get_blast_sends(blast_id, campaign_id, token, page=DEFAULT_PAGE, per_page=DE
 def get_campaign_sends(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,)):
     query = '?page=%s&per_page=%s' % (page, per_page)
     response = send_request('get', PushCampaignApiUrl.SENDS % campaign_id + query, token)
+    logger.info('tests: get_campaign_sends: %s', response.content)
+    print('tests: get_campaign_sends: %s', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -227,6 +237,7 @@ def schedule_campaign(campaign_id, data, token, expected_status=(200,), smartlis
     logger.info('tests : schedule_campaign: Going to schedule push campaign (id: %s)' % campaign_id)
     response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_id, token, data)
     logger.info('tests : schedule_campaign: %s', response.content)
+    print('tests : schedule_campaign: %s', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -234,6 +245,7 @@ def schedule_campaign(campaign_id, data, token, expected_status=(200,), smartlis
 def reschedule_campaign(campaign_id, data, token, expected_status=(200,)):
     response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_id, token, data)
     logger.info('tests: reschedule_campaign: %s', response.content)
+    print('tests: reschedule_campaign: %s', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -241,6 +253,7 @@ def reschedule_campaign(campaign_id, data, token, expected_status=(200,)):
 def unschedule_campaign(campaign_id, token, expected_status=(200,)):
     response = send_request('delete', PushCampaignApiUrl.SCHEDULE % campaign_id, token)
     logger.info('tests : unschedule_campaign: %s', response.content)
+    print('tests : unschedule_campaign: %s', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -251,6 +264,7 @@ def associate_device_to_candidate(candidate_id, device_id, token, expected_statu
     }
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_id, token, data=data)
     logger.info('tests : associate_device_to_candidate: %s', response.content)
+    print('tests : associate_device_to_candidate: %s', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -258,6 +272,7 @@ def associate_device_to_candidate(candidate_id, device_id, token, expected_statu
 def get_candidate_devices(candidate_id, token, expected_status=(200,)):
     response = send_request('get', CandidateApiUrl.DEVICES % candidate_id, token)
     logger.info('tests : get_candidate_devices: %s', response.content)
+    print('tests : get_candidate_devices: %s', response.content)
     assert response.status_code in expected_status
     return response.json()
 
@@ -268,5 +283,6 @@ def delete_candidate_device(candidate_id, device_id,  token, expected_status=(20
     }
     response = send_request('delete', CandidateApiUrl.DEVICES % candidate_id, token, data=data)
     logger.info('tests : delete_candidate_devices: %s', response.content)
+    print('tests : delete_candidate_devices: %s', response.content)
     assert response.status_code in expected_status
     return response.json()
