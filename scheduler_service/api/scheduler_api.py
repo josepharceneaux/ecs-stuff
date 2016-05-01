@@ -16,7 +16,7 @@ from flask.ext.restful import Resource
 # Application imports
 from werkzeug.exceptions import BadRequest
 
-from scheduler_service import TalentConfigKeys, flask_app, logger
+from scheduler_service import TalentConfigKeys, flask_app, logger, redis_store, SchedulerUtils
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token, User
 from scheduler_service.common.routes import SchedulerApi
@@ -27,7 +27,7 @@ from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFou
 from scheduler_service.common.utils.auth_utils import require_oauth
 from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
     SchedulerNotRunningError, SchedulerServiceApiException
-from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, run_job
+from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, run_job, get_tasks
 
 api = TalentApi()
 scheduler_blueprint = Blueprint('scheduler_api', __name__)
@@ -135,14 +135,19 @@ class Tasks(Resource):
         user_id = request.user.id if request.user else None
 
         raise_if_scheduler_not_running()
-        tasks = scheduler.get_jobs()
-        tasks = filter(lambda _task: _task.args[0] == user_id, tasks)
-        tasks_count = len(tasks)
-        # If page is 1, and per_page is 10 then task_indices will look like list of integers e.g [0-9]
-        task_indices = range((page-1) * per_page, page * per_page)
 
-        tasks = [serialize_task(tasks[index])
-                 for index in task_indices if index < tasks_count and tasks[index]]
+        if user_id:
+            job_ids = redis_store.lrange(SchedulerUtils.REDIS_SCHEDULER_USER_TASK % user_id,
+                                         (page-1) * per_page, page * per_page - 1)
+        else:
+            job_ids = redis_store.keys(SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % '*',
+                                         (page-1) * per_page, page * per_page - 1)
+
+        tasks = get_tasks(job_ids=job_ids)
+        tasks_count = len(tasks)
+
+        tasks = [serialize_task(task)
+                 for task in tasks if task]
 
         tasks = [task for task in tasks if task]
         header = {
@@ -228,6 +233,10 @@ class Tasks(Resource):
             raise InvalidUsage("Bad Request, data should be in json")
 
         task_id = schedule_job(task, request.user.id if request.user else None, request.oauth_token)
+
+        redis_store.rpush(SchedulerUtils.REDIS_SCHEDULER_USER_TASK % request.user.id
+                          if request.user else SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % task.get('task_name'),
+                          task_id)
 
         headers = {'Location': '/v1/tasks/%s' % task_id}
         response = json.dumps(dict(id=task_id))

@@ -293,6 +293,16 @@ def remove_tasks(ids, user_id):
     return removed
 
 
+def get_tasks(job_ids):
+    tasks = []
+    for job_id in job_ids:
+        task = scheduler.get_job(job_id=job_id)
+        if task:
+            tasks.append(tasks)
+
+    return tasks
+
+
 def serialize_task(task):
     """
     Serialize task data to JSON object
