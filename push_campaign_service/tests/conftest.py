@@ -171,7 +171,7 @@ def campaign_blast(token_first, campaign_in_db, smartlist_first, candidate_devic
     :return: campaign's blast dict object
     """
     send_campaign(campaign_in_db['id'], token_first, smartlist_id=smartlist_first['id'], candidate_count=1)
-    response = retry(get_blasts, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+    response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
                      args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
     blasts = response['blasts']
     assert len(blasts) == 1
@@ -249,12 +249,12 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
     :param candidate_device_first: candidate device dict object
     :return: url_conversion dict object
     """
-    retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+    retry(get_smartlist_candidates, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
           args=(smartlist_first['id'], token_first), kwargs={'count': 1})
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
     assert response.status_code == codes.OK
     # get campaign blast
-    response = retry(get_blasts, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+    response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
                      args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
     blasts = response['blasts']
     assert len(blasts) == 1

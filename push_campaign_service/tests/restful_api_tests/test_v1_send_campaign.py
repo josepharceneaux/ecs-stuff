@@ -22,8 +22,7 @@ from redo import retry
 from requests import codes
 
 # Application specific imports
-from push_campaign_service.common.utils.test_utils import get_smartlist_candidates
-from push_campaign_service.tests.test_utilities import send_campaign, get_blasts, SLEEP_TIME
+from push_campaign_service.tests.test_utilities import send_campaign, get_blasts
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
 URL = PushCampaignApiUrl.SEND
@@ -61,11 +60,9 @@ class TestSendCampaign(object):
         send_campaign(campaign_in_db['id'], token_first, expected_status=(codes.OK,),
                       smartlist_id=smartlist_first['id'], candidate_count=1)
 
-        # Wait for 20 seconds to run celery which will send campaign and creates blast
-        time.sleep(2 * SLEEP_TIME)
-        response = get_blasts(campaign_in_db['id'], token_first, expected_status=(codes.OK,))
+        response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                         args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
         blasts = response['blasts']
-        assert len(blasts) == 1
         assert blasts[0]['sends'] == 1
 
     def test_send_campaign_with_other_user_in_same_domain(self, token_same_domain, campaign_in_db,
@@ -80,12 +77,9 @@ class TestSendCampaign(object):
         send_campaign(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,),
                       smartlist_id=smartlist_first['id'], candidate_count=1)
 
-        # Wait for 20 seconds to run celery which will send campaign and creates blast
-        time.sleep(2 * SLEEP_TIME)
-        response = get_blasts(campaign_in_db['id'], token_same_domain,
-                              expected_status=(codes.OK,))
+        response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                         args=(campaign_in_db['id'], token_same_domain), kwargs={'count': 1})
         blasts = response['blasts']
-        assert len(blasts) == 1
         assert blasts[0]['sends'] == 1
 
     def test_send_camapign_with_diff_domain(self, token_second, campaign_in_db):
@@ -103,11 +97,9 @@ class TestSendCampaign(object):
         """
         campaign_id = campaign_in_db_multiple_smartlists['id']
         send_campaign(campaign_id, token_first, expected_status=(codes.OK,))
-        time.sleep(SLEEP_TIME)
-        # There should be only one blast for this campaign
-        response = get_blasts(campaign_id, token_first, expected_status=(codes.OK,))
+        response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                         args=(campaign_id, token_first), kwargs={'count': 1})
         blasts = response['blasts']
-        assert len(blasts) == 1
         assert blasts[0]['sends'] == 2
 
     def test_campaign_send_to_candidate_with_no_device(self, token_first, campaign_in_db):

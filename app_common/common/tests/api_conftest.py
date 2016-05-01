@@ -193,11 +193,10 @@ def smartlist_first(request, token_first, user_first, candidate_first, talent_po
     """
     talent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
     talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
-    # talent_pipeline = get_talent_pipeline(talent_pipeline_id, token_first)['talent_pipeline']
     candidate_ids = [candidate_first['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_first)['smartlist']
     smartlist_id = smartlist['id']
-    # time.sleep(60)
+    time.sleep(60)
 
     def tear_down():
         delete_smartlist(smartlist_id, token_first,
