@@ -48,6 +48,6 @@ done
 
 # If we've pushed and tagged all the images, tag the branch
 echo "Tagging branch with ${timestamp_tag}"
-# Need to turn off triggering from tag push
-# git tag -a ${timestamp_tag} -m "Adding timestamp tag"
-# git push --tags
+# Need to turn off triggering from tag push..?
+git tag -a ${timestamp_tag} -m "Adding timestamp tag"
+git push --tags
