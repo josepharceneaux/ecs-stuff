@@ -24,6 +24,7 @@ class TestSchedulerGet(object):
         Then assign admin role to sample user.
         Try to get jobs again using a admin user and response should be 200
         """
+        valid_token = auth_header['Authorization']
         auth_header['Authorization'] = 'invalid token'
 
         # Test without admin access, should get 401 response
@@ -37,6 +38,8 @@ class TestSchedulerGet(object):
                                 headers=auth_header)
 
         assert response.status_code == 401
+
+        auth_header['Authorization'] = valid_token
 
         # Assign admin role to user
         add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
@@ -53,7 +56,7 @@ class TestSchedulerGet(object):
                                                          schedule_ten_general_jobs):
         """
         In this test, use filters to get filtered tasks from admin API
-        Test covers user_id, is_paused, task_category, task_type filters to test response from scheduler service endpoint
+        Test covers user_id, paused, task_category, task_type filters to test response from scheduler service endpoint
         """
         users_list = create_five_users
         add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
@@ -71,7 +74,7 @@ class TestSchedulerGet(object):
                                                                 schedule_ten_jobs_for_each_user):
         """
         In this test, use filters to get filtered tasks from admin API
-        Test covers user_id, is_paused, task_category, task_type filters to test response from scheduler service endpoint
+        Test covers user_id, paused, task_category, task_type filters to test response from scheduler service endpoint
         """
         add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
 
@@ -97,7 +100,7 @@ class TestSchedulerGet(object):
                                                             schedule_ten_jobs_for_each_user):
         """
         In this test, use filters to get filtered tasks from admin API
-        Test covers user_id, is_paused, task_category, task_type filters to test response from scheduler service endpoint
+        Test covers user_id, paused, task_category, task_type filters to test response from scheduler service endpoint
         """
         add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
 
@@ -123,7 +126,7 @@ class TestSchedulerGet(object):
                                                             schedule_ten_jobs_for_each_user):
         """
         In this test, use filters to get filtered tasks from admin API
-        Test covers user_id, is_paused, task_category, task_type filters to test response from scheduler service endpoint
+        Test covers user_id, paused, task_category, task_type filters to test response from scheduler service endpoint
         """
         add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
 
@@ -142,13 +145,13 @@ class TestSchedulerGet(object):
                                                             schedule_ten_jobs_for_each_user):
         """
         In this test, use filters try to get filtered tasks from admin API using invalid filters
-        Test covers user_id, is_paused, task_category, task_type filters to test response from scheduler service endpoint
+        Test covers user_id, paused, task_category, task_type filters to test response from scheduler service endpoint
         """
         users_list = create_five_users
         add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
 
-        # Try to get jobs using wrong is_paused value
-        response = requests.get('{0}?per_page=50&is_paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'None'),
+        # Try to get jobs using wrong paused value
+        response = requests.get('{0}?per_page=50&paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'None'),
                                 headers=auth_header)
         assert response.status_code == 400
 
@@ -190,11 +193,11 @@ class TestSchedulerGet(object):
         assert len(response.json()['tasks']) >= 10
 
         # Get jobs using all available filters
-        response = requests.get('{0}?per_page=50&user_id={1}&task_category={2}&task_type=user&paused=0'
+        response = requests.get('{0}?per_page=50&user_id={1}&task_category={2}&task_type=periodic&paused=1'
                                 .format(SchedulerApiUrl.ADMIN_TASKS,
                                         users_list[0][0].id,
                                         SchedulerUtils.CATEGORY_USER),
                                 headers=auth_header)
-        assert response.status_code == 200
+        assert response.status_code == 200, response.text
 
         assert len(response.json()['tasks']) >= 10

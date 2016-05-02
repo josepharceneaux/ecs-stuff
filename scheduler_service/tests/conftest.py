@@ -263,6 +263,7 @@ def schedule_ten_jobs_for_each_user(request, create_five_users, job_config_one_t
     Schedule 10 jobs of each users (we created 5 users). So, there will be 50 jobs in total.
     """
     jobs_count = 10
+    job_ids_and_tokens = []
     user_job_ids_list = []
     users_list = create_five_users
     header = {'Content-Type': 'application/json'}
@@ -284,6 +285,7 @@ def schedule_ten_jobs_for_each_user(request, create_five_users, job_config_one_t
             assert response.status_code == 201, response.text
             job_ids_list.append(response.json()['id'])
 
+            job_ids_and_tokens.append((response.json()['id'], token))
             # Pause all jobs of first user, we need to check if admin can get paused jobs(in test)
             if not index:
                 response = requests.post(SchedulerApiUrl.PAUSE_TASK % response.json()['id'],
@@ -294,14 +296,12 @@ def schedule_ten_jobs_for_each_user(request, create_five_users, job_config_one_t
 
     def tear_down():
         # Delete user based jobs
-        for user_index, (_, _token) in enumerate(users_list):
-            header['Authorization'] = 'Bearer ' + token
-            for _index in range(jobs_count):
-                response_remove_job = requests.delete(SchedulerApiUrl.TASK % user_job_ids_list[user_index][_index],
-                                                      headers=header)
+        for _job_id, _token in job_ids_and_tokens:
+            header['Authorization'] = 'Bearer ' + _token
+            response_remove_job = requests.delete(SchedulerApiUrl.TASK % _job_id,
+                                                  headers=header)
 
-                assert response_remove_job.status_code == 200
-                job_ids_list.append(response.json()['id'])
+            assert response_remove_job.status_code == 200
 
     request.addfinalizer(tear_down)
 
