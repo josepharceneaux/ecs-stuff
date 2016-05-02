@@ -47,7 +47,7 @@ from push_campaign_service.common.campaign_services.campaign_base import Campaig
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from push_campaign_service.common.models.push_campaign import (PushCampaign, PushCampaignSend,
                                                                PushCampaignSendUrlConversion)
-from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE
+from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE, ONE_SIGNAL_TEST_DEVICE_ID
 
 
 class PushCampaignBase(CampaignBase):
