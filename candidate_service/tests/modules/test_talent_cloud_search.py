@@ -116,28 +116,15 @@ def _update_now(candidate_ids):
 
 def _assert_search_results(domain_id, search_vars, candidate_ids, wait=True,
                            check_for_equality=False, check_for_sorting=False, facets_dict=None):
-    """
-
-    :param domain_id:
-    :param search_vars:
-    :param candidate_ids:
-    :param wait:
-    :param smart_wait:
-    :param check_for_equality:
-    :param check_for_sorting:
-    :param facets_dict:
-    :return:
-    """
     # sometimes when asserting same uploaded candidates in a domain with several different queries,
-    # its not worth waiting
+    # it's not worth waiting
     # so don't sleep as cloud_search is already updated
     if wait:
         time.sleep(30)  # Wait for cloud_search to update
 
     response = search_candidates(domain_id=domain_id, request_vars=search_vars)
     resultant_candidate_ids = [long(candidate['id']) for candidate in response['candidates']]
-    print candidate_ids
-    print resultant_candidate_ids
+
     # Test whether every element in the set candidate_ids is in resultant_candidate_ids.
     assert set(candidate_ids).issubset(resultant_candidate_ids)
     if check_for_equality:
