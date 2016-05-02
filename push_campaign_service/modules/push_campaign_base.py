@@ -125,12 +125,14 @@ class PushCampaignBase(CampaignBase):
         :type candidates: list
         :return: generator
         """
+        # update  session
+        db.session.commit()
         candidate_and_device_ids = []
         for candidate in candidates:
             devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
             device_ids = [device.one_signal_device_id for device in devices]
             if not device_ids:
-                raise InvalidUsage('There is no device associated Candidate (id: %s)' % candidate.id)
+                raise InvalidUsage('There is no device associated with Candidate (id: %s)' % candidate.id)
             candidate_and_device_ids.append((candidate.id, device_ids))
         return candidate_and_device_ids
 
