@@ -27,7 +27,8 @@ from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFou
 from scheduler_service.common.utils.auth_utils import require_oauth
 from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
     SchedulerNotRunningError, SchedulerServiceApiException
-from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, run_job
+from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, run_job, \
+    scheduler_remove_job
 
 api = TalentApi()
 scheduler_blueprint = Blueprint('scheduler_api', __name__)
@@ -524,7 +525,7 @@ class TaskByName(Resource):
         task = [task for task in tasks if task.name == _name and task.args[0] is None]
         # Check if task is valid and belongs to the logged-in user
         if task and user_id is None:
-            scheduler.remove_job(task[0].id)
+            scheduler_remove_job(task[0].id, user_id=task[0].args[0], task_name=task[0].args)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task with name %s not found" % _name)
 
@@ -647,7 +648,7 @@ class TaskById(Resource):
         task = scheduler.get_job(_id)
         # Check if task is valid and belongs to the logged-in user
         if task and task.args[0] == user_id:
-            scheduler.remove_job(task.id)
+            scheduler_remove_job(task.id, user_id=task.args[0], task_name=task.args)
             logger.info('Job with id %s removed successfully.' % _id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task not found")

@@ -12,17 +12,18 @@ import datetime
 # Third-party imports
 from urllib import urlencode
 from dateutil.tz import tzutc
-from apscheduler.events import EVENT_JOB_ERROR
+from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_ADDED, EVENT_JOB_MISSED, EVENT_JOB_REMOVED
 from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.interval import IntervalTrigger
+from flask import request
 from jsonschema import validate, FormatChecker, ValidationError
 from apscheduler.schedulers.background import BackgroundScheduler
 
 # Application imports
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token
-from scheduler_service import logger, TalentConfigKeys, flask_app
+from scheduler_service import logger, TalentConfigKeys, flask_app, redis_store
 from scheduler_service.apscheduler_config import executors, job_store, jobstores, job_defaults
 from scheduler_service.common.models.user import User
 from scheduler_service.common.error_handling import InvalidUsage
@@ -47,6 +48,24 @@ scheduler.add_jobstore(job_store)
 REQUEST_TIMEOUT = 30
 
 
+def scheduler_remove_job(job_id, user_id=None, task_name=None):
+    """
+    Removes the job from redis as well as apscheduler
+    :param job_id: job_id returned by scheduler when job was scheduled
+    :type job_id: str
+    :param user_id:
+    :type user_id: int | str
+    :param task_name: name of task to be deleted
+    :type task_name: str
+    :return:
+    """
+    count = redis_store.lrem(SchedulerUtils.REDIS_SCHEDULER_USER_TASK % user_id
+                             if user_id else SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % task_name,
+                             job_id)
+    scheduler.remove_job(job_id=job_id)
+    return count
+
+
 def apscheduler_listener(event):
     """
     APScheduler listener for logging on job crashed or job time expires
@@ -68,17 +87,33 @@ def apscheduler_listener(event):
                           IntervalTrigger) and job.next_run_time and job.next_run_time > job.trigger.end_date:
                 logger.info('Stopping job')
                 try:
-                    scheduler.remove_job(job_id=job.id)
-                    logger.info("apscheduler_listener: Job with id %s removed successfully" % job.id)
+                    count = scheduler_remove_job(job_id=job.id)
+                    logger.info("apscheduler_listener: Job with id %s removed successfully. Removed jobs count %s"
+                                % (job.id, count))
                 except Exception as e:
                     logger.exception("apscheduler_listener: Error occurred while removing job")
                     raise e
             elif isinstance(job.trigger, DateTrigger) and not job.run_date:
-                scheduler.remove_job(job_id=job.id)
-                logger.info("apscheduler_listener: Job with id %s removed successfully" % job.id)
+                count = scheduler_remove_job(job_id=job.id)
+                logger.info("apscheduler_listener: Job with id %s removed successfully. Removed jobs count %s"
+                            % (job.id, count))
 
 
-scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+def apscheduler_job_added(event):
+    if event.code == EVENT_JOB_ADDED:
+        # If its user type job then add a prefix user_ continued by user_id, if its general job then add a general
+        # prefix continued by name of job
+        task = scheduler.get_job(job_id=event.job_id)
+        redis_store.rpush(SchedulerUtils.REDIS_SCHEDULER_USER_TASK % task.args[0]
+                          if task.args[0] else SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % task.name,
+                          event.job_id)
+
+    if event.code == EVENT_JOB_REMOVED:
+        pass
+
+
+scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR | EVENT_JOB_MISSED)
+scheduler.add_listener(apscheduler_job_added, EVENT_JOB_ADDED | EVENT_JOB_REMOVED)
 
 
 def validate_one_time_job(data):
@@ -154,7 +189,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
             # If user is deleted, then delete all its jobs too
             if not user:
                 tasks = filter(lambda task: task.args[0] == user_id, scheduler.get_jobs())
-                [scheduler.remove_job(job_id=task.id) for task in tasks]
+                [scheduler_remove_job(job_id=task.id) for task in tasks]
                 return
 
         token = Token.get_token(access_token=access_token.split(' ')[1])
@@ -279,17 +314,18 @@ def schedule_job(data, user_id=None, access_token=None):
 
 def remove_tasks(ids, user_id):
     """
-    Remove jobs from APScheduler redisStore
+    Remove jobs from APScheduler and redis
     :param ids: ids of tasks which are in APScheduler
     :param user_id: tasks owned by user
     :return: tasks which are removed
     """
     # Get all jobs from APScheduler
-    jobs_aps = map(lambda job_id: scheduler.get_job(job_id=job_id), ids)
-    # Now only keep those that belong to the user
-    jobs_aps = filter(lambda job: job and job.args[0] == user_id, jobs_aps)
+    # Now only keep those jobs that belong to the user
+    valid_jobs = [scheduler.get_job(job_id=job_id) for job_id in ids]
+    valid_job = [job for job in valid_jobs if job and job.args[0] == user_id]
     # Finally remove all such jobs
-    removed = map(lambda job: (scheduler.remove_job(job.id), job.id), jobs_aps)
+    removed = [(scheduler_remove_job(job_id=job.id, user_id=job.args[0],
+                                     task_name=job.args[0]), job_id) for job_id in valid_job]
     return removed
 
 
