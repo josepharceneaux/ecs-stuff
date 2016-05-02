@@ -60,17 +60,17 @@ class TestCampaignSends(object):
         # 403 Case, Not authorized
         get_campaign_sends(campaign_in_db['id'], token_second, expected_status=(codes.FORBIDDEN,))
 
-    def test_get_campaign_sends_with_diff_user_from_same_domain(self, token_same_domain,
-                                                                campaign_in_db, campaign_blasts):
+    def test_get_campaign_sends_with_diff_user_from_same_domain(self, token_same_domain, cadidate_first,
+                                                                candidate_device_first, campaign_in_db, campaign_blasts):
         """
         Test that accessing campaign sends of a campaign created by other user but domain is
         same , so current user can access campaign sends
         :param token_same_domain: auth token of another valid user from different domain
         """
-        # 403 Case, Not authorized
         get_campaign_sends(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,))
 
-    def test_get_campaign_sends_paginated(self, token_first, campaign_in_db, campaign_blasts_pagination):
+    def test_get_campaign_sends_paginated(self, token_first, cadidate_first, candidate_device_first,
+                                          campaign_in_db, campaign_blasts_pagination):
         """
         Test success case. Get sends of a campaign with valid token, valid campaign id,
         campaign with some sends. It should return OK response (200 status code)

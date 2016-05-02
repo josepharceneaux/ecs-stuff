@@ -125,8 +125,6 @@ class PushCampaignBase(CampaignBase):
         :type candidates: list
         :return: generator
         """
-        # update  session
-        db.session.commit()
         candidate_and_device_ids = []
         for candidate in candidates:
             devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)

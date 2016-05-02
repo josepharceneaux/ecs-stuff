@@ -40,7 +40,8 @@ class TestCampaignBlasts(object):
         invalid_campaign_id = sys.maxint
         get_blasts(invalid_campaign_id, token_first, expected_status=(codes.NOT_FOUND,))
 
-    def test_get_campaign_blasts(self, token_first, campaign_in_db, campaign_blasts):
+    def test_get_campaign_blasts_with_valid_data(self, token_first, candidate_first, candidate_device_first,
+                                 campaign_in_db, campaign_blasts):
         """
         Try to get blasts of a valid campaign and it should return OK response
         :param token_first: auth token
@@ -52,8 +53,8 @@ class TestCampaignBlasts(object):
         response = get_blasts(campaign_id, token_first, expected_status=(codes.OK,))
         assert len(response['blasts']) == len(campaign_blasts)
 
-    def test_get_campaign_blasts_from_same_domain(self, token_same_domain, campaign_in_db,
-                                                  campaign_blasts):
+    def test_get_campaign_blasts_from_same_domain(self, token_same_domain, candidate_first, candidate_device_first,
+                                                  campaign_in_db, campaign_blasts):
         """
         Try to get blasts of a valid campaign where user is not owner of campaign but he is from
         same domain as the owner of campaign so we are expecting 200 status code.
@@ -65,8 +66,8 @@ class TestCampaignBlasts(object):
         response = get_blasts(campaign_id, token_same_domain, expected_status=(codes.OK,))
         assert len(response['blasts']) == len(campaign_blasts)
 
-    def test_get_campaign_blasts_from_diff_domain(self, token_second, campaign_in_db,
-                                                  campaign_blast):
+    def test_get_campaign_blasts_from_diff_domain(self, token_second, candidate_first, candidate_device_first,
+                                                  campaign_in_db, campaign_blast):
         """
         Try to get blasts of a valid campaign where user is not owner of campaign and also he is from
         different domain so we are expecting 403 status code.
