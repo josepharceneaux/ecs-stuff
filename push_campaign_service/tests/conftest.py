@@ -36,7 +36,7 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_data, 
                                                         get_blasts, schedule_campaign,
                                                         associate_device_to_candidate,
                                                         get_candidate_devices, delete_campaigns,
-                                                        SLEEP_TIME, delete_candidate_device)
+                                                        SLEEP_TIME, delete_candidate_device, get_blast_sends)
 
 fake = Faker()
 test_config = load_test_config()
@@ -257,15 +257,11 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
     response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
                      args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
     blasts = response['blasts']
-    assert len(blasts) == 1
     blast_id = blasts[0]['id']
     # get campaign sends
-    response = send_request('get', PushCampaignApiUrl.BLAST_SENDS
-                            % (campaign_in_db['id'], blast_id), token_first)
-    assert response.status_code == codes.OK
-    sends = response.json()['sends']
-    # get if of record of sms_campaign_send_url_conversion for this campaign
-    assert len(sends) == 1
+    response = retry(get_blast_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                     args=(blast_id, campaign_in_db['id'], token_first), kwargs={'count': 1})
+    sends = response['sends']
     campaign_send = sends[0]
     response = send_request('get', PushCampaignApiUrl.URL_CONVERSION_BY_SEND_ID % campaign_send['id'], token_first)
     assert response.status_code == codes.OK

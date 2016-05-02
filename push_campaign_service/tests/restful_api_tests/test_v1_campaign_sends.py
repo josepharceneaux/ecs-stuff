@@ -60,7 +60,7 @@ class TestCampaignSends(object):
         # 403 Case, Not authorized
         get_campaign_sends(campaign_in_db['id'], token_second, expected_status=(codes.FORBIDDEN,))
 
-    def test_get_campaign_sends_with_diff_user_from_same_domain(self, token_same_domain, cadidate_first,
+    def test_get_campaign_sends_with_diff_user_from_same_domain(self, token_same_domain, candidate_first,
                                                                 candidate_device_first, campaign_in_db, campaign_blasts):
         """
         Test that accessing campaign sends of a campaign created by other user but domain is

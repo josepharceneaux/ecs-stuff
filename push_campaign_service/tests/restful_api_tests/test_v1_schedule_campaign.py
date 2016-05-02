@@ -117,8 +117,8 @@ class TestScheduleCampaignUsingPOST(object):
 
     def test_schedule_a_campaign_with_valid_data(self, candidate_first, smartlist_first, campaign_in_db, talent_pool,
                                                  token_first, candidate_device_first):
-        # retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
-        #       args=(smartlist_first['id'], token_first), kwargs={'count': 1})
+        retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+              args=(smartlist_first['id'], token_first), kwargs={'count': 1})
         data = generate_campaign_schedule_data()
         response = schedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.OK,),
                                      smartlist_id=smartlist_first['id'], candidate_count=1)
@@ -132,8 +132,8 @@ class TestScheduleCampaignUsingPOST(object):
     def test_schedule_a_campaign_with_user_from_same_domain(self, smartlist_same_domain, campaign_data,  talent_pool,
                                                             token_first, token_same_domain,  candidate_device_first):
 
-        # retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
-        #       args=(smartlist_same_domain['id'], token_same_domain), kwargs={'count': 1})
+        retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+              args=(smartlist_same_domain['id'], token_same_domain), kwargs={'count': 1})
 
         data = campaign_data.copy()
         data['smartlist_ids'] = [smartlist_same_domain['id']]
