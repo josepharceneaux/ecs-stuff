@@ -66,7 +66,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
                                  headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_api_response(response)
 
-    def test_campaign_schedule_with_non_existing_frequency_id(self, valid_header,
+    def test_campaign_schedule_with_non_existing_frequency_id(self, headers,
                                                               sms_campaign_of_current_user):
         """
         Trying to schedule a campaign with invalid frequency Id, Valid ids are in [1,2,3..6] for
@@ -75,11 +75,11 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         data = generate_campaign_schedule_data()
         data['frequency_id'] = fake.numerify()  # this returns a three digit random number
         response = requests.post(self.URL % sms_campaign_of_current_user['id'],
-                                 headers=valid_header,
+                                 headers=headers,
                                  data=json.dumps(data))
         CampaignsTestsHelpers.assert_api_response(response)
 
-    def test_campaign_schedule_with_invalid_frequency_id(self, valid_header,
+    def test_campaign_schedule_with_invalid_frequency_id(self, headers,
                                                          sms_campaign_of_current_user):
         """
         Trying to schedule a campaign with non int frequency Id, It should result
@@ -88,7 +88,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         data = generate_campaign_schedule_data()
         data['frequency_id'] = fake.word()
         response = requests.post(self.URL % sms_campaign_of_current_user['id'],
-                                 headers=valid_header,
+                                 headers=headers,
                                  data=json.dumps(data))
         CampaignsTestsHelpers.assert_api_response(response)
 
@@ -101,22 +101,22 @@ class TestSmsCampaignScheduleHTTPPOST(object):
                                                           self.URL % sms_campaign_in_other_domain['id'],
                                                           access_token_first)
 
-    def test_campaign_schedule_with_non_json_data_type(self, valid_header,
+    def test_campaign_schedule_with_non_json_data_type(self, headers,
                                                        sms_campaign_of_current_user):
         """
         Trying to schedule a campaign of with Non JSON data, It should get result in request error.
         """
         response = requests.post(self.URL % sms_campaign_of_current_user['id'],
-                                 headers=valid_header,
+                                 headers=headers,
                                  data=generate_campaign_schedule_data())
         CampaignsTestsHelpers.assert_api_response(response)
 
-    def test_campaign_schedule_with_no_data(self, valid_header, sms_campaign_of_current_user):
+    def test_campaign_schedule_with_no_data(self, headers, sms_campaign_of_current_user):
         """
         Trying to schedule a campaign of with no data, It should get result in request error.
         """
         response = requests.post(self.URL % sms_campaign_of_current_user['id'],
-                                 headers=valid_header)
+                                 headers=headers)
         CampaignsTestsHelpers.assert_api_response(response)
 
     def test_campaign_schedule_with_deleted_resource(self, access_token_first,

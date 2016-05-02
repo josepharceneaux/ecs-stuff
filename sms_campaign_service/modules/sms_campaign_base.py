@@ -304,7 +304,7 @@ class SmsCampaignBase(CampaignBase):
 
     def get_all_campaigns(self):
         """
-        This gets all the campaigns created by all user's in logged in user's domain
+        This gets all the campaigns created by all users in logged in user's domain
         :return: all campaigns associated to domain of logged-in user
         :rtype: list
         """

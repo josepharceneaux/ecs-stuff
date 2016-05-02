@@ -150,7 +150,7 @@ class TestCampaignSchedule(object):
     """
 
     def test_one_time_campaign_schedule_and_validate_task_run(
-            self, valid_header, user_first, access_token_first, sms_campaign_of_current_user):
+            self, headers, user_first, access_token_first, sms_campaign_of_current_user):
         """
         Here we schedule SMS campaign one time with all valid parameters. Then we check
         that task is run fine and assert the blast, sends and activity have been created
@@ -160,7 +160,7 @@ class TestCampaignSchedule(object):
         data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=5))
         response = requests.post(
             SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user['id'],
-            headers=valid_header, data=json.dumps(data))
+            headers=headers, data=json.dumps(data))
         task_id = assert_campaign_schedule(response, user_first.id,
                                            sms_campaign_of_current_user['id'])
         CampaignsTestsHelpers.get_blasts_with_polling(
@@ -170,9 +170,9 @@ class TestCampaignSchedule(object):
                                                            sms_campaign_of_current_user['id'],
                                                            access_token_first,
                                                            blast_timeout=60)
-        delete_test_scheduled_task(task_id, valid_header)
+        delete_test_scheduled_task(task_id, headers)
 
-    def test_periodic_campaign_schedule_and_validate_run(self, valid_header, user_first,
+    def test_periodic_campaign_schedule_and_validate_run(self, headers, user_first,
                                                          access_token_first,
                                                          sms_campaign_of_current_user):
         """
@@ -184,7 +184,7 @@ class TestCampaignSchedule(object):
         data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=5))
         response = requests.post(
             SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user['id'],
-            headers=valid_header, data=json.dumps(data))
+            headers=headers, data=json.dumps(data))
         task_id = assert_campaign_schedule(response, user_first.id,
                                            sms_campaign_of_current_user['id'])
         # assert that scheduler has sent the campaign for the first time
@@ -199,10 +199,10 @@ class TestCampaignSchedule(object):
                                                            access_token_first,
                                                            expected_blasts=2,
                                                            blast_index=1, blast_timeout=60)
-        delete_test_scheduled_task(task_id, valid_header)
+        delete_test_scheduled_task(task_id, headers)
 
     def test_campaign_daily_schedule_and_validate_task_run(
-            self, valid_header, user_first, access_token_first, sms_campaign_of_current_user):
+            self, headers, user_first, access_token_first, sms_campaign_of_current_user):
         """
         Here we schedule SMS campaign for daily bases. Then we check that task is run fine
         and assert the blast, sends and activity have been created in database. It should run only
@@ -212,12 +212,12 @@ class TestCampaignSchedule(object):
         data['frequency_id'] = Frequency.DAILY
         data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=5))
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_current_user['id'],
-                                 headers=valid_header, data=json.dumps(data))
+                                 headers=headers, data=json.dumps(data))
         task_id = assert_campaign_schedule(response, user_first.id, sms_campaign_of_current_user['id'])
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2,
                                                            sms_campaign_of_current_user['id'],
                                                            access_token_first)
-        delete_test_scheduled_task(task_id, valid_header)
+        delete_test_scheduled_task(task_id, headers)
 
 
 class TestURLRedirectionApi(object):
@@ -269,7 +269,7 @@ class TestURLRedirectionApi(object):
             url_conversion_by_send_test_sms_campaign.source_url)
 
     def test_get_with_deleted_campaign(
-            self, valid_header, sms_campaign_of_current_user,
+            self, headers, sms_campaign_of_current_user,
             url_conversion_by_send_test_sms_campaign):
         """
         Here we first delete the campaign, and then test functionality of url_redirect
@@ -277,12 +277,12 @@ class TestURLRedirectionApi(object):
         ResourceNotFound Error. But candidate should get Internal server error. Hence this test
         should get internal server error.
         """
-        _delete_sms_campaign(sms_campaign_of_current_user, valid_header)
+        _delete_sms_campaign(sms_campaign_of_current_user, headers)
         request_and_assert_internal_server_error(
             url_conversion_by_send_test_sms_campaign.source_url)
 
     def test_get_with_deleted_candidate(self, url_conversion_by_send_test_sms_campaign,
-                                        valid_header, access_token_first,
+                                        headers, access_token_first,
                                         sms_campaign_of_current_user, user_first):
         """
         Here we first delete the candidate, which internally deletes the sms_campaign_send record
@@ -295,7 +295,7 @@ class TestURLRedirectionApi(object):
         candidates = get_candidates_of_smartlist(smartlist_id, True, access_token_first)
         candidate_ids = [candidate_id for candidate_id in candidates]
         for candidate_id in candidate_ids:
-            _delete_candidate(candidate_id, valid_header, user_first)
+            _delete_candidate(candidate_id, headers, user_first)
         request_and_assert_internal_server_error(url_conversion_by_send_test_sms_campaign.source_url)
 
     def test_get_with_deleted_url_conversion(self, url_conversion_by_send_test_sms_campaign):
@@ -332,16 +332,16 @@ class TestURLRedirectionMethods(object):
             assert error.error_code == CampaignException.EMPTY_DESTINATION_URL
 
     def test_process_url_redirect_with_deleted_campaign(
-            self, valid_header, sms_campaign_of_current_user,
+            self, headers, sms_campaign_of_current_user,
             url_conversion_by_send_test_sms_campaign):
         """
         Here we first delete the campaign which internally deletes campaign send record,
         and then test functionality of url_redirect. it should result in ResourceNotFound Error.
         """
-        _delete_sms_campaign(sms_campaign_of_current_user, valid_header)
+        _delete_sms_campaign(sms_campaign_of_current_user, headers)
         _assert_for_no_campaign_send_obj(url_conversion_by_send_test_sms_campaign)
 
-    def test_process_url_redirect_with_deleted_candidate(self, valid_header,sms_campaign_of_current_user,
+    def test_process_url_redirect_with_deleted_candidate(self, headers,sms_campaign_of_current_user,
                                                          url_conversion_by_send_test_sms_campaign,
                                                          access_token_first, user_first):
         """
@@ -353,7 +353,7 @@ class TestURLRedirectionMethods(object):
         candidates = get_candidates_of_smartlist(smartlist_id, True, access_token_first)
         candidate_ids = [candidate_id for candidate_id in candidates]
         for candidate_id in candidate_ids:
-            _delete_candidate(candidate_id, valid_header, user_first)
+            _delete_candidate(candidate_id, headers, user_first)
         try:
             _call_process_url_redirect(url_conversion_by_send_test_sms_campaign)
         except ResourceNotFound as error:
