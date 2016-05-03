@@ -11,11 +11,14 @@ import json
 import StringIO
 import requests
 import random
+from faker import Faker
 from nameparser import HumanName
-from candidate_service.tests.api.candidate_sample_data import fake, college_majors
+from spreadsheet_import_service.common.tests.fake_testing_data_generator import college_majors
 from spreadsheet_import_service.app import app
 from spreadsheet_import_service.common.utils.talent_s3 import upload_to_filepicker_s3
 from spreadsheet_import_service.common.routes import SpreadsheetImportApiUrl
+
+fake = Faker()
 
 
 def import_spreadsheet_candidates(talent_pool_id, access_token, candidate_data=None,
@@ -52,7 +55,8 @@ def import_spreadsheet_candidates(talent_pool_id, access_token, candidate_data=N
         spreadsheet_file_data = csv_file.read()
     else:
         current_dir = os.path.dirname(__file__)
-        with open(os.path.join(current_dir, 'test_spreadsheets/{}'.format(spreadsheet_file_name)), 'rb') as spreadsheet_file:
+        with open(os.path.join(current_dir, 'test_spreadsheets/{}'.format(spreadsheet_file_name)),
+                  'rb') as spreadsheet_file:
             spreadsheet_file_data = spreadsheet_file.read()
             s3_key_name = str(uuid.uuid4())[0:8] + spreadsheet_file_name.split('.')[1]
 

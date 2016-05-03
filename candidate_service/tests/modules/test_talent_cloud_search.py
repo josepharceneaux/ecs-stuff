@@ -7,8 +7,9 @@ from candidate_service.common.models.candidate import CandidateStatus
 from candidate_service.candidate_app import db, logger
 from candidate_service.modules.talent_cloud_search import search_candidates, upload_candidate_documents
 from candidate_service.common.models.misc import AreaOfInterest
+from candidate_service.common.models.talent_pools_pipelines import TalentPool
 from candidate_service.common.utils.talent_areas_of_interest import KAISER_PARENT_TO_CHILD_AOIS
-from candidate_service.tests.api.candidate_sample_data import college_majors
+from candidate_service.common.tests.fake_testing_data_generator import college_majors
 from faker import Faker
 from nameparser import HumanName
 # Common utilities
@@ -27,14 +28,66 @@ VARIOUS_US_LOCATIONS = (('San Jose', 'CA', '95132'), ('Providence', 'Rhode Islan
 
 
 def populate_candidates(access_token, talent_pool, count=1, first_name=None, middle_name=None,
-                        last_name=None, added_time=None, objective=None,
-                        phone=None, company_name=None, job_title=None, candidate_text_comment=None,
-                        source_id=None, city=None, state=None, zip_code=None, areas_of_interest=None,
-                        school_name=None, major=None, degree_type=None, degree_title=None, university_start_year=None,
-                        university_start_month=None, graduation_year=None, graduation_month=None,
-                        military_branch=None, military_status=None, military_grade=None, military_to_date=None,
-                        military_from_date=None, skills=None, custom_fields_dict=None,
-                        experiences=None):
+                        last_name=None, added_datetime=None, objective=None, company_name=None, job_title=None,
+                        city=None, state=None, zip_code=None, areas_of_interest=None, school_name=None,
+                        major=None, degree_type=None, degree_title=None, military_branch=None,
+                        military_status=None, military_grade=None, military_to_date=None,
+                        military_from_date=None, skills=None, experiences=None):
+    """
+    Function will create candidate(s) by making a POST request to /v1/candidates
+     All fields are populated unless if specified via function-params
+    :param  access_token:        required | user's access token for authentication
+    :type   access_token:        str
+    :param  talent_pool:         required | user's talent pool
+    :type   talent_pool:         TalentPool
+    :param  count:               optional | number of candidates that will be created
+    :type   count:               int | long
+    :param  first_name:          optional | candidate's first name
+    :type   first_name:          str
+    :param  middle_name:         optional | candidate's middle name
+    :type   middle_name:         str
+    :param  last_name:           optional | candidate's last name
+    :type   last_name:           str
+    :param  added_datetime:      optional | candidate's creation datetime
+    :param  objective:           optional | candidate's objective
+    :type   objective:           str
+    :param  company_name:        optional | candidate's employer's name
+    :type   company_name:        str
+    :param  job_title:           optional | candidate's job title
+    :type   job_title:           str
+    :param  city:                optional | candidate's city of resident
+    :type   city:                str
+    :param  state:               optional | candidate's state of resident
+    :type   state:               str
+    :param  zip_code:            optional | candidate's zipcode of resident
+    :type   zip_code:            str
+    :param  areas_of_interest:   optional | candidate's areas of interest
+    :type   areas_of_interest:   list[dict]
+    :param  school_name:         optional | candidate's school/college/university name
+    :type   school_name:         str
+    :param  major:               optional | candidate's major, e.g. Mechanical Engineering
+    :type   major:               str
+    :param  degree_type:         optional | e.g. Bachelors, Masters, Doctorate
+    :type   degree_type:         str
+    :param  degree_title:        optional | e.g. Bachelor of Fine Arts
+    :type   degree_title:        str
+    :param  military_branch:     optional | e.g. Marine Corps, Coast Guard
+    :type   military_branch:     str
+    :param  military_status:     optional | e.g. Active, Inactive
+    :type   military_status:     str
+    :param  military_grade:      optional | e.g. Private, Sergeant, Major
+    :type   military_grade:      str
+    :param  military_to_date:    optional | end date of military service, e.g. 2012-07-15
+    :type   military_to_date:    str
+    :param  military_from_date:  optional | start date of military service, e.g. 2008-07-15
+    :type   military_from_date:  str
+    :param  skills:              optional | candidate's skills
+    :type   skills:              list[dict]
+    :param  experiences:         optional | candidate's work experiences
+    :type   experiences:         list[dict]
+    :return:                     {'candidates': [{'id': int}, {'id': int}, ...]}
+    :rtype:                      list[dict]
+    """
     candidate_ids = []
     for i in range(count):
         full_name = fake.name()
@@ -44,7 +97,7 @@ def populate_candidates(access_token, talent_pool, count=1, first_name=None, mid
             talent_pool_ids=dict(
                 add=[talent_pool.id]
             ),
-            added_datetime=added_time,
+            added_datetime=added_datetime,
             first_name=first_name or parsed_full_name.first,
             middle_name=middle_name or parsed_full_name.middle,
             last_name=last_name or parsed_full_name.last,
@@ -103,17 +156,7 @@ def populate_candidates(access_token, talent_pool, count=1, first_name=None, mid
     return candidate_ids
 
 
-def _update_now(candidate_ids):
-    """
-    If update_now is set to False in populate_candidates function, then call this function to update them all at once.
-    :param candidate_ids: list of candidate ids to sent to cloud_search to update candidate.
-    :return:
-    """
-    # Update cloud_search
-    upload_candidate_documents.delay(candidate_ids)
-    return
-
-
+# TODO: User polling instead of time.sleep()
 def _assert_search_results(domain_id, search_vars, candidate_ids, wait=True,
                            check_for_equality=False, check_for_sorting=False, facets_dict=None):
     # sometimes when asserting same uploaded candidates in a domain with several different queries,
@@ -194,21 +237,6 @@ def get_or_create_status(db, status_name):
         db.session.add(add_status)
         db.session.commit()
         return add_status
-
-
-def user_from_id(user_id):
-    """
-    Get Id of user
-    :param user_id:
-    :return: User row object
-    """
-
-    user = db.session.query(User).filter_by(id=user_id).first()
-    if not user:
-        logger.error("Couldn't find a user with user_id: %s", user_id)
-        return None
-    else:
-        return user
 
 
 def compare_dictionaries(dict1, dict2):

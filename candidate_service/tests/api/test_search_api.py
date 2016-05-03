@@ -4,29 +4,19 @@ Test cases for candidate-search-service-API
 from candidate_service.tests.modules.test_talent_cloud_search import (
     populate_candidates, VARIOUS_US_LOCATIONS, create_area_of_interest_facets
 )
-from candidate_service.cloudsearch_constants import SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH
-from ..modules.test_talent_cloud_search import _assert_search_results
 from candidate_service.common.tests.conftest import *
-from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateAddress
-from candidate_service.modules.talent_cloud_search import upload_candidate_documents
+from candidate_service.common.models.candidate import CandidateAddress
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
-from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from helpers import AddUserRoles
 from polling import poll
-# Standard libraries
-import datetime
-import uuid
-import time
-import requests
-from dateutil.parser import parse
 
 
 class TestCandidateSearchGet(object):
     @staticmethod
     def create_candidates(access_token, user, talent_pool):
-        AddUserRoles.add(user=user)
+        AddUserRoles.add(user)
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}},
             {'talent_pool_ids': {'add': [talent_pool.id]}},
