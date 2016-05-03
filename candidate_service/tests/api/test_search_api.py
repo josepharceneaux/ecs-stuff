@@ -208,7 +208,7 @@ def test_search_military_date_of_separation(user_first, access_token_first, tale
     AddUserRoles.add_and_get(user_first)
 
     candidates_today = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=5,
-                                           military_to_date=str(datetime.datetime.utcnow().date()))
+                                           military_to_date=str(datetime.utcnow().date()))
 
     candidates_2014 = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
                                           military_to_date='2014-04-26')
