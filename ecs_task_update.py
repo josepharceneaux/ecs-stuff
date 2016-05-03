@@ -41,9 +41,12 @@ restart = args.restart
 # Check our invocation and derive the AWS service and task definition names from the getTalent service name
 if cluster == 'stage':
     service_svc = service + "-stage"
+    gt_environment = 'qa'
+    service_td = service + '-stage-td'
 else:
     service_svc = service + "-svc"
-service_td = service + '-td'
+    gt_environment = 'prod'
+    service_td = service + '-td'
 
 
 # Perhaps validate that this service is among those currently running? Have to figure out naming problem.
@@ -68,6 +71,8 @@ for definition in task_definition['taskDefinition']['containerDefinitions']:
     # Create a new image pointer with our new tag
     new_image = image.split(':')[0] + ':' + tag
     definition['image'] = new_image
+    name = [ v for v in definition['environment'] if v['name'] == 'GT_ENVIRONMENT' ]
+    name[0]['value'] = gt_environment
 
 for definition in task_definition['taskDefinition']['containerDefinitions']:
     print "Updated container image with: {}".format(definition['image'])
