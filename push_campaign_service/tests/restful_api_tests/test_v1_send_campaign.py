@@ -22,7 +22,7 @@ from redo import retry
 from requests import codes
 
 # Application specific imports
-from push_campaign_service.tests.test_utilities import send_campaign, get_blasts
+from push_campaign_service.tests.test_utilities import send_campaign, get_blasts, get_blast_sends
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
 URL = PushCampaignApiUrl.SEND
@@ -100,7 +100,10 @@ class TestSendCampaign(object):
         response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
                          args=(campaign_id, token_first), kwargs={'count': 1})
         blasts = response['blasts']
-        assert blasts[0]['sends'] == 2
+        blast_id = blasts[0]['id']
+        response = retry(get_blast_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                         args=(blast_id, campaign_id, token_first), kwargs={'count': 2})
+        assert len(response['sends']) == 2
 
     def test_campaign_send_to_candidate_with_no_device(self, token_first, campaign_in_db):
         """
