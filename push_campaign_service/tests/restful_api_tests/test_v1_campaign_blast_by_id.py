@@ -87,7 +87,7 @@ class TestCampaignBlastById(object):
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
         retry(get_blast_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
-              args=(blast_id, campaign_in_db['id'], token_first), kwargs={'count': campaign_blast['sends']})
+              args=(blast_id, campaign_id, token_first), kwargs={'count': 1})
         response = get_blast(blast_id, campaign_id, token_first,
                              expected_status=(codes.OK,))
         blast = response['blast']
@@ -101,7 +101,7 @@ class TestCampaignBlastById(object):
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
         retry(get_blast_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
-              args=(blast_id, campaign_id, token_same_domain), kwargs={'count': campaign_blast['sends']})
+              args=(blast_id, campaign_id, token_same_domain), kwargs={'count': 1})
         response = get_blast(blast_id, campaign_id, token_same_domain,
                              expected_status=(codes.OK,))
         blast = response['blast']

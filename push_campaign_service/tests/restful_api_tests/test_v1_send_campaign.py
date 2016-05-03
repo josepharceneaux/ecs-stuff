@@ -15,7 +15,6 @@ Send a Campaign: /v1/push-campaigns/:id/send [POST]
 """
 # Builtin imports
 import sys
-import time
 
 # 3rd party imports
 from redo import retry
@@ -63,7 +62,10 @@ class TestSendCampaign(object):
         response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
                          args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
         blasts = response['blasts']
-        assert blasts[0]['sends'] == 1
+        blast_id = blasts[0]['id']
+        response = retry(get_blast_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                         args=(blast_id, campaign_in_db['id'], token_first), kwargs={'count': 1})
+        assert len(response['sends']) == 1
 
     def test_send_campaign_with_other_user_in_same_domain(self, token_same_domain, campaign_in_db,
                                                           smartlist_first, candidate_device_first):
@@ -80,7 +82,10 @@ class TestSendCampaign(object):
         response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
                          args=(campaign_in_db['id'], token_same_domain), kwargs={'count': 1})
         blasts = response['blasts']
-        assert blasts[0]['sends'] == 1
+        blast_id = blasts[0]['id']
+        response = retry(get_blast_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                         args=(blast_id, campaign_in_db['id'], token_same_domain), kwargs={'count': 1})
+        assert len(response['sends']) == 1
 
     def test_send_camapign_with_diff_domain(self, token_second, campaign_in_db):
         # try to send a campaign with different domain, we should get 403 error, i.e. user

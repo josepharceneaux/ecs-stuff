@@ -18,6 +18,7 @@ import sys
 import time
 
 # 3rd party imports
+from redo import retry
 from requests import codes
 
 # Application specific imports
@@ -69,7 +70,7 @@ class TestCampaignSends(object):
         """
         get_campaign_sends(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,))
 
-    def test_get_campaign_sends_paginated(self, token_first, cadidate_first, candidate_device_first,
+    def test_get_campaign_sends_paginated(self, token_first, candidate_first, candidate_device_first,
                                           campaign_in_db, campaign_blasts_pagination):
         """
         Test success case. Get sends of a campaign with valid token, valid campaign id,
@@ -82,9 +83,11 @@ class TestCampaignSends(object):
         blasts_count = campaign_blasts_pagination
         per_page = blasts_count - 5
         time.sleep(3 * SLEEP_TIME)
-        response = get_campaign_sends(campaign_id, token_first, per_page=per_page,
-                                      expected_status=(codes.OK,))
-        assert len(response['sends']) == per_page
+        retry(get_campaign_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+              args=(campaign_id, token_first), kwargs={'per_page': per_page, 'count': per_page})
+        # response = get_campaign_sends(campaign_id, token_first, per_page=per_page,
+        #                               expected_status=(codes.OK,))
+        # assert len(response['sends']) == per_page
 
         response = get_campaign_sends(campaign_id, token_first, page=2, per_page=per_page,
                                       expected_status=(codes.OK,))

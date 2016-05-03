@@ -221,13 +221,17 @@ def get_blast_sends(blast_id, campaign_id, token, page=DEFAULT_PAGE, per_page=DE
     return response
 
 
-def get_campaign_sends(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,)):
+def get_campaign_sends(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,),
+                       count=None):
     query = '?page=%s&per_page=%s' % (page, per_page)
     response = send_request('get', PushCampaignApiUrl.SENDS % campaign_id + query, token)
     logger.info('tests: get_campaign_sends: %s', response.content)
     print('tests: get_campaign_sends: %s', response.content)
     assert response.status_code in expected_status
-    return response.json()
+    response = response.json()
+    if count:
+        assert len(response['sends']) == count
+    return response
 
 
 def schedule_campaign(campaign_id, data, token, expected_status=(200,), smartlist_id=None, candidate_count=None):
