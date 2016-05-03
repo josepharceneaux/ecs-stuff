@@ -121,7 +121,7 @@ def _set_environment_specific_configurations(environment, app_config):
         app_config['BG_URL'] = 'http://sandbox-lensapi.burning-glass.com/v1.7/parserservice/resume'
         app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
         app_config['DEBUG'] = True
-        app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200  # 2 hours expiry time for bearer token
+        app_config['JWT_OAUTH_EXPIRATION'] = 7200  # 2 hours expiry time for bearer token
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
 
 

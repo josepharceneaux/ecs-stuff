@@ -94,7 +94,7 @@ class User(db.Model):
             request.user = None
             return
 
-        raise UnauthorizedError(error_message="User with id=%s doesn't exist in database" % data['user_id'])
+        raise UnauthorizedError(error_message="User %s doesn't exist in database" % data['user_id'])
 
     def is_authenticated(self):
         return True
