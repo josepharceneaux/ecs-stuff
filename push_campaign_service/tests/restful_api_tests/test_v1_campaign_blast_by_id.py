@@ -91,9 +91,9 @@ class TestCampaignBlastById(object):
         response = get_blast(blast_id, campaign_id, token_first,
                              expected_status=(codes.OK,))
         blast = response['blast']
-        assert blast['sends'] == campaign_blast['sends']
-        assert blast['clicks'] == campaign_blast['clicks']
-        assert blast['id'] == campaign_blast['id']
+        assert blast['sends'] == 1
+        assert blast['clicks'] == 0
+        assert blast['id'] == blast_id
 
     def test_get_campaign_blast_with_same_domain_user(self, token_same_domain,
                                                       campaign_blast, campaign_in_db):
@@ -105,6 +105,6 @@ class TestCampaignBlastById(object):
         response = get_blast(blast_id, campaign_id, token_same_domain,
                              expected_status=(codes.OK,))
         blast = response['blast']
-        assert blast['sends'] == campaign_blast['sends']
-        assert blast['clicks'] == campaign_blast['clicks']
-        assert blast['id'] == campaign_blast['id']
+        assert blast['sends'] == 1
+        assert blast['clicks'] == 0
+        assert blast['id'] == blast_id

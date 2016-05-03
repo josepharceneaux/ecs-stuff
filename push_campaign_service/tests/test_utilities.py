@@ -180,7 +180,7 @@ def delete_campaigns(data, token, expected_status=(200,)):
 
 def send_campaign(campaign_id, token, expected_status=(200,), smartlist_id=None, candidate_count=None):
     if smartlist_id and candidate_count:
-        retry(get_smartlist_candidates, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        retry(get_smartlist_candidates, attempts=30, sleeptime=3, max_sleeptime=100, retry_exceptions=(AssertionError,),
               args=(smartlist_id, token), kwargs={'count': candidate_count})
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_id, token)
     logger.info('tests : send_campaign: %s', response.content)
@@ -236,7 +236,7 @@ def get_campaign_sends(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_P
 
 def schedule_campaign(campaign_id, data, token, expected_status=(200,), smartlist_id=None, candidate_count=None):
     if smartlist_id and candidate_count:
-        retry(get_smartlist_candidates, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        retry(get_smartlist_candidates, attempts=30, sleeptime=3, max_sleeptime=100, retry_exceptions=(AssertionError,),
               args=(smartlist_id, token), kwargs={'count': candidate_count})
     logger.info('tests : schedule_campaign: Going to schedule push campaign (id: %s)' % campaign_id)
     response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_id, token, data)

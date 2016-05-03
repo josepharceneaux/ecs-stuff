@@ -226,6 +226,8 @@ def schedule_a_campaign(request, smartlist_first, campaign_in_db, token_first):
     :rtype data: dict
     """
     task_id = None
+    retry(get_smartlist_candidates, max_sleeptime=60, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
+          args=(smartlist_first['id'], token_first), kwargs={'count': 1})
     data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
     task_id = schedule_campaign(campaign_in_db['id'], data, token_first,
                                 smartlist_id=smartlist_first['id'], candidate_count=1)['task_id']
@@ -249,7 +251,7 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
     :param candidate_device_first: candidate device dict object
     :return: url_conversion dict object
     """
-    retry(get_smartlist_candidates, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+    retry(get_smartlist_candidates, attempts=30, sleeptime=3, max_sleeptime=100, retry_exceptions=(AssertionError,),
           args=(smartlist_first['id'], token_first), kwargs={'count': 1})
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
     assert response.status_code == codes.OK
@@ -307,7 +309,7 @@ def candidate_device_same_domain(request, token_same_domain, candidate_same_doma
     :param candidate_same_domain: candidate dict object
     """
     candidate_id = candidate_same_domain['id']
-    device_id = test_config['PUSH_CONFIG']['device_id_2']
+    device_id = test_config['PUSH_CONFIG']['device_id_1']
     associate_device_to_candidate(candidate_id, device_id, token_same_domain)
     devices = get_candidate_devices(candidate_id, token_same_domain)['devices']
     assert len(devices) == 1
@@ -329,7 +331,7 @@ def candidate_device_second(request, token_second, candidate_second):
     :param candidate_second: candidate dict object
     """
     candidate_id = candidate_second['id']
-    device_id = test_config['PUSH_CONFIG']['device_id_2']
+    device_id = test_config['PUSH_CONFIG']['device_id_1']
     associate_device_to_candidate(candidate_id, device_id, token_second)
     devices = get_candidate_devices(candidate_id, token_second)['devices']
     assert len(devices) == 1
