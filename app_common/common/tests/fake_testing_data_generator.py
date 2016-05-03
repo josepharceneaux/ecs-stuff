@@ -1,5 +1,6 @@
-import uuid
+import uuid, random
 from faker import Faker
+
 fake = Faker()
 
 __author__ = 'jitesh'
@@ -9,7 +10,6 @@ class FakeCandidatesData(object):
     @classmethod
     def create(cls, talent_pool, count=1, first_name=True, middle_name=False, last_name=True,
                added_time=True, emails_list=True, address_list=None):
-
         """
         Generates candidate data dictionary as required by candidate_service API.
         Creates candidate data dictionary with given data or random data
@@ -54,4 +54,24 @@ class FakeCandidatesData(object):
         return [{'address_line_1': fake.street_address(), 'city': fake.city(),
                  'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country()}]
 
-    # Add other methods as an when required
+
+def college_majors():
+    """
+    Function will return some popular college majors
+    Note: dict-keys represent discipline and its key is a list of majors within that discipline.
+    Testing example:
+        >>> discipline = random.choice(college_majors().keys())     # => 'engineering'
+        >>> random.choice(college_majors()[discipline])             # => 'Nuclear Engineering'
+    :rtype:  dict
+    """
+    majors = {
+        'engineering': [
+            'Aerospace Engineering', 'Agricultural Engineering', 'Bioengineering',
+            'Biomedical Engineering', 'Ceramic Engineering', 'Chemical Engineering',
+            'Civil Engineering', 'Computer Engineering', 'Computer Science', 'Electrical Engineering',
+            'Geophysical Engineering', 'Materials Engineering', 'Mechanical Engineering',
+            'Mining & Mineral Engineering', 'Marine Engineering', 'Nuclear Engineering',
+            'Petroleum Engineering', 'Software Engineering', 'Systems Analysis & Engineering'
+        ]
+    }
+    return majors
