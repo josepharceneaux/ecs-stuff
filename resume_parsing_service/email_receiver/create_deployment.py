@@ -105,13 +105,15 @@ def _copy_virtual_env_libs(deployment_dir, venv_folder):
     :param venv_folder: The name of the virtual environment directory.
     :return:
     """
+    print deployment_dir
+    print venv_folder
     if os.path.exists(venv_folder):
-        lib_dir = "{}/lib/"
-        lib64_dir = "{}/lib64/"
-        lib_cmd = "cp -r {0} {1}".format(lib_dir, deployment_dir).split()
-        lib64_cmd = "cp -r {0} {1}".format(lib64_dir, deployment_dir).split()
-        unused_lib_cmd_code = subprocess.call(lib_cmd, shell=False)
-        unused_lib64_cmd_code = subprocess.call(lib64_cmd, shell=False)
+        lib_dir = "{}/lib/".format(venv_folder)
+        lib64_dir = "{}/lib64/".format(venv_folder)
+        lib_cmd = "cp -r {0} {1}".format(lib_dir, deployment_dir)
+        lib64_cmd = "cp -r {0} {1}".format(lib64_dir, deployment_dir)
+        unused_lib_cmd_code = subprocess.call(lib_cmd, shell=True)
+        unused_lib64_cmd_code = subprocess.call(lib64_cmd, shell=True)
     else:
         raise UserWarning('Virtual environment folder not found.')
     pass
