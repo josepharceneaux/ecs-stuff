@@ -79,13 +79,15 @@ def validate_email_file(email_file, key):
     :return tuple (str sender, str talent_pool_hash):
     """
 
-    sender = email_file.get('From')
-    if not sender:
+    sender_info = email_file.get('From')
+    if not sender_info:
         error_msg = 'Could not retrieve email sender with file {}'.format(key)
         logger.info(error_msg)
         raise KeyError(error_msg)
 
+    sender = email.utils.parseaddr(sender_info)[1]
     receiver = email_file.get('To')
+
     if not receiver:
         error_msg = 'Could not retrieve email receiver with file {}'.format(key)
         logger.info(error_msg)
@@ -144,20 +146,24 @@ def get_email_attachment(email_file, key):
 
     payloads = email_file.get_payload()
     payload_count = len(payloads)
-    if payload_count != PAYLOAD_QTY:
+
+    if payload_count < PAYLOAD_QTY:
         error_msg = "User supplied incorrect payload count of {} from file {}".format(
             payload_count, key
         )
         logger.info(error_msg)
         raise UserWarning(error_msg)
 
-    raw_attachment = payloads[1]
-    if not raw_attachment.get_filename():
-        error_msg = "User supplied no file from s3 file {}".format(key)
-        logger.info(error_msg)
-        raise UserWarning(error_msg)
+    raw_attachments = payloads[1]
+    for attachment in raw_attachments.get_payload():
+        if not attachment.get_filename():
+            continue
+        return attachment
 
-    return raw_attachment
+    # In the event we do not return an attachment we need to raise an error.
+    error_msg = "User supplied no file from s3 file {}".format(key)
+    logger.info(error_msg)
+    raise UserWarning(error_msg)
 
 
 def get_desired_talent_pool(simple_hash):

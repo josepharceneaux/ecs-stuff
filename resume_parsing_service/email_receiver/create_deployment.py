@@ -108,10 +108,10 @@ def _copy_virtual_env_libs(deployment_dir, venv_folder):
     print deployment_dir
     print venv_folder
     if os.path.exists(venv_folder):
-        lib_dir = "{}/lib/".format(venv_folder)
-        lib64_dir = "{}/lib64/".format(venv_folder)
-        lib_cmd = "cp -r {0} {1}".format(lib_dir, deployment_dir)
-        lib64_cmd = "cp -r {0} {1}".format(lib64_dir, deployment_dir)
+        lib_dir = "{}/lib/python2.7/site-packages/".format(venv_folder)
+        lib64_dir = "{}/lib64/python2.7/site-packages/".format(venv_folder)
+        lib_cmd = "cp -r {0}* {1}".format(lib_dir, deployment_dir)
+        lib64_cmd = "cp -r {0}* {1}".format(lib64_dir, deployment_dir)
         unused_lib_cmd_code = subprocess.call(lib_cmd, shell=True)
         unused_lib64_cmd_code = subprocess.call(lib64_cmd, shell=True)
     else:
