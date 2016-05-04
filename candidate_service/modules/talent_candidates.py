@@ -11,6 +11,7 @@ import pycountry
 import phonenumbers
 from flask import request
 from datetime import date
+from nameparser import HumanName
 
 # Database connection and logger
 from candidate_service.common.models.db import db
@@ -154,6 +155,9 @@ def fetch_candidate_info(candidate, fields=None):
 
     return_dict = {
         'id': candidate_id,
+        'first_name': candidate.first_name,
+        'middle_name': candidate.middle_name,
+        'last_name': candidate.last_name,
         'full_name': full_name,
         'created_at_datetime': created_at_datetime,
         'updated_at_datetime': created_at_datetime,
@@ -1093,12 +1097,21 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
     Function will update Candidate
     :return:    Candidate ID
     """
-    update_dict = {'first_name': first_name, 'middle_name': middle_name,
-                   'last_name': last_name, 'formatted_name': formatted_name,
-                   'objective': objective, 'summary': summary, 'filename': resume_url}
+    # If formatted name is provided, must also update first name, middle name, and last name
+    if formatted_name:
+        parsed_names_object = HumanName(formatted_name)
+        first_name = parsed_names_object.first
+        middle_name = parsed_names_object.middle
+        last_name = parsed_names_object.last
+
+    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url}
 
     # Remove keys with empty values and strip each value
     update_dict = purge_dict(update_dict)
+
+    # Update request dict with candidate names
+    update_dict.update(first_name=first_name, middle_name=middle_name, last_name=last_name,
+                       formatted_name=formatted_name)
 
     # Candidate will not be updated if update_dict is empty
     if not update_dict:
