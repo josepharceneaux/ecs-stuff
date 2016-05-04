@@ -5,8 +5,6 @@ from sqlalchemy.orm import sessionmaker
 some_engine = create_engine('mysql://root@127.0.0.1/talent_local')
 Session = sessionmaker(bind=some_engine)
 session = Session()
-
-
 Base = declarative_base()
 
 class Client(Base):
