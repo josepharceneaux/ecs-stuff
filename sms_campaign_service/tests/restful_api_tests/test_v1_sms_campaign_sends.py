@@ -152,7 +152,7 @@ class TestSmsCampaignSends(object):
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=4, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY]
-        # pick second blast object from the response. it will be 6th blast object
+        # Pick second blast object from the response. It will be 6th blast object
         received_send_obj = json_resp[1]
         assert received_send_obj['blast_id'] == blast_id
         assert received_send_obj['candidate_id'] in candidate_ids
@@ -162,7 +162,7 @@ class TestSmsCampaignSends(object):
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY]
-        # pick second send object from the response. it will be 10th send object
+        # Pick second send object from the response. It will be 10th send object
         received_send_obj = json_resp[1]
         assert received_send_obj['blast_id'] == blast_id
         assert received_send_obj['candidate_id'] in candidate_ids

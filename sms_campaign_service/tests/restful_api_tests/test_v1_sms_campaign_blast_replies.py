@@ -168,7 +168,7 @@ class TestSmsCampaignBlastReplies(object):
         response = requests.get(url + '?per_page=4&page=3', headers=valid_header)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY]
-        # pick second reply object from the response. it will be 10th reply object
+        # Pick second reply object from the response. It will be 10th reply object
         received_reply_obj = json_resp[1]
         assert_reply_object(received_reply_obj, blast_id, candidate_phone_ids)
 

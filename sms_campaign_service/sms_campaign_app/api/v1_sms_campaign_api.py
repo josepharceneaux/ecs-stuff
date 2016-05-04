@@ -1108,6 +1108,7 @@ class SmsCampaignSends(Resource):
 
         # Get blast_ids related to requested campaign_id
         blast_ids = map(lambda blast: blast.id, campaign.blasts.all())
+        # TODO--can we plesae put this in Model?
         query = SmsCampaignSend.query.filter(SmsCampaignSend.blast_id.in_(blast_ids))
         # Serialize sends of a campaign and get paginated response
         page, per_page = get_pagination_params(request)
