@@ -525,7 +525,7 @@ class TaskByName(Resource):
         task = [task for task in tasks if task.name == _name and task.args[0] is None]
         # Check if task is valid and belongs to the logged-in user
         if task and user_id is None:
-            scheduler_remove_job(task[0].id, user_id=task[0].args[0], task_name=task[0].args)
+            scheduler_remove_job(task[0].id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task with name %s not found" % _name)
 
@@ -648,7 +648,7 @@ class TaskById(Resource):
         task = scheduler.get_job(_id)
         # Check if task is valid and belongs to the logged-in user
         if task and task.args[0] == user_id:
-            scheduler_remove_job(task.id, user_id=task.args[0], task_name=task.args)
+            scheduler_remove_job(task.id)
             logger.info('Job with id %s removed successfully.' % _id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task not found")
