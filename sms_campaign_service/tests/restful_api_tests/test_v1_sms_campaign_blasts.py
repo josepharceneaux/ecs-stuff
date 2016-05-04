@@ -10,6 +10,7 @@ import requests
 # Common Utils
 from sms_campaign_service.common.models.db import db
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.tests.modules.common_functions import assert_valid_blast_object
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
@@ -30,8 +31,8 @@ class TestSmsCampaignBlasts(object):
 
     def test_get_with_no_blasts_saved(self, access_token_first, sms_campaign_of_current_user):
         """
-        Here we assume that there is no blast saved for given campaign. We should get OK
-        response and count should be 0.
+        Here we assume that there is no blast saved for given campaign. Which means we haven't
+        sent the campaign yet. We should get OK response and count should be 0.
         """
         response = requests.get(self.URL % sms_campaign_of_current_user['id'],
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -52,19 +53,17 @@ class TestSmsCampaignBlasts(object):
         This is the case where we assume we have sent campaign to 2 candidates.
         """
         sent_campaign, blast_ids = sent_campaign_and_blast_ids
-        expected_count = 2
+        expected_sends = 2
         # Poll sends for blast
         CampaignsTestsHelpers.assert_blast_sends(
-            sent_campaign, expected_count,
+            sent_campaign, expected_sends,
             blast_url=SmsCampaignApiUrl.BLAST % (sent_campaign['id'], blast_ids[0]),
             access_token=access_token_first)
         response = requests.get(self.URL % sent_campaign['id'],
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY][0]
-        assert json_resp['id'] == blast_ids[0]
-        assert json_resp['campaign_id'] == sent_campaign['id']
-        assert json_resp['sends'] == expected_count
+        assert_valid_blast_object(json_resp, blast_ids[0], sent_campaign['id'], expected_sends)
 
     def test_get_with_not_owned_campaign(self, access_token_first, sms_campaign_in_other_domain):
         """
@@ -81,25 +80,24 @@ class TestSmsCampaignBlasts(object):
         Here we test the paginated response of GET call on endpoint /v1/sms-campaigns/:id/blasts
         """
         sent_campaign, blast_ids = sent_campaign_and_blast_ids
-        expected_count = 2
+        expected_sends = 2
         url = self.URL % sent_campaign['id']
         CampaignsTestsHelpers.assert_blast_sends(
-            sent_campaign, expected_count,
+            sent_campaign, expected_sends,
             blast_url=SmsCampaignApiUrl.BLAST % (sent_campaign['id'], blast_ids[0]),
             access_token=access_token_first)
         db.session.commit()
+        # It should get only one blast object
         response = requests.get(url + '?per_page=1',
                                 headers=headers)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY]
         assert len(json_resp) == 1
         received_blast_obj = json_resp[0]
-        assert received_blast_obj['id'] == blast_ids[0]
-        assert received_blast_obj['campaign_id'] == sent_campaign['id']
-        assert received_blast_obj['sends'] == expected_count
+        assert_valid_blast_object(received_blast_obj, blast_ids[0], sent_campaign['id'], expected_sends)
 
-        # sending campaign 10 times to create 10 blast objects
-        for _ in xrange(1, 10):
+        # sending campaign 9 more times to create 10 blast objects
+        for _ in xrange(0, 9):
             CampaignsTestsHelpers.send_campaign(SmsCampaignApiUrl.SEND,
                                                 sent_campaign, access_token_first,
                                                 SmsCampaignApiUrl.BLASTS)
@@ -109,7 +107,7 @@ class TestSmsCampaignBlasts(object):
 
         # Poll sends for 4th blast
         CampaignsTestsHelpers.assert_blast_sends(
-            sent_campaign, expected_count,
+            sent_campaign, expected_sends,
             blast_url=SmsCampaignApiUrl.BLAST % (sent_campaign['id'], blast_ids[3]),
             access_token=access_token_first, abort_time_for_sends=40)
 
@@ -120,13 +118,11 @@ class TestSmsCampaignBlasts(object):
 
         # pick 4th blast object and assert valid response
         received_blast_obj = json_resp[3]
-        assert received_blast_obj['id'] == blast_ids[3]
-        assert received_blast_obj['campaign_id'] == sent_campaign['id']
-        assert received_blast_obj['sends'] == expected_count
+        assert_valid_blast_object(received_blast_obj, blast_ids[3], sent_campaign['id'], expected_sends)
 
         # Poll sends for 5th blast
         CampaignsTestsHelpers.assert_blast_sends(
-            sent_campaign, expected_count,
+            sent_campaign, expected_sends,
             blast_url=SmsCampaignApiUrl.BLAST % (sent_campaign['id'], blast_ids[4]),
             access_token=access_token_first, abort_time_for_sends=40)
 
@@ -137,13 +133,11 @@ class TestSmsCampaignBlasts(object):
         # pick second blast object and assert valid response
         # pick first blast object from the response. it will be 5th blast object
         received_blast_obj = json_resp[0]
-        assert received_blast_obj['id'] == blast_ids[4]
-        assert received_blast_obj['campaign_id'] == sent_campaign['id']
-        assert received_blast_obj['sends'] == expected_count
+        assert_valid_blast_object(received_blast_obj, blast_ids[4], sent_campaign['id'], expected_sends)
 
         # Poll sends for 10th blast
         CampaignsTestsHelpers.assert_blast_sends(
-            sent_campaign, expected_count,
+            sent_campaign, expected_sends,
             blast_url=SmsCampaignApiUrl.BLAST % (sent_campaign['id'], blast_ids[9]),
             access_token=access_token_first, abort_time_for_sends=40)
 
@@ -153,9 +147,7 @@ class TestSmsCampaignBlasts(object):
         json_resp = response.json()[self.ENTITY]
         # pick second blast object from the response. it will be 10th blast object
         received_blast_obj = json_resp[1]
-        assert received_blast_obj['id'] == blast_ids[9]
-        assert received_blast_obj['campaign_id'] == sent_campaign['id']
-        assert received_blast_obj['sends'] == expected_count
+        assert_valid_blast_object(received_blast_obj, blast_ids[9], sent_campaign['id'], expected_sends)
 
         # Test GET blasts of SMS campaign with page = 4. No blast object should be received
         # in response as we have sent campaign only 10 times so far and we are using

@@ -202,15 +202,56 @@ def get_replies_count(campaign, access_token):
     return sms_campaign_blasts[0]['replies']
 
 
-def assert_reply_object(received_reply_obj, blast_id, candidate_phone_ids):
+def assert_valid_reply_object(received_reply_obj, expected_blast_id, candidate_phone_ids):
     """
     Here we are asserting that response from API has all required fields in it.
     :param (dict) received_reply_obj: object received from API endpoint /v1/sms-campaigns/:campaign_id/replies
-    :param (int, long) blast_id: Id of campaign blast
+    :param (int, long) expected_blast_id: Id of campaign blast
     :param (list) candidate_phone_ids: list of candidate phone ids
     """
     assert received_reply_obj['id']
     assert received_reply_obj['body_text']
     assert received_reply_obj['added_datetime']
-    assert received_reply_obj['blast_id'] == blast_id
+    assert received_reply_obj['blast_id'] == expected_blast_id
     assert received_reply_obj['candidate_phone_id'] in candidate_phone_ids
+
+
+def assert_valid_campaign_get(campaign_dict, referenced_campaign, compare_fields=True):
+    """
+    This asserts that the sms-campaign we get from GET http request has same fields as we expect
+    :param (dict) campaign_dict: sms-campaign dict received from HTTP GET
+    :param (dict) referenced_campaign: sms-campaign object with which we are comparing
+    :param (bool) compare_fields: If True, it will compare values of respective fields of both
+                campaigns, otherwise it will only asserts that expected fields are present.
+    """
+    # TODO: Update this for user-defined fields in GET-1260
+    if compare_fields:
+        for field in campaign_dict.keys():
+            assert campaign_dict[field] == referenced_campaign[field]
+    else:
+        assert campaign_dict['id']
+        assert campaign_dict['name']
+        assert campaign_dict['body_text']
+        assert campaign_dict['list_ids']
+        assert campaign_dict['user_id']
+        assert campaign_dict['added_datetime']
+
+
+def assert_valid_blast_object(received_blast_obj, expected_blast_id, campaign_id, expected_sends=0,
+                             expected_replies=0, expected_clicks=0,):
+    """
+    Here we are asserting that response from API has all required fields in it.
+    :param (dict) received_blast_obj: object received from API endpoint /v1/sms-campaigns/:campaign_id/blasts
+    :param (int, long) expected_blast_id: Id of campaign blast
+    :param (int, long) campaign_id: Id of sms-campaign
+    :param (int | long) expected_sends: Number of sends for given campaign
+    :param (int | long) expected_replies: Number of replies for given campaign
+    :param (int | long) expected_clicks: Number of clicks for given campaign
+    """
+    assert received_blast_obj['id'] == expected_blast_id
+    assert received_blast_obj['campaign_id'] == campaign_id
+    assert received_blast_obj['sends'] == expected_sends
+    assert received_blast_obj['replies'] == expected_replies
+    assert received_blast_obj['clicks'] == expected_clicks
+    assert received_blast_obj['sent_datetime']
+    assert received_blast_obj['updated_time']
