@@ -70,6 +70,8 @@ for definition in task_definition['taskDefinition']['containerDefinitions']:
     image = definition['image']
     # Create a new image pointer with our new tag
     new_image = image.split(':')[0] + ':' + tag
+    # Remove references to stage repo which will be discarded
+    new_image = new_image.replace('gettalent-stage', 'gettalent')
     definition['image'] = new_image
     name = [ v for v in definition['environment'] if v['name'] == 'GT_ENVIRONMENT' ]
     name[0]['value'] = gt_environment
