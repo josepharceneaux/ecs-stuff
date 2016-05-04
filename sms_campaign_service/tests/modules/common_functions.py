@@ -207,7 +207,7 @@ def assert_reply_object(received_reply_obj, blast_id, candidate_phone_ids):
     Here we are asserting that response from API has all required fields in it.
     :param (dict) received_reply_obj: object received from API endpoint /v1/sms-campaigns/:campaign_id/replies
     :param (int, long) blast_id: Id of campaign blast
-    :param (list) candidate_phone_ids: list of candidate phone ids
+    :param (list[int | long]) candidate_phone_ids: list of candidate phone ids
     """
     assert received_reply_obj['id']
     assert received_reply_obj['body_text']
