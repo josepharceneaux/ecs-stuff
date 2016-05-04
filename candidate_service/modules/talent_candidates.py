@@ -155,6 +155,7 @@ def fetch_candidate_info(candidate, fields=None):
 
     return_dict = {
         'id': candidate_id,
+        'owner': candidate.user_id,
         'first_name': candidate.first_name,
         'middle_name': candidate.middle_name,
         'last_name': candidate.last_name,
