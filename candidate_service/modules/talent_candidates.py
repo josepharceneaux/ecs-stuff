@@ -458,16 +458,15 @@ def candidate_contact_history(candidate):
     :type candidate:    Candidate
     :rtype              dict
     """
-    assert isinstance(candidate, Candidate)
-    timeline = []
-
     # Campaign sends & campaigns
+    timeline = []
     for email_campaign_send in candidate.email_campaign_sends:
         if not email_campaign_send.campaign_id:
             logger.error("contact_history: email_campaign_send has no campaign_id: %s", email_campaign_send.id)
             continue
         email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.campaign_id)
-        timeline.insert(0, dict(event_datetime=email_campaign_send.sent_datetime,
+        timeline.insert(0, dict(id=email_campaign.id,
+                                event_datetime=email_campaign_send.sent_datetime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
                                 campaign_name=email_campaign.name))
 
