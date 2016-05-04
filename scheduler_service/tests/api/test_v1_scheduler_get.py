@@ -354,3 +354,4 @@ class TestSchedulerGet(object):
         # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
+
