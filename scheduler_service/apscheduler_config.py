@@ -1,9 +1,9 @@
 from apscheduler.executors.pool import ProcessPoolExecutor, ThreadPoolExecutor
 from apscheduler.jobstores.redis import RedisJobStore
-from scheduler_service.scheduler import flask_app
 from redis._compat import urlparse
 
 from scheduler_service import SchedulerUtils, TalentConfigKeys
+from scheduler_service.modules.scheduler import flask_app
 
 __author__ = 'saad'
 

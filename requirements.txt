@@ -91,3 +91,4 @@ redis-collections==0.1.7
 # Misc
 boltons==16.1.1
 polling==0.3.0
+nameparser==0.3.16
