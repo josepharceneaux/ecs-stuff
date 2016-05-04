@@ -1110,8 +1110,10 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
     update_dict = purge_dict(update_dict)
 
     # Update request dict with candidate names
-    update_dict.update(first_name=first_name, middle_name=middle_name, last_name=last_name,
-                       formatted_name=formatted_name)
+    update_dict.update(
+        first_name=first_name, middle_name=middle_name, last_name=last_name,
+        formatted_name=formatted_name or format_full_name(first_name, middle_name, last_name)
+    )
 
     # Clear update_dict if every remaining key-values in update_dict is None
     if all(v is None for v in update_dict.values()):
@@ -2251,3 +2253,11 @@ class CachedData(object):
       when its data is no longer needed
     """
     country_codes = []
+
+
+def format_full_name(first_name=None, middle_name=None, last_name=None):
+    # Figure out first_name, last_name, middle_name, and formatted_name from inputs
+    if first_name or last_name or middle_name:
+        if (first_name or last_name):
+            # If first_name and last_name given but not formatted_name, guess it
+            return get_fullname_from_name_fields(first_name or '', middle_name or '', last_name or '')
