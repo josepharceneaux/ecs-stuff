@@ -32,13 +32,11 @@ class SmsCampaign(db.Model):
     def __repr__(self):
         return "<SmsCampaign (name = %r)>" % self.name
 
-    def to_dict(self, include_fields=None):
+    def to_dict(self):
         """
         This returns required fields when an sms-campaign object is requested.
-        :param list[str] | None include_fields: List of fields to include, or None for all.
         :rtype: dict[str, T]
         """
-        # TODO: include_fields param is required here but will be used in GET-1260
         return_dict = {"id": self.id,
                        "user_id": self.user_phone.user_id,
                        "name": self.name,
@@ -63,20 +61,6 @@ class SmsCampaign(db.Model):
         if not isinstance(user_phone_id, (int, long)):
             raise InvalidUsage('Invalid user_phone_id given')
         return cls.query.filter(cls.user_phone_id == user_phone_id).all()
-
-    @classmethod
-    def get_by_domain_id(cls, domain_id):
-        """
-        This returns all the sms-campaigns for given domain id
-        :param (int, long) domain_id: Id of user's domain
-        :return: Query to get all sms-campaigns for given domain_id
-        :rtype: Query object
-        """
-        if not isinstance(domain_id, (int, long)):
-            raise InvalidUsage('Invalid domain_id given. Valid value should be int greater than 0')
-        from user import User, UserPhone  # This has to be here to avoid circular import
-        return cls.query.join(UserPhone, cls.user_phone_id == UserPhone.id).\
-            join(User, UserPhone.user_id == User.id).filter(User.domain_id == domain_id)
 
 
 class SmsCampaignBlast(db.Model):
