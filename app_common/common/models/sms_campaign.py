@@ -138,6 +138,16 @@ class SmsCampaignReply(db.Model):
             raise InvalidUsage('Invalid candidate_phone_id given')
         return cls.query.filter(cls.candidate_phone_id == candidate_phone_id).all()
 
+    @classmethod
+    def get_by_blast_ids(cls, blast_ids):
+        """
+        This returns the query object to get all sms-campaign-reply objects for given blast_ids
+        :param list[int|long] blast_ids: List of blast_ids
+        """
+        if not isinstance(blast_ids, list):
+            raise InvalidUsage('blast_ids must be a list')
+        return cls.query.filter(cls.blast_id.in_(blast_ids))
+
 
 class SmsCampaignSmartlist(db.Model):
     __tablename__ = 'sms_campaign_smartlist'

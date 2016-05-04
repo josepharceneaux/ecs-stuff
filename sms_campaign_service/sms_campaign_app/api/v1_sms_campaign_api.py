@@ -1169,7 +1169,7 @@ class SmsCampaignReplies(Resource):
                                                                    CampaignUtils.SMS)
         # Get blast_ids related to requested campaign_id
         blast_ids = map(lambda blast: blast.id, campaign.blasts.all())
-        query = SmsCampaignReply.query.filter(SmsCampaignReply.blast_id.in_(blast_ids))
+        query = SmsCampaignReply.get_by_blast_ids(blast_ids)
         # Serialize replies of a campaign and get paginated response
         page, per_page = get_pagination_params(request)
         return get_paginated_response('replies', query, page, per_page)
