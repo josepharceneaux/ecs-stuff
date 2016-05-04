@@ -129,15 +129,13 @@ class TestScheduleCampaignUsingPOST(object):
         retry(get_blasts, max_sleeptime=60, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
               args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
 
-    def test_schedule_a_campaign_with_user_from_same_domain(self, smartlist_same_domain, campaign_data,  talent_pool,
+    def test_schedule_a_campaign_with_user_from_same_domain(self, smartlist_same_domain, campaign_in_db,  talent_pool,
                                                             token_first, token_same_domain,  candidate_device_first):
 
         retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=100, retry_exceptions=(AssertionError,),
               args=(smartlist_same_domain['id'], token_same_domain), kwargs={'count': 1})
 
-        data = campaign_data.copy()
-        data['smartlist_ids'] = [smartlist_same_domain['id']]
-        campaign_id = create_campaign(data, token_first)['id']
+        campaign_id = campaign_in_db['id']
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = schedule_campaign(campaign_id, data, token_same_domain, expected_status=(codes.OK,),
                                      smartlist_id=smartlist_same_domain['id'], candidate_count=1)

@@ -250,6 +250,7 @@ class PushCampaignBase(CampaignBase):
         It rollbacks the transaction otherwise it will cause other transactions (if any) to fail.
         :param uuid:
         """
+        logger.warn('Error occurred while sending push campaign.')
         db.session.rollback()
 
     def save(self, form_data):
