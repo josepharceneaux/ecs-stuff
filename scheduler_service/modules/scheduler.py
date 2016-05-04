@@ -11,7 +11,6 @@ import datetime
 
 # Third-party imports
 from urllib import urlencode
-from dateutil.tz import tzutc
 from apscheduler.events import EVENT_JOB_ERROR
 from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.triggers.date import DateTrigger
@@ -30,6 +29,7 @@ from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.utils.datetime_utils import DatetimeUtils
 from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
+from scheduler_service.common.utils.test_utils import get_user
 from scheduler_service.modules.json_schema import base_job_schema, one_time_task_job_schema
 from scheduler_service.modules.json_schema import periodic_task_job_schema
 from scheduler_service.validators import get_valid_data_from_dict, get_valid_url_from_dict, \
@@ -73,7 +73,7 @@ def apscheduler_listener(event):
                 except Exception as e:
                     logger.exception("apscheduler_listener: Error occurred while removing job")
                     raise e
-            elif isinstance(job.trigger, DateTrigger) and not job.run_date:
+            elif isinstance(job.trigger, DateTrigger) and not job.next_run_time:
                 scheduler.remove_job(job_id=job.id)
                 logger.info("apscheduler_listener: Job with id %s removed successfully" % job.id)
 
@@ -234,11 +234,13 @@ def schedule_job(data, user_id=None, access_token=None):
 
     trigger = str(job_config['task_type']).lower().strip()
 
+    callback_method = 'scheduler_service.modules.scheduler:run_job'
+
     if trigger == SchedulerUtils.PERIODIC:
         valid_data = validate_periodic_job(data)
 
         try:
-            job = scheduler.add_job('scheduler:run_job',
+            job = scheduler.add_job(callback_method,
                                     name=job_config['task_name'],
                                     trigger='interval',
                                     seconds=valid_data['frequency'],
@@ -254,13 +256,14 @@ def schedule_job(data, user_id=None, access_token=None):
             if not job_start_time_obj.is_in_future():
                 run_job(user_id, access_token, job_config['url'], content_type, job_config['post_data'], job_config.get('is_jwt_request'))
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
-        except Exception:
+        except Exception as e:
+            logger.error(e.message)
             raise JobNotCreatedError("Unable to create the job.")
         return job.id
     elif trigger == SchedulerUtils.ONE_TIME:
         valid_data = validate_one_time_job(data)
         try:
-            job = scheduler.add_job('scheduler:run_job',
+            job = scheduler.add_job(callback_method,
                                     name=job_config['task_name'],
                                     trigger='date',
                                     run_date=valid_data['run_datetime'],
@@ -270,7 +273,8 @@ def schedule_job(data, user_id=None, access_token=None):
                                     );
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
             return job.id
-        except Exception:
+        except Exception as e:
+            logger.error(e.message)
             raise JobNotCreatedError("Unable to create job. Invalid data given")
     else:
         raise TriggerTypeError("Task type not correct. Please use either %s or %s as task type."
@@ -293,11 +297,12 @@ def remove_tasks(ids, user_id):
     return removed
 
 
-def serialize_task(task):
+def serialize_task(task, is_admin_api=False):
     """
     Serialize task data to JSON object
     :param task: APScheduler task to convert to JSON dict
                  task.args: user_id, access_token, url, content_type, post_data, is_jwt_request
+    :param is_admin_api: If true, then request is made to admin API, so add user_email to task_dict.
     :return: JSON converted dict object
     """
     task_dict = None
@@ -341,5 +346,16 @@ def serialize_task(task):
 
     if task_dict and task.name and not task.args[0]:
         task_dict['task_name'] = task.name
+
+    # For scheduler admin API
+    if is_admin_api and task_dict:
+        if task.args[0]:
+            task_dict['user_id'] = task.args[0]
+            user = User.get_by_id(task.args[0])
+            if not user:
+                logger.error("serialize_task: user with id %s doesn't exist." % task.args[0])
+                task_dict['user_email'] = 'user_id: %s, User Deleted' % task.args[0]
+            else:
+                task_dict['user_email'] = user.email
 
     return task_dict
