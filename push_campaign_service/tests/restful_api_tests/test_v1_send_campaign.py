@@ -102,8 +102,6 @@ class TestSendCampaign(object):
         """
         campaign_id = campaign_in_db_multiple_smartlists['id']
         send_campaign(campaign_id, token_first, expected_status=(codes.OK,))
-        import time
-        time.sleep(60)
         response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
                          args=(campaign_id, token_first), kwargs={'count': 1})
         blasts = response['blasts']

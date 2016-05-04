@@ -98,6 +98,10 @@ def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, ca
     :param campaign_data: dict data to create campaign
     :return: campaign data
     """
+    retry(get_smartlist_candidates, max_sleeptime=100, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
+          args=(smartlist_first['id'], token_first), kwargs={'count': 1})
+    retry(get_smartlist_candidates, max_sleeptime=100, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
+          args=(smartlist_same_domain['id'], token_first), kwargs={'count': 1})
     data = campaign_data.copy()
     data['smartlist_ids'] = [smartlist_first['id'], smartlist_same_domain['id']]
     campaign_id = create_campaign(data, token_first)['id']
