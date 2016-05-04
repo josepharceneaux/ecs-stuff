@@ -1111,14 +1111,14 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
     update_dict = purge_dict(update_dict)
 
     # Update request dict with candidate names
-    update_dict.update(
+    names_dict = dict(
         first_name=first_name, middle_name=middle_name, last_name=last_name,
         formatted_name=formatted_name or format_full_name(first_name, middle_name, last_name)
     )
 
-    # Clear update_dict if every remaining key-values in update_dict is None
-    if all(v is None for v in update_dict.values()):
-        update_dict = {}
+    # Add names' data to update_dict if at least one of name is provided
+    if not all(v is None for v in names_dict.values()):
+        update_dict.update(**names_dict)
 
     # Candidate will not be updated if update_dict is empty
     if not update_dict:
