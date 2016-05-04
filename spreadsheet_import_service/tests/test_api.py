@@ -92,9 +92,20 @@ def test_import_candidates_from_file(access_token_first, user_first, talent_pool
     add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
 
     # Logged-in user trying to import 15 candidates from a csv spreadsheet
+    # Candidates with erroneous data will not be added, so the count will reflect only successfully added candidates
     response, status_code = import_spreadsheet_candidates(
         talent_pool_id=talent_pool.id, access_token=access_token_first,
         spreadsheet_file_name="test_spreadsheet_2.xls", is_csv=False, import_candidates=True,
+        domain_custom_field=domain_custom_fields[0]
+    )
+    print "\nresponse_content: {}".format(response)
+    assert status_code == 201
+    assert response.get('status') == 'complete'
+
+    # Another file containing candidates' addresses too
+    response, status_code = import_spreadsheet_candidates(
+        talent_pool_id=talent_pool.id, access_token=access_token_first,
+        spreadsheet_file_name="chineese_eng.xls", is_csv=False, import_candidates=True,
         domain_custom_field=domain_custom_fields[0]
     )
     print "\nresponse_content: {}".format(response)

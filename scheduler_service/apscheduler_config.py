@@ -1,9 +1,9 @@
 from apscheduler.executors.pool import ProcessPoolExecutor, ThreadPoolExecutor
 from apscheduler.jobstores.redis import RedisJobStore
-from scheduler_service.scheduler import flask_app
 from redis._compat import urlparse
 
 from scheduler_service import SchedulerUtils, TalentConfigKeys
+from scheduler_service.modules.scheduler import flask_app
 
 __author__ = 'saad'
 
@@ -14,7 +14,7 @@ job_store = RedisJobStore(host=url.hostname, password=url.password)
 
 executors = {
     'default': ThreadPoolExecutor(MAX_THREAD_POOLS),
-    'processpool': ProcessPoolExecutor(max_workers=10)
+    'processpool': ProcessPoolExecutor(max_workers=5)
 }
 
 jobstores = {

@@ -72,7 +72,8 @@ pylama
 pylama_pylint
 
 # Scheduling Service
-APScheduler==3.0.4
+#APScheduler branch
+git+https://github.com/saadqc/apscheduler.git@APS-0.1
 celery==3.1.20
 kombu==3.0.33
 flower==0.8.3
@@ -90,3 +91,4 @@ redis-collections==0.1.7
 # Misc
 boltons==16.1.1
 polling==0.3.0
+nameparser==0.3.16

@@ -8,6 +8,7 @@ from pytz import timezone
 from dateutil.parser import parse
 
 # App specific imports
+from scheduler_service import SchedulerUtils
 from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.utils.validators import is_valid_url_format
 
@@ -31,18 +32,24 @@ def get_valid_data_from_dict(data, key):
 
 def get_valid_task_name_from_dict(data, key):
     """
-    Check if datetime is valid, if no, then raise invalid value exception
+    Check if the task_name value has alphanumeric, unique and allowed characters.
+    Also `run_job` shouldn't be the task_name as its a default callback for every user based task
+    :param data: dictionary consisting of acpscheduler tasks
+    :type data: dict
+    :param key: key to get from data dictionary
+    :type key: str
     """
     assert isinstance(data, dict)
     value = str(get_valid_data_from_dict(data, key))
-    general_msg = "Invalid value of %s %s. %s should be unique and alphanumeric and allowed characters are [-, _ ]" % (key, value, key)
-    try:
-        allowed_characters = ['-', '_']
-        if any(c for c in value if not(c.isalnum() or c in allowed_characters)):
-            raise InvalidUsage(error_message=general_msg)
-    except Exception:
-        raise InvalidUsage(
-            error_message=general_msg)
+    general_msg = "Invalid value of %s %s. %s should be unique, alphanumeric and allowed characters are [-, _ ]. " \
+                  "Note: `%s` is not allowed as a task name." % (key, value, key, SchedulerUtils.RUN_JOB_METHOD_NAME)
+    if value.lower() == SchedulerUtils.RUN_JOB_METHOD_NAME.lower():
+        raise InvalidUsage(error_message=general_msg)
+
+    allowed_characters = ['-', '_']
+    if any(c for c in value if not(c.isalnum() or c in allowed_characters)):
+        raise InvalidUsage(error_message=general_msg)
+
     return value
 
 
