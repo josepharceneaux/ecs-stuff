@@ -14,12 +14,15 @@ but user is different.
 """
 import pytest
 import time
+
+from redo import retry
 from requests import codes
 
 from ..test_config_manager import load_test_config
 from ..utils.test_utils import (get_user, add_roles, create_candidate, get_candidate, delete_candidate,
                                 create_smartlist, delete_smartlist, delete_talent_pool, create_talent_pools,
-                                get_talent_pool, get_talent_pipeline, delete_talent_pipeline, create_talent_pipelines)
+                                get_talent_pool, get_talent_pipeline, delete_talent_pipeline, create_talent_pipelines,
+                                get_smartlist_candidates)
 
 ROLES = ['CAN_ADD_USERS', 'CAN_GET_USERS', 'CAN_DELETE_USERS', 'CAN_ADD_TALENT_POOLS',
          'CAN_GET_TALENT_POOLS', 'CAN_DELETE_TALENT_POOLS', 'CAN_ADD_TALENT_POOLS_TO_GROUP',
@@ -196,6 +199,8 @@ def smartlist_first(request, token_first, user_first, candidate_first, talent_po
     candidate_ids = [candidate_first['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_first)['smartlist']
     smartlist_id = smartlist['id']
+    retry(get_smartlist_candidates, max_sleeptime=100, sleeptime=3, attempts=35, retry_exceptions=(AssertionError,),
+          args=(smartlist_id, token_first), kwargs={'count': 1})
 
     def tear_down():
         delete_smartlist(smartlist_id, token_first,
@@ -219,6 +224,8 @@ def smartlist_second(request, token_second, user_second, candidate_second, talen
     candidate_ids = [candidate_second['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_second)['smartlist']
     smartlist_id = smartlist['id']
+    retry(get_smartlist_candidates, max_sleeptime=100, sleeptime=3, attempts=35, retry_exceptions=(AssertionError,),
+          args=(smartlist_id, token_second), kwargs={'count': 1})
 
     def tear_down():
         delete_smartlist(smartlist_id, token_second,
@@ -242,6 +249,8 @@ def smartlist_same_domain(request, token_same_domain, user_same_domain, candidat
     candidate_ids = [candidate_same_domain['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_same_domain)['smartlist']
     smartlist_id = smartlist['id']
+    retry(get_smartlist_candidates, max_sleeptime=100, sleeptime=3, attempts=35, retry_exceptions=(AssertionError,),
+          args=(smartlist_id, token_same_domain), kwargs={'count': 1})
 
     def tear_down():
         delete_smartlist(smartlist_id, token_same_domain,
