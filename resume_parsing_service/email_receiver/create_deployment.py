@@ -8,16 +8,18 @@ where n is incremented for each deployment based on the existing deployment dire
 
 This has been modified and linted from https://github.com/youngsoul/AlexaDeploymentSample
 """
+import argparse
 import os
 import subprocess
 import zipfile
 
-import argparse
-
 parser = argparse.ArgumentParser(description='Create an AWS Lambda Deployment for resume emails')
 parser.add_argument('--env', required=True, choices=['prod', 'staging'],
                     help='Which environment would you like to create a build for?')
+parser.add_argument('--venv', required=True,
+                    help='What is the relative location of the virtual environment folder?')
 args = parser.parse_args()
+
 ROOT_DEPLOYMENTS_DIR = "./deployments"
 
 """
@@ -25,7 +27,7 @@ List of files that should be included in the deployment
 Only the files listed here, and the libraries in the requirements.txt
 file will be included in the deployment.
 """
-DEPLOYMENT_FILES = ['email_process.py']
+DEPLOYMENT_FILES = ['email_process.py', 'python.conf', 'models.py', '/usr/lib64/libmysqlclient.so.18']
 
 if args.env == 'prod':
     print 'Building a prod deployment'
@@ -82,18 +84,37 @@ def make_deployment_dir():
 
     return new_deployment_dir_path, deployment_name
 
+# Keeping this temporarily in the event _copy_virtual_env_libs causes unforeseen complications.
+# def _install_requirements(deployment_reqs, deployment_dir):
+#     """
+#     pip install <requirements line> -t <deployment_dir>
+#     :param deployment_reqs
+#     :param deployment_dir:
+#     :return:
+#     """
+#     if os.path.exists(deployment_dir):
+#         for requirement in deployment_reqs:
+#             cmd = "pip install {0} -t {1}".format(requirement, deployment_dir).split()
+#             unused_return_code = subprocess.call(cmd, shell=False)
 
-def _install_requirements(deployment_reqs, deployment_dir):
+
+def _copy_virtual_env_libs(deployment_dir, venv_folder):
     """
-    pip install <requirements line> -t <deployment_dir>
-    :param deployment_reqs
-    :param deployment_dir:
+    Copies the installed libraries from the virtual environment library dirs.
+    :param deployment_dir: The name of the new deployment directory before zipping.
+    :param venv_folder: The name of the virtual environment directory.
     :return:
     """
-    if os.path.exists(deployment_dir):
-        for requirement in deployment_reqs:
-            cmd = "pip install {0} -t {1}".format(requirement, deployment_dir).split()
-            unused_return_code = subprocess.call(cmd, shell=False)
+    if os.path.exists(venv_folder):
+        lib_dir = "{}/lib/"
+        lib64_dir = "{}/lib64/"
+        lib_cmd = "cp -r {0} {1}".format(lib_dir, deployment_dir).split()
+        lib64_cmd = "cp -r {0} {1}".format(lib64_dir, deployment_dir).split()
+        unused_lib_cmd_code = subprocess.call(lib_cmd, shell=False)
+        unused_lib64_cmd_code = subprocess.call(lib64_cmd, shell=False)
+    else:
+        raise UserWarning('Virtual environment folder not found.')
+    pass
 
 
 def _copy_deployment_files(deployment_dir):
@@ -168,5 +189,5 @@ if __name__ == "__main__":
     (NEW_DEPLOYMENT_DIR, CURRENT_DEPLOYMENT_NAME) = make_deployment_dir()
     _copy_deployment_files(NEW_DEPLOYMENT_DIR)
     DEPLOYMENT_REQUIREMENTS = get_library_requirements()
-    _install_requirements(DEPLOYMENT_REQUIREMENTS, NEW_DEPLOYMENT_DIR)
+    _copy_virtual_env_libs(NEW_DEPLOYMENT_DIR, args.venv)
     zipdir(NEW_DEPLOYMENT_DIR, "{0}/{1}.zip".format(ROOT_DEPLOYMENTS_DIR, CURRENT_DEPLOYMENT_NAME))
