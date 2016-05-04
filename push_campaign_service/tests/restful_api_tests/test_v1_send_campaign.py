@@ -56,8 +56,7 @@ class TestSendCampaign(object):
         :param smartlist_first: smartlist object
         """
         # 200 case: Campaign Sent successfully
-        send_campaign(campaign_in_db['id'], token_first, expected_status=(codes.OK,),
-                      smartlist_id=smartlist_first['id'], candidate_count=1)
+        send_campaign(campaign_in_db['id'], token_first, expected_status=(codes.OK,))
 
         response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
                          args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
@@ -76,8 +75,7 @@ class TestSendCampaign(object):
         :param campaign_in_db: campaign in same domain but created by different user in same domain
         """
         # 200 case: Campaign Sent successfully
-        send_campaign(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,),
-                      smartlist_id=smartlist_first['id'], candidate_count=1)
+        send_campaign(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,))
 
         response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
                          args=(campaign_in_db['id'], token_same_domain), kwargs={'count': 1})

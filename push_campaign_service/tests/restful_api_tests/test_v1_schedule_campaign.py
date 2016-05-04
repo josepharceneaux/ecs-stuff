@@ -117,11 +117,8 @@ class TestScheduleCampaignUsingPOST(object):
 
     def test_schedule_a_campaign_with_valid_data(self, candidate_first, smartlist_first, campaign_in_db, talent_pool,
                                                  token_first, candidate_device_first):
-        retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=100, retry_exceptions=(AssertionError,),
-              args=(smartlist_first['id'], token_first), kwargs={'count': 1})
         data = generate_campaign_schedule_data()
-        response = schedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.OK,),
-                                     smartlist_id=smartlist_first['id'], candidate_count=1)
+        response = schedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.OK,))
         assert 'task_id' in response
         assert 'message' in response
         task_id = response['task_id']
@@ -132,13 +129,9 @@ class TestScheduleCampaignUsingPOST(object):
     def test_schedule_a_campaign_with_user_from_same_domain(self, smartlist_same_domain, campaign_in_db,  talent_pool,
                                                             token_first, token_same_domain,  candidate_device_first):
 
-        retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=100, retry_exceptions=(AssertionError,),
-              args=(smartlist_same_domain['id'], token_same_domain), kwargs={'count': 1})
-
         campaign_id = campaign_in_db['id']
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
-        response = schedule_campaign(campaign_id, data, token_same_domain, expected_status=(codes.OK,),
-                                     smartlist_id=smartlist_same_domain['id'], candidate_count=1)
+        response = schedule_campaign(campaign_id, data, token_same_domain, expected_status=(codes.OK,))
         assert 'task_id' in response
         assert 'message' in response
         task_id = response['task_id']
@@ -307,9 +300,4 @@ class TestUnscheduleCamapignUsingDELETE(object):
         """
         unschedule_campaign(campaign_in_db['id'], token_first, expected_status=(codes.OK,))
 
-
-def assert_campaign_blasts(campaign_id, token, expected_count=1):
-    response = get_blasts(campaign_id, token, expected_status=(codes.OK,))
-    blasts = response['blasts']
-    return len(blasts) == expected_count
 

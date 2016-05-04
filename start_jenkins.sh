@@ -56,5 +56,5 @@ done
 
 sleep 10
 
-py.test -n 48 push_campaign_service/tests/ -k test_campaign_send_with_multiple_smartlists
+py.test -n 48 push_campaign_service/tests/
 

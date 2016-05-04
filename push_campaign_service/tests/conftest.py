@@ -98,10 +98,6 @@ def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, ca
     :param campaign_data: dict data to create campaign
     :return: campaign data
     """
-    # retry(get_smartlist_candidates, max_sleeptime=100, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
-    #       args=(smartlist_first['id'], token_first), kwargs={'count': 1})
-    # retry(get_smartlist_candidates, max_sleeptime=100, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
-    #       args=(smartlist_same_domain['id'], token_first), kwargs={'count': 1})
     data = campaign_data.copy()
     data['smartlist_ids'] = [smartlist_first['id'], smartlist_same_domain['id']]
     campaign_id = create_campaign(data, token_first)['id']
@@ -174,7 +170,7 @@ def campaign_blast(token_first, campaign_in_db, smartlist_first, candidate_devic
     :param candidate_device_first: candidate device dict object
     :return: campaign's blast dict object
     """
-    send_campaign(campaign_in_db['id'], token_first, smartlist_id=smartlist_first['id'], candidate_count=1)
+    send_campaign(campaign_in_db['id'], token_first)
     response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
                      args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
     blasts = response['blasts']
@@ -195,7 +191,7 @@ def campaign_blasts(campaign_in_db, token_first, smartlist_first, candidate_devi
     """
     blasts_counts = 3
     for num in range(blasts_counts):
-        send_campaign(campaign_in_db['id'], token_first, smartlist_id=smartlist_first['id'], candidate_count=1)
+        send_campaign(campaign_in_db['id'], token_first)
     time.sleep(SLEEP_TIME)
     blasts = get_blasts(campaign_in_db['id'], token_first)['blasts']
     return blasts
@@ -213,7 +209,7 @@ def campaign_blasts_pagination(campaign_in_db, token_first, smartlist_first, can
     """
     blasts_counts = 15
     for num in range(blasts_counts):
-        send_campaign(campaign_in_db['id'], token_first, smartlist_id=smartlist_first['id'], candidate_count=1)
+        send_campaign(campaign_in_db['id'], token_first)
     time.sleep(2 * SLEEP_TIME)
     return blasts_counts
 
@@ -230,11 +226,8 @@ def schedule_a_campaign(request, smartlist_first, campaign_in_db, token_first):
     :rtype data: dict
     """
     task_id = None
-    retry(get_smartlist_candidates, max_sleeptime=60, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
-          args=(smartlist_first['id'], token_first), kwargs={'count': 1})
     data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
-    task_id = schedule_campaign(campaign_in_db['id'], data, token_first,
-                                smartlist_id=smartlist_first['id'], candidate_count=1)['task_id']
+    task_id = schedule_campaign(campaign_in_db['id'], data, token_first)['task_id']
 
     def fin():
         delete_scheduler_task(task_id, token_first,
@@ -255,8 +248,6 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
     :param candidate_device_first: candidate device dict object
     :return: url_conversion dict object
     """
-    retry(get_smartlist_candidates, attempts=30, sleeptime=3, max_sleeptime=100, retry_exceptions=(AssertionError,),
-          args=(smartlist_first['id'], token_first), kwargs={'count': 1})
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
     assert response.status_code == codes.OK
     # get campaign blast
