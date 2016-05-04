@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Push containers built by Jenkins to either staging or production
+echo "Pushing containers"
 
 eval $(aws ecr get-login --region us-east-1)
 
