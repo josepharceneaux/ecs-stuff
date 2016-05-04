@@ -15,10 +15,16 @@ class SchedulerUtils(object):
     CELERY_ROUTING_KEY = QUEUE + '_key'
     # Set the minimum frequency in seconds
     env = os.getenv(TalentConfigKeys.ENV_KEY) or 'dev'
-    # For qa and production minimum frequency would be one hour
+    # For QA and production minimum frequency would be one hour
     MIN_ALLOWED_FREQUENCY = 4 if env in ['dev', 'circle'] else 3600
     MAX_MISFIRE_TIME = 60   # Max misfire of job time => 60 seconds
 
     # Redis job ids prefix for user and general job
     REDIS_SCHEDULER_USER_TASK = 'apscheduler_job_ids:user_%s'
     REDIS_SCHEDULER_GENERAL_TASK = 'apscheduler_job_ids:general_%s'
+    # `user` and `general` are constants for user and general job types
+    CATEGORY_USER = 'user'
+    CATEGORY_GENERAL = 'general'
+
+    # Method name of default scheduler callback
+    RUN_JOB_METHOD_NAME = 'run_job'
