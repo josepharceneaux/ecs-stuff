@@ -299,6 +299,7 @@ class CampaignsTestsHelpers(object):
         """
         This returns all the blasts associated with given campaign
         """
+        # TODO--kindly validate campaign here and in followoing relevant methods
         db.session.commit()
         if not blasts_url:
             return campaign.blasts.all()
@@ -379,6 +380,7 @@ class CampaignsTestsHelpers(object):
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
         """
+        # TODO kindly validate mandatory params
         if assign_role:
             CampaignsTestsHelpers.assign_roles(talent_pipeline.user)
         if not data:
@@ -389,6 +391,7 @@ class CampaignsTestsHelpers(object):
 
         candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                              return_candidate_ids_only=True)
+        # TODO can we rmeove the following todo or in future?
         if assert_candidates:
             time.sleep(10)  # TODO: Need to remove this and use polling instead
         smartlist_data = {'name': smartlist_name,
@@ -404,6 +407,8 @@ class CampaignsTestsHelpers(object):
             except TimeoutException:
                 raise InternalServerError('Candidates not found for smartlist(id:%s) '
                                           'within given time range' % smartlist_id)
+
+            # TODO may be we can remove the print or instead log
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
         return smartlist_id, candidate_ids
 
@@ -596,6 +601,7 @@ def get_invalid_ids(last_id_of_obj_in_db):
     Given a database model object, here we create a list of two invalid ids. One of them
     is 0 and other one is 1000 plus the id of last record.
     """
+    # TODO--one line validation would be awesome
     return 0, last_id_of_obj_in_db + 1000
 
 
@@ -605,6 +611,7 @@ def _get_invalid_id_and_status_code_pair(invalid_ids):
     :param invalid_ids:
     :return:
     """
+    # TODO a none invalid_ids will breka things here, kindly validate
     return [(invalid_ids[0], InvalidUsage.http_status_code()),
             (invalid_ids[1], ResourceNotFound.http_status_code())]
 
@@ -616,4 +623,5 @@ def _get_activity(user_id, _type, source_id):
     :param (int, long) _type: Type number of activity
     :param (int, long) source_id: Id of activity source
     """
+    # TODO--kindly validate
     return Activity.get_by_user_id_type_source_id(user_id, _type, source_id)

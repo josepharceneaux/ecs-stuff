@@ -219,6 +219,7 @@ def sms_campaign_with_two_smartlists(request, campaign_valid_data,
     """
     This creates the SMS campaign for user_first using valid data and two smartlists.
     """
+    # TODO--comment needs updating I think
     smartlist_1_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
         access_token_first, talent_pipeline, create_phone=True)
     smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
@@ -268,6 +269,7 @@ def sms_campaign_with_no_candidate(request, campaign_valid_data,
     """
     This creates the SMS campaign for user_first using valid data.
     """
+    # TODO not sure if the comment is correct
     smartlist_id = FixtureHelpers.create_smartlist_with_search_params(access_token_first,
                                                                       talent_pipeline.id)
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
@@ -729,6 +731,7 @@ def create_sms_campaign_via_api(campaign_data, headers, user_id):
     response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                              headers=headers,
                              data=json.dumps(campaign_data))
+    # TODO may be we can remove prints
     print response.json()
     campaign_id = assert_campaign_creation(response, user_id, requests.codes.CREATED)
     response = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign_id,

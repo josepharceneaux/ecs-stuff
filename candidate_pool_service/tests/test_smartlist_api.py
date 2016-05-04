@@ -73,7 +73,7 @@ class TestSmartlistResource(object):
 
             total_found = response.json()['total_found']
             assert total_found == 20
-
+        # TODO, should this remain?
         # TODO Commenting out randomly failing test case so build passes. - basit
         # def test_create_smartlist_with_candidate_ids_using_pagination_params(self, access_token_first, talent_pipeline):
         #     """

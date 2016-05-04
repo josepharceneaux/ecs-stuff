@@ -204,9 +204,9 @@ class TestCampaignSchedule(object):
     def test_campaign_daily_schedule_and_validate_task_run(
             self, headers, user_first, access_token_first, sms_campaign_of_current_user):
         """
-        Here we schedule SMS campaign for daily bases. Then we check that task is run fine
+        Here we schedule SMS campaign on daily basis. Then we check whether that task runs fine
         and assert the blast, sends and activity have been created in database. It should run only
-        one time during tests.
+        once during tests.
         """
         data = generate_campaign_schedule_data()
         data['frequency_id'] = Frequency.DAILY
@@ -336,7 +336,7 @@ class TestURLRedirectionMethods(object):
             url_conversion_by_send_test_sms_campaign):
         """
         Here we first delete the campaign which internally deletes campaign send record,
-        and then test functionality of url_redirect. it should result in ResourceNotFound Error.
+        and then test functionality of url_redirect. It should result in ResourceNotFound Error.
         """
         _delete_sms_campaign(sms_campaign_of_current_user, headers)
         _assert_for_no_campaign_send_obj(url_conversion_by_send_test_sms_campaign)
@@ -387,7 +387,7 @@ class TestURLRedirectionMethods(object):
         """
         Here we pass blast as None, and then test functionality of
         validate_blast_candidate_url_conversion_in_db() handy function in campaign_utils.py.
-        it should result in ResourceNotFound Error.
+        It should result in ResourceNotFound Error.
         """
         _test_validate_blast_candidate_url_conversion_in_db(
             None, candidate_first, url_conversion_by_send_test_sms_campaign)

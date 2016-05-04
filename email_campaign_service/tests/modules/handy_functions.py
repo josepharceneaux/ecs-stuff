@@ -242,6 +242,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         # assert on activity for whole campaign send
         CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_SEND,
                                                   campaign.id)
+        # TODO--can we discuss and remove after talking to Osman? Thanks in adv and there are other such TODOs as well
         # TODO: commented after discussing with osman -- basit
         # if not email_client:
         #     assert poll(assert_and_delete_email, step=3, args=(campaign.subject,), timeout=60), \
