@@ -65,7 +65,7 @@ except Exception as e:
 
 
 # We are running single container tasks for the moment, but we may change that
-print "Processing {} containers for service {}".format(len(task_definition['taskDefinition']['containerDefinitions']), service)
+print "Processing {} containers for service {}".format(len(task_definition['taskDefinition']['containerDefinitions']), service_svc)
 for definition in task_definition['taskDefinition']['containerDefinitions']:
     image = definition['image']
     # Create a new image pointer with our new tag
@@ -84,7 +84,7 @@ try:
         print "Error Registering Task Definition. HTTP Status: {}".format(get_http_status(response))
         exit(1)
 except Exception as e:
-    print "Exception {} registering task definition for {}".format(e.message, service)
+    print "Exception {} registering task definition for {}".format(e.message, service_svc)
     exit(1)
 
 
@@ -115,7 +115,7 @@ if restart == 'restart':
         print "Exception {} updating service {}".format(e.message, service_svc)
         exit(1)
 
-    print "Successfully updated AWS service for {}".format(service)
+    print "Successfully updated AWS service for {}".format(service_svc)
 
 # Consider garbage collecting Task Definitions?
 
