@@ -80,7 +80,7 @@ def process_batch_item(user_id, create_candidate=True):
     # given a user does not have a Token.
     oauth_token = Token.query.filter_by(user_id=user_id).first() or None
     if not oauth_token:
-        raise TalentError('Error in process_batch_item - No token found for user with id {}:'.format(user_id))
+        raise InternalServerError('Error in process_batch_item - No token found for user with id {}:'.format(user_id))
     formatted_token_header = "bearer {}".format(oauth_token.access_token)
     talent_pools = get_users_talent_pools(formatted_token_header)
     parse_params = {
