@@ -115,7 +115,7 @@ class TestScheduleCampaignUsingPOST(object):
         schedule_campaign(campaign_in_db['id'], data, token_first,
                           expected_status=(codes.BAD_REQUEST,))
 
-    def test_schedule_a_campaign_with_valid_data(self, candidate_first, smartlist_first, campaign_in_db, talent_pool,
+    def test_schedule_a_campaign_with_valid_data(self, smartlist_first, campaign_in_db, talent_pool,
                                                  token_first, candidate_device_first):
         data = generate_campaign_schedule_data()
         response = schedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.OK,))
