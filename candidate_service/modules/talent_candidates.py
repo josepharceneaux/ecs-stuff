@@ -1113,8 +1113,9 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
     update_dict.update(first_name=first_name, middle_name=middle_name, last_name=last_name,
                        formatted_name=formatted_name)
 
-    # Remove keys with None values
-    update_dict = {k: v for k, v in update_dict.iteritems() if v is not None}
+    # Clear update_dict if every remaining key-values in update_dict is None
+    if all(v is None for v in update_dict.values()):
+        update_dict = {}
 
     # Candidate will not be updated if update_dict is empty
     if not update_dict:
