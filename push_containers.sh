@@ -48,6 +48,6 @@ done
 echo "Tagging branch with ${timestamp_tag}"
 
 # Need to turn off triggering from tag push..?
-git tag -a ${timestamp_tag} -m "Adding timestamp tag"
+# git tag -a ${timestamp_tag} -m "Adding timestamp tag"
 # This triggers another build. Have to figure out how to recognize it.
 # git push origin ${timestamp_tag}
