@@ -200,10 +200,10 @@ class CampaignsTestsHelpers(object):
     def assert_campaign_failure(cls, response, campaign, email_client=False,
                          expected_status=200):
         """
-        This asserts that if some data was invalid while sending the campaign,
-        campaign sending fails and no blasts are created.
+        If we try to send a campaign with invalid data, e.g. a campaign with no smartlist associated
+        or with 0 candidates, the campaign sending witll fail. This method asserts that the specified
+        campaign sending failed and no blasts have been created.
         """
-        # TODO: From the comments above and code below I don't what this method is all about
         assert response.status_code == expected_status
         assert response.json()
         if not email_client:

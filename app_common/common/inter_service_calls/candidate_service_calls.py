@@ -99,7 +99,11 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
 
 
 def get_candidate_subscription_preference(candidate_id, user_id):
-    # TODO--add meaningful comment and assert on params
+    """
+    Method to get the subscription preference of a candidate with specified candidate id.
+    :param candidate_id: Id of candidate for which subscription prederence is to be retrieved.
+    :param user_id: Id of owner user of the candidate.
+    """
     resp = http_request('get', CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id,
                         headers=create_oauth_headers(user_id=user_id))
     if resp.status_code == ForbiddenError.http_status_code():
