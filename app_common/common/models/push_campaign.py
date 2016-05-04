@@ -115,7 +115,7 @@ class PushCampaignBlast(db.Model):
         blast = cls.get_by_id(blast_id)
         if not blast:
             raise InvalidUsage('Blast record not found. Unable to update sends for PushCampaignBlast(id:%s)' % blast_id)
-        blast.update({'sends': blast.sends + count})
+        blast.update(sends=(blast.sends + count))
 
 
 class PushCampaignSend(db.Model):

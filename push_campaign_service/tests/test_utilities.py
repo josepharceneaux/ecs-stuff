@@ -198,12 +198,15 @@ def get_blasts(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE
     return response
 
 
-def get_blast(blast_id, campaign_id, token, expected_status=(200,)):
+def get_blast(blast_id, campaign_id, token, expected_status=(200,), sends=None):
     response = send_request('get', PushCampaignApiUrl.BLAST % (campaign_id, blast_id),
                             token)
 
     assert response.status_code in expected_status
-    return response.json()
+    response = response.json()
+    if sends:
+        assert response['blast']['sends'] == sends
+    return response
 
 
 def get_blast_sends(blast_id, campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE,

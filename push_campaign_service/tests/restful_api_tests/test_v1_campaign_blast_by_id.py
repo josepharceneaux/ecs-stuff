@@ -82,14 +82,12 @@ class TestCampaignBlastById(object):
         get_blast(blast_id, campaign_id, token_second,
                   expected_status=(codes.FORBIDDEN,))
 
-    def test_get_campaign_blast(self, token_first, campaign_blast, campaign_in_db):
+    def test_get_campaign_blast_with_valid_data(self, token_first, campaign_blast, campaign_in_db):
         # 200 case: Campaign Blast successfully
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
-        retry(get_blast_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
-              args=(blast_id, campaign_id, token_first), kwargs={'count': 1})
-        response = get_blast(blast_id, campaign_id, token_first,
-                             expected_status=(codes.OK,))
+        response = retry(get_blast, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                         args=(blast_id, campaign_id, token_first), kwargs={'sends': 1})
         blast = response['blast']
         assert blast['sends'] == 1
         assert blast['clicks'] == 0
@@ -100,10 +98,8 @@ class TestCampaignBlastById(object):
         # 200 case: Campaign Blast successfully
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
-        retry(get_blast_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
-              args=(blast_id, campaign_id, token_same_domain), kwargs={'count': 1})
-        response = get_blast(blast_id, campaign_id, token_same_domain,
-                             expected_status=(codes.OK,))
+        response = retry(get_blast, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                         args=(blast_id, campaign_id, token_same_domain), kwargs={'sends': 1})
         blast = response['blast']
         assert blast['sends'] == 1
         assert blast['clicks'] == 0

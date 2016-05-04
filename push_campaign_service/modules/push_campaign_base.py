@@ -193,7 +193,6 @@ class PushCampaignBase(CampaignBase):
                                                          candidate_id=candidate.id
                                                          )
                         PushCampaignSend.save(campaign_send)
-                        PushCampaignBlast.increment_sends(self.campaign_blast_id)
                         push_url_conversion = PushCampaignSendUrlConversion(
                             url_conversion_id=url_conversion_id,
                             send_id=campaign_send.id
