@@ -420,8 +420,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(blasts_url, basestring)
         blasts_get_response = send_request('get', blasts_url, access_token)
-        if blasts_get_response.ok:
-            return blasts_get_response.json()['blasts']
+        return blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
 
     @staticmethod
     def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=10):
@@ -516,9 +515,8 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
-        blasts = poll(CampaignsTestsHelpers.get_blasts, step=3,
-                      args=(campaign, access_token, blasts_url), timeout=timeout)
-        assert len(blasts) == expected_count
+        poll(lambda: len(CampaignsTestsHelpers.get_blasts(campaign, access_token, blasts_url)) == expected_count,
+             step=3, timeout=timeout)
 
     @staticmethod
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1,
