@@ -232,7 +232,7 @@ class TestRescheduleCampaignUsingPUT(object):
                             expected_status=(codes.BAD_REQUEST,))
 
     def test_reschedule_campaign_with_valid_data(self, token_first, campaign_in_db, talent_pool, candidate_first,
-                                             smartlist_first, schedule_a_campaign):
+                                             smartlist_first, schedule_a_campaign, candidate_device_first):
 
         # retry(get_smartlist_candidates, max_sleeptime=60, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
         #       args=(smartlist_first['id'], token_first), kwargs={'count': 1})
