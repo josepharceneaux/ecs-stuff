@@ -191,3 +191,9 @@ def test_lambda_handler(token_fixture, talent_pool_fixture, user_fixture):
     raw_attachment = get_email_attachment(email_file, 'unused Key')
     send_resume_to_service(token_fixture.access_token, raw_attachment,
                                   talent_pool_fixture.id, 'test')
+
+    with open(EMAIL_FILES_ROOT + 'nestedAttachment', 'r') as infile:
+        email_file = email.message_from_file(infile)
+    raw_attachment = get_email_attachment(email_file, 'unused Key')
+    send_resume_to_service(token_fixture.access_token, raw_attachment,
+                                  talent_pool_fixture.id, 'test')
