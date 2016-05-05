@@ -413,9 +413,9 @@ class CampaignsTestsHelpers(object):
         """
         This returns all the blasts associated with given campaign
         """
-        raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         db.session.commit()
         if not blasts_url:
+            raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
             return campaign.blasts.all()
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(blasts_url, basestring)
@@ -506,7 +506,7 @@ class CampaignsTestsHelpers(object):
         assert sends_verified
 
     @staticmethod
-    def assert_campaign_blasts(campaign, expected_count, access_token=None, blasts_url=None, timeout=10):
+    def verify_blasts(campaign, access_token, blasts_url, expected_count):
         """
         This function asserts that given campaign has expected number of blast objects
         """
@@ -514,8 +514,28 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(expected_count, int)
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
+        received_blasts_count = len(CampaignsTestsHelpers.get_blasts(campaign, access_token,
+                                                                     blasts_url))
+        if received_blasts_count == expected_count:
+            return True
+        else:
+            print 'Expected Blasts:%s' % expected_count
+            print 'Received Blasts:%s' % received_blasts_count
+            return False
+
+    @staticmethod
+    def assert_campaign_blasts(campaign, expected_count, access_token=None, blasts_url=None, timeout=10):
+        """
+        This function polls verify_blasts() to assert that given campaign has expected number
+        of blast objects.
+        """
+        raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
+        raise_if_not_instance_of(expected_count, int)
+        raise_if_not_instance_of(access_token, basestring) if access_token else None
+        raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
-        poll(lambda: len(CampaignsTestsHelpers.get_blasts(campaign, access_token, blasts_url)) == expected_count,
+        poll(lambda: CampaignsTestsHelpers.verify_blasts,
+             args=(campaign, access_token, blasts_url, expected_count),
              step=3, timeout=timeout)
 
     @staticmethod
