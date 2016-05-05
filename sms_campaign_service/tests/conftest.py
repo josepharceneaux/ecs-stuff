@@ -217,7 +217,7 @@ def sms_campaign_with_two_smartlists(request, campaign_valid_data,
                                      access_token_first, talent_pipeline,
                                      headers):
     """
-    This creates the SMS campaign for user_first using valid data and two smartlists.
+    This creates the SMS campaign for "user_first"(fixture) using valid data and two smartlists.
     It then returns the campaign object.
     """
     smartlist_1_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
