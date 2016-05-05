@@ -109,7 +109,7 @@ def candidate_first(request, talent_pool, token_first, user_first):
     """
     response = create_candidate(talent_pool['id'], token_first)
     candidate_id = response['candidates'][0]['id']
-    response = retry(get_candidate, max_sleeptime=60, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
+    response = retry(get_candidate, max_sleeptime=60, retry_exceptions=(AssertionError,),
                      args=(candidate_id, token_first))
     candidate = response['candidate']
 
@@ -132,7 +132,7 @@ def candidate_same_domain(request, user_same_domain, talent_pool, token_same_dom
     """
     response = create_candidate(talent_pool['id'], token_same_domain)
     candidate_id = response['candidates'][0]['id']
-    response = retry(get_candidate, max_sleeptime=60, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
+    response = retry(get_candidate, max_sleeptime=60, retry_exceptions=(AssertionError,),
                      args=(candidate_id, token_same_domain))
     candidate = response['candidate']
 
@@ -155,7 +155,7 @@ def candidate_second(request, token_second, talent_pool_second, user_second):
     """
     response = create_candidate(talent_pool_second['id'], token_second)
     candidate_id = response['candidates'][0]['id']
-    response = retry(get_candidate, max_sleeptime=60, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
+    response = retry(get_candidate, max_sleeptime=60, sleeptime=3, retry_exceptions=(AssertionError,),
                      args=(candidate_id, token_second))
     candidate = response['candidate']
 
@@ -183,7 +183,7 @@ def smartlist_first(request, token_first, user_first, candidate_first, talent_po
     candidate_ids = [candidate_first['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_first)['smartlist']
     smartlist_id = smartlist['id']
-    retry(get_smartlist_candidates, max_sleeptime=100, sleeptime=3, attempts=35, retry_exceptions=(AssertionError,),
+    retry(get_smartlist_candidates, max_sleeptime=100, sleeptime=3, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_first), kwargs={'count': 1})
 
     def tear_down():
@@ -208,7 +208,7 @@ def smartlist_second(request, token_second, user_second, candidate_second, talen
     candidate_ids = [candidate_second['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_second)['smartlist']
     smartlist_id = smartlist['id']
-    retry(get_smartlist_candidates, max_sleeptime=100, sleeptime=3, attempts=35, retry_exceptions=(AssertionError,),
+    retry(get_smartlist_candidates, max_sleeptime=100, sleeptime=3, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_second), kwargs={'count': 1})
 
     def tear_down():
@@ -233,7 +233,7 @@ def smartlist_same_domain(request, token_same_domain, user_same_domain, candidat
     candidate_ids = [candidate_same_domain['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_same_domain)['smartlist']
     smartlist_id = smartlist['id']
-    retry(get_smartlist_candidates, max_sleeptime=100, sleeptime=3, attempts=35, retry_exceptions=(AssertionError,),
+    retry(get_smartlist_candidates, max_sleeptime=100, sleeptime=3, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_same_domain), kwargs={'count': 1})
 
     def tear_down():
@@ -253,7 +253,6 @@ def talent_pool(request, token_first, user_first):
     """
     talent_pools = create_talent_pools(token_first)
     talent_pool_id = talent_pools['talent_pools'][0]
-    # talent_pool_obj = get_talent_pool(talent_pool_id, token_first)['talent_pool']
 
     def tear_down():
         delete_talent_pool(talent_pool_id, token_first,
@@ -271,7 +270,6 @@ def talent_pool_second(request, token_second, user_second):
     """
     talent_pools = create_talent_pools(token_second)
     talent_pool_id = talent_pools['talent_pools'][0]
-    # talent_pool_obj = get_talent_pool(talent_pool_id, token_second)['talent_pool']
 
     def tear_down():
         delete_talent_pool(talent_pool_id, token_second,

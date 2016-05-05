@@ -123,10 +123,10 @@ class TestScheduleCampaignUsingPOST(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        retry(get_blasts, max_sleeptime=60, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
+        retry(get_blasts, max_sleeptime=60, retry_exceptions=(AssertionError,),
               args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
 
-    def test_schedule_a_campaign_with_user_from_same_domain(self, smartlist_same_domain, campaign_in_db,  talent_pool,
+    def test_schedule_a_campaign_with_user_from_same_domain(self, smartlist_first, campaign_in_db,  talent_pool,
                                                             token_first, token_same_domain,  candidate_device_first):
 
         campaign_id = campaign_in_db['id']
@@ -136,7 +136,7 @@ class TestScheduleCampaignUsingPOST(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        retry(get_blasts, max_sleeptime=60, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
+        retry(get_blasts, max_sleeptime=60, retry_exceptions=(AssertionError,),
               args=(campaign_id, token_first), kwargs={'count': 1})
 
     def test_schedule_a_campaign_with_user_from_diff_domain(self, token_first, token_second,
@@ -234,7 +234,7 @@ class TestRescheduleCampaignUsingPUT(object):
     def test_reschedule_campaign_with_valid_data(self, token_first, campaign_in_db, talent_pool, candidate_first,
                                              smartlist_first, schedule_a_campaign, candidate_device_first):
 
-        # retry(get_smartlist_candidates, max_sleeptime=60, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
+        # retry(get_smartlist_candidates, max_sleeptime=60, retry_exceptions=(AssertionError,),
         #       args=(smartlist_first['id'], token_first), kwargs={'count': 1})
 
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
@@ -245,7 +245,7 @@ class TestRescheduleCampaignUsingPUT(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        retry(get_blasts, max_sleeptime=60, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
+        retry(get_blasts, max_sleeptime=60, sleeptime=3, retry_exceptions=(AssertionError,),
               args=(campaign_in_db['id'], token_first), kwargs={'count': 2})
 
     def test_reschedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,
