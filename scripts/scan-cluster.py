@@ -9,14 +9,20 @@ import boto3
 import argparse
 
 def validate_http_status(request_name, response):
+    '''
+    Validate that we got a good status on our request.
+    :param request_name: Caller name to put in error message.
+    :param response: The response to be validated.
+    '''
+    
     try:
         http_status = response['ResponseMetadata']['HTTPStatusCode']
     except Exception as e:
-        print "Exception with {}: {}".format(request_name, get_http_status(response), e.message)
+        print "Exception getting HTTP status {}: {}".format(request_name, e.message)
         exit(1)
 
     if http_status != 200:
-        print "Error with {}. HTTP Status: {}".format(request_name, get_http_status(response))
+        print "Error with {}. HTTP Status: {}".format(request_name, http_status)
         exit(1)
 
 def scan_cluster(cluster):
