@@ -362,7 +362,7 @@ class CampaignsTestsHelpers(object):
         and 'sends' or 'replies' for a particular campaign.
         :param (Response) response: Response object of HTTP request
         :param (int) count: Number of expected objects
-        :param (int) entity: Name of expected entity
+        :param (str) entity: Name of expected entity
         :param (bool) check_count: If True, will check number of objects
         """
         raise_if_not_instance_of(response, Response)
@@ -534,8 +534,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
-        poll(lambda: CampaignsTestsHelpers.verify_blasts,
-             args=(campaign, access_token, blasts_url, expected_count),
+        poll(CampaignsTestsHelpers.verify_blasts, args=(campaign, access_token, blasts_url, expected_count),
              step=3, timeout=timeout)
 
     @staticmethod

@@ -64,8 +64,9 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_sends, 
                                                  access_token=access_token,
                                                  blasts_url=SmsCampaignApiUrl.BLASTS % campaign.id,
                                                  timeout=blast_timeout)
-    # Poll blast sends
+    # Get sms-campaign-blast object
     sms_campaign_blast = CampaignsTestsHelpers.get_blast_by_index_with_polling(campaign, blast_index)
+    # Poll blast sends
     CampaignsTestsHelpers.assert_blast_sends(campaign, expected_sends, blast_index=blast_index,
                                              abort_time_for_sends=sends_timeout)
 
