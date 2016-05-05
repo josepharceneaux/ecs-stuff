@@ -295,6 +295,10 @@ class CandidatesResource(Resource):
             if not candidate_id:
                 raise InvalidUsage("Candidate ID is required", custom_error.INVALID_USAGE)
 
+            # Candidate must belong to user's domain
+            if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+                raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+
             # Check for candidate's existence
             candidate = Candidate.get_by_id(candidate_id)
             if not candidate:
@@ -446,7 +450,7 @@ class CandidateResource(Resource):
         # Check for candidate's existence and web-hidden status
         candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
-        # Candidate must belong to user, and must be in the same domain as the user's domain
+        # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
