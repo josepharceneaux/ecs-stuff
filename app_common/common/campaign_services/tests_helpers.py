@@ -518,7 +518,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(timeout, int)
         blasts = poll(CampaignsTestsHelpers.get_blasts, step=3,
                       args=(campaign, access_token, blasts_url), timeout=timeout)
-        return len(blasts) == expected_count
+        assert len(blasts) == expected_count
 
     @staticmethod
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1,
