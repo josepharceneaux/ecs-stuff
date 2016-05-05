@@ -36,7 +36,8 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_data, 
                                                         get_blasts, schedule_campaign,
                                                         associate_device_to_candidate,
                                                         get_candidate_devices, delete_campaigns,
-                                                        SLEEP_TIME, delete_candidate_device, get_blast_sends)
+                                                        SLEEP_TIME, delete_candidate_device, get_blast_sends,
+                                                        get_campaign_sends)
 
 fake = Faker()
 test_config = load_test_config()
@@ -171,8 +172,7 @@ def campaign_blast(token_first, campaign_in_db, smartlist_first, candidate_devic
     :return: campaign's blast dict object
     """
     send_campaign(campaign_in_db['id'], token_first)
-    response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
-                     args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
+    response = get_blasts(campaign_in_db['id'], token_first)
     blasts = response['blasts']
     assert len(blasts) == 1
     blast = blasts[0]
@@ -192,7 +192,6 @@ def campaign_blasts(campaign_in_db, token_first, smartlist_first, candidate_devi
     blasts_counts = 3
     for num in range(blasts_counts):
         send_campaign(campaign_in_db['id'], token_first)
-    time.sleep(SLEEP_TIME)
     blasts = get_blasts(campaign_in_db['id'], token_first)['blasts']
     return blasts
 
@@ -210,7 +209,6 @@ def campaign_blasts_pagination(campaign_in_db, token_first, smartlist_first, can
     blasts_counts = 15
     for num in range(blasts_counts):
         send_campaign(campaign_in_db['id'], token_first)
-    time.sleep(2 * SLEEP_TIME)
     return blasts_counts
 
 
@@ -250,14 +248,9 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
     """
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
     assert response.status_code == codes.OK
-    # get campaign blast
-    response = retry(get_blasts, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
-                     args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
-    blasts = response['blasts']
-    blast_id = blasts[0]['id']
     # get campaign sends
-    response = retry(get_blast_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
-                     args=(blast_id, campaign_in_db['id'], token_first), kwargs={'count': 1})
+    response = retry(get_campaign_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                     args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
     sends = response['sends']
     campaign_send = sends[0]
     response = send_request('get', PushCampaignApiUrl.URL_CONVERSION_BY_SEND_ID % campaign_send['id'], token_first)
@@ -283,16 +276,15 @@ def candidate_device_first(request, token_first, candidate_first):
     """
     candidate_id = candidate_first['id']
     device_id = test_config['PUSH_CONFIG']['device_id_1']
-    associate_device_to_candidate(candidate_id, device_id, token_first)
-    devices = get_candidate_devices(candidate_id, token_first)['devices']
-    assert len(devices) == 1
+    device = {'id':  associate_device_to_candidate(candidate_id, device_id, token_first),
+              'one_signal_id': device_id}
 
     def tear_down():
         delete_candidate_device(candidate_id, device_id, token_first, expected_status=(codes.OK,
                                                                                        codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
-    return devices[0]
+    return device
 
 
 @pytest.fixture(scope='function')
@@ -305,16 +297,15 @@ def candidate_device_same_domain(request, token_same_domain, candidate_same_doma
     """
     candidate_id = candidate_same_domain['id']
     device_id = test_config['PUSH_CONFIG']['device_id_1']
-    associate_device_to_candidate(candidate_id, device_id, token_same_domain)
-    devices = get_candidate_devices(candidate_id, token_same_domain)['devices']
-    assert len(devices) == 1
+    device = {'id':  associate_device_to_candidate(candidate_id, device_id, token_same_domain),
+              'one_signal_id': device_id}
 
     def tear_down():
         delete_candidate_device(candidate_id, device_id, token_same_domain,
                                 expected_status=(codes.OK, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
-    return devices[0]
+    return device
 
 
 @pytest.fixture(scope='function')
@@ -327,13 +318,12 @@ def candidate_device_second(request, token_second, candidate_second):
     """
     candidate_id = candidate_second['id']
     device_id = test_config['PUSH_CONFIG']['device_id_1']
-    associate_device_to_candidate(candidate_id, device_id, token_second)
-    devices = get_candidate_devices(candidate_id, token_second)['devices']
-    assert len(devices) == 1
+    device = {'id':  associate_device_to_candidate(candidate_id, device_id, token_second),
+              'one_signal_id': device_id}
 
     def tear_down():
         delete_candidate_device(candidate_id, device_id, token_second, expected_status=(codes.OK,
                                                                                         codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
-    return devices[0]
+    return device

@@ -82,12 +82,8 @@ class TestCampaignSends(object):
         campaign_id = campaign_in_db['id']
         blasts_count = campaign_blasts_pagination
         per_page = blasts_count - 5
-        time.sleep(3 * SLEEP_TIME)
         retry(get_campaign_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
               args=(campaign_id, token_first), kwargs={'per_page': per_page, 'count': per_page})
-        # response = get_campaign_sends(campaign_id, token_first, per_page=per_page,
-        #                               expected_status=(codes.OK,))
-        # assert len(response['sends']) == per_page
 
         response = get_campaign_sends(campaign_id, token_first, page=2, per_page=per_page,
                                       expected_status=(codes.OK,))

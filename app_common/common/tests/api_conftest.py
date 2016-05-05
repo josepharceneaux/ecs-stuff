@@ -66,9 +66,9 @@ def user_first(request, token_first):
     :return: user dictionary object
     """
     user_id = test_config['USER_FIRST']['user_id']
-    user = get_user(user_id, token_first)
-    add_roles(user_id, ROLES, token_first)
-    return user
+    # user = get_user(user_id, token_first)
+    # add_roles(user_id, ROLES, token_first)
+    return {'id': user_id}
 
 
 @pytest.fixture(scope='session')
@@ -80,9 +80,9 @@ def user_second(request, token_second):
     :return: user dictionary object
     """
     user_id = test_config['USER_SECOND']['user_id']
-    user = get_user(user_id, token_second)
-    add_roles(user_id, ROLES, token_second)
-    return user
+    # user = get_user(user_id, token_second)
+    # add_roles(user_id, ROLES, token_second)
+    return {'id': user_id}
 
 
 @pytest.fixture(scope='session')
@@ -94,9 +94,9 @@ def user_same_domain(request, token_same_domain):
     :return: user dictionary object
     """
     user_id = test_config['USER_SAME_DOMAIN']['user_id']
-    user = get_user(user_id, token_same_domain)
-    add_roles(user_id, ROLES, token_same_domain)
-    return user
+    # user = get_user(user_id, token_same_domain)
+    # add_roles(user_id, ROLES, token_same_domain)
+    return {'id': user_id}
 
 
 @pytest.fixture(scope='function')
@@ -108,9 +108,10 @@ def candidate_first(request, talent_pool, token_first, user_first):
     :param talent_pool: talent pool dict object associated to user_first
     """
     response = create_candidate(talent_pool['id'], token_first)
-    time.sleep(25)
     candidate_id = response['candidates'][0]['id']
-    candidate = get_candidate(candidate_id, token_first)['candidate']
+    response = retry(get_candidate, max_sleeptime=60, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
+                     args=(candidate_id, token_first))
+    candidate = response['candidate']
 
     def tear_down():
         delete_candidate(candidate_id, token_first,
@@ -130,9 +131,10 @@ def candidate_same_domain(request, user_same_domain, talent_pool, token_same_dom
     :param token_same_domain: authentication token
     """
     response = create_candidate(talent_pool['id'], token_same_domain)
-    time.sleep(25)
     candidate_id = response['candidates'][0]['id']
-    candidate = get_candidate(candidate_id, token_same_domain)['candidate']
+    response = retry(get_candidate, max_sleeptime=60, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
+                     args=(candidate_id, token_same_domain))
+    candidate = response['candidate']
 
     def tear_down():
         delete_candidate(candidate_id, token_same_domain,
@@ -152,35 +154,17 @@ def candidate_second(request, token_second, talent_pool_second, user_second):
     :param talent_pool_second: talent pool dict object from domain second
     """
     response = create_candidate(talent_pool_second['id'], token_second)
-    time.sleep(25)
     candidate_id = response['candidates'][0]['id']
-    candidate = get_candidate(candidate_id, token_second)['candidate']
+    response = retry(get_candidate, max_sleeptime=60, sleeptime=3, attempts=30, retry_exceptions=(AssertionError,),
+                     args=(candidate_id, token_second))
+    candidate = response['candidate']
 
     def tear_down():
         delete_candidate(candidate_id, token_second,
                          expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
 
-    # request.addfinalizer(tear_down)
-    return candidate
-
-
-@pytest.fixture()
-def talent_pipeline(request, token_first, user_first):
-    """
-    This fixture created a talent pipeline that is associated to user_first
-    :param request: request object
-    :param token_first: authentication token for user_first
-    """
-    talent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
-    talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
-    talent_pipeline_obj = get_talent_pipeline(talent_pipeline_id, token_first)['talent_pipeline']
-
-    def tear_down():
-        delete_talent_pipeline(talent_pipeline_id, token_first,
-                               expected_status=(codes.OK, codes.NOT_FOUND))
-
     request.addfinalizer(tear_down)
-    return talent_pipeline_obj
+    return candidate
 
 
 @pytest.fixture(scope='function')
@@ -269,14 +253,14 @@ def talent_pool(request, token_first, user_first):
     """
     talent_pools = create_talent_pools(token_first)
     talent_pool_id = talent_pools['talent_pools'][0]
-    talent_pool_obj = get_talent_pool(talent_pool_id, token_first)['talent_pool']
+    # talent_pool_obj = get_talent_pool(talent_pool_id, token_first)['talent_pool']
 
     def tear_down():
         delete_talent_pool(talent_pool_id, token_first,
                            expected_status=(codes.OK, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
-    return talent_pool_obj
+    return {'id': talent_pool_id}
 
 
 @pytest.fixture(scope='function')
@@ -287,12 +271,12 @@ def talent_pool_second(request, token_second, user_second):
     """
     talent_pools = create_talent_pools(token_second)
     talent_pool_id = talent_pools['talent_pools'][0]
-    talent_pool_obj = get_talent_pool(talent_pool_id, token_second)['talent_pool']
+    # talent_pool_obj = get_talent_pool(talent_pool_id, token_second)['talent_pool']
 
     def tear_down():
         delete_talent_pool(talent_pool_id, token_second,
                            expected_status=(codes.OK, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
-    return talent_pool_obj
+    return {'id': talent_pool_id}
 
