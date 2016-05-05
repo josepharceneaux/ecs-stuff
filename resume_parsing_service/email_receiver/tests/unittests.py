@@ -27,7 +27,8 @@ VALID_EMAILS = [
     EMAIL_FILES_ROOT + 'valid1',
     EMAIL_FILES_ROOT + 'valid2',
     EMAIL_FILES_ROOT + 'valid3',
-    EMAIL_FILES_ROOT + 'appleEmailValid'
+    EMAIL_FILES_ROOT + 'appleEmailValid',
+    EMAIL_FILES_ROOT + 'nestedAttachment'
 ]
 ####################################
 # No database connections required

@@ -155,7 +155,16 @@ def get_email_attachment(email_file, key):
         raise UserWarning(error_msg)
 
     attachment = payloads[1]
+
     if not attachment.get_filename():
+
+        # Check if the attachment is nested 1 level in.
+        if hasattr(attachment, 'get_payload'):
+            nested_items = attachment.get_payload()
+            for nested in nested_items:
+                if nested.get_filename():
+                    return nested
+
         # In the event we do not return an attachment we need to raise an error.
         error_msg = "User supplied no file from s3 file {}".format(key)
         logger.info(error_msg)
