@@ -26,7 +26,8 @@ EMAIL_FILES_ROOT = os.path.join(CURRENT_DIR, 'email_files/')
 VALID_EMAILS = [
     EMAIL_FILES_ROOT + 'valid1',
     EMAIL_FILES_ROOT + 'valid2',
-    EMAIL_FILES_ROOT + 'valid3'
+    EMAIL_FILES_ROOT + 'valid3',
+    EMAIL_FILES_ROOT + 'appleEmailValid'
 ]
 ####################################
 # No database connections required
@@ -63,6 +64,7 @@ def test_get_email_attachment_with_content():
         with open(electronic_mail, 'r') as infile:
             email_file = email.message_from_file(infile)
         raw_attachment = get_email_attachment(email_file, 'unused Key')
+        print raw_attachment.get_filename()
         assert raw_attachment
         assert isinstance(raw_attachment, email.message.Message)
 

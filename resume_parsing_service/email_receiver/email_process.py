@@ -147,23 +147,21 @@ def get_email_attachment(email_file, key):
     payloads = email_file.get_payload()
     payload_count = len(payloads)
 
-    if payload_count < PAYLOAD_QTY:
+    if payload_count != PAYLOAD_QTY:
         error_msg = "User supplied incorrect payload count of {} from file {}".format(
             payload_count, key
         )
         logger.info(error_msg)
         raise UserWarning(error_msg)
 
-    raw_attachments = payloads[1]
-    for attachment in raw_attachments.get_payload():
-        if not attachment.get_filename():
-            continue
-        return attachment
+    attachment = payloads[1]
+    if not attachment.get_filename():
+        # In the event we do not return an attachment we need to raise an error.
+        error_msg = "User supplied no file from s3 file {}".format(key)
+        logger.info(error_msg)
+        raise UserWarning(error_msg)
 
-    # In the event we do not return an attachment we need to raise an error.
-    error_msg = "User supplied no file from s3 file {}".format(key)
-    logger.info(error_msg)
-    raise UserWarning(error_msg)
+    return attachment
 
 
 def get_desired_talent_pool(simple_hash):
