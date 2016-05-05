@@ -115,7 +115,6 @@ def get_candidates_from_search_api(params, access_token):
     :param (dict) params: Params to be passed to search_service
     :param (str) access_token: Access Token
     """
-    # TODO--we need to validate params here and below
     response = requests.get(CandidateApiUrl.CANDIDATE_SEARCH_URI,
                             headers=create_oauth_headers(access_token), params=json.dumps(params))
     if response.ok:

@@ -74,7 +74,6 @@ class SmsCampaign(db.Model):
         """
         if not isinstance(domain_id, (int, long)):
             raise InvalidUsage('Invalid domain_id given. Valid value should be int greater than 0')
-        # TODO--just a random suggestion, what if we try 'import user.User as User_Model'---see if that works
         from user import User, UserPhone  # This has to be here to avoid circular import
         return cls.query.join(UserPhone, cls.user_phone_id == UserPhone.id).\
             join(User, UserPhone.user_id == User.id).filter(User.domain_id == domain_id)
