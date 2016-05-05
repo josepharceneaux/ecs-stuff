@@ -60,9 +60,9 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_sends, 
     # know about the changes that Celery session has made.
     db.session.commit()
     # GET blasts of given campaign
-    CampaignsTestsHelpers.assert_campaign_blasts(campaign, access_token,
+    CampaignsTestsHelpers.assert_campaign_blasts(campaign, expected_blasts,
+                                                 access_token=access_token,
                                                  blasts_url=SmsCampaignApiUrl.BLASTS % campaign.id,
-                                                 expected_count=expected_blasts,
                                                  timeout=blast_timeout)
     # Poll blast sends
     sms_campaign_blast = CampaignsTestsHelpers.get_blast_by_index_with_polling(campaign, blast_index)
