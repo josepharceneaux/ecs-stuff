@@ -63,10 +63,15 @@ def lambda_handler(event, unused_context):
         logger.info(error_msg)
         raise Exception(error_msg)
 
+    print 'Getting sender and talent_pool_hash for {}'.format(key)
     validated_sender, talent_pool_hash = validate_email_file(email_file, key)
+    print 'Getting access token for {}'.format(key)
     access_token = get_user_access_token(validated_sender)
+    print 'Getting attachment for {}'.format(key)
     raw_attachment = get_email_attachment(email_file, key)
+    print 'Getting talent_pool_id for {}'.format(key)
     talent_pool_id = get_desired_talent_pool(talent_pool_hash)
+    print 'Sending resume for {}'.format(key)
     send_resume_to_service(access_token, raw_attachment, talent_pool_id, key)
     print 'Finished lambda event.'
 
