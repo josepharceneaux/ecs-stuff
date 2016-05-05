@@ -352,7 +352,6 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(source_id, (int, long))
         # Need to commit the session because Celery has its own session, and our session does not
         # know about the changes that Celery session has made.
-        db.session.commit()
         activity = poll(_get_activity, args=(user_id, _type, source_id), step=3, timeout=60)
         assert activity
 
@@ -805,4 +804,7 @@ def _get_activity(user_id, _type, source_id):
     raise_if_not_instance_of(user_id, (int, long))
     raise_if_not_instance_of(_type, (int, long))
     raise_if_not_instance_of(source_id, (int, long))
+    # Need to commit the session because Celery has its own session, and our session does not
+    # know about the changes that Celery session has made.
+    db.session.commit()
     return Activity.get_by_user_id_type_source_id(user_id, _type, source_id)
