@@ -65,6 +65,7 @@ def migrate_stage_image_to_prod(service, tag):
     '''
     Update production to use the docker image currently in staging.
     :param service: The getTalent service name.
+    :param tag: The tag to be used (as in a version tag).
     '''
 
     print "Migrating {} to production".format(service)
