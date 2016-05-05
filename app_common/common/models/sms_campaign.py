@@ -126,6 +126,16 @@ class SmsCampaignSend(db.Model):
         return cls.query.order_by(-cls.sent_datetime).filter(
             cls.candidate_id == candidate_id).first()
 
+    @classmethod
+    def get_by_blast_ids(cls, blast_ids):
+        """
+        This returns the query object to get all send objects for given blast_ids
+        :param list[int|long] blast_ids: List of blast_ids
+        """
+        if not isinstance(blast_ids, list):
+            raise InvalidUsage('blast_ids must be a list')
+        return cls.query.filter(cls.blast_id.in_(blast_ids))
+
 
 class SmsCampaignReply(db.Model):
     __tablename__ = 'sms_campaign_reply'
@@ -144,6 +154,16 @@ class SmsCampaignReply(db.Model):
         if not isinstance(candidate_phone_id, (int, long)):
             raise InvalidUsage('Invalid candidate_phone_id given')
         return cls.query.filter(cls.candidate_phone_id == candidate_phone_id).all()
+
+    @classmethod
+    def get_by_blast_ids(cls, blast_ids):
+        """
+        This returns the query object to get all sms-campaign-reply objects for given blast_ids
+        :param list[int|long] blast_ids: List of blast_ids
+        """
+        if not isinstance(blast_ids, list):
+            raise InvalidUsage('blast_ids must be a list')
+        return cls.query.filter(cls.blast_id.in_(blast_ids))
 
 
 class SmsCampaignSmartlist(db.Model):

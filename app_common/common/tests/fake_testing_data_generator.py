@@ -1,4 +1,4 @@
-import uuid
+import uuid, random
 from faker import Faker
 from ..utils.handy_functions import sample_phone_number
 
@@ -57,4 +57,24 @@ class FakeCandidatesData(object):
         return [{'address_line_1': fake.street_address(), 'city': fake.city(),
                  'state': fake.state(), 'zip_code': fake.zipcode(), 'country': fake.country()}]
 
-    # Add other methods as an when required
+
+def college_majors():
+    """
+    Function will return some popular college majors
+    Note: dict-keys represent discipline and its key is a list of majors within that discipline.
+    Testing example:
+        >>> discipline = random.choice(college_majors().keys())     # => 'engineering'
+        >>> random.choice(college_majors()[discipline])             # => 'Nuclear Engineering'
+    :rtype:  dict
+    """
+    majors = {
+        'engineering': [
+            'Aerospace Engineering', 'Agricultural Engineering', 'Bioengineering',
+            'Biomedical Engineering', 'Ceramic Engineering', 'Chemical Engineering',
+            'Civil Engineering', 'Computer Engineering', 'Computer Science', 'Electrical Engineering',
+            'Geophysical Engineering', 'Materials Engineering', 'Mechanical Engineering',
+            'Mining & Mineral Engineering', 'Marine Engineering', 'Nuclear Engineering',
+            'Petroleum Engineering', 'Software Engineering', 'Systems Analysis & Engineering'
+        ]
+    }
+    return majors

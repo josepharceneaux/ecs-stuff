@@ -15,7 +15,7 @@ from polling import poll, TimeoutException
 # Application Specific
 from ..models.db import db
 from ..tests.conftest import fake
-from campaign_utils import get_model
+from campaign_utils import get_model, CampaignUtils
 from ..routes import CandidatePoolApiUrl
 from custom_errors import CampaignException
 from ..models.user import (DomainRole, User)
@@ -68,7 +68,7 @@ class CampaignsTestsHelpers(object):
         :param (str) url_after_delete: URL to be requested after deleting the campaign
         :param (str) method_after_delete: Name of method to be requested after deleting campaign
         :param (str) token: access token of logged-in user
-        :param data: Data to be sent in request after deleting campaign
+        :param (dict | None) data: Data to be sent in request after deleting campaign
         """
         campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
         # Delete the campaign first
@@ -303,6 +303,8 @@ class CampaignsTestsHelpers(object):
         db.session.commit()
         if not blasts_url:
             return campaign.blasts.all()
+        raise_if_not_instance_of(access_token, basestring)
+        raise_if_not_instance_of(blasts_url, basestring)
         blasts_get_response = send_request('get', blasts_url, access_token)
         if blasts_get_response.ok:
             return blasts_get_response.json()['blasts']
@@ -329,12 +331,16 @@ class CampaignsTestsHelpers(object):
         """
         This returns one particular blast associated with given campaign as specified by index.
         """
+        raise_if_not_instance_of(blast_index, int)
         db.session.commit()
         if not blasts_url:
             try:
+                raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
                 return campaign.blasts[blast_index]
             except IndexError:
                 return []
+        raise_if_not_instance_of(access_token, basestring)
+        raise_if_not_instance_of(blasts_url, basestring)
         blasts_get_response = send_request('get', blasts_url, access_token)
         if blasts_get_response.ok:
             return blasts_get_response.json()['blast']
@@ -344,9 +350,14 @@ class CampaignsTestsHelpers(object):
         """
         This returns all number of sends associated with given blast index of a campaign
         """
+        raise_if_not_instance_of(expected_count, int)
+        raise_if_not_instance_of(blast_index, int)
         db.session.commit()
         if not blast_url:
-            return campaign.blasts[blast_index].sends
+            raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
+            return campaign.blasts[blast_index].sends == expected_count
+        raise_if_not_instance_of(access_token, basestring)
+        raise_if_not_instance_of(blast_url, basestring)
         response = send_request('get', blast_url, access_token)
         if response.ok:
             return response.json()['blast']['sends'] == expected_count
@@ -355,8 +366,11 @@ class CampaignsTestsHelpers(object):
     def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20,
                            blast_url=None, access_token=None):
         """
-        This function asserts the particular blast of given campaign has expected number of sends
+        This function asserts that particular blast of given campaign has expected number of sends
         """
+        raise_if_not_instance_of(expected_count, int)
+        raise_if_not_instance_of(blast_index, int)
+        raise_if_not_instance_of(abort_time_for_sends, int)
         sends_verified = poll(CampaignsTestsHelpers.verify_sends, step=3,
                               args=(campaign, expected_count, blast_index, blast_url, access_token),
                               timeout=abort_time_for_sends)
@@ -365,7 +379,7 @@ class CampaignsTestsHelpers(object):
     @staticmethod
     def assert_campaign_blasts(campaign, access_token, blasts_url, expected_count, timeout=10):
         """
-        This function asserts the particular blast of given campaign has expected number of sends
+        This function asserts that given campaign has expected number of blast objects
         """
         blasts = poll(CampaignsTestsHelpers.get_blasts, step=3,
                       args=(campaign, access_token, blasts_url), timeout=timeout)
@@ -375,7 +389,7 @@ class CampaignsTestsHelpers(object):
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1,
                                         data=None, emails_list=False, create_phone=False,
                                         assign_role=False, assert_candidates=True,
-                                        smartlist_name=fake.word(), timeout=70):
+                                        smartlist_name=fake.word(), timeout=80):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.

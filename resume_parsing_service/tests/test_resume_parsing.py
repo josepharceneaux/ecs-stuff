@@ -255,6 +255,14 @@ def test_2448_3264_jpg_by_post(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
+def test_jpg_in_pdf(token_fixture, user_fixture):
+    """Test that large jpgs files can be posted."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'jpg_in_pdf.pdf')
+    assert_non_create_content_and_status(content, status)
+
+
 ####################################################################################################
 # Test Candidate Creation
 ####################################################################################################

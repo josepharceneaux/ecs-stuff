@@ -13,7 +13,22 @@ from candidate_service.common.utils.handy_functions import sample_phone_number
 
 # Faker
 from faker import Faker
+
 fake = Faker()
+
+
+def college_majors():
+    majors = {
+        'engineering': [
+            'Aerospace Engineering', 'Agricultural Engineering', 'Bioengineering',
+            'Biomedical Engineering', 'Ceramic Engineering', 'Chemical Engineering',
+            'Civil Engineering', 'Computer Engineering', 'Computer Science', 'Electrical Engineering',
+            'Geophysical Engineering', 'Materials Engineering', 'Mechanical Engineering',
+            'Mining & Mineral Engineering', 'Marine Engineering', 'Nuclear Engineering',
+            'Petroleum Engineering', 'Software Engineering', 'Systems Analysis & Engineering'
+        ]
+    }
+    return majors
 
 
 def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, custom_fields=None):
