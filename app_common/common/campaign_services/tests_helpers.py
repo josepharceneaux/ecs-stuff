@@ -242,9 +242,6 @@ class CampaignsTestsHelpers(object):
         :param (int, long) type_: Type number of activity
         :param (int, long) source_id: Id of activity source
         """
-        # Need to commit the session because Celery has its own session, and our session does not
-        # know about the changes that Celery session has made.
-        db.session.commit()
         activity = poll(_get_activity, args=(user_id, type_, source_id), step=3, timeout=60)
         assert activity
 
@@ -630,4 +627,7 @@ def _get_activity(user_id, _type, source_id):
     :param (int, long) _type: Type number of activity
     :param (int, long) source_id: Id of activity source
     """
+    # Need to commit the session because Celery has its own session, and our session does not
+    # know about the changes that Celery session has made.
+    db.session.commit()
     return Activity.get_by_user_id_type_source_id(user_id, _type, source_id)
