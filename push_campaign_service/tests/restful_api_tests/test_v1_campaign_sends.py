@@ -85,14 +85,13 @@ class TestCampaignSends(object):
         retry(get_campaign_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
               args=(campaign_id, token_first), kwargs={'per_page': per_page, 'count': per_page})
 
-        response = get_campaign_sends(campaign_id, token_first, page=2, per_page=per_page,
-                                      expected_status=(codes.OK,))
-        assert len(response['sends']) == (blasts_count - per_page)
+        retry(get_campaign_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+              args=(campaign_id, token_first),
+              kwargs={'page': 2, 'per_page': per_page, 'count': (blasts_count - per_page)})
 
         per_page = blasts_count
-        response = get_campaign_sends(campaign_id, token_first, per_page=per_page,
-                                      expected_status=(codes.OK,))
-        assert len(response['sends']) == blasts_count
+        retry(get_campaign_sends, attempts=30, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+              args=(campaign_id, token_first), kwargs={'per_page': per_page, 'count': blasts_count})
 
         response = get_campaign_sends(campaign_id, token_first, page=2, per_page=20,
                                       expected_status=(codes.OK,))

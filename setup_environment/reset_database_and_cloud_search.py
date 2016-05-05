@@ -91,7 +91,9 @@ INSERT INTO token VALUES (1,'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z',1,'Bearer
 INSERT INTO domain_role (role_name) VALUES ("CAN_ADD_USER_ROLES"),("CAN_DELETE_USER_ROLES"), ("CAN_ADD_USERS"),
 ("CAN_GET_USERS"),("CAN_DELETE_USERS"),("CAN_ADD_TALENT_POOLS"),("CAN_GET_TALENT_POOLS"),("CAN_DELETE_TALENT_POOLS"),("CAN_ADD_TALENT_POOLS_TO_GROUP"),("CAN_ADD_CANDIDATES"),("CAN_GET_CANDIDATES"),
 ("CAN_DELETE_CANDIDATES"),("CAN_ADD_TALENT_PIPELINE_SMART_LISTS"), ("CAN_DELETE_TALENT_PIPELINE_SMART_LISTS"), ("CAN_ADD_TALENT_PIPELINES");
-INSERT INTO user_scoped_roles (UserId, RoleId) VALUES (1, 1), (1,2),(2,1),(2,2),(3,1),(3,2);
+INSERT INTO user_scoped_roles (UserId, RoleId) select 1, id from domain_role;
+INSERT INTO user_scoped_roles (UserId, RoleId) select 2, id from domain_role;
+INSERT INTO user_scoped_roles (UserId, RoleId) select 3, id from domain_role;
 '''
 
 sql = text(q)
