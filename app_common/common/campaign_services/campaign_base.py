@@ -493,6 +493,7 @@ class CampaignBase(object):
         :return: Campaign obj if campaign belongs to user's domain
         :rtype: SmsCampaign or some other campaign obj
         """
+        raise_if_not_instance_of(campaign_id, (int, long))
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         raise_if_not_instance_of(current_user, User)
         campaign_obj = CampaignUtils.get_campaign(campaign_id, current_user.domain_id,
