@@ -1083,31 +1083,26 @@ class CampaignBase(object):
         logger = current_app.config[TalentConfigKeys.LOGGER]
         campaign = self.get_campaign_if_domain_is_valid(campaign_id, self.user,
                                                         self.campaign_type)
-        CampaignUtils.raise_if_not_instance_of_campaign_models(campaign)
-        self.campaign = campaign
-        campaign_type = self.campaign_type
-        logger.debug('send: %s(id:%s) is being sent. User(id:%s)' % (campaign_type,
+        logger.debug('send: %s(id:%s) is being sent. User(id:%s)' % (self.campaign_type,
                                                                      campaign.id,
                                                                      self.user.id))
         if not self.campaign.body_text:
             # body_text is empty
-            raise InvalidUsage('Body text is empty for %s(id:%s)' % (campaign_type, campaign.id),
+            raise InvalidUsage('Body text is empty for %s(id:%s)' % (self.campaign_type, campaign.id),
                                error_code=CampaignException.EMPTY_BODY_TEXT)
         # Get smartlists associated to this campaign
-        campaign_smartlist_model = get_model(campaign_type, campaign_type + '_smartlist')
-        campaign_smartlists = CampaignUtils.get_campaign_smartlist_obj_by_campaign_id(
-            campaign_smartlist_model, campaign.id)
+        campaign_smartlists = self.campaign.smartlists
         if not campaign_smartlists:
             raise InvalidUsage(
                 'No smartlist is associated with %s(id:%s). (User(id:%s))'
-                % (campaign_type, campaign.id, self.user.id),
+                % (self.campaign_type, campaign.id, self.user.id),
                 error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
         candidates = sum(map(self.get_smartlist_candidates, campaign_smartlists), [])
         if not candidates:
             raise InvalidUsage(
                 'No candidate is associated with smartlist(s). %s(id:%s). '
                 'campaign smartlist ids are %s'
-                % (campaign_type, campaign.id, [smartlist.id for smartlist in campaign_smartlists]),
+                % (self.campaign_type, campaign.id, [smartlist.id for smartlist in campaign_smartlists]),
                 error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
         # create SMS campaign blast
         self.campaign_blast_id = self.create_campaign_blast(self.campaign)

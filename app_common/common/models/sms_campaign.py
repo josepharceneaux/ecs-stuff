@@ -26,11 +26,11 @@ class SmsCampaign(db.Model):
     # Relationships
     blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',
                           passive_deletes=True, lazy='dynamic', backref='campaign')
-    campaign_smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
-                                       passive_deletes=True, backref='campaign')
+    smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
+                              passive_deletes=True, backref='campaign')
 
     def __repr__(self):
-        return "<SmsCampaign (name = %r)>" % self.name
+        return "<SmsCampaign (id = %d, name = %s)>" % (self.id, self.name)
 
     def to_dict(self, include_fields=None):
         """
@@ -47,7 +47,7 @@ class SmsCampaign(db.Model):
                        "end_datetime": DatetimeUtils.utc_isoformat(self.end_datetime) if self.end_datetime else None,
                        "added_datetime": DatetimeUtils.utc_isoformat(self.added_datetime) if self.added_datetime else None,
                        "body_text": self.body_text,
-                       "list_ids": [campaign_smartlist.smartlist_id for campaign_smartlist in self.campaign_smartlists],
+                       "list_ids": [campaign_smartlist.smartlist_id for campaign_smartlist in self.smartlists],
                        "scheduler_task_id": self.scheduler_task_id}
         return return_dict
 
