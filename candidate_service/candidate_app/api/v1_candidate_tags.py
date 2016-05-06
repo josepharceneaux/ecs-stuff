@@ -10,7 +10,7 @@ from flask_restful import Resource
 
 # Validators
 from candidate_service.modules.validators import (
-    get_candidate_if_exists, does_candidate_belong_to_users_domain, get_json_data_if_it_passed_validation
+    get_candidate_if_exists, does_candidate_belong_to_users_domain, get_json_data_if_validated
 )
 
 # Modules
@@ -34,7 +34,7 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 class CandidateTagResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def post(self, **kwargs):
         """
         Function will create tags
@@ -49,11 +49,12 @@ class CandidateTagResource(Resource):
         :return:  {'tags': [{'id': int}, {'id': int}, ...]}
         """
         # Get json data if exists and validate its schema
-        body_dict = get_json_data_if_it_passed_validation(request, tag_schema, False)
+        body_dict = get_json_data_if_validated(request, tag_schema, False)
 
         # Description is a required field (must not be empty)
         for tag in body_dict['tags']:
-            if not tag['name'].strip():
+            tag['name'] = tag['name'].strip().lower()  # remove whitespaces while validating
+            if not tag['name']:
                 raise InvalidUsage('Tag name is a required field', custom_error.MISSING_INPUT)
 
         # Authenticated user & candidate ID
@@ -104,8 +105,8 @@ class CandidateTagResource(Resource):
         """
         Function will update candidate's tag(s)
         Endpoints:
-             i. PUT /v1/candidates/:candidate_id/tags
-            ii. PUT /v1/candidates/:candidate_id/tags/:id
+             i. PATCH /v1/candidates/:candidate_id/tags
+            ii. PATCH /v1/candidates/:candidate_id/tags/:id
         Example:
             >>> url = 'host/v1/candidates/4/tags' or 'host/v1/candidates/4/tags/57'
             >>> headers = {'Authorization': 'Bearer edo9rdSKN8hYuc1zBWMfLXpXFd4ZbE'}
@@ -113,12 +114,13 @@ class CandidateTagResource(Resource):
             >>> requests.patch(url=url, headers=headers, data=json.dumps(data))
         """
         # Get json data if exists and validate its schema
-        body_dict = get_json_data_if_it_passed_validation(request, tag_schema, False)
+        body_dict = get_json_data_if_validated(request, tag_schema, False)
 
         # Description is a required field (must not be empty)
         tags, tag = body_dict.get('tags'), body_dict.get('tag')
         for tag in tags:
-            if not tag['name'].strip():
+            tag['name'] = tag['name'].strip().lower()  # remove whitespaces while validating
+            if not tag['name']:
                 raise InvalidUsage('Tag name is a required field', custom_error.MISSING_INPUT)
 
         # Authenticated user, candidate ID, and tag ID
@@ -143,7 +145,7 @@ class CandidateTagResource(Resource):
         updated_tag_ids = update_candidate_tags(candidate_id=candidate_id, tags=tags)
         return {'updated_tags': [{'id': tag_id} for tag_id in updated_tag_ids]}
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Function will delete candidate's tag(s)

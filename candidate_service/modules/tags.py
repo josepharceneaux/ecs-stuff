@@ -27,7 +27,7 @@ def create_tags(candidate_id, tags):
             db.session.flush()
 
         # Insert into CandidateTag table
-        candidate_tag_object = CandidateTag.query.filter_by(candidate_id=candidate_id, tag_id=tag_object.id).first()
+        candidate_tag_object = CandidateTag.get_by(candidate_id=candidate_id, tag_id=tag_object.id)
         if candidate_tag_object:
             raise InvalidUsage("Candidate ({}) is already associated with tag \"{}\"".format(candidate_id, tag_name),
                                error_code=custom_error.TAG_EXISTS,
@@ -60,14 +60,14 @@ def get_tags(candidate_id, tag_id=None):
         return {'name': tag_object.name}
 
     # Return all of candidate's tags if tag_id is not provided
-    candidate_tags = CandidateTag.query.filter_by(candidate_id=candidate_id).all()
+    candidate_tags = CandidateTag.get_all(candidate_id)
     if not candidate_tags:
         raise NotFoundError('Candidate is not associated with any tags', custom_error.TAG_NOT_FOUND)
 
     tags = []
     for candidate_tag in candidate_tags:
         tag = Tag.get(candidate_tag.tag_id)
-        tags.append(dict(name=tag.name))
+        tags.append(dict(id=tag.id, name=tag.name))
 
     return {'tags': tags}
 
@@ -86,7 +86,8 @@ def update_candidate_tag(candidate_id, tag_id, tag_name):
         raise NotFoundError("Tag ID: {} is not recognized".format(tag_id), custom_error.TAG_NOT_FOUND)
 
     # Candidate must already be associated with provided tag_id
-    candidate_tag_object = CandidateTag.get_one(candidate_id, tag_id)
+    candidate_tag_query = CandidateTag.query.filter_by(candidate_id=candidate_id, tag_id=tag_id)
+    candidate_tag_object = candidate_tag_query.first()
     if not candidate_tag_object:
         raise InvalidUsage('Candidate ({}) is not associated with Tag ({})'.format(candidate_id, tag_id),
                            custom_error.INVALID_USAGE)
@@ -99,8 +100,7 @@ def update_candidate_tag(candidate_id, tag_id, tag_name):
         db.session.flush()
 
     # Update
-    update_dict = dict(candidate_id=candidate_id, tag_id=tag_object.id)
-    candidate_tag_object.update(**update_dict)
+    candidate_tag_query.update(dict(candidate_id=candidate_id, tag_id=tag_object.id))
     db.session.commit()
     return {'id': tag_object.id}
 
@@ -114,7 +114,7 @@ def update_candidate_tags(candidate_id, tags):
     """
     created_tag_ids, updated_tag_ids = [], []
     for tag in tags:
-        tag_name, tag_id = tag['name'], tag.get('id')  # TODO: make sure tag_name is stripped and not empty
+        tag_name, tag_id = tag['name'], tag.get('id')
         tag_object = Tag.get_by_name(tag_name)
 
         # If Tag is not found, create it
@@ -134,13 +134,13 @@ def update_candidate_tags(candidate_id, tags):
             raise NotFoundError("Tag ID: {} is not recognized".format(tag_id), custom_error.TAG_NOT_FOUND)
 
         # Candidate must already be associated with provided tag_id
-        candidate_tag_object = CandidateTag.get_one(candidate_id, tag_id)
-        if not candidate_tag_object:
+        candidate_tag_query = CandidateTag.query.filter_by(candidate_id=candidate_id, tag_id=tag_id)
+        if not candidate_tag_query.first():
             raise InvalidUsage('Candidate ({}) is not associated with Tag ({})'.format(candidate_id, tag_id),
                                custom_error.INVALID_USAGE)
         # Update
-        candidate_tag_object.update(**update_dict)
-        updated_tag_ids.append(tag_id)
+        candidate_tag_query.update(update_dict)
+        updated_tag_ids.append(tag_object.id)
 
     db.session.commit()
     return updated_tag_ids
@@ -157,8 +157,8 @@ def delete_tag(candidate_id, tag_id):
     if not candidate_tag_object:
         raise NotFoundError('Candidate ({}) is not associated with tag: {}'.format(candidate_id, tag_id),
                             custom_error.INVALID_USAGE)
-    db.session.delete(candidate_tag_object)
-    db.session.commit()
+    candidate_tag_object.delete()
+
     return {'id': tag_id}
 
 
@@ -170,7 +170,7 @@ def delete_tags(candidate_id):
     """
     deleted_tag_ids = []
     for candidate_tag in CandidateTag.get_all(candidate_id):
-        db.session.delete(candidate_tag)
         deleted_tag_ids.append(candidate_tag.tag_id)
-    db.session.commit()
+        candidate_tag.delete()
+
     return [{'id': tag_id} for tag_id in deleted_tag_ids]

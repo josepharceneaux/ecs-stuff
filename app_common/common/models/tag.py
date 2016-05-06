@@ -8,7 +8,7 @@ from ..models.candidate import Candidate
 class Tag(db.Model):
     __tablename__ = 'tag'
     id = Column(INTEGER, primary_key=True)
-    name = Column(VARCHAR(12), nullable=False)
+    name = Column(VARCHAR(12), nullable=False, unique=True)
     added_datetime = Column(TIMESTAMP, default=datetime.datetime.utcnow)
     updated_datetime = db.Column(TIMESTAMP, default=datetime.datetime.utcnow)
 
@@ -33,6 +33,19 @@ class CandidateTag(db.Model):
 
     def __repr__(self):
         return "<CandidateTag (candidate_id = {})>".format(self.candidate_id)
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    @classmethod
+    def get_by(cls, **filters):
+        """
+        Function will return the first matching object filtered by keywords
+        :param filters: keywords, e.g. (candidate_id=1, tag_id=2)
+        :rtype:  CandidateTag
+        """
+        return cls.query.filter_by(**filters).first()
 
     @classmethod
     def get_all(cls, candidate_id):

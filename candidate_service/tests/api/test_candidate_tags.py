@@ -42,7 +42,8 @@ class TestCreateCandidateTags(object):
         Test:  Add tags to candidate
         Expect: 201
         """
-        AddUserRoles.add(user_first)
+        AddUserRoles.edit(user_first)
+
         # Create candidate Tags
         create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
@@ -54,7 +55,7 @@ class TestCreateCandidateTags(object):
         Test:  Add duplicate tags
         Expect: 201, but no duplicate tags should be in db
         """
-        AddUserRoles.add_and_get(user_first)
+        AddUserRoles.all_roles(user_first)
 
         # Create candidate tags
         name = str(uuid.uuid4())[:5]
@@ -74,7 +75,7 @@ class TestGetCandidateTags(object):
         Test:  Add & retrieve candidate tags
         Expect: 200
         """
-        AddUserRoles.add_and_get(user_first)
+        AddUserRoles.all_roles(user_first)
 
         # Create candidate Tags
         send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
@@ -84,13 +85,14 @@ class TestGetCandidateTags(object):
         print response_info(get_resp)
         assert get_resp.status_code == 200
         assert len(get_resp.json()['tags']) == len(data['tags'])
+        assert 'id' in get_resp.json()['tags'][0]
 
     def test_get_candidate_tag(self, access_token_first, user_first, candidate_first):
         """
         Test:  Retrieve a single tag
         Expect: 200
         """
-        AddUserRoles.add_and_get(user_first)
+        AddUserRoles.all_roles(user_first)
 
         # Create candidate Tags
         create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
@@ -127,6 +129,30 @@ class TestUpdateCandidateTags(object):
         update_resp = send_request('patch', update_url, access_token_first, update_data)
         print response_info(update_resp)
 
+    def test_update_multiple_tags(self, user_first, access_token_first, candidate_first):
+        """
+        Test:  Update multiple candidate tags
+        """
+        AddUserRoles.all_roles(user_first)
+
+        # Create two tags for candidate
+        url = CandidateApiUrl.TAGS % candidate_first.id
+        create_resp = send_request('post', url, access_token_first, data)
+        print response_info(create_resp)
+
+        # Get tag IDs
+        tag_1_id, tag_2_id = create_resp.json()['tags'][0]['id'], create_resp.json()['tags'][1]['id']
+
+        # Update one of candidate's tag
+        update_data = {'tags': [
+            {'id': tag_1_id, 'name': str(uuid.uuid4())[:5]}, {'id': tag_2_id, 'name': str(uuid.uuid4())[:5]}
+        ]}
+        update_resp = send_request('patch', url, access_token_first, update_data)
+        print response_info(update_resp)
+        assert update_resp.status_code == 200
+        assert len(update_resp.json()['updated_tags']) == len(update_data['tags'])
+        assert update_resp.json()['updated_tags'][0]['id'] != (tag_1_id or tag_2_id)
+
 
 class TestDeleteCandidateTags(object):
     def test_delete_one(self, user_first, access_token_first, candidate_first):
@@ -149,7 +175,7 @@ class TestDeleteCandidateTags(object):
         get_resp = send_request('get', url, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == 403
-        assert get_resp.json()['error']['code'] == 3172
+        assert get_resp.json()['error']['code'] == custom_errors.TAG_FORBIDDEN
 
     def test_delete_all(self, user_first, access_token_first, candidate_first):
         """
@@ -170,4 +196,4 @@ class TestDeleteCandidateTags(object):
         get_resp = send_request('get', CandidateApiUrl.TAGS % candidate_first.id, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == 404
-        assert get_resp.json()['error']['code'] == 3170
+        assert get_resp.json()['error']['code'] == custom_errors.TAG_NOT_FOUND
