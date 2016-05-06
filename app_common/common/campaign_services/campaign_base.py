@@ -1074,14 +1074,13 @@ class CampaignBase(object):
         .. see also:: callback_campaign_sent() method in CampaignBase class.
 
         :exception: InvalidUsage
-        :exception: InternalServerError
 
         ..Error Codes:: 5101 (EMPTY_BODY_TEXT)
                         5102 (NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
                         5103 (NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
         """
         if not isinstance(self.campaign, CampaignUtils.MODELS):
-            raise InternalServerError('campaign was not set properly')
+            raise InvalidUsage('campaign was not set properly')
         logger = current_app.config[TalentConfigKeys.LOGGER]
         logger.debug('send: %s(id:%s) is being sent. User(id:%s)' % (self.campaign_type,
                                                                      self.campaign.id,

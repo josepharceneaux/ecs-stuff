@@ -17,10 +17,10 @@
     <option name="TEST_TYPE" value="TEST_SCRIPT" />
     <option name="PATTERN" value="" />
     <option name="USE_PATTERN" value="false" />
-    <option name="testToRun" value="$PROJECT_DIR$/sms_campaign_service/tests" />
+    <option name="testToRun" value="$PROJECT_DIR$/sms_campaign_service/tests/restful_api_tests/test_v1_sms_campaign_send.py" />
     <option name="keywords" value="" />
-    <option name="params" value="" />
-    <option name="USE_PARAM" value="false" />
+    <option name="params" value="-k test_post_with_invalid_campaign_id" />
+    <option name="USE_PARAM" value="true" />
     <option name="USE_KEYWORD" value="false" />
     <method />
   </configuration>
