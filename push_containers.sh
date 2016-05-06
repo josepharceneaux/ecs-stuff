@@ -41,7 +41,7 @@ do
     else
 	# Update task definition for this service and restart staging services
 	echo "python ecs_task_update.py ${app} ${timestamp_tag} stage restart"
-	python ecs_task_update.py ${app} ${timestamp_tag} stage restart
+	python scripts/ecs_task_update.py ${app} ${timestamp_tag} stage restart
     fi
 done
 
