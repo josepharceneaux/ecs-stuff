@@ -9,26 +9,33 @@ import json
 import types
 
 # Third party imports
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
+
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 
 # Application imports
 from werkzeug.exceptions import BadRequest
 
-from scheduler_service import TalentConfigKeys, flask_app, logger, redis_store
+from scheduler_service import TalentConfigKeys, flask_app, redis_store
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token, User
+from scheduler_service import logger, SchedulerUtils
+from scheduler_service.api.scheduler_tests_api import raise_if_scheduler_not_running, check_job_state, \
+    dummy_request_method
+from scheduler_service.common.models.user import DomainRole
 from scheduler_service.common.routes import SchedulerApi
-from scheduler_service.common.talent_config_manager import TalentEnvs
-from scheduler_service.common.utils.api_utils import api_route, ApiResponse
+from scheduler_service.common.utils.api_utils import api_route, ApiResponse, get_pagination_params
 from scheduler_service.common.talent_api import TalentApi
-from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound, ForbiddenError
-from scheduler_service.common.utils.auth_utils import require_oauth
 from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
-    SchedulerNotRunningError, SchedulerServiceApiException
+    SchedulerNotRunningError
 from scheduler_service.modules.CONSTANTS import REQUEST_COUNTER
-from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, run_job
+from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound
+from scheduler_service.common.utils.auth_utils import require_oauth, require_all_roles
+from scheduler_service.custom_exceptions import SchedulerServiceApiException
+from scheduler_service.modules.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, run_job
+from scheduler_service.modules.scheduler_admin import filter_jobs_using_task_type, \
+    filter_jobs_using_task_category, filter_paused_jobs
 
 api = TalentApi()
 scheduler_blueprint = Blueprint('scheduler_api', __name__)
@@ -121,7 +128,7 @@ class Tasks(Resource):
         page, per_page = request.args.get('page', 1), request.args.get('per_page', default_per_page)
 
         if not (str(page).isdigit() and int(page) > 0):
-            raise InvalidUsage(error_message="'page' arg should be a digit. Greater or equal to 1")
+            raise InvalidUsage(error_message="'page' arg should be a digit (greater than or equal to 1)")
 
         if not (str(per_page).isdigit() and int(per_page) >= default_per_page):
             raise InvalidUsage(
@@ -738,6 +745,160 @@ class PauseTaskById(Resource):
         raise ResourceNotFound(error_message="Task not found")
 
 
+@api.route(SchedulerApi.SCHEDULER_ADMIN_TASKS)
+class AdminTasks(Resource):
+    """
+        This resource returns a list of tasks owned by a user or service by using pagination and it's accessible to
+        admin users only.
+    """
+    decorators = [require_oauth()]
+    # a parent class and put all the core pagination functionality in its get() and then we can later override that
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_ALL_JOBS)
+    def get(self):
+        """
+        This action returns a list of apscheduler scheduled tasks.
+        :return tasks_data: a dictionary containing list of tasks
+        :rtype: json
+
+
+        :Example (in case of pagination):
+            By default, it will return 30 jobs (max)
+
+            Case 1:
+
+             >>> headers = {'Authorization': 'Bearer <access_token>'}
+             >>> response = requests.get(API_URL + '/admin/v1/tasks?page=2', headers=headers)
+
+            # Returns 30 jobs ranging from 30-59 ( zero-based index )
+
+            Case 2:
+
+             >>> headers = {'Authorization': 'Bearer <access_token>'}
+             >>> response = requests.get(API_URL + '/admin/v1/tasks?page=2&per_page=35', headers=headers)
+
+            # Returns 35 jobs ranging from 35-69 ( zero-based index )
+
+        :Example:
+
+        In case of task_category filter
+
+             >>> headers = {'Authorization': 'Bearer <access_token>'}
+             >>> response = requests.get(API_URL + '/admin/v1/tasks?task_category=general', headers=headers)
+
+        In case of task_type filter
+
+             >>> headers = {'Authorization': 'Bearer <access_token>'}
+             >>> response = requests.get(API_URL + '/admin/v1/tasks?task_type=periodic', headers=headers)
+
+        In case of jobs of a specific user
+
+             >>> headers = {'Authorization': 'Bearer <access_token>'}
+             >>> response = requests.get(API_URL + '/admin/v1/tasks?user_id=2', headers=headers)
+
+
+        In case of paused or running jobs only
+
+             >>> headers = {'Authorization': 'Bearer <access_token>'}
+             # returns paused jobs only
+             >>> response = requests.get(API_URL + '/admin/v1/tasks?paused=true', headers=headers)
+             # returns running jobs only
+             >>> response = requests.get(API_URL + '/admin/v1/tasks?paused=false', headers=headers)
+
+
+        Response will be similar to get all tasks endpoint with few additional fields
+
+        .. Response::
+
+            {
+                "tasks": [
+                    {
+                        "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
+                        "user_email": "saad_lhr@hotmail.com",
+                        "task_type": "user",
+                        "post_data": {
+                            "url": "http://getTalent.com/sms/send/",
+                            "phone_number": "09230862348",
+                            "smart_list_id": 123456,
+                            "content": "text to be sent as sms"
+                            "some_other_kwarg": "abc",
+                            "campaign_name": "SMS Campaign"
+                        },
+                        "frequency": 3601,      # in seconds
+                        "start_datetime": "2015-11-05T08:00:00",
+                        "end_datetime": "2015-12-05T08:00:00"
+                        "next_run_datetime": "2015-11-05T08:20:30",
+                        "task_type": "periodic"
+                    }
+               ]
+            }
+
+
+        .. Status:: 200 (OK)
+                    400 (Invalid Usage)
+                    401 (Unauthorized Error)
+                    500 (Internal Server Error)
+
+        """
+        # In case of higher number of scheduled task running for a particular user and user wants to get only
+        # a limited number of jobs by specifying page and per_page parameter, then return only specified jobs
+
+        # Default per_page size
+        default_per_page = 30
+
+        # If user didn't specify page or per_page, then it should default to 1 and 30 respectively.
+        page, per_page = get_pagination_params(request, default_per_page=default_per_page)
+
+        raise_if_scheduler_not_running()
+        tasks = scheduler.get_jobs()
+
+        # Get all param filters
+        user_id, paused, task_type, task_category = request.args.get('user_id'), request.args.get('paused'), \
+                                                       request.args.get('task_type'), \
+                                                       request.args.get('task_category')
+
+        # If user_id is given then only return jobs of that particular user
+        if user_id:
+            if not (str(user_id).isdigit() and int(user_id) > 0):
+                raise InvalidUsage("user_id should be of type int")
+            tasks = filter(lambda _task: _task.args[0] == int(user_id), tasks)
+
+        # If paused is given then only return paused jobs.
+        if paused:
+            tasks = filter_paused_jobs(tasks, is_paused=paused)
+
+        # If task_type is specified then return only specified `one_time` or `periodic` jobs
+        if task_type:
+            tasks = filter_jobs_using_task_type(tasks, task_type=task_type)
+
+        # If task_category is given then return only specified `user` or `general` job
+        if task_category:
+            filter_jobs_using_task_category(tasks, task_category=task_category)
+
+        # The following case should never occur. As the general jobs are independent of user. So, if user use such
+        # a filter then raise Invalid usage api exception.
+        if user_id and task_category == SchedulerUtils.CATEGORY_GENERAL:
+            raise InvalidUsage(error_message=
+                               "user and task_category cannot be used together. General jobs are independent of users.")
+
+        tasks_count = len(tasks)
+
+        # If page is 1, and per_page is 30 then task_indices will look like list of integers e.g [0-29]
+        task_indices = range((page-1) * per_page, page * per_page)
+
+        tasks = [serialize_task(tasks[index], is_admin_api=True)
+                 for index in task_indices if index < tasks_count and tasks[index]]
+
+        tasks = [task for task in tasks if task]
+
+        header = {
+            'X-Total': tasks_count,
+            'X-Per-Page': per_page,
+            'X-Page': page
+        }
+        return ApiResponse(response=dict(tasks=tasks), headers=header)
+
+
 @api.route(SchedulerApi.SCHEDULER_TASKS_TEST)
 class SendRequestTest(Resource):
     """
@@ -777,91 +938,3 @@ class SendRequestTest(Resource):
         dummy_request_method(_request=request)
 
         return dict(message='Dummy GET Endpoint called')
-
-
-def dummy_request_method(_request):
-    """
-    Dummy endpoint to test GET, POST, DELETE request using celery
-    :param _request:
-    :return:
-    """
-    env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
-    if not (env_key == TalentEnvs.DEV or env_key == TalentEnvs.JENKINS):
-        raise ForbiddenError("You are not authorized to access this endpoint.")
-
-    request_counter_key = REQUEST_COUNTER % (_request.headers.environ['REQUEST_METHOD'].lower())
-
-    # Add a counter key in redis to check how many times this dummy endpoint is called
-    if redis_store.exists(request_counter_key):
-        redis_store.set(request_counter_key, int(redis_store.get(request_counter_key))+1)
-    else:
-        redis_store.set(request_counter_key, 1)
-
-    user_id = _request.user.id
-    try:
-        task = _request.get_json()
-    except BadRequest:
-        raise InvalidUsage('Given data is not JSON serializable')
-
-    # Post data param expired. If yes, then expire the token
-    expired = task.get('expired', False)
-
-    url = task.get('url', '')
-
-    if expired:
-        # Set the date in past to expire request oauth token.
-        # This is to test that run_job method refresh token or not
-        expiry = datetime.utcnow() - timedelta(days=5)
-        expiry = expiry.strftime('%Y-%m-%d %H:%M:%S')
-
-        # Expire oauth token and then pass it to run_job. And run_job should refresh token and send request to URL
-        db.db.session.commit()
-        token = Token.query.filter_by(user_id=_request.user.id).first()
-        token.update(expires=expiry)
-        run_job(user_id, _request.oauth_token, url, task.get('content-type', 'application/json'),
-                task.get('post_data', dict()))
-    else:
-        try:
-            # Try deleting the user if exist
-            db.db.session.commit()
-            test_user_id = task['test_user_id']
-            test_user = User.query.filter_by(id=test_user_id).first()
-            test_user.delete()
-        except Exception:
-            pass
-
-
-def raise_if_scheduler_not_running():
-    # if scheduler is not running
-    if not scheduler.running:
-        raise SchedulerNotRunningError("Scheduler is not running")
-
-
-def check_job_state(job_id, job_state_to_check):
-    """
-    We retrieve a job and if it's pending we raise an error. If job_state_to_check
-    is 'paused' and job's next_run_time is None then we raise an error indicating job
-    is already in paused state. Likewise, if job_state_to_check is 'running' and
-    next_run_time is not None then we raise an error indicating job is already running.
-    :param job_id: job_id of task which is in APScheduler
-    :param job_state_to_check: the state to check, if doesn't meet requirement then raise exception.
-            'func' can be 'running' or 'paused'.
-    :return:
-    """
-    # get job from scheduler by job_id
-    job = scheduler.get_job(job_id=job_id)
-
-    # if job is pending then throw pending state exception
-    if job.pending:
-        raise PendingJobError("Task with id '%s' is in pending state. Scheduler not running" % job_id)
-
-    # if job has next_run_datetime none, then job is in paused state
-    if not job.next_run_time and job_state_to_check == 'paused':
-        raise JobAlreadyPausedError("Task with id '%s' is already in paused state" % job_id)
-
-    # if job has_next_run_datetime is not None, then job is in running state
-    if job.next_run_time and job_state_to_check == 'running':
-        raise JobAlreadyRunningError("Task with id '%s' is already in running state" % job_id)
-
-    return job
-
