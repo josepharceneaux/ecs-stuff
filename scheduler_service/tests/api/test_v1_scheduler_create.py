@@ -11,10 +11,11 @@ import requests
 # Application imports
 import time
 from datetime import timedelta, datetime
-from scheduler_service import db
+from scheduler_service import db, redis_store
 from scheduler_service.common.models.user import User
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.conftest import sample_user
+from scheduler_service.modules.CONSTANTS import REQUEST_COUNTER
 
 __author__ = 'saad'
 
@@ -54,6 +55,7 @@ class TestSchedulerCreate(object):
             POST data while hitting the endpoint.
         :return:
         """
+        redis_store.delete(REQUEST_COUNTER % 'post')
         test_user = User.query.filter_by(email=sample_user.email).first()
         user_id = test_user.id
         run_datetime = datetime.utcnow() + timedelta(seconds=10)
@@ -72,6 +74,8 @@ class TestSchedulerCreate(object):
         db.session.commit()
         test_user = User.query.filter_by(id=user_id).first()
         assert not test_user
+
+        assert redis_store.get(REQUEST_COUNTER % 'post') ==  '1'
 
     def test_dummy_endpoint_jwt_job(self, auth_header, job_config_one_time_task, sample_user):
         """

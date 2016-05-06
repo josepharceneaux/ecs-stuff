@@ -13,11 +13,13 @@ from time import sleep
 import requests
 
 # Application imports
+from scheduler_service import redis_store
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.conftest import sample_user
 from scheduler_service.common.utils.models_utils import get_by_id
+from scheduler_service.modules.CONSTANTS import REQUEST_COUNTER
 
 __author__ = 'saad'
 
@@ -83,7 +85,7 @@ class TestSchedulerMisc(object):
             POST data while hitting the endpoint.
         :return:
         """
-
+        redis_store.delete(REQUEST_COUNTER % 'get')
         auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
 
         auth_header = {'Authorization': 'Bearer ' + auth_token_row['access_token'],
@@ -117,6 +119,7 @@ class TestSchedulerMisc(object):
         auth_header['Authorization'] = 'Bearer ' + token.access_token
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
+        assert redis_store.get(REQUEST_COUNTER % 'get') ==  '1'
 
     def test_scheduled_job_delete_request(self, sample_user, user_auth, job_config, job_cleanup):
         """
@@ -131,6 +134,7 @@ class TestSchedulerMisc(object):
         :return:
         """
 
+        redis_store.delete(REQUEST_COUNTER % 'delete')
         auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
 
         auth_header = {'Authorization': 'Bearer ' + auth_token_row['access_token'],
@@ -164,6 +168,8 @@ class TestSchedulerMisc(object):
         auth_header['Authorization'] = 'Bearer ' + token.access_token
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
+
+        assert redis_store.get(REQUEST_COUNTER % 'delete') ==  '1'
 
     def test_scheduled_job_patch_request(self, sample_user, user_auth, job_config, job_cleanup):
         """
@@ -178,6 +184,7 @@ class TestSchedulerMisc(object):
         :return:
         """
 
+        redis_store.delete(REQUEST_COUNTER % 'patch')
         auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
 
         auth_header = {'Authorization': 'Bearer ' + auth_token_row['access_token'],
@@ -185,7 +192,7 @@ class TestSchedulerMisc(object):
 
         current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=40)
         job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
-        job_config['request_method'] = 'delete'
+        job_config['request_method'] = 'patch'
 
         # Set the expiry after 20 seconds and update token expiry in db
         expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=20)
@@ -211,6 +218,8 @@ class TestSchedulerMisc(object):
         auth_header['Authorization'] = 'Bearer ' + token.access_token
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
+
+        assert redis_store.get(REQUEST_COUNTER % 'patch') == '1'
 
     def test_scheduled_job_put_request(self, sample_user, user_auth, job_config, job_cleanup):
         """
@@ -225,6 +234,7 @@ class TestSchedulerMisc(object):
         :return:
         """
 
+        redis_store.delete(REQUEST_COUNTER % 'put')
         auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
 
         auth_header = {'Authorization': 'Bearer ' + auth_token_row['access_token'],
@@ -232,7 +242,7 @@ class TestSchedulerMisc(object):
 
         current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=40)
         job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
-        job_config['request_method'] = 'delete'
+        job_config['request_method'] = 'put'
 
         # Set the expiry after 20 seconds and update token expiry in db
         expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=20)
@@ -258,6 +268,8 @@ class TestSchedulerMisc(object):
         auth_header['Authorization'] = 'Bearer ' + token.access_token
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
+
+        assert redis_store.get(REQUEST_COUNTER % 'put') == '1'
 
     def test_run_job_with_expired_token(self, sample_user, user_auth, job_config):
         """

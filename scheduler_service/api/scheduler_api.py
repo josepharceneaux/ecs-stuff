@@ -16,7 +16,7 @@ from flask.ext.restful import Resource
 # Application imports
 from werkzeug.exceptions import BadRequest
 
-from scheduler_service import TalentConfigKeys, flask_app, logger
+from scheduler_service import TalentConfigKeys, flask_app, logger, redis_store
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token, User
 from scheduler_service.common.routes import SchedulerApi
@@ -27,6 +27,7 @@ from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFou
 from scheduler_service.common.utils.auth_utils import require_oauth
 from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
     SchedulerNotRunningError, SchedulerServiceApiException
+from scheduler_service.modules.CONSTANTS import REQUEST_COUNTER
 from scheduler_service.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, run_job
 
 api = TalentApi()
@@ -787,6 +788,14 @@ def dummy_request_method(_request):
     env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
     if not (env_key == TalentEnvs.DEV or env_key == TalentEnvs.JENKINS):
         raise ForbiddenError("You are not authorized to access this endpoint.")
+
+    request_counter_key = REQUEST_COUNTER % (_request.headers.environ['REQUEST_METHOD'].lower())
+
+    # Add a counter key in redis to check how many times this dummy endpoint is called
+    if redis_store.exists(request_counter_key):
+        redis_store.set(request_counter_key, int(redis_store.get(request_counter_key))+1)
+    else:
+        redis_store.set(request_counter_key, 1)
 
     user_id = _request.user.id
     try:
