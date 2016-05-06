@@ -96,12 +96,12 @@ class CampaignsTestsHelpers(object):
         campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
         # Delete the campaign first
         CampaignsTestsHelpers.request_for_ok_response('delete', url_to_delete_campaign % campaign_id,
-                                                      access_token, None)
+                                                      access_token)
         CampaignsTestsHelpers.request_for_resource_not_found_error(
             method_after_delete, url_after_delete % campaign_id, access_token, data)
 
     @classmethod
-    def request_for_ok_response(cls, method, url, access_token, data):
+    def request_for_ok_response(cls, method, url, access_token, data=None):
         """
         This function is expected to schedule a campaign with all valid parameters.
         :param (str) method: Name of HTTP method
@@ -413,9 +413,9 @@ class CampaignsTestsHelpers(object):
         """
         This returns all the blasts associated with given campaign
         """
-        db.session.commit()
         if not blasts_url:
             raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
+            db.session.commit()
             return campaign.blasts.all()
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(blasts_url, basestring)
@@ -457,10 +457,10 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(blast_index, int)
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
-        db.session.commit()
         if not blasts_url:
             try:
                 raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
+                db.session.commit()
                 return campaign.blasts[blast_index]
             except IndexError:
                 return []
@@ -478,9 +478,9 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         raise_if_not_instance_of(expected_count, int)
         raise_if_not_instance_of(blast_index, int)
-        db.session.commit()
         if not blast_url:
             raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
+            db.session.commit()
             return campaign.blasts[blast_index].sends == expected_count
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(blast_url, basestring)
@@ -566,8 +566,8 @@ class CampaignsTestsHelpers(object):
 
         candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                              return_candidate_ids_only=True)
-        if assert_candidates:
-            time.sleep(10)  # TODO: Need to remove this and use polling instead
+        # if assert_candidates:
+        #     time.sleep(10)  # TODO: Need to remove this and use polling instead
         smartlist_data = {'name': smartlist_name,
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}

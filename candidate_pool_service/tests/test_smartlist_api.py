@@ -30,8 +30,7 @@ class TestSmartlistResource(object):
         @classmethod
         def create_and_return_smartlist_with_candidates(cls, access_token,
                                                         talent_pipeline, count,
-                                                        smartlist_name=fake.name(),
-                                                        timeout=40):
+                                                        smartlist_name=fake.name()):
             """
             Creates and returns the id of a smartlist with candidate ids (dumb list).
             :param access_token: Token for authorization.
@@ -43,7 +42,7 @@ class TestSmartlistResource(object):
             """
             smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
                 access_token, talent_pipeline, count=count, emails_list=True, assign_role=True,
-                smartlist_name=smartlist_name, timeout=timeout)
+                smartlist_name=smartlist_name)
             return smartlist_id, candidate_ids
 
         def test_create_smartlist_with_search_params(self, access_token_first, talent_pipeline):
@@ -62,7 +61,7 @@ class TestSmartlistResource(object):
         def test_create_smartlist_with_candidate_ids(self, access_token_first, talent_pipeline):
             """Test to create smartlist with candidate ids (smartlist with candidate ids is dumblist)."""
             smartlist_id, candidate_ids = self.create_and_return_smartlist_with_candidates(
-                access_token_first, talent_pipeline, count=20, timeout=60)
+                access_token_first, talent_pipeline, count=20)
             # Get candidate_ids from SmartlistCandidates and assert with candidate ids used to create the smartlist
             smartlist_candidates_api = TestSmartlistCandidatesApi()
             response = smartlist_candidates_api.call_smartlist_candidates_get_api(smartlist_id,
@@ -84,7 +83,7 @@ class TestSmartlistResource(object):
             :param talent_pipeline: valid talent pipeline
             """
             smartlist_id, candidate_ids = self.create_and_return_smartlist_with_candidates(
-                access_token_first, talent_pipeline, count=20, timeout=60)
+                access_token_first, talent_pipeline, count=20)
             # Get candidate_ids from SmartlistCandidates and assert with candidate ids used to create the smartlist
             smartlist_candidates_api = TestSmartlistCandidatesApi()
             response = smartlist_candidates_api.call_smartlist_candidates_get_api_with_pagination_params(
@@ -278,8 +277,7 @@ class TestSmartlistResource(object):
             num_of_candidates = 4
             talent_pipeline.search_params = ''
             smartlist_id, candidate_ids = TestSmartlistResource.TestSmartlistResourcePOST.create_and_return_smartlist_with_candidates(
-                access_token_first, talent_pipeline, count=num_of_candidates, timeout=60,
-                smartlist_name=list_name)
+                access_token_first, talent_pipeline, count=num_of_candidates, smartlist_name=list_name)
             resp = self.call_get_api(access_token_first, smartlist_id)
             assert resp.status_code == 200
             response = json.loads(resp.content)
@@ -470,7 +468,7 @@ class TestSmartlistCandidatesApi(object):
     def test_return_candidate_ids_only(self, access_token_first, talent_pipeline):
         num_of_candidates = random.choice(range(1, 10))
         smartlist_id, candidate_ids = TestSmartlistResource.TestSmartlistResourcePOST.create_and_return_smartlist_with_candidates(
-            access_token_first, talent_pipeline, count=num_of_candidates, timeout=50)
+            access_token_first, talent_pipeline, count=num_of_candidates)
         params = {'fields': 'id'}
 
         resp = self.call_smartlist_candidates_get_api(smartlist_id, params, access_token_first)
@@ -485,7 +483,7 @@ class TestSmartlistCandidatesApi(object):
     def test_return_count_only(self, access_token_first, talent_pipeline):
         num_of_candidates = random.choice(range(1, 10))
         smartlist_id, candidate_ids = TestSmartlistResource.TestSmartlistResourcePOST.create_and_return_smartlist_with_candidates(
-            access_token_first, talent_pipeline, count=num_of_candidates, timeout=60)
+            access_token_first, talent_pipeline, count=num_of_candidates)
         params = {'fields': 'count_only'}
 
         resp = self.call_smartlist_candidates_get_api(smartlist_id, params, access_token_first)
@@ -497,7 +495,7 @@ class TestSmartlistCandidatesApi(object):
     def test_return_all_fields(self, access_token_first, talent_pipeline):
         num_of_candidates = random.choice(range(1, 10))
         smartlist_id, candidate_ids = TestSmartlistResource.TestSmartlistResourcePOST.create_and_return_smartlist_with_candidates(
-            access_token_first, talent_pipeline, count=num_of_candidates, timeout=60)
+            access_token_first, talent_pipeline, count=num_of_candidates)
 
         resp = self.call_smartlist_candidates_get_api(smartlist_id, {}, access_token_first)
         assert resp.status_code == 200

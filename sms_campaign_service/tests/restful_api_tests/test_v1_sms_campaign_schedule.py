@@ -314,11 +314,11 @@ class TestSmsCampaignScheduleHTTPDELETE(object):
         # It should get campaign has been un scheduled
         CampaignsTestsHelpers.request_for_ok_response(
             self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user['id'],
-            access_token_first, None)
+            access_token_first)
         # It should get campaign is already unscheduled
         CampaignsTestsHelpers.request_for_ok_response(
             self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user['id'],
-            access_token_first, None)
+            access_token_first)
 
     def test_unschedule_not_owned_campaign(self, access_token_first,
                                            scheduled_sms_campaign_of_other_domain):
