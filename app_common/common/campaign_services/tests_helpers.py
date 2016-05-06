@@ -535,7 +535,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
         poll(CampaignsTestsHelpers.verify_blasts, args=(campaign, access_token, blasts_url, expected_count),
-             step=3, timeout=timeout)
+             step=1, timeout=timeout)
 
     @staticmethod
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1,
