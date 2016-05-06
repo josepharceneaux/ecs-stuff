@@ -128,7 +128,7 @@ def validate_periodic_job(data):
     return valid_data
 
 
-def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=False):
+def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=False, request_method="post"):
     """
     Function callback to run when job time comes, this method is called by APScheduler
     :param user_id:
@@ -137,6 +137,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     :param content_type: format of post data
     :param post_data: post data like campaign name, smartlist ids etc
     :param is_jwt_request: (optional) if true, then use X-Talent-Secret-Id in header
+    :param request_method: (optional) default request type will be POST
     :return:
     """
     # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
@@ -180,7 +181,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
 
     logger.info('Queueing data send. User ID: %s, URL: %s, Content-Type: %s', user_id, url, content_type)
     # Call celery task to send post_data to URL
-    send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, is_jwt_request],
+    send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, is_jwt_request, request_method],
                              serializer='json',
                              queue=SchedulerUtils.QUEUE,
                              routing_key=SchedulerUtils.CELERY_ROUTING_KEY)
@@ -214,6 +215,7 @@ def schedule_job(data, user_id=None, access_token=None):
 
     job_config['task_type'] = get_valid_data_from_dict(data, 'task_type')
     job_config['url'] = get_valid_url_from_dict(data, 'url')
+    job_config['request_method'] = data.get('request_method')
 
     # Server to Server call. We check if a job with a certain 'task_name'
     # is already running as we only allow one such task to run at a time.
@@ -246,7 +248,8 @@ def schedule_job(data, user_id=None, access_token=None):
                                     end_date=valid_data['end_datetime'],
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
-                                          job_config['post_data'], job_config.get('is_jwt_request')]
+                                          job_config['post_data'], job_config.get('is_jwt_request'),
+                                          job_config.get('request_method')]
                                     )
             # Due to request timeout delay, there will be a delay in scheduling job sometimes.
             # And if start time is passed due to this request delay, then job should be run
@@ -266,8 +269,9 @@ def schedule_job(data, user_id=None, access_token=None):
                                     run_date=valid_data['run_datetime'],
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
-                                          job_config['post_data'], job_config.get('is_jwt_request')]
-                                    );
+                                          job_config['post_data'], job_config.get('is_jwt_request'),
+                                          job_config.get('request_method')]
+                                    )
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
             return job.id
         except Exception:

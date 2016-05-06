@@ -93,6 +93,7 @@ class TestSchedulerMisc(object):
 
         current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=40)
         job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        job_config['url'] = SchedulerApiUrl.TEST_TASK
         job_config['request_method'] = 'get'
 
         # Set the expiry after 20 seconds and update token expiry in db
@@ -142,6 +143,7 @@ class TestSchedulerMisc(object):
 
         current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=40)
         job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        job_config['url'] = SchedulerApiUrl.TEST_TASK
         job_config['request_method'] = 'delete'
 
         # Set the expiry after 20 seconds and update token expiry in db
@@ -192,6 +194,7 @@ class TestSchedulerMisc(object):
 
         current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=40)
         job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        job_config['url'] = SchedulerApiUrl.TEST_TASK
         job_config['request_method'] = 'patch'
 
         # Set the expiry after 20 seconds and update token expiry in db
@@ -242,6 +245,7 @@ class TestSchedulerMisc(object):
 
         current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=40)
         job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        job_config['url'] = SchedulerApiUrl.TEST_TASK
         job_config['request_method'] = 'put'
 
         # Set the expiry after 20 seconds and update token expiry in db
