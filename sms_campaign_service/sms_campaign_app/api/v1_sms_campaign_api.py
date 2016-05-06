@@ -671,7 +671,7 @@ class SendSmsCampaign(Resource):
                          5103 (NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
         """
         camp_obj = SmsCampaignBase(request.user.id, campaign_id)
-        camp_obj.send(campaign_id)
+        camp_obj.send()
         return dict(message='Campaign(id:%s) is being sent to candidates.' % campaign_id), requests.codes.OK
 
 

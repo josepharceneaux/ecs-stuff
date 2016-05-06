@@ -330,24 +330,25 @@ def test_already_exists_candidate(token_fixture, user_fixture):
     assert_create_or_update_content_and_status(update_content, status)
 
 
+#TODO: Commenting this for erik (basit)
 ####################################################################################################
 # Batch Processing tests
 ####################################################################################################
-def test_batch_processing(user_fixture, token_fixture):
-    # create a single file queue
-    user_id = user_fixture.id
-    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
-                                         DomainRole.Roles.CAN_GET_CANDIDATES])
-    queue_string = 'batch:{}:fp_keys'.format(user_id)
-    unused_queue_status = add_fp_keys_to_queue([PDF15_FP_KEY], user_id, token_fixture.access_token)
-    # mock hit from scheduler service.
-    batch_response = requests.get('{}/{}'.format(ResumeApiUrl.BATCH_URL, user_id),
-                                  headers={'Authorization': 'bearer {}'.format(
-                                      token_fixture.access_token)})
-    formatted_response = json.loads(batch_response.content)
-    redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
-    assert 'candidate' in formatted_response, "Candidate should be in response content"
+# def test_batch_processing(user_fixture, token_fixture):
+#     # create a single file queue
+#     user_id = user_fixture.id
+#     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+#                                          DomainRole.Roles.CAN_GET_TALENT_POOLS,
+#                                          DomainRole.Roles.CAN_GET_CANDIDATES])
+#     queue_string = 'batch:{}:fp_keys'.format(user_id)
+#     unused_queue_status = add_fp_keys_to_queue([PDF15_FP_KEY], user_id, token_fixture.access_token)
+#     # mock hit from scheduler service.
+#     batch_response = requests.get('{}/{}'.format(ResumeApiUrl.BATCH_URL, user_id),
+#                                   headers={'Authorization': 'bearer {}'.format(
+#                                       token_fixture.access_token)})
+#     formatted_response = json.loads(batch_response.content)
+#     redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
+#     assert 'candidate' in formatted_response, "Candidate should be in response content"
 
 
 # Unittest Style - located here due to conversion to flask redis which requires app context.
