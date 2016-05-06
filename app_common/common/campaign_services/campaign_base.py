@@ -40,7 +40,7 @@ from campaign_utils import (get_model, CampaignUtils)
 from ..utils.validators import raise_if_not_instance_of
 from custom_errors import (CampaignException, EmptyDestinationUrl)
 from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
-from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound, InternalServerError)
+from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
 from validators import (validate_form_data,
                         validation_of_data_to_schedule_campaign,
                         validate_blast_candidate_url_conversion_in_db,
