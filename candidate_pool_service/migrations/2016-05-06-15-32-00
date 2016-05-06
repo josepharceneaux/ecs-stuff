@@ -17,7 +17,7 @@ db.session.execute(
 talent_pools = db.session.query(TalentPool).all()
 
 for pool in talent_pools:
-    m = hashlib.md5.new()
+    m = hashlib.md5()
     m.update(str(pool.id))
     pool.simple_hash = m.hexdigest()[:8]
     pool_saved = False

@@ -241,8 +241,8 @@ class TalentPoolApi(Resource):
 
         db.session.commit()
 
-        for talent_pool in talent_pools:
-            hash = hashlib.md5.new()
+        for talent_pool in talent_pool_objects:
+            hash = hashlib.md5()
             hash.update(str(talent_pool.id))
             talent_pool.simple_hash = hash.hexdigest()[:8]
             pool_saved = False
