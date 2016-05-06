@@ -566,8 +566,8 @@ class CampaignsTestsHelpers(object):
 
         candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                              return_candidate_ids_only=True)
-        # if assert_candidates:
-        #     time.sleep(10)  # TODO: Need to remove this and use polling instead
+        if assert_candidates:
+            time.sleep(10)  # TODO: Need to remove this and use polling instead
         smartlist_data = {'name': smartlist_name,
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}
