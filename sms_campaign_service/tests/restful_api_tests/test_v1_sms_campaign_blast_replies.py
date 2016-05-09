@@ -111,7 +111,7 @@ class TestSmsCampaignBlastReplies(object):
             SmsCampaignBlast, self.HTTP_METHOD, self.URL % (sms_campaign_of_current_user['id'], '%s'),
             access_token_first, None)
 
-    def test_get_replies_with_paginated_response(self,
+    def test_get_blast_replies_with_paginated_response(self,
                                                  sent_campaign_and_blast_ids,
                                                  create_bulk_replies, headers,
                                                  candidate_and_phone_1, candidate_and_phone_2):

@@ -40,7 +40,8 @@ def assert_url_conversion(sms_campaign_sends):
     for send_url_conversion in sends_url_conversions:
         # get URL conversion record from database table 'url_conversion' and delete it
         # delete url_conversion record
-        assert str(send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
+        assert str(
+            send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
 
 
@@ -65,7 +66,8 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_sends, 
                                                  blasts_url=SmsCampaignApiUrl.BLASTS % campaign.id,
                                                  timeout=blast_timeout)
     # Get sms-campaign-blast object
-    sms_campaign_blast = CampaignsTestsHelpers.get_blast_by_index_with_polling(campaign, blast_index)
+    sms_campaign_blast = CampaignsTestsHelpers.get_blast_by_index_with_polling(campaign,
+                                                                               blast_index)
     # Poll blast sends
     CampaignsTestsHelpers.assert_blast_sends(campaign, expected_sends, blast_index=blast_index,
                                              abort_time_for_sends=sends_timeout)
@@ -172,11 +174,11 @@ def reply_and_assert_response(campaign_obj, user_phone, candidate_phone, access_
     assert 'xml' in str(response_get.text).strip()
     campaign_reply_in_db = get_campaign_reply(candidate_phone)
     assert len(campaign_reply_in_db) == count_of_replies
-    assert campaign_reply_in_db[count_of_replies-1].body_text == reply_text
+    assert campaign_reply_in_db[count_of_replies - 1].body_text == reply_text
     reply_count_after = get_replies_count(campaign_obj, access_token)
     assert reply_count_after == reply_count_before + 1
     assert_for_activity(user_phone.user_id, Activity.MessageIds.CAMPAIGN_SMS_REPLY,
-                        campaign_reply_in_db[count_of_replies-1].id)
+                        campaign_reply_in_db[count_of_replies - 1].id)
 
 
 def get_campaign_reply(candidate_phone):
@@ -186,7 +188,8 @@ def get_campaign_reply(candidate_phone):
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
-    candidate_phone_id = candidate_phone.id if hasattr(candidate_phone, 'id') else candidate_phone['id']
+    candidate_phone_id = candidate_phone.id if hasattr(candidate_phone, 'id') else candidate_phone[
+        'id']
     campaign_reply_record = SmsCampaignReply.get_by_candidate_phone_id(candidate_phone_id)
     return campaign_reply_record
 
@@ -199,14 +202,17 @@ def get_replies_count(campaign, access_token):
     """
     sms_campaign_blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign,
                                                                         access_token,
-                                                                        blasts_url=SmsCampaignApiUrl.BLASTS % campaign['id'])
+                                                                        blasts_url=SmsCampaignApiUrl.BLASTS %
+                                                                                   campaign['id'])
     return sms_campaign_blasts[0]['replies']
 
 
 def assert_valid_reply_object(received_reply_obj, expected_blast_id, candidate_phone_ids):
     """
-    Here we are asserting that response from API has all required fields in it.
-    :param (dict) received_reply_obj: object received from API endpoint /v1/sms-campaigns/:campaign_id/replies
+    Here we are asserting that response from API
+    1- /v1/sms-campaigns/:campaign_id/replies
+    2- /v1/sms-campaigns/:campaign_id/blasts/:blast_id/replies has all required fields in it.
+    :param (dict) received_reply_obj: object received from above API endpoints
     :param (int, long) expected_blast_id: Id of campaign blast
     :param (list[int | long]) candidate_phone_ids: list of candidate phone ids
     """
@@ -239,10 +245,12 @@ def assert_valid_campaign_get(campaign_dict, referenced_campaign, compare_fields
 
 
 def assert_valid_blast_object(received_blast_obj, expected_blast_id, campaign_id, expected_sends=0,
-                             expected_replies=0, expected_clicks=0):
+                              expected_replies=0, expected_clicks=0):
     """
-    Here we are asserting that response from API has all required fields in it.
-    :param (dict) received_blast_obj: object received from API endpoint /v1/sms-campaigns/:campaign_id/blasts
+    Here we are asserting that response from API
+    1- /v1/sms-campaigns/:campaign_id/blasts
+    2- /v1/sms-campaigns/:campaign_id/blasts/:blast_id has all required fields in it.
+    :param (dict) received_blast_obj: object received from above API endpoints
     :param (int | long) expected_blast_id: Id of campaign blast
     :param (int | long) campaign_id: Id of sms-campaign
     :param (int | long) expected_sends: Number of sends for given campaign
@@ -256,3 +264,19 @@ def assert_valid_blast_object(received_blast_obj, expected_blast_id, campaign_id
     assert received_blast_obj['clicks'] == expected_clicks
     assert received_blast_obj['sent_datetime']
     assert received_blast_obj['updated_time']
+
+
+def assert_valid_send_object(received_send_obj, expected_blast_id, candidate_ids):
+    """
+    Here we are asserting that response from API
+    1- /v1/sms-campaigns/:campaign_id/sends
+    2- /v1/sms-campaigns/:campaign_id/blasts/:blast_id/sends has all required fields in it.
+    :param (dict) received_send_obj: object received from above API endpoints
+    :param (int, long) expected_blast_id: Id of campaign blast
+    :param (list[int | long]) candidate_ids: list of candidate ids
+    """
+    assert received_send_obj['id']
+    assert received_send_obj['blast_id'] == expected_blast_id
+    assert received_send_obj['candidate_id'] in candidate_ids
+    assert received_send_obj['sent_datetime']
+    assert received_send_obj['updated_time']
