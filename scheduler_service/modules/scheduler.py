@@ -403,7 +403,7 @@ def serialize_task(task, is_admin_api=False):
     return task_dict
 
 
-def get_user_job_ids(user_id, count=-1):
+def get_user_job_ids(user_id):
     """
     Return job_ids of a specific user
     :param user_id:
@@ -412,8 +412,10 @@ def get_user_job_ids(user_id, count=-1):
     :type count: int
     :return:
     """
-    job_ids = redis_store.lrange(SchedulerUtils.REDIS_SCHEDULER_USER_TASK % user_id, 0,
-                                 count)
+    start_index = 0
+    end_index = -1
+    job_ids = redis_store.lrange(SchedulerUtils.REDIS_SCHEDULER_USER_TASK % user_id, start_index,
+                                 end_index)
     return job_ids
 
 
@@ -424,7 +426,9 @@ def get_general_job_id(task_name):
     :type task_name: str
     :return:
     """
-    job_id = redis_store.lrange(SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % task_name, 0, -1)
+    start_index = 0
+    end_index = -1
+    job_id = redis_store.lrange(SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % task_name, start_index, end_index)
     return next(job_id)
 
 

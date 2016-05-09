@@ -489,7 +489,8 @@ class TaskByName(Resource):
         task_id = get_general_job_id(_name)
         task = scheduler.get_job(task_id)
         # Make sure task is valid and belongs to non-logged-in user
-        if task and user_id is None and user_id == task.args[0]:
+        # task.arg[0] contains user_id and if it is none then it is a general job
+        if task and not user_id and not task.args[0]:
             task = serialize_task(task)
             if task:
                 return dict(task=task)
