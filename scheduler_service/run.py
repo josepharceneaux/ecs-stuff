@@ -11,6 +11,7 @@ from scheduler_service.common.routes import GTApis
 
 
 if __name__ == '__main__':
+    # Need to remove this after running migrations
     from migrations.migrate_jobs import migrate_sched_jobs
     migrate_sched_jobs()
     app.run(host='0.0.0.0', port=GTApis.SCHEDULER_SERVICE_PORT, use_reloader=True, debug=False, threaded=True)
