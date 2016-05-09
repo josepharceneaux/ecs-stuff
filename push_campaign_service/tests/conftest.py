@@ -109,6 +109,30 @@ def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, ca
 
 
 @pytest.fixture()
+def campaign_in_db_same_domain(request, token_same_domain, smartlist_same_domain, campaign_data):
+    """
+    This fixture creates a campaign in database by hitting push campaign service api
+    :param request: request object
+    :param token_same_domain: authentication token for user_first
+    :param smartlist_same_domain: smartlist dict object
+    :param campaign_data: data to create campaign
+    :return: campaign dict object
+    """
+    previous_count = len(get_campaigns(token_same_domain)['campaigns'])
+    data = campaign_data.copy()
+    data['smartlist_ids'] = [smartlist_same_domain['id']]
+    campaign_id = create_campaign(data, token_same_domain)['id']
+    data['id'] = campaign_id
+    data['previous_count'] = previous_count
+
+    def tear_down():
+        delete_campaign(campaign_id, token_same_domain, expected_status=(codes.OK, codes.NOT_FOUND))
+
+    request.addfinalizer(tear_down)
+    return data
+
+
+@pytest.fixture()
 def campaign_in_db_second(request, token_second, user_second, smartlist_second, campaign_data):
     """
     This fixture creates a push campaign in database for sample_user

@@ -129,6 +129,24 @@ class TestGetListOfCampaigns(object):
         per_page = MAX_PAGE_SIZE + 1
         get_campaigns(token_first, per_page=per_page, expected_status=(codes.BAD_REQUEST,))
 
+    def test_get_all_campaigns_in_user_domain(self, token_first, token_same_domain, token_second,
+                                              campaign_in_db, campaign_in_db_same_domain, campaign_in_db_second,
+                                              ):
+        """
+        In this test, we will create three campaign for three users , two from same domain and one from
+        different domain and then we will get campaigns using user_first token and we will expect two campaigns,
+        and one campaign when using token for `user_second`.
+        :return:
+        """
+        response = get_campaigns(token_first, expected_status=(codes.OK,))
+        assert len(response['campaigns']) == 2
+
+        response = get_campaigns(token_same_domain, expected_status=(codes.OK,))
+        assert len(response['campaigns']) == 2
+
+        response = get_campaigns(token_second, expected_status=(codes.OK,))
+        assert len(response['campaigns']) == 1
+
 
 class TestDeleteMultipleCampaigns(object):
     """
