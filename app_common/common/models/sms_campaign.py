@@ -26,11 +26,11 @@ class SmsCampaign(db.Model):
     # Relationships
     blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',
                           passive_deletes=True, lazy='dynamic', backref='campaign')
-    campaign_smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
-                                       passive_deletes=True, backref='campaign')
+    smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
+                              passive_deletes=True, backref='campaign')
 
     def __repr__(self):
-        return "<SmsCampaign (name = %r)>" % self.name
+        return "<SmsCampaign (id = %d, name = %s)>" % (self.id, self.name)
 
     def to_dict(self, include_fields=None):
         """
@@ -47,7 +47,7 @@ class SmsCampaign(db.Model):
                        "end_datetime": DatetimeUtils.utc_isoformat(self.end_datetime) if self.end_datetime else None,
                        "added_datetime": DatetimeUtils.utc_isoformat(self.added_datetime) if self.added_datetime else None,
                        "body_text": self.body_text,
-                       "list_ids": [campaign_smartlist.smartlist_id for campaign_smartlist in self.campaign_smartlists],
+                       "list_ids": [campaign_smartlist.smartlist_id for campaign_smartlist in self.smartlists],
                        "scheduler_task_id": self.scheduler_task_id}
         return return_dict
 
@@ -125,6 +125,16 @@ class SmsCampaignSend(db.Model):
         return cls.query.order_by(-cls.sent_datetime).filter(
             cls.candidate_id == candidate_id).first()
 
+    @classmethod
+    def get_by_blast_ids(cls, blast_ids):
+        """
+        This returns the query object to get all send objects for given blast_ids
+        :param list[int|long] blast_ids: List of blast_ids
+        """
+        if not isinstance(blast_ids, list):
+            raise InvalidUsage('blast_ids must be a list')
+        return cls.query.filter(cls.blast_id.in_(blast_ids))
+
 
 class SmsCampaignReply(db.Model):
     __tablename__ = 'sms_campaign_reply'
@@ -143,6 +153,16 @@ class SmsCampaignReply(db.Model):
         if not isinstance(candidate_phone_id, (int, long)):
             raise InvalidUsage('Invalid candidate_phone_id given')
         return cls.query.filter(cls.candidate_phone_id == candidate_phone_id).all()
+
+    @classmethod
+    def get_by_blast_ids(cls, blast_ids):
+        """
+        This returns the query object to get all sms-campaign-reply objects for given blast_ids
+        :param list[int|long] blast_ids: List of blast_ids
+        """
+        if not isinstance(blast_ids, list):
+            raise InvalidUsage('blast_ids must be a list')
+        return cls.query.filter(cls.blast_id.in_(blast_ids))
 
 
 class SmsCampaignSmartlist(db.Model):

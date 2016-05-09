@@ -48,7 +48,7 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_sends, 
                                                        access_token,
                                                        expected_blasts=1,
                                                        blast_index=0, blast_timeout=10,
-                                                       sends_timeout=20):
+                                                       sends_timeout=30):
     """
     This function assert the number of sends in database table "sms_campaign_blast" and
     records in database table "sms_campaign_sends"
@@ -60,12 +60,13 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_sends, 
     # know about the changes that Celery session has made.
     db.session.commit()
     # GET blasts of given campaign
-    CampaignsTestsHelpers.assert_campaign_blasts(campaign, access_token,
+    CampaignsTestsHelpers.assert_campaign_blasts(campaign, expected_blasts,
+                                                 access_token=access_token,
                                                  blasts_url=SmsCampaignApiUrl.BLASTS % campaign.id,
-                                                 expected_count=expected_blasts,
                                                  timeout=blast_timeout)
-    # Poll blast sends
+    # Get sms-campaign-blast object
     sms_campaign_blast = CampaignsTestsHelpers.get_blast_by_index_with_polling(campaign, blast_index)
+    # Poll blast sends
     CampaignsTestsHelpers.assert_blast_sends(campaign, expected_sends, blast_index=blast_index,
                                              abort_time_for_sends=sends_timeout)
 
@@ -207,7 +208,7 @@ def assert_valid_reply_object(received_reply_obj, expected_blast_id, candidate_p
     Here we are asserting that response from API has all required fields in it.
     :param (dict) received_reply_obj: object received from API endpoint /v1/sms-campaigns/:campaign_id/replies
     :param (int, long) expected_blast_id: Id of campaign blast
-    :param (list) candidate_phone_ids: list of candidate phone ids
+    :param (list[int | long]) candidate_phone_ids: list of candidate phone ids
     """
     assert received_reply_obj['id']
     assert received_reply_obj['body_text']
@@ -238,12 +239,12 @@ def assert_valid_campaign_get(campaign_dict, referenced_campaign, compare_fields
 
 
 def assert_valid_blast_object(received_blast_obj, expected_blast_id, campaign_id, expected_sends=0,
-                             expected_replies=0, expected_clicks=0,):
+                             expected_replies=0, expected_clicks=0):
     """
     Here we are asserting that response from API has all required fields in it.
     :param (dict) received_blast_obj: object received from API endpoint /v1/sms-campaigns/:campaign_id/blasts
-    :param (int, long) expected_blast_id: Id of campaign blast
-    :param (int, long) campaign_id: Id of sms-campaign
+    :param (int | long) expected_blast_id: Id of campaign blast
+    :param (int | long) campaign_id: Id of sms-campaign
     :param (int | long) expected_sends: Number of sends for given campaign
     :param (int | long) expected_replies: Number of replies for given campaign
     :param (int | long) expected_clicks: Number of clicks for given campaign

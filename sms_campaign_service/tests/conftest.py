@@ -29,7 +29,8 @@ from sms_campaign_service.tests.modules.common_functions import (assert_api_send
                                                                  delete_test_scheduled_task,
                                                                  assert_campaign_creation,
                                                                  candidate_ids_associated_with_campaign,
-                                                                 reply_and_assert_response)
+                                                                 reply_and_assert_response,
+                                                                 assert_campaign_delete)
 from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
                                                                      TWILIO_TEST_NUMBER,
                                                                      TWILIO_INVALID_TEST_NUMBER)
@@ -206,7 +207,7 @@ def sms_campaign_of_current_user(request, campaign_valid_data, talent_pipeline,
                                                     talent_pipeline.user.id)
 
     def fin():
-        _delete_campaign(test_sms_campaign)
+        _delete_campaign(test_sms_campaign, headers)
 
     request.addfinalizer(fin)
     return test_sms_campaign
@@ -217,7 +218,8 @@ def sms_campaign_with_two_smartlists(request, campaign_valid_data,
                                      access_token_first, talent_pipeline,
                                      headers):
     """
-    This creates the SMS campaign for user_first using valid data and two smartlists.
+    This creates the SMS campaign for "user_first"(fixture) using valid data and two smartlists.
+    It then returns the campaign object.
     """
     smartlist_1_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
         access_token_first, talent_pipeline, create_phone=True)
@@ -228,7 +230,7 @@ def sms_campaign_with_two_smartlists(request, campaign_valid_data,
                                                     talent_pipeline.user.id)
 
     def fin():
-        _delete_campaign(test_sms_campaign)
+        _delete_campaign(test_sms_campaign, headers)
 
     request.addfinalizer(fin)
     return test_sms_campaign
@@ -255,7 +257,7 @@ def sms_campaign_with_one_valid_candidate(request, campaign_valid_data,
                                                     talent_pipeline.user.id)
 
     def fin():
-        _delete_campaign(test_sms_campaign)
+        _delete_campaign(test_sms_campaign, headers)
 
     request.addfinalizer(fin)
     return test_sms_campaign
@@ -266,7 +268,8 @@ def sms_campaign_with_no_candidate(request, campaign_valid_data,
                                    access_token_first, talent_pipeline,
                                    headers, user_phone_1):
     """
-    This creates the SMS campaign for user_first using valid data.
+    This creates the SMS campaign for user_first using valid data. It associates such a smartlist
+    with sms-campaign which has no candidates associated with it.
     """
     smartlist_id = FixtureHelpers.create_smartlist_with_search_params(access_token_first,
                                                                       talent_pipeline.id)
@@ -275,7 +278,7 @@ def sms_campaign_with_no_candidate(request, campaign_valid_data,
                                                     talent_pipeline.user.id)
 
     def fin():
-        _delete_campaign(test_sms_campaign)
+        _delete_campaign(test_sms_campaign, headers)
 
     request.addfinalizer(fin)
     return test_sms_campaign
@@ -297,7 +300,7 @@ def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data,
                                                     user_same_domain.id)
 
     def fin():
-        _delete_campaign(test_sms_campaign)
+        _delete_campaign(test_sms_campaign, headers)
 
     request.addfinalizer(fin)
     return test_sms_campaign
@@ -319,21 +322,21 @@ def bulk_sms_campaigns(request, campaign_valid_data, talent_pipeline,
 
     def fin():
         for test_sms_campaign in test_campaigns:
-            _delete_campaign(test_sms_campaign)
+            _delete_campaign(test_sms_campaign, headers)
 
     request.addfinalizer(fin)
     return test_campaigns
 
 
 @pytest.fixture()
-def invalid_sms_campaign(request, campaign_valid_data, user_phone_1):
+def invalid_sms_campaign(request, campaign_valid_data, user_phone_1, headers):
     """
     This creates the SMS campaign for sample_user using valid data.
     """
     test_sms_campaign = _create_sms_campaign(campaign_valid_data, user_phone_1)
 
     def fin():
-        _delete_campaign(test_sms_campaign)
+        _delete_campaign(test_sms_campaign, headers)
 
     request.addfinalizer(fin)
     return test_sms_campaign
@@ -354,7 +357,7 @@ def sms_campaign_with_no_valid_candidate(request, campaign_valid_data,
                                                     talent_pipeline.user.id)
 
     def fin():
-        _delete_campaign(test_sms_campaign)
+        _delete_campaign(test_sms_campaign, headers)
 
     request.addfinalizer(fin)
     return test_sms_campaign
@@ -374,7 +377,7 @@ def sms_campaign_in_other_domain(request, campaign_valid_data, headers_other,
                                                     talent_pipeline_other.user.id)
 
     def fin():
-        _delete_campaign(test_sms_campaign)
+        _delete_campaign(test_sms_campaign, headers_other)
 
     request.addfinalizer(fin)
     return test_sms_campaign
@@ -646,7 +649,7 @@ def campaign_with_ten_candidates(request, access_token_first, talent_pipeline, c
                                                     talent_pipeline.user.id)
 
     def fin():
-        _delete_campaign(test_sms_campaign)
+        _delete_campaign(test_sms_campaign, headers)
 
     request.addfinalizer(fin)
     return test_sms_campaign, candidate_ids
@@ -729,7 +732,6 @@ def create_sms_campaign_via_api(campaign_data, headers, user_id):
     response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                              headers=headers,
                              data=json.dumps(campaign_data))
-    print response.json()
     campaign_id = assert_campaign_creation(response, user_id, requests.codes.CREATED)
     response = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign_id,
                             headers=headers)
@@ -795,13 +797,15 @@ def _unschedule_campaign(campaign, headers):
         pass
 
 
-def _delete_campaign(campaign_obj):
+def _delete_campaign(sms_campaign, headers):
     """
     This deletes the given campaign from database
-    :param campaign_obj: sms-campaign object
+    :param (dict | SmsCampaign) sms_campaign: sms-campaign object
     """
     try:
-        SmsCampaign.delete(campaign_obj)
+        campaign_id = sms_campaign.id if hasattr(sms_campaign, 'id') else sms_campaign['id']
+        response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % campaign_id, headers=headers)
+        assert_campaign_delete(response, user_first.id, sms_campaign_of_current_user['id'])
     except Exception:  # campaign may have been deleted in case of DELETE request
         pass
 

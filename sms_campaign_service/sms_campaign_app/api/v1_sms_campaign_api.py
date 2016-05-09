@@ -671,7 +671,7 @@ class SendSmsCampaign(Resource):
                          5103 (NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
         """
         camp_obj = SmsCampaignBase(request.user.id, campaign_id)
-        camp_obj.send(campaign_id)
+        camp_obj.send()
         return dict(message='Campaign(id:%s) is being sent to candidates.' % campaign_id), requests.codes.OK
 
 
@@ -1106,12 +1106,11 @@ class SmsCampaignSends(Resource):
         # Get campaign object if it belongs to user's domain
         campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                    CampaignUtils.SMS)
-
+        page, per_page = get_pagination_params(request)
         # Get blast_ids related to requested campaign_id
         blast_ids = map(lambda blast: blast.id, campaign.blasts.all())
-        query = SmsCampaignSend.query.filter(SmsCampaignSend.blast_id.in_(blast_ids))
+        query = SmsCampaignSend.get_by_blast_ids(blast_ids)
         # Serialize sends of a campaign and get paginated response
-        page, per_page = get_pagination_params(request)
         return get_paginated_response('sends', query, page, per_page)
 
 
@@ -1171,7 +1170,7 @@ class SmsCampaignReplies(Resource):
                                                                    CampaignUtils.SMS)
         # Get blast_ids related to requested campaign_id
         blast_ids = map(lambda blast: blast.id, campaign.blasts.all())
-        query = SmsCampaignReply.query.filter(SmsCampaignReply.blast_id.in_(blast_ids))
+        query = SmsCampaignReply.get_by_blast_ids(blast_ids)
         # Serialize replies of a campaign and get paginated response
         page, per_page = get_pagination_params(request)
         return get_paginated_response('replies', query, page, per_page)

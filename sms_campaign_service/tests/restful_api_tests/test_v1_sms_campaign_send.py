@@ -85,8 +85,7 @@ class TestSendSmsCampaign(object):
         CampaignsTestsHelpers.request_with_invalid_resource_id(SmsCampaign,
                                                                self.HTTP_METHOD,
                                                                self.URL,
-                                                               access_token_first,
-                                                               None)
+                                                               access_token_first)
 
     def test_post_with_one_smartlist_two_candidates_with_no_phone(
             self, access_token_first, sms_campaign_with_no_valid_candidate):

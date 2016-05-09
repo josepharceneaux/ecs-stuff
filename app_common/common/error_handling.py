@@ -1,8 +1,12 @@
-import inspect
+"""
+This module contains our custom exception types (Errors) and error handlers for these exceptions.
+
+    TalentError is the base class for all other exceptions classes.
+"""
+from flask import jsonify, request, has_request_context
+
 
 __author__ = 'oamasood'
-
-from flask import jsonify, request, has_request_context
 
 
 class TalentError(Exception):
@@ -93,62 +97,52 @@ def register_error_handlers(app, logger):
 
     @app.errorhandler(InvalidUsage)
     def handle_invalid_usage(error):
-        response = jsonify(error.to_dict())
-        logger.warn("Invalid API usage for app %s: %s", app.import_name, request.url if has_request_context() else None)
-        return response, error.http_status_code()
+        return handle_error(error, 'Invalid API usage.')
 
     @app.errorhandler(NotFoundError)
     def handle_not_found(error):
-        response = jsonify(error.to_dict())
-        logger.warn("Requested resource not found for the app %s as: %s", app.import_name,
-                    request.url if has_request_context() else None)
-        return response, error.http_status_code()
+        return handle_error(error, 'Requested resource not found.')
 
     @app.errorhandler(ForbiddenError)
     def handle_forbidden(error):
-        logger.warn("Unauthorized for app %s: %s", app.import_name, request.url if has_request_context() else None)
-        response = jsonify(error.to_dict())
-        return response, error.http_status_code()
+        return handle_error(error, 'Forbidden for this resource.')
 
     @app.errorhandler(UnauthorizedError)
     def handle_unauthorized(error):
-        response = jsonify(error.to_dict())
-        logger.warn("Unauthorized for app %s as: %s", app.import_name, request.url if has_request_context() else None)
-        return response, error.http_status_code()
+        return handle_error(error, 'Unauthorized for this resource.')
 
     @app.errorhandler(ResourceNotFound)
     def handle_resource_not_found(error):
-        logger.warn("Resource not found for app %s: %s", app.import_name,
-                    request.url if has_request_context() else None)
-        response = jsonify(error.to_dict())
-        return response, error.http_status_code()
-
-    @app.errorhandler(ForbiddenError)
-    def handle_forbidden(error):
-        logger.warn("Forbidden request format for app %s: %s", app.import_name,
-                    request.url if has_request_context() else None)
-        response = jsonify(error.to_dict())
-        return response, error.http_status_code()
+        return handle_error(error, 'Resource not found.')
 
     @app.errorhandler(UnprocessableEntity)
     def handle_unprocessable(error):
-        logger.warn("Unprocessable data for app %s: %s", app.import_name,
-                    request.url if has_request_context() else None)
-        response = jsonify(error.to_dict())
-        return response, error.http_status_code()
+        return handle_error(error, 'Unprocessable data for this resource.')
 
     @app.errorhandler(500)
     def handle_internal_server_errors(exc):
-        if exc.__class__.__name__ == InternalServerError.__name__:  # Why doesn't instanceof() work here?
-            # If an InternalServerError is raised by the server code, return its to_dict
-            response = exc.to_dict()
-        elif isinstance(exc, InternalServerError):
-            response = exc.to_dict()
-        elif isinstance(exc, Exception):
-            # If any other Exception is thrown, return its message
-            response = {'error': {'message': "Internal server error: %s" % exc.message}}
+        if isinstance(exc, InternalServerError):
+            error = exc.to_dict()
+            response = error
         else:
-            # This really shouldn't happen -- exc should be an exception
+            error = exc.message
             response = {'error': {'message': "Internal server error"}}
-        logger.error("Internal server error for app %s: %s", app.import_name, exc.message)
+        logger.error("Internal server error. App: %s,\nUrl: %s,\nError Details: %s", app.import_name,
+                     request.url if has_request_context() else None, error)
         return jsonify(response), 500
+
+    def handle_error(error, message):
+        """
+        This function logs error message which contains app name, Url and error details.
+        It also returns response with respective status code.
+        :param TalentError error: exception raised by app
+        :param str message: message to append while logging error details.
+        :return: response, status_code
+        """
+        message = message if message else 'Error occurred.'
+        assert isinstance(error, TalentError), '"error" is not a getTalent custom exception.'
+        error_dict = error.to_dict()
+        response = jsonify(error_dict)
+        logger.warn("%s App: %s,\n Url: %s\nError Details: %s", message,
+                    app.import_name, request.url if has_request_context() else None, error_dict)
+        return response, error.http_status_code()
