@@ -215,7 +215,7 @@ def schedule_job(data, user_id=None, access_token=None):
 
     job_config['task_type'] = get_valid_data_from_dict(data, 'task_type')
     job_config['url'] = get_valid_url_from_dict(data, 'url')
-    job_config['request_method'] = data.get('request_method')
+    job_config['request_method'] = data.get('request_method', 'post')
 
     # Server to Server call. We check if a job with a certain 'task_name'
     # is already running as we only allow one such task to run at a time.

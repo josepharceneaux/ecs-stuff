@@ -24,7 +24,7 @@ from scheduler_service import celery_app as celery, flask_app as app, TalentConf
 
 
 @celery.task(name="send_request", queue=SchedulerUtils.QUEUE)
-def send_request(access_token, secret_key_id, url, content_type, post_data, is_jwt_request=False, request_method="post"):
+def send_request(access_token, secret_key_id, url, content_type, post_data, is_jwt_request=False, request_method='post'):
     """
     This method will be called by run_job asynchronously
     :param access_token: authorization token for user
