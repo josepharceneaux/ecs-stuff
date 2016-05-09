@@ -223,6 +223,13 @@ def remove_roles(user_id, roles, token):
 
 
 def delete_scheduler_task(task_id, token, expected_status=(200,)):
+    """
+    This method sends a DELETE request to Scheduler API to delete  a scheduled task.
+    :type task_id: str
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('delete', SchedulerApiUrl.TASK % task_id, token)
     print('common_tests : delete_scheduler: ', response.content)
     assert response.status_code in expected_status
@@ -230,6 +237,13 @@ def delete_scheduler_task(task_id, token, expected_status=(200,)):
 
 
 def create_candidate(talent_pool_id, token, expected_status=(201,)):
+    """
+    This method sends a POST request to Candidate API to create  a candidate.
+    :type talent_pool_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     data = {
         "candidates": [
             {
@@ -257,6 +271,13 @@ def create_candidate(talent_pool_id, token, expected_status=(201,)):
 
 
 def get_candidate(candidate_id, token, expected_status=(200,)):
+    """
+    This method sends a GET request to Candidate API to get a candidate info.
+    :type candidate_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token)
     print('common_tests : get_candidate: ', response.content)
     assert response.status_code in expected_status
@@ -264,12 +285,27 @@ def get_candidate(candidate_id, token, expected_status=(200,)):
 
 
 def delete_candidate(candidate_id, token, expected_status=(200,)):
+    """
+    This method sends a DELETE request to Candidate API to delete a candidate given by candidate_id.
+    :type candidate_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_id, token)
     print('common_tests : delete_candidate: ', response.content)
     assert response.status_code in expected_status
 
 
 def create_smartlist(candidate_ids, talent_pipeline_id, token, expected_status=(201,)):
+    """
+    This method sends a POST request to CandidatePool API to create a smartlist.
+    :type candidate_ids: list[int]
+    :type talent_pipeline_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     assert isinstance(candidate_ids, (list, tuple)), 'candidate_ids must be list or tuple'
     data = {
         'candidate_ids': candidate_ids,
@@ -283,6 +319,13 @@ def create_smartlist(candidate_ids, talent_pipeline_id, token, expected_status=(
 
 
 def delete_smartlist(smartlist_id, token, expected_status=(200,)):
+    """
+    This method sends a DELETE request to CandidatePool API to delete a smartlist.
+    :type smartlist_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('delete', CandidatePoolApiUrl.SMARTLIST % smartlist_id, token)
     print('common_tests : delete_smartlist: ', response.content)
     assert response.status_code in expected_status
@@ -290,6 +333,13 @@ def delete_smartlist(smartlist_id, token, expected_status=(200,)):
 
 
 def get_smartlist_candidates(smartlist_id, token, expected_status=(200,), count=None):
+    """
+    This method sends a GET request to CandidatePool API to get list of candidates associated to  a smartlist.
+    :type smartlist_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % smartlist_id, token)
     print('common_tests : get_smartlist_candidates: ', response.content)
     assert response.status_code in expected_status
@@ -300,6 +350,14 @@ def get_smartlist_candidates(smartlist_id, token, expected_status=(200,), count=
 
 
 def create_talent_pipelines(token, talent_pool_id, count=1, expected_status=(200,)):
+    """
+    This method sends a POST request to CandidatePool API to create  a talent pipeline.
+    :type token: str
+    :type talent_pool_id: int | long
+    :type count: int
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     data = {
         "talent_pipelines": []
     }
@@ -318,6 +376,13 @@ def create_talent_pipelines(token, talent_pool_id, count=1, expected_status=(200
 
 
 def get_talent_pipeline(talent_pipeline_id, token, expected_status=(200,)):
+    """
+    This method sends a GET request to CandidatePool API to get talent pipeline.
+    :type talent_pipeline_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('get', CandidatePoolApiUrl.TALENT_PIPELINE % talent_pipeline_id, token)
     print('common_tests : get_talent_pipeline: ', response.content)
     assert response.status_code in expected_status
@@ -325,6 +390,13 @@ def get_talent_pipeline(talent_pipeline_id, token, expected_status=(200,)):
 
 
 def delete_talent_pipeline(talent_pipeline_id, token, expected_status=(200,)):
+    """
+    This method sends a DELETE request to CandidatePool API to delete a specific talent pipeline.
+    :type talent_pipeline_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('delete', CandidatePoolApiUrl.TALENT_PIPELINE % talent_pipeline_id,
                             token)
     print('common_tests : delete_talent_pipeline: ', response.content)
@@ -333,6 +405,13 @@ def delete_talent_pipeline(talent_pipeline_id, token, expected_status=(200,)):
 
 
 def create_talent_pools(token, count=1, expected_status=(200,)):
+    """
+    This method sends a POST request to CandidatePool API to create a talent pool.
+    :type token: str
+    :type count: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     data = {
         "talent_pools": []
     }
@@ -349,6 +428,13 @@ def create_talent_pools(token, count=1, expected_status=(200,)):
 
 
 def get_talent_pool(talent_pool_id, token, expected_status=(200,)):
+    """
+    This method sends a GET request to CandidatePool API to get a specific talent pool.
+    :type talent_pool_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('get', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id, token)
     print('common_tests : get_talent_pool: ', response.content)
     assert response.status_code in expected_status
@@ -356,6 +442,13 @@ def get_talent_pool(talent_pool_id, token, expected_status=(200,)):
 
 
 def delete_talent_pool(talent_pool_id, token, expected_status=(200,)):
+    """
+    This method sends a DELETE request to CandidatePool API to delete a talent pool.
+    :type talent_pool_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('delete', CandidatePoolApiUrl.TALENT_POOL % talent_pool_id,
                             token)
     print('common_tests : delete_talent_pool: ', response.content)

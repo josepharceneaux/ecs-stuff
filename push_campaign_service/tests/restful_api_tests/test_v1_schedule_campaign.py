@@ -36,7 +36,6 @@ Unschedule a campaign: /v1/push-campaigns/:id/schedule [DELETE]
 """
 # Builtin imports
 import sys
-import time
 from datetime import datetime
 # 3rd party imports
 from redo import retry
@@ -44,10 +43,8 @@ from requests import codes
 # Application specific imports
 from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
                                                         schedule_campaign, invalid_data_test,
-                                                        reschedule_campaign, get_blasts, SLEEP_TIME,
-                                                        unschedule_campaign, get_campaigns, create_campaign)
-from push_campaign_service.common.utils.test_utils import delete_scheduler_task, create_talent_pipelines, \
-    create_candidate, get_candidate, create_smartlist, send_request, get_smartlist_candidates
+                                                        reschedule_campaign, unschedule_campaign)
+from push_campaign_service.common.utils.test_utils import send_request
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.test_utils import unauthorize_test
 from push_campaign_service.common.models.misc import Frequency
@@ -59,6 +56,9 @@ class TestScheduleCampaignUsingPOST(object):
 
     # Test URL: /v1/push-campaigns/{id}/schedule [POST]
     def test_schedule_campaign_with_invalid_token(self, campaign_in_db, smartlist_first):
+        """
+        Try to schedule a campaign with invalid AuthToken and API will rasie Unauthorized error (401).
+        """
         # data not needed here but just to be consistent with other requests of
         # this resource test
         data = generate_campaign_schedule_data()
@@ -66,9 +66,15 @@ class TestScheduleCampaignUsingPOST(object):
         schedule_campaign(campaign_id, data, 'invalid_token', expected_status=(codes.UNAUTHORIZED,))
 
     def test_schedule_campaign_with_invalid_data(self, token_first, campaign_in_db, smartlist_first):
+        """
+        Schedule a campaign with invalid data and API will  raise InvalidUsage.
+        """
         invalid_data_test('post', URL % campaign_in_db['id'], token_first)
 
     def test_schedule_campaign_with_invalid_campaign_id(self, token_first, campaign_in_db, smartlist_first):
+        """
+        Try to schedule a campaign that does not exists, it will raise BadRequest (400 in case of 0) or NotFound 404.
+        """
         data = generate_campaign_schedule_data()
         # Test with invalid or non-existing id
         non_existing_id = sys.maxint
@@ -88,6 +94,9 @@ class TestScheduleCampaignUsingPOST(object):
 
     def test_schedule_campaign_with_missing_fields_in_schedule_data(self, token_first, campaign_in_db,
                                                            smartlist_first):
+        """
+        Schedule a campaign without `start_datetime` in schedule data and it will raise InvalidUsage (400).
+        """
         # Test missing start_datetime field which is mandatory to schedule a campaign
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         del data['start_datetime']
@@ -103,6 +112,9 @@ class TestScheduleCampaignUsingPOST(object):
 
     def test_schedule_compaign_with_invalid_datetime_format(self, token_first, campaign_in_db,
                                                            smartlist_first):
+        """
+        In this test, we will schedule a campaign with invalid datetime format and  it will raise an error 400.
+        """
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         start = datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
@@ -117,6 +129,10 @@ class TestScheduleCampaignUsingPOST(object):
 
     def test_schedule_a_campaign_with_valid_data(self, smartlist_first, campaign_in_db, talent_pool,
                                                  token_first, candidate_device_first):
+        """
+        In this test, we will schedule a campaign with all valid data and it should return an OK response and campaign
+        should be scheduled.
+        """
         data = generate_campaign_schedule_data()
         response = schedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.OK,))
         assert 'task_id' in response
@@ -128,6 +144,11 @@ class TestScheduleCampaignUsingPOST(object):
 
     def test_schedule_a_campaign_with_user_from_same_domain(self, smartlist_first, campaign_in_db,  talent_pool,
                                                             token_first, token_same_domain,  candidate_device_first):
+        """
+        In this test, we will schedule a campaign using different user's auth token, but user is from same domain ,
+        as the actual owner of the campaign. So we are expecting that , response will be OK and campaign will be
+        scheduled.
+        """
 
         campaign_id = campaign_in_db['id']
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
@@ -157,6 +178,9 @@ class TestRescheduleCampaignUsingPUT(object):
 
     # Test URL: /v1/push-campaigns/{id}/schedule [PUT]
     def test_reschedule_campaign_with_invalid_token(self, campaign_in_db, smartlist_first):
+        """
+        Try to reschedule a campaign with invalid AuthToken and API will raise Unauthorized error (401).
+        """
         # data not needed here but just to be consistent with other requests of
         # this resource test
         data = generate_campaign_schedule_data()
@@ -174,11 +198,17 @@ class TestRescheduleCampaignUsingPUT(object):
                             expected_status=(codes.FORBIDDEN,))
 
     def test_reschedule_campaign_with_invalid_data(self, token_first, campaign_in_db, smartlist_first):
+        """
+        Reschedule a campaign with invalid data and API will  raise InvalidUsage.
+        """
         invalid_data_test('put', URL % campaign_in_db['id'], token_first)
 
     def test_reschedule_campaign_with_invalid_campaign_id(self, token_first, campaign_in_db,
                                                           smartlist_first,
                                                           schedule_a_campaign):
+        """
+        Try to reschedule a campaign that does not exists, it will raise BadRequest (for 0as id) or NotFoundError
+        """
         data = generate_campaign_schedule_data()
 
         # Test with invalid integer id
@@ -201,7 +231,10 @@ class TestRescheduleCampaignUsingPUT(object):
 
     def test_reschedule_campaign_with_missing_fields_in_schedule_data(self, token_first, campaign_in_db,
                                                            smartlist_first, schedule_a_campaign):
-
+        """
+        Reschedule a campaign without `start_datetime` or `end_datetime` in schedule data
+        and it will raise InvalidUsage/BadRequest (400).
+        """
         # Test missing start_datetime field which is mandatory to schedule a campaign
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         del data['start_datetime']
@@ -219,6 +252,9 @@ class TestRescheduleCampaignUsingPUT(object):
 
     def test_reschedule_campaign_with_invalid_datetime_format(self, token_first, campaign_in_db,
                                                             smartlist_first, schedule_a_campaign):
+        """
+        In this test, we will reschedule a campaign with invalid datetime format and  it will raise an error 400.
+        """
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         start = datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
@@ -233,6 +269,9 @@ class TestRescheduleCampaignUsingPUT(object):
 
     def test_reschedule_campaign_with_valid_data(self, token_first, campaign_in_db, talent_pool, candidate_first,
                                              smartlist_first, schedule_a_campaign, candidate_device_first):
+        """
+        Reschedule a campaign with valid data and it should return 200 response.
+        """
 
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
@@ -247,7 +286,11 @@ class TestRescheduleCampaignUsingPUT(object):
 
     def test_reschedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,
                                                             campaign_in_db, schedule_a_campaign):
-
+        """
+        In this test, we will reschedule a campaign using different user's auth token, but user is from same domain ,
+        as the actual owner of the campaign. So we are expecting that , response will be OK and campaign will be
+        rescheduled.
+        """
         data = generate_campaign_schedule_data()
         reschedule_campaign(campaign_in_db['id'], data, token_same_domain,
                             expected_status=(codes.FORBIDDEN,))
@@ -256,14 +299,20 @@ class TestRescheduleCampaignUsingPUT(object):
 class TestUnscheduleCamapignUsingDELETE(object):
 
     # Test URL: /v1/push-campaigns/{id}/schedule [DELETE]
-    def test_unschedule_campaign_with_invalid_token(self, campaign_in_db, smartlist_first,
-                                                    schedule_a_campaign):
+    def test_unschedule_campaign_with_invalid_token(self, campaign_in_db, smartlist_first):
+        """
+         Try to unschedule a campaign with invalid aut token nd  API will raise 401 error.
+        """
         # data not needed here but just to be consistent with other requests of
         # this resource test
         data = generate_campaign_schedule_data()
         unauthorize_test('delete',  URL % campaign_in_db['id'], data)
 
     def test_unschedule_campaign_with_other_user(self, token_second, campaign_in_db):
+        """
+        Try to  unschedule a campaign with user auth token from different domain and it should
+        raise Forbidden (403) error.
+        """
         # Test with a valid campaign but user is not owner of campaign
         # Here we created campaign with user whose Auth token_first is "token_first"
         # and we have a a test user token_first "test_auth_token" to test ownership
@@ -279,6 +328,9 @@ class TestUnscheduleCamapignUsingDELETE(object):
         unschedule_campaign(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,))
 
     def test_unschedule_campaign_with_invalid_campaign_id(self, token_first, campaign_in_db):
+        """
+        Try to unschedule a campaign that does not exists, it will raise BadRequest (400 in case of 0) or NotFound 404.
+        """
         # Test with invalid integer id
         non_existing_id = sys.maxint
         invalid_ids = [(0, codes.BAD_REQUEST),

@@ -15,7 +15,6 @@ Get Campaign's Sends: /v1/push-campaigns/:id/sends [GET]
 """
 # Builtin imports
 import sys
-import time
 
 # 3rd party imports
 from redo import retry

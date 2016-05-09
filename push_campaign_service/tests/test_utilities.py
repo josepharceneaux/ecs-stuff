@@ -1,20 +1,17 @@
 from datetime import datetime, timedelta
 from faker import Faker
-from redo import retry
 from requests import codes
 from push_campaign_service.common.campaign_services.custom_errors import CampaignException
 from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi, CandidateApiUrl
 from push_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from push_campaign_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
-from push_campaign_service.common.utils.test_utils import (send_request,
-                                                           get_fake_dict, get_smartlist_candidates)
+from push_campaign_service.common.utils.test_utils import (send_request, get_fake_dict)
 from push_campaign_service.push_campaign_app import logger
 
 fake = Faker()
 
 API_URL = PushCampaignApiUrl.HOST_NAME
 VERSION = PushCampaignApi.VERSION
-SLEEP_TIME = 20
 
 
 def missing_key_test(data, key, token):
@@ -27,8 +24,6 @@ def missing_key_test(data, key, token):
     :type key: str
     :param token: auth token
     :rtype token: str
-    :param campaign_id: push campaign id
-    :type campaign_id: int | long
     """
     del data[key]
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
@@ -102,6 +97,7 @@ def generate_campaign_schedule_data(frequency_id=1):
     """
     This method generates data (dict) for scheduling a campaign.
     This data contains start_date, end_datetime and frequency id
+    :type frequency_id: int
     :return: data
     :rtype dict
     """
@@ -119,6 +115,9 @@ def compare_campaign_data(campaign_first, campaign_second):
     """
     This function compares two push campaign dictionaries
     It raises assertion error if respective keys' values do not match.
+    :type campaign_first: dict
+    :type campaign_second: dict
+    :rtype dict
     """
     assert campaign_first['body_text'] == campaign_second['body_text']
     assert campaign_first['name'] == campaign_second['name']
@@ -126,6 +125,13 @@ def compare_campaign_data(campaign_first, campaign_second):
 
 
 def get_campaigns(token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,)):
+    """
+    Get campaign of a specific user.
+    Default page number is 1 and per_page (page size) is 10
+    :type page: int | long
+    :type per_page: int | long
+    :type expected_status: tuple[int]
+    """
     query = '?page=%s&per_page=%s' % (page, per_page)
     response = send_request('get', PushCampaignApiUrl.CAMPAIGNS + query, token)
     logger.info('tests : get_campaigns: %s', response.content)
@@ -135,6 +141,13 @@ def get_campaigns(token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected
 
 
 def get_campaign(campaign_id, token, expected_status=(200,)):
+    """
+    Get a push campaign from API given by campaign id.
+    :type campaign_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('get', PushCampaignApiUrl.CAMPAIGN % campaign_id, token)
     logger.info('tests : get_campaign: %s', response.content)
     print('tests : get_campaign: %s', response.content)
@@ -143,6 +156,13 @@ def get_campaign(campaign_id, token, expected_status=(200,)):
 
 
 def create_campaign(data, token, expected_status=(201,)):
+    """
+    Send a POST request to Push Campaign API with campaign data to create a new Push Campaign.
+    :type data: dict
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
     logger.info('tests : create_campaign: %s', response.content)
     print('tests : create_campaign: %s', response.content)
@@ -154,6 +174,14 @@ def create_campaign(data, token, expected_status=(201,)):
 
 
 def update_campaign(campaign_id, data, token, expected_status=(200, 204)):
+    """
+    This method send a PUT request to Push Campaign API to updates a push campaign with given data.
+    :type campaign_id: int | long
+    :type data: dict
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_id, token, data)
     logger.info('tests : update_campaign: %s', response.content)
     print('tests : update_campaign: %s', response.content)
@@ -162,6 +190,13 @@ def update_campaign(campaign_id, data, token, expected_status=(200, 204)):
 
 
 def delete_campaign(campaign_id, token, expected_status=(200,)):
+    """
+    This method sends a DELETE request to Push Campaign API to delete a campaign given by campaign_id.
+    :type campaign_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('delete', PushCampaignApiUrl.CAMPAIGN % campaign_id, token)
     logger.info('tests : delete_campaign: %s', response.content)
     print('tests : delete_campaign: %s', response.content)
@@ -171,6 +206,13 @@ def delete_campaign(campaign_id, token, expected_status=(200,)):
 
 
 def delete_campaigns(data, token, expected_status=(200,)):
+    """
+    This method sends a DELETE request to Push Campaign API to delete multiple campaigns.
+    :type data: dict
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('delete', PushCampaignApiUrl.CAMPAIGNS, token, data=data)
     logger.info('tests : delete_campaigns: %s', response.content)
     print('tests : delete_campaigns: %s', response.content)
@@ -179,6 +221,13 @@ def delete_campaigns(data, token, expected_status=(200,)):
 
 
 def send_campaign(campaign_id, token, expected_status=(200,)):
+    """
+    This method sends a POST request to Push Campaign API to send a campaign to associated candidates.
+    :type campaign_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_id, token)
     logger.info('tests : send_campaign: %s', response.content)
     print('tests : send_campaign: %s', response.content)
@@ -187,6 +236,17 @@ def send_campaign(campaign_id, token, expected_status=(200,)):
 
 
 def get_blasts(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,), count=None):
+    """
+    This method sends a GET request to Push Campaign API to get a list of blasts associated with
+     a campaign given by campaign_id.
+    :type campaign_id: int | long
+    :type token: str
+    :type page: int | long
+    :type per_page: int | long
+    :type expected_status: tuple[int]
+    :type count: int | None
+    :rtype dict
+    """
     query = '?page=%s&per_page=%s' % (page, per_page)
     response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_id + query, token)
     logger.info('tests : get_blasts: %s', response.content)
@@ -199,6 +259,16 @@ def get_blasts(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE
 
 
 def get_blast(blast_id, campaign_id, token, expected_status=(200,), sends=None):
+    """
+    This method sends a GET request to Push Campaign API to get a specific blast associated with
+     a campaign given by campaign_id.
+    :type blast_id: int | long
+    :type campaign_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :type sends: int | None
+    :rtype dict
+    """
     response = send_request('get', PushCampaignApiUrl.BLAST % (campaign_id, blast_id),
                             token)
 
@@ -211,6 +281,17 @@ def get_blast(blast_id, campaign_id, token, expected_status=(200,), sends=None):
 
 def get_blast_sends(blast_id, campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE,
                     expected_status=(200,), count=None):
+    """
+    This method sends a GET request to Push Campaign API to get a list of sends associated to a specific blast.
+    :type blast_id: int | long
+    :type campaign_id: int | long
+    :type token: str
+    :type page: int | long
+    :type per_page: int | long
+    :type expected_status: tuple[int]
+    :type count: int | None
+    :rtype dict
+    """
     query = '?page=%s&per_page=%s' % (page, per_page)
     response = send_request('get', PushCampaignApiUrl.BLAST_SENDS % (campaign_id, blast_id) + query,
                             token)
@@ -223,6 +304,17 @@ def get_blast_sends(blast_id, campaign_id, token, page=DEFAULT_PAGE, per_page=DE
 
 def get_campaign_sends(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE, expected_status=(200,),
                        count=None):
+    """
+    This method sends a GET request to Push Campaign API to get a list of sends associated with
+     a campaign.
+    :type campaign_id: int | long
+    :type token: str
+    :type page: int | long
+    :type per_page: int | long
+    :type expected_status: tuple[int]
+    :type count: int | long
+    :rtype dict
+    """
     query = '?page=%s&per_page=%s' % (page, per_page)
     response = send_request('get', PushCampaignApiUrl.SENDS % campaign_id + query, token)
     logger.info('tests: get_campaign_sends: %s', response.content)
@@ -235,6 +327,14 @@ def get_campaign_sends(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_P
 
 
 def schedule_campaign(campaign_id, data, token, expected_status=(200,)):
+    """
+    This method sends a POST request to Push Campaign API to schedule a push campaign with given schedule data.
+    :type campaign_id: int | long
+    :type data: dict
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     logger.info('tests : schedule_campaign: Going to schedule push campaign (id: %s)' % campaign_id)
     response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_id, token, data)
     logger.info('tests : schedule_campaign: %s', response.content)
@@ -244,6 +344,14 @@ def schedule_campaign(campaign_id, data, token, expected_status=(200,)):
 
 
 def reschedule_campaign(campaign_id, data, token, expected_status=(200,)):
+    """
+    This method sends a PUT request to Push Campaign API to reschedule a push campaign with given schedule data.
+    :type campaign_id: int | long
+    :type data: dict
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_id, token, data)
     logger.info('tests: reschedule_campaign: %s', response.content)
     print('tests: reschedule_campaign: %s', response.content)
@@ -252,6 +360,13 @@ def reschedule_campaign(campaign_id, data, token, expected_status=(200,)):
 
 
 def unschedule_campaign(campaign_id, token, expected_status=(200,)):
+    """
+    This method sends a DELETE request to Push Campaign API to unschedule a push campaign.
+    :type campaign_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('delete', PushCampaignApiUrl.SCHEDULE % campaign_id, token)
     logger.info('tests : unschedule_campaign: %s', response.content)
     print('tests : unschedule_campaign: %s', response.content)
@@ -260,6 +375,15 @@ def unschedule_campaign(campaign_id, token, expected_status=(200,)):
 
 
 def associate_device_to_candidate(candidate_id, device_id, token, expected_status=(201,)):
+    """
+    This method sends a POST request to Candidate API to associate a OneSignal Device Id to a candidate.
+
+    :type candidate_id: int | long
+    :type device_id: str
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     data = {
         'one_signal_device_id': device_id
     }
@@ -271,6 +395,14 @@ def associate_device_to_candidate(candidate_id, device_id, token, expected_statu
 
 
 def get_candidate_devices(candidate_id, token, expected_status=(200,)):
+    """
+    This method sends a GET request to Candidate API to get all associated OneSignal Device Ids to a candidate.
+
+    :type candidate_id: int | long
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     response = send_request('get', CandidateApiUrl.DEVICES % candidate_id, token)
     logger.info('tests : get_candidate_devices: %s', response.content)
     print('tests : get_candidate_devices: %s', response.content)
@@ -279,6 +411,15 @@ def get_candidate_devices(candidate_id, token, expected_status=(200,)):
 
 
 def delete_candidate_device(candidate_id, device_id,  token, expected_status=(200,)):
+    """
+    This method sends a DELETE request to Candidate API to delete  OneSignal Device that is associated to a candidate.
+
+    :type candidate_id: int | long
+    :type device_id: str
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
     data = {
         'one_signal_device_id': device_id
     }

@@ -12,14 +12,13 @@ are some fixture that are postfix with '_same_domain', actually belong to domain
 but maybe some other user.
 
 """
-import time
 import pytest
 from faker import Faker
 from redo import retry
 from requests import codes
 
 from push_campaign_service.common.models.misc import Frequency
-from push_campaign_service.common.utils.test_utils import delete_scheduler_task, get_smartlist_candidates
+from push_campaign_service.common.utils.test_utils import delete_scheduler_task
 from push_campaign_service.common.test_config_manager import load_test_config
 from push_campaign_service.common.tests.api_conftest import (token_first, token_same_domain,
                                                              token_second, user_first,
@@ -35,9 +34,7 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_data, 
                                                         delete_campaign, send_campaign,
                                                         get_blasts, schedule_campaign,
                                                         associate_device_to_candidate,
-                                                        get_candidate_devices, delete_campaigns,
-                                                        SLEEP_TIME, delete_candidate_device, get_blast_sends,
-                                                        get_campaign_sends)
+                                                        delete_campaigns, delete_candidate_device, get_campaign_sends)
 
 fake = Faker()
 test_config = load_test_config()
