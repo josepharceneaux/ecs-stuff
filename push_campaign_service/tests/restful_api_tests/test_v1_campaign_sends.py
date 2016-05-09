@@ -21,7 +21,7 @@ from redo import retry
 from requests import codes
 
 # Application specific imports
-from push_campaign_service.tests.test_utilities import get_campaign_sends, SLEEP_TIME
+from push_campaign_service.tests.test_utilities import get_campaign_sends
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
 
