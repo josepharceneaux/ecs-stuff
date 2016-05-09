@@ -35,7 +35,6 @@ MarkupSafe==0.23
 pdfminer==20110515
 phonenumbers==7.0.8
 Pillow==2.9.0
-python-magic==0.4.6
 six==1.9.0
 
 # Logging
