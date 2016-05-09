@@ -616,6 +616,7 @@ class SchedulerApi(object):
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
     SCHEDULER_MULTIPLE_TASKS = RELATIVE_VERSION % "tasks"
     SCHEDULER_TASKS_TEST = RELATIVE_VERSION % "tasks/test"
+    SCHEDULER_TASKS_TEST_POST = RELATIVE_VERSION % "tasks/test-post"
     SCHEDULER_ONE_TASK = RELATIVE_VERSION % "tasks/id/<string:_id>"
     SCHEDULER_NAMED_TASK = RELATIVE_VERSION % "tasks/name/<string:_name>"
     SCHEDULER_ONE_TASK_NAME = RELATIVE_VERSION % "tasks/name/<string:_name>"
@@ -647,6 +648,7 @@ class SchedulerApiUrl(object):
     PAUSE_TASKS = RELATIVE_VERSION % 'tasks/pause'
     RESUME_TASKS = RELATIVE_VERSION % 'tasks/resume'
     TEST_TASK = RELATIVE_VERSION % 'tasks/test'
+    TEST_TASK_POST = RELATIVE_VERSION % 'tasks/test-post'
 
     # Scheduler Admin API
     ADMIN_TASKS = RELATIVE_VERSION % "admin/tasks"

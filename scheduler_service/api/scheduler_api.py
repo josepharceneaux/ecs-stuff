@@ -22,7 +22,7 @@ from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token, User
 from scheduler_service import logger, SchedulerUtils
 from scheduler_service.api.scheduler_tests_api import raise_if_scheduler_not_running, check_job_state, \
-    dummy_request_method
+    dummy_request_method, test_dummy_endpoint_hits
 from scheduler_service.common.models.user import DomainRole
 from scheduler_service.common.routes import SchedulerApi
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse, get_pagination_params
@@ -902,12 +902,13 @@ class AdminTasks(Resource):
 @api.route(SchedulerApi.SCHEDULER_TASKS_TEST)
 class SendRequestTest(Resource):
     """
-    POST Method:
+    Endpoint:
         This resource is dummy endpoint which is used to call send_request method for testing
         This dummy endpoint serve two purposes.
         1. To check if endpoint is working then send response 201 (run callback function directly)
         2. To check if authentication token is refreshed after expiry.
         3. Test that scheduler sends GET, POST, DELETE, PUT, PATCH request
+        4. Test how many times a endpoint hits when scheduler send requests
     """
     @require_oauth()
     def post(self):
@@ -917,24 +918,42 @@ class SendRequestTest(Resource):
 
     @require_oauth()
     def put(self):
+        test_dummy_endpoint_hits(_request=request)
         dummy_request_method(_request=request)
 
         return dict(message='Dummy PUT Endpoint called')
 
     @require_oauth()
     def patch(self):
+        test_dummy_endpoint_hits(_request=request)
         dummy_request_method(_request=request)
 
         return dict(message='Dummy PATCH Endpoint called')
 
     @require_oauth()
     def delete(self):
+        test_dummy_endpoint_hits(_request=request)
         dummy_request_method(_request=request)
 
         return dict(message='Dummy DELETE Endpoint called')
 
     @require_oauth()
     def get(self):
+        test_dummy_endpoint_hits(_request=request)
         dummy_request_method(_request=request)
 
         return dict(message='Dummy GET Endpoint called')
+
+
+@api.route(SchedulerApi.SCHEDULER_TASKS_TEST_POST)
+class SendRequestTestPost(Resource):
+    """
+    POST Method:
+        Test how many times post request method is being hit
+    """
+    @require_oauth()
+    def post(self):
+        test_dummy_endpoint_hits(_request=request)
+        dummy_request_method(_request=request)
+
+        return dict(message='Dummy hits testing POST Endpoint called')

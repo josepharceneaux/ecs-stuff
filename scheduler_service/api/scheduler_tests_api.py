@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from werkzeug.exceptions import BadRequest
 
-from scheduler_service import flask_app, TalentConfigKeys, redis_store
+from scheduler_service import flask_app, TalentConfigKeys, redis_store, logger
 from scheduler_service.common.error_handling import ForbiddenError, InvalidUsage
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token, User
@@ -10,6 +10,17 @@ from scheduler_service.custom_exceptions import SchedulerNotRunningError, Pendin
     JobAlreadyRunningError
 from scheduler_service.modules.CONSTANTS import REQUEST_COUNTER
 from scheduler_service.modules.scheduler import run_job, scheduler
+
+
+def test_dummy_endpoint_hits(_request):
+    # Increment the count in redis whenever this endpoint hits
+    request_counter_key = REQUEST_COUNTER % (_request.method.lower())
+
+    # Add a counter key in redis to check how many times this dummy endpoint is called
+    if redis_store.exists(request_counter_key):
+        redis_store.set(request_counter_key, int(redis_store.get(request_counter_key))+1)
+    else:
+        redis_store.set(request_counter_key, 1)
 
 
 def dummy_request_method(_request):
@@ -21,14 +32,6 @@ def dummy_request_method(_request):
     env_key = flask_app.config.get(TalentConfigKeys.ENV_KEY)
     if not (env_key == TalentEnvs.DEV or env_key == TalentEnvs.JENKINS):
         raise ForbiddenError("You are not authorized to access this endpoint.")
-
-    request_counter_key = REQUEST_COUNTER % (_request.headers.environ['REQUEST_METHOD'].lower())
-
-    # Add a counter key in redis to check how many times this dummy endpoint is called
-    if redis_store.exists(request_counter_key):
-        redis_store.set(request_counter_key, int(redis_store.get(request_counter_key))+1)
-    else:
-        redis_store.set(request_counter_key, 1)
 
     user_id = _request.user.id
     try:
@@ -60,8 +63,8 @@ def dummy_request_method(_request):
             test_user_id = task['test_user_id']
             test_user = User.query.filter_by(id=test_user_id).first()
             test_user.delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.exception(e.message)
 
 
 def raise_if_scheduler_not_running():
