@@ -5,6 +5,7 @@ This module contains tests code that is common across campaign-services. e.g SMS
 __author__ = 'basit'
 
 # Standard Imports
+import sys
 import time
 import json
 from datetime import datetime, timedelta
@@ -95,13 +96,12 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(data, dict) if data else None
         campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
         # Delete the campaign first
-        CampaignsTestsHelpers.request_for_ok_response('delete', url_to_delete_campaign % campaign_id,
-                                                      access_token)
-        CampaignsTestsHelpers.request_for_resource_not_found_error(
+        cls.request_for_ok_response('delete', url_to_delete_campaign % campaign_id, access_token)
+        cls.request_for_resource_not_found_error(
             method_after_delete, url_after_delete % campaign_id, access_token, data)
 
-    @classmethod
-    def request_for_ok_response(cls, method, url, access_token, data=None):
+    @staticmethod
+    def request_for_ok_response(method, url, access_token, data=None):
         """
         This function is expected to schedule a campaign with all valid parameters.
         :param (str) method: Name of HTTP method
@@ -121,8 +121,8 @@ class CampaignsTestsHelpers(object):
             assert json_response['task_id']
             return json_response['task_id']
 
-    @classmethod
-    def request_with_past_start_and_end_datetime(cls, method, url, access_token, data):
+    @staticmethod
+    def request_with_past_start_and_end_datetime(method, url, access_token, data):
         """
         Here we pass start_datetime and end_datetime with invalid value i.e. in past, to schedule
         a campaign. Then we assert that we get InvalidUsage error in response.
@@ -139,8 +139,8 @@ class CampaignsTestsHelpers(object):
         if not data['frequency_id'] or not data['frequency_id'] == Frequency.ONCE:
             _assert_invalid_datetime(method, url, access_token, data, 'end_datetime')
 
-    @classmethod
-    def missing_fields_in_schedule_data(cls, method, url, access_token, data):
+    @staticmethod
+    def missing_fields_in_schedule_data(method, url, access_token, data):
         """
         Here we try to schedule a campaign with missing required fields and assert that we get
         InvalidUsage error in response.
@@ -159,8 +159,8 @@ class CampaignsTestsHelpers(object):
         if not data['frequency_id'] or not data['frequency_id'] == Frequency.ONCE:
             _assert_api_response_for_missing_field(method, url, access_token, data, 'end_datetime')
 
-    @classmethod
-    def invalid_datetime_format(cls, method, url, access_token, data):
+    @staticmethod
+    def invalid_datetime_format(method, url, access_token, data):
         """
         Here we pass start_datetime and end_datetime in invalid format to schedule a campaign.
         :param (str) method: Name of HTTP method
@@ -176,8 +176,8 @@ class CampaignsTestsHelpers(object):
         if not data['frequency_id'] or not data['frequency_id'] == Frequency.ONCE:
             _assert_invalid_datetime_format(method, url, access_token, data, 'end_datetime')
 
-    @classmethod
-    def request_with_invalid_token(cls, method, url, data=None):
+    @staticmethod
+    def request_with_invalid_token(method, url, data=None):
         """
         This is used in tests where we want to make HTTP request on given URL with invalid
         access access_token. It assert that we get ForbiddenError as a result.
@@ -190,8 +190,8 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(data, dict) if data else None
         _assert_unauthorized(method, url, 'invalid_token', data)
 
-    @classmethod
-    def reschedule_with_invalid_data(cls, url, access_token):
+    @staticmethod
+    def reschedule_with_invalid_data(url, access_token):
         """
         This is used in campaign tests where we want to re-schedule a campaign with invalid data.
         This asserts that we get BadRequest error for every bad data we pass.
@@ -220,25 +220,44 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(data, dict) if data else None
-        last_campaign_id_in_db = cls.get_last_id(model)
-        invalid_ids = get_invalid_ids(last_campaign_id_in_db)
+        invalid_ids = (0, cls.get_non_existing_id(model))
         invalid_id_and_status_code = _get_invalid_id_and_status_code_pair(invalid_ids)
         for _id, status_code in invalid_id_and_status_code:
             response = send_request(method, url % _id, access_token, data)
             assert response.status_code == status_code
 
-    @classmethod
-    def get_last_id(cls, model):
+    @staticmethod
+    def get_last_id(model):
         """
         This methods returns the id of last record in given database table.
+        If there is no record found, it returns None.
         :param (db.Model) model: SQLAlchemy model
         """
         assert db.Model in model.__mro__, '`model` should be instance of db.Model'
         last_obj = model.query.order_by(model.id.desc()).first()
-        if last_obj:
-            return last_obj.id
-        else:
-            return 1000
+        return last_obj.id if last_obj else None
+
+    @classmethod
+    def get_non_existing_id(cls, model):
+        """
+        This methods returns the non-existing id for given db Model.
+        If last record is found, it adds 1000 in its id and return it.
+        Otherwise it returns sys.maxint which ensures that returned number is a non-existing id for
+        given model.
+        :param (db.Model) model: SQLAlchemy model
+        """
+        assert db.Model in model.__mro__, '`model` should be instance of db.Model'
+        last_id = cls.get_last_id(model)
+        return last_id + 1000 if last_id else sys.maxint
+
+    @classmethod
+    def get_non_existing_ids(cls, model):
+        """
+        This methods returns a tuple of non-existing ids for given db Model.
+        :param (db.Model) model: SQLAlchemy model
+        """
+        assert db.Model in model.__mro__, '`model` should be instance of db.Model'
+        return get_invalid_ids(cls.get_non_existing_id(model))
 
     @classmethod
     def reschedule_with_post_method(cls, url, access_token, data):
@@ -255,8 +274,8 @@ class CampaignsTestsHelpers(object):
         response = send_request('post', url, access_token, data)
         cls.assert_api_response(response, expected_status_code=ForbiddenError.http_status_code())
 
-    @classmethod
-    def assert_api_response(cls, response, expected_status_code=InvalidUsage.http_status_code()):
+    @staticmethod
+    def assert_api_response(response, expected_status_code=InvalidUsage.http_status_code()):
         """
         This method is used to assert Invalid usage error in given response
         :param (Response) response: HTTP response
@@ -270,8 +289,8 @@ class CampaignsTestsHelpers(object):
         assert error['message']
         return error
 
-    @classmethod
-    def campaign_send_with_no_smartlist(cls, url, access_token):
+    @staticmethod
+    def campaign_send_with_no_smartlist(url, access_token):
         """
         This is the test to send a campaign which has no smartlist associated  with it.
         It should get Invalid usage error. Custom error should be
@@ -339,8 +358,8 @@ class CampaignsTestsHelpers(object):
         assert error_resp['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
         assert str(campaign_id) in error_resp['message']
 
-    @classmethod
-    def assert_for_activity(cls, user_id, _type, source_id):
+    @staticmethod
+    def assert_for_activity(user_id, _type, source_id):
         """
         This verifies that activity has been created for given action
         :param (int, long) user_id: Id of user
@@ -355,8 +374,8 @@ class CampaignsTestsHelpers(object):
         activity = poll(_get_activity, args=(user_id, _type, source_id), step=3, timeout=60)
         assert activity
 
-    @classmethod
-    def assert_ok_response_and_counts(cls, response, count=0, entity='sends', check_count=True):
+    @staticmethod
+    def assert_ok_response_and_counts(response, count=0, entity='sends', check_count=True):
         """
         This is the common function to assert that response is returning valid 'count'
         and 'sends' or 'replies' for a particular campaign.
@@ -541,7 +560,7 @@ class CampaignsTestsHelpers(object):
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1,
                                         data=None, emails_list=False, create_phone=False,
                                         assign_role=False, assert_candidates=True,
-                                        smartlist_name=fake.word(), timeout=100):
+                                        smartlist_name=fake.word(), timeout=120):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
@@ -792,13 +811,13 @@ def _invalid_data_test(method, url, access_token):
     CampaignsTestsHelpers.assert_api_response(response)
 
 
-def get_invalid_ids(last_id_of_obj_in_db):
+def get_invalid_ids(non_existing_id):
     """
     Given a database model object, here we create a list of two invalid ids. One of them
-    is 0 and other one is 1000 plus the id of last record.
+    is 0 and other one is non-existing id for a particular model.
     """
-    raise_if_not_instance_of(last_id_of_obj_in_db, (int, long))
-    return 0, last_id_of_obj_in_db + 1000
+    raise_if_not_instance_of(non_existing_id, (int, long))
+    return 0, non_existing_id
 
 
 def _get_invalid_id_and_status_code_pair(invalid_ids):

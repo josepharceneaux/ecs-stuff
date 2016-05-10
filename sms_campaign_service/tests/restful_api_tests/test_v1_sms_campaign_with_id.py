@@ -252,8 +252,8 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         This is a test to update a campaign which does not exists in database.
         """
         data = campaign_valid_data.copy()
-        last_id = CampaignsTestsHelpers.get_last_id(Smartlist)
-        data['smartlist_ids'] = [last_id + 100, 0, smartlist_with_two_candidates_in_other_domain[0]]
+        non_existing_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
+        data['smartlist_ids'] = [non_existing_id, 0, smartlist_with_two_candidates_in_other_domain[0]]
         response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user['id'],
                                 headers=headers,
                                 data=json.dumps(data))
