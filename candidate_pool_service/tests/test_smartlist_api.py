@@ -1,4 +1,4 @@
-from polling import poll
+from redo import retry
 from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.tests.conftest import *
 from common_functions import create_candidates_from_candidate_api
@@ -54,9 +54,8 @@ class TestSmartlistResource(object):
             assert 'smartlist' in response
             assert 'id' in response['smartlist']
             smartlist_id = response['smartlist']['id']
-            assert poll(assert_smartlist_candidates, step=3,
-                        args=(smartlist_id, len(candidate_ids), access_token), timeout=timeout), \
-                'Candidates not found for smartlist(id:%s)' % smartlist_id
+            retry(assert_smartlist_candidates, sleeptime=3, max_sleeptime=timeout, sleepscale=1,
+                  retry_exceptions=(AssertionError,), args=(smartlist_id, len(candidate_ids), access_token))
             logger.info('%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id))
 
             return smartlist_id, candidate_ids

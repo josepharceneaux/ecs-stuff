@@ -96,9 +96,6 @@ def assert_smartlist_candidates(smartlist_id, expected_count, access_token):
     :param (int, long) smartlist_id: id of smartlist
     :param (int, long) expected_count: expected number of candidates
     :param (str) access_token: access token of user to make HTTP request on smartlist API
-    :rtype: bool
     """
     candidates = get_candidates_of_smartlist(smartlist_id, True, access_token)
-    if len(candidates) == expected_count:
-        return True
-    return False
+    assert len(candidates) == expected_count

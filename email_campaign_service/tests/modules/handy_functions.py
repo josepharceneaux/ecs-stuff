@@ -6,7 +6,7 @@ import imaplib
 import datetime
 
 # Third Party
-from polling import poll
+from redo import retry
 import requests
 
 # Application Specific
@@ -106,9 +106,8 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
     smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
     smartlist_id = smartlists['smartlist']['id']
     if assert_candidates:
-        assert poll(assert_smartlist_candidates, step=3,
-                    args=(smartlist_id, len(candidate_ids), access_token), timeout=timeout), \
-            'Candidates not found for smartlist(id:%s)' % smartlist_id
+        retry(assert_smartlist_candidates, sleeptime=3, max_sleeptime=timeout, sleepscale=1,
+              retry_exceptions=(AssertionError,), args=(smartlist_id, len(candidate_ids), access_token))
         logger.info('%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id))
     return smartlist_id, candidate_ids
 
@@ -328,7 +327,9 @@ def get_blasts(campaign):
     This returns all the blasts associated with given campaign
     """
     db.session.commit()
-    return campaign.blasts.all()
+    blasts = campaign.blasts.all()
+    assert len(blasts) > 0
+    return blasts
 
 
 def get_sends(campaign, blast_index):
@@ -336,21 +337,25 @@ def get_sends(campaign, blast_index):
     This returns all number of sends associated with given blast index of a campaign
     """
     db.session.commit()
-    return campaign.blasts[blast_index].sends
+    sends = campaign.blasts[blast_index].sends
+    assert sends
+    return sends
 
 
 def get_blasts_with_polling(campaign):
     """
     This polls the result of blasts of a campaign for 10s.
     """
-    return poll(get_blasts, step=3, args=(campaign,), timeout=10)
+    return retry(get_blasts, sleeptime=3,  max_sleeptime=10, sleepscale=1, args=(campaign,),
+                 retry_exceptions=(AssertionError,))
 
 
 def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
     """
     This function asserts the particular blast of given campaign has expected number of sends
     """
-    sends = poll(get_sends, step=3, args=(campaign, blast_index), timeout=abort_time_for_sends)
+    sends = retry(get_sends, sleeptime=3, max_sleeptime=abort_time_for_sends, sleepscale=1,
+                  args=(campaign, blast_index), retry_exceptions=(AssertionError,))
     assert sends >= expected_count
 
 

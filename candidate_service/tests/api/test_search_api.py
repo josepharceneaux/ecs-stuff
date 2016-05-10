@@ -10,7 +10,7 @@ from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 from helpers import AddUserRoles
-from polling import poll
+from redo import retry
 
 
 class TestCandidateSearchGet(object):
@@ -1273,6 +1273,6 @@ def get_response(access_token, arguments_to_url, expected_count, timeout=100):
     # Wait for cloudsearch to update the candidates
     url = CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
-    if poll(lambda: len(requests.get(url, headers=headers).json()['candidates']) >= expected_count, step=5,
-            timeout=timeout):
-        return requests.get(url=url, headers=headers)
+    retry(lambda: len(requests.get(url, headers=headers).json()['candidates']) >= expected_count,
+          sleeptime=5, max_sleeptime=timeout, sleepscale=1, retry_exceptions=(AssertionError,))
+    return requests.get(url=url, headers=headers)
