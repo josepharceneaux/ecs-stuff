@@ -43,7 +43,7 @@ from requests import codes
 # Application specific imports
 from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
                                                         schedule_campaign, invalid_data_test,
-                                                        reschedule_campaign, unschedule_campaign)
+                                                        reschedule_campaign, unschedule_campaign, get_blasts)
 from push_campaign_service.common.utils.test_utils import send_request
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.test_utils import unauthorize_test
@@ -139,8 +139,8 @@ class TestScheduleCampaignUsingPOST(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        # retry(get_blasts, max_sleeptime=60, retry_exceptions=(AssertionError,),
-        #       args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
+        retry(get_blasts, max_sleeptime=60, retry_exceptions=(AssertionError,),
+              args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
 
     def test_schedule_a_campaign_with_user_from_same_domain(self, smartlist_first, campaign_in_db,  talent_pool,
                                                             token_first, token_same_domain,  candidate_device_first):
