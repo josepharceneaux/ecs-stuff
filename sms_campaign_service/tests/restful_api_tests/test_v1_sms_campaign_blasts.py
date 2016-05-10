@@ -97,7 +97,7 @@ class TestSmsCampaignBlasts(object):
         assert_valid_blast_object(received_blast_obj, blast_ids[0], sent_campaign['id'], expected_sends)
 
         # sending campaign 9 more times to create 10 blast objects
-        for _ in xrange(0, 9):
+        for _ in xrange(9):
             CampaignsTestsHelpers.send_campaign(SmsCampaignApiUrl.SEND,
                                                 sent_campaign, access_token_first,
                                                 SmsCampaignApiUrl.BLASTS)

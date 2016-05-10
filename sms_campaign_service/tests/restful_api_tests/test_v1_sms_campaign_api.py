@@ -23,20 +23,20 @@ from sms_campaign_service.common.campaign_services.tests_helpers import Campaign
 
 
 # Models
-from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.misc import Activity
+from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.smartlist import Smartlist
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (InvalidUsage, InternalServerError,
-                                                        ForbiddenError,ResourceNotFound)
+                                                        ForbiddenError, ResourceNotFound)
 
 
 class TestSmsCampaignHTTPGet(object):
     """
-    This class contains tests for endpoint /campaigns/ and HTTP method GET.
+    This class contains tests for endpoint /v1/sms-campaigns and HTTP method GET.
     """
     URL = SmsCampaignApiUrl.CAMPAIGNS
 
@@ -131,7 +131,7 @@ class TestSmsCampaignHTTPGet(object):
 
 class TestSmsCampaignHTTPPost(object):
     """
-    This class contains tests for endpoint /campaigns/ and HTTP method POST.
+    This class contains tests for endpoint /v1/sms-campaigns and HTTP method POST.
     """
     URL = SmsCampaignApiUrl.CAMPAIGNS
 
@@ -341,7 +341,7 @@ class TestSmsCampaignHTTPPost(object):
 
 class TestSmsCampaignHTTPDelete(object):
     """
-    This class contains tests for endpoint /campaigns/ and HTTP method DELETE.
+    This class contains tests for endpoint /v1/sms-campaigns and HTTP method DELETE.
     """
 
     URL = SmsCampaignApiUrl.CAMPAIGNS

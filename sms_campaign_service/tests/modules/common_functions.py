@@ -159,7 +159,7 @@ def candidate_ids_associated_with_campaign(campaign, access_token, smartlist_ind
 
 
 def reply_and_assert_response(campaign_obj, user_phone, candidate_phone, access_token,
-                              count_of_replies=1):
+                              reply_count=1):
     """
     We reply to a campaign by hitting /v1/receive endpoint.
     We then assert that all the expected entries have been created in database.
@@ -173,12 +173,12 @@ def reply_and_assert_response(campaign_obj, user_phone, candidate_phone, access_
     assert response_get.status_code == requests.codes.OK, 'Response should be ok'
     assert 'xml' in str(response_get.text).strip()
     campaign_reply_in_db = get_campaign_reply(candidate_phone)
-    assert len(campaign_reply_in_db) == count_of_replies
-    assert campaign_reply_in_db[count_of_replies - 1].body_text == reply_text
+    assert len(campaign_reply_in_db) == reply_count
+    assert campaign_reply_in_db[reply_count - 1].body_text == reply_text
     reply_count_after = get_replies_count(campaign_obj, access_token)
     assert reply_count_after == reply_count_before + 1
     assert_for_activity(user_phone.user_id, Activity.MessageIds.CAMPAIGN_SMS_REPLY,
-                        campaign_reply_in_db[count_of_replies - 1].id)
+                        campaign_reply_in_db[reply_count - 1].id)
 
 
 def get_campaign_reply(candidate_phone):
