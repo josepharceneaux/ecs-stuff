@@ -31,7 +31,7 @@ from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
     get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid,
-    does_candidate_cf_exist, get_json_data_if_it_passed_validation
+    does_candidate_cf_exist, get_json_data_if_validated
 )
 
 # JSON Schemas
@@ -275,7 +275,7 @@ class CandidatesResource(Resource):
         start_time = time()
 
         # Validate and retrieve json data
-        body_dict = get_json_data_if_it_passed_validation(request, candidates_resource_schema_patch)
+        body_dict = get_json_data_if_validated(request, candidates_resource_schema_patch)
 
         # Get authenticated user & candidate ID
         authed_user, candidate_id_from_url = request.user, kwargs.get('id')
@@ -297,6 +297,10 @@ class CandidatesResource(Resource):
             candidate_id = candidate_id_from_url or _candidate_dict.get('id')
             if not candidate_id:
                 raise InvalidUsage("Candidate ID is required", custom_error.INVALID_USAGE)
+
+            # Candidate must belong to user's domain
+            if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+                raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
             # Check for candidate's existence
             candidate = Candidate.get_by_id(candidate_id)
@@ -449,7 +453,7 @@ class CandidateResource(Resource):
         # Check for candidate's existence and web-hidden status
         candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
-        # Candidate must belong to user, and must be in the same domain as the user's domain
+        # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
@@ -2225,7 +2229,7 @@ class CandidateReferencesResource(Resource):
                     status code: 201
         """
         # Get json data if exists and validate its schema
-        body_dict = get_json_data_if_it_passed_validation(request, reference_schema)
+        body_dict = get_json_data_if_validated(request, reference_schema)
 
         # Get authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']
