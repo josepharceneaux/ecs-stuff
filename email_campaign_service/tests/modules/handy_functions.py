@@ -328,7 +328,7 @@ def get_blasts(campaign):
     """
     db.session.commit()
     blasts = campaign.blasts.all()
-    assert len(blasts) > 0
+    assert blasts
     return blasts
 
 
@@ -354,7 +354,7 @@ def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_s
     """
     This function asserts the particular blast of given campaign has expected number of sends
     """
-    sends = retry(get_sends, sleeptime=3,  attempts=20,
+    sends = retry(get_sends, sleeptime=3,  max_sleeptime=abort_time_for_sends,
                   args=(campaign, blast_index), retry_exceptions=(AssertionError,))
     assert sends >= expected_count
 
