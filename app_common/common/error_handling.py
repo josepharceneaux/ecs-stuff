@@ -5,7 +5,6 @@ This module contains our custom exception types (Errors) and error handlers for 
 """
 from flask import jsonify, request, has_request_context
 
-
 __author__ = 'oamasood'
 
 
@@ -139,10 +138,25 @@ def register_error_handlers(app, logger):
         :param str message: message to append while logging error details.
         :return: response, status_code
         """
+        # Can't import at top, due to circular dependency
+        from ..common.models.user import User
         message = message if message else 'Error occurred.'
         assert isinstance(error, TalentError), '"error" is not a getTalent custom exception.'
         error_dict = error.to_dict()
         response = jsonify(error_dict)
-        logger.warn("%s App: %s,\n Url: %s\nError Details: %s", message,
-                    app.import_name, request.url if has_request_context() else None, error_dict)
+        app_name, url, user_id, user_email = (None,) * 4
+        if has_request_context():
+            app_name = app.import_name
+            url = request.url
+            if hasattr(request, 'user') and isinstance(request.user, User):
+                user_id = request.user.id
+                user_email = request.user.email
+
+        logger.warn('''%s
+                       App: %s,
+                       Url: %s
+                       User Id: %s
+                       UserEmail: %s
+                       Error Details: %s
+                       ''', message, app_name, url, user_id, user_email, error_dict)
         return response, error.http_status_code()
