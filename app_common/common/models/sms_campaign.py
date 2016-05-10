@@ -1,4 +1,3 @@
-
 __author__ = 'basit'
 
 import datetime
@@ -6,7 +5,7 @@ import datetime
 from sqlalchemy.orm import relationship
 
 from db import db
-from ..error_handling import InvalidUsage
+from ..error_handling import InternalServerError
 from ..utils.datetime_utils import DatetimeUtils
 
 
@@ -61,7 +60,7 @@ class SmsCampaign(db.Model):
         :rtype: list
         """
         if not isinstance(user_phone_id, (int, long)):
-            raise InvalidUsage('Invalid user_phone_id given')
+            raise InternalServerError('Invalid user_phone_id given')
         return cls.query.filter(cls.user_phone_id == user_phone_id).all()
 
     @classmethod
@@ -70,10 +69,10 @@ class SmsCampaign(db.Model):
         This returns all the sms-campaigns for given domain id
         :param (int, long) domain_id: Id of user's domain
         :return: Query to get all sms-campaigns for given domain_id
-        :rtype: Query object
+        :rtype: sqlalchemy.orm.query.Query
         """
         if not isinstance(domain_id, (int, long)):
-            raise InvalidUsage('Invalid domain_id given. Valid value should be int greater than 0')
+            raise InternalServerError('Invalid domain_id given. Valid value should be int greater than 0')
         from user import User, UserPhone  # This has to be here to avoid circular import
         return cls.query.join(UserPhone, cls.user_phone_id == UserPhone.id).\
             join(User, UserPhone.user_id == User.id).filter(User.domain_id == domain_id)
@@ -119,7 +118,7 @@ class SmsCampaignSend(db.Model):
     @classmethod
     def get_latest_campaign_by_candidate_id(cls, candidate_id):
         if not isinstance(candidate_id, (int, long)):
-            raise InvalidUsage('Invalid candidate_id given')
+            raise InternalServerError('Invalid candidate_id given')
         # dash in following query is to order in ascending order in terms of datetime
         # (i.e. latest campaign send record should appear first)
         return cls.query.order_by(-cls.sent_datetime).filter(
@@ -130,9 +129,10 @@ class SmsCampaignSend(db.Model):
         """
         This returns the query object to get all send objects for given blast_ids
         :param list[int|long] blast_ids: List of blast_ids
+        :rtype: sqlalchemy.orm.query.Query
         """
         if not isinstance(blast_ids, list):
-            raise InvalidUsage('blast_ids must be a list')
+            raise InternalServerError('blast_ids must be a list')
         return cls.query.filter(cls.blast_id.in_(blast_ids))
 
 
@@ -151,7 +151,7 @@ class SmsCampaignReply(db.Model):
     @classmethod
     def get_by_candidate_phone_id(cls, candidate_phone_id):
         if not isinstance(candidate_phone_id, (int, long)):
-            raise InvalidUsage('Invalid candidate_phone_id given')
+            raise InternalServerError('Invalid candidate_phone_id given')
         return cls.query.filter(cls.candidate_phone_id == candidate_phone_id).all()
 
     @classmethod
@@ -159,9 +159,10 @@ class SmsCampaignReply(db.Model):
         """
         This returns the query object to get all sms-campaign-reply objects for given blast_ids
         :param list[int|long] blast_ids: List of blast_ids
+        :rtype: sqlalchemy.orm.query.Query
         """
         if not isinstance(blast_ids, list):
-            raise InvalidUsage('blast_ids must be a list')
+            raise InternalServerError('blast_ids must be a list')
         return cls.query.filter(cls.blast_id.in_(blast_ids))
 
 
