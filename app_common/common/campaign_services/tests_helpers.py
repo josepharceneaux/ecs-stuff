@@ -18,6 +18,7 @@ from ..routes import CandidatePoolApiUrl
 from custom_errors import CampaignException
 from ..models.misc import (Frequency, Activity)
 from ..utils.datetime_utils import DatetimeUtils
+from ..models.email_campaign import EmailCampaign
 from ..utils.validators import raise_if_not_instance_of
 from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER)
 from ..error_handling import (ForbiddenError, InvalidUsage,
@@ -458,6 +459,10 @@ def get_blasts(campaign, expected_count):
     :param campaign: Valid campaign object.
     :param expected_count: Number of blasts to be expected.
     """
+    if not isinstance(campaign, EmailCampaign):
+        raise InvalidUsage(error_message='Must provide valid email campaign object.')
+    if expected_count is None:
+        raise InvalidUsage(error_message='expected_count must be a positive integer.')
     db.session.commit()
     blasts = campaign.blasts.all()
     if len(blasts) == expected_count:

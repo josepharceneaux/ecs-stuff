@@ -5,7 +5,7 @@ from sqlalchemy.orm import relationship
 
 from db import db
 from ..utils.datetime_utils import DatetimeUtils
-from ..error_handling import (InternalServerError, ResourceNotFound, ForbiddenError)
+from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError)
 
 __author__ = 'jitesh'
 
@@ -99,6 +99,8 @@ class EmailCampaignSmartlist(db.Model):
 
     @classmethod
     def get_smartlists_of_campaign(cls, campaign_id, smartlist_ids_only=False):
+        if not campaign_id:
+            raise InternalServerError(error_message='campaign id must be provided')
         records = cls.query.filter_by(campaign_id=campaign_id).all()
         if smartlist_ids_only:
             return [row.smartlist_id for row in records]
@@ -205,8 +207,8 @@ class EmailCampaignSend(db.Model):
         :param campaign: Valid campaign object.
         :return: Ids of candidates to whom email for specified campaign has already being sent.
         """
-        if not campaign:
-            raise InternalServerError(error_message="Email Campaign object not provided.")
+        if not isinstance(campaign, EmailCampaign):
+            raise InternalServerError(error_message='Must provide valid email campaign object.')
 
         already_emailed_candidates = cls.query.with_entities(
             cls.candidate_id).filter_by(campaign_id=campaign.id).all()

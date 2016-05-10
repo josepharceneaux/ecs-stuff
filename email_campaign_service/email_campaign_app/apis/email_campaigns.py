@@ -102,7 +102,7 @@ class EmailCampaignApi(Resource):
             email_campaign = EmailCampaign.get_by_id(email_campaign_id)
             """:type : email_campaign_service.common.models.email_campaign.EmailCampaign"""
 
-            if not email_campaign:
+            if not isinstance(email_campaign, EmailCampaign):
                 raise NotFoundError("Email campaign with id: %s does not exist"
                                     % email_campaign_id)
             if not email_campaign.user.domain_id == user.domain_id:
@@ -165,7 +165,7 @@ class EmailCampaignSendApi(Resource):
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
         campaign = EmailCampaign.query.get(campaign_id)
-        if not campaign:
+        if not isinstance(campaign, EmailCampaign):
             raise NotFoundError("Given campaign_id: %s does not exists." % campaign_id)
 
         if not campaign.user.domain_id == request.user.domain_id:

@@ -171,6 +171,9 @@ def send_email_campaign(campaign, new_candidates_only=False):
     :param new_candidates_only: True if email needs to be sent to those candidates whom emails were not sent previously
     """
     # gt plugin code starts here.
+
+    if not isinstance(campaign, EmailCampaign):
+        raise InvalidUsage(error_message='Must provide valid email campaign object.')
     if campaign.email_client_id:
         candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(campaign=campaign,
                                                                                new_candidates_only=new_candidates_only)
@@ -232,7 +235,7 @@ def send_campaign_to_candidates(candidate_ids_and_emails, blast_params, email_ca
     :type campaign: EmailCampaign
     :type new_candidates_only: bool
     """
-    if not campaign:
+    if not isinstance(campaign, EmailCampaign):
         raise InternalServerError(error_message='Valid email campaign object must be provided')
     if not candidate_ids_and_emails:
         raise InternalServerError(error_message='No candidate data provided.')
@@ -270,8 +273,10 @@ def post_processing_campaign_sent(celery_result, campaign,
     :param new_candidates_only: True if emails sent to new candidates only
     :param email_campaign_blast_id: Id of blast object for specified campaign
     """
-    if not campaign:
-        raise InternalServerError(error_message='Camaign object is not valid')
+    if not celery_result:
+        raise InternalServerError(error_message='Celery task sending campaign(id;%s) emails failed' % campaign.id)
+    if not isinstance(campaign, EmailCampaign):
+        raise InternalServerError(error_message='Campaign object is not valid')
     if not email_campaign_blast_id:
         raise InternalServerError(error_message='email_campaign_blast_id not provided')
     logger.info('celery_result: %s' % celery_result)
@@ -280,7 +285,7 @@ def post_processing_campaign_sent(celery_result, campaign,
 
 
 @celery_app.task(name='process_campaign_send')
-def process_campaign_send(celery_result, campaign_id, list_ids, new_candidates_only):
+def process_campaign_send(celery_result, campaign_id, list_ids, new_candidates_only=False):
     """
      Callback after getting candidate data of all smartlists. Results from all the smartlists
      are present in celery_result and we use that for further processing of the campaign. That includes
@@ -290,6 +295,10 @@ def process_campaign_send(celery_result, campaign_id, list_ids, new_candidates_o
     if not celery_result:
         raise InvalidUsage('No candidate(s) found for smartlist_ids %s.' % list_ids,
                            error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
+    if not campaign_id:
+        raise InvalidUsage(error_message='campaign_id must be provided')
+    if not list_ids:
+        raise InvalidUsage(error_message='list_ids are mandatory')
     logger.info('celery_result: %s' % celery_result)
 
     # gather all candidates from various smartlists
@@ -345,6 +354,8 @@ def get_email_campaign_candidate_ids_and_emails(campaign, new_candidates_only=Fa
     :return: Returns array of candidate IDs in the campaign's smartlists.
              Is unique.
     """
+    if not isinstance(campaign, EmailCampaign):
+        raise InvalidUsage(error_message='Must provide valid email campaign object.')
     # Get smartlists of this campaign
     list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
                                                                  smartlist_ids_only=True)
@@ -727,7 +738,7 @@ def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only):
     """
     if not blast_id:
         raise InternalServerError(error_message='Blast Id must be provided')
-    if not campaign:
+    if not isinstance(campaign, EmailCampaign):
         raise InternalServerError(error_message='Valid campaign object must be provided')
 
     blast_obj = EmailCampaignBlast.get_by_id(blast_id)
@@ -801,7 +812,7 @@ def get_candidates_from_smartlist_for_email_client_id(campaign, list_ids):
     :param list_ids: List of smartlist ids associated with campaign.
     :return: List of candidate ids.
     """
-    if not campaign:
+    if not isinstance(campaign, EmailCampaign):
         raise InvalidUsage("Valid email campaign must be provided.")
     if not list_ids:
         raise InvalidUsage("Please provide list of smartlist ids.")
@@ -873,7 +884,7 @@ def get_smartlist_candidates_via_celery(campaign, new_candidates_only):
     :param new_candidates_only: True if only new candidates are to be returned.
     :return:
     """
-    if not campaign:
+    if not isinstance(campaign, EmailCampaign):
         raise InternalServerError(error_message='Valid campaign object must be provided.')
     # Get smartlists of this campaign
     list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
@@ -906,7 +917,7 @@ def get_filtered_email_rows(campaign, subscribed_candidate_ids):
     :param subscribed_candidate_ids: Ids of subscribed candidates.
     :return:
     """
-    if not campaign:
+    if not isinstance(campaign, EmailCampaign):
         raise InternalServerError(error_message='Valid campaign object must be provided')
     if not subscribed_candidate_ids:
         raise InternalServerError(error_message='subscribed_candidate_ids must be provided')
@@ -983,7 +994,7 @@ def notify_and_get_blast_params(campaign, new_candidates_only, candidate_ids_and
     :param candidate_ids_and_emails: Ids and email addresses of candidates.
     :return:
     """
-    if not campaign:
+    if not isinstance(campaign, EmailCampaign):
         raise InternalServerError('Valid campaign object must be provided')
     if not candidate_ids_and_emails:
         raise InternalServerError(error_message='Candidate data not provided')

@@ -4,11 +4,11 @@ from sqlalchemy.orm import relationship, backref
 import datetime
 from ..error_handling import InvalidUsage, InternalServerError
 from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
-from email_campaign import EmailCampaignSend
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
 from sms_campaign import SmsCampaignReply
+from email_campaign import (EmailCampaign, EmailCampaignSend)
 
 
 class Candidate(db.Model):
@@ -1105,6 +1105,10 @@ class CandidateSubscriptionPreference(db.Model):
         :param all_candidate_ids: Ids of candidates.
         :return: List of subscribed candidate ids.
         """
+        if not isinstance(campaign, EmailCampaign):
+            raise InternalServerError(error_message='Must provide valid email campaign object.')
+        if not all_candidate_ids:
+            raise InternalServerError(error_message='aal_candidates_ids must be provided')
         subscribed_candidates_rows = CandidateSubscriptionPreference.with_entities(
             CandidateSubscriptionPreference.candidate_id).filter(
             and_(CandidateSubscriptionPreference.candidate_id.in_(all_candidate_ids),
