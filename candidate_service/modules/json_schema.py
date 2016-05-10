@@ -2,6 +2,7 @@
 JSON Schemas for validating data sent to CandidatesResource
 """
 from datetime import datetime
+
 CURRENT_YEAR = datetime.now().year
 
 candidates_resource_schema_post = {
@@ -1120,7 +1121,6 @@ candidates_resource_schema_patch = {
     }
 }
 
-
 candidates_resource_schema_get = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": ["object", "null"],
@@ -1135,7 +1135,6 @@ candidates_resource_schema_get = {
         }
     }
 }
-
 
 resource_schema_preferences = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -1207,7 +1206,6 @@ resource_schema_photos_patch = {
     }
 }
 
-
 notes_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
@@ -1227,7 +1225,6 @@ notes_schema = {
         }
     }
 }
-
 
 language_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -1314,6 +1311,33 @@ reference_schema = {
                             "url": {"type": ["string", "null"]},
                             "description": {"type": ["string", "null"]}
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+tag_schema = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["tags"],
+    "properties": {
+        "tags": {
+            "type": ["array"],
+            "items": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["name"],
+                "properties": {
+                    "id": {
+                        "type": ["integer", "null"]
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 12
                     }
                 }
             }
