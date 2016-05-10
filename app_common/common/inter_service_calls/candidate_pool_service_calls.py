@@ -98,4 +98,5 @@ def assert_smartlist_candidates(smartlist_id, expected_count, access_token):
     :param (str) access_token: access token of user to make HTTP request on smartlist API
     """
     candidates = get_candidates_of_smartlist(smartlist_id, True, access_token)
+    print('assert_smartlist_candidates: count: %s' % len(candidates))
     assert len(candidates) == expected_count

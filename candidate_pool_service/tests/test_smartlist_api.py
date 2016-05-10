@@ -54,7 +54,7 @@ class TestSmartlistResource(object):
             assert 'smartlist' in response
             assert 'id' in response['smartlist']
             smartlist_id = response['smartlist']['id']
-            retry(assert_smartlist_candidates, sleeptime=3, max_sleeptime=timeout, sleepscale=1,
+            retry(assert_smartlist_candidates, sleeptime=3, attempts=20,
                   retry_exceptions=(AssertionError,), args=(smartlist_id, len(candidate_ids), access_token))
             logger.info('%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id))
 
@@ -567,9 +567,8 @@ class TestSmartlistCandidatesApi(object):
         smartlist = save_smartlist(user_id=user_first.id, name=fake.name(),
                                    talent_pipeline_id=talent_pipeline.id,
                                    search_params=search_params)
-        assert poll(assert_smartlist_candidates, step=3,
-                    args=(smartlist.id, len(candidate_ids), access_token_first), timeout=30), \
-            'Candidates not found for smartlist(id:%s)' % smartlist.id
+        retry(assert_smartlist_candidates, sleeptime=3, max_sleeptime=30, sleepscale=1, retry_exceptions=(AssertionError,),
+              args=(smartlist.id, len(candidate_ids), access_token_first))
         resp = self.call_smartlist_candidates_get_api(smartlist.id, {},access_token_first)
         assert resp.status_code == 200
 
