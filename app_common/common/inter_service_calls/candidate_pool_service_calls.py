@@ -93,7 +93,7 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, para
     return response
 
 
-def assert_smartlist_candidates(smartlist_id, expected_count, access_token):
+def assert_smartlist_candidates(smartlist_id, expected_count, access_token=None):
     """
     This gets the candidates for given smartlist_id.
     If number of candidates found is same as expected_count, it returns True.
@@ -103,6 +103,8 @@ def assert_smartlist_candidates(smartlist_id, expected_count, access_token):
     :param (str) access_token: access token of user to make HTTP request on smartlist API
     :rtype: bool
     """
+    raise_if_not_instance_of(smartlist_id, (int, long))
+    raise_if_not_instance_of(expected_count, (int, long))
     candidates = get_candidates_of_smartlist(list_id=smartlist_id, candidate_ids_only=True, access_token=access_token)
     if len(candidates) == expected_count:
         return True
