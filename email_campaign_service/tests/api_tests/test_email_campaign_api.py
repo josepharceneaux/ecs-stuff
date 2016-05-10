@@ -18,6 +18,7 @@ import requests
 from datetime import datetime, timedelta
 
 # Application Specific
+import sys
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.tests.conftest import fake, uuid
@@ -325,7 +326,7 @@ class TestCreateCampaign(object):
             uuid.uuid4().__str__()[0:8] + '-test_with_invalid_email_client_id'
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject, assert_candidates=False)
-        campaign_data['email_client_id'] = CampaignsTestsHelpers.get_last_id(EmailClient) + 100
+        campaign_data['email_client_id'] = CampaignsTestsHelpers.get_non_existing_id(EmailClient)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == InvalidUsage.http_status_code()
         json_response = response.json()

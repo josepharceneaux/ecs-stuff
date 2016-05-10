@@ -331,8 +331,8 @@ class TestSmsCampaignHTTPPost(object):
         Status code should be 400 and campaign should not be created.
         """
         data = campaign_valid_data.copy()
-        last_id = CampaignsTestsHelpers.get_last_id(Smartlist)
-        data['smartlist_ids'] = [last_id + 100, 0, smartlist_with_two_candidates_in_other_domain[0]]
+        non_existing_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
+        data['smartlist_ids'] = [non_existing_id, 0, smartlist_with_two_candidates_in_other_domain[0]]
         response = requests.post(self.URL,
                                  headers=headers,
                                  data=json.dumps(data))
@@ -476,7 +476,7 @@ class TestSmsCampaignHTTPDelete(object):
         Test with one existing, and one non existing ids of SMS campaign.
         It should result in 207 status code.
         """
-        non_existing_id = CampaignsTestsHelpers.get_last_id(SmsCampaign) + 1000
+        non_existing_id = CampaignsTestsHelpers.get_non_existing_id(SmsCampaign)
         response = requests.delete(self.URL,
                                    headers=headers,
                                    data=json.dumps({
