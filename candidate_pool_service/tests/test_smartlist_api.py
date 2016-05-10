@@ -567,7 +567,7 @@ class TestSmartlistCandidatesApi(object):
         smartlist = save_smartlist(user_id=user_first.id, name=fake.name(),
                                    talent_pipeline_id=talent_pipeline.id,
                                    search_params=search_params)
-        retry(assert_smartlist_candidates, sleeptime=3, max_sleeptime=30, sleepscale=1, retry_exceptions=(AssertionError,),
+        retry(assert_smartlist_candidates, sleeptime=3,  attempts=20, retry_exceptions=(AssertionError,),
               args=(smartlist.id, len(candidate_ids), access_token_first))
         resp = self.call_smartlist_candidates_get_api(smartlist.id, {},access_token_first)
         assert resp.status_code == 200

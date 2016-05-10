@@ -1507,7 +1507,7 @@ class CandidateClientEmailCampaignResource(Resource):
         try:
             # timeout=60 is just an upper limit to poll the Smartlist API
             # (needed this for some tests, it shouldn't affect normal API flow)
-            retry(assert_smartlist_candidates, sleeptime=3, max_sleeptime=60, sleepscale=1,
+            retry(assert_smartlist_candidates, sleeptime=3,  attempts=20,
                   retry_exceptions=(AssertionError,), args=(created_smartlist_id, len(candidate_ids),
                                                             request.headers.get('authorization')))
         except AssertionError:

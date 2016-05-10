@@ -106,7 +106,7 @@ def create_smartlist_with_candidate(access_token, talent_pipeline, emails_list=T
     smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
     smartlist_id = smartlists['smartlist']['id']
     if assert_candidates:
-        retry(assert_smartlist_candidates, sleeptime=3, max_sleeptime=timeout, sleepscale=1,
+        retry(assert_smartlist_candidates, sleeptime=3,  attempts=20,
               retry_exceptions=(AssertionError,), args=(smartlist_id, len(candidate_ids), access_token))
         logger.info('%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id))
     return smartlist_id, candidate_ids
@@ -346,7 +346,7 @@ def get_blasts_with_polling(campaign):
     """
     This polls the result of blasts of a campaign for 10s.
     """
-    return retry(get_blasts, sleeptime=3,  max_sleeptime=10, sleepscale=1, args=(campaign,),
+    return retry(get_blasts, sleeptime=3,   attempts=20, args=(campaign,),
                  retry_exceptions=(AssertionError,))
 
 
@@ -354,7 +354,7 @@ def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_s
     """
     This function asserts the particular blast of given campaign has expected number of sends
     """
-    sends = retry(get_sends, sleeptime=3, max_sleeptime=abort_time_for_sends, sleepscale=1,
+    sends = retry(get_sends, sleeptime=3,  attempts=20,
                   args=(campaign, blast_index), retry_exceptions=(AssertionError,))
     assert sends >= expected_count
 

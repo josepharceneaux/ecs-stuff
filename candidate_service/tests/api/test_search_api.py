@@ -1274,5 +1274,5 @@ def get_response(access_token, arguments_to_url, expected_count, timeout=100):
     url = CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
     retry(lambda: len(requests.get(url, headers=headers).json()['candidates']) >= expected_count,
-          sleeptime=5, max_sleeptime=timeout, sleepscale=1, retry_exceptions=(AssertionError,))
+          sleeptime=5,  attempts=20, retry_exceptions=(AssertionError,))
     return requests.get(url=url, headers=headers)

@@ -9,10 +9,10 @@ sudo usermod -aG docker jenkins
 
 # Sopping all containers and removing all dangling images from Jenkins container
 docker stop $(docker ps -a -q)
-#docker rm $(docker ps -a -q)
+docker rm $(docker ps -a -q)
 docker images -qf dangling=true | xargs docker rmi
 
-#cd base_service_container && tar -czh . | docker build -t gettalent/base-service-container:latest - && cd ../
+cd base_service_container && tar -czh . | docker build -t gettalent/base-service-container:latest - && cd ../
 cd auth_service && tar -czh . | docker build -t gettalent/auth-service:latest - && cd ../
 cd resume_parsing_service && tar -czh . | docker build -t gettalent/resume-parsing-service:latest - && cd ../
 cd activity_service && tar -czh . | docker build -t gettalent/activity-service:latest - && cd ../
