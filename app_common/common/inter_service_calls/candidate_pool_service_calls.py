@@ -50,6 +50,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
     :param user_id: Id of user, needed when token is invalid or unavailable such as if called
     from celery task.
     """
+    raise_if_not_instance_of(list_id, (int, long))
     per_page = 1000  # Smartlists can have a large number of candidates, hence page size of 1000
     params = {'fields': 'id'} if candidate_ids_only else {}
     response = get_candidates_from_smartlist_with_page_params(list_id, per_page, DEFAULT_PAGE,

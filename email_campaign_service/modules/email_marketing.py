@@ -427,6 +427,12 @@ def send_campaign_emails_to_candidate(campaign_id, candidate_id, candidate_addre
     :type email_campaign_blast_id: int | long | None
     :type blast_datetime: datetime.datetime | None
     """
+    if not campaign_id:
+        raise InvalidUsage(error_message='campaign_id must be provided')
+    if not candidate_id:
+        raise InvalidUsage(error_message='candidate_id must be provided')
+    if not candidate_address:
+        raise InvalidUsage(error_message='Candidate_address must be provided')
     campaign = EmailCampaign.get_by_id(campaign_id)
     candidate = Candidate.get_by_id(candidate_id)
     new_text, new_html, subject, email_campaign_send, blast_params, _ = \
@@ -542,6 +548,10 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id,
     :type blast_datetime: datetime.datetime | None
     :return:
     """
+    if not campaign_id:
+        raise InvalidUsage(error_message='campaign_id must be provided')
+    if not candidate_id:
+        raise InvalidUsage(error_message='candidate_id must be provided')
     # TODO: We should solve that detached instance issue more gracefully.
     candidate = Candidate.get_by_id(candidate_id)
     campaign = EmailCampaign.get_by_id(campaign_id)
@@ -831,7 +841,7 @@ def get_candidates_from_smartlist_for_email_client_id(campaign, list_ids):
     return all_candidate_ids
 
 
-def get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only):
+def get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only=False):
     """
     Takes campaign and all candidate ids as arguments and process them to return
     the ids of subscribed candidates.
@@ -840,6 +850,10 @@ def get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_onl
     :param new_candidates_only: if campaign is to be sent only to new candidates
     :return: ids of subscribed candidates
     """
+    if not isinstance(campaign, EmailCampaign):
+        raise InvalidUsage(error_message='Valid email campaign object must be provided.')
+    if not all_candidate_ids:
+        raise InvalidUsage(error_message='all_candidates_ids must be provided')
     if campaign.is_subscription:
         # A subscription campaign is a campaign which needs candidates
         # to be subscribed to it in order to receive notifications regarding the campaign.
@@ -877,7 +891,7 @@ def get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_onl
     return subscribed_candidate_ids
 
 
-def get_smartlist_candidates_via_celery(campaign, new_candidates_only):
+def get_smartlist_candidates_via_celery(campaign, new_candidates_only=False):
     """
     Get candidates of given smartlist by creating celery task for each smartlist.
     :param campaign: Email Campiagn

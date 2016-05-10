@@ -104,6 +104,10 @@ def get_candidate_subscription_preference(candidate_id, user_id):
     :param candidate_id: Id of candidate for which subscription prederence is to be retrieved.
     :param user_id: Id of owner user of the candidate.
     """
+    if not candidate_id:
+        raise InternalServerError(error_message='candidate_id must be provided')
+    if not user_id:
+        raise InternalServerError(error_message='user_id must be provided')
     resp = http_request('get', CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id,
                         headers=create_oauth_headers(user_id=user_id))
     if resp.status_code == ForbiddenError.http_status_code():
