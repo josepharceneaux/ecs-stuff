@@ -483,12 +483,12 @@ def create_bulk_replies(candidate_and_phone_1, candidate_and_phone_2, sent_campa
     table "sms_campaign_reply" for first candidate associated with campaign.
     We use 2 candidates and create 5 replies from each candidate
     """
-    for count in xrange(5):
+    for count in xrange(1, 6):
         reply_and_assert_response(sent_campaign, user_phone_1,
                                   candidate_and_phone_1[1], access_token_first,
                                   reply_count=count)
 
-    for count in xrange(5):
+    for count in xrange(1, 6):
         reply_and_assert_response(sent_campaign, user_phone_1,
                                   candidate_and_phone_2[1], access_token_first,
                                   reply_count=count)
