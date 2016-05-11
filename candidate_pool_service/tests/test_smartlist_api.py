@@ -39,6 +39,7 @@ class TestSmartlistResource(object):
             :param talent_pipeline: valid talent pipeline.
             :param count: Number of candidates.
             :return: smartlist_id and candidate_ids.
+            :rtype: tuple[(int|long, int|long)]
             """
             smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
                 access_token, talent_pipeline, count=count, emails_list=True, assign_role=True,

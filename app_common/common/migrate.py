@@ -14,7 +14,8 @@ from models import (
     university,
     user,
     venue,
-    widget
+    widget,
+    tag
 )
 
 from models.db import db

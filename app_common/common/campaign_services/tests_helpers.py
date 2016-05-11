@@ -262,8 +262,9 @@ class CampaignsTestsHelpers(object):
     @classmethod
     def reschedule_with_post_method(cls, url, access_token, data):
         """
-        Test forbidden error. To schedule a task first time, we have to send POST,
-        but we will send request using PUT which is for update and will validate error
+        To re-schedule a campaign, we have to use PUT HTTP method. But here we will make a
+        POST HTTP request which is for first time scheduling and will validate that we get
+        forbidden error.
         :param (str) url: URL to to make HTTP request
         :param (str) access_token: access access_token of user
         :param (dict) data: Data to be posted
@@ -492,7 +493,9 @@ class CampaignsTestsHelpers(object):
     @staticmethod
     def verify_sends(campaign, expected_count, blast_index, blast_url=None, access_token=None):
         """
-        This returns all number of sends associated with given blast index of a campaign
+        This verifies that we get expected number of sends associated with given blast index of
+        given campaign. If count is verified, it returns True, otherwise it returns False.
+        :rtype: bool
         """
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         raise_if_not_instance_of(expected_count, int)
@@ -527,7 +530,9 @@ class CampaignsTestsHelpers(object):
     @staticmethod
     def verify_blasts(campaign, access_token, blasts_url, expected_count):
         """
-        This function asserts that given campaign has expected number of blast objects
+        This function verifies that given campaign has expected number of blast objects.
+        If they are, it returns True, otherwise returns False.
+        :rtype: bool
         """
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         raise_if_not_instance_of(expected_count, int)
