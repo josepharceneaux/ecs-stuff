@@ -52,13 +52,12 @@ from sms_campaign_service.tests.modules.common_functions import \
 
 
 # TODO: Add a test where two smartlists have same candidate associated with them.
-# TODO: Sends should be 1 not 2.
+# TODO: Sends should be 1 not 2. (GET-1287)
 class TestCeleryTasks(object):
     """
     This class contains tasks that run on celery or if  the fixture they use has some
     processing on Celery.
     """
-
     @staticmethod
     def send_campaign(campaign, access_token):
         """
@@ -111,6 +110,22 @@ class TestCeleryTasks(object):
         assert_api_send_response(sms_campaign_of_current_user, response_send, requests.codes.OK)
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id,
                                                            access_token_first)
+
+    def test_campaign_send_with_other_user_of_same_domain(self, access_token_same,
+                                                          user_same_domain,
+                                                          sms_campaign_of_current_user):
+        """
+        User auth token is valid, campaign has one smartlist associated. Smartlist has two
+        candidates. Both candidates have different phone numbers associated. SMS Campaign
+        should be sent to both of the candidates. Sms-campaign was created by some other user
+        of same domain.
+        """
+        CampaignsTestsHelpers.assign_roles(user_same_domain)
+        campaign_id = sms_campaign_of_current_user['id']
+        response_send = self.send_campaign(sms_campaign_of_current_user, access_token_same)
+        assert_api_send_response(sms_campaign_of_current_user, response_send, requests.codes.OK)
+        assert_on_blasts_sends_url_conversion_and_activity(user_same_domain.id, 2, campaign_id,
+                                                           access_token_same)
 
     def test_campaign_send_with_two_candidates_with_different_phones_no_link_in_text(
             self, access_token_first, user_first, sms_campaign_of_current_user):

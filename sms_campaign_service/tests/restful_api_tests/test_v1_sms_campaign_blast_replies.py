@@ -52,16 +52,20 @@ class TestSmsCampaignBlastReplies(object):
             campaign, SmsCampaignApiUrl.CAMPAIGN, self.URL % ('%s', blast_id),
             self.HTTP_METHOD, access_token_first)
 
-    def test_get_with_one_blast_reply(self, headers, candidate_and_phone_1,
+    def test_get_with_one_blast_reply(self, headers_for_different_users_of_same_domain,
+                                      candidate_and_phone_1,
                                       sent_campaign_and_blast_ids,
                                       create_campaign_replies):
         """
         This is the case where one candidate has replied to the sms-campaign.
         This uses fixture "create_campaign_replies" to create an entry in database table
         "sms_campaign_replies". Replies count should be 1.
+        This runs for both users
+        1) Who created the campaign and 2) Some other user of same domain
         """
         campaign, blast_ids = sent_campaign_and_blast_ids
-        response = requests.get(self.URL % (campaign['id'], blast_ids[0]), headers=headers)
+        response = requests.get(self.URL % (campaign['id'], blast_ids[0]),
+                                headers=headers_for_different_users_of_same_domain)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         received_reply_objects = response.json()[self.ENTITY]
         # Assert all reply objects have valid fields

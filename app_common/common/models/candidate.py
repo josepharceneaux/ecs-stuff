@@ -227,13 +227,21 @@ class CandidatePhone(db.Model):
             phone.is_default = False
 
     @classmethod
-    def search_phone_number_in_user_domain(cls, phone_value, candidate_ids):
+    def search_phone_number_in_user_domain(cls, phone_value, current_user):
+        """
+        This searches given candidate phone in logged-in user's domain and return list of all
+        CandidatePhone records
+        :param (str) phone_value: Candidate Phone value
+        :param (User) current_user: Logged-in user's object
+        :rtype: list[CandidatePhone]
+        """
         if not isinstance(phone_value, basestring):
-            raise InvalidUsage('Include phone_value as a str|unicode.')
-        if not isinstance(candidate_ids, list):
-            raise InvalidUsage('Include candidate_ids as a list.')
-        return cls.query.filter(db.and_(cls.value == phone_value,
-                                        cls.candidate_id.in_(candidate_ids))).all()
+            raise InternalServerError('Include phone_value as a str|unicode.')
+        from user import User  # This has to be here to avoid circular import
+        if not isinstance(current_user, User):
+            raise InternalServerError('Invalid User object given')
+        return cls.query.join(User, current_user.id == User.id).filter(User.domain_id == current_user.domain_id,
+                                                                       cls.value == phone_value).all()
 
 
 class EmailLabel(db.Model):
