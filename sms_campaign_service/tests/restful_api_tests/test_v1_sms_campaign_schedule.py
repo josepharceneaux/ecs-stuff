@@ -193,7 +193,7 @@ class TestSmsCampaignScheduleHTTPPUT(object):
     URL = SmsCampaignApiUrl.SCHEDULE
 
     def test_reschedule_campaign_from_one_time_to_periodic(
-            self, access_tokens_first,
+            self, access_token_first,
             scheduled_sms_campaign_of_current_user):
         """
         Campaign is scheduled one time. Here we try to re-schedule it periodically with valid data.
@@ -203,7 +203,7 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         data['frequency_id'] = Frequency.DAILY  # for Periodic job
         CampaignsTestsHelpers.request_for_ok_response(
             self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user['id'],
-            access_tokens_first, data)
+            access_token_first, data)
 
     # TODO: Filed a JIRA for saad GET-1286
     # def test_reschedule_campaign_with_other_user_of_same_domain(

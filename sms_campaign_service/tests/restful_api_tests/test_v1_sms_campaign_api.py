@@ -300,7 +300,7 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(self.URL,
                                  headers=headers,
                                  data=json.dumps(campaign_valid_data))
-        assert_campaign_creation(response, user_first.id, requests.codes.CREATES)
+        assert_campaign_creation(response, user_first.id, requests.codes.CREATED)
 
     def test_campaign_creation_with_other_user_of_same_domain(self, user_same_domain,
                                                               headers_same_domain,

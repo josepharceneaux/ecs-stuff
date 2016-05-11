@@ -240,8 +240,9 @@ class CandidatePhone(db.Model):
         from user import User  # This has to be here to avoid circular import
         if not isinstance(current_user, User):
             raise InternalServerError('Invalid User object given')
-        return cls.query.join(User, current_user.id == User.id).filter(User.domain_id == current_user.domain_id,
-                                                                       cls.value == phone_value).all()
+        return cls.query.join(Candidate).\
+            join(User, User.domain_id == current_user.domain_id).\
+            filter(and_(Candidate.user_id == User.id, cls.value == phone_value)).all()
 
 
 class EmailLabel(db.Model):
