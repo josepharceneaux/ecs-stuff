@@ -300,6 +300,7 @@ class CandidateApiWords(object):
     NOTES = "/notes"
     LANGUAGES = "/languages"
     REFERENCES = "/references"
+    TAGS = "/tags"
 
 
 class CandidateApi(object):
@@ -383,6 +384,9 @@ class CandidateApi(object):
     REFERENCES = _CANDIDATE_ID + CandidateApiWords.REFERENCES
     REFERENCE = REFERENCES + _INT_ID
 
+    TAGS = _CANDIDATE_ID + CandidateApiWords.TAGS
+    TAG = TAGS + _INT_ID
+
 
 class CandidateApiUrl(object):
     """
@@ -460,6 +464,9 @@ class CandidateApiUrl(object):
 
     REFERENCES = CANDIDATE + CandidateApiWords.REFERENCES
     REFERENCE = REFERENCES + "/%s"
+
+    TAGS = CANDIDATE + CandidateApiWords.TAGS
+    TAG = TAGS + "/%s"
 
 
 class WidgetApi(object):
