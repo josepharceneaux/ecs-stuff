@@ -101,8 +101,8 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
 def get_candidate_subscription_preference(candidate_id, user_id):
     """
     Method to get the subscription preference of a candidate with specified candidate id.
-    :param candidate_id: Id of candidate for which subscription prederence is to be retrieved.
-    :param user_id: Id of owner user of the candidate.
+    :param (int, long) candidate_id: Id of candidate for which subscription prederence is to be retrieved.
+    :param (int, long) user_id: Id of owner user of the candidate.
     """
     if not candidate_id:
         raise InternalServerError(error_message='candidate_id must be provided')

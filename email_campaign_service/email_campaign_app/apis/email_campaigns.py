@@ -161,7 +161,7 @@ class EmailCampaignSendApi(Resource):
         """
         Sends campaign emails to the candidates present in smartlists of campaign.
         Scheduler service will call this to send emails to candidates.
-        :param campaign_id: Campaign id
+        :param (int, long) campaign_id: Campaign id
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
         campaign = EmailCampaign.query.get(campaign_id)

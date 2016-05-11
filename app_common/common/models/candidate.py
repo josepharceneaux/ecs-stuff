@@ -352,7 +352,7 @@ class CandidateEmail(db.Model):
     def get_email_by_candidate_id(cls, candidate_id):
         """
         Returns email of specified candidate.
-        :param candidate_id: Id of candidate for which email address is to be retrieved.
+        :param (int, long) candidate_id: Id of candidate for which email address is to be retrieved.
         :return: Candidate Email
         """
         if not candidate_id:

@@ -21,8 +21,9 @@ from email_campaign_service.common.models.misc import (Activity,
                                                        Frequency)
 from email_campaign_service.common.routes import (EmailCampaignUrl,
                                                   CandidatePoolApiUrl)
-from email_campaign_service.common.utils.amazon_ses import send_email, get_default_email_info
-from email_campaign_service.common.error_handling import UnprocessableEntity
+from email_campaign_service.common.error_handling import InternalServerError
+from email_campaign_service.common.utils.amazon_ses import (send_email,
+                                                            get_default_email_info)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailClient, EmailCampaignSend)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
@@ -183,21 +184,23 @@ def delete_campaign(campaign):
         pass
 
 
-def send_campaign(campaign, access_token, blast_count=1):
+def send_campaign(campaign, access_token, expected_blast_count=1):
     """
     This function sends the campaign via /v1/email-campaigns/:id/send
     timeout is set to be 20s here. One can modify this by passing required value.
     :param (EmailCampaign) campaign: Email campaign obj
     :param (str) access_token: Auth token to make HTTP request
+    :param (int) expected_blast_count:
     """
     raise_if_not_instance_of(campaign, EmailCampaign)
     raise_if_not_instance_of(access_token, basestring)
+    raise_if_not_instance_of(expected_blast_count, int)
     # send campaign
     response = requests.post(EmailCampaignUrl.SEND % campaign.id,
                              headers=dict(Authorization='Bearer %s' % access_token))
     assert response.ok
     try:
-        get_blasts_with_polling(campaign, blast_count, 100)
+        get_blasts_with_polling(campaign, expected_blast_count, 100)
     except Exception as e:
         e.message += '\n Blasts not found in specified time'
         raise
@@ -358,12 +361,16 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
 def get_sends(campaign, blast_index, expected_count):
     """
     This returns all number of sends associated with given blast index of a campaign
-    :param campaign: Valid campaign object.
-    :param blast_index: Index of blast to be retrieved.
-    :param expected_count: Number of sends to be expected.
+    :param (EmailCampaign) campaign: Valid campaign object.
+    :param (int) blast_index: Index of blast to be retrieved.
+    :param (int) expected_count: Number of sends to be expected.
     """
-    assert campaign, 'Please provide valid campaign object'
-    assert expected_count, 'expected_count must be provided'
+    if not isinstance(campaign, EmailCampaign):
+        raise InternalServerError(error_message='Valid email campaign object must be provided')
+    if not isinstance(blast_index, int):
+        raise InternalServerError(error_message='blast_index must be positive integer')
+    if not isinstance(expected_count, int):
+        raise InternalServerError(error_message='expected_count must be positive integer')
     db.session.commit()
     try:
         if campaign.blasts[blast_index].sends >= expected_count:
@@ -584,10 +591,10 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
 def send_campaign_email_to_candidate(campaign, email, candidate_id, blast_id):
     """
     This function will create a campaign send object and then it will send the email to given email address.
-    :param campaign: EmailCampaign object
-    :param email: CandidateEmail object
-    :param candidate_id: candidate unique id
-    :param blast_id: campaign blast id
+    :param (EmailCampiagn) campaign: EmailCampaign object
+    :param (dict, CandidateEmail) email: CandidateEmail object
+    :param (int, long) candidate_id: candidate unique id
+    :param (int, long) blast_id: campaign blast id
     """
     # Create an campaign send object
     email_campaign_send = EmailCampaignSend(campaign_id=campaign.id,

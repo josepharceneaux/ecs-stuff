@@ -385,9 +385,15 @@ class TestSendCampaign(object):
         created.
         """
         with app.app_context():
-            CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
+            response = CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
                 self.URL % email_campaign_of_user_first.id, access_token_first,
                 email_campaign_of_user_first, talent_pipeline.id)
+            CampaignsTestsHelpers.assert_campaign_failure(response, email_campaign_of_user_first,
+                                                          expected_status=200)
+            if not email_campaign_of_user_first.email_client_id:
+                json_resp = response.json()
+                assert str(email_campaign_of_user_first.id) in json_resp['message']
+
 
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
                                                      email_campaign_in_other_domain):
@@ -417,7 +423,12 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign_with_candidate_having_no_email.id,
             headers=dict(Authorization='Bearer %s' % access_token_first))
-        CampaignsTestsHelpers.assert_campaign_failure(response, campaign_with_candidate_having_no_email, False, requests.codes.OK)
+        CampaignsTestsHelpers.assert_campaign_failure(response, campaign_with_candidate_having_no_email,
+                                                      requests.codes.OK)
+        if not campaign_with_candidate_having_no_email.email_client_id:
+            json_resp = response.json()
+            assert str(campaign_with_candidate_having_no_email.id) in json_resp['message']
+
 
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
             self, access_token_first, user_first, campaign_with_valid_candidate):
@@ -446,7 +457,10 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign_with_valid_candidate.id,
             headers=dict(Authorization='Bearer %s' % access_token_first))
-        CampaignsTestsHelpers.assert_campaign_failure(response, campaign_with_valid_candidate, False, requests.codes.OK)
+        CampaignsTestsHelpers.assert_campaign_failure(response, campaign_with_valid_candidate, requests.codes.OK)
+        if not campaign_with_valid_candidate.email_client_id:
+            json_resp = response.json()
+            assert str(campaign_with_valid_candidate.id) in json_resp['message']
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_diff_domain(
             self, access_token_first, user_first,

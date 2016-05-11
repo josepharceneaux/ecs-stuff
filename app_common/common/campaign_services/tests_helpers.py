@@ -195,11 +195,10 @@ class CampaignsTestsHelpers(object):
                                                           smartlist_id=smartlist_id)
         campaign_smartlist_model.save(campaign_smartlist_obj)
         response_post = send_request('post', url, access_token)
-        cls.assert_campaign_failure(response_post, campaign, email_client=False,
-                                    expected_status=200)
+        return response_post
 
     @classmethod
-    def assert_campaign_failure(cls, response, campaign, email_client=False,
+    def assert_campaign_failure(cls, response, campaign,
                                 expected_status=200):
         """
         If we try to send a campaign with invalid data, e.g. a campaign with no smartlist associated
@@ -208,10 +207,6 @@ class CampaignsTestsHelpers(object):
         """
         assert response.status_code == expected_status
         assert response.json()
-        if not email_client:
-            json_resp = response.json()
-            assert str(campaign.id) in json_resp['message']
-        # Need to add this as processing of POST request runs on Celery
         blasts = get_blasts(campaign, 0)
         assert not blasts, 'Email campaign blasts found for campaign (id:%d)' % campaign.id
         assert len(blasts) == 0
@@ -455,17 +450,17 @@ def _get_invalid_id_and_status_code_pair(invalid_ids):
             (invalid_ids[1], ResourceNotFound.http_status_code())]
 
 
-def get_blasts(campaign, expected_count):
+def get_blasts(campaign, expected_blast_count):
     """
     This returns all the blasts associated with given campaign.
     :param campaign: Valid campaign object.
-    :param expected_count: Number of blasts to be expected.
+    :param expected_blast_count: Number of blasts to be expected.
     """
     raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
-    raise_if_not_instance_of(expected_count, (int, long))
+    raise_if_not_instance_of(expected_blast_count, (int, long))
     db.session.commit()
     blasts = campaign.blasts.all()
-    if len(blasts) == expected_count:
+    if len(blasts) == expected_blast_count:
         return blasts
     else:
         return False
