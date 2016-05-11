@@ -15,10 +15,10 @@ from ..models.db import db
 from ..tests.conftest import fake
 from campaign_utils import get_model
 from ..routes import CandidatePoolApiUrl
+from campaign_utils import CampaignUtils
 from custom_errors import CampaignException
 from ..models.misc import (Frequency, Activity)
 from ..utils.datetime_utils import DatetimeUtils
-from ..models.email_campaign import EmailCampaign
 from ..utils.validators import raise_if_not_instance_of
 from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER)
 from ..error_handling import (ForbiddenError, InvalidUsage,
@@ -29,6 +29,7 @@ class CampaignsTestsHelpers(object):
     """
     This class contains common tests for sms_campaign_service and push_campaign_service.
     """
+
     @classmethod
     def request_for_forbidden_error(cls, method, url, token):
         """
@@ -52,10 +53,10 @@ class CampaignsTestsHelpers(object):
         campaign_id = campaign.id
         # Delete the campaign first
         CampaignsTestsHelpers.request_for_ok_response('delete', url_to_delete_campaign % campaign_id,
-                                                     token, None)
+                                                      token, None)
         CampaignsTestsHelpers.request_for_resource_not_found_error(method_after_delete,
-                                                                  url_after_delete % campaign_id,
-                                                                  token)
+                                                                   url_after_delete % campaign_id,
+                                                                   token)
 
     @classmethod
     def request_for_ok_response(cls, method, url, token, data):
@@ -195,11 +196,11 @@ class CampaignsTestsHelpers(object):
         campaign_smartlist_model.save(campaign_smartlist_obj)
         response_post = send_request('post', url, access_token)
         cls.assert_campaign_failure(response_post, campaign, email_client=False,
-                                expected_status=200)
+                                    expected_status=200)
 
     @classmethod
     def assert_campaign_failure(cls, response, campaign, email_client=False,
-                         expected_status=200):
+                                expected_status=200):
         """
         If we try to send a campaign with invalid data, e.g. a campaign with no smartlist associated
         or with 0 candidates, the campaign sending witll fail. This method asserts that the specified
@@ -223,7 +224,7 @@ class CampaignsTestsHelpers(object):
         will have no email or for SMS campaign, candidate will not have any mobile number
         associated. This should assert custom error NO_VALID_CANDIDATE_FOUND in response.
         """
-        response_post = send_request('post', url,  token)
+        response_post = send_request('post', url, token)
         error_resp = cls.assert_api_response(response_post,
                                              expected_status_code=InvalidUsage.http_status_code())
         assert error_resp['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
@@ -268,6 +269,7 @@ class FixtureHelpers(object):
     """
     This contains the functions which will be useful for similar fixtures across campaigns
     """
+
     @classmethod
     def create_smartlist_with_search_params(cls, access_token, talent_pipeline_id):
         """
@@ -333,7 +335,7 @@ def get_invalid_fake_dict():
     :rtype dict
     """
     fake_dict = get_fake_dict()
-    fake_dict[len(fake_dict.keys())-1] = [fake.word]
+    fake_dict[len(fake_dict.keys()) - 1] = [fake.word]
     return fake_dict
 
 
@@ -459,10 +461,8 @@ def get_blasts(campaign, expected_count):
     :param campaign: Valid campaign object.
     :param expected_count: Number of blasts to be expected.
     """
-    if not isinstance(campaign, EmailCampaign):
-        raise InvalidUsage(error_message='Must provide valid email campaign object.')
-    if expected_count is None:
-        raise InvalidUsage(error_message='expected_count must be a positive integer.')
+    raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
+    raise_if_not_instance_of(expected_count, (int, long))
     db.session.commit()
     blasts = campaign.blasts.all()
     if len(blasts) == expected_count:

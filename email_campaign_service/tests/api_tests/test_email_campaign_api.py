@@ -569,7 +569,7 @@ class TestSendCampaign(object):
         smartlist_ids = create_two_smartlists_with_same_candidate(access_token_first,
                                                                   talent_pipeline,
                                                                   emails_list=True,
-                                                                  timeout=100)
+                                                                  timeout=300)
         campaign = email_campaign_of_user_first
         create_email_campaign_smartlists(smartlist_ids=smartlist_ids,
                                          email_campaign_id=campaign.id)

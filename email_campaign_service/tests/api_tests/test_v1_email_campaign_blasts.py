@@ -97,8 +97,8 @@ class TestEmailCampaignBlasts(object):
         assert received_blast_obj['sends'] == expected_sends_count
 
         # sending campaign 10 times to create 10 blast objects
-        for i in xrange(1, 10):
-            send_campaign(sent_campaign, access_token_first, i+1)
+        for index in xrange(1, 10):
+            send_campaign(sent_campaign, access_token_first, index+1)
 
         assert_blast_sends(sent_campaign, expected_sends_count, blast_index=3, abort_time_for_sends=100)
         #  Test GET blasts of email campaign with 4 results per_page. It should get 4 blast objects

@@ -173,7 +173,7 @@ def send_email_campaign(campaign, new_candidates_only=False):
     # gt plugin code starts here.
 
     if not isinstance(campaign, EmailCampaign):
-        raise InvalidUsage(error_message='Must provide valid email campaign object.')
+        raise InternalServerError(error_message='Must provide valid email campaign object.')
     if campaign.email_client_id:
         candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(campaign=campaign,
                                                                                new_candidates_only=new_candidates_only)
