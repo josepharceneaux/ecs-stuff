@@ -126,8 +126,16 @@ def register_error_handlers(app, logger):
         else:
             error = exc.message
             response = {'error': {'message': "Internal server error"}}
+        app_name, url, user_id, user_email = get_request_info(app)
         logger.error("Internal server error. App: %s,\nUrl: %s,\nError Details: %s", app.import_name,
                      request.url if has_request_context() else None, error)
+        logger.error('''Internal server error.
+                        App: %s,
+                        Url: %s
+                        User Id: %s
+                        UserEmail: %s
+                        Error Details: %s
+                        ''', app_name, url, user_id, user_email, error)
         return jsonify(response), 500
 
     def handle_error(error, message):
@@ -138,19 +146,11 @@ def register_error_handlers(app, logger):
         :param str message: message to append while logging error details.
         :return: response, status_code
         """
-        # Can't import at top, due to circular dependency
-        from ..common.models.user import User
         message = message if message else 'Error occurred.'
         assert isinstance(error, TalentError), '"error" is not a getTalent custom exception.'
         error_dict = error.to_dict()
         response = jsonify(error_dict)
-        app_name, url, user_id, user_email = (None,) * 4
-        if has_request_context():
-            app_name = app.import_name
-            url = request.url
-            if hasattr(request, 'user') and isinstance(request.user, User):
-                user_id = request.user.id
-                user_email = request.user.email
+        app_name, url, user_id, user_email = get_request_info(app)
 
         logger.warn('''%s
                        App: %s,
@@ -160,3 +160,24 @@ def register_error_handlers(app, logger):
                        Error Details: %s
                        ''', message, app_name, url, user_id, user_email, error_dict)
         return response, error.http_status_code()
+
+
+def get_request_info(app):
+    """
+    This function takes app as argument and returns request related information about user, request url and
+    error information.
+    :param app: Flask app
+    :rtype tuple
+    """
+    # Can't import at top, due to circular dependency, can remove this import if we are 100 % sure
+    # that request.user is user instance.
+    from ..common.models.user import User
+    app_name, url, user_id, user_email = (None,) * 4
+    if has_request_context():
+        app_name = app.import_name
+        url = request.url
+        if hasattr(request, 'user') and isinstance(request.user, User):
+            user_id = request.user.id
+            user_email = request.user.email
+    return app_name, url, user_id, user_email
+
