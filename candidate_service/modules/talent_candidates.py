@@ -178,7 +178,8 @@ def fetch_candidate_info(candidate, fields=None):
         'openweb_id': openweb_id,
         'dice_profile_id': dice_profile_id,
         'talent_pool_ids': talent_pool_ids,
-        'resume_url': resume_url
+        'resume_url': resume_url,
+        'source_id': candidate.source_id
     }
 
     # Remove keys with None values
@@ -840,36 +841,37 @@ def create_or_update_candidate_from_params(
         CandidateMilitaryService, CandidatePreferredLocation,
         CandidateSkill, CandidateSocialNetwork
 
-    :type user_id:                  int|long
-    :type is_creating:              bool
-    :type is_updating:              bool
-    :type candidate_id:             int
-    :type first_name:               basestring
-    :type last_name:                basestring
-    :type middle_name:              basestring
-    :type formatted_name:           str
-    :type status_id:                int
-    :type emails:                   list
-    :type phones:                   list
-    :type addresses:                list
-    :type educations:               list
-    :type military_services:        list
-    :type areas_of_interest:        list
-    :type custom_fields:            list
-    :type social_networks:          list
-    :type work_experiences:         list
-    :type work_preference:          dict
-    :type preferred_locations:      list
-    :type skills:                   list
-    :type dice_social_profile_id:   int
-    :type dice_profile_id:          int
-    :type added_datetime:           str
-    :type source_id:                int
-    :type objective:                basestring
-    :type summary:                  basestring
-    :type talent_pool_ids:          dict
-    :type delete_talent_pools:      bool
-    :type resume_url                basestring
+    :type   user_id:                int|long
+    :type   is_creating:            bool
+    :type   is_updating:            bool
+    :type   candidate_id:           int
+    :type   first_name:             basestring
+    :type   last_name:              basestring
+    :type   middle_name:            basestring
+    :type   formatted_name:         str
+    :type   status_id:              int
+    :type   emails:                 list
+    :type   phones:                 list
+    :type   addresses:              list
+    :type   educations:             list
+    :type   military_services:      list
+    :type   areas_of_interest:      list
+    :type   custom_fields:          list
+    :type   social_networks:        list
+    :type   work_experiences:       list
+    :type   work_preference:        dict
+    :type   preferred_locations:    list
+    :type   skills:                 list
+    :type   dice_social_profile_id: int
+    :type   dice_profile_id:        int
+    :type   added_datetime:         str
+    :param  source_id:              Source of candidate's intro, e.g. job-fair
+    :type   source_id:              int
+    :type   objective:              basestring
+    :type   summary:                basestring
+    :type   talent_pool_ids:        dict
+    :type   delete_talent_pools:    bool
+    :type   resume_url              basestring
     :rtype                          dict
     """
     # Format inputs
@@ -910,9 +912,8 @@ def create_or_update_candidate_from_params(
         raise InvalidUsage('Candidate ID is required for updating', custom_error.MISSING_INPUT)
 
     if is_updating:  # Update Candidate
-        candidate_id = _update_candidate(first_name, middle_name, last_name,
-                                         formatted_name, objective, summary,
-                                         candidate_id, user_id, resume_url)
+        candidate_id = _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
+                                         candidate_id, user_id, resume_url, source_id)
     else:  # Add Candidate
         candidate_id = _add_candidate(first_name, middle_name, last_name,
                                       formatted_name, added_datetime, status_id,
@@ -1102,7 +1103,7 @@ def social_network_name_from_url(url):
 
 
 def _update_candidate(first_name, middle_name, last_name, formatted_name, objective,
-                      summary, candidate_id, user_id, resume_url):
+                      summary, candidate_id, user_id, resume_url, source_id):
     """
     Function will update Candidate
     :return:    Candidate ID
@@ -1114,7 +1115,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         middle_name = parsed_names_object.middle
         last_name = parsed_names_object.last
 
-    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url}
+    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url, 'source_id': source_id}
 
     # Remove keys with empty values and strip each value
     update_dict = purge_dict(update_dict)
