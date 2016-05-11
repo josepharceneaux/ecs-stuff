@@ -1510,6 +1510,9 @@ class CandidateClientEmailCampaignResource(Resource):
             retry(assert_smartlist_candidates, sleeptime=3,  attempts=20,
                   retry_exceptions=(AssertionError,), args=(created_smartlist_id, len(candidate_ids),
                                                             request.headers.get('authorization')))
+
+            logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
+                        % (len(candidate_ids), created_smartlist_id))
         except AssertionError:
             raise InternalServerError('Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)'
                                       % (candidate_ids, created_smartlist_id))

@@ -57,7 +57,7 @@ class TestEmailCampaignSends(object):
         """
         Here we test the paginated response of GET call on endpoint /v1/email-campaigns/:id/sends
         """
-        assert_blast_sends(sent_campaign_to_ten_candidates, 4)
+        assert_blast_sends(sent_campaign_to_ten_candidates, 10)
         #  Test GET sends of email campaign with 4 results per_page. It should get 4 blast objects
         url = self.URL % sent_campaign_to_ten_candidates.id
         response = requests.get(url + '?per_page=4',
@@ -68,7 +68,7 @@ class TestEmailCampaignSends(object):
         assert received_send_obj['campaign_id'] == sent_campaign_to_ten_candidates.id
         assert received_send_obj['candidate_id'] == sent_campaign_to_ten_candidates.sends[0].candidate_id
 
-        assert_blast_sends(sent_campaign_to_ten_candidates, 8)
+        assert_blast_sends(sent_campaign_to_ten_candidates, 10)
         #  Test GET sends of email campaign with 4 results per_page using page = 2
         response = requests.get(url + '?per_page=4&page=2',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -79,7 +79,7 @@ class TestEmailCampaignSends(object):
         assert received_send_obj['campaign_id'] == sent_campaign_to_ten_candidates.id
         assert received_send_obj['candidate_id'] == sent_campaign_to_ten_candidates.sends[5].candidate_id
 
-        assert_blast_sends(sent_campaign_to_ten_candidates, 9)
+        assert_blast_sends(sent_campaign_to_ten_candidates, 10)
         response = requests.get(url + '?per_page=4&page=3',
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)

@@ -322,40 +322,44 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         UrlConversion.delete(send_url_conversion.url_conversion)
 
 
-def get_blasts(campaign):
+def get_blasts(campaign,count=None):
     """
     This returns all the blasts associated with given campaign
     """
     db.session.commit()
     blasts = campaign.blasts.all()
-    assert blasts
+    if count is not None:
+        assert len(blasts) == count
     return blasts
 
 
-def get_sends(campaign, blast_index):
+def get_sends(campaign, blast_index, count=None):
     """
     This returns all number of sends associated with given blast index of a campaign
     """
     db.session.commit()
     sends = campaign.blasts[blast_index].sends
-    assert sends
+    if count is not None:
+        assert sends == count
     return sends
 
 
 def get_blasts_with_polling(campaign):
     """
-    This polls the result of blasts of a campaign for 10s.
+    This polls the result of blasts of a campaign for 12s.
     """
-    return retry(get_blasts, sleeptime=3,   attempts=20, args=(campaign,),
+    return retry(get_blasts, sleeptime=3, attempts=4, sleepscale=1, args=(campaign,),
                  retry_exceptions=(AssertionError,))
 
 
 def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=20):
     """
-    This function asserts the particular blast of given campaign has expected number of sends
+    This function asserts the particular blast of given campaign has expected number of sends.
+    If it fails, it retries until given timeout.
     """
-    sends = retry(get_sends, sleeptime=3,  max_sleeptime=abort_time_for_sends,
-                  args=(campaign, blast_index), retry_exceptions=(AssertionError,))
+    attempts = int(abort_time_for_sends / 3) + 1
+    sends = retry(get_sends, sleeptime=3, attempts=attempts, sleepscale=1,
+                  args=(campaign, blast_index, expected_count), retry_exceptions=(AssertionError,))
     assert sends >= expected_count
 
 
