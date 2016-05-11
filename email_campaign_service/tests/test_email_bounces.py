@@ -7,6 +7,7 @@ Author: Zohaib Ijaz, QC-Technologies, <mzohaib.qc@gmail.com>
 import time
 
 from email_campaign_service.common.campaign_services.custom_errors import CampaignException
+from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.tests.conftest import *
 
@@ -14,7 +15,7 @@ from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend, EmailCampaignBlast
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
-from email_campaign_service.tests.modules.handy_functions import create_smartlist_with_candidate, send_campaign_email_to_candidate
+from email_campaign_service.tests.modules.handy_functions import send_campaign_email_to_candidate
 
 
 def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles_to_user_first, email_campaign_of_user_first,
@@ -148,10 +149,10 @@ def create_campaign_data(access_token, campaign_id, talent_pipeline, candidate_c
         - It then creates campaign blast
         - It returns a tuple with campaign blast, smartlist_id, candidate_ids
     """
-    smartlist_id, candidate_ids = create_smartlist_with_candidate(access_token,
-                                                                  talent_pipeline,
-                                                                  emails_list=True,
-                                                                  count=candidate_count)
+    smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
+                                                                                        talent_pipeline,
+                                                                                        emails_list=True,
+                                                                                        count=candidate_count)
 
     create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
                                      email_campaign_id=campaign_id)

@@ -33,7 +33,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         any error.
         """
         task_id = CampaignsTestsHelpers.request_for_ok_response(
-            self.HTTP_METHOD, self.URL % sms_campaign_of_current_user.id,
+            self.HTTP_METHOD, self.URL % sms_campaign_of_current_user['id'],
             access_token_first, one_time_and_periodic)
         one_time_and_periodic['task_id'] = task_id
 
@@ -42,10 +42,9 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         """
         Using no Auth header like dict(Authorization='Bearer %s' % 'invalid_token'),
         just passing auth token as str. It should get Attribute Error.
-        :return:
         """
         try:
-            requests.post(self.URL % sms_campaign_of_current_user.id,
+            requests.post(self.URL % sms_campaign_of_current_user['id'],
                           headers=access_token_first)
         except AttributeError as e:
             assert 'unicode' in e.message
@@ -53,46 +52,43 @@ class TestSmsCampaignScheduleHTTPPOST(object):
     def test_campaign_schedule_with_invalid_token(self, sms_campaign_of_current_user):
         """
         User auth token is invalid. It should result in Unauthorized error.
-        :return:
         """
         CampaignsTestsHelpers.request_with_invalid_token(
-            self.HTTP_METHOD, self.URL % sms_campaign_of_current_user.id,
+            self.HTTP_METHOD, self.URL % sms_campaign_of_current_user['id'],
             generate_campaign_schedule_data())
 
     def test_campaign_schedule_with_invalid_header(self, access_token_first,
                                                    sms_campaign_of_current_user):
         """
         Making POST call with no content-type specifying. It should result in bad request error.
-        :return:
         """
-        response = requests.post(self.URL % sms_campaign_of_current_user.id,
+        response = requests.post(self.URL % sms_campaign_of_current_user['id'],
                                  headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_api_response(response)
 
-    def test_campaign_schedule_with_non_existing_frequency_id(self, valid_header,
+    def test_campaign_schedule_with_non_existing_frequency_id(self, headers,
                                                               sms_campaign_of_current_user):
         """
         Trying to schedule a campaign with invalid frequency Id, Valid ids are in [1,2,3..6] for
         now. It should get result in request error.
-        :return:
         """
         data = generate_campaign_schedule_data()
         data['frequency_id'] = fake.numerify()  # this returns a three digit random number
-        response = requests.post(self.URL % sms_campaign_of_current_user.id,
-                                 headers=valid_header,
+        response = requests.post(self.URL % sms_campaign_of_current_user['id'],
+                                 headers=headers,
                                  data=json.dumps(data))
         CampaignsTestsHelpers.assert_api_response(response)
 
-    def test_campaign_schedule_with_invalid_frequency_id(self, valid_header,
+    def test_campaign_schedule_with_invalid_frequency_id(self, headers,
                                                          sms_campaign_of_current_user):
         """
-        Trying to schedule a campaign with non int frequency Id, It should result in bad request error.
-        :return:
+        Trying to schedule a campaign with non int frequency Id, It should result
+        in bad request error.
         """
         data = generate_campaign_schedule_data()
         data['frequency_id'] = fake.word()
-        response = requests.post(self.URL % sms_campaign_of_current_user.id,
-                                 headers=valid_header,
+        response = requests.post(self.URL % sms_campaign_of_current_user['id'],
+                                 headers=headers,
                                  data=json.dumps(data))
         CampaignsTestsHelpers.assert_api_response(response)
 
@@ -100,30 +96,27 @@ class TestSmsCampaignScheduleHTTPPOST(object):
                                                        sms_campaign_in_other_domain):
         """
         Trying to schedule a campaign of some other user, It should result in forbidden error.
-        :return:
         """
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
-                                                          self.URL % sms_campaign_in_other_domain.id,
+                                                          self.URL % sms_campaign_in_other_domain['id'],
                                                           access_token_first)
 
-    def test_campaign_schedule_with_non_json_data_type(self, valid_header,
+    def test_campaign_schedule_with_non_json_data_type(self, headers,
                                                        sms_campaign_of_current_user):
         """
         Trying to schedule a campaign of with Non JSON data, It should get result in request error.
-        :return:
         """
-        response = requests.post(self.URL % sms_campaign_of_current_user.id,
-                                 headers=valid_header,
+        response = requests.post(self.URL % sms_campaign_of_current_user['id'],
+                                 headers=headers,
                                  data=generate_campaign_schedule_data())
         CampaignsTestsHelpers.assert_api_response(response)
 
-    def test_campaign_schedule_with_no_data(self, valid_header, sms_campaign_of_current_user):
+    def test_campaign_schedule_with_no_data(self, headers, sms_campaign_of_current_user):
         """
         Trying to schedule a campaign of with no data, It should get result in request error.
-        :return:
         """
-        response = requests.post(self.URL % sms_campaign_of_current_user.id,
-                                 headers=valid_header)
+        response = requests.post(self.URL % sms_campaign_of_current_user['id'],
+                                 headers=headers)
         CampaignsTestsHelpers.assert_api_response(response)
 
     def test_campaign_schedule_with_deleted_resource(self, access_token_first,
@@ -146,7 +139,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         It should get invalid usage error.
         """
         CampaignsTestsHelpers.request_with_past_start_and_end_datetime(
-            self.HTTP_METHOD, self.URL % sms_campaign_of_current_user.id, access_token_first,
+            self.HTTP_METHOD, self.URL % sms_campaign_of_current_user['id'], access_token_first,
             one_time_and_periodic)
 
     def test_campaign_schedule_with_missing_fields(self, access_token_first,
@@ -156,7 +149,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         This is the a to schedule a campaign with missing required fields.
         """
         CampaignsTestsHelpers.missing_fields_in_schedule_data(
-            self.HTTP_METHOD, self.URL % sms_campaign_of_current_user.id, access_token_first,
+            self.HTTP_METHOD, self.URL % sms_campaign_of_current_user['id'], access_token_first,
             one_time_and_periodic)
 
     def test_campaign_schedule_with_invalid_datetime_format(self, access_token_first,
@@ -166,23 +159,20 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         This is the a to schedule a campaign with invalid datetime formats
         """
         CampaignsTestsHelpers.invalid_datetime_format(
-            self.HTTP_METHOD, self.URL % sms_campaign_of_current_user.id,
+            self.HTTP_METHOD, self.URL % sms_campaign_of_current_user['id'],
             access_token_first, one_time_and_periodic)
 
     def test_schedule_campaign_with_put_method(self, access_token_first,
                                                sms_campaign_of_current_user):
         """
         This test tries to schedule a campaign with PUT method. It should get forbidden error
-        :return:
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            'put', self.URL % sms_campaign_of_current_user.id, access_token_first)
+            'put', self.URL % sms_campaign_of_current_user['id'], access_token_first)
 
     def test_schedule_campaign_with_invalid_campaign_id(self, access_token_first):
         """
         This is a test to schedule a campaign which does not exists in database.
-        :param access_token_first:
-        :return:
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(SmsCampaign,
                                                                self.HTTP_METHOD,
@@ -203,40 +193,32 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         """
         Campaign is scheduled one time. Here we try to re-schedule it periodically with valid data.
         It should be re-scheduled.
-        :param access_token_first:
-        :param scheduled_sms_campaign_of_current_user:
-        :return:
         """
         data = generate_campaign_schedule_data()
         data['frequency_id'] = Frequency.DAILY  # for Periodic job
         CampaignsTestsHelpers.request_for_ok_response(
-            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user.id,
+            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user['id'],
             access_token_first, data)
 
     def test_reschedule_campaign_with_invalid_token(self, sms_campaign_of_current_user):
         """
         Auth token is invalid. It should get Un-authorized error
-        :param sms_campaign_of_current_user:
-        :return:
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL
-                                                         % sms_campaign_of_current_user.id,
+                                                         % sms_campaign_of_current_user['id'],
                                                          generate_campaign_schedule_data())
 
     def test_reschedule_campaign_with_invalid_data(self, access_token_first,
                                                    scheduled_sms_campaign_of_current_user):
         """
         This is the test for PUT endpoint with invalid data e.g. empty dict, None data etc.
-        :return:
         """
         CampaignsTestsHelpers.reschedule_with_invalid_data(
-            self.URL % scheduled_sms_campaign_of_current_user.id, access_token_first)
+            self.URL % scheduled_sms_campaign_of_current_user['id'], access_token_first)
 
     def test_reschedule_campaign_with_invalid_campaign_id(self, access_token_first):
         """
         This is a test to update a campaign which does not exists in database.
-        :param access_token_first:
-        :return:
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(SmsCampaign,
                                                                self.HTTP_METHOD,
@@ -250,12 +232,9 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         """
         To schedule a task first time, we have to send POST,
         but we will send request using PUT which is for update and will validate error
-        :param access_token_first:
-        :param scheduled_sms_campaign_of_current_user:
-        :return:
         """
         CampaignsTestsHelpers.reschedule_with_post_method(
-            self.URL % scheduled_sms_campaign_of_current_user.id, access_token_first,
+            self.URL % scheduled_sms_campaign_of_current_user['id'], access_token_first,
             generate_campaign_schedule_data())
 
     def test_campaign_reschedule_with_missing_fields_in_data(
@@ -264,12 +243,9 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         """
         Here we try to reschedule given campaign periodically an one time. And test by no
         start_datetime and no end_datetime. It should get Invalid usage error.
-        :param access_token_first:
-        :param scheduled_sms_campaign_of_current_user:
-        :return:
         """
         CampaignsTestsHelpers.missing_fields_in_schedule_data(
-            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user.id,
+            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user['id'],
             access_token_first, one_time_and_periodic)
 
     def test_reschedule_campaign_with_invalid_datetime_format(
@@ -278,12 +254,9 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         """
         Campaign is scheduled one time. Here we try to re-schedule it periodically and one_time.
         We pass datetime with invalid format. We then assert that we get Invalid usage error.
-        :param access_token_first:
-        :param scheduled_sms_campaign_of_current_user:
-        :return:
         """
         CampaignsTestsHelpers.invalid_datetime_format(
-            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user.id,
+            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user['id'],
             access_token_first, one_time_and_periodic)
 
     def test_reschedule_not_owned_campaign(self, access_token_first,
@@ -293,7 +266,7 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         :return:
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_other_domain.id,
+            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_other_domain['id'],
             access_token_first)
 
     def test_rescheduling_deleted_campaign(self, access_token_first,
@@ -320,14 +293,15 @@ class TestSmsCampaignScheduleHTTPDELETE(object):
     def test_unschedule_campaign_with_invalid_token(self, sms_campaign_of_current_user):
         """
         User auth token is invalid. It should get Unauthorized error.
-        :return:
         """
         CampaignsTestsHelpers.request_with_invalid_token(
-            self.HTTP_METHOD, self.URL % sms_campaign_of_current_user.id,
+            self.HTTP_METHOD, self.URL % sms_campaign_of_current_user['id'],
             generate_campaign_schedule_data())
 
     def test_unschedule_campaign_with_invalid_campaign_id(self, access_token_first):
-        # Test with invalid integer id
+        """
+        Test with invalid integer id
+        """
         CampaignsTestsHelpers.request_with_invalid_resource_id(
             SmsCampaign, self.HTTP_METHOD, self.URL, access_token_first,
             generate_campaign_schedule_data())
@@ -336,27 +310,23 @@ class TestSmsCampaignScheduleHTTPDELETE(object):
                                    scheduled_sms_campaign_of_current_user):
         """
         Here we un schedule a campaign. It should get OK response.
-        :param access_token_first:
-        :param scheduled_sms_campaign_of_current_user:
-        :return:
         """
         # It should get campaign has been un scheduled
         CampaignsTestsHelpers.request_for_ok_response(
-            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user.id,
-            access_token_first, None)
+            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user['id'],
+            access_token_first)
         # It should get campaign is already unscheduled
         CampaignsTestsHelpers.request_for_ok_response(
-            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user.id,
-            access_token_first, None)
+            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user['id'],
+            access_token_first)
 
     def test_unschedule_not_owned_campaign(self, access_token_first,
                                            scheduled_sms_campaign_of_other_domain):
         """
         Here we try to un schedule a campaign of some other user. It should get forbidden error.
-        :return:
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_other_domain.id,
+            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_other_domain['id'],
             access_token_first)
 
     def test_unschedule_with_deleted_resource(self, access_token_first,
