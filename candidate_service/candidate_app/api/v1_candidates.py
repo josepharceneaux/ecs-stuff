@@ -1504,6 +1504,8 @@ class CandidateClientEmailCampaignResource(Resource):
             created_smartlist_id = created_smartlist.get('smartlist', {}).get('id')
 
         # Pool the Smartlist API to assert candidate(s) have been associated with smartlist
+        error_message = 'Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)' \
+                        % (candidate_ids, created_smartlist_id)
         try:
             if poll(assert_smartlist_candidates, step=3,
                     args=(created_smartlist_id, len(candidate_ids), request.headers.get('authorization')),
@@ -1513,11 +1515,10 @@ class CandidateClientEmailCampaignResource(Resource):
                 logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
                             % (len(candidate_ids), created_smartlist_id))
             else:
-                raise InternalServerError('Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)'
-                                          % (candidate_ids, created_smartlist_id))
+                raise InternalServerError(error_message)
         except TimeoutException:
-            raise InternalServerError('Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)'
-                                      % (candidate_ids, created_smartlist_id))
+            logger.exception(error_message)
+            raise InternalServerError(error_message)
 
         # create campaign
         email_campaign_object = {
