@@ -25,6 +25,7 @@ from celery import chord
 from flask import current_app
 
 # Database Models
+from ..inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 from ..utils.auth_utils import refresh_token
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
@@ -272,6 +273,11 @@ class CampaignBase(object):
         :rtype: str
         """
         pass
+
+    @property
+    def auth_token(self):
+        auth_header = self.get_authorization_header(self.user.id)
+        return auth_header['Authorization'].replace('Bearer ', '')
 
     @staticmethod
     def get_authorization_header(user_id, bearer_access_token=None):
@@ -1170,25 +1176,9 @@ class CampaignBase(object):
         # we just log the error and move on to next iteration. In case of any error, we return
         # empty list.
         try:
-            # other campaigns need to update this
-            raise_if_not_instance_of(campaign_smartlist, CampaignUtils.SMARTLIST_MODELS)
-            params = {'fields': 'id'}
-            # HTTP GET call to candidate_service to get candidates associated with given
-            # smartlist_id.
-            response = http_request('GET', CandidatePoolApiUrl.SMARTLIST_CANDIDATES
-                                    % campaign_smartlist.smartlist_id,
-                                    headers=self.oauth_header, params=params, user_id=self.user.id)
-            # get candidate objects
-            candidates = [Candidate.get_by_id(candidate['id'])
-                          for candidate in response.json()['candidates']]
-            # page_count = response.headers['X-Page-Count']
-            # for page_no in xrange(2, page_count):
-            #     response = http_request('GET', CandidatePoolApiUrl.SMARTLIST_CANDIDATES
-            #                             % campaign_smartlist.smartlist_id + 'page=%s' % page_no,
-            #                             headers=self.oauth_header, params=params, user_id=self.user.id)
-            #     # get candidate objects
-            #     candidates = [Candidate.get_by_id(candidate['id'])
-            #                   for candidate in response.json()['candidates']]
+            candidates_ids = get_candidates_of_smartlist(campaign_smartlist.smartlist_id, candidate_ids_only=True,
+                                                         access_token=self.auth_token)
+            candidates = [Candidate.get_by_id(candidate_id) for candidate_id in candidates_ids]
         except Exception:
             logger.exception('get_smartlist_candidates: Error while fetching candidates for '
                              'smartlist(id:%s)' % campaign_smartlist.smartlist_id)
