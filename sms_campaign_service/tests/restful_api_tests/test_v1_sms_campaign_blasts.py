@@ -79,6 +79,7 @@ class TestSmsCampaignBlasts(object):
         """
         Here we test the paginated response of GET call on endpoint /v1/sms-campaigns/:id/blasts
         """
+        # TODO let's please add a comment here and also does the URL in the comment look okay?
         sent_campaign, blast_ids = sent_campaign_and_blast_ids
         expected_sends = 2
         url = self.URL % sent_campaign['id']
