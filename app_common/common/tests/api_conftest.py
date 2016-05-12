@@ -20,13 +20,8 @@ from requests import codes
 from ..test_config_manager import load_test_config
 from ..utils.test_utils import (create_candidate, get_candidate, delete_candidate,
                                 create_smartlist, delete_smartlist, delete_talent_pool,
-                                create_talent_pools, create_talent_pipelines, get_smartlist_candidates)
+                                create_talent_pools, create_talent_pipelines, get_smartlist_candidates, get_talent_pool)
 
-ROLES = ['CAN_ADD_USERS', 'CAN_GET_USERS', 'CAN_DELETE_USERS', 'CAN_ADD_TALENT_POOLS',
-         'CAN_GET_TALENT_POOLS', 'CAN_DELETE_TALENT_POOLS', 'CAN_ADD_TALENT_POOLS_TO_GROUP',
-         'CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES', 'CAN_DELETE_CANDIDATES',
-         'CAN_ADD_TALENT_PIPELINE_SMART_LISTS', 'CAN_DELETE_TALENT_PIPELINE_SMART_LISTS',
-         'CAN_ADD_TALENT_PIPELINES']
 
 test_config = load_test_config()
 
@@ -247,13 +242,14 @@ def talent_pool(request, token_first, user_first):
     """
     talent_pools = create_talent_pools(token_first)
     talent_pool_id = talent_pools['talent_pools'][0]
+    talent_pool_obj = get_talent_pool(talent_pool_id, token_first)['talent_pool']
 
     def tear_down():
         delete_talent_pool(talent_pool_id, token_first,
                            expected_status=(codes.OK, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
-    return {'id': talent_pool_id}
+    return talent_pool_obj
 
 
 @pytest.fixture(scope='function')
@@ -264,11 +260,12 @@ def talent_pool_second(request, token_second, user_second):
     """
     talent_pools = create_talent_pools(token_second)
     talent_pool_id = talent_pools['talent_pools'][0]
+    talent_pool_obj = get_talent_pool(talent_pool_id, token_second)['talent_pool']
 
     def tear_down():
         delete_talent_pool(talent_pool_id, token_second,
                            expected_status=(codes.OK, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
-    return {'id': talent_pool_id}
+    return talent_pool_obj
 

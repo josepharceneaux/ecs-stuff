@@ -312,7 +312,7 @@ class CampaignBase(object):
             raise ForbiddenError('User(id:%s) has no auth token associated.'
                                  % user_id)
 
-        if user_token_obj.expires < (datetime.now() + timedelta(seconds=60)):
+        if user_token_obj.expires < (datetime.utcnow() + timedelta(seconds=60)):
             user_access_token = refresh_token(user_access_token, token=user_token_obj)
         return {'Authorization': 'Bearer %s' % user_access_token}
 
@@ -1171,6 +1171,7 @@ class CampaignBase(object):
         # we just log the error and move on to next iteration. In case of any error, we return
         # empty list.
         try:
+            raise_if_not_instance_of(campaign_smartlist, CampaignUtils.SMARTLIST_MODELS)
             candidates_ids = get_candidates_of_smartlist(campaign_smartlist.smartlist_id, candidate_ids_only=True,
                                                          access_token=self.auth_token)
             candidates = [Candidate.get_by_id(candidate_id) for candidate_id in candidates_ids]
