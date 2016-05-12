@@ -162,21 +162,21 @@ class TestSmartlistResource(object):
             assert resp.status_code == 400
             assert resp.json()['error']['message'] == "`candidate_ids` should be list of whole numbers"
 
-        def test_create_smartlist_with_both_search_params_and_candidate_ids(self, access_token_first):
-            """Test creating smartlist with both search_params and candidate_ids should not be allowed"""
-            data = {'name': fake.word(), 'candidate_ids': [1], 'search_params': {"maximum_years_experience": "5"}}
-            resp = self.call_post_api(data, access_token_first)
+        # def test_create_smartlist_with_both_search_params_and_candidate_ids(self, access_token_first):
+        #     """Test creating smartlist with both search_params and candidate_ids should not be allowed"""
+        #     data = {'name': fake.word(), 'candidate_ids': [1], 'search_params': {"maximum_years_experience": "5"}}
+        #     resp = self.call_post_api(data, access_token_first)
 
-            assert resp.status_code == 400
-            assert json.loads(resp.content)['error']['message'] == "Bad input: `search_params` and `candidate_ids` both are present. Service accepts only one"
+        #     assert resp.status_code == 400
+        #     assert json.loads(resp.content)['error']['message'] == "Bad input: `search_params` and `candidate_ids` both are present. Service accepts only one"
 
-        def test_create_smartlist_with_invalid_search_params(self, access_token_first):
-            """Test search_params should be in dictionary format"""
-            data = {'name': fake.word(), 'search_params': "location=San Jose, CA"}
-            resp = self.call_post_api(data, access_token_first)
+        # def test_create_smartlist_with_invalid_search_params(self, access_token_first):
+        #     """Test search_params should be in dictionary format"""
+        #     data = {'name': fake.word(), 'search_params': "location=San Jose, CA"}
+        #     resp = self.call_post_api(data, access_token_first)
 
-            assert resp.status_code == 400
-            assert json.loads(resp.content)['error']['message'] == "`search_params` should in dictionary format."
+        #     assert resp.status_code == 400
+        #     assert json.loads(resp.content)['error']['message'] == "`search_params` should in dictionary format."
 
         def test_create_smartlist_with_string_search_params(self, access_token_first):
             data2 = {'name': fake.word(), 'search_params': "'example'"}
@@ -287,25 +287,25 @@ class TestSmartlistResource(object):
             assert response['smartlist']['total_found'] == num_of_candidates
             assert response['smartlist']['user_id'] == user_first.id
 
-        def test_get_api_with_search_params(self, access_token_first, user_first, talent_pipeline):
-            """
-            Test GET API for smartlist (with search_params)
-            """
-            list_name = fake.name()
-            add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_CANDIDATES])
-            search_params = json.dumps({"location": "San Jose, CA"})
-            smartlist = save_smartlist(user_id=user_first.id,
-                                       name=list_name,
-                                       search_params=search_params, talent_pipeline_id=talent_pipeline.id)
-            resp = self.call_get_api(access_token_first, smartlist.id)
+        # def test_get_api_with_search_params(self, access_token_first, user_first, talent_pipeline):
+        #     """
+        #     Test GET API for smartlist (with search_params)
+        #     """
+        #     list_name = fake.name()
+        #     add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_CANDIDATES])
+        #     search_params = json.dumps({"location": "San Jose, CA"})
+        #     smartlist = save_smartlist(user_id=user_first.id,
+        #                                name=list_name,
+        #                                search_params=search_params, talent_pipeline_id=talent_pipeline.id)
+        #     resp = self.call_get_api(access_token_first, smartlist.id)
 
-            assert resp.status_code == 200
+        #     assert resp.status_code == 200
 
-            response = json.loads(resp.content)
+        #     response = json.loads(resp.content)
 
-            assert response['smartlist']['name'] == list_name
-            assert response['smartlist']['user_id'] == user_first.id
-            assert response['smartlist']['search_params'] == search_params
+        #     assert response['smartlist']['name'] == list_name
+        #     assert response['smartlist']['user_id'] == user_first.id
+        #     assert response['smartlist']['search_params'] == search_params
 
         def test_get_smartlist_from_outside_domain(self, user_first, access_token_first,
                                                    access_token_second, talent_pipeline):
