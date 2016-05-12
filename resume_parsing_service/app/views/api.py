@@ -46,6 +46,7 @@ def resume_post_reciever():
     # key and filename.
     if 'application/json' in content_type:
         request_json = request.get_json()
+        logger.info('Beginning parsing with JSON params: {}'.format(request_json))
         create_candidate = request_json.get('create_candidate', False)
         talent_pool_ids = request_json.get('talent_pool_ids')
         if not isinstance(talent_pool_ids, (list, type(None))):
