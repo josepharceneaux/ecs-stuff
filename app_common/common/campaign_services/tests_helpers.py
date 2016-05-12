@@ -11,6 +11,7 @@ import json
 from datetime import datetime, timedelta
 
 # Third Party
+import pytz
 import requests
 from requests import Response
 from polling import poll, TimeoutException
@@ -370,8 +371,6 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(user_id, (int, long))
         raise_if_not_instance_of(_type, (int, long))
         raise_if_not_instance_of(source_id, (int, long))
-        # Need to commit the session because Celery has its own session, and our session does not
-        # know about the changes that Celery session has made.
         activity = poll(_get_activity, args=(user_id, _type, source_id), step=3, timeout=60)
         assert activity
 
@@ -618,6 +617,18 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(user, User)
         raise_if_not_instance_of(roles, (list, tuple))
         add_role_to_test_user(user, roles)
+
+    @staticmethod
+    def assert_valid_datetime_range(datetime_str, minutes=2):
+        """
+        This asserts that given datetime is in valid range i.e. in neighboured of current datetime.
+        1) It should be greater than current datetime - minutes (default=2)
+        2) It should be less than current datetime + minutes (default=2)
+        """
+        raise_if_not_instance_of(datetime_str, basestring)
+        current_datetime = datetime.utcnow().replace(tzinfo=pytz.utc)
+        assert DatetimeUtils.utc_isoformat_to_datetime(datetime_str) > current_datetime - timedelta(minutes=minutes)
+        assert DatetimeUtils.utc_isoformat_to_datetime(datetime_str) < current_datetime + timedelta(minutes=minutes)
 
 
 class FixtureHelpers(object):
