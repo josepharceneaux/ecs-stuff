@@ -1807,7 +1807,7 @@ class CandidateDeviceResource(Resource):
             raise InvalidUsage('device_id is not given in post data')
         if os.getenv(TalentConfigKeys.ENV_KEY) == TalentEnvs.PROD:
             device = CandidateDevice.get_device_by_one_signal_id_and_domain_id(one_signal_device_id,
-                                                                                     authenticated_user.domain_id)
+                                                                               authenticated_user.domain_id)
             if device:
                 raise InvalidUsage('Given OneSignal Device id (%s) is already associated to a '
                                    'candidate in your domain')
@@ -1870,8 +1870,7 @@ class CandidateDeviceResource(Resource):
         one_signal_device_id = data.get('one_signal_device_id')
         if not one_signal_device_id:
             raise InvalidUsage('device_id is not given in post data')
-        # device = CandidateDevice.get_device_by_one_signal_id_and_domain_id(one_signal_device_id,
-        #                                                                          authenticated_user.domain_id)
+
         device = CandidateDevice.get_by_candidate_id_and_one_signal_device_id(candidate_id, one_signal_device_id)
         if not device:
             raise ResourceNotFound('Device not found with given OneSignalId (%s) and candidate_id (%s)'

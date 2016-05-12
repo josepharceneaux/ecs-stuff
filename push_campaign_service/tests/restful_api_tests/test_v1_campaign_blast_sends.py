@@ -75,7 +75,7 @@ class TestCampaignBlastSends(object):
         # 200 case: Got Campaign Sends successfully
         blast_id = campaign_blast['id']
         campaign_id = campaign_blast['campaign_id']
-        response = retry(get_blast_sends, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        response = retry(get_blast_sends, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(blast_id, campaign_id, token_first), kwargs={'count': 1})
         # Since each blast have one send, so total sends will be equal to number of blasts
         assert len(response['sends']) == 1

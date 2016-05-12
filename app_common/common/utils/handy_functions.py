@@ -21,7 +21,6 @@ from flask import current_app, request
 from ..models.db import db
 from werkzeug.exceptions import BadRequest
 from ..talent_config_manager import TalentConfigKeys
-from ..utils.validators import raise_if_not_instance_of
 from ..models.user import (User, UserScopedRoles, DomainRole)
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
@@ -233,9 +232,11 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     error_message = e.message
             else:
                 # raise any Server error
-                log_exception("http_request: Server error from %s on %s call. "
-                              "Make sure requested server is running. Data: %s, Headers: %s" % (url, method_type,
-                                                                                                data, headers))
+                log_exception('''http_request: Server error, make sure requested server is running.
+                                 URL:     %s
+                                 Method:  %s
+                                 Data:    %s
+                                 Headers: %s''' % (url, method_type, data, headers))
                 raise
         except ConnectionError:
             # This check is for if any talent service is not running. It logs the URL on

@@ -1,18 +1,21 @@
 """
 This module contains utility methods will be used in API based tests.
 """
+# builtin imports
 import json
-
 from datetime import datetime, timedelta
-from dateutil.parser import parse
-import requests
-from requests import codes
-from faker import Faker
 
-from ..tests.conftest import randomword
+# 3rd party imports
+import requests
+from faker import Faker
+from requests import codes
+from dateutil.parser import parse
+
+# Service specific imports
 from ..error_codes import ErrorCodes
-from ..routes import UserServiceApiUrl, AuthApiUrl, CandidateApiUrl, CandidatePoolApiUrl, \
-    SchedulerApiUrl
+from ..tests.conftest import randomword
+from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
+                      CandidatePoolApiUrl, SchedulerApiUrl)
 
 fake = Faker()
 

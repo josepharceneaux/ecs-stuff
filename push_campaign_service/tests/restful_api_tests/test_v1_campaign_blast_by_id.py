@@ -86,7 +86,7 @@ class TestCampaignBlastById(object):
         # 200 case: Campaign Blast successfully
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
-        response = retry(get_blast, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        response = retry(get_blast, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(blast_id, campaign_id, token_first), kwargs={'sends': 1})
         blast = response['blast']
         assert blast['sends'] == 1
@@ -98,7 +98,7 @@ class TestCampaignBlastById(object):
         # 200 case: Campaign Blast successfully
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
-        response = retry(get_blast, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        response = retry(get_blast, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(blast_id, campaign_id, token_same_domain), kwargs={'sends': 1})
         blast = response['blast']
         assert blast['sends'] == 1

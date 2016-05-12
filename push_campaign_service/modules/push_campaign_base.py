@@ -46,8 +46,8 @@ from push_campaign_service.common.models.candidate import CandidateDevice, Candi
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from push_campaign_service.common.models.push_campaign import (PushCampaign, PushCampaignSend,
-                                                               PushCampaignSendUrlConversion, PushCampaignBlast)
-from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE, ONE_SIGNAL_TEST_DEVICE_ID
+                                                               PushCampaignSendUrlConversion)
+from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE
 
 
 class PushCampaignBase(CampaignBase):

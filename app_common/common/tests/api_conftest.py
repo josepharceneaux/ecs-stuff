@@ -13,16 +13,14 @@ but user is different.
 
 """
 import pytest
-import time
 
 from redo import retry
 from requests import codes
 
 from ..test_config_manager import load_test_config
-from ..utils.test_utils import (get_user, add_roles, create_candidate, get_candidate, delete_candidate,
-                                create_smartlist, delete_smartlist, delete_talent_pool, create_talent_pools,
-                                get_talent_pool, get_talent_pipeline, delete_talent_pipeline, create_talent_pipelines,
-                                get_smartlist_candidates)
+from ..utils.test_utils import (create_candidate, get_candidate, delete_candidate,
+                                create_smartlist, delete_smartlist, delete_talent_pool,
+                                create_talent_pools, create_talent_pipelines, get_smartlist_candidates)
 
 ROLES = ['CAN_ADD_USERS', 'CAN_GET_USERS', 'CAN_DELETE_USERS', 'CAN_ADD_TALENT_POOLS',
          'CAN_GET_TALENT_POOLS', 'CAN_DELETE_TALENT_POOLS', 'CAN_ADD_TALENT_POOLS_TO_GROUP',
@@ -66,8 +64,6 @@ def user_first(request, token_first):
     :return: user dictionary object
     """
     user_id = test_config['USER_FIRST']['user_id']
-    # user = get_user(user_id, token_first)
-    # add_roles(user_id, ROLES, token_first)
     return {'id': user_id}
 
 
@@ -80,8 +76,6 @@ def user_second(request, token_second):
     :return: user dictionary object
     """
     user_id = test_config['USER_SECOND']['user_id']
-    # user = get_user(user_id, token_second)
-    # add_roles(user_id, ROLES, token_second)
     return {'id': user_id}
 
 
@@ -94,8 +88,6 @@ def user_same_domain(request, token_same_domain):
     :return: user dictionary object
     """
     user_id = test_config['USER_SAME_DOMAIN']['user_id']
-    # user = get_user(user_id, token_same_domain)
-    # add_roles(user_id, ROLES, token_same_domain)
     return {'id': user_id}
 
 
@@ -106,6 +98,8 @@ def candidate_first(request, talent_pool, token_first, user_first):
     after test has run.
     :param request: request object
     :param talent_pool: talent pool dict object associated to user_first
+    :param str token_first: auth token for  first user
+    :param dict user_first: user dict
     """
     response = create_candidate(talent_pool['id'], token_first)
     candidate_id = response['candidates'][0]['id']

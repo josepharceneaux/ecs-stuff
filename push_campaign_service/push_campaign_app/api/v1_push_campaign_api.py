@@ -672,7 +672,7 @@ class SendPushCampaign(Resource):
         user = request.user
         campaign_obj = PushCampaignBase(user_id=user.id)
         campaign_obj.campaign_id = campaign_id
-        campaign_obj.send(campaign_id)
+        campaign_obj.send()
         return dict(message='Campaign(id:%s) is being sent to candidates' % campaign_id), 200
 
 

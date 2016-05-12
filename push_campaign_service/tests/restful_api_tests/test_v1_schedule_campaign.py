@@ -37,9 +37,11 @@ Unschedule a campaign: /v1/push-campaigns/:id/schedule [DELETE]
 # Builtin imports
 import sys
 from datetime import datetime
+
 # 3rd party imports
 from redo import retry
 from requests import codes
+
 # Application specific imports
 from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
                                                         schedule_campaign, invalid_data_test,
@@ -139,7 +141,7 @@ class TestScheduleCampaignUsingPOST(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        retry(get_blasts, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
               args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
 
     def test_schedule_a_campaign_with_user_from_same_domain(self, smartlist_first, campaign_in_db,  talent_pool,
@@ -157,7 +159,7 @@ class TestScheduleCampaignUsingPOST(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        # retry(get_blasts, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        # retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
         #       args=(campaign_id, token_first), kwargs={'count': 1})
 
     def test_schedule_a_campaign_with_user_from_diff_domain(self, token_first, token_second,
@@ -275,13 +277,13 @@ class TestRescheduleCampaignUsingPUT(object):
 
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
-        assert response.status_code == 200
+        assert response.status_code == codes.OK
         response = response.json()
         assert 'task_id' in response
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        # retry(get_blasts, max_sleeptime=60, sleeptime=3, retry_exceptions=(AssertionError,),
+        # retry(get_blasts, attempts=20, sleepscale=1, sleeptime=3, retry_exceptions=(AssertionError,),
         #       args=(campaign_in_db['id'], token_first), kwargs={'count': 2})
 
     def test_reschedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,

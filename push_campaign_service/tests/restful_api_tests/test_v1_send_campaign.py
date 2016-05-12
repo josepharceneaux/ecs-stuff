@@ -58,11 +58,11 @@ class TestSendCampaign(object):
         # 200 case: Campaign Sent successfully
         send_campaign(campaign_in_db['id'], token_first, expected_status=(codes.OK,))
 
-        response = retry(get_blasts, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        response = retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
         blasts = response['blasts']
         blast_id = blasts[0]['id']
-        response = retry(get_blast_sends, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        response = retry(get_blast_sends, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(blast_id, campaign_in_db['id'], token_first), kwargs={'count': 1})
         assert len(response['sends']) == 1
 
@@ -77,11 +77,11 @@ class TestSendCampaign(object):
         # 200 case: Campaign Sent successfully
         send_campaign(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,))
 
-        response = retry(get_blasts, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        response = retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(campaign_in_db['id'], token_same_domain), kwargs={'count': 1})
         blasts = response['blasts']
         blast_id = blasts[0]['id']
-        response = retry(get_blast_sends, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        response = retry(get_blast_sends, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(blast_id, campaign_in_db['id'], token_same_domain), kwargs={'count': 1})
         assert len(response['sends']) == 1
 
@@ -100,11 +100,11 @@ class TestSendCampaign(object):
         """
         campaign_id = campaign_in_db_multiple_smartlists['id']
         send_campaign(campaign_id, token_first, expected_status=(codes.OK,))
-        response = retry(get_blasts, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        response = retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(campaign_id, token_first), kwargs={'count': 1})
         blasts = response['blasts']
         blast_id = blasts[0]['id']
-        response = retry(get_blast_sends, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+        response = retry(get_blast_sends, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(blast_id, campaign_id, token_first), kwargs={'count': 2})
         assert len(response['sends']) == 2
 

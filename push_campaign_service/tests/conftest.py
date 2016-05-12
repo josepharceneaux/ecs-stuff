@@ -270,7 +270,7 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
     response = send_request('post', PushCampaignApiUrl.SEND % campaign_in_db['id'], token_first)
     assert response.status_code == codes.OK
     # get campaign sends
-    response = retry(get_campaign_sends, sleeptime=3, max_sleeptime=60, retry_exceptions=(AssertionError,),
+    response = retry(get_campaign_sends, sleeptime=3, attempts=10, retry_exceptions=(AssertionError,),
                      args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
     sends = response['sends']
     campaign_send = sends[0]

@@ -25,7 +25,6 @@ from celery import chord
 from flask import current_app
 
 # Database Models
-from ..inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 from ..utils.auth_utils import refresh_token
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
@@ -41,8 +40,9 @@ from ..talent_config_manager import TalentConfigKeys
 from campaign_utils import (get_model, CampaignUtils)
 from ..utils.validators import raise_if_not_instance_of
 from custom_errors import (CampaignException, EmptyDestinationUrl)
-from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
+from ..routes import (ActivityApiUrl, SchedulerApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
+from ..inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 from validators import (validate_form_data,
                         validation_of_data_to_schedule_campaign,
                         validate_blast_candidate_url_conversion_in_db,
