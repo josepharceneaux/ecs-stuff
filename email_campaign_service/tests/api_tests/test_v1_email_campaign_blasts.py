@@ -68,7 +68,7 @@ class TestEmailCampaignBlasts(object):
         If primary email is not found then email-campaign will be sent to latest emails added for candidates.
         """
         expected_count = 2
-        CampaignsTestsHelpers.assert_blast_sends(sent_campaign_multiple_email, expected_count, abort_time_for_sends=100)
+        CampaignsTestsHelpers.assert_blast_sends(sent_campaign_multiple_email, expected_count, abort_time_for_sends=200)
         response = requests.get(
             self.URL % sent_campaign_multiple_email.id,
             headers=dict(Authorization='Bearer %s' % access_token_first))
