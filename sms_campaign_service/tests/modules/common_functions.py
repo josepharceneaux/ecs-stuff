@@ -236,8 +236,6 @@ def assert_valid_campaign_get(campaign_dict, referenced_campaign, compare_fields
         for field in campaign_dict.keys():
             assert campaign_dict[field] == referenced_campaign[field]
     else:
-        # TODO just to cater for future, we can keep field names in list and then iterate over them doing asserts,
-        # we can do this in other places as well. Kindly decide youself if it sounds minor or doable right now
         assert campaign_dict['id']
         assert campaign_dict['name']
         assert campaign_dict['body_text']

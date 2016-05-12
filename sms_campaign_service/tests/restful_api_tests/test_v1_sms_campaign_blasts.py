@@ -48,7 +48,8 @@ class TestSmsCampaignBlasts(object):
                                                               self.URL, self.HTTP_METHOD,
                                                               access_token_first)
 
-    def test_get_blasts_without_pagination_params(self, access_token_first, sent_campaign_and_blast_ids):
+    def test_get_blasts_without_pagination_params(self, access_token_first,
+                                                  sent_campaign_and_blast_ids):
         """
         This is the case where we assume we have sent campaign to 2 candidates.
         """
@@ -77,9 +78,10 @@ class TestSmsCampaignBlasts(object):
     def test_get_blasts_with_paginated_response(self, access_token_first, headers,
                                                 sent_campaign_and_blast_ids):
         """
-        Here we test the paginated response of GET call on endpoint /v1/sms-campaigns/:id/blasts
+        Here we test the paginated response of GET call on endpoint /v1/sms-campaigns/:campaign_id/blasts
         """
-        # TODO let's please add a comment here and also does the URL in the comment look okay?
+        # sent_campaign_and_blast_ids is a tuple which contains campaign object and list of
+        # blast ids associated to this campaign,
         sent_campaign, blast_ids = sent_campaign_and_blast_ids
         expected_sends = 2
         url = self.URL % sent_campaign['id']
