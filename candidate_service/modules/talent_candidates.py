@@ -987,7 +987,16 @@ def get_fullname_from_name_fields(first_name, middle_name, last_name):
     Function will concatenate names if any, otherwise will return empty string
     :rtype: str
     """
-    return re.sub(' +', ' ', '%s %s %s' % (first_name, middle_name, last_name)).strip()
+    full_name = re.sub(' +', ' ', '%s %s %s' % (first_name, middle_name, last_name))
+    return full_name.replace('None', '').strip()
+
+
+def format_full_name(first_name=None, middle_name=None, last_name=None):
+    # Figure out first_name, last_name, middle_name, and formatted_name from inputs
+    if first_name or last_name or middle_name:
+        if first_name or last_name:
+            # If first_name and last_name given but not formatted_name, guess it
+            return get_fullname_from_name_fields(first_name or '', middle_name or '', last_name or '')
 
 
 def get_name_fields_from_name(formatted_name):
@@ -1111,10 +1120,12 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
     update_dict = purge_dict(update_dict)
 
     # Update request dict with candidate names
+    # Candidate name(s) will be removed if empty string is provided; None values will be ignored
     names_dict = dict(
         first_name=first_name, middle_name=middle_name, last_name=last_name,
         formatted_name=formatted_name or format_full_name(first_name, middle_name, last_name)
     )
+    names_dict = {k: v for k, v in names_dict.items() if v is not None}
 
     # Add names' data to update_dict if at least one of name is provided
     if not all(v is None for v in names_dict.values()):
@@ -2254,11 +2265,3 @@ class CachedData(object):
       when its data is no longer needed
     """
     country_codes = []
-
-
-def format_full_name(first_name=None, middle_name=None, last_name=None):
-    # Figure out first_name, last_name, middle_name, and formatted_name from inputs
-    if first_name or last_name or middle_name:
-        if (first_name or last_name):
-            # If first_name and last_name given but not formatted_name, guess it
-            return get_fullname_from_name_fields(first_name or '', middle_name or '', last_name or '')
