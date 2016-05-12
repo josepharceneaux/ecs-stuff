@@ -2,7 +2,7 @@
 This module contains utility methods will be used in API based tests.
 """
 # builtin imports
-import json
+import json, uuid
 from datetime import datetime, timedelta
 
 # 3rd party imports
@@ -410,7 +410,7 @@ def create_talent_pools(token, count=1, expected_status=(200,)):
     """
     This method sends a POST request to CandidatePool API to create a talent pool.
     :type token: str
-    :type count: str
+    :type count: int | long
     :type expected_status: tuple[int]
     :rtype dict
     """
@@ -419,7 +419,7 @@ def create_talent_pools(token, count=1, expected_status=(200,)):
     }
     for index in xrange(count):
         talent_pool = {
-                "name": randomword(20),
+                "name": str(uuid.uuid4())[:20],
                 "description": fake.paragraph()
             }
         data["talent_pools"].append(talent_pool)
