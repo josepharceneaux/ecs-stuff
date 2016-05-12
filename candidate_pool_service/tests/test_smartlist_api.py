@@ -9,6 +9,7 @@ from candidate_pool_service.common.utils.handy_functions import add_role_to_test
 from candidate_pool_service.common.routes import CandidatePoolApiUrl
 from candidate_pool_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 from candidate_pool_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from candidate_pool_service.common.utils.test_utils import response_info
 
 
 class TestSmartlistResource(object):
@@ -48,7 +49,7 @@ class TestSmartlistResource(object):
                              "minimum_years_experience": "2"}
             data = {'name': name, 'search_params': search_params, 'talent_pipeline_id': talent_pipeline.id}
             resp = self.call_post_api(data, access_token_first)
-
+            print response_info(resp)
             assert resp.status_code == 201  # Successfully created
 
             response = json.loads(resp.content)
@@ -171,7 +172,7 @@ class TestSmartlistResource(object):
             """Test search_params should be in dictionary format"""
             data = {'name': fake.word(), 'search_params': "location=San Jose, CA"}
             resp = self.call_post_api(data, access_token_first)
-
+            print response_info(resp)
             assert resp.status_code == 400
             assert json.loads(resp.content)['error']['message'] == "`search_params` should in dictionary format."
 
@@ -187,7 +188,7 @@ class TestSmartlistResource(object):
             name = "    "
             data = {'name': name, 'candidate_ids': [1]}
             resp = self.call_post_api(data, access_token_first)
-
+            print response_info(resp)
             assert resp.status_code == 400
             assert json.loads(resp.content)['error']['message'] == "Missing input: `name` is required for creating list"
 
