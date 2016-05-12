@@ -4,7 +4,6 @@ Author: Zohaib Ijaz, QC-Technologies, <mzohaib.qc@gmail.com>
     This module contains pyTests for send an email campaign to invalid emails and
     then expecting bounce messages from Amazon SNS which will mark invalid email as bounced.
 """
-import time
 
 from polling import poll
 
@@ -13,11 +12,10 @@ from email_campaign_service.common.tests.conftest import *
 
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.routes import EmailCampaignUrl
+from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend, EmailCampaignBlast
-from email_campaign_service.tests.modules.handy_functions import get_blasts_with_polling
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
-from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
-                                                                  send_campaign_email_to_candidate)
+from email_campaign_service.tests.modules.handy_functions import send_campaign_email_to_candidate
 
 
 def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles_to_user_first, email_campaign_of_user_first,
@@ -44,7 +42,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         db.session.commit()
         send_campaign_email_to_candidate(campaign, email, candidate_ids[0], email_campaign_blast.id)
         poll(check_is_bounced, step=3, args=(email,), timeout=100)
-        campaign_blasts = get_blasts_with_polling(campaign, 1, 20)
+        campaign_blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, timeout=20)
         campaign_blast = campaign_blasts[0]
         assert campaign_blast.bounces == 1
 
@@ -113,7 +111,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
             EmailCampaignUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == 200
 
-        campaign_blasts = get_blasts_with_polling(campaign, 2, 100)
+        campaign_blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, timeout=100)
 
         # Get second blast
         campaign_blast = campaign_blasts[1]
@@ -136,10 +134,10 @@ def create_campaign_data(access_token, campaign_id, talent_pipeline, candidate_c
         - It then creates campaign blast
         - It returns a tuple with campaign blast, smartlist_id, candidate_ids
     """
-    smartlist_id, candidate_ids = create_smartlist_with_candidate(access_token,
-                                                                  talent_pipeline,
-                                                                  emails_list=True,
-                                                                  count=candidate_count)
+    smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
+                                                                                        talent_pipeline,
+                                                                                        emails_list=True,
+                                                                                        count=candidate_count)
 
     create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
                                      email_campaign_id=campaign_id)

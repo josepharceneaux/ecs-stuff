@@ -152,7 +152,7 @@ class CampaignBase(object):
     * reschedule(self, _request, campaign_id)
         This method is used to re-schedules a campaign.
 
-    * send(self, campaign):
+    * send(self):
         This method is used send the campaign to candidates. This has the common functionality
         for all campaigns.
 
@@ -493,6 +493,7 @@ class CampaignBase(object):
         :return: Campaign obj if campaign belongs to user's domain
         :rtype: SmsCampaign or some other campaign obj
         """
+        raise_if_not_instance_of(campaign_id, (int, long))
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         raise_if_not_instance_of(current_user, User)
         campaign_obj = CampaignUtils.get_campaign(campaign_id, current_user.domain_id,
@@ -1039,11 +1040,12 @@ class CampaignBase(object):
             task_id = self.schedule(pre_processed_data['data_to_schedule'])
         return task_id
 
-    def send(self, campaign_id):
+    def send(self):
         """
         This does the following steps to send campaign to candidates.
 
-        1- Gets the campaign object from database table 'sms_campaign or push_campaign'
+        1- Validates that campaign object belongs to valid campaign database tables e.g
+            'sms_campaign or push_campaign' etc
         2- Get body_text from campaign obj e.g. sms_campaign obj. If body_text is found empty,
             we raise Invalid usage error with custom error code to be EMPTY_BODY_TEXT
         3- Get selected smartlists for the campaign to be sent from campaign_smartlist obj e.g.
@@ -1062,52 +1064,45 @@ class CampaignBase(object):
 
             1- Create class object
                 >>> from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
-                >>> camp_obj = SmsCampaignBase(int('user_id'))
+                >>> camp_obj = SmsCampaignBase(int('user_id'), int('campaign_id'))
 
             2- Call method send
-                >>> camp_obj.send(int('campaign_id'))
+                >>> camp_obj.send()
 
         **See Also**
         .. see also:: send_campaign_to_candidates() method in CampaignBase class.
         .. see also:: callback_campaign_sent() method in CampaignBase class.
 
-        :param campaign_id: id of SMS campaign obj or push campaign etc
-        :type campaign_id: int | long
         :exception: InvalidUsage
 
         ..Error Codes:: 5101 (EMPTY_BODY_TEXT)
                         5102 (NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
                         5103 (NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
         """
-        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
+        if not isinstance(self.campaign, CampaignUtils.MODELS):
+            raise InvalidUsage('campaign was not set properly')
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        campaign = self.get_campaign_if_domain_is_valid(campaign_id, self.user,
-                                                        self.campaign_type)
-        CampaignUtils.raise_if_not_instance_of_campaign_models(campaign)
-        self.campaign = campaign
-        campaign_type = self.campaign_type
-        logger.debug('send: %s(id:%s) is being sent. User(id:%s)' % (campaign_type,
-                                                                     campaign.id,
+        logger.debug('send: %s(id:%s) is being sent. User(id:%s)' % (self.campaign_type,
+                                                                     self.campaign.id,
                                                                      self.user.id))
         if not self.campaign.body_text:
             # body_text is empty
-            raise InvalidUsage('Body text is empty for %s(id:%s)' % (campaign_type, campaign.id),
+            raise InvalidUsage('Body text is empty for %s(id:%s)' % (self.campaign_type,
+                                                                     self.campaign.id),
                                error_code=CampaignException.EMPTY_BODY_TEXT)
         # Get smartlists associated to this campaign
-        campaign_smartlist_model = get_model(campaign_type, campaign_type + '_smartlist')
-        campaign_smartlists = CampaignUtils.get_campaign_smartlist_obj_by_campaign_id(
-            campaign_smartlist_model, campaign.id)
+        campaign_smartlists = self.campaign.smartlists
         if not campaign_smartlists:
             raise InvalidUsage(
                 'No smartlist is associated with %s(id:%s). (User(id:%s))'
-                % (campaign_type, campaign.id, self.user.id),
+                % (self.campaign_type, self.campaign.id, self.user.id),
                 error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
         candidates = sum(map(self.get_smartlist_candidates, campaign_smartlists), [])
         if not candidates:
             raise InvalidUsage(
                 'No candidate is associated with smartlist(s). %s(id:%s). '
-                'campaign smartlist ids are %s'
-                % (campaign_type, campaign.id, [smartlist.id for smartlist in campaign_smartlists]),
+                'campaign smartlist ids are %s' % (self.campaign_type, self.campaign.id,
+                                                   [smartlist.id for smartlist in campaign_smartlists]),
                 error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
         # create SMS campaign blast
         self.campaign_blast_id = self.create_campaign_blast(self.campaign)

@@ -281,10 +281,9 @@ class TestTSmsCampaignBase(object):
         Creating object of SmsCampaignBase class with non-existing user_ids.
         :return:
         """
-        last_campaign_id_in_db = CampaignsTestsHelpers.get_last_id(User)
-        ids = get_invalid_ids(last_campaign_id_in_db)
+        non_existing_ids = CampaignsTestsHelpers.get_non_existing_ids(User)
         error_message = None
-        for _id in ids:
+        for _id in non_existing_ids:
             try:
                 SmsCampaignBase(_id)
                 assert None, 'ResourceNotFound should be thrown as user_id does not exists in db.'

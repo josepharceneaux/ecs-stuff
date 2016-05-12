@@ -367,7 +367,7 @@ class Frequency(db.Model):
             cls.BIWEEKLY: 14 * 24 * 3600,
             cls.MONTHLY: 30 * 24 * 3600,
             cls.YEARLY: 365 * 24 * 3600,
-            cls.CUSTOM: 5 * SchedulerUtils.MIN_ALLOWED_FREQUENCY
+            cls.CUSTOM: 3 * SchedulerUtils.MIN_ALLOWED_FREQUENCY
         }
         seconds = seconds_from_frequency_id.get(frequency_id)
         if not seconds and seconds != 0:
