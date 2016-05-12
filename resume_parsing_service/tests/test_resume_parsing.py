@@ -30,6 +30,7 @@ from resume_parsing_service.common.routes import ResumeApiUrl, ResumeApi, Schedu
 
 from resume_parsing_service.common.models.user import DomainRole
 from resume_parsing_service.common.utils.handy_functions import add_role_to_test_user
+from resume_parsing_service.common.utils.test_utils import response_info
 
 DOC_FP_KEY = '0169173d35beaf1053e79fdf1b5db864.docx'
 PDF15_FP_KEY = 'e68b51ee1fd62db589d2669c4f63f381.pdf'
@@ -292,12 +293,12 @@ def test_985_from_fp_key(token_fixture, user_fixture):
     assert_create_or_update_content_and_status(content, status)
 
 
-# def test_create_candidate_from_resume_without_name(token_fixture, user_fixture):
-#     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-#                                          DomainRole.Roles.CAN_GET_CANDIDATES,
-#                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
-#     content, status = fetch_resume_post_response(token_fixture, 'Adams.John.doc', create_mode=True)
-#     assert_create_or_update_content_and_status(content, status)
+def test_create_candidate_from_resume_without_name(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'Adams.John.doc', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
 
 
 def test_create_candidate_from_no_email_resume(token_fixture, user_fixture):
@@ -308,12 +309,12 @@ def test_create_candidate_from_no_email_resume(token_fixture, user_fixture):
     assert_create_or_update_content_and_status(content, status)
 
 
-# def test_create_candidate_from_no_address_resume(token_fixture, user_fixture):
-#     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-#                                          DomainRole.Roles.CAN_GET_CANDIDATES,
-#                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
-#     content, status = fetch_resume_post_response(token_fixture, 'no_address.doc', create_mode=True)
-#     assert_create_or_update_content_and_status(content, status)
+def test_create_candidate_from_no_address_resume(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'no_address.doc', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
 
 
 ####################################################################################################
@@ -326,6 +327,7 @@ def test_already_exists_candidate(token_fixture, user_fixture):
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
                                          DomainRole.Roles.CAN_EDIT_CANDIDATES])
     unused_create_response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
+    print "\nunused_create_response: {}".format(unused_create_response)
     update_content, status = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
     assert_create_or_update_content_and_status(update_content, status)
 
@@ -375,6 +377,7 @@ def test_integration_add_single_item(user_fixture, token_fixture):
                              headers=auth_headers,
                              data=json.dumps({'filenames': ['file1b']})
                             )
+    print response_info(response)
     assert response.status_code == requests.codes.created
     response_dict = json.loads(response.content)
     job_id = response_dict['ids'][0]

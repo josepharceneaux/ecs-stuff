@@ -8,49 +8,49 @@ from candidate_pool_service.common.utils.test_utils import response_info
 from common_functions import *
 
 
-# def test_talent_pool_api_post(access_token_first, access_token_second, user_first, user_second):
+def test_talent_pool_api_post(access_token_first, access_token_second, user_first, user_second):
 
-#     data = {
-#         'talent_pools': [
-#             {
-#                 'name': gen_salt(20),
-#                 'description': gen_salt(20)
-#             }
-#         ]
-#     }
+    data = {
+        'talent_pools': [
+            {
+                'name': gen_salt(20),
+                'description': gen_salt(20)
+            }
+        ]
+    }
 
-#     # Logged-in user trying to add a new talent-pool in a domain
-#     response, status_code = talent_pool_api(access_token_first, data=data, action='POST')
-#     assert status_code == 401
+    # Logged-in user trying to add a new talent-pool in a domain
+    response, status_code = talent_pool_api(access_token_first, data=data, action='POST')
+    assert status_code == 401
 
-#     add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_TALENT_POOLS])
-#     add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_TALENT_POOLS])
+    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
 
-#     # Logged-in user trying to add a new talent-pool in a domain with empty request body
-#     response, status_code = talent_pool_api(access_token_first, action='POST')
-#     assert status_code == 400
+    # Logged-in user trying to add a new talent-pool in a domain with empty request body
+    response, status_code = talent_pool_api(access_token_first, action='POST')
+    assert status_code == 400
 
-#     # Logged-in user trying to add a new talent-pool in a domain with empty name
-#     data['talent_pools'][0]['name'] = ''
-#     response, status_code = talent_pool_api(access_token_first, data=data, action='POST')
-#     assert status_code == 400
+    # Logged-in user trying to add a new talent-pool in a domain with empty name
+    data['talent_pools'][0]['name'] = ''
+    response, status_code = talent_pool_api(access_token_first, data=data, action='POST')
+    assert status_code == 400
 
-#     # Logged-in user trying to add a new talent-pool in a domain
-#     data['talent_pools'][0]['name'] = gen_salt(20)
-#     response, status_code = talent_pool_api(access_token_first, data=data, action='POST')
-#     assert status_code == 200
-#     assert len(response.get('talent_pools')) == 1
+    # Logged-in user trying to add a new talent-pool in a domain
+    data['talent_pools'][0]['name'] = gen_salt(20)
+    response, status_code = talent_pool_api(access_token_first, data=data, action='POST')
+    assert status_code == 200
+    assert len(response.get('talent_pools')) == 1
 
-#     # Logged-in user trying to add a new talent-pool with existing name in a domain
-#     response, status_code = talent_pool_api(access_token_first, data=data, action='POST')
-#     assert status_code == 400
+    # Logged-in user trying to add a new talent-pool with existing name in a domain
+    response, status_code = talent_pool_api(access_token_first, data=data, action='POST')
+    assert status_code == 400
 
-#     # Admin user trying to add a new talent-pool in another domain
-#     data['talent_pools'][0]['user_id'] = user_first.id
-#     data['talent_pools'][0]['name'] = gen_salt(20)
-#     response, status_code = talent_pool_api(access_token_second, data=data, action='POST')
-#     assert status_code == 200
-#     assert len(response.get('talent_pools')) == 1
+    # Admin user trying to add a new talent-pool in another domain
+    data['talent_pools'][0]['user_id'] = user_first.id
+    data['talent_pools'][0]['name'] = gen_salt(20)
+    response, status_code = talent_pool_api(access_token_second, data=data, action='POST')
+    assert status_code == 200
+    assert len(response.get('talent_pools')) == 1
 
 
 def test_talent_pool_api_put(access_token_first, user_first, talent_pool, talent_pool_second):
@@ -197,45 +197,45 @@ def test_talent_pool_api_get(access_token_first, access_token_second, user_first
     assert response['talent_pools'][0]['name'] == talent_pool.name
 
 
-# def test_talent_pool_group_api_get(access_token_first, access_token_second, user_first, user_second, talent_pool,
-#                                    first_group, second_group):
+def test_talent_pool_group_api_get(access_token_first, access_token_second, user_first, user_second, talent_pool,
+                                   first_group, second_group):
 
-#     # Logged-in user trying to get talent pools of non-existing group
-#     response, status_code = talent_pool_group_api(access_token_first, user_group_id=first_group.id + 1000)
-#     print response_info(response)
-#     assert status_code == 404
+    # Logged-in user trying to get talent pools of non-existing group
+    response, status_code = talent_pool_group_api(access_token_first, user_group_id=first_group.id + 1000)
+    print response_info(response)
+    assert status_code == 404
 
-#     # Logged-in user trying to get talent pools of group of different domain
-#     response, status_code = talent_pool_group_api(access_token_first, user_group_id=second_group.id)
-#     assert status_code == 403
+    # Logged-in user trying to get talent pools of group of different domain
+    response, status_code = talent_pool_group_api(access_token_first, user_group_id=second_group.id)
+    assert status_code == 403
 
-#     # Logged-in user trying to get talent pools of group
-#     response, status_code = talent_pool_group_api(access_token_first, user_group_id=first_group.id)
-#     assert status_code == 200
-#     assert len(response['talent_pools']) == 1
-#     assert response['talent_pools'][0]['name'] == talent_pool.name
+    # Logged-in user trying to get talent pools of group
+    response, status_code = talent_pool_group_api(access_token_first, user_group_id=first_group.id)
+    assert status_code == 200
+    assert len(response['talent_pools']) == 1
+    assert response['talent_pools'][0]['name'] == talent_pool.name
 
-#     # Logged-in user trying to get talent pools of group of different domain
-#     add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
-#     response, status_code = talent_pool_group_api(access_token_first, user_group_id=second_group.id)
-#     assert status_code == 200
-#     assert len(response['talent_pools']) == 0
+    # Logged-in user trying to get talent pools of group of different domain
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    response, status_code = talent_pool_group_api(access_token_first, user_group_id=second_group.id)
+    assert status_code == 200
+    assert len(response['talent_pools']) == 0
 
-#     user_second.domain_id = user_first.domain_id
-#     db.session.commit()
+    user_second.domain_id = user_first.domain_id
+    db.session.commit()
 
-#     # Logged-in user of same domain but different group trying to get talent pools of another group
-#     response, status_code = talent_pool_group_api(access_token_second, user_group_id=second_group.id)
-#     assert status_code == 403
+    # Logged-in user of same domain but different group trying to get talent pools of another group
+    response, status_code = talent_pool_group_api(access_token_second, user_group_id=second_group.id)
+    assert status_code == 403
 
-#     # Adding 'CAN_GET_TALENT_POOLS_OF_GROUP' role in user_second
-#     add_role_to_test_user(user_second, [DomainRole.Roles.CAN_GET_TALENT_POOLS_OF_GROUP])
+    # Adding 'CAN_GET_TALENT_POOLS_OF_GROUP' role in user_second
+    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_GET_TALENT_POOLS_OF_GROUP])
 
-#     # Logged-in user of same domain but different group trying to get talent pools of another group
-#     response, status_code = talent_pool_group_api(access_token_second, user_group_id=first_group.id)
-#     assert status_code == 200
-#     assert len(response['talent_pools']) == 1
-#     assert response['talent_pools'][0]['name'] == talent_pool.name
+    # Logged-in user of same domain but different group trying to get talent pools of another group
+    response, status_code = talent_pool_group_api(access_token_second, user_group_id=first_group.id)
+    assert status_code == 200
+    assert len(response['talent_pools']) == 1
+    assert response['talent_pools'][0]['name'] == talent_pool.name
 
 
 def test_talent_pool_group_api_post(access_token_first, user_first, user_second, talent_pool, talent_pool_second,
