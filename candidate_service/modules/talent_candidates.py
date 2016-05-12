@@ -1860,10 +1860,11 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         """
 
         # phonenumbers.format() will append "+None" if phone_number_obj.country_code is None
-        if not phone_number_obj.country_code:
-            value = phone_number_obj.national_number
-        else:
-            value = phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164)
+        if phone_number_obj:
+            if not phone_number_obj.country_code:
+                value = phone_number_obj.national_number
+            else:
+                value = phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164)
 
         # Clear CachedData's country_codes to prevent aggregating unnecessary data
         CachedData.country_codes = []
