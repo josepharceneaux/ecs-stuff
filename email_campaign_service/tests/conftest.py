@@ -7,6 +7,7 @@ from email_campaign_service.common.routes import EmailCampaignUrl
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
                                                                  EmailTemplateFolder)
+from email_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   create_email_campaign_smartlist,
                                                                   delete_campaign,
@@ -14,6 +15,13 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   create_smartlist_with_given_email_candidate)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
+@pytest.fixture()
+def headers(access_token_first):
+    """
+    Returns the header containing access token and content-type to make POST/DELETE requests.
+    :param access_token_first: fixture to get access token of user
+    """
+    return _get_auth_header(access_token_first)
 
 @pytest.fixture()
 def email_campaign_of_user_first(request, user_first):
@@ -312,3 +320,13 @@ def invalid_data_for_campaign_creation(request):
                      }
     del campaign_data[request.param]
     return campaign_data, request.param
+
+
+def _get_auth_header(access_token):
+    """
+    This returns auth header dict.
+    :param access_token: access token of user
+    """
+    auth_header = {'Authorization': 'Bearer %s' % access_token}
+    auth_header.update(JSON_CONTENT_TYPE_HEADER)
+    return auth_header
