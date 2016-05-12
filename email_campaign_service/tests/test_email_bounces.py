@@ -113,6 +113,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
         campaign_blasts = poll(CampaignsTestsHelpers.verify_blasts, args=(campaign, access_token_first, None, 2),
                                step=3, timeout=200)
 
+        CampaignsTestsHelpers.assert_blast_sends(campaign, 1, abort_time_for_sends=200)
         # Get second blast
         campaign_blast = campaign_blasts[1]
 
