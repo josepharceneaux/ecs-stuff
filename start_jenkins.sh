@@ -1,10 +1,5 @@
 #!/bin/bash
 
-echo "INFO: "
-git tag --points-at HEAD
-git show | cat
-env
-
 # Install Requirements
 pip install -r requirements.txt
 
