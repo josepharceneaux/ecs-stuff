@@ -43,15 +43,14 @@ def send_request(method, url, access_token, data=None, is_json=True, verify=True
 
 def response_info(response):
     """
-    Function returns the following response information:
-        1. Url, 2. Request 3. Response dict if any, and 4. Response status code
+    Function returns the following response information if available:
+        1. Url, 2. Request 3. Response dict, and 4. Response status code
     :type response: requests.models.Response
     """
-    url, request, status_code = response.url, response.request, response.status_code
-    try:
-        _json = response.json()
-    except Exception:
-        _json = None
+    status_code = response.status_code if hasattr(response, 'status_code') else None
+    url = response.url if hasattr(response, 'url') else None
+    request = response.request if hasattr(response, 'request') else None
+    _json = response.json() if hasattr(response, 'json()') else None
 
     content = "\nUrl: {}\nRequest: {}\nStatus code: {}\nResponse JSON: {}"
     return content.format(url, request, status_code, _json)
