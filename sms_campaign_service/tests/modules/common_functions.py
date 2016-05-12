@@ -40,8 +40,9 @@ def assert_url_conversion(sms_campaign_sends):
     for send_url_conversion in sends_url_conversions:
         # get URL conversion record from database table 'url_conversion' and delete it
         # delete url_conversion record
-        assert str(
-            send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
+        url_conversion_id = str(send_url_conversion.url_conversion.id)
+        source_url = send_url_conversion.url_conversion.source_url
+        assert url_conversion_id in source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
 
 
