@@ -16,7 +16,7 @@ from flask.ext.restful import Resource
 from scheduler_service import logger, SchedulerUtils
 from scheduler_service.api.scheduler_tests_api import raise_if_scheduler_not_running, check_job_state, \
     dummy_request_method
-from scheduler_service.common.models.user import DomainRole
+from scheduler_service.common.models.user import DomainRole, User
 from scheduler_service.common.routes import SchedulerApi
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse, get_pagination_params
 from scheduler_service.common.talent_api import TalentApi
@@ -602,8 +602,10 @@ class TaskById(Resource):
         user_id = request.user.id if request.user else None
         raise_if_scheduler_not_running()
         task = scheduler.get_job(_id)
+        # Check if requesting user task scheduler user is of same domain
+        is_same_domain = user_id and task and User.get_by_id(task.args[0]).domain_id == request.user.domain_id
         # Make sure task is valid and belongs to logged-in user
-        if task and task.args[0] == user_id:
+        if task and (task.args[0] == user_id or is_same_domain):
             task = serialize_task(task)
             if task:
                 return dict(task=task)

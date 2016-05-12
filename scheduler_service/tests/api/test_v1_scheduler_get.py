@@ -11,7 +11,9 @@ import uuid
 import requests
 
 # Application imports
+from scheduler_service.common.models.user import Token
 from scheduler_service.common.routes import SchedulerApiUrl
+from scheduler_service.common.tests.conftest import user_same_domain, access_token_same
 from scheduler_service.common.utils.handy_functions import random_word
 
 __author__ = 'saad'
@@ -355,3 +357,41 @@ class TestSchedulerGet(object):
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
+    def test_retrieve_same_domain_job(self, auth_header, job_config, access_token_same):
+        """
+        Schedule a job from a user and then get the same task from a different user in same domain
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        # Creating a job
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+                                 headers=auth_header)
+        assert response.status_code == 201
+        data = response.json()
+
+        old_token = auth_header['Authorization']
+        auth_header['Authorization'] = 'Bearer %s' % access_token_same
+        # Now get the job from other user in same domain
+        response_get = requests.get(SchedulerApiUrl.TASK % data['id'],
+                                    headers=auth_header)
+        assert response_get.status_code == 200
+        assert json.loads(response_get.text)['task']['id'] == data['id']
+
+        job_data = response_get.json()['task']
+
+        assert job_data['start_datetime'] == job_config['start_datetime']
+        assert job_data['end_datetime'] == job_config['end_datetime']
+        assert int(job_data['frequency']['seconds']) == job_config['frequency']
+        assert job_data['post_data'] == job_config['post_data']
+        assert job_data['task_type'] == job_config['task_type']
+        assert job_data['url'] == job_config['url']
+
+        auth_header['Authorization'] = old_token
+
+        # Let's delete jobs now
+        response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
+                                          headers=auth_header)
+        assert response_remove.status_code == 200
