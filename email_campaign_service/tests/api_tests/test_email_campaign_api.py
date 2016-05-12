@@ -580,9 +580,9 @@ class TestSendCampaign(object):
         :param assign_roles_to_user_first: Assign required roles to user of first domain.
         """
         smartlist_ids = CampaignsTestsHelpers.create_two_smartlists_with_same_candidate(access_token_first,
-                                                                  talent_pipeline,
-                                                                  emails_list=True,
-                                                                  timeout=300)
+                                                                                        talent_pipeline,
+                                                                                        emails_list=True,
+                                                                                        timeout=500)
         campaign = email_campaign_of_user_first
         create_email_campaign_smartlists(smartlist_ids=smartlist_ids,
                                          email_campaign_id=campaign.id)

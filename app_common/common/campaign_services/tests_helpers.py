@@ -555,13 +555,13 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(expected_count, int)
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
-        received_blasts_count = len(CampaignsTestsHelpers.get_blasts(campaign, access_token,
-                                                                     blasts_url))
-        if received_blasts_count == expected_count:
-            return True
+        received_blasts = CampaignsTestsHelpers.get_blasts(campaign, access_token,
+                                                                     blasts_url)
+        if len(received_blasts) == expected_count:
+            return received_blasts
         else:
             print 'Expected Blasts:%s' % expected_count
-            print 'Received Blasts:%s' % received_blasts_count
+            print 'Received Blasts:%s' % len(received_blasts)
             return False
 
     @staticmethod

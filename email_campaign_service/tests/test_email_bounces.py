@@ -110,8 +110,8 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
         response = requests.post(
             EmailCampaignUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == 200
-        CampaignsTestsHelpers.verify_blasts(campaign, access_token_first, None, 2)
-        campaign_blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, timeout=100)
+        campaign_blasts = poll(CampaignsTestsHelpers.verify_blasts, args=(campaign, access_token_first, None, 2),
+                               step=3, timeout=200)
 
         # Get second blast
         campaign_blast = campaign_blasts[1]
