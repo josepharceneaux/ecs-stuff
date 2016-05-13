@@ -604,7 +604,7 @@ class TaskById(Resource):
         task = scheduler.get_job(_id)
         if task:
             task_owner_id = task.args[0]
-            is_same_domain = user_id and task and User.get_by_id(task_owner_id).domain_id == request.user.domain_id
+            is_same_domain = user_id and User.get_by_id(task_owner_id).domain_id == request.user.domain_id
             # Make sure task is valid and belongs to logged-in user or user which is in same domain as requesting user
             is_owner = task_owner_id == user_id
             if is_owner or is_same_domain:
