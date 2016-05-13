@@ -122,7 +122,8 @@ def get_token(info):
     resp = resp.json()
     access_token = resp['access_token']
     data.update(resp)
-    if parse(resp['expires_at']) < (datetime.now() + timedelta(seconds=60)):
+    one_minute_later = datetime.utcnow() + timedelta(seconds=60)
+    if parse(resp['expires_at']) < one_minute_later:
         access_token = refresh_token(data)
     return access_token
 
@@ -196,7 +197,9 @@ def add_roles(user_id, roles, token):
     :param token: auth token
     :return: True | False
     """
-
+    assert isinstance(user_id, (int, long)) and user_id > 0, 'user_id is invalid. given :%s' % user_id
+    assert isinstance(roles, (list, tuple)) and roles, 'roles should be a non-empty list or tuple, given: %s' % roles
+    assert isinstance(token, basestring) and token, 'token should be a non-empty string, given: %s' % token
     for role in roles:
         data = {"roles": [role]}
         response = send_request('post', UserServiceApiUrl.USER_ROLES_API % user_id,
@@ -342,6 +345,7 @@ def get_smartlist_candidates(smartlist_id, token, expected_status=(200,), count=
     :type expected_status: tuple[int]
     :rtype dict
     """
+
     response = send_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % smartlist_id, token)
     print('common_tests : get_smartlist_candidates: ', response.content)
     assert response.status_code in expected_status
@@ -456,3 +460,4 @@ def delete_talent_pool(talent_pool_id, token, expected_status=(200,)):
     print('common_tests : delete_talent_pool: ', response.content)
     assert response.status_code in expected_status
     return response.json()
+

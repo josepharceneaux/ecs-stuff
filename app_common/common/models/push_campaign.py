@@ -103,20 +103,6 @@ class PushCampaignBlast(db.Model):
     def __repr__(self):
         return "<PushCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
 
-    @classmethod
-    def increment_sends(cls, blast_id, count=1):
-        """
-        This  method increments blast sends count by given number of `count`.
-
-        :param (int, long) blast_id: blast unique id
-        :param (int, long) count: number to increment
-        :exception InvalidUsage
-        """
-        blast = cls.get_by_id(blast_id)
-        if not blast:
-            raise InvalidUsage('Blast record not found. Unable to update sends for PushCampaignBlast(id:%s)' % blast_id)
-        blast.update(sends=(blast.sends + count))
-
 
 class PushCampaignSend(db.Model):
     """

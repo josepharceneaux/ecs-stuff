@@ -311,9 +311,9 @@ class CampaignBase(object):
         if not user_access_token:
             raise ForbiddenError('User(id:%s) has no auth token associated.'
                                  % user_id)
-
-        if user_token_obj.expires < (datetime.utcnow() + timedelta(seconds=60)):
-            user_access_token = refresh_token(user_access_token, token=user_token_obj)
+        one_minute_later = datetime.utcnow() + timedelta(seconds=60)
+        if user_token_obj.expires < one_minute_later:
+            user_access_token = refresh_token(user_token_obj)
         return {'Authorization': 'Bearer %s' % user_access_token}
 
     def pre_process_save_or_update(self, campaign_data):

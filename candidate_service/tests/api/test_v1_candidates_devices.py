@@ -47,7 +47,7 @@ def test_associate_device_to_non_existing_candidate(access_token_first):
     candidate_id = sys.maxint
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_id, access_token_first, data)
     logger.info(response.content)
-    assert response.status_code == 404
+    assert response.status_code == requests.codes.NOT_FOUND
 
 
 def test_associate_device_with_invalid_one_signal_device_id(access_token_first, candidate_first):
@@ -61,7 +61,7 @@ def test_associate_device_with_invalid_one_signal_device_id(access_token_first, 
     data = {'one_signal_device_id': 'Invalid Id'}
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_first.id, access_token_first, data)
     logger.info(response.content)
-    assert response.status_code == 404
+    assert response.status_code == requests.codes.NOT_FOUND
 
 
 def test_associate_device_to_deleted_candidate(access_token_first, user_first, candidate_first):
@@ -76,12 +76,12 @@ def test_associate_device_to_deleted_candidate(access_token_first, user_first, c
     AddUserRoles.delete(user_first)
     response = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
     logger.info(response.content)
-    assert response.status_code == 204
+    assert response.status_code == requests.codes.NO_CONTENT
 
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_first.id, access_token_first, data)
     logger.info(response.content)
-    assert response.status_code == 404
+    assert response.status_code == requests.codes.NOT_FOUND
 
 
 def test_associate_device_with_valid_data(access_token_first, candidate_first, delete_device):
@@ -96,11 +96,11 @@ def test_associate_device_with_valid_data(access_token_first, candidate_first, d
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_first.id, access_token_first, data)
     logger.info(response.content)
-    assert response.status_code == 201
+    assert response.status_code == requests.codes.CREATED
 
     response = send_request('get', CandidateApiUrl.DEVICES % candidate_first.id, access_token_first)
     logger.info(response.content)
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK
     response = response.json()
     assert 'devices' in response
     assert len(response['devices']) == 1
@@ -123,14 +123,14 @@ def test_associate_device_to_two_candidate_in_same_domain(access_token_first, ca
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_first.id, access_token_first, data)
     logger.info(response.content)
-    assert response.status_code == 201
+    assert response.status_code == requests.codes.CREATED
 
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_second.id, access_token_first, data)
     logger.info(response.content)
     # api raises invalid usage in production if we want to associate same device id to multiple candidates
     # but in dev or jenkins, this restriction is not applicable.
     # assert response.status_code == 400
-    assert response.status_code == 201
+    assert response.status_code == requests.codes.CREATED
 
     # Set data to be used in finalizer to delete device association
     delete_device['candidate_id'] = candidate_first.id
@@ -149,11 +149,11 @@ def test_associate_device_using_diff_user_token_same_domain(access_token_same, c
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_first.id, access_token_same, data)
     logger.info(response.content)
-    assert response.status_code == 201
+    assert response.status_code == requests.codes.CREATED
 
     response = send_request('get', CandidateApiUrl.DEVICES % candidate_first.id, access_token_same)
     logger.info(response.content)
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK
     response = response.json()
     assert 'devices' in response
     assert len(response['devices']) == 1
@@ -175,35 +175,35 @@ def test_associate_device_using_diff_user_token_diff_domain(access_token_second,
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_first.id, access_token_second, data)
     logger.info(response.content)
-    assert response.status_code == 403
+    assert response.status_code == requests.codes.FORBIDDEN
 
 
 def test_delete_candidate_device(access_token_first, candidate_first, associate_device):
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('delete', CandidateApiUrl.DEVICES % candidate_first.id, access_token_first, data)
     logger.info(response.content)
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK
 
 
 def test_delete_candidate_device_in_same_domain(access_token_same, candidate_first, associate_device):
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('delete', CandidateApiUrl.DEVICES % candidate_first.id, access_token_same, data)
     logger.info(response.content)
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK
 
 
 def test_delete_candidate_device_in_diff_domain(access_token_second, candidate_first, associate_device):
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('delete', CandidateApiUrl.DEVICES % candidate_first.id, access_token_second, data)
     logger.info(response.content)
-    assert response.status_code == 403
+    assert response.status_code == requests.codes.FORBIDDEN
 
 
 def test_delete_candidate_device_with_invalid_one_signal_id(access_token_first, candidate_first, associate_device):
     data = {'one_signal_device_id': 'Invalid Id'}
     response = send_request('delete', CandidateApiUrl.DEVICES % candidate_first.id, access_token_first, data)
     logger.info(response.content)
-    assert response.status_code == 404
+    assert response.status_code == requests.codes.NOT_FOUND
 
 
 def test_delete_candidate_device_with_invalid_candidate_id(access_token_first, associate_device):
@@ -211,4 +211,4 @@ def test_delete_candidate_device_with_invalid_candidate_id(access_token_first, a
     candidate_id = sys.maxint
     response = send_request('delete', CandidateApiUrl.DEVICES % candidate_id, access_token_first, data)
     logger.info(response.content)
-    assert response.status_code == 404
+    assert response.status_code == requests.codes.FOUND

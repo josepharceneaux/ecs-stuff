@@ -148,6 +148,15 @@ class User(db.Model):
         session.commit()
         return user
 
+    @staticmethod
+    def get_by_email(email):
+        """
+        This method returns a user with specified email or None if not found.
+        :param (str) email: user email address
+        :rtype User | None
+        """
+        return User.query.filter_by(email=email).first()
+
 
 class UserPhone(db.Model):
     __tablename__ = 'user_phone'
