@@ -91,20 +91,20 @@ def test_posting_no_file(token_fixture, user_fixture):
     assert invalid_post.status_code == requests.codes.bad_request
 
 
-# def test_posting_None_file(token_fixture, user_fixture):
-#     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
-#     invalid_post = requests.post(ResumeApiUrl.PARSE,
-#                                   headers={
-#                                       'Authorization': 'Bearer {}'.format(
-#                                           token_fixture.access_token),
-#                                       'Content-Type': 'application/json'
-#                                   },
-#                                   data=json.dumps({'resume_file': None,
-#                                                    'create_candidate': True})
-#                                  )
-#     content = json.loads(invalid_post.content)
-#     assert 'error' in content
-#     assert invalid_post.status_code == requests.codes.bad_request
+def test_posting_None_file(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    invalid_post = requests.post(ResumeApiUrl.PARSE,
+                                  headers={
+                                      'Authorization': 'Bearer {}'.format(
+                                          token_fixture.access_token),
+                                      'Content-Type': 'application/json'
+                                  },
+                                  data=json.dumps({'resume_file': None,
+                                                   'create_candidate': True})
+                                 )
+    content = json.loads(invalid_post.content)
+    assert 'error' in content
+    assert invalid_post.status_code == requests.codes.bad_request
 
 
 def test_talent_pool_error(token_fixture):
