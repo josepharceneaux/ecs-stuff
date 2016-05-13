@@ -1,5 +1,4 @@
 from polling import poll
-from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.tests.conftest import *
 from common_functions import create_candidates_from_candidate_api
 from candidate_pool_service.modules.smartlists import save_smartlist
