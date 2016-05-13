@@ -74,6 +74,9 @@ for definition in task_definition['taskDefinition']['containerDefinitions']:
     new_image = new_image.replace('gettalent-stage', 'gettalent')
     definition['image'] = new_image
     name = [ v for v in definition['environment'] if v['name'] == 'GT_ENVIRONMENT' ]
+    if not name:
+        raise Exception("Could not find task definition matching GT_ENVIRONMENT for cluster {}".format(cluster))
+
     name[0]['value'] = gt_environment
 
 for definition in task_definition['taskDefinition']['containerDefinitions']:
