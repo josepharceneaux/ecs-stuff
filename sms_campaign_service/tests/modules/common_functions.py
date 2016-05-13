@@ -40,8 +40,9 @@ def assert_url_conversion(sms_campaign_sends):
     for send_url_conversion in sends_url_conversions:
         # get URL conversion record from database table 'url_conversion' and delete it
         # delete url_conversion record
-        assert str(
-            send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
+        url_conversion_id = str(send_url_conversion.url_conversion.id)
+        source_url = send_url_conversion.url_conversion.source_url
+        assert url_conversion_id in source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
 
 
@@ -241,7 +242,7 @@ def assert_valid_campaign_get(campaign_dict, referenced_campaign, compare_fields
         assert campaign_dict['body_text']
         assert campaign_dict['list_ids']
         assert campaign_dict['user_id']
-        assert campaign_dict['added_datetime']
+        CampaignsTestsHelpers.assert_valid_datetime_range(campaign_dict['added_datetime'])
 
 
 def assert_valid_blast_object(received_blast_obj, expected_blast_id, campaign_id, expected_sends=0,
@@ -262,8 +263,8 @@ def assert_valid_blast_object(received_blast_obj, expected_blast_id, campaign_id
     assert received_blast_obj['sends'] == expected_sends
     assert received_blast_obj['replies'] == expected_replies
     assert received_blast_obj['clicks'] == expected_clicks
-    assert received_blast_obj['sent_datetime']
-    assert received_blast_obj['updated_time']
+    CampaignsTestsHelpers.assert_valid_datetime_range(received_blast_obj['sent_datetime'])
+    CampaignsTestsHelpers.assert_valid_datetime_range(received_blast_obj['updated_time'])
 
 
 def assert_valid_send_object(received_send_obj, expected_blast_id, candidate_ids):
@@ -278,5 +279,5 @@ def assert_valid_send_object(received_send_obj, expected_blast_id, candidate_ids
     assert received_send_obj['id']
     assert received_send_obj['blast_id'] == expected_blast_id
     assert received_send_obj['candidate_id'] in candidate_ids
-    assert received_send_obj['sent_datetime']
-    assert received_send_obj['updated_time']
+    CampaignsTestsHelpers.assert_valid_datetime_range(received_send_obj['sent_datetime'])
+    CampaignsTestsHelpers.assert_valid_datetime_range(received_send_obj['updated_time'])
