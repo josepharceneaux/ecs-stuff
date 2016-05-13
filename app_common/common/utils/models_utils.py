@@ -400,6 +400,7 @@ def init_talent_app(app_name):
             migrations.run_migrations(logger, db)
         except Exception as e:
             logger.exception("Exception running migrations: {}".format(e.message))
+            db.session.rollback()
 
         return flask_app, logger
 
