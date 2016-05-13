@@ -7,13 +7,9 @@ from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from candidate_pool_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
 from candidate_pool_service.common.routes import CandidatePoolApiUrl
-from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE
-from candidate_pool_service.common.inter_service_calls.candidate_pool_service_calls import \
-    assert_smartlist_candidates
+from candidate_pool_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 from candidate_pool_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-
-
-__author__ = 'jitesh'
+from candidate_pool_service.common.utils.test_utils import response_info
 
 
 class TestSmartlistResource(object):
@@ -49,10 +45,11 @@ class TestSmartlistResource(object):
         def test_create_smartlist_with_search_params(self, access_token_first, talent_pipeline):
             """Test to create smartlist by passing valid search_params as parameter. It should create smartlist"""
             name = fake.word()
-            search_params = {"maximum_years_experience": "5", "location": "San Jose, CA", "minimum_years_experience": "2"}
+            search_params = {"maximum_years_experience": "5", "location": "San Jose, CA",
+                             "minimum_years_experience": "2"}
             data = {'name': name, 'search_params': search_params, 'talent_pipeline_id': talent_pipeline.id}
             resp = self.call_post_api(data, access_token_first)
-
+            print response_info(resp)
             assert resp.status_code == 201  # Successfully created
 
             response = json.loads(resp.content)
@@ -168,13 +165,14 @@ class TestSmartlistResource(object):
             resp = self.call_post_api(data, access_token_first)
 
             assert resp.status_code == 400
-            assert json.loads(resp.content)['error']['message'] == "Bad input: `search_params` and `candidate_ids` both are present. Service accepts only one"
+            assert json.loads(resp.content)['error'][
+                       'message'] == "Bad input: `search_params` and `candidate_ids` both are present. Service accepts only one"
 
         def test_create_smartlist_with_invalid_search_params(self, access_token_first):
             """Test search_params should be in dictionary format"""
             data = {'name': fake.word(), 'search_params': "location=San Jose, CA"}
             resp = self.call_post_api(data, access_token_first)
-
+            print response_info(resp)
             assert resp.status_code == 400
             assert json.loads(resp.content)['error']['message'] == "`search_params` should in dictionary format."
 
@@ -190,7 +188,7 @@ class TestSmartlistResource(object):
             name = "    "
             data = {'name': name, 'candidate_ids': [1]}
             resp = self.call_post_api(data, access_token_first)
-
+            print response_info(resp)
             assert resp.status_code == 400
             assert json.loads(resp.content)['error']['message'] == "Missing input: `name` is required for creating list"
 
@@ -202,8 +200,8 @@ class TestSmartlistResource(object):
             assert resp.status_code == 401
 
         def test_create_smartlist_from_candidates_not_in_users_domain(
-                self, access_token_first, access_token_second, talent_pipeline, talent_pool_second, user_first, user_second):
-
+                self, access_token_first, access_token_second, talent_pipeline, talent_pool_second, user_first,
+                user_second):
             """Test user should not be allowed to create smartlist with candidates not belonging to his own domain"""
             # user_second creates candidates
             add_role_to_test_user(user_second, [DomainRole.Roles.CAN_ADD_CANDIDATES])
@@ -216,7 +214,8 @@ class TestSmartlistResource(object):
             resp = self.call_post_api(data, access_token_first)
 
             assert resp.status_code == 403
-            assert json.loads(resp.content)['error']['message'] == "Provided list of candidates does not belong to user's domain"
+            assert json.loads(resp.content)['error'][
+                       'message'] == "Provided list of candidates does not belong to user's domain"
 
         def test_create_smartlist_with_existing_name_in_domain(self, access_token_first, user_first, talent_pipeline):
             """Test smartlist creation with same name is now allowed, previously it was not"""
@@ -446,9 +445,9 @@ class TestSmartlistResource(object):
 class TestSmartlistCandidatesApi(object):
     def call_smartlist_candidates_get_api(self, smartlist_id, params, access_token):
         return requests.get(
-                url=CandidatePoolApiUrl.SMARTLIST_CANDIDATES % smartlist_id,
-                params=params,
-                headers={'Authorization': 'Bearer %s' % access_token})
+            url=CandidatePoolApiUrl.SMARTLIST_CANDIDATES % smartlist_id,
+            params=params,
+            headers={'Authorization': 'Bearer %s' % access_token})
 
     def call_smartlist_candidates_get_api_with_pagination_params(self, smartlist_id, params, access_token, page,
                                                                  per_page):
@@ -549,7 +548,7 @@ class TestSmartlistCandidatesApi(object):
         assert poll(assert_smartlist_candidates, step=3,
                     args=(smartlist.id, len(candidate_ids), access_token_first), timeout=30), \
             'Candidates not found for smartlist(id:%s)' % smartlist.id
-        resp = self.call_smartlist_candidates_get_api(smartlist.id, {},access_token_first)
+        resp = self.call_smartlist_candidates_get_api(smartlist.id, {}, access_token_first)
         assert resp.status_code == 200
 
         response = resp.json()
