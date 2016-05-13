@@ -301,6 +301,7 @@ class CandidateApiWords(object):
     LANGUAGES = "/languages"
     REFERENCES = "/references"
     TAGS = "/tags"
+    PIPELINES = "/pipelines"
 
 
 class CandidateApi(object):
@@ -387,6 +388,8 @@ class CandidateApi(object):
     TAGS = _CANDIDATE_ID + CandidateApiWords.TAGS
     TAG = TAGS + _INT_ID
 
+    PIPELINES = _CANDIDATE_ID + CandidateApiWords.PIPELINES
+
 
 class CandidateApiUrl(object):
     """
@@ -467,6 +470,8 @@ class CandidateApiUrl(object):
 
     TAGS = CANDIDATE + CandidateApiWords.TAGS
     TAG = TAGS + "/%s"
+
+    PIPELINES = CANDIDATE + CandidateApiWords.PIPELINES
 
 
 class WidgetApi(object):
