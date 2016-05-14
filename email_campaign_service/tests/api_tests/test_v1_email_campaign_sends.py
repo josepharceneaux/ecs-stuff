@@ -45,7 +45,9 @@ class TestEmailCampaignSends(object):
         We then assert that sends has been created by making HTTP GET call on
         endpoint /v1/email-campaigns/:id/sends
         """
-        CampaignsTestsHelpers.assert_blast_sends(sent_campaign, 2, abort_time_for_sends=100)
+        poll(CampaignsTestsHelpers.verify_blasts, args=(sent_campaign, access_token_first, None, 1),
+             step=3, timeout=100)
+        CampaignsTestsHelpers.assert_blast_sends(sent_campaign, 2, abort_time_for_sends=300)
         response = requests.get(self.URL % sent_campaign.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)

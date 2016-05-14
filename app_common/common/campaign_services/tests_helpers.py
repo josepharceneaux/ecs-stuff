@@ -433,7 +433,7 @@ class CampaignsTestsHelpers(object):
         if blasts_url:
             blasts_url = blasts_url % campaign_id
         blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, access_token,
-                                                               blasts_url=blasts_url)
+                                                               blasts_url=blasts_url, timeout=100)
         if not blasts:
             raise UnprocessableEntity('blasts not found in given time range.')
         return response
