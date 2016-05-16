@@ -473,24 +473,6 @@ def talent_pool_other(request, test_domain_2, second_group, user_from_diff_domai
 
 
 @pytest.fixture()
-def talent_pipelines(user_first, talent_pool):
-    """
-    Fixture will create 10 pipelines in user_first's domain
-    :rtype:  list[TalentPipeline]
-    """
-    list_of_talent_pipelines = []
-    for i in range(10):
-        talent_pipeline = TalentPipeline(name=gen_salt(6), description=gen_salt(15), positions=random.choice(range(1, 8)),
-                                         date_needed=datetime.utcnow().isoformat(sep=' '), user_id=user_first.id,
-                                         talent_pool_id=talent_pool.id)
-        db.session.add(talent_pipeline)
-        db.session.commit()
-        list_of_talent_pipelines.append(talent_pipeline)
-
-    return list_of_talent_pipelines
-
-
-@pytest.fixture()
 def talent_pipeline(request, user_first, talent_pool):
     talent_pipeline = TalentPipeline(name=gen_salt(6), description=gen_salt(15), positions=2,
                                      date_needed=datetime.utcnow().isoformat(sep=' '), user_id=user_first.id,

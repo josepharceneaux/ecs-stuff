@@ -691,8 +691,7 @@ class UserGroup(db.Model):
                     else:
                         group_id = None
 
-                group = UserGroup.query.filter_by(id=group_id,
-                                                  domain_id=domain_id).first() or None if group_id else None
+                group = UserGroup.query.filter_by(id=group_id, domain_id=domain_id).first() or group_id
                 if group:
                     db.session.delete(group)
                 else:
