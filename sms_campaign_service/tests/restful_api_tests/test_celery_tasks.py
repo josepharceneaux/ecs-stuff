@@ -51,8 +51,6 @@ from sms_campaign_service.tests.modules.common_functions import \
      assert_api_send_response, assert_campaign_schedule, delete_test_scheduled_task)
 
 
-# TODO: Add a test where two smartlists have same candidate associated with them.
-# TODO: Sends should be 1 not 2. (GET-1287)
 class TestCeleryTasks(object):
     """
     This class contains tasks that run on celery or if  the fixture they use has some
@@ -154,6 +152,24 @@ class TestCeleryTasks(object):
         campaign_id = sms_campaign_with_two_smartlists['id']
         response_post = self.send_campaign(sms_campaign_with_two_smartlists, access_token_first)
         assert_api_send_response(sms_campaign_with_two_smartlists, response_post, requests.codes.OK)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id,
+                                                           access_token_first)
+
+    def test_campaign_send_with_same_candidate_in_multiple_smartlists(
+            self, access_token_first, user_first,
+            sms_campaign_with_same_candidate_in_multiple_smartlists):
+        """
+        - This tests the endpoint /v1/sms-campaigns/:id/send
+
+        User auth token is valid, campaign has two smartlists associated, Smartlists have one
+        common candidate. One smartlist has 2 candidate and other smartlist has 1 candidates.
+        Total number of sends should be 2.
+        """
+        campaign_id = sms_campaign_with_same_candidate_in_multiple_smartlists['id']
+        response_post = self.send_campaign(sms_campaign_with_same_candidate_in_multiple_smartlists,
+                                           access_token_first)
+        assert_api_send_response(sms_campaign_with_same_candidate_in_multiple_smartlists,
+                                 response_post, requests.codes.OK)
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id,
                                                            access_token_first)
 

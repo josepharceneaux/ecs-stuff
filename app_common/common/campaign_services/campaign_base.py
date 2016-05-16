@@ -1097,7 +1097,7 @@ class CampaignBase(object):
                 'No smartlist is associated with %s(id:%s). (User(id:%s))'
                 % (self.campaign_type, self.campaign.id, self.user.id),
                 error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
-        candidates = sum(map(self.get_smartlist_candidates, campaign_smartlists), [])
+        candidates = list(set(sum(map(self.get_smartlist_candidates, campaign_smartlists), [])))
         if not candidates:
             raise InvalidUsage(
                 'No candidate is associated with smartlist(s). %s(id:%s). '
