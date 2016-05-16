@@ -442,7 +442,7 @@ class CampaignsTestsHelpers(object):
         return blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
 
     @staticmethod
-    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=10):
+    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=20):
         """
         This polls the result of blasts of a campaign for given timeout (default 10s).
         """
@@ -455,7 +455,7 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     def get_blast_by_index_with_polling(campaign, blast_index=0, access_token=None,
-                                        blasts_url=None, timeout=10):
+                                        blasts_url=None, timeout=20):
         """
         This polls the result of get_blasts_with_index() for given timeout (default 10s).
         """
@@ -510,7 +510,7 @@ class CampaignsTestsHelpers(object):
             return response.json()['blast']['sends'] == expected_count
 
     @staticmethod
-    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=30,
+    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=60,
                            blast_url=None, access_token=None):
         """
         This function asserts that particular blast of given campaign has expected number of sends
@@ -564,7 +564,7 @@ class CampaignsTestsHelpers(object):
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1,
                                         data=None, emails_list=False, create_phone=False,
                                         assign_role=False, assert_candidates=True,
-                                        smartlist_name=fake.word(), timeout=120):
+                                        smartlist_name=fake.word(), timeout=150):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.

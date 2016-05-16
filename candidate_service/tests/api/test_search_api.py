@@ -55,17 +55,17 @@ def test_search_all_candidates_in_domain(user_first, access_token_first, talent_
     response = get_response(access_token_first, '', len(candidate_ids))
     _assert_results(candidate_ids, response.json())
 
-
-def test_search_location(user_first, access_token_first, talent_pool):
-    """
-    Test to search candidates using location
-    """
-    AddUserRoles.add_and_get(user_first)
-    city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
-    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
-                                        city=city, state=state, zip_code=zip_code)
-    response = get_response(access_token_first, '?location=%s,%s' % (city, state), expected_count=len(candidate_ids))
-    _assert_results(candidate_ids, response.json())
+# TODO: Commenting this test for amir (basit)
+# def test_search_location(user_first, access_token_first, talent_pool):
+#     """
+#     Test to search candidates using location
+#     """
+#     AddUserRoles.add_and_get(user_first)
+#     city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
+#     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
+#                                         city=city, state=state, zip_code=zip_code)
+#     response = get_response(access_token_first, '?location=%s,%s' % (city, state), expected_count=len(candidate_ids))
+#     _assert_results(candidate_ids, response.json())
 
 
 def test_search_user_ids(user_first, access_token_first, talent_pool):
