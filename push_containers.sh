@@ -15,37 +15,48 @@ if [[ $1 && $1 == "prod" ]] ; then
     production="true"
 fi
 
-# Consider error if branch is master and production was specified
+if [ $production ] ; then
+    version_tag=`git tag --points-at HEAD | grep '^v.\+' `
 
-# Consider handling docker errors - just exit?
+    if [ ! $version_tag ] ; then
+	echo "No version tag points to HEAD"
+	exit 1
+    fi
 
-timestamp=`date +"%Y-%m-%d-%H-%M-%S"`
-timestamp_tag="built-at-$timestamp"
+    for app in ${FLASK_APPS}
+    do
+	# Get the image staging is using
+	# Tag it with the version
+	tag_command="docker tag -f gettalent/${app} ${ecr_registry_url}/gettalent/${app}:${version_tag}"
+	echo $tag_command
 
-# for app_index in ${FLASK_APPS}
-for app in ${FLASK_APPS}
+	# Update the task definition and restart the service
+	echo python scripts/move-stage-to-prod.py ${app} ${version_tag}
+	# REMOVE COMMENT
+	# python scripts/move-stage-to-prod.py ${app} ${version_tag}
+    done
 
-do
-    tag_command="docker tag -f gettalent/${app} ${ecr_registry_url}/gettalent/${app}:${timestamp_tag}"
-    echo $tag_command
-    eval $tag_command
+else
+    timestamp=`date +"%Y-%m-%d-%H-%M-%S"`
+    timestamp_tag="built-at-$timestamp"
 
-    push_command="docker push ${ecr_registry_url}/gettalent/${app}:${timestamp_tag}"
-    echo $push_command
-    eval $push_command
+    for app in ${FLASK_APPS}
+    do
+	tag_command="docker tag -f gettalent/${app} ${ecr_registry_url}/gettalent/${app}:${timestamp_tag}"
+	echo $tag_command
+        eval $tag_command
 
-    if [ $production ] ; then
-	# Update task definition for this service
-	# python ecs_task_update.py ${app} ${timestamp_tag} prod
-	echo "Not yet pushing to production - THIS SHOULDN'T BE HERE"
-    else
+	push_command="docker push ${ecr_registry_url}/gettalent/${app}:${timestamp_tag}"
+	echo $push_command
+        eval $push_command
+
 	# Update task definition for this service and restart staging services
 	echo "python ecs_task_update.py ${app} ${timestamp_tag} stage restart"
 	python scripts/ecs_task_update.py ${app} ${timestamp_tag} stage restart
-    fi
-done
+    done
 
-# If we've pushed and tagged all the images, tag the branch
-echo "Tagging branch with ${timestamp_tag}"
-git tag -a ${timestamp_tag} -m "Adding timestamp tag"
-git push origin ${timestamp_tag}
+    # If we've pushed and tagged all the images, tag the branch
+    echo "Tagging branch with ${timestamp_tag}"
+    git tag -a ${timestamp_tag} -m "Adding timestamp tag"
+    git push origin ${timestamp_tag}
+fi
