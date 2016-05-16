@@ -26,6 +26,7 @@ from scheduler_service.apscheduler_config import executors, job_store, jobstores
 from scheduler_service.common.models.user import User
 from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.routes import AuthApiUrl
+from scheduler_service.common.talent_config_manager import TalentEnvs
 from scheduler_service.common.utils.datetime_utils import DatetimeUtils
 from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
@@ -148,7 +149,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     elif not is_jwt_request:
         headers = {'content-type': 'application/x-www-form-urlencoded'}
         db.db.session.commit()
-        if flask_app.config[TalentConfigKeys.ENV_KEY] in ['dev', 'jenkins']:
+        if flask_app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
             user = User.get_by_id(user_id)
 
             # If user is deleted, then delete all its jobs too
@@ -270,7 +271,7 @@ def schedule_job(data, user_id=None, access_token=None):
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
                                           job_config['post_data'], job_config.get('is_jwt_request')]
-                                    );
+                                    )
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
             return job.id
         except Exception as e:

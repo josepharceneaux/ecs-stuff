@@ -45,8 +45,7 @@ from candidate_service.common.utils.auth_utils import require_oauth, require_all
 
 # Error handling
 from candidate_service.common.error_handling import (
-    ForbiddenError, InvalidUsage, NotFoundError, InternalServerError,
-    ResourceNotFound
+    ForbiddenError, InvalidUsage, NotFoundError, InternalServerError, ResourceNotFound
 )
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
@@ -87,8 +86,7 @@ from candidate_service.modules.talent_openweb import (
 from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 from onesignalsdk.one_signal_sdk import OneSignalSdk
 
-from candidate_service.common.inter_service_calls.candidate_pool_service_calls import \
-    assert_smartlist_candidates
+from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 
 
 class CandidatesResource(Resource):
@@ -1504,18 +1502,19 @@ class CandidateClientEmailCampaignResource(Resource):
             created_smartlist_id = created_smartlist.get('smartlist', {}).get('id')
 
         # Pool the Smartlist API to assert candidate(s) have been associated with smartlist
+        error_message = 'Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)' \
+                        % (candidate_ids, created_smartlist_id)
         try:
             # timeout=60 is just an upper limit to poll the Smartlist API
             # (needed this for some tests, it shouldn't affect normal API flow)
-            retry(assert_smartlist_candidates, sleeptime=3,  attempts=20,
+            retry(assert_smartlist_candidates, sleeptime=3,  attempts=20, sleepscale=1,
                   retry_exceptions=(AssertionError,), args=(created_smartlist_id, len(candidate_ids),
                                                             request.headers.get('authorization')))
 
             logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
                         % (len(candidate_ids), created_smartlist_id))
         except AssertionError:
-            raise InternalServerError('Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)'
-                                      % (candidate_ids, created_smartlist_id))
+            raise InternalServerError(error_message)
 
         # create campaign
         email_campaign_object = {
