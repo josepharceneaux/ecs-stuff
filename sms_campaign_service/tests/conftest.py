@@ -13,8 +13,6 @@ from sqlalchemy.orm.exc import ObjectDeletedError
 
 # Application Specific
 # common conftest
-from sms_campaign_service.common.inter_service_calls.candidate_service_calls import \
-    create_candidates_from_candidate_api
 from sms_campaign_service.common.tests.conftest import \
     (db, pytest, fake, requests, gen_salt, user_auth, access_token_first,
      sample_client, test_domain, first_group, domain_first, user_first, candidate_first,

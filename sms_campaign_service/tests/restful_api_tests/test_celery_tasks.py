@@ -51,8 +51,6 @@ from sms_campaign_service.tests.modules.common_functions import \
      assert_api_send_response, assert_campaign_schedule, delete_test_scheduled_task)
 
 
-# TODO: Add a test where two smartlists have same candidate associated with them.
-# TODO: Sends should be 1 not 2.
 class TestCeleryTasks(object):
     """
     This class contains tasks that run on celery or if  the fixture they use has some
