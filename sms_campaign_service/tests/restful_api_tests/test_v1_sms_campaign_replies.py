@@ -53,7 +53,8 @@ class TestSmsCampaignReplies(object):
                                                               access_token_first)
 
     def test_get_with_valid_token_and_one_reply(self, candidate_and_phone_1,
-                                                sent_campaign_and_blast_ids, headers,
+                                                sent_campaign_and_blast_ids,
+                                                headers_for_different_users_of_same_domain,
                                                 create_campaign_replies):
         """
         This is the case where we assume we have received the replies on a campaign from 1
@@ -61,9 +62,13 @@ class TestSmsCampaignReplies(object):
         This uses fixture "sms_campaign_of_current_user" to create an SMS campaign and
         "create_campaign_replies" to create an entry in database table "sms_campaign_replies".
         Replies count should be 1.
+
+        This runs for both users
+        1) Who created the campaign and 2) Some other user of same domain
         """
         campaign, blast_ids = sent_campaign_and_blast_ids
-        response = requests.get(self.URL % campaign['id'], headers=headers)
+        response = requests.get(self.URL % campaign['id'],
+                                headers=headers_for_different_users_of_same_domain)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         received_reply_objects = response.json()[self.ENTITY]
         # Assert all reply objects have valid fields

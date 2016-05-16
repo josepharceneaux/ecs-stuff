@@ -63,23 +63,28 @@ class TestSmsCampaignSends(object):
                                                               self.URL, self.HTTP_METHOD,
                                                               access_token_first)
 
-    def test_get_with_valid_token_and_two_sends(self, access_token_first,
-                                                sent_campaign_and_blast_ids, user_first):
+    def test_get_with_valid_token_and_two_sends(self,
+                                                access_tokens_for_different_users_of_same_domain,
+                                                sent_campaign_and_blast_ids):
         """
         This is the case where we assume we have sent the campaign to 2 candidates. We are
         using fixtures to create campaign blast and campaign sends.
         This uses fixture "sms_campaign_of_current_user" to create an SMS campaign and
         "create_sms_campaign_sends" to create an entry in database table "sms_campaign_sends",
         and then gets the "sends" of that campaign. Sends count should be 2.
+
+        This runs for both users
+        1) Who created the campaign and 2) Some other user of same domain
         """
+        access_token = access_tokens_for_different_users_of_same_domain
         campaign, blast_ids = sent_campaign_and_blast_ids
-        candidate_ids = candidate_ids_associated_with_campaign(campaign, access_token_first)
+        candidate_ids = candidate_ids_associated_with_campaign(campaign, access_token)
         CampaignsTestsHelpers.assert_blast_sends(campaign, 2,
                                                  blast_url=SmsCampaignApiUrl.BLAST % (campaign['id'],
                                                                                       blast_ids[0]),
-                                                 access_token=access_token_first)
+                                                 access_token=access_token)
         response = requests.get(self.URL % campaign['id'],
-                                headers=dict(Authorization='Bearer %s' % access_token_first))
+                                headers=dict(Authorization='Bearer %s' % access_token))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2)
         received_send_obj = response.json()[self.ENTITY]
         for send_obj in received_send_obj:

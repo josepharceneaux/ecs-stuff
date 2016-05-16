@@ -25,16 +25,20 @@ class TestSmsCampaignScheduleHTTPPOST(object):
     HTTP_METHOD = 'post'
     URL = SmsCampaignApiUrl.SCHEDULE
 
-    def test_campaign_schedule_with_valid_data(self, access_token_first,
+    def test_campaign_schedule_with_valid_data(self,
+                                               access_tokens_for_different_users_of_same_domain,
                                                sms_campaign_of_current_user,
                                                one_time_and_periodic):
         """
         Here we reschedule a campaign, both one time and periodically. We shouldn't get
         any error.
+
+        This runs for both users
+        1) Who created the campaign and 2) Some other user of same domain
         """
         task_id = CampaignsTestsHelpers.request_for_ok_response(
             self.HTTP_METHOD, self.URL % sms_campaign_of_current_user['id'],
-            access_token_first, one_time_and_periodic)
+            access_tokens_for_different_users_of_same_domain, one_time_and_periodic)
         one_time_and_periodic['task_id'] = task_id
 
     def test_campaign_schedule_with_no_auth_header(self, access_token_first,
@@ -189,7 +193,8 @@ class TestSmsCampaignScheduleHTTPPUT(object):
     URL = SmsCampaignApiUrl.SCHEDULE
 
     def test_reschedule_campaign_from_one_time_to_periodic(
-            self, access_token_first, scheduled_sms_campaign_of_current_user):
+            self, access_token_first,
+            scheduled_sms_campaign_of_current_user):
         """
         Campaign is scheduled one time. Here we try to re-schedule it periodically with valid data.
         It should be re-scheduled.
@@ -199,6 +204,19 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         CampaignsTestsHelpers.request_for_ok_response(
             self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user['id'],
             access_token_first, data)
+
+    # TODO: Filed a JIRA for saad GET-1286
+    # def test_reschedule_campaign_with_other_user_of_same_domain(
+    #         self, access_token_same, scheduled_sms_campaign_of_current_user):
+    #     """
+    #     Campaign is scheduled one time. Here we try to re-schedule it periodically with valid data
+    #     with some other user of same domain. It should be re-scheduled.
+    #     """
+    #     data = generate_campaign_schedule_data()
+    #     data['frequency_id'] = Frequency.DAILY  # for Periodic job
+    #     CampaignsTestsHelpers.request_for_ok_response(
+    #         self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user['id'],
+    #         access_token_same, data)
 
     def test_reschedule_campaign_with_invalid_token(self, sms_campaign_of_current_user):
         """
@@ -306,19 +324,23 @@ class TestSmsCampaignScheduleHTTPDELETE(object):
             SmsCampaign, self.HTTP_METHOD, self.URL, access_token_first,
             generate_campaign_schedule_data())
 
-    def test_unschedule_a_campaign(self, access_token_first,
+    def test_unschedule_a_campaign(self, access_tokens_for_different_users_of_same_domain,
                                    scheduled_sms_campaign_of_current_user):
         """
         Here we un schedule a campaign. It should get OK response.
+
+        This runs for both users
+        1) Who created the campaign and 2) Some other user of same domain
+
         """
         # It should get campaign has been un scheduled
         CampaignsTestsHelpers.request_for_ok_response(
             self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user['id'],
-            access_token_first)
+            access_tokens_for_different_users_of_same_domain)
         # It should get campaign is already unscheduled
         CampaignsTestsHelpers.request_for_ok_response(
             self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_current_user['id'],
-            access_token_first)
+            access_tokens_for_different_users_of_same_domain)
 
     def test_unschedule_not_owned_campaign(self, access_token_first,
                                            scheduled_sms_campaign_of_other_domain):

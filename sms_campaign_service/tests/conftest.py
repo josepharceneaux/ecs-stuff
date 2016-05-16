@@ -99,6 +99,34 @@ def headers_same_domain(access_token_same):
     return _get_auth_header(access_token_same)
 
 
+@pytest.fixture(params=['user_first', 'user_same_domain'])
+def headers_for_different_users_of_same_domain(request, headers, headers_same_domain,
+                                               user_same_domain):
+    """
+    This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
+    using their respective headers.
+    """
+    if request.param == 'user_first':
+        return headers
+    elif request.param == 'user_same_domain':
+        CampaignsTestsHelpers.assign_roles(user_same_domain)
+        return headers_same_domain
+
+
+@pytest.fixture(params=['user_first', 'user_same_domain'])
+def access_tokens_for_different_users_of_same_domain(request, access_token_first, access_token_same,
+                                                     user_same_domain):
+    """
+    This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
+    using their access_tokens.
+    """
+    if request.param == 'user_first':
+        return access_token_first
+    elif request.param == 'user_same_domain':
+        CampaignsTestsHelpers.assign_roles(user_same_domain)
+        return access_token_same
+
+
 @pytest.fixture()
 def headers_other(access_token_other):
     """
@@ -720,7 +748,7 @@ def url_conversion_by_send_test_sms_campaign(request, sent_campaign):
     campaign_in_db = SmsCampaign.get_by_id(sent_campaign['id'])
     # get campaign blast
     sms_campaign_blast = campaign_in_db.blasts[0]
-    CampaignsTestsHelpers.assert_blast_sends(campaign_in_db, 2, abort_time_for_sends=20)
+    CampaignsTestsHelpers.assert_blast_sends(campaign_in_db, 2)
     # get URL conversion record from relationship
     url_conversion = \
         sms_campaign_blast.blast_sends[0].url_conversions[0].url_conversion

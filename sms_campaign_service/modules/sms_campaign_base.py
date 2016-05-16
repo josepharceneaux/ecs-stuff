@@ -459,7 +459,7 @@ class SmsCampaignBase(CampaignBase):
         for candidate in candidates:
             try:
                 # check if candidate belongs to user's domain
-                if candidate.user_id != self.user.id:
+                if candidate.user.domain_id != self.user.domain_id:
                     raise CandidateNotFoundInUserDomain
                 candidates_and_phones.append(self.does_candidate_have_unique_mobile_phone(candidate))
             except CandidateNotFoundInUserDomain:
@@ -962,16 +962,17 @@ def _get_valid_candidate_phone(candidate_phone_value, current_user):
     - This function is called from class method process_candidate_reply() of
     SmsCampaignBase class to get candidate_phone db record.
 
-    :param candidate_phone_value: Phone number by which we want to get user.
-    :type candidate_phone_value: str
+    :param (str) candidate_phone_value: Phone number by which we want to get user.
+    :param (User) current_user: Logged-in user's object
     :exception: If Multiple Candidates found, it raises "MultipleCandidatesFound".
     :exception: If no Candidate is found, it raises "CandidateNotFoundInUserDomain".
     :return: candidate_phone obj
     :rtype: CandidatePhone
     """
     raise_if_not_instance_of(candidate_phone_value, basestring)
-    candidate_phone_records = CandidatePhone.search_phone_number_in_user_domain(
-        candidate_phone_value, [candidate.id for candidate in current_user.candidates])
+    raise_if_not_instance_of(current_user, User)
+    candidate_phone_records = \
+        CandidatePhone.search_phone_number_in_user_domain(candidate_phone_value, current_user)
     if len(candidate_phone_records) == 1:
         candidate_phone = candidate_phone_records[0]
     elif len(candidate_phone_records) > 1:

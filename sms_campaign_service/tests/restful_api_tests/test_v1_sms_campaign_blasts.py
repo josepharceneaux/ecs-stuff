@@ -48,20 +48,23 @@ class TestSmsCampaignBlasts(object):
                                                               self.URL, self.HTTP_METHOD,
                                                               access_token_first)
 
-    def test_get_blasts_without_pagination_params(self, access_token_first,
+    def test_get_blasts_without_pagination_params(self,
+                                                  access_tokens_for_different_users_of_same_domain,
                                                   sent_campaign_and_blast_ids):
         """
         This is the case where we assume we have sent campaign to 2 candidates.
+        This runs for both users
+        1) Who created the campaign and 2) Some other user of same domain
         """
         sent_campaign, blast_ids = sent_campaign_and_blast_ids
         expected_sends = 2
-        # Poll sends for blast
+        # Poll campaign sends
         CampaignsTestsHelpers.assert_blast_sends(
             sent_campaign, expected_sends,
             blast_url=SmsCampaignApiUrl.BLAST % (sent_campaign['id'], blast_ids[0]),
-            access_token=access_token_first)
+            access_token=access_tokens_for_different_users_of_same_domain)
         response = requests.get(self.URL % sent_campaign['id'],
-                                headers=dict(Authorization='Bearer %s' % access_token_first))
+                                headers=dict(Authorization='Bearer %s' % access_tokens_for_different_users_of_same_domain))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY][0]
         assert_valid_blast_object(json_resp, blast_ids[0], sent_campaign['id'], expected_sends)

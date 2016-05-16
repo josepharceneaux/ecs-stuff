@@ -41,21 +41,25 @@ class TestSmsCampaignWithIdHTTPGET(object):
         User auth token is invalid. It should get Unauthorized error.
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
-                                                         self.URL % sms_campaign_of_current_user['id'])
-        
-    def test_get_campaign_in_same_domain(self, access_token_first, sms_campaign_of_current_user):
+                                                         self.URL % sms_campaign_of_current_user[
+                                                             'id'])
+
+    def test_get_campaign_in_same_domain(self, access_tokens_for_different_users_of_same_domain,
+                                         sms_campaign_of_current_user):
         """
         User auth token is valid. It uses 'sms_campaign_of_current_user' fixture
         to create an SMS campaign in database. It gets that record from GET HTTP request
         Response should be OK. It then assert all fields of record that we get from GET call with the
         original field values (provided at time of creation of campaign).
-
+        This runs for both users
+        1) Who created the campaign and 2) Some other user of same domain
         """
+        access_token = access_tokens_for_different_users_of_same_domain
         response = requests.get(self.URL % sms_campaign_of_current_user['id'],
-                                headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response.status_code == 200, 'Response should be ok (200)'
-        # verify all the field values
+                                headers=dict(Authorization='Bearer %s' % access_token))
+        assert response.status_code == requests.codes.OK, 'Response should be ok (200)'
         received_campaign = response.json()['campaign']
+        # verify values of all the fields
         assert_valid_campaign_get(received_campaign, sms_campaign_of_current_user)
 
     def test_with_campaign_of_other_domain(self, access_token_first, sms_campaign_in_other_domain):
@@ -65,7 +69,8 @@ class TestSmsCampaignWithIdHTTPGET(object):
         Response should result in Forbidden error as campaign does not belong to domain of logged-in user.
         """
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
-                                                          self.URL % sms_campaign_in_other_domain['id'],
+                                                          self.URL % sms_campaign_in_other_domain[
+                                                              'id'],
                                                           access_token_first)
 
     def test_with_id_of_deleted_record(self, access_token_first,
@@ -74,7 +79,7 @@ class TestSmsCampaignWithIdHTTPGET(object):
         User auth token is valid. It deletes the campaign and then GETs the record from db.
         It should result in ResourceNotFound error.
         """
-        CampaignsTestsHelpers.request_after_deleting_campaign(sms_campaign_of_current_user, 
+        CampaignsTestsHelpers.request_after_deleting_campaign(sms_campaign_of_current_user,
                                                               SmsCampaignApiUrl.CAMPAIGN,
                                                               self.URL, self.HTTP_METHOD,
                                                               access_token_first)
@@ -102,7 +107,8 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         User auth token is invalid. It should get Unauthorized error.
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
-                                                         self.URL % sms_campaign_of_current_user['id'])
+                                                         self.URL % sms_campaign_of_current_user[
+                                                             'id'])
 
     def test_with_invalid_header(self, access_token_first, sms_campaign_of_current_user):
         """
@@ -114,14 +120,15 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
 
-    def test_updating_campaign_in_own_domain(self, headers,
-                                             campaign_valid_data,
-                                             sms_campaign_of_current_user):
+    def test_updating_campaign_in_same_domain(self, headers_for_different_users_of_same_domain,
+                                              campaign_valid_data,
+                                              sms_campaign_of_current_user):
         """
         This uses fixture to create an sms_campaign record in db. It then makes a POST
         call to update that record with name modification. If status code is 200, it then
         gets the record from database and assert the 'name' of modified record.
         """
+        headers = headers_for_different_users_of_same_domain
         data = campaign_valid_data.copy()
         modified_name = 'Modified Name'
         data.update({'name': modified_name})
@@ -131,12 +138,12 @@ class TestSmsCampaignWithIdHTTPPUT(object):
             SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user['id'],
             headers=headers,
             data=json.dumps(data))
-        assert response_post.status_code == 200, 'Response should be ok (200)'
+        assert response_post.status_code == requests.codes.OK, 'Response should be ok (200)'
 
         # get updated record to verify the change we made in name
         response_get = requests.get(
             SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user['id'], headers=headers)
-        assert response_get.status_code == 200, 'Response should be ok (200)'
+        assert response_get.status_code == requests.codes.OK, 'Response should be ok (200)'
         resp = response_get.json()['campaign']
         assert resp
         assert resp['name'] == modified_name
@@ -149,6 +156,9 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         """
         Here we try to update a campaign which does not belong to domain of logged-in user.
         It should get forbidden error.
+
+        This runs for both users
+        1) Who created the campaign and 2) Some other user of same domain
         """
         modified_name = 'Modified Name'
         campaign_valid_data.update({'name': modified_name})
@@ -250,7 +260,8 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         """
         data = campaign_valid_data.copy()
         non_existing_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
-        data['smartlist_ids'] = [non_existing_id, 0, smartlist_with_two_candidates_in_other_domain[0]]
+        data['smartlist_ids'] = [non_existing_id, 0,
+                                 smartlist_with_two_candidates_in_other_domain[0]]
         response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_current_user['id'],
                                 headers=headers,
                                 data=json.dumps(data))
@@ -284,8 +295,8 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         assert response.status_code == UnauthorizedError.http_status_code(), \
             'It should be unauthorized (401)'
 
-    def test_with_sms_campaign_in_own_domain(self, headers,
-                                             user_first, sms_campaign_of_current_user):
+    def test_delete_campaign_in_own_domain(self, headers,
+                                           user_first, sms_campaign_of_current_user):
         """
         User auth token is valid. It deletes the campaign, belong to the user, from database.
         It should get OK response.
@@ -293,6 +304,17 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         response = requests.delete(self.URL % sms_campaign_of_current_user['id'],
                                    headers=headers)
         assert_campaign_delete(response, user_first.id, sms_campaign_of_current_user['id'])
+
+    def test_delete_campaign_with_other_user_of_same_domain(self, headers_same_domain,
+                                                            user_same_domain,
+                                                            sms_campaign_of_current_user):
+        """
+        Some other user of same domain tries to delete the sms-campaign created by some other user.
+        It should get OK response.
+        """
+        response = requests.delete(self.URL % sms_campaign_of_current_user['id'],
+                                   headers=headers_same_domain)
+        assert_campaign_delete(response, user_same_domain.id, sms_campaign_of_current_user['id'])
 
     def test_with_sms_campaign_in_other_domain(self, headers, sms_campaign_in_other_domain):
         """

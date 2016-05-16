@@ -180,5 +180,4 @@ class TestSmsReceive(object):
         Data passed is valid and candidate belongs to more than one domains.
         It should not get any error.
         """
-
         reply_and_assert_response(sent_campaign, user_phone_1, candidate_and_phone_1[1], access_token_first)

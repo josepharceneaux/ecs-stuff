@@ -40,12 +40,16 @@ class TestSmsCampaignBlastsWithId(object):
             campaign, SmsCampaignApiUrl.CAMPAIGN,
             self.URL % ('%s', blast_ids[0]), self.HTTP_METHOD, access_token_first)
 
-    def test_get_with_saved_blast(self, access_token_first, sent_campaign_and_blast_ids,
-                                  create_campaign_replies):
+    def test_get_blast_with_two_sends_one_reply(self,
+                                                access_tokens_for_different_users_of_same_domain,
+                                                sent_campaign_and_blast_ids,
+                                                create_campaign_replies):
         """
         This is the case where we assume we have blast saved with one reply and 2 sends.
         We are using fixture "create_campaign_replies" to create an entry in database table
         "sms_campaign_replies". Replies count should be 1 and sends count should be 2.
+        This runs for both users
+        1) Who created the campaign and 2) Some other user of same domain
         """
         campaign, blast_ids = sent_campaign_and_blast_ids
         expected_sends = 2
@@ -53,11 +57,11 @@ class TestSmsCampaignBlastsWithId(object):
         CampaignsTestsHelpers.assert_blast_sends(
             campaign, expected_sends,
             blast_url=SmsCampaignApiUrl.BLAST % (campaign['id'], blast_ids[0]),
-            access_token=access_token_first)
+            access_token=access_tokens_for_different_users_of_same_domain)
 
         response = requests.get(
             self.URL % (campaign['id'], blast_ids[0]),
-            headers=dict(Authorization='Bearer %s' % access_token_first))
+            headers=dict(Authorization='Bearer %s' % access_tokens_for_different_users_of_same_domain))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY,
                                                             check_count=False)
         json_resp = response.json()[self.ENTITY]
