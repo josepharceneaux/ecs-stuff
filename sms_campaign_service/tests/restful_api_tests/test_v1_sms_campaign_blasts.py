@@ -115,7 +115,7 @@ class TestSmsCampaignBlasts(object):
         CampaignsTestsHelpers.assert_blast_sends(
             sent_campaign, expected_sends,
             blast_url=SmsCampaignApiUrl.BLAST % (sent_campaign['id'], blast_ids[3]),
-            access_token=access_token_first, abort_time_for_sends=40)
+            access_token=access_token_first)
 
         # Test GET blasts of SMS campaign with 4 results per_page. It should get 4 blast objects
         response = requests.get(url + '?per_page=4', headers=headers)
@@ -130,7 +130,7 @@ class TestSmsCampaignBlasts(object):
         CampaignsTestsHelpers.assert_blast_sends(
             sent_campaign, expected_sends,
             blast_url=SmsCampaignApiUrl.BLAST % (sent_campaign['id'], blast_ids[4]),
-            access_token=access_token_first, abort_time_for_sends=40)
+            access_token=access_token_first)
 
         #  Test GET blasts of SMS campaign with 4 results per_page using page = 2
         response = requests.get(url + '?per_page=4&page=2', headers=headers)
@@ -145,7 +145,7 @@ class TestSmsCampaignBlasts(object):
         CampaignsTestsHelpers.assert_blast_sends(
             sent_campaign, expected_sends,
             blast_url=SmsCampaignApiUrl.BLAST % (sent_campaign['id'], blast_ids[9]),
-            access_token=access_token_first, abort_time_for_sends=40)
+            access_token=access_token_first)
 
         #  Test GET blasts of SMS campaign with 4 results per_page using page = 3
         response = requests.get(url + '?per_page=4&page=3', headers=headers)
