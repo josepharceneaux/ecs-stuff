@@ -30,6 +30,7 @@ from resume_parsing_service.common.routes import ResumeApiUrl, ResumeApi, Schedu
 
 from resume_parsing_service.common.models.user import DomainRole
 from resume_parsing_service.common.utils.handy_functions import add_role_to_test_user
+from resume_parsing_service.common.utils.test_utils import response_info
 
 DOC_FP_KEY = '0169173d35beaf1053e79fdf1b5db864.docx'
 PDF15_FP_KEY = 'e68b51ee1fd62db589d2669c4f63f381.pdf'
@@ -255,6 +256,14 @@ def test_2448_3264_jpg_by_post(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
+def test_jpg_in_pdf(token_fixture, user_fixture):
+    """Test that large jpgs files can be posted."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'jpg_in_pdf.pdf')
+    assert_non_create_content_and_status(content, status)
+
+
 ####################################################################################################
 # Test Candidate Creation
 ####################################################################################################
@@ -318,28 +327,30 @@ def test_already_exists_candidate(token_fixture, user_fixture):
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
                                          DomainRole.Roles.CAN_EDIT_CANDIDATES])
     unused_create_response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
+    print "\nunused_create_response: {}".format(unused_create_response)
     update_content, status = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
     assert_create_or_update_content_and_status(update_content, status)
 
 
+#TODO: Commenting this for erik (basit)
 ####################################################################################################
 # Batch Processing tests
 ####################################################################################################
-def test_batch_processing(user_fixture, token_fixture):
-    # create a single file queue
-    user_id = user_fixture.id
-    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
-                                         DomainRole.Roles.CAN_GET_CANDIDATES])
-    queue_string = 'batch:{}:fp_keys'.format(user_id)
-    unused_queue_status = add_fp_keys_to_queue([PDF15_FP_KEY], user_id, token_fixture.access_token)
-    # mock hit from scheduler service.
-    batch_response = requests.get('{}/{}'.format(ResumeApiUrl.BATCH_URL, user_id),
-                                  headers={'Authorization': 'bearer {}'.format(
-                                      token_fixture.access_token)})
-    formatted_response = json.loads(batch_response.content)
-    redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
-    assert 'candidate' in formatted_response, "Candidate should be in response content"
+# def test_batch_processing(user_fixture, token_fixture):
+#     # create a single file queue
+#     user_id = user_fixture.id
+#     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+#                                          DomainRole.Roles.CAN_GET_TALENT_POOLS,
+#                                          DomainRole.Roles.CAN_GET_CANDIDATES])
+#     queue_string = 'batch:{}:fp_keys'.format(user_id)
+#     unused_queue_status = add_fp_keys_to_queue([PDF15_FP_KEY], user_id, token_fixture.access_token)
+#     # mock hit from scheduler service.
+#     batch_response = requests.get('{}/{}'.format(ResumeApiUrl.BATCH_URL, user_id),
+#                                   headers={'Authorization': 'bearer {}'.format(
+#                                       token_fixture.access_token)})
+#     formatted_response = json.loads(batch_response.content)
+#     redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
+#     assert 'candidate' in formatted_response, "Candidate should be in response content"
 
 
 # Unittest Style - located here due to conversion to flask redis which requires app context.
@@ -366,6 +377,7 @@ def test_integration_add_single_item(user_fixture, token_fixture):
                              headers=auth_headers,
                              data=json.dumps({'filenames': ['file1b']})
                             )
+    print response_info(response)
     assert response.status_code == requests.codes.created
     response_dict = json.loads(response.content)
     job_id = response_dict['ids'][0]

@@ -4,7 +4,9 @@ import re
 
 # Third Party
 import phonenumbers
+from phonenumbers.phonenumber import PhoneNumber
 import pycountry
+from jsonschema import validate, FormatChecker, ValidationError
 
 # Application Specific
 from ..error_handling import InvalidUsage
@@ -25,6 +27,67 @@ def is_valid_email(email):
     """
     regex = """^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"""
     return email and re.match(regex, email)
+
+
+def get_phone_number_extension_if_exists(phone_number):
+    """
+    Function will extract & return phone-number, extension prefix, and extension-number if an extension is provided
+    :return: phone number, extension-prefix & extension number; e.g. ('4084059934', 'ext', '45') | (None, None, None)
+    :rtype:  tuple
+    """
+    # TODO: compile regex at application startup
+    # Link from where regex was copied:
+    #   https://www.quora.com/What-is-the-best-way-to-parse-and-standardize-phone-numbers-in-Python?share=1
+    matched = re.match(r'([^a-zA-Z]+)([a-zA-Z]+\D*)(\d+)', phone_number)
+    return matched.groups() if matched else (None, None, None)
+
+
+def parse_phone_number(phone_number, iso3166_country_code=None):
+    """
+    Function will parse phone number. If phone number does not have country code, it will look for
+      provided iso3166_country_code. If iso3166_country_code is not provided it will save phone number
+      as provided. InvalidUsage will be raised if phone number is not properly formatted or is invalid
+    :type phone_number:  str
+    :param phone_number: +14084056677 | 4084056677 | 4084056677ext456 (must be at least 7 digits long)
+    :type iso3166_country_code:  str
+    :param iso3166_country_code:  Alpha-2 code per ISO 3166 standards
+    :rtype:  PhoneNumber
+    :return  PhoneNumber(country_code=1, national_number=4084056677, extension=None,
+                         italian_leading_zero=None, number_of_leading_zeros=None, country_code_source=None,
+                         preferred_domestic_carrier_code=None)
+    """
+    try:  # Maybe the number is already internationally formatted
+        return phonenumbers.parse(str(phone_number))
+    except phonenumbers.NumberParseException:
+        pass
+
+    if iso3166_country_code:
+        try:  # Maybe the country_code is correct
+            return phonenumbers.parse(number=str(phone_number), region=iso3166_country_code.upper())
+        except phonenumbers.NumberParseException:
+            raise InvalidUsage(error_message="format_phone_number({}, {}): Couldn't parse phone number".
+                               format(phone_number, iso3166_country_code))
+
+    # If phone number contains an extension, it must be parsed
+    number, extension_prefix, extension_value = get_phone_number_extension_if_exists(phone_number)
+
+    # Phone number is considered invalid if it's less than 7 digits; see:
+    #   http://stackoverflow.com/questions/14894899/what-is-the-minimum-length-of-a-valid-international-phone-number
+    if number:
+        number = re.sub('\D', '', number)  # Number must contain only digits
+        if len(number) < 7:
+            raise InvalidUsage("Invalid phone number: {}".format(number))
+
+    phone_number = re.sub('\D', '', phone_number)  # Number must contain only digits
+    if len(phone_number) < 7:
+        raise InvalidUsage("Invalid phone number: {}".format(number))
+
+    # If phone number is not prefixed with international code and country_code is not provided
+    #    it will be saved as-is unless if phone number is invalid, e.g. "letter56"
+    try:
+        return PhoneNumber(national_number=number or phone_number, extension=extension_value)
+    except ValueError:
+        raise InvalidUsage("Invalid phone number: {}".format(phone_number))
 
 
 def format_phone_number(phone_number, country_code='US'):
@@ -50,10 +113,10 @@ def format_phone_number(phone_number, country_code='US'):
             return dict(formatted_number=str(formatted_number), extension=parsed_phone_number.extension)
         except phonenumbers.NumberParseException:
             raise InvalidUsage(error_message="format_phone_number(%s, %s): Couldn't parse phone number" %
-                               (phone_number, country_code))
+                                             (phone_number, country_code))
     except:
         raise InvalidUsage(error_message="format_phone_number(%s, %s): Received other exception" %
-                           (phone_number, country_code))
+                                         (phone_number, country_code))
 
 
 def sanitize_zip_code(zip_code):
@@ -167,3 +230,33 @@ def raise_if_not_instance_of(obj, instances, exception=InvalidUsage):
                                                        for instance in instances]))
         else:
             raise exception(error_message % instances.__name__)
+
+
+def get_json_if_exist(_request):
+    """ Function will ensure data's content-type is JSON, and it isn't empty
+    :type _request:  request
+    """
+    if "application/json" not in _request.content_type:
+        raise InvalidUsage("Request body must be a JSON object")
+    if not _request.get_data():
+        raise InvalidUsage("Request body cannot be empty")
+    return _request.get_json()
+
+
+def get_json_data_if_validated(request_body, json_schema, format_checker=True):
+    """
+    Function will compare requested json data with provided json schema
+    :type request_body:  request
+    :type json_schema:  dict
+    :param format_checker:  If True, specified formats will need to be validated, e.g. datetime
+    :return:  JSON data if validation passes
+    """
+    try:
+        body_dict = get_json_if_exist(request_body)
+        if format_checker:
+            validate(instance=body_dict, schema=json_schema, format_checker=FormatChecker())
+        else:
+            validate(instance=body_dict, schema=json_schema)
+    except ValidationError as e:
+        raise InvalidUsage('JSON schema validation error: {}'.format(e))
+    return body_dict

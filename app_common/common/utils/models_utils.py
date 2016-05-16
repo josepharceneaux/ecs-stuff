@@ -377,6 +377,10 @@ def init_talent_app(app_name):
 
         # Initialize Redis Cache
         redis_store.init_app(flask_app)
+        # noinspection PyProtectedMember
+        logger.info("Redis connection pool on app startup: %s", repr(redis_store._redis_client.connection_pool))
+        # noinspection PyProtectedMember
+        logger.info("Redis info on app startup: %s", redis_store._redis_client.info())
 
         # Enable CORS for *.gettalent.com and localhost
         CORS(flask_app, resources=GTApis.CORS_HEADERS)
@@ -396,6 +400,7 @@ def init_talent_app(app_name):
             migrations.run_migrations(logger, db)
         except Exception as e:
             logger.exception("Exception running migrations: {}".format(e.message))
+            db.session.rollback()
 
         return flask_app, logger
 

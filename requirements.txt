@@ -13,7 +13,7 @@ itsdangerous==0.24
 Jinja2==2.8
 mysql-python==1.2.5
 oauthlib==1.0.3
-pytest==2.8.2
+pytest==2.9.1
 pytest-xdist==1.13.1
 pytest-mock==0.11.0
 requests-oauthlib==0.5.0
@@ -26,7 +26,6 @@ wsgiref==0.1.2
 
 # Resume Parsing
 beautifulsoup4==4.4.0
-BeautifulSoup==3.2.1
 boto3==1.3.0 # used in emailReciever Lambda tests
 ghostscript==0.4.1
 libmagic
@@ -36,7 +35,6 @@ MarkupSafe==0.23
 pdfminer==20110515
 phonenumbers==7.0.8
 Pillow==2.9.0
-python-magic==0.4.6
 six==1.9.0
 
 # Logging
@@ -91,3 +89,4 @@ redis-collections==0.1.7
 # Misc
 boltons==16.1.1
 polling==0.3.0
+nameparser==0.3.16

@@ -224,6 +224,7 @@ class UserServiceApiWords(object):
     RESET_PASSWORD = '/reset-password'
     UPDATE_PASSWORD = '/update-password'
     FORGOT_PASSWORD = '/forgot-password'
+    SOURCES = 'sources'
 
 
 class UserServiceApi(object):
@@ -241,6 +242,10 @@ class UserServiceApi(object):
     DOMAIN_ROLES = UserServiceApiWords.DOMAIN + '/<int:domain_id>' + UserServiceApiWords.ROLES
     DOMAIN_GROUPS = UserServiceApiWords.DOMAIN + "/<int:domain_id>/" + UserServiceApiWords.GROUPS
     DOMAIN_GROUPS_UPDATE = UserServiceApiWords.DOMAIN + "/" + UserServiceApiWords.GROUPS + '/<int:group_id>'
+
+    DOMAIN_SOURCES = '/' + VERSION + '/' + UserServiceApiWords.SOURCES
+    DOMAIN_SOURCE = DOMAIN_SOURCES + '/<int:id>'
+
     USER_GROUPS = _GROUP + UserServiceApiWords.USERS
     UPDATE_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.UPDATE_PASSWORD
     FORGOT_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.FORGOT_PASSWORD
@@ -263,6 +268,10 @@ class UserServiceApiUrl(object):
     DOMAIN_ROLES_API = API_URL % (UserServiceApiWords.DOMAIN + '/%s' + UserServiceApiWords.ROLES)
     DOMAIN_GROUPS_API = API_URL % (UserServiceApiWords.DOMAIN + '/%s/' + UserServiceApiWords.GROUPS)
     DOMAIN_GROUPS_UPDATE_API = API_URL % (UserServiceApiWords.DOMAIN + '/' + UserServiceApiWords.GROUPS + '/%s')
+
+    DOMAIN_SOURCES = API_URL % UserServiceApiWords.SOURCES
+    DOMAIN_SOURCE = DOMAIN_SOURCES + '/%s'
+
     USER_GROUPS_API = API_URL % (UserServiceApiWords.GROUPS + '/%s/' + UserServiceApiWords.USERS)
     UPDATE_PASSWORD_API = API_URL % UserServiceApi.UPDATE_PASSWORD
     FORGOT_PASSWORD_API = API_URL % UserServiceApi.FORGOT_PASSWORD
@@ -300,6 +309,8 @@ class CandidateApiWords(object):
     NOTES = "/notes"
     LANGUAGES = "/languages"
     REFERENCES = "/references"
+    TAGS = "/tags"
+    PIPELINES = "/pipelines"
 
 
 class CandidateApi(object):
@@ -383,6 +394,11 @@ class CandidateApi(object):
     REFERENCES = _CANDIDATE_ID + CandidateApiWords.REFERENCES
     REFERENCE = REFERENCES + _INT_ID
 
+    TAGS = _CANDIDATE_ID + CandidateApiWords.TAGS
+    TAG = TAGS + _INT_ID
+
+    PIPELINES = _CANDIDATE_ID + CandidateApiWords.PIPELINES
+
 
 class CandidateApiUrl(object):
     """
@@ -460,6 +476,11 @@ class CandidateApiUrl(object):
 
     REFERENCES = CANDIDATE + CandidateApiWords.REFERENCES
     REFERENCE = REFERENCES + "/%s"
+
+    TAGS = CANDIDATE + CandidateApiWords.TAGS
+    TAG = TAGS + "/%s"
+
+    PIPELINES = CANDIDATE + CandidateApiWords.PIPELINES
 
 
 class WidgetApi(object):
@@ -557,8 +578,8 @@ class CandidatePoolApiUrl(object):
     TALENT_POOL_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + "/%s" + CandidatePoolApiWords.STATS)
     TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = API_URL % CandidatePoolApiWords.TALENT_POOLS + '/%s/' \
                                                 + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
-    TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_POOLS +'/%s'+CandidatePoolApiWords.CANDIDATES)
-    TALENT_POOL_GROUP = API_URL % (CandidatePoolApiWords.GROUPS+'/%s/'+CandidatePoolApiWords.TALENT_POOLS)
+    TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_POOLS + '/%s' + CandidatePoolApiWords.CANDIDATES)
+    TALENT_POOL_GROUP = API_URL % (CandidatePoolApiWords.GROUPS + '/%s/' + CandidatePoolApiWords.TALENT_POOLS)
     TALENT_PIPELINES_OF_TALENT_POOLS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + '/%s/' +
                                                   CandidatePoolApiWords.TALENT_PIPELINES)
 
@@ -623,6 +644,7 @@ class SchedulerApi(object):
     SCHEDULER_MULTIPLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/pause"
     SCHEDULER_SINGLE_TASK_RESUME = RELATIVE_VERSION % "tasks/<string:_id>/resume"
     SCHEDULER_SINGLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/<string:_id>/pause"
+    SCHEDULER_ADMIN_TASKS = RELATIVE_VERSION % "admin/tasks"
 
 
 class SchedulerApiUrl(object):
@@ -646,6 +668,9 @@ class SchedulerApiUrl(object):
     PAUSE_TASKS = RELATIVE_VERSION % 'tasks/pause'
     RESUME_TASKS = RELATIVE_VERSION % 'tasks/resume'
     TEST_TASK = RELATIVE_VERSION % 'tasks/test'
+
+    # Scheduler Admin API
+    ADMIN_TASKS = RELATIVE_VERSION % "admin/tasks"
 
     # Use different port of scheduler service URL
     FLOWER_MONITORING_PORT = '--port=5511'
