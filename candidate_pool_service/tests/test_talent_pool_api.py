@@ -1,6 +1,10 @@
+# Candidate Pool Service app instance
+from candidate_pool_service.candidate_pool_app import app
+
 from time import sleep
 from candidate_pool_service.common.tests.conftest import *
 from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
+from candidate_pool_service.common.utils.test_utils import response_info
 from common_functions import *
 
 
@@ -198,6 +202,7 @@ def test_talent_pool_group_api_get(access_token_first, access_token_second, user
 
     # Logged-in user trying to get talent pools of non-existing group
     response, status_code = talent_pool_group_api(access_token_first, user_group_id=first_group.id + 1000)
+    print response_info(response)
     assert status_code == 404
 
     # Logged-in user trying to get talent pools of group of different domain
