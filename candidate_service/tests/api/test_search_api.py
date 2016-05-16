@@ -64,7 +64,7 @@ def test_search_location(user_first, access_token_first, talent_pool):
     city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
                                         city=city, state=state, zip_code=zip_code)
-    response = get_response(access_token_first, '?location=%s,%s' % (city, state), expected_count=len(candidate_ids))
+    response = get_response(access_token_first, '?location=%s,%s' % (city, state), expected_count=len(candidate_ids), timeout=120)
     _assert_results(candidate_ids, response.json())
 
 
