@@ -56,4 +56,4 @@ done
 
 sleep 10
 
-py.test -n 48 push_campaign_service/tests
+py.test -n 10 push_campaign_service/tests
