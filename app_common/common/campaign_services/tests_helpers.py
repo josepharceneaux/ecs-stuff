@@ -564,7 +564,7 @@ class CampaignsTestsHelpers(object):
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1,
                                         data=None, emails_list=False, create_phone=False,
                                         assign_role=False, assert_candidates=True,
-                                        smartlist_name=fake.word(), timeout=120):
+                                        smartlist_name=fake.word(), timeout=150):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
