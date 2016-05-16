@@ -47,23 +47,22 @@ from push_campaign_service.common.campaign_services.campaign_base import Campaig
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from push_campaign_service.common.models.push_campaign import (PushCampaign, PushCampaignSend,
                                                                PushCampaignSendUrlConversion)
-from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE
+from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 
 
 class PushCampaignBase(CampaignBase):
 
-    def __init__(self, user_id, *args, **kwargs):
+    def __init__(self, user_id, campaign_id=None):
         """
         Here we set the "user_id" by calling super constructor.
         In this method, initialize all instance attributes.
-        :param args:
-        :param kwargs:
+        :param (int|long) user_id: user unique id
+        :param (int|long) campaign_id: push campaign id
         """
         # sets the user_id
-        super(PushCampaignBase, self).__init__(user_id)
+        super(PushCampaignBase, self).__init__(user_id, campaign_id=campaign_id)
         self.campaign_blast = None
-        self.campaign_id = None
-        self.queue_name = kwargs.get('queue_name', CELERY_QUEUE)
+        self.campaign_id = campaign_id
         self.campaign_type = CampaignUtils.PUSH
 
     @staticmethod
