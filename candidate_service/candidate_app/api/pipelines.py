@@ -20,8 +20,7 @@ from candidate_service.common.models.user import DomainRole, User
 from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.talent_pools_pipelines import TalentPipeline
 
-from candidate_service.common.utils.test_utils import send_request
-from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.inter_service_calls.candidate_service_calls import search_candidates_from_params
 
 
 class CandidatePipelineResource(Resource):
@@ -44,20 +43,23 @@ class CandidatePipelineResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
-        # Get User-domain's five most recent talent pipelines in order of added time
+        # Get User-domain's 10 most recent talent pipelines in order of added time
         talent_pipelines = TalentPipeline.query.join(User).filter(
-            User.domain_id == authed_user.domain_id).order_by(TalentPipeline.added_time.desc()).limit(5).all()
+            User.domain_id == authed_user.domain_id).order_by(TalentPipeline.added_time.desc()).limit(10).all()
 
         # Use Search API to retrieve candidate's domain-pipeline inclusion
-        smart_list_ids = ','.join(map(str, [talent_pipeline.id for talent_pipeline in talent_pipelines]))
-        url = CandidateApiUrl.CANDIDATE_SEARCH_URI + '?id={}&smart_list_ids={}'.format(candidate_id, smart_list_ids)
-        search_response = send_request('get', url, access_token=authed_user.token[0].access_token)
+        found_candidate_ids = []
+        access_token = authed_user.token[0].access_token
+        for talent_pipeline in talent_pipelines:
+            search_params = talent_pipeline.search_params
+            search_response = search_candidates_from_params(search_params=search_params, access_token=access_token)
+            found_candidate_ids.append(search_response['candidates']['id'])
 
-        found_candidate_ids = [candidate['id'] for candidate in search_response.json()['candidates']]
+        # If candidate is not found in the 10 most recently added domain pipelines, return empty list
         if candidate_id not in found_candidate_ids:
             return {'candidate_pipelines': []}
 
-        else:
+        else:  # Return only five pipelines if candidate is found in more than 5 domain pipelines
             return [{
                         'id': talent_pipeline.id,
                         'candidate_id': Candidate.query.filter_by(user_id=talent_pipeline.user_id).first().id,
@@ -67,4 +69,4 @@ class CandidatePipelineResource(Resource):
                         'datetime_needed': str(talent_pipeline.date_needed),
                         'user_id': talent_pipeline.user_id,
                         'added_datetime': str(talent_pipeline.added_time)
-                    } for talent_pipeline in talent_pipelines]
+                    } for talent_pipeline in talent_pipelines[:5] if len(talent_pipelines) > 5]

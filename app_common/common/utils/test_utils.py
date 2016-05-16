@@ -46,7 +46,7 @@ def response_info(response):
     status_code = response.status_code if hasattr(response, 'status_code') else None
     url = response.url if hasattr(response, 'url') else None
     request = response.request if hasattr(response, 'request') else None
-    _json = response.json() if hasattr(response, 'json()') else None
+    _json = response.json() if hasattr(response, 'json') else None
 
     content = "\nUrl: {}\nRequest: {}\nStatus code: {}\nResponse JSON: {}"
     return content.format(url, request, status_code, _json)
@@ -100,7 +100,7 @@ def unauthorize_test(method, url, data=None):
     :param data: dictionary payload
     :return:
     """
-    response = send_request(method, url, 'invalid_token',  data)
+    response = send_request(method, url, 'invalid_token', data)
     assert response.status_code == HttpStatus.UNAUTHORIZED
 
 
@@ -250,9 +250,9 @@ def create_talent_pools(token, count=1, expected_status=(200,)):
     }
     for index in xrange(count):
         talent_pool = {
-                "name": randomword(20),
-                "description": fake.paragraph()
-            }
+            "name": randomword(20),
+            "description": fake.paragraph()
+        }
         data["talent_pools"].append(talent_pool)
     response = send_request('post', CandidatePoolApiUrl.TALENT_POOLS, token, data=data)
     assert response.status_code in expected_status

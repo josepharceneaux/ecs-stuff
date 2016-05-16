@@ -49,6 +49,7 @@ from types import MethodType
 # Third Party
 from flask import Flask
 from sqlalchemy import inspect
+from sqlalchemy.exc import InvalidRequestError
 from flask.ext.cors import CORS
 from healthcheck import HealthCheck
 from flask.ext.sqlalchemy import BaseQuery
@@ -57,11 +58,12 @@ from sqlalchemy.orm.dynamic import AppenderQuery
 # Application Specific
 from ..models.db import db
 from ..models import migrations
+from ..models.candidate import Candidate
 from ..routes import GTApis, HEALTH_CHECK
 from ..redis_cache import redis_store
 from ..talent_flask import TalentFlask
 from ..utils.talent_ec2 import get_ec2_instance_id
-from ..error_handling import register_error_handlers, InvalidUsage
+from ..error_handling import register_error_handlers, InvalidUsage, InternalServerError
 from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
 
@@ -241,6 +243,27 @@ def get_by_id(cls, _id):
 
 
 @classmethod
+def get_by_filters(cls, **filters):
+    """
+    This method will return a list of all objects filtered via filters
+    :param cls: model class, a child class of db.Model
+    :param filters: filters of given instance
+    :return: Model instance
+    :rtype:  [db.Model]
+    Usage:
+        >>> filters = dict(first_name="jon", last_name="snow")
+        >>> Candidate.get_by_filters(**filters)
+        >>> [<Candidate: (id = int)>]
+    """
+    try:
+        objects = cls.query.filter_by(**filters).all()
+    except InvalidRequestError:
+        raise InternalServerError("One of these properties: {} "
+                                  "do not belong to model instance '{}'".format(cls, filters.keys()))
+    return objects
+
+
+@classmethod
 def delete(cls, ref, app=None):
     """
     This method deletes a record from database given by id and the calling Model class.
@@ -309,6 +332,8 @@ def add_model_helpers(cls):
     cls.get = get_by_id
     # This method deletes an instance
     cls.delete = delete
+    # This method gets a list of objects via filtering keyword args
+    cls.get_by_filters = get_by_filters
 
     # Sometimes we have lazy relationship, that is actually just a query (AppenderQuery instance)
     # it contains all methods like filter, filter_by, first, all etc but not paginate, so we are patching `paginate`
