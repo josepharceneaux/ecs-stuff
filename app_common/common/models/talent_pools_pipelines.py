@@ -43,7 +43,8 @@ class TalentPoolCandidate(db.Model):
 
     # Relationships
     candidate = db.relationship('Candidate', backref=db.backref('talent_pool_candidate', cascade="all, delete-orphan"))
-    talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pool_candidate', cascade="all, delete-orphan"))
+    talent_pool = db.relationship('TalentPool',
+                                  backref=db.backref('talent_pool_candidate', cascade="all, delete-orphan"))
 
     def __repr__(self):
         return "<TalentPoolCandidate: (talent_pool_id = {})>".format(self.talent_pool_id)
@@ -82,7 +83,7 @@ class TalentPipeline(db.Model):
     description = db.Column(db.TEXT)
     positions = db.Column(db.Integer, default=1, nullable=False)
     date_needed = db.Column(db.DateTime, nullable=False)
-    user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'),  nullable=False)
+    user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id'), nullable=False)
     search_params = db.Column(db.String(1023))
     added_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -93,26 +94,39 @@ class TalentPipeline(db.Model):
     user = db.relationship('User', backref=db.backref('talent_pipeline', cascade="all, delete-orphan"))
     talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pipeline', cascade="all, delete-orphan"))
 
+    def __repr__(self):
+        return "TalentPipeline (id = {})".format(self.id)
+
     def get_id(self):
         return unicode(self.id)
+
+    @classmethod
+    def get_by_user_id_in_desc_order(cls, user_id):
+        """
+        Returns a list of TalentPipelines ordered by their creation time
+        :type user_id:  int | long
+        :rtype:  list[TalentPipeline]
+        """
+        return cls.query.filter_by(user_id=user_id).order_by(cls.added_time.desc()).all()
 
     def get_email_campaigns(self, page=1, per_page=20):
         from candidate_pool_service.common.models.email_campaign import EmailCampaign, EmailCampaignSmartlist
         from candidate_pool_service.common.models.smartlist import Smartlist
-        return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline).\
+        return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline). \
             filter(TalentPipeline.id == self.id).paginate(page=page, per_page=per_page, error_out=False).items
 
     def get_email_campaigns_count(self):
         from candidate_pool_service.common.models.email_campaign import EmailCampaign, EmailCampaignSmartlist
         from candidate_pool_service.common.models.smartlist import Smartlist
-        return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline).\
+        return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline). \
             filter(TalentPipeline.id == self.id).count()
 
     def delete(self):
         db.session.delete(self)
         db.session.commit()
 
-    def to_dict(self, include_stats=False, get_stats_function=None, include_growth=False, interval=None, get_growth_function=None):
+    def to_dict(self, include_stats=False, get_stats_function=None, include_growth=False, interval=None,
+                get_growth_function=None):
 
         talent_pipeline = {
             'id': self.id,
