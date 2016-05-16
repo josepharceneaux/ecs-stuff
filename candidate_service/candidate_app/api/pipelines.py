@@ -44,13 +44,9 @@ class CandidatePipelineResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
-        # Get User-domain's talent pipelines in order of added time
+        # Get User-domain's five most recent talent pipelines in order of added time
         talent_pipelines = TalentPipeline.query.join(User).filter(
-            User.domain_id == authed_user.domain_id).order_by(TalentPipeline.added_time.desc()).all()
-
-        # Cut domain pipelines to the last five
-        if len(talent_pipelines) > 5:
-            talent_pipelines = talent_pipelines[:5]
+            User.domain_id == authed_user.domain_id).order_by(TalentPipeline.added_time.desc()).limit(5).all()
 
         # Use Search API to retrieve candidate's domain-pipeline inclusion
         smart_list_ids = ','.join(map(str, [talent_pipeline.id for talent_pipeline in talent_pipelines]))
