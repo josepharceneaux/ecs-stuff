@@ -151,6 +151,17 @@ class AuthApi(object):
     AUTHORIZE = RELATIVE_VERSION % 'oauth2/authorize'
 
 
+class AuthApiV2(object):
+    """
+    API relative URLs for auth_service. e.g. /v1/oauth2/token
+    """
+    VERSION = 'v2'
+    RELATIVE_VERSION = _get_api_relative_version(VERSION)
+    TOKEN_CREATE = RELATIVE_VERSION % 'oauth2/token'
+    TOKEN_REVOKE = RELATIVE_VERSION % 'oauth2/revoke'
+    AUTHORIZE = RELATIVE_VERSION % 'oauth2/authorize'
+
+
 class AuthApiUrl(object):
     """
     Rest URLs of auth_service
@@ -161,6 +172,18 @@ class AuthApiUrl(object):
     TOKEN_CREATE = HOST_NAME % AuthApi.TOKEN_CREATE
     TOKEN_REVOKE = HOST_NAME % AuthApi.TOKEN_REVOKE
     AUTHORIZE = HOST_NAME % AuthApi.AUTHORIZE
+
+
+class AuthApiUrlV2(object):
+    """
+    Rest URLs of auth_service
+    """
+    HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME,
+                               GTApis.AUTH_SERVICE_PORT)
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+    TOKEN_CREATE = HOST_NAME % AuthApiV2.TOKEN_CREATE
+    TOKEN_REVOKE = HOST_NAME % AuthApiV2.TOKEN_REVOKE
+    AUTHORIZE = HOST_NAME % AuthApiV2.AUTHORIZE
 
 
 class ActivityApi(object):
