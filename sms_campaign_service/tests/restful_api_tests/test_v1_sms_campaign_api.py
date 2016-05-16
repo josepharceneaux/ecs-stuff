@@ -90,8 +90,8 @@ class TestSmsCampaignHTTPGet(object):
                                               sms_campaign_of_current_user,
                                               sms_campaign_of_other_user_in_same_domain):
         """
-        Here user get all campaigns in it's domain. It should result in OK response and count of campaigns
-        should be 2 as 2 user have created campaign in one domain.
+        Here user gets all campaigns in its domain. It should result in OK response and count of
+        campaigns should be 2 as 2 users have created campaign in one domain.
         """
         response = requests.get(self.URL, headers=headers)
         campaigns = _assert_campaign_count_and_fields(response, count=2, assert_fields=False)
@@ -103,8 +103,8 @@ class TestSmsCampaignHTTPGet(object):
                                                             sms_campaign_of_other_user_in_same_domain,
                                                             sms_campaign_with_no_candidate):
         """
-        Here other user of same domain tries to get all campaign in its domain. It should result
-        in OK response and count of campaign should be 2 as 2 user have created campaign in its domain.
+        Here other user of same domain tries to get all campaigns in its domain. It should result
+        in OK response and count of campaigns should be 2 as 2 user have created campaign in its domain.
         """
         response = requests.get(self.URL, headers=headers_same_domain)
         campaigns = _assert_campaign_count_and_fields(response, count=3, assert_fields=False)

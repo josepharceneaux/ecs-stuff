@@ -103,8 +103,8 @@ def headers_same_domain(access_token_same):
 def headers_for_different_users_of_same_domain(request, headers, headers_same_domain,
                                                user_same_domain):
     """
-    This fixture is used to test the API with user first and some other user of same domain
-    with their respective headers.
+    This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
+    using their respective headers.
     """
     if request.param == 'user_first':
         return headers
@@ -117,7 +117,7 @@ def headers_for_different_users_of_same_domain(request, headers, headers_same_do
 def access_tokens_for_different_users_of_same_domain(request, access_token_first, access_token_same,
                                                      user_same_domain):
     """
-    This fixture is used to test the API with user first and some other user of same domain
+    This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
     using their access_tokens.
     """
     if request.param == 'user_first':
