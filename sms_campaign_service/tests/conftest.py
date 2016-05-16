@@ -315,7 +315,7 @@ def bulk_sms_campaigns(request, campaign_valid_data, talent_pipeline,
     smartlist_id, _ = smartlist_with_two_candidates
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
     test_campaigns = []
-    for _ in xrange(1, 11):
+    for _ in xrange(10):
         campaign_valid_data['name'] = 'bulk_campaigns: %s' % fake.name()
         test_campaigns.append(create_sms_campaign_via_api(campaign_valid_data, headers,
                                                           talent_pipeline.user.id))
@@ -458,12 +458,12 @@ def create_bulk_replies(candidate_and_phone_1, candidate_and_phone_2, sent_campa
     for count in xrange(1, 6):
         reply_and_assert_response(sent_campaign, user_phone_1,
                                   candidate_and_phone_1[1], access_token_first,
-                                  count_of_replies=count)
+                                  reply_count=count)
 
     for count in xrange(1, 6):
         reply_and_assert_response(sent_campaign, user_phone_1,
                                   candidate_and_phone_2[1], access_token_first,
-                                  count_of_replies=count)
+                                  reply_count=count)
 
 
 @pytest.fixture()

@@ -1080,7 +1080,7 @@ class CampaignBase(object):
                         5103 (NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
         """
         if not isinstance(self.campaign, CampaignUtils.MODELS):
-            raise InvalidUsage('campaign was not set properly')
+            raise InvalidUsage('campaign object was not set properly')
         logger = current_app.config[TalentConfigKeys.LOGGER]
         logger.debug('send: %s(id:%s) is being sent. User(id:%s)' % (self.campaign_type,
                                                                      self.campaign.id,

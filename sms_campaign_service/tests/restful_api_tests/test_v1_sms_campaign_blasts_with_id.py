@@ -9,8 +9,9 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from sms_campaign_service.tests.modules.common_functions import assert_valid_blast_object
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 class TestSmsCampaignBlastsWithId(object):
@@ -60,10 +61,8 @@ class TestSmsCampaignBlastsWithId(object):
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY,
                                                             check_count=False)
         json_resp = response.json()[self.ENTITY]
-        assert json_resp['id'] == blast_ids[0]
-        assert json_resp['campaign_id'] == campaign['id']
-        assert json_resp['sends'] == expected_sends
-        assert json_resp['replies'] == 1
+        assert_valid_blast_object(json_resp, blast_ids[0], campaign['id'],
+                                  expected_sends, expected_replies=1)
 
     def test_get_with_not_owned_campaign(self, access_token_first, sms_campaign_in_other_domain,
                                          sent_campaign_and_blast_ids):
@@ -104,5 +103,6 @@ class TestSmsCampaignBlastsWithId(object):
         This is a test to get blasts of a campaign using non-existing blast_id
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(
-            SmsCampaignBlast, self.HTTP_METHOD, self.URL % (sms_campaign_of_current_user['id'], '%s'),
+            SmsCampaignBlast, self.HTTP_METHOD,
+            self.URL % (sms_campaign_of_current_user['id'], '%s'),
             access_token_first, None)
