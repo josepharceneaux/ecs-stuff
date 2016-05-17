@@ -25,7 +25,7 @@ def validate_http_status(request_name, response):
     :param response: The response to be validated.
     :return: None.
     '''
-    
+  
     try:
         http_status = response['ResponseMetadata']['HTTPStatusCode']
     except Exception as e:
