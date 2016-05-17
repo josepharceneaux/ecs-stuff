@@ -1081,7 +1081,7 @@ class TestDeleteWorkPreference(object):
         Expect: 401
         """
         # Delete Candidate's work preference
-        resp = send_request('delete', CandidateApiUrl.WORK_PREFERENCE % 5, None)
+        resp = send_request('delete', CandidateApiUrl.WORK_PREFERENCES % 5, None)
         print response_info(resp)
         assert resp.status_code == 401
 
@@ -1092,7 +1092,7 @@ class TestDeleteWorkPreference(object):
         Expect: 404
         """
         # Delete Candidate's work preference
-        resp = send_request('delete', CandidateApiUrl.WORK_PREFERENCE % 'x', None)
+        resp = send_request('delete', CandidateApiUrl.WORK_PREFERENCES % 'x', None)
         print response_info(resp)
         assert resp.status_code == 404
 
@@ -1114,7 +1114,7 @@ class TestDeleteWorkPreference(object):
         candidate_1_id = create_resp_1.json()['candidates'][0]['id']
 
         # Delete candidate_1's work preference with sample_user_2 logged in
-        updated_resp = send_request('delete', CandidateApiUrl.WORK_PREFERENCE % candidate_1_id, access_token_second)
+        updated_resp = send_request('delete', CandidateApiUrl.WORK_PREFERENCES % candidate_1_id, access_token_second)
         print response_info(updated_resp)
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
@@ -1133,7 +1133,7 @@ class TestDeleteWorkPreference(object):
         candidate_id = create_resp.json()['candidates'][0]['id']
 
         # Delete Candidate's work preference
-        updated_resp = send_request('delete', CandidateApiUrl.WORK_PREFERENCE % candidate_id, access_token_first)
+        updated_resp = send_request('delete', CandidateApiUrl.WORK_PREFERENCES % candidate_id, access_token_first)
         print response_info(updated_resp)
 
         # Retrieve Candidate after update
