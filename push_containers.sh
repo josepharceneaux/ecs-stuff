@@ -25,12 +25,14 @@ if [ $production ] ; then
 
     for app in ${FLASK_APPS}
     do
-	# Get the image staging is using
+	# Pull the image staging is using
 	# Tag it with the version
 	tag_command="docker tag -f gettalent/${app} ${ecr_registry_url}/gettalent/${app}:${version_tag}"
 	echo $tag_command
+	# Push it back to the repo
 
 	# Update the task definition and restart the service
+	echo "Would run: "
 	echo python scripts/move-stage-to-prod.py ${app} ${version_tag}
 	# REMOVE COMMENT
 	# python scripts/move-stage-to-prod.py ${app} ${version_tag}
