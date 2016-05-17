@@ -13,9 +13,9 @@ import chardet
 import json
 import requests
 from flask import request, jsonify
-from . import db, logger, app
+from spreadsheet_import_service.app import logger, app, celery_app
 from spreadsheet_import_service.common.utils.talent_s3 import *
-from spreadsheet_import_service.common.models.user import User
+from spreadsheet_import_service.common.models.user import User, db
 from spreadsheet_import_service.common.models.misc import AreaOfInterest
 from spreadsheet_import_service.common.models.candidate import CandidateSource
 from spreadsheet_import_service.common.utils.talent_reporting import email_error_to_admins
@@ -101,7 +101,9 @@ def convert_csv_to_table(csv_file):
         raise InvalidUsage(error_message="Error importing csv because %s" % e.message)
 
 
-def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool_ids, source_id=None):
+@celery_app.task()
+def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool_ids,
+                            oauth_token, user_id, is_scheduled=False, source_id=None):
     """
     This function will create new candidates from information of candidates given in a csv file
     :param source_id: Id of candidates source
@@ -109,6 +111,9 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
     :param spreadsheet_filename: Name of spreadsheet file from which candidates are being imported
     :param header_row: An array of headers of candidate's spreadsheet
     :param talent_pool_ids: An array on talent_pool_ids
+    :param oauth_token: OAuth token of logged-in user
+    :param is_scheduled: Is this method called asynchronously ?
+    :param user_id: User id of logged-in user
     :return: A dictionary containing number of candidates successfully imported
     :rtype: dict
     """
@@ -117,7 +122,6 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
     assert spreadsheet_filename
     assert header_row
 
-    user_id = request.user.id
     user = User.query.get(user_id)
     domain_id = user.domain_id
 
@@ -268,7 +272,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                                                                                    source_id=this_source_id,
                                                                                    talent_pool_ids=talent_pool_dict,
                                                                                    areas_of_interest=areas_of_interest,
-                                                                                   custom_fields=custom_fields))
+                                                                                   custom_fields=custom_fields), oauth_token)
 
             if status_code == 201:
                 candidate_ids.append(response.get('candidates')[0].get('id'))
@@ -280,8 +284,10 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
         delete_from_s3(spreadsheet_filename, 'CSVResumes')
 
-        logger.info("Successfully imported %s candidates from CSV: User %s", len(candidate_ids), user.id)
-        return jsonify(dict(count=len(candidate_ids), status='complete', error_messages=error_messages)), 201
+        logger.info("Successfully imported %s candidates from CSV: User %s, Error Messages %s" % (len(
+                candidate_ids), user.id, error_messages))
+        if not is_scheduled:
+            return jsonify(dict(count=len(candidate_ids), status='complete', error_messages=error_messages)), 201
 
     except Exception as e:
         email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s, S3_URL: %s" %
@@ -319,20 +325,21 @@ def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
     return areas
 
 
-def create_candidates_from_parsed_spreadsheet(candidate_dict):
+def create_candidates_from_parsed_spreadsheet(candidate_dict, oauth_token):
     """
     Create a new candidate using candidate_service
     :param candidate_dict: Dict containing information of new candidate
+    :param oauth_token: OAuth token of logged-in user
     :return: A dictionary containing IDs of newly created candidates
     :rtype: dict
     """
-    try:
-        r = requests.post(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': [candidate_dict]}),
-                          headers={'Authorization': request.oauth_token, 'content-type': 'application/json'})
+    r = requests.post(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': [candidate_dict]}),
+                      headers={'Authorization': oauth_token, 'content-type': 'application/json'})
 
+    try:
         return r.status_code, r.json()
-    except Exception as e:
-        raise InvalidUsage(error_message="Couldn't create candidate from parsed_spreadsheet because %s" % e.message)
+    except:
+        return r.status_code, {"error": "Couldn't create candidate from candidate dict %s" % candidate_dict}
 
 
 def prepare_candidate_data(data_array, key, value):
