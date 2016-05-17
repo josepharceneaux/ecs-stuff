@@ -33,9 +33,11 @@ if [ $production ] ; then
 
 	# Update the task definition and restart the service
 	echo "Would run: "
-	echo python scripts/move-stage-to-prod.py ${app} ${version_tag}
-	# REMOVE COMMENT
+	# Can only do this once we know there's such an image
 	# python scripts/move-stage-to-prod.py ${app} ${version_tag}
+	echo python scripts/move-stage-to-prod.py ${app}
+	# REMOVE COMMENT
+	# python scripts/move-stage-to-prod.py ${app}
     done
 
 else
