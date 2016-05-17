@@ -21,7 +21,6 @@ from flask import current_app, request
 from ..models.db import db
 from werkzeug.exceptions import BadRequest
 from ..talent_config_manager import TalentConfigKeys
-from ..utils.validators import raise_if_not_instance_of
 from ..models.user import (User, UserScopedRoles, DomainRole)
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
