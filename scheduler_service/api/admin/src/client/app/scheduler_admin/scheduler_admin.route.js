@@ -20,7 +20,7 @@
           templateUrl: 'app/scheduler_admin/scheduler_admin.html',
           controller: 'SchedulerAdminController',
           controllerAs: 'vm',
-          is_authenticated: true,
+          auth_required: true,
           title: 'Scheduler Service',
           settings: {
             nav: 2,

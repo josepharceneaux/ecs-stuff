@@ -117,7 +117,7 @@ class TestSchedulerCreate(object):
         """
         Create a job by hitting the endpoint with secret_key (global tasks) and make sure we get job_id in
         response.
-        This test case is to create a named task which is in case of server to server communication (global tasks)
+        This test case is to create a named task which is in case of server to server user_auth (global tasks)
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as

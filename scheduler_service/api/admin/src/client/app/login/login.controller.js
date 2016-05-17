@@ -5,9 +5,9 @@
     .module('app.login')
     .controller('LoginController', LoginController);
 
-  LoginController.$inject = ['logger'];
+  LoginController.$inject = ['logger', 'AuthUser'];
   /* @ngInject */
-  function LoginController(logger) {
+  function LoginController(logger, AuthUser) {
     var vm = this;
     vm.title = 'Login';
 

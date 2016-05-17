@@ -5,9 +5,9 @@
     .module('app.dashboard')
     .controller('DashboardController', DashboardController);
 
-  DashboardController.$inject = ['$q', 'dataservice', 'logger'];
+  DashboardController.$inject = ['$q', '$location', 'logger', 'AuthUser'];
   /* @ngInject */
-  function DashboardController($q, dataservice, logger) {
+  function DashboardController($q, $location, logger, AuthUser) {
     var vm = this;
     vm.news = {
       title: 'Scheduler Service Admin Panel',
@@ -17,26 +17,16 @@
     vm.people = [];
     vm.title = 'Dashboard';
 
+    if(!AuthUser.is_authenticated){
+      //$location.url('/user/login');
+    }
+
     activate();
 
     function activate() {
-      var promises = [getMessageCount(), getPeople()];
+      var promises = [];
       return $q.all(promises).then(function() {
         logger.info('Activated Dashboard View');
-      });
-    }
-
-    function getMessageCount() {
-      return dataservice.getMessageCount().then(function(data) {
-        vm.messageCount = data;
-        return vm.messageCount;
-      });
-    }
-
-    function getPeople() {
-      return dataservice.getPeople().then(function(data) {
-        vm.people = data;
-        return vm.people;
       });
     }
   }

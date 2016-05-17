@@ -21,7 +21,7 @@
           controller: 'DashboardController',
           controllerAs: 'vm',
           title: 'dashboard',
-          is_authenticated: true,
+          auth_required: true,
           settings: {
             nav: 1,
             content: '<i class="fa fa-dashboard"></i> Dashboard'

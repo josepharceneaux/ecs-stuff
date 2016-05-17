@@ -5,9 +5,9 @@
     .module('app.scheduler_admin')
     .controller('SchedulerAdminController', SchedulerAdminController);
 
-  SchedulerAdminController.$inject = ['logger'];
+  SchedulerAdminController.$inject = ['logger', 'AuthUser'];
   /* @ngInject */
-  function SchedulerAdminController(logger) {
+  function SchedulerAdminController(logger, AuthUser) {
     var vm = this;
     vm.title = 'Scheduler Service Admin';
 

@@ -2742,7 +2742,7 @@ Distribution Program.
    · Go! Team Go! Baseball Scorecard for iPad manages a baseball team's schedule, roster, scoring,
        and calculates complex statistics for batting, pitching and fielding. Syncs data with website and
        web app for displaying play by play scoring results. Easy to use but very complex application
-       with storyboard, popovers, settings and asynchronous communication with server.
+       with storyboard, popovers, settings and asynchronous user_auth with server.
    ·   Survey for iPad enables Healthcare consultants to interview hospital employees and collect data
        for sync with server. Saves $500,000 annually in labor costs compared to prior method of
        manually compiling and editing reports. App sync with website for updating questions and
@@ -3042,7 +3042,7 @@ PDF_14 = """
      Professional      A creative person with strong problem solving abilities; solutionoriented who performs well under pressure.
  Skills
      <summary>
-      Detailed, methodical with strong organizational and analytical skills. Excellent written, oral communication
+      Detailed, methodical with strong organizational and analytical skills. Excellent written, oral user_auth
           and presentation skills. Flexible and energetic team player. Accountable selfstarter and quick learner.
           ·   Experience managing, testing and implementing projects for Webbased and Client/Server applications.
           ·   Experience writing requirements, test, integration and implementation plans.
@@ -3301,7 +3301,7 @@ jlchavez.ca   ·   203108 Oak Street   ·   Vancouver, BC. V6H 2L1   ·   604.60
     </canonskill>
     <canonskill name="Communication Skills" skill-cluster="Common Skills: Communication and Coordination">
      <variant>
-      oral communication
+      oral user_auth
      </variant>
     </canonskill>
     <canonskill name="Computer Hardware/Software Knowledge" skill-cluster="Customer Service: Basic Assistance: Technical and Electronic; Specialized Skills">
@@ -3496,7 +3496,7 @@ Talent for quickly learning and applying complex technologies.   *
 Effective instructor and mentor to co-workers and end-users.   *
 An effective problem solver, able to identify problems in initial stages and execute quick
  resolutions.   *
-Excellent interpersonal skills for effective communication with technical and non-
+Excellent interpersonal skills for effective user_auth with technical and non-
 technical colleagues .  * Ability to self-motivate and work independently .  *
 Data collection and creation for analysis (speech production, speech recognition and synth
 esis).  * Experimental design and stimulus preparation.  *
@@ -3536,7 +3536,7 @@ Targeting certain areas that will require additional outreach and promotion effo
 orking with
 Complete Count Committees (CCCs) to encourage the community to cooperate with enumerators
 during  NRFU.  *
-Maintaining communication with state/local/tribal governments as well as regional corporat
+Maintaining user_auth with state/local/tribal governments as well as regional corporat
 ions and
 businesses and civic groups about recruitment, census activities and the overall partners
 hip strategy is vital  in gaining the support of these partners.  *
@@ -3720,7 +3720,7 @@ Address:  <job end="728296" id="38" inferred-naics="611310" naics="611310" naics
     <variant>business processes</variant>
   </canonskill>
   <canonskill name="Communication Skills" skill-cluster="Common Skills: Communication and Coordination">
-    <variant>effective communication</variant>
+    <variant>effective user_auth</variant>
   </canonskill>
   <canonskill name="Communication Skills" skill-cluster="Common Skills: Communication and Coordination">
     <variant>Excellent interpersonal skills</variant>

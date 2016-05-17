@@ -16,7 +16,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(logger('dev'));
 
-app.use('/api', require('./routes'));
+app.use('/api', require('./api_routes'));
+app.use('/user', require('./user_routes'));
 
 console.log('About to crank up node');
 console.log('PORT=' + port);
@@ -31,7 +32,7 @@ switch (environment) {
       four0four.send404(req, res);
     });
     // Any deep link calls should return index.html
-    app.use('/*', express.static('./build/index.html'));
+    app.use('/*', express.static('./build/login.html'));
     break;
   default:
     console.log('** DEV **');
@@ -43,7 +44,7 @@ switch (environment) {
       four0four.send404(req, res);
     });
     // Any deep link calls should return index.html
-    app.use('/*', express.static('./src/client/index.html'));
+    app.use('/*', express.static('./src/client/login.html'));
     break;
 }
 
