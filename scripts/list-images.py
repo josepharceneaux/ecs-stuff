@@ -1,6 +1,8 @@
 import boto3
 import argparse
 
+import ecs_utils
+
 SERVICE_NAME = 'service-name' # Service means getTalent micro service, not ECS service.
 TAGS_ONLY = '--tags'
 parser = argparse.ArgumentParser(description="Update and restart ECS tasks.")
@@ -16,26 +18,6 @@ if args.tags:
 
 ECS_CLIENT = boto3.client('ecr')
 
-
-def validate_http_status(request_name, response):
-    '''
-    Validate that we got a good status on our request.
-
-    :param request_name: Caller name to put in error message.
-    :param response: The response to be validated.
-    :return: None.
-    '''
-  
-    try:
-        http_status = response['ResponseMetadata']['HTTPStatusCode']
-    except Exception as e:
-        print "Exception getting HTTP status {}: {}".format(request_name, e.message)
-        exit(1)
-
-    if http_status != 200:
-        print "Error with {}. HTTP Status: {}".format(request_name, http_status)
-        exit(1)
-
 def describe_image(image):
     if 'imageTag' in image:
         if tags_only:
@@ -47,7 +29,7 @@ def describe_image(image):
 
 service_path = "gettalent/" + service
 response = ECS_CLIENT.list_images(repositoryName=service_path)
-validate_http_status('list_images', response)
+ecs_utils.validate_http_status('list_images', response)
 
 count = 0
 while True:
@@ -61,6 +43,6 @@ while True:
         break
 
     response = ECS_CLIENT.list_images(repositoryName=service_path, nextToken=response['nextToken'])
-    validate_http_status('list_images', response)
+    ecs_utils.validate_http_status('list_images', response)
 
 print "{} images found.".format(count)
