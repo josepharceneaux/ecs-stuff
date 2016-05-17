@@ -16,14 +16,15 @@ from flask.ext.restful import Resource
 from scheduler_service import logger, SchedulerUtils
 from scheduler_service.api.scheduler_tests_api import raise_if_scheduler_not_running, check_job_state, \
     dummy_request_method
-from scheduler_service.common.models.user import DomainRole
+from scheduler_service.common.models.user import DomainRole, User
 from scheduler_service.common.routes import SchedulerApi
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse, get_pagination_params
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound
 from scheduler_service.common.utils.auth_utils import require_oauth, require_all_roles
 from scheduler_service.custom_exceptions import SchedulerServiceApiException
-from scheduler_service.modules.scheduler import scheduler, schedule_job, serialize_task, remove_tasks
+from scheduler_service.modules.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, \
+    scheduler_remove_job
 from scheduler_service.modules.scheduler_admin import filter_jobs_using_task_type, \
     filter_jobs_using_task_category, filter_paused_jobs
 
@@ -522,7 +523,7 @@ class TaskByName(Resource):
         task = [task for task in tasks if task.name == _name and task.args[0] is None]
         # Check if task is valid and belongs to the logged-in user
         if task and user_id is None:
-            scheduler.remove_job(task[0].id)
+            scheduler_remove_job(task[0].id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task with name %s not found" % _name)
 
@@ -602,11 +603,15 @@ class TaskById(Resource):
         user_id = request.user.id if request.user else None
         raise_if_scheduler_not_running()
         task = scheduler.get_job(_id)
-        # Make sure task is valid and belongs to logged-in user
-        if task and task.args[0] == user_id:
-            task = serialize_task(task)
-            if task:
-                return dict(task=task)
+        if task:
+            task_owner_id = task.args[0]
+            is_same_domain = user_id and User.get_by_id(task_owner_id).domain_id == request.user.domain_id
+            # Make sure task is valid and belongs to logged-in user or user which is in same domain as requesting user
+            is_owner = task_owner_id == user_id
+            if is_owner or is_same_domain:
+                task = serialize_task(task)
+                if task:
+                    return dict(task=task)
         raise ResourceNotFound(error_message="Task not found")
 
     @require_oauth(allow_null_user=True)
@@ -645,7 +650,7 @@ class TaskById(Resource):
         task = scheduler.get_job(_id)
         # Check if task is valid and belongs to the logged-in user
         if task and task.args[0] == user_id:
-            scheduler.remove_job(task.id)
+            scheduler_remove_job(task.id)
             logger.info('Job with id %s removed successfully.' % _id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task not found")
