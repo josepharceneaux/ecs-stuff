@@ -53,7 +53,7 @@ class DomainCustomFieldsResource(Resource):
                 raise InvalidUsage("Name is required for creating custom field.")
 
             # Prevent duplicate entries for the same domain
-            custom_field_obj = CustomField.get_by_filters(domain_id=domain_id, name=cf_name)
+            custom_field_obj = CustomField.query.filter_by(domain_id=domain_id, name=cf_name).all()
             if not custom_field_obj:
                 custom_field_obj = CustomField(domain_id=domain_id, name=cf_name, type="string",
                                                added_time=datetime.datetime.utcnow())

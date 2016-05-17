@@ -10,6 +10,7 @@ from helpers import AddUserRoles
 from candidate_service.common.routes import CandidateApiUrl, CandidatePoolApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.inter_service_calls.candidate_service_calls import search_candidates_from_params as search
+from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
 
 class TestSearchCandidatePipeline(object):
@@ -19,7 +20,6 @@ class TestSearchCandidatePipeline(object):
 
     def test_search_for_candidate_in_pipeline(self, user_first, access_token_first, talent_pool):
         AddUserRoles.add_and_get(user_first)
-        from candidate_service.common.utils.handy_functions import add_role_to_test_user
         add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_TALENT_PIPELINES])
 
         # Create candidate
@@ -51,4 +51,4 @@ class TestSearchCandidatePipeline(object):
             get_resp = send_request('get', self.PIPELINE_INCLUSION_URL % candidate_id, access_token_first)
             print response_info(get_resp)
             assert get_resp.status_code == 200
-            assert len(get_resp.json()) == len(data['talent_pipelines'])
+            assert len(get_resp.json()['candidate_pipelines']) == len(data['talent_pipelines'])

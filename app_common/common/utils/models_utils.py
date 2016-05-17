@@ -242,27 +242,6 @@ def get_by_id(cls, _id):
 
 
 @classmethod
-def get_by_filters(cls, **filters):
-    """
-    This method will return a list of all objects filtered via filters
-    :param cls: model class, a child class of db.Model
-    :param filters: filters of given instance
-    :return: Model instance
-    :rtype:  [db.Model]
-    Usage:
-        >>> filters = dict(first_name="jon", last_name="snow")
-        >>> Candidate.get_by_filters(**filters)
-        >>> [<Candidate: (id = int)>]
-    """
-    try:
-        objects = cls.query.filter_by(**filters).all()
-    except InvalidRequestError:
-        raise InternalServerError("One of these properties: {} "
-                                  "do not belong to model instance '{}'".format(cls, filters.keys()))
-    return objects
-
-
-@classmethod
 def delete(cls, ref, app=None):
     """
     This method deletes a record from database given by id and the calling Model class.
@@ -331,8 +310,6 @@ def add_model_helpers(cls):
     cls.get = get_by_id
     # This method deletes an instance
     cls.delete = delete
-    # This method gets a list of objects via filtering keyword args
-    cls.get_by_filters = get_by_filters
 
     # Sometimes we have lazy relationship, that is actually just a query (AppenderQuery instance)
     # it contains all methods like filter, filter_by, first, all etc but not paginate, so we are patching `paginate`
