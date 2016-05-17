@@ -45,8 +45,7 @@ from candidate_service.common.utils.auth_utils import require_oauth, require_all
 
 # Error handling
 from candidate_service.common.error_handling import (
-    ForbiddenError, InvalidUsage, NotFoundError, InternalServerError,
-    ResourceNotFound
+    ForbiddenError, InvalidUsage, NotFoundError, InternalServerError, ResourceNotFound
 )
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
@@ -87,8 +86,7 @@ from candidate_service.modules.talent_openweb import (
 from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 from onesignalsdk.one_signal_sdk import OneSignalSdk
 
-from candidate_service.common.inter_service_calls.candidate_pool_service_calls import \
-    assert_smartlist_candidates
+from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 
 
 class CandidatesResource(Resource):
