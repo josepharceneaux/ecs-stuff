@@ -68,7 +68,6 @@ def import_from_table():
     header_row = posted_data.get('header_row')
     source_id = posted_data.get('source_id')
     talent_pool_ids = posted_data.get('talent_pool_ids', [])
-    is_import_scheduled = posted_data.get('is_import_scheduled')
 
     if not header_row or not file_picker_key:
         raise InvalidUsage(error_message="FilePicker key or header_row is missing")
@@ -86,12 +85,6 @@ def import_from_table():
     if any(param in candidates_table[0] for param in HEADER_ROW_PARAMS):
         candidates_table.pop(0)
 
-    if len(candidates_table) > 500 and not is_import_scheduled:
-        file_obj.close()
-        posted_data['is_import_scheduled'] = True
-        schedule_spreadsheet_import(posted_data)
-        return jsonify(dict(count=len(candidates_table), status='pending')), 201
-
     delete_from_filepicker_s3(file_picker_key)
 
     file_obj.seek(0)
@@ -101,4 +94,10 @@ def import_from_table():
 
     file_obj.close()
 
-    return import_from_spreadsheet(candidates_table, file_picker_key, header_row, talent_pool_ids, source_id)
+    if len(candidates_table) > 500:
+        import_from_spreadsheet.delay(candidates_table, file_picker_key, header_row, talent_pool_ids,
+                                      request.oauth_token, request.user.id, True, source_id)
+        return jsonify(dict(count=len(candidates_table), status='pending')), 201
+    else:
+        return import_from_spreadsheet(candidates_table, file_picker_key, header_row, talent_pool_ids,
+                                       request.oauth_token, request.user.id, False, source_id)

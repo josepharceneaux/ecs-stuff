@@ -248,6 +248,7 @@ class UserServiceApiWords(object):
     UPDATE_PASSWORD = '/update-password'
     FORGOT_PASSWORD = '/forgot-password'
     SOURCES = 'sources'
+    CUSTOM_FIELDS = 'custom_fields'
 
 
 class UserServiceApi(object):
@@ -273,6 +274,7 @@ class UserServiceApi(object):
     UPDATE_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.UPDATE_PASSWORD
     FORGOT_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.FORGOT_PASSWORD
     RESET_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.RESET_PASSWORD + '/<token>'
+    DOMAIN_CUSTOM_FIELDS = '/' + VERSION + '/' + UserServiceApiWords.CUSTOM_FIELDS
 
 
 class UserServiceApiUrl(object):
@@ -299,6 +301,7 @@ class UserServiceApiUrl(object):
     UPDATE_PASSWORD_API = API_URL % UserServiceApi.UPDATE_PASSWORD
     FORGOT_PASSWORD_API = API_URL % UserServiceApi.FORGOT_PASSWORD
     RESET_PASSWORD_API = USERS + UserServiceApiWords.RESET_PASSWORD + '/%s'
+    DOMAIN_CUSTOM_FIELDS = API_URL % UserServiceApiWords.CUSTOM_FIELDS
 
 
 class CandidateApiWords(object):
