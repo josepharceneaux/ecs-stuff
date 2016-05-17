@@ -32,12 +32,10 @@ if [ $production ] ; then
 	# Push it back to the repo
 
 	# Update the task definition and restart the service
-	echo "Would run: "
 	# Can only do this once we know there's such an image
 	# python scripts/move-stage-to-prod.py ${app} ${version_tag}
 	echo python scripts/move-stage-to-prod.py ${app}
-	# REMOVE COMMENT
-	# python scripts/move-stage-to-prod.py ${app}
+	python scripts/move-stage-to-prod.py ${app}
     done
 
 else
