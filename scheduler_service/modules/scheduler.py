@@ -50,11 +50,15 @@ REQUEST_TIMEOUT = 30
 
 def scheduler_remove_job(job_id):
     """
-    Removes the job from apscheduler
-    :param job_id: job_id returned by scheduler when job was scheduled
+    Removes the job from redis as well as apscheduler
+    :param job_id: job_id returned by scheduler when job was scheduled e.g. w4523kd1sdf23kljfdjflsdf
     :type job_id: str
+    :param user_id:
+    :type user_id: int | str
+    :param task_name: name of task to be deleted
+    :type task_name: str
+    :return:
     """
-    logger.info("Removing job with id %s" % job_id)
     scheduler.remove_job(job_id=job_id)
 
 
@@ -63,7 +67,6 @@ def apscheduler_listener(event):
     APScheduler listener for logging on job crashed or job time expires
     The method also checks if a job time is passed. If yes, then it remove job from apscheduler because there is no
     use of expired job.
-    :param event: event object returned by apscheduler.
     """
     if event.exception:
         logger.error('The job crashed :(\n')
@@ -93,27 +96,24 @@ def apscheduler_listener(event):
 def apscheduler_job_added(event):
     """
     Event callback handler of apscheduler which calls this method when a job is added or removed.
-    As we are maintaining our own dictionary in redis. So, add the job id against a user id in redis db.
-    like this:
-    user_43: [job_id1, job_id2, job_id3, ....]
-
-    likewise, user removes a job, then we need to delete the id against that user
-    so, we get the user_id and remove the job id from our list.
     :param event:
     :return:
     """
-    task = scheduler.get_job(job_id=event.job_id)
-    key = SchedulerUtils.REDIS_SCHEDULER_USER_TASK % \
-          task.args[0] if task.args[0] else SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % task.name
     if event.code == EVENT_JOB_ADDED:
         # If its user type job then add a prefix user_ continued by user_id, if its general job then add a general
         # prefix continued by name of job
-        redis_store.rpush(key, event.job_id)
+        task = scheduler.get_job(job_id=event.job_id)
+        redis_store.rpush(SchedulerUtils.REDIS_SCHEDULER_USER_TASK % task.args[0]
+                          if task.args[0] else SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % task.name,
+                          event.job_id)
 
     if event.code == EVENT_JOB_BEFORE_REMOVE:
         # Get the job and remove it from redis table then from scheduler
+        task = scheduler.get_job(job_id=event.job_id)
         if task:
-            redis_store.lrem(key, event.job_id)
+            redis_store.lrem(SchedulerUtils.REDIS_SCHEDULER_USER_TASK % task.args[0]
+                             if task.args[0] else SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % task.name,
+                             event.job_id)
 
 
 # Register event listener methods to apscheduler
@@ -310,7 +310,7 @@ def schedule_job(data, user_id=None, access_token=None):
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
                                           job_config['post_data'], job_config.get('is_jwt_request')]
-                                    )
+                                    );
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
             return job.id
         except Exception as e:
@@ -399,3 +399,42 @@ def serialize_task(task, is_admin_api=False):
                 task_dict['user_email'] = user.email
 
     return task_dict
+
+
+def get_user_job_ids(user_id):
+    """
+    Return job_ids of a specific user
+    :param user_id:
+    :type user_id: int
+    :param count: number of job ids needed. By default, returns all job ids of a user.
+    :type count: int
+    :return:
+    """
+    start_index = 0
+    end_index = -1
+    job_ids = redis_store.lrange(SchedulerUtils.REDIS_SCHEDULER_USER_TASK % user_id, start_index,
+                                 end_index)
+    return job_ids
+
+
+def get_general_job_id(task_name):
+    """
+    Return id of scheduled general task
+    :param task_name: general task name which is scheduled
+    :type task_name: str
+    :return:
+    """
+    start_index = 0
+    end_index = -1
+    job_id = redis_store.lrange(SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % task_name, start_index, end_index)
+    return next(job_id)
+
+
+def get_all_general_job_ids():
+    """
+    Return id of scheduled general task
+    :return:
+    """
+    general_task_keys = redis_store.keys(SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % '*')
+    general_task_ids = [next(iter(redis_store.lrange(key, 0, -1)), None) for key in general_task_keys]
+    return general_task_ids
