@@ -1,6 +1,9 @@
 """
 This file contains Pipeline-restful-services
 """
+# Standard library
+import requests
+
 # Flask specific
 from flask import request
 from flask_restful import Resource
@@ -31,7 +34,10 @@ class CandidatePipelineResource(Resource):
         """
         Function will return user's 5 most recently added Pipelines. One of the pipelines will
           include the specified candidate.
-        :return:
+        :rtype:  dict[list[dict]]
+        Usage:
+            >>> requests.get('host/v1/candidates/:candidate_id/pipelines')
+            <Response [200]>
         """
         # Authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']
@@ -49,14 +55,19 @@ class CandidatePipelineResource(Resource):
 
         # Use Search API to retrieve candidate's domain-pipeline inclusion
         found_candidate_ids = []
+        skip = False  # Will skip condition if set to True
         access_token = authed_user.token[0].access_token
-        for talent_pipeline in talent_pipelines:
-            search_params = talent_pipeline.search_params
-            search_response = search_candidates_from_params(search_params=search_params, access_token=access_token)
-            found_candidate_ids.append(search_response['candidates']['id'])
+        for count, talent_pipeline in enumerate(talent_pipelines, 1):
+            search_response = search_candidates_from_params(talent_pipeline.search_params, access_token)
+            found_candidate_ids.extend(candidate['id'] for candidate in search_response['candidates'])
+
+            # Return if candidate_id is found in one of the Pipelines AND 5 or more requests have been made
+            if candidate_id in found_candidate_ids and count >= 5:
+                skip = True
+                break
 
         # If candidate is not found in the 10 most recently added domain pipelines, return empty list
-        if candidate_id not in found_candidate_ids:
+        if not skip and (unicode(candidate_id) not in found_candidate_ids):
             return {'candidate_pipelines': []}
 
         else:  # Return only five pipelines if candidate is found in more than 5 domain pipelines
@@ -69,4 +80,4 @@ class CandidatePipelineResource(Resource):
                         'datetime_needed': str(talent_pipeline.date_needed),
                         'user_id': talent_pipeline.user_id,
                         'added_datetime': str(talent_pipeline.added_time)
-                    } for talent_pipeline in talent_pipelines[:5] if len(talent_pipelines) > 5]
+                    } for talent_pipeline in talent_pipelines]

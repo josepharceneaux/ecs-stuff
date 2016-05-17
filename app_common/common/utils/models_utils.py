@@ -58,7 +58,6 @@ from sqlalchemy.orm.dynamic import AppenderQuery
 # Application Specific
 from ..models.db import db
 from ..models import migrations
-from ..models.candidate import Candidate
 from ..routes import GTApis, HEALTH_CHECK
 from ..redis_cache import redis_store
 from ..talent_flask import TalentFlask
