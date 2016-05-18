@@ -13,7 +13,7 @@ but user is different.
 
 """
 import pytest
-
+import time
 from redo import retry
 from requests import codes
 
@@ -171,6 +171,7 @@ def smartlist_first(request, token_first, user_first, candidate_first, talent_po
     talent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
     talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
     candidate_ids = [candidate_first['id']]
+    time.sleep(10)
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_first)['smartlist']
     smartlist_id = smartlist['id']
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
@@ -196,6 +197,7 @@ def smartlist_second(request, token_second, user_second, candidate_second, talen
     talent_pipelines = create_talent_pipelines(token_second, talent_pool_second['id'])
     talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
     candidate_ids = [candidate_second['id']]
+    time.sleep(10)
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_second)['smartlist']
     smartlist_id = smartlist['id']
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
@@ -221,6 +223,7 @@ def smartlist_same_domain(request, token_same_domain, user_same_domain, candidat
     talent_pipelines = create_talent_pipelines(token_same_domain, talent_pool['id'])
     talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
     candidate_ids = [candidate_same_domain['id']]
+    time.sleep(10)
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_same_domain)['smartlist']
     smartlist_id = smartlist['id']
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
