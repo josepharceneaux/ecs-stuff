@@ -10,10 +10,10 @@ import json
 import requests
 
 # Service Specific
-from sms_campaign_service.tests.conftest import generate_campaign_schedule_data, \
-    CREATE_CAMPAIGN_DATA
+from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
-from sms_campaign_service.tests.modules.common_functions import assert_campaign_delete
+from sms_campaign_service.tests.modules.common_functions import assert_campaign_delete, \
+    assert_valid_campaign_get
 
 # Common Utils
 from sms_campaign_service.common.models.misc import Frequency
@@ -55,11 +55,8 @@ class TestSmsCampaignWithIdHTTPGET(object):
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == 200, 'Response should be ok (200)'
         # verify all the field values
-        response_campaign = response.json()['campaign']
-        assert response_campaign['name'] == CREATE_CAMPAIGN_DATA['name']
-        assert response_campaign['body_text'] == CREATE_CAMPAIGN_DATA['body_text']
-        assert response_campaign['list_ids'] == [smartlist_id for smartlist_id
-                                                 in sms_campaign_of_current_user['list_ids']]
+        received_campaign = response.json()['campaign']
+        assert_valid_campaign_get(received_campaign, sms_campaign_of_current_user)
 
     def test_with_campaign_of_other_domain(self, access_token_first, sms_campaign_in_other_domain):
         """

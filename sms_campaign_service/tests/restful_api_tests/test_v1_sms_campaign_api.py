@@ -17,25 +17,26 @@ from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import (assert_for_activity,
                                                                  assert_campaign_delete,
-                                                                 assert_campaign_creation)
+                                                                 assert_campaign_creation,
+                                                                 assert_valid_campaign_get)
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 # Models
-from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.misc import Activity
+from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.smartlist import Smartlist
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (InvalidUsage, InternalServerError,
-                                                        ForbiddenError,ResourceNotFound)
+                                                        ForbiddenError, ResourceNotFound)
 
 
 class TestSmsCampaignHTTPGet(object):
     """
-    This class contains tests for endpoint /campaigns/ and HTTP method GET.
+    This class contains tests for endpoint /v1/sms-campaigns and HTTP method GET.
     """
     URL = SmsCampaignApiUrl.CAMPAIGNS
 
@@ -51,7 +52,7 @@ class TestSmsCampaignHTTPGet(object):
         user silently.
         """
         response = requests.get(self.URL, headers=headers)
-        _assert_counts_and_campaigns(response)
+        _assert_campaign_count_and_fields(response)
         _delete_created_number_of_user(user_first)
 
     def test_campaigns_get_with_one_user_twilio_number(self, headers, user_phone_1):
@@ -60,7 +61,7 @@ class TestSmsCampaignHTTPGet(object):
         has been created yet.
         """
         response = requests.get(self.URL, headers=headers)
-        _assert_counts_and_campaigns(response)
+        _assert_campaign_count_and_fields(response)
 
     def test_campaigns_get_with_user_having_multiple_twilio_numbers(self,
                                                                     headers,
@@ -83,7 +84,7 @@ class TestSmsCampaignHTTPGet(object):
         should be 1,
         """
         response = requests.get(self.URL, headers=headers)
-        _assert_counts_and_campaigns(response, count=1)
+        _assert_campaign_count_and_fields(response, sms_campaign_of_current_user, count=1)
 
     def test_get_all_campaigns_in_user_domain(self, headers,
                                               sms_campaign_of_current_user,
@@ -93,7 +94,9 @@ class TestSmsCampaignHTTPGet(object):
         should be 2 as 2 user have created campaign in one domain.
         """
         response = requests.get(self.URL, headers=headers)
-        _assert_counts_and_campaigns(response, count=2)
+        campaigns = _assert_campaign_count_and_fields(response, count=2, assert_fields=False)
+        assert_valid_campaign_get(campaigns[0], sms_campaign_of_current_user)
+        assert_valid_campaign_get(campaigns[1], sms_campaign_of_other_user_in_same_domain)
 
     def test_get_campaigns_with_paginated_response(self, headers, bulk_sms_campaigns):
         """
@@ -103,32 +106,32 @@ class TestSmsCampaignHTTPGet(object):
 
         # This should get 4 campaign objects on page 1
         response = requests.get(self.URL + '?per_page=4', headers=headers)
-        _assert_counts_and_campaigns(response, count=4)
+        _assert_campaign_count_and_fields(response, bulk_sms_campaigns[0], count=4, compare_fields=False)
 
         for campaign in response.json()['campaigns']:
             assert campaign['id'] in campaign_ids
 
         # This should also get 4 campaign objects on page 2
         response = requests.get(self.URL + '?per_page=4&page=2', headers=headers)
-        _assert_counts_and_campaigns(response, count=4)
+        _assert_campaign_count_and_fields(response, bulk_sms_campaigns[0], count=4, compare_fields=False)
         for campaign in response.json()['campaigns']:
             assert campaign['id'] in campaign_ids
 
         # This should also get 2 campaign objects on page 3
         response = requests.get(self.URL + '?per_page=4&page=3', headers=headers)
-        _assert_counts_and_campaigns(response, count=2)
+        _assert_campaign_count_and_fields(response, bulk_sms_campaigns[0], count=2, compare_fields=False)
         for campaign in response.json()['campaigns']:
             assert campaign['id'] in campaign_ids
 
         # This should not campaign objects as total campaigns are 10 and we are trying
         # to access 4th page with per_page=4.
         response = requests.get(self.URL + '?per_page=4&page=4', headers=headers)
-        _assert_counts_and_campaigns(response, count=0)
+        _assert_campaign_count_and_fields(response, count=0)
 
 
 class TestSmsCampaignHTTPPost(object):
     """
-    This class contains tests for endpoint /campaigns/ and HTTP method POST.
+    This class contains tests for endpoint /v1/sms-campaigns and HTTP method POST.
     """
     URL = SmsCampaignApiUrl.CAMPAIGNS
 
@@ -338,7 +341,7 @@ class TestSmsCampaignHTTPPost(object):
 
 class TestSmsCampaignHTTPDelete(object):
     """
-    This class contains tests for endpoint /campaigns/ and HTTP method DELETE.
+    This class contains tests for endpoint /v1/sms-campaigns and HTTP method DELETE.
     """
 
     URL = SmsCampaignApiUrl.CAMPAIGNS
@@ -521,27 +524,25 @@ class TestSmsCampaignHTTPDelete(object):
         assert response_after_delete.status_code == ResourceNotFound.http_status_code()
 
 
-def _assert_counts_and_campaigns(response, count=0):
+def _delete_created_number_of_user(user):
+    # Need to commit the session here as we have saved the user_phone in another session.
+    # And we do not have any user_phone for this session.
+    db.session.commit()
+    UserPhone.delete(user.user_phones[0])
+
+
+def _assert_campaign_count_and_fields(response, referenced_campaign=None, count=0,
+                                      assert_fields=True, compare_fields=True):
     """
-    This function is used to asserts that we ger expected number of SMS campaigns
+    This function is used to asserts that we get expected number of SMS campaigns.
+    It then asserts that the campaign object has all the fields that we are expecting
     """
     assert response.status_code == requests.codes.OK, 'Status should be Ok (200)'
     assert response.json()
     resp = response.json()
     assert 'campaigns' in resp
     assert len(resp['campaigns']) == count
-    for campaign in resp['campaigns']:
-        # TODO: Update this for user-defined fields in GET-1260
-        assert campaign['id']
-        assert campaign['name']
-        assert campaign['body_text']
-        assert campaign['list_ids']
-        assert campaign['user_id']
-        assert campaign['added_datetime']
-
-
-def _delete_created_number_of_user(user):
-    # Need to commit the session here as we have saved the user_phone in another session.
-    # And we do not have any user_phone for this session.
-    db.session.commit()
-    UserPhone.delete(user.user_phones[0])
+    if assert_fields:
+        for campaign in resp['campaigns']:
+            assert_valid_campaign_get(campaign, referenced_campaign, compare_fields=compare_fields)
+    return resp['campaigns']

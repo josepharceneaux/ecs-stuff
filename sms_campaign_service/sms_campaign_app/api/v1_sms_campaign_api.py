@@ -721,7 +721,7 @@ class SmsCampaignUrlRedirection(Resource):
         """
         # Google's shorten URL API hits this end point while converting long_url to shorter version.
         if request_from_google_shorten_url_api(request.headers.environ):
-            return 200
+            return requests.codes.OK
         try:
             redirection_url = CampaignBase.url_redirect(url_conversion_id, CampaignUtils.SMS,
                                                         verify_signature=True,
@@ -847,11 +847,13 @@ class SmsCampaignBlasts(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
+        # get pagination params
+        page, per_page = get_pagination_params(request)
+
         # Get campaign object if it belongs to user's domain
         campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                    CampaignUtils.SMS)
         # Serialize blasts of a campaign and get paginated response
-        page, per_page = get_pagination_params(request)
         return get_paginated_response('blasts', campaign.blasts, page, per_page)
 
 
@@ -969,14 +971,14 @@ class SmsCampaignBlastSends(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
+        # get pagination params
+        page, per_page = get_pagination_params(request)
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
         # Validate that campaign belongs to user's domain
         SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                         CampaignUtils.SMS)
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
-
         # Serialize sends of a campaign and get paginated response
-        page, per_page = get_pagination_params(request)
         return get_paginated_response('sends', blast_obj.blast_sends, page, per_page)
 
 
@@ -1037,6 +1039,8 @@ class SmsCampaignBlastReplies(Resource):
                     404 (Campaign not found)
                     500 (Internal server error)
         """
+        # get pagination params
+        page, per_page = get_pagination_params(request)
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id,
                                                       blast_id=blast_id))
         # Validate that campaign object belongs to user's domain
@@ -1045,7 +1049,6 @@ class SmsCampaignBlastReplies(Resource):
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
 
         # Serialize replies of an sms-campaign and get paginated response
-        page, per_page = get_pagination_params(request)
         return get_paginated_response('replies', blast_obj.blast_replies, page, per_page)
 
 
@@ -1103,10 +1106,11 @@ class SmsCampaignSends(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: SMS campaign sends records as dict
         """
+        # get pagination params
+        page, per_page = get_pagination_params(request)
         # Get campaign object if it belongs to user's domain
         campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                    CampaignUtils.SMS)
-        page, per_page = get_pagination_params(request)
         # Get blast_ids related to requested campaign_id
         blast_ids = map(lambda blast: blast.id, campaign.blasts.all())
         query = SmsCampaignSend.get_by_blast_ids(blast_ids)
@@ -1165,6 +1169,8 @@ class SmsCampaignReplies(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
+        # get pagination params
+        page, per_page = get_pagination_params(request)
         # Get campaign object if it belongs to user's domain
         campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                    CampaignUtils.SMS)
@@ -1172,5 +1178,4 @@ class SmsCampaignReplies(Resource):
         blast_ids = map(lambda blast: blast.id, campaign.blasts.all())
         query = SmsCampaignReply.get_by_blast_ids(blast_ids)
         # Serialize replies of a campaign and get paginated response
-        page, per_page = get_pagination_params(request)
         return get_paginated_response('replies', query, page, per_page)

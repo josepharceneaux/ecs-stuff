@@ -139,7 +139,7 @@ class TestSchedulerGet(object):
         response = requests.get('{0}?per_page=50&paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'false'),
                                 headers=auth_header)
         # There should be 40 jobs which are not paused.
-        assert response.status_code == 200 and len(response.json()['tasks']) >= 50
+        assert response.status_code == 200 and len(response.json()['tasks']) >= 40
 
     def test_retrieve_jobs_as_admin_using_invalid_filters(self, sample_user, auth_header, create_five_users,
                                                             schedule_ten_jobs_for_each_user):
