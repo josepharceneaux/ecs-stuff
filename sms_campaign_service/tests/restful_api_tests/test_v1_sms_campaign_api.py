@@ -5,6 +5,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 """
 # Standard Imports
 import json
+from operator import itemgetter
 
 # Third Party Imports
 import requests
@@ -606,4 +607,4 @@ def _sort_campaigns(campaigns_list, field='id', reverse=False):
     :param (str) field: Name of field on which we want to sort
     :param (bool) reverse: If we want to order in reverse order, this should be True.
     """
-    return sorted(campaigns_list, key=lambda campaign: campaign[field], reverse=reverse)
+    return sorted(campaigns_list, key=itemgetter(field), reverse=reverse)
