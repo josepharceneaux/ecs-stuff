@@ -5,9 +5,11 @@
     .module('app.dashboard')
     .controller('DashboardController', DashboardController);
 
-  DashboardController.$inject = ['$q', '$location', 'logger', 'AuthUser'];
+  DashboardController.$inject = ['$q', '$location', 'logger', 'usertoken'];
+
   /* @ngInject */
-  function DashboardController($q, $location, logger, AuthUser) {
+  function DashboardController($q, $location, logger, usertoken) {
+
     var vm = this;
     vm.news = {
       title: 'Scheduler Service Admin Panel',
@@ -17,7 +19,9 @@
     vm.people = [];
     vm.title = 'Dashboard';
 
-    if(!AuthUser.is_authenticated){
+    if(!usertoken.is_authenticated){
+      logger.info('User not authenticated. Navigating to Login page.');
+      $location.path('/user/login');
       //$location.url('/user/login');
     }
 

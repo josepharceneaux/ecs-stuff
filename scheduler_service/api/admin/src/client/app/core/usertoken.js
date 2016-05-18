@@ -6,15 +6,16 @@
   'use strict';
 
   angular
-    .module('app.userauth')
-    .factory('AuthUser', AuthUser);
+    .module('app.core')
+    .factory('usertoken', usertoken);
   /* @ngInject */
-  function AuthUser() {
+  function usertoken() {
 
-    return {
+    var service = {
       access_token: null,
       refresh_token: null,
       is_authenticated: false
     };
+    return service;
   }
-});
+})();
