@@ -94,9 +94,13 @@ class TestSmsCampaignHTTPGet(object):
         campaigns should be 2 as 2 users have created campaign in one domain.
         """
         response = requests.get(self.URL, headers=headers)
-        campaigns = _assert_campaign_count_and_fields(response, count=2, assert_fields=False)
-        assert_valid_campaign_get(campaigns[0], sms_campaign_of_user_first)
-        assert_valid_campaign_get(campaigns[1], sms_campaign_of_other_user_in_same_domain)
+        campaigns = _sort_campaigns(_assert_campaign_count_and_fields(response, count=2,
+                                                                      assert_fields=False))
+        sorted_campaigns = _sort_campaigns([sms_campaign_of_other_user_in_same_domain,
+                                            sms_campaign_of_user_first])
+
+        assert_valid_campaign_get(campaigns[0], sorted_campaigns[0])
+        assert_valid_campaign_get(campaigns[1], sorted_campaigns[1])
 
     def test_get_all_campaigns_by_other_user_of_same_domain(self, headers_second_domain_d1,
                                                             sms_campaign_of_user_first,
@@ -107,10 +111,14 @@ class TestSmsCampaignHTTPGet(object):
         in OK response and count of campaigns should be 2 as 2 user have created campaign in its domain.
         """
         response = requests.get(self.URL, headers=headers_second_domain_d1)
-        campaigns = _assert_campaign_count_and_fields(response, count=3, assert_fields=False)
-        assert_valid_campaign_get(campaigns[0], sms_campaign_of_other_user_in_same_domain)
-        assert_valid_campaign_get(campaigns[1], sms_campaign_of_user_first)
-        assert_valid_campaign_get(campaigns[2], sms_campaign_with_no_candidate)
+        campaigns = _sort_campaigns(_assert_campaign_count_and_fields(response, count=3,
+                                                                      assert_fields=False))
+        sorted_campaigns = _sort_campaigns([sms_campaign_of_other_user_in_same_domain,
+                                            sms_campaign_of_user_first,
+                                            sms_campaign_with_no_candidate])
+        assert_valid_campaign_get(campaigns[0], sorted_campaigns[0])
+        assert_valid_campaign_get(campaigns[1], sorted_campaigns[1])
+        assert_valid_campaign_get(campaigns[2], sorted_campaigns[2])
 
     def test_get_campaigns_with_paginated_response(self, headers, bulk_sms_campaigns):
         """
@@ -589,3 +597,13 @@ def _assert_campaign_count_and_fields(response, referenced_campaign=None, count=
         for campaign in resp['campaigns']:
             assert_valid_campaign_get(campaign, referenced_campaign, compare_fields=compare_fields)
     return resp['campaigns']
+
+
+def _sort_campaigns(campaigns_list, field='id', reverse=False):
+    """
+    This sorts the given list of campaigns on the bases of their ids.
+    :param (list) campaigns_list: List of campaigns
+    :param (str) field: Name of field on which we want to sort
+    :param (bool) reverse: If we want to order in reverse order, this should be True.
+    """
+    return sorted(campaigns_list, key=lambda campaign: campaign[field], reverse=reverse)
