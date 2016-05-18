@@ -294,8 +294,14 @@ class TestRescheduleCampaignUsingPUT(object):
         rescheduled.
         """
         data = generate_campaign_schedule_data()
-        reschedule_campaign(campaign_in_db['id'], data, token_same_domain,
-                            expected_status=(codes.FORBIDDEN,))
+        response = reschedule_campaign(campaign_in_db['id'], data, token_same_domain,
+                                       expected_status=(codes.OK,))
+        assert 'task_id' in response
+        assert 'message' in response
+        task_id = response['task_id']
+        assert task_id
+        # retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
+        #       args=(campaign_id, token_first), kwargs={'count': 1})
 
 
 class TestUnscheduleCamapignUsingDELETE(object):
