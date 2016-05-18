@@ -156,7 +156,7 @@ def populate_candidates(access_token, talent_pool, count=1, first_name=None, mid
     return candidate_ids
 
 
-# TODO: User polling instead of time.sleep()
+# TODO: Use polling instead of time.sleep()
 def _assert_search_results(domain_id, search_vars, candidate_ids, wait=True,
                            check_for_equality=False, check_for_sorting=False, facets_dict=None):
     # sometimes when asserting same uploaded candidates in a domain with several different queries,

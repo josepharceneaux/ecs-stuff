@@ -50,6 +50,17 @@ def init_celery_app(flask_app, default_queue, modules_to_include=None):
     celery_app.conf.update(accept_content)
     logger = flask_app.config[TalentConfigKeys.LOGGER]
     logger.info("Celery has been configured for %s successfully" % flask_app.import_name)
+
+    TaskBase = celery_app.Task
+
+    class ContextTask(TaskBase):
+        abstract = True
+
+        def __call__(self, *args, **kwargs):
+            with flask_app.app_context():
+                return TaskBase.__call__(self, *args, **kwargs)
+    celery_app.Task = ContextTask
+
     return celery_app
 
 

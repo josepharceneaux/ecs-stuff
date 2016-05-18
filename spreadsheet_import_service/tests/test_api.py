@@ -5,6 +5,7 @@
         * test_import_candidates_from_spreadsheet: It'll test functionality of '/parse_spreadsheet/import_from_table' endpoint
         * test_health_check: It'll test either the service is up
 """
+from time import sleep
 from spreadsheet_import_service.common.tests.conftest import *
 from spreadsheet_import_service.common.utils.test_utils import send_request, response_info
 from spreadsheet_import_service.common.routes import CandidateApiUrl
@@ -77,6 +78,8 @@ def test_import_candidates_from_spreadsheet(access_token_first, user_first, tale
                                                           domain_custom_field=domain_custom_fields[0])
     assert response.get('count') == len(candidate_data)
     assert response.get('status') == 'pending'
+
+    sleep(10)
 
 
 def test_health_check():

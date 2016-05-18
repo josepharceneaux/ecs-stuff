@@ -86,6 +86,11 @@ class CandidateCustomErrors(object):
     LANGUAGE_NOT_FOUND = 3160
     LANGUAGE_FORBIDDEN = 3161
 
-    # Error codes for CandidateLanguage
+    # Error codes for Candidate Reference
     REFERENCE_NOT_FOUND = 3160
     REFERENCE_FORBIDDEN = 3161
+
+    # Error codes for Candidate Tags
+    TAG_NOT_FOUND = 3170
+    TAG_FORBIDDEN = 3172
+    TAG_EXISTS = 3173

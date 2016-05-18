@@ -49,6 +49,7 @@ from types import MethodType
 # Third Party
 from flask import Flask
 from sqlalchemy import inspect
+from sqlalchemy.exc import InvalidRequestError
 from flask.ext.cors import CORS
 from healthcheck import HealthCheck
 from flask.ext.sqlalchemy import BaseQuery
@@ -61,7 +62,7 @@ from ..routes import GTApis, HEALTH_CHECK
 from ..redis_cache import redis_store
 from ..talent_flask import TalentFlask
 from ..utils.talent_ec2 import get_ec2_instance_id
-from ..error_handling import register_error_handlers, InvalidUsage
+from ..error_handling import register_error_handlers, InvalidUsage, InternalServerError
 from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
 
@@ -400,6 +401,7 @@ def init_talent_app(app_name):
             migrations.run_migrations(logger, db)
         except Exception as e:
             logger.exception("Exception running migrations: {}".format(e.message))
+            db.session.rollback()
 
         return flask_app, logger
 

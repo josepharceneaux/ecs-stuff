@@ -51,13 +51,12 @@ REQUEST_TIMEOUT = 30
 def scheduler_remove_job(job_id):
     """
     Removes the job from redis as well as apscheduler
-    :param job_id: job_id returned by scheduler when job was scheduled
+    :param job_id: job_id returned by scheduler when job was scheduled e.g. w4523kd1sdf23kljfdjflsdf
     :type job_id: str
     :param user_id:
     :type user_id: int | str
     :param task_name: name of task to be deleted
     :type task_name: str
-    :return:
     """
     scheduler.remove_job(job_id=job_id)
 
@@ -67,8 +66,6 @@ def apscheduler_listener(event):
     APScheduler listener for logging on job crashed or job time expires
     The method also checks if a job time is passed. If yes, then it remove job from apscheduler because there is no
     use of expired job.
-    :param event:
-    :return:
     """
     if event.exception:
         logger.error('The job crashed :(\n')
@@ -98,8 +95,6 @@ def apscheduler_listener(event):
 def apscheduler_job_added(event):
     """
     Event callback handler of apscheduler which calls this method when a job is added or removed.
-    :param event:
-    :return:
     """
     if event.code == EVENT_JOB_ADDED:
         # If its user type job then add a prefix user_ continued by user_id, if its general job then add a general
@@ -179,7 +174,6 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     :param content_type: format of post data
     :param post_data: post data like campaign name, smartlist ids etc
     :param is_jwt_request: (optional) if true, then use X-Talent-Secret-Id in header
-    :return:
     """
     # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
     # created because frequency is set to minimum (1 hour).

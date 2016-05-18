@@ -16,14 +16,11 @@ from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfinterp import process_pdf
 from pdfminer.pdfparser import PDFDocument
 from pdfminer.pdfparser import PDFParser
-import magic
 import requests
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
-# from resume_parsing_service.app.views.sovren_parse_lib import fetch_sovren_response
-# from resume_parsing_service.app.views.sovren_parse_lib import parse_sovren_xml
 from resume_parsing_service.app.views.utils import update_candidate_from_resume
 from resume_parsing_service.app.views.utils import create_parsed_resume_candidate
 from resume_parsing_service.app.views.utils import gen_hash_from_file

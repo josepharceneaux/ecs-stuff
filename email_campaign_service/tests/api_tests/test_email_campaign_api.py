@@ -18,6 +18,7 @@ import requests
 from datetime import datetime, timedelta
 
 # Application Specific
+import sys
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.tests.conftest import fake, uuid
@@ -28,8 +29,6 @@ from email_campaign_service.common.error_handling import (InvalidUsage, Unproces
 from email_campaign_service.common.routes import (EmailCampaignUrl, EmailCampaignEndpoints,
                                                   HEALTH_CHECK)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from email_campaign_service.tests.modules.handy_functions import (create_smartlist_with_candidate,
-                                                                  create_email_campaign_smartlists)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailClient)
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
@@ -37,7 +36,8 @@ from email_campaign_service.tests.modules.handy_functions import (assert_valid_c
                                                                   assert_talent_pipeline_response,
                                                                   assert_campaign_send,
                                                                   create_email_campaign_via_api,
-                                                                  create_data_for_campaign_creation)
+                                                                  create_data_for_campaign_creation,
+                                                                  create_email_campaign_smartlists)
 
 
 class TestGetCampaigns(object):
@@ -326,7 +326,7 @@ class TestCreateCampaign(object):
             uuid.uuid4().__str__()[0:8] + '-test_with_invalid_email_client_id'
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject, assert_candidates=False)
-        campaign_data['email_client_id'] = CampaignsTestsHelpers.get_last_id(EmailClient) + 100
+        campaign_data['email_client_id'] = CampaignsTestsHelpers.get_non_existing_id(EmailClient)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == InvalidUsage.http_status_code()
         json_response = response.json()
@@ -534,14 +534,14 @@ class TestSendCampaign(object):
         :param email_campaign_of_user_first: email campaign associated with user first
         :param assign_roles_to_user_first: Assign required roles to user of first domain.
         """
-        smartlist_id1, _ = create_smartlist_with_candidate(access_token_first,
-                                                           talent_pipeline,
-                                                           emails_list=True,
-                                                           count=20, timeout=60)
-        smartlist_id2, _ = create_smartlist_with_candidate(access_token_first,
-                                                           talent_pipeline,
-                                                           emails_list=True,
-                                                           count=20, timeout=60)
+        smartlist_id1, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
+                                                                                 talent_pipeline,
+                                                                                 count=20,
+                                                                                 emails_list=True)
+        smartlist_id2, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
+                                                                                 talent_pipeline,
+                                                                                 count=20,
+                                                                                 emails_list=True)
         campaign = email_campaign_of_user_first
         create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2],
                                          email_campaign_id=campaign.id)

@@ -67,7 +67,7 @@ class DatetimeUtils(object):
             To use this method
                 >>> obj = DatetimeUtils(datetime.utcnow() + timedelta(minutes=2))
                 >>> obj.is_in_future()
-                >>> True
+                True
         """
         raise_if_not_instance_of(neg_offset, (int, long, float))
         raise_if_not_instance_of(pos_offset, (int, long, float))
@@ -113,6 +113,16 @@ class DatetimeUtils(object):
         :rtype: str
         """
         return datetime_obj.replace(tzinfo=pytz.utc).isoformat()
+
+    @staticmethod
+    def utc_isoformat_to_datetime(datetime_str):
+        """
+        This converts UTC ISO formatted datetime str ("2016-03-02T08:44:55+00:00") to UTC datetime
+        object.
+        :rtype: datetime
+        """
+        raise_if_not_instance_of(datetime_str, basestring)
+        return parse(datetime_str).replace(tzinfo=pytz.utc)
 
     @staticmethod
     def isoformat_to_mysql_datetime(iso8601_datetime_string):
