@@ -962,7 +962,7 @@ def _get_valid_candidate_phone(candidate_phone_value, current_user):
     - This function is called from class method process_candidate_reply() of
     SmsCampaignBase class to get candidate_phone db record.
 
-    :param (str) candidate_phone_value: Phone number by which we want to get user.
+    :param (basestring) candidate_phone_value: Phone number by which we want to get user.
     :param (User) current_user: Logged-in user's object
     :exception: If Multiple Candidates found, it raises "MultipleCandidatesFound".
     :exception: If no Candidate is found, it raises "CandidateNotFoundInUserDomain".
