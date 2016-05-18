@@ -5,7 +5,7 @@ from flask import current_app as app
 from amazon_ses import send_email, get_default_email_info
 from ..talent_config_manager import TalentConfigKeys
 
-ADMINS = ['osman@gettalent.com', 'vincent.mendolia@dice.com', 'ahmed@janim.me', 'jitesh.karesia@newvisionsoftware.in',
+ADMINS = ['osman@gettalent.com', 'vincent.mendolia@dice.com', 'ahmed@janim.me',
           'ashwin@gettalent.com', 'umar.farooqi.gt@gmail.com']
 
 

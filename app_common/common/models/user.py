@@ -148,6 +148,15 @@ class User(db.Model):
         session.commit()
         return user
 
+    @staticmethod
+    def get_by_email(email):
+        """
+        This method returns a user with specified email or None if not found.
+        :param (str) email: user email address
+        :rtype User | None
+        """
+        return User.query.filter_by(email=email).first()
+
 
 class UserPhone(db.Model):
     __tablename__ = 'user_phone'
@@ -450,6 +459,10 @@ class DomainRole(db.Model):
         # Email Template Folder Roles
         CAN_CREATE_EMAIL_TEMPLATE_FOLDER = "CAN_CREATE_EMAIL_TEMPLATE_FOLDER"
         CAN_DELETE_EMAIL_TEMPLATE_FOLDER = "CAN_DELETE_EMAIL_TEMPLATE_FOLDER"
+
+        # Scheduler Admin Role
+        # TODO--w: It should say 'CAN_GET_ALL_SCHEDULER_JOBS' to clearly indicate it belongs to Scheduler
+        CAN_GET_ALL_JOBS = "CAN_GET_ALL_JOBS"
 
     def delete(self):
         db.session.delete(self)

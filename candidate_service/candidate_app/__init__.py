@@ -26,6 +26,7 @@ try:
         CandidateReferencesResource
     )
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
+    from candidate_service.candidate_app.api.v1_candidate_tags import CandidateTagResource
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)
@@ -263,6 +264,10 @@ try:
     # ****** CandidateReferencesResource *******
     api.add_resource(CandidateReferencesResource, CandidateApi.REFERENCES, endpoint='candidate_references')
     api.add_resource(CandidateReferencesResource, CandidateApi.REFERENCE, endpoint='candidate_reference')
+
+    # ****** CandidateTagResource *******
+    api.add_resource(CandidateTagResource, CandidateApi.TAGS, endpoint='candidate_tags')
+    api.add_resource(CandidateTagResource, CandidateApi.TAG, endpoint='candidate_tag')
 
     db.create_all()
     db.session.commit()

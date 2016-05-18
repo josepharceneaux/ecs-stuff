@@ -15,19 +15,13 @@ but user is different.
 import pytest
 
 from redo import retry
-from requests import codes as HttpStatus
+from requests import codes
 
 from ..test_config_manager import load_test_config
-from ..utils.test_utils import get_user, add_roles, \
-    create_candidate, get_candidate, delete_candidate, create_smartlist, delete_smartlist, \
-    delete_talent_pool, create_talent_pools, get_talent_pool, get_talent_pipeline, delete_talent_pipeline, \
-    create_talent_pipelines, get_smartlist_candidates
+from ..utils.test_utils import (create_candidate, get_candidate, delete_candidate,
+                                create_smartlist, delete_smartlist, delete_talent_pool,
+                                create_talent_pools, create_talent_pipelines, get_smartlist_candidates, get_talent_pool)
 
-ROLES = ['CAN_ADD_USERS', 'CAN_GET_USERS', 'CAN_DELETE_USERS', 'CAN_ADD_TALENT_POOLS',
-         'CAN_GET_TALENT_POOLS', 'CAN_DELETE_TALENT_POOLS', 'CAN_ADD_TALENT_POOLS_TO_GROUP',
-         'CAN_ADD_CANDIDATES', 'CAN_GET_CANDIDATES', 'CAN_DELETE_CANDIDATES',
-         'CAN_ADD_TALENT_PIPELINE_SMART_LISTS', 'CAN_DELETE_TALENT_PIPELINE_SMART_LISTS',
-         'CAN_ADD_TALENT_PIPELINES']
 
 test_config = load_test_config()
 
@@ -65,9 +59,7 @@ def user_first(request, token_first):
     :return: user dictionary object
     """
     user_id = test_config['USER_FIRST']['user_id']
-    user = get_user(user_id, token_first)
-    add_roles(user_id, ROLES, token_first)
-    return user
+    return {'id': user_id}
 
 
 @pytest.fixture(scope='session')
@@ -79,9 +71,7 @@ def user_second(request, token_second):
     :return: user dictionary object
     """
     user_id = test_config['USER_SECOND']['user_id']
-    user = get_user(user_id, token_second)
-    add_roles(user_id, ROLES, token_second)
-    return user
+    return {'id': user_id}
 
 
 @pytest.fixture(scope='session')
@@ -93,9 +83,7 @@ def user_same_domain(request, token_same_domain):
     :return: user dictionary object
     """
     user_id = test_config['USER_SAME_DOMAIN']['user_id']
-    user = get_user(user_id, token_same_domain)
-    add_roles(user_id, ROLES, token_same_domain)
-    return user
+    return {'id': user_id}
 
 
 @pytest.fixture(scope='function')
@@ -105,16 +93,18 @@ def candidate_first(request, talent_pool, token_first, user_first):
     after test has run.
     :param request: request object
     :param talent_pool: talent pool dict object associated to user_first
+    :param str token_first: auth token for  first user
+    :param dict user_first: user dict
     """
     response = create_candidate(talent_pool['id'], token_first)
     candidate_id = response['candidates'][0]['id']
-    response = retry(get_candidate, max_sleeptime=60, sleeptime=3, attempts=20, sleepscale=1,
-                     retry_exceptions=(AssertionError,), args=(candidate_id, token_first))
+    response = retry(get_candidate, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                     args=(candidate_id, token_first))
     candidate = response['candidate']
 
     def tear_down():
         delete_candidate(candidate_id, token_first,
-                         expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
+                         expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return candidate
@@ -131,13 +121,13 @@ def candidate_same_domain(request, user_same_domain, talent_pool, token_same_dom
     """
     response = create_candidate(talent_pool['id'], token_same_domain)
     candidate_id = response['candidates'][0]['id']
-    response = retry(get_candidate, max_sleeptime=60, sleeptime=3, attempts=20, sleepscale=1,
-                     retry_exceptions=(AssertionError,), args=(candidate_id, token_same_domain))
+    response = retry(get_candidate, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                     args=(candidate_id, token_same_domain))
     candidate = response['candidate']
 
     def tear_down():
         delete_candidate(candidate_id, token_same_domain,
-                         expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
+                         expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return candidate
@@ -154,35 +144,16 @@ def candidate_second(request, token_second, talent_pool_second, user_second):
     """
     response = create_candidate(talent_pool_second['id'], token_second)
     candidate_id = response['candidates'][0]['id']
-    response = retry(get_candidate, max_sleeptime=60, sleeptime=3, attempts=20, sleepscale=1,
-                     retry_exceptions=(AssertionError,), args=(candidate_id, token_second))
+    response = retry(get_candidate, max_sleeptime=60, sleeptime=3, retry_exceptions=(AssertionError,),
+                     args=(candidate_id, token_second))
     candidate = response['candidate']
 
     def tear_down():
         delete_candidate(candidate_id, token_second,
-                         expected_status=(HttpStatus.NO_CONTENT, HttpStatus.NOT_FOUND))
+                         expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return candidate
-
-
-@pytest.fixture()
-def talent_pipeline(request, token_first, user_first):
-    """
-    This fixture created a talent pipeline that is associated to user_first
-    :param request: request object
-    :param token_first: authentication token for user_first
-    """
-    talent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
-    talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
-    talent_pipeline_obj = get_talent_pipeline(talent_pipeline_id, token_first)['talent_pipeline']
-
-    def tear_down():
-        delete_talent_pipeline(talent_pipeline_id, token_first,
-                               expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
-    return talent_pipeline_obj
 
 
 @pytest.fixture(scope='function')
@@ -201,13 +172,12 @@ def smartlist_first(request, token_first, user_first, candidate_first, talent_po
     candidate_ids = [candidate_first['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_first)['smartlist']
     smartlist_id = smartlist['id']
-    retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60,
-          sleepscale=1, retry_exceptions=(AssertionError,), args=(smartlist_id, token_first),
-          kwargs={'candidates_count': 1})
+    retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
+          args=(smartlist_id, token_first), kwargs={'count': 1})
 
     def tear_down():
         delete_smartlist(smartlist_id, token_first,
-                         expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+                         expected_status=(codes.OK, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return smartlist
@@ -227,13 +197,12 @@ def smartlist_second(request, token_second, user_second, candidate_second, talen
     candidate_ids = [candidate_second['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_second)['smartlist']
     smartlist_id = smartlist['id']
-    retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60,
-          sleepscale=1, retry_exceptions=(AssertionError,), args=(smartlist_id, token_second),
-          kwargs={'candidates_count': 1})
+    retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
+          args=(smartlist_id, token_second), kwargs={'count': 1})
 
     def tear_down():
         delete_smartlist(smartlist_id, token_second,
-                         expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+                         expected_status=(codes.OK, codes.NOT_FOUND))
     request.addfinalizer(tear_down)
     return smartlist
 
@@ -253,13 +222,12 @@ def smartlist_same_domain(request, token_same_domain, user_same_domain, candidat
     candidate_ids = [candidate_same_domain['id']]
     smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_same_domain)['smartlist']
     smartlist_id = smartlist['id']
-    retry(get_smartlist_candidates, attempts=20, sleeptime=3, max_sleeptime=60,
-          sleepscale=1, retry_exceptions=(AssertionError,), args=(smartlist_id, token_same_domain),
-          kwargs={'candidates_count': 1})
+    retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
+          args=(smartlist_id, token_same_domain), kwargs={'count': 1})
 
     def tear_down():
         delete_smartlist(smartlist_id, token_same_domain,
-                         expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+                         expected_status=(codes.OK, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return smartlist
@@ -278,7 +246,7 @@ def talent_pool(request, token_first, user_first):
 
     def tear_down():
         delete_talent_pool(talent_pool_id, token_first,
-                           expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+                           expected_status=(codes.OK, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return talent_pool_obj
@@ -296,7 +264,7 @@ def talent_pool_second(request, token_second, user_second):
 
     def tear_down():
         delete_talent_pool(talent_pool_id, token_second,
-                           expected_status=(HttpStatus.OK, HttpStatus.NOT_FOUND))
+                           expected_status=(codes.OK, codes.NOT_FOUND))
 
     request.addfinalizer(tear_down)
     return talent_pool_obj

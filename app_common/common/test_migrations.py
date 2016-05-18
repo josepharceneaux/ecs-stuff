@@ -103,26 +103,32 @@ class TestMigrations():
         message = "No migrations to process."
         self.logger.info.assert_called_with(message)
 
-    def test_bad_migration_file_type(self, tmpdir):
+    def test_bad_migration_file_type(self, tmpdir, mocker):
         '''
         :param tmpdir: Temporary directory provided by fixture.
+        :param mocker: Mock object provided by fixture
         '''
+        mocker.patch.object(self.logger, 'exception')
         migrations_dir = self.ensure_migrations_directory(tmpdir)
         migrations_subdir = "{}/im_a_directory".format(migrations_dir.__str__())
         os.mkdir(migrations_subdir, 0755)
-        with pytest.raises(UnprocessableEntity):
-            run_migrations(self.logger, db)
+        run_migrations(self.logger, db)
+        message = "Can't execute migration file ./migrations/im_a_directory"
+        self.logger.exception.assert_called_with(message)
 
-    def test_bad_migration_filename(self, tmpdir):
+    def test_bad_migration_filename(self, tmpdir, mocker):
         '''
         :param tmpdir: Temporary directory provided by fixture.
+        :param mocker: Mock object provided by fixture
         '''
+        mocker.patch.object(self.logger, 'exception')
         migrations_dir = self.ensure_migrations_directory(tmpdir)
         bad_filename = "im-a-bad-bad-filename"
         bad_migration_pathname = "{}/{}".format(migrations_dir.__str__(), bad_filename)
         self.create_empty_filename(bad_migration_pathname)
-        with pytest.raises(UnprocessableEntity):
-            run_migrations(self.logger, db)
+        run_migrations(self.logger, db)
+        message = "Incorrect migration filename: im-a-bad-bad-filename"
+        self.logger.exception.assert_called_with(message)
 
     def test_missing_migrations_table_is_created(self, tmpdir):
         '''
@@ -207,11 +213,15 @@ class TestMigrations():
         assert migrations1[0].run_at_timestamp >= migrations2[0].run_at_timestamp
         assert migrations2[0].run_at_timestamp >= migrations3[0].run_at_timestamp
 
-    def test_handling_failed_migration_file(self, tmpdir):
+    def test_handling_failed_migration_file(self, tmpdir, mocker):
         '''
         :param tmpdir: Temporary directory provided by fixture.
+        :param mocker: Mock object provided by fixture
         '''
 
-        self.create_migration_file(tmpdir, time.strftime(DATETIME_FORMAT, time.gmtime()), 'break me')
-        with pytest.raises(UnprocessableEntity):
-            run_migrations(self.logger, db)
+        mocker.patch.object(self.logger, 'exception')
+        filename = time.strftime(DATETIME_FORMAT, time.gmtime())
+        self.create_migration_file(tmpdir, filename, 'break me')
+        run_migrations(self.logger, db)
+        message = "Can't execute migration file ./migrations/{}".format(filename)
+        self.logger.exception.assert_called_with(message)

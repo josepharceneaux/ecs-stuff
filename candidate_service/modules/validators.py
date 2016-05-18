@@ -28,7 +28,6 @@ from candidate_service.common.utils.validators import format_phone_number
 # Json schema validation
 from jsonschema import validate, ValidationError, FormatChecker
 
-
 SPECIAL_CHARS = r'+-!(){}[]^"~*?\:'
 
 
@@ -73,8 +72,8 @@ def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
     """
     assert isinstance(candidate_id, (int, long))
     candidate_row = db.session.query(Candidate).join(User).filter(
-            Candidate.id == candidate_id, Candidate.user_id == user_row.id,
-            User.domain_id == user_row.domain_id
+        Candidate.id == candidate_id, Candidate.user_id == user_row.id,
+        User.domain_id == user_row.domain_id
     ).first()
 
     return True if candidate_row else False
@@ -425,7 +424,7 @@ def get_candidate_email_from_domain_if_exists(user_id, email_address):
     """
     user_domain_id = User.get_domain_id(_id=user_id)
     candidate_email = CandidateEmail.query.join(Candidate).join(User).filter(
-            CandidateEmail.address == email_address, User.domain_id == user_domain_id).first()
+        CandidateEmail.address == email_address, User.domain_id == user_domain_id).first()
     return candidate_email if candidate_email else None
 
 
@@ -448,7 +447,7 @@ def get_education_if_exists(educations, education_dict, education_degrees):
                     'end_year': existing_degree.end_year,
                     'title': existing_degree.degree_title
                 } for existing_degree in education.degrees
-            ]
+                ]
 
             new_degree_dicts = [
                 {
@@ -456,7 +455,7 @@ def get_education_if_exists(educations, education_dict, education_degrees):
                     'end_year': new_degree.get('end_year'),
                     'title': new_degree.get('title')
                 } for new_degree in education_degrees
-            ]
+                ]
 
             common_dicts = [common for common in existing_degree_dicts if common in new_degree_dicts]
             if common_dicts:
@@ -609,7 +608,7 @@ def does_military_service_exist(military_services, military_service_dict):
     return False
 
 
-def get_json_data_if_it_passed_validation(request_body, json_schema, format_checker=True):
+def get_json_data_if_validated(request_body, json_schema, format_checker=True):
     """
     Function will compare requested json data with provided json schema
     :type request_body:  request

@@ -39,7 +39,7 @@ class TestClientEmailCampaign(object):
                                                  access_token_first, data)
         print response_info(create_candidate_response)
         candidate_id = create_candidate_response.json()['candidates'][0]['id']
-        time.sleep(20)
+        time.sleep(10)
 
         # Get Candidate via ID
         get_candidate_response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id,

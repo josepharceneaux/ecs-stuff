@@ -217,12 +217,20 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                     prepare_candidate_data(degrees, 'start_month', 6)
                     prepare_candidate_data(degrees, 'end_month', 6)
 
+                elif column_name == 'candidate_address.address_line_1':
+                    prepare_candidate_data(addresses, 'address_line_1', column)
+                elif column_name == 'candidate_address.address_line_2':
+                    prepare_candidate_data(addresses, 'address_line_2', column)
                 elif column_name == 'candidate_address.city':
                     prepare_candidate_data(addresses, 'city', column)
                 elif column_name == 'candidate_address.state':
                     prepare_candidate_data(addresses, 'state', column)
+                elif column_name == 'candidate_address.subdivision_code':
+                    prepare_candidate_data(addresses, 'subdivision_code', column)
                 elif column_name == 'candidate_address.zipCode':
                     prepare_candidate_data(addresses, 'zip_code', column)
+                elif column_name == 'candidate_address.country_code':
+                    prepare_candidate_data(addresses, 'country_code', column)
                 elif 'custom_field.' in column_name:
                     custom_fields_dict = {}
                     if isinstance(column, basestring):

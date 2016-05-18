@@ -18,7 +18,7 @@ Hit endpoint:
     - but url conversion object has been deleted from database
 """
 # 3rd party imports
-from requests import codes as HttpStatus
+from requests import codes
 
 # Application specific
 from push_campaign_service.tests.test_utilities import send_request,delete_campaign
@@ -42,23 +42,23 @@ class TestURLRedirectionApi(object):
         "hit_count" and "clicks" have been successfully updated by '1' in database.
         """
         # stats before making HTTP GET request to source URL
-        response = get_blasts(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
+        response = get_blasts(campaign_in_db['id'], token_first, expected_status=(codes.OK,))
         blasts = response['blasts']
         assert len(blasts) == 1
         blast = blasts[0]
         hit_count, clicks = url_conversion['hit_count'],  blast['clicks']
         response = send_request('get', url_conversion['source_url'], '', verify=False)
-        assert response.status_code == HttpStatus.OK, 'Response should be ok'
+        assert response.status_code == codes.OK, 'Response should be ok'
 
         response = send_request('get', PushCampaignApiUrl.BLASTS % campaign_in_db['id'], token_first, verify=False)
-        assert response.status_code == HttpStatus.OK
+        assert response.status_code == codes.OK
         blasts = response.json()['blasts']
         assert len(blasts) == 1
         blast = blasts[0]
 
         response = send_request('get', PushCampaignApiUrl.URL_CONVERSION % url_conversion['id'], token_first,
                                 verify=False)
-        assert response.status_code == HttpStatus.OK
+        assert response.status_code == codes.OK
         url_conversion = response.json()['url_conversion']
 
         updated_hit_counts, updated_clicks = url_conversion['hit_count'],  blast['clicks']
@@ -71,13 +71,13 @@ class TestURLRedirectionApi(object):
         """
         url_without_signature = url_conversion['source_url'].split('?')[0]
         response = send_request('get', url_without_signature, '', verify=False)
-        assert response.status_code == HttpStatus.INTERNAL_SERVER_ERROR
+        assert response.status_code == codes.INTERNAL_SERVER_ERROR
 
     def test_get_with_invalid_signature(self, url_conversion):
         source_url = url_conversion['source_url']
         url_wit_invalid_signature = source_url.split('signature=')[0] + 'signature=invalid_signature'
         response = send_request('get', url_wit_invalid_signature, '', verify=False)
-        assert response.status_code == HttpStatus.INTERNAL_SERVER_ERROR
+        assert response.status_code == codes.INTERNAL_SERVER_ERROR
 
     def test_get_with_deleted_campaign(self, token_first, campaign_in_db,
                                        url_conversion):
@@ -87,9 +87,9 @@ class TestURLRedirectionApi(object):
         But candidate should get Internal server error. Hence this test should get internal server
         error.
         """
-        delete_campaign(campaign_in_db['id'], token_first, expected_status=(HttpStatus.OK,))
+        delete_campaign(campaign_in_db['id'], token_first, expected_status=(codes.OK,))
         response = send_request('get', url_conversion['source_url'], '', verify=False)
-        assert response.status_code == HttpStatus.INTERNAL_SERVER_ERROR
+        assert response.status_code == codes.INTERNAL_SERVER_ERROR
 
     def test_get_with_deleted_candidate(self, url_conversion, candidate_first, token_first):
         """
@@ -101,7 +101,7 @@ class TestURLRedirectionApi(object):
         """
         delete_candidate(candidate_first['id'], token_first, expected_status=(204,))
         response = send_request('get', url_conversion['source_url'], '', verify=False)
-        assert response.status_code == HttpStatus.INTERNAL_SERVER_ERROR
+        assert response.status_code == codes.INTERNAL_SERVER_ERROR
 
     def test_get_with_deleted_url_conversion(self, url_conversion, token_first):
         """
@@ -113,6 +113,6 @@ class TestURLRedirectionApi(object):
         """
         source_url = url_conversion['source_url']
         response = send_request('delete', PushCampaignApiUrl.URL_CONVERSION % url_conversion['id'], token_first)
-        assert response.status_code == HttpStatus.OK
+        assert response.status_code == codes.OK
         response = send_request('get', source_url, '', verify=False)
-        assert response.status_code == HttpStatus.INTERNAL_SERVER_ERROR
+        assert response.status_code == codes.INTERNAL_SERVER_ERROR

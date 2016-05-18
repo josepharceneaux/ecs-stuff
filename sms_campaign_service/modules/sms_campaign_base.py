@@ -304,11 +304,11 @@ class SmsCampaignBase(CampaignBase):
 
     def get_all_campaigns(self):
         """
-        This gets all the campaigns created by current user
-        :return: all campaigns associated to with user
+        This gets all the campaigns created by all users in logged in user's domain
+        :return: all campaigns associated to domain of logged-in user
         :rtype: list
         """
-        return self.user_phone.sms_campaigns
+        return SmsCampaign.get_by_domain_id(self.user_phone.user.domain_id)
 
     def pre_process_save_or_update(self, form_data):
         """
@@ -340,7 +340,7 @@ class SmsCampaignBase(CampaignBase):
         if not form_data:
             raise InvalidUsage('save: No data received from UI. (User(id:%s))' % self.user.id)
         form_data['user_phone_id'] = self.user_phone.id
-        logger.debug("user_phone_id has been added in form data for user %s() %s"
+        logger.debug("user_phone_id has been added in form data for user %s(id:%s)"
                      % (self.user.name, self.user.id))
         return super(SmsCampaignBase, self).save(form_data)
 
@@ -450,9 +450,8 @@ class SmsCampaignBase(CampaignBase):
         """
         This overrides the CampaignBase class method and filter only those candidates who
         have one unique mobile number associated.
-        :param candidates:
-        :type candidates: list
-        :return:
+        :param candidates: list of candidates to whom we want to send campaign
+        :type candidates: list[Candidate]
         """
         not_owned_ids = []
         multiple_records_ids = []
@@ -944,16 +943,16 @@ def _get_valid_user_phone(user_phone_value):
     user_phones_obj = UserPhone.get_by_phone_value(user_phone_value)
     if len(user_phones_obj) == 1:
         user_phone = user_phones_obj[0]
+        return user_phone
     elif len(user_phones_obj) > 1:
-        raise MultipleUsersFound(
-            '%s phone number is associated with %s users. User ids are %s'
-            % (user_phone_value,
-               len(user_phones_obj),
-               [user_phone.user_id for user_phone in user_phones_obj]))
+        if not user_phone_value == TWILIO_TEST_NUMBER:
+            raise MultipleUsersFound('%s phone number is associated with %s users. '
+                                     'User ids are %s'
+                                     % (user_phone_value, len(user_phones_obj),
+                                        [user_phone.user_id for user_phone in user_phones_obj]))
     else:
         raise NoUserFoundForPhoneNumber('No User is associated with '
                                         '%s phone number' % user_phone_value)
-    return user_phone
 
 
 def _get_valid_candidate_phone(candidate_phone_value, current_user):

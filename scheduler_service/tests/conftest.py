@@ -4,13 +4,20 @@ Test cases for scheduling service
 # Standard imports
 import json
 import os
+import random
+import string
 from datetime import timedelta
 
-# Application imports
+# Third-party imports
 import requests
+
+
+# Application imports
+from scheduler_service import db
 from scheduler_service.common.routes import SchedulerApiUrl
+from scheduler_service.common.tests.auth_utilities import get_access_token
 from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, \
-    test_org, test_culture, first_group, domain_first
+    test_org, test_culture, first_group, domain_first, PASSWORD, sample_client
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -188,3 +195,114 @@ def post_hundred_jobs(request, job_config_one_time_task, auth_header):
         jobs_id.append(response.json()['id'])
 
     return jobs_id
+
+
+@pytest.fixture()
+def create_five_users(request, domain_first, first_group, sample_client):
+    """
+    Create five users and delete them in finalizer
+    """
+    users_list = []
+    for _ in range(5):
+        user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
+        db.session.commit()
+        access_token = get_access_token(user, PASSWORD, sample_client.client_id, sample_client.client_secret)
+        users_list.append((user, access_token))
+
+    def tear_down():
+        for _user, _ in users_list:
+            try:
+                db.session.delete(_user)
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+    request.addfinalizer(tear_down)
+    return users_list
+
+
+@pytest.fixture()
+def schedule_ten_general_jobs(request, job_config_one_time_task):
+    """
+    Schedule 10 general scheduler jobs by sending request to scheduler.
+    Jobs which are independent of user and have task name are called general jobs
+    """
+    general_job_ids_list = []
+    header = {'Content-Type': 'application/json'}
+    for _ in range(10):
+        secret_key_id, access_token = User.generate_jw_token()
+        header['Authorization'] = 'Bearer ' + access_token
+        header['X-Talent-Secret-Key-ID'] = secret_key_id
+        job_config_one_time_task['task_name'] = ''\
+            .join(random.SystemRandom()
+                  .choice(string.ascii_uppercase + string.digits) for _ in range(8))
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task.copy()),
+                                 headers=header)
+        assert response.status_code == 201, response.text
+        general_job_ids_list.append(response.json()['id'])
+
+    def teardown():
+        _secret_key_id, _access_token = User.generate_jw_token()
+        # Delete general jobs
+        header['Authorization'] = 'Bearer ' + _access_token
+        header['X-Talent-Secret-Key-ID'] = _secret_key_id
+        for index in range(len(general_job_ids_list)):
+            response_remove_job = requests.delete(SchedulerApiUrl.TASK % general_job_ids_list[index],
+                                                  headers=header)
+
+            assert response_remove_job.status_code == 200
+            general_job_ids_list.append(response.json()['id'])
+
+    request.addfinalizer(teardown)
+
+    return general_job_ids_list
+
+
+@pytest.fixture()
+def schedule_ten_jobs_for_each_user(request, create_five_users, job_config_one_time_task, job_config):
+    """
+    Schedule 10 jobs of each users (we created 5 users). So, there will be 50 jobs in total.
+    """
+    jobs_count = 10
+    job_ids_and_tokens = []
+    user_job_ids_list = []
+    users_list = create_five_users
+    header = {'Content-Type': 'application/json'}
+    for index, (user, token) in enumerate(users_list):
+        job_ids_list = []
+        header['Authorization'] = 'Bearer ' + token
+
+        # Schedule 10 of each user and paused the jobs of first user
+        for _ in range(jobs_count):
+            if not index:
+                data = json.dumps(job_config.copy())
+            else:
+                run_datetime = datetime.utcnow() + timedelta(hours=10)
+                job_config_one_time_task['url'] = SchedulerApiUrl.RESUME_TASK
+                job_config_one_time_task['run_datetime'] = run_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                data = json.dumps(job_config_one_time_task.copy())
+            response = requests.post(SchedulerApiUrl.TASKS, data=data,
+                                     headers=header)
+            assert response.status_code == 201, response.text
+            job_ids_list.append(response.json()['id'])
+
+            job_ids_and_tokens.append((response.json()['id'], token))
+            # Pause all jobs of first user, we need to check if admin can get paused jobs(in test)
+            if not index:
+                response = requests.post(SchedulerApiUrl.PAUSE_TASK % response.json()['id'],
+                                         headers=header)
+                assert response.status_code == 200
+
+        user_job_ids_list.append(job_ids_list)
+
+    def tear_down():
+        # Delete user based jobs
+        for _job_id, _token in job_ids_and_tokens:
+            header['Authorization'] = 'Bearer ' + _token
+            response_remove_job = requests.delete(SchedulerApiUrl.TASK % _job_id,
+                                                  headers=header)
+
+            assert response_remove_job.status_code == 200
+
+    request.addfinalizer(tear_down)
+
+    return user_job_ids_list
