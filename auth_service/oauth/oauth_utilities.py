@@ -64,7 +64,6 @@ def save_token_v2(user):
     return jsonify(dict(
         user_id=user.id,
         access_token=s.dumps(payload),
-        expires_in=app.config['JWT_OAUTH_EXPIRATION'],
         expires_at=expires_at,
         token_type="Bearer",
         secret_key_id=secret_key_id
