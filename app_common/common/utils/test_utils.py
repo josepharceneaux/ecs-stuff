@@ -53,10 +53,13 @@ def response_info(response):
     status_code = response.status_code if hasattr(response, 'status_code') else None
     url = response.url if hasattr(response, 'url') else None
     request = response.request if hasattr(response, 'request') else None
-    _json = response.json() if hasattr(response, 'json()') else None
+    try:
+        jsoned = response.json()
+    except Exception:
+        jsoned = None
 
     content = "\nUrl: {}\nRequest: {}\nStatus code: {}\nResponse JSON: {}"
-    return content.format(url, request, status_code, _json)
+    return content.format(url, request, status_code, jsoned)
 
 
 def get_user(user_id, token):

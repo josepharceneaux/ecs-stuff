@@ -27,6 +27,7 @@ try:
     )
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
     from candidate_service.candidate_app.api.v1_candidate_tags import CandidateTagResource
+    from candidate_service.candidate_app.api.pipelines import CandidatePipelineResource
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)
@@ -268,6 +269,9 @@ try:
     # ****** CandidateTagResource *******
     api.add_resource(CandidateTagResource, CandidateApi.TAGS, endpoint='candidate_tags')
     api.add_resource(CandidateTagResource, CandidateApi.TAG, endpoint='candidate_tag')
+
+    # ****** CandidatePipelineResource *******
+    api.add_resource(CandidatePipelineResource, CandidateApi.PIPELINES, endpoint='candidate_pipelines')
 
     db.create_all()
     db.session.commit()

@@ -12,7 +12,7 @@ from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 from sms_campaign_service.tests.modules.common_functions import \
-    candidate_ids_associated_with_campaign
+    candidate_ids_associated_with_campaign, assert_valid_send_object, assert_valid_blast_object
 
 
 class TestSmsCampaignBlastSends(object):
@@ -59,9 +59,9 @@ class TestSmsCampaignBlastSends(object):
             self.URL % (campaign['id'], blast_ids[0]),
             headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=expected_count)
-        json_resp = response.json()[self.ENTITY][0]
-        assert json_resp['blast_id'] == blast_ids[0]
-        assert str(json_resp['candidate_id']) in candidate_ids
+        received_send_obj = response.json()[self.ENTITY]
+        for send_obj in received_send_obj:
+            assert_valid_send_object(send_obj, blast_ids[0], candidate_ids)
 
     def test_get_with_campaign_in_other_domain(self, access_token_first,
                                                sms_campaign_in_other_domain,
@@ -118,47 +118,46 @@ class TestSmsCampaignBlastSends(object):
         sent_campaign = sent_campaign_bulk_and_blast_ids[0][0]
         candidate_ids = sent_campaign_bulk_and_blast_ids[0][1]
         blast_ids = sent_campaign_bulk_and_blast_ids[1]
-        CampaignsTestsHelpers.assert_blast_sends(sent_campaign, 10,
+        expected_sends = 10
+        CampaignsTestsHelpers.assert_blast_sends(sent_campaign, expected_sends,
                                                  blast_url=SmsCampaignApiUrl.BLAST
                                                            % (sent_campaign['id'], blast_ids[0]),
                                                  access_token=access_token_first,
                                                  abort_time_for_sends=60)
         response_blasts = requests.get(SmsCampaignApiUrl.BLASTS % sent_campaign['id'],
                                        headers=headers)
-        CampaignsTestsHelpers.assert_ok_response_and_counts(response_blasts,
-                                                            count=1, entity='blasts')
-        json_resp = response_blasts.json()['blasts'][0]
-        assert json_resp['campaign_id'] == sent_campaign['id']
-        assert json_resp['sends'] == 10
-        blast_id = json_resp['id']
-        # URL to GET sends
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response_blasts, count=1, entity='blasts')
+        received_blast_obj = response_blasts.json()['blasts'][0]
+        assert_valid_blast_object(received_blast_obj, blast_ids[0], sent_campaign['id'], expected_sends)
+        blast_id = received_blast_obj['id']
+        # URL to GET sends1
         url = self.URL % (sent_campaign['id'], blast_id)
         # Test GET sends of SMS campaign with 4 results per_page. It should get 4 blast objects
         response = requests.get(url + '?per_page=4',
                                 headers=headers)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=4, entity=self.ENTITY)
-        json_resp = response.json()[self.ENTITY]
-        # Pick first send object
-        received_send_obj = json_resp[0]
-        assert received_send_obj['blast_id'] == blast_id
-        assert received_send_obj['candidate_id'] in candidate_ids
+        received_send_objects = response.json()[self.ENTITY]
+
+        # Assert fields of all received send objects
+        for send_obj in received_send_objects:
+            assert_valid_send_object(send_obj, blast_id, candidate_ids)
 
         #  Test GET sends of SMS campaign with 4 results per_page using page = 2
         response = requests.get(url + '?per_page=4&page=2', headers=headers)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=4, entity=self.ENTITY)
-        json_resp = response.json()[self.ENTITY]
-        # pick second blast object from the response. it will be 6th blast object
-        received_send_obj = json_resp[1]
-        assert received_send_obj['blast_id'] == blast_id
-        assert received_send_obj['candidate_id'] in candidate_ids
+        received_send_objects = response.json()[self.ENTITY]
+
+        # Assert fields of all received send objects
+        for send_obj in received_send_objects:
+            assert_valid_send_object(send_obj, blast_id, candidate_ids)
 
         response = requests.get(url + '?per_page=4&page=3', headers=headers)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)
-        json_resp = response.json()[self.ENTITY]
-        # pick second send object from the response. it will be 10th send object
-        received_send_obj = json_resp[1]
-        assert received_send_obj['blast_id'] == blast_id
-        assert received_send_obj['candidate_id'] in candidate_ids
+        received_send_objects = response.json()[self.ENTITY]
+
+        # Assert fields of all received send objects
+        for send_obj in received_send_objects:
+            assert_valid_send_object(send_obj, blast_id, candidate_ids)
 
         # Test GET blasts of SMS campaign with page = 2. No blast object should be received
         # in response as we have sent campaign only two times so far and default per_page is 10.

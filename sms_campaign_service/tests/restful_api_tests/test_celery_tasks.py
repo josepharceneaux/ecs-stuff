@@ -455,8 +455,6 @@ def _delete_sms_campaign(campaign, header):
 def request_and_assert_internal_server_error(url):
     """
     This makes HTTP GET call on given URL and assert that it receives internal server error.
-    :param url:
-    :return:
     """
     response_get = _use_ngrok_or_local_address('get', url)
     assert response_get.status_code == InternalServerError.http_status_code(), \
@@ -504,7 +502,6 @@ def _get_hit_count_and_clicks(url_conversion, campaign):
     :param url_conversion: URL conversion obj
     :param campaign: SMS campaign obj
     :type campaign: SmsCampaign
-    :return:
     """
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
@@ -516,7 +513,6 @@ def _get_hit_count_and_clicks(url_conversion, campaign):
 def _get_args_from_url(url):
     """
     This gets the args from the signed URL
-    :param url:
     """
     args = url.split('?')[1].split('&')
     request_args = dict()
@@ -530,7 +526,6 @@ def _get_args_from_url(url):
 def _call_process_url_redirect(url_conversion_obj):
     """
     This directly calls the url_redirect() class method of CampaignBase
-    :param url_conversion_obj:
     """
     with app.app_context():
         CampaignBase.url_redirect(url_conversion_obj.id, CampaignUtils.SMS)

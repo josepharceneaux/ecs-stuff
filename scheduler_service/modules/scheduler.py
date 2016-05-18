@@ -11,7 +11,8 @@ import datetime
 
 # Third-party imports
 from urllib import urlencode
-from apscheduler.events import EVENT_JOB_ERROR
+from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_ADDED, EVENT_JOB_MISSED, \
+    EVENT_JOB_BEFORE_REMOVE
 from apscheduler.events import EVENT_JOB_EXECUTED
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.triggers.interval import IntervalTrigger
@@ -21,7 +22,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 # Application imports
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token
-from scheduler_service import logger, TalentConfigKeys, flask_app
+from scheduler_service import logger, TalentConfigKeys, flask_app, redis_store
 from scheduler_service.apscheduler_config import executors, job_store, jobstores, job_defaults
 from scheduler_service.common.models.user import User
 from scheduler_service.common.error_handling import InvalidUsage
@@ -30,7 +31,6 @@ from scheduler_service.common.talent_config_manager import TalentEnvs
 from scheduler_service.common.utils.datetime_utils import DatetimeUtils
 from scheduler_service.common.utils.handy_functions import http_request
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
-from scheduler_service.common.utils.test_utils import get_user
 from scheduler_service.modules.json_schema import base_job_schema, one_time_task_job_schema
 from scheduler_service.modules.json_schema import periodic_task_job_schema
 from scheduler_service.validators import get_valid_data_from_dict, get_valid_url_from_dict, \
@@ -48,13 +48,24 @@ scheduler.add_jobstore(job_store)
 REQUEST_TIMEOUT = 30
 
 
+def scheduler_remove_job(job_id):
+    """
+    Removes the job from redis as well as apscheduler
+    :param job_id: job_id returned by scheduler when job was scheduled e.g. w4523kd1sdf23kljfdjflsdf
+    :type job_id: str
+    :param user_id:
+    :type user_id: int | str
+    :param task_name: name of task to be deleted
+    :type task_name: str
+    """
+    scheduler.remove_job(job_id=job_id)
+
+
 def apscheduler_listener(event):
     """
     APScheduler listener for logging on job crashed or job time expires
     The method also checks if a job time is passed. If yes, then it remove job from apscheduler because there is no
     use of expired job.
-    :param event:
-    :return:
     """
     if event.exception:
         logger.error('The job crashed :(\n')
@@ -69,17 +80,42 @@ def apscheduler_listener(event):
                           IntervalTrigger) and job.next_run_time and job.next_run_time > job.trigger.end_date:
                 logger.info('Stopping job')
                 try:
-                    scheduler.remove_job(job_id=job.id)
-                    logger.info("apscheduler_listener: Job with id %s removed successfully" % job.id)
+                    scheduler_remove_job(job_id=job.id)
+                    logger.info("apscheduler_listener: Job with id %s removed successfully"
+                                % job.id)
                 except Exception as e:
                     logger.exception("apscheduler_listener: Error occurred while removing job")
                     raise e
-            elif isinstance(job.trigger, DateTrigger) and not job.next_run_time:
-                scheduler.remove_job(job_id=job.id)
-                logger.info("apscheduler_listener: Job with id %s removed successfully" % job.id)
+            elif isinstance(job.trigger, DateTrigger) and not job.run_date:
+                scheduler_remove_job(job_id=job.id)
+                logger.info("apscheduler_listener: Job with id %s removed successfully."
+                            % job.id)
 
 
-scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
+def apscheduler_job_added(event):
+    """
+    Event callback handler of apscheduler which calls this method when a job is added or removed.
+    """
+    if event.code == EVENT_JOB_ADDED:
+        # If its user type job then add a prefix user_ continued by user_id, if its general job then add a general
+        # prefix continued by name of job
+        task = scheduler.get_job(job_id=event.job_id)
+        redis_store.rpush(SchedulerUtils.REDIS_SCHEDULER_USER_TASK % task.args[0]
+                          if task.args[0] else SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % task.name,
+                          event.job_id)
+
+    if event.code == EVENT_JOB_BEFORE_REMOVE:
+        # Get the job and remove it from redis table then from scheduler
+        task = scheduler.get_job(job_id=event.job_id)
+        if task:
+            redis_store.lrem(SchedulerUtils.REDIS_SCHEDULER_USER_TASK % task.args[0]
+                             if task.args[0] else SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % task.name,
+                             event.job_id)
+
+
+# Register event listener methods to apscheduler
+scheduler.add_listener(apscheduler_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR | EVENT_JOB_MISSED)
+scheduler.add_listener(apscheduler_job_added, EVENT_JOB_ADDED | EVENT_JOB_BEFORE_REMOVE)
 
 
 def validate_one_time_job(data):
@@ -138,7 +174,6 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     :param content_type: format of post data
     :param post_data: post data like campaign name, smartlist ids etc
     :param is_jwt_request: (optional) if true, then use X-Talent-Secret-Id in header
-    :return:
     """
     # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
     # created because frequency is set to minimum (1 hour).
@@ -155,7 +190,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
             # If user is deleted, then delete all its jobs too
             if not user:
                 tasks = filter(lambda task: task.args[0] == user_id, scheduler.get_jobs())
-                [scheduler.remove_job(job_id=task.id) for task in tasks]
+                [scheduler_remove_job(job_id=task.id) for task in tasks]
                 return
 
         token = Token.get_token(access_token=access_token.split(' ')[1])
@@ -271,7 +306,7 @@ def schedule_job(data, user_id=None, access_token=None):
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
                                           job_config['post_data'], job_config.get('is_jwt_request')]
-                                    )
+                                    );
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
             return job.id
         except Exception as e:
@@ -284,17 +319,17 @@ def schedule_job(data, user_id=None, access_token=None):
 
 def remove_tasks(ids, user_id):
     """
-    Remove jobs from APScheduler redisStore
+    Remove jobs from APScheduler and redis
     :param ids: ids of tasks which are in APScheduler
     :param user_id: tasks owned by user
     :return: tasks which are removed
     """
     # Get all jobs from APScheduler
-    jobs_aps = map(lambda job_id: scheduler.get_job(job_id=job_id), ids)
-    # Now only keep those that belong to the user
-    jobs_aps = filter(lambda job: job and job.args[0] == user_id, jobs_aps)
+    # Now only keep those jobs that belong to the user
+    valid_jobs = [scheduler.get_job(job_id=job_id) for job_id in ids]
+    valid_job_ids = [job.id for job in valid_jobs if job and job.args[0] == user_id]
     # Finally remove all such jobs
-    removed = map(lambda job: (scheduler.remove_job(job.id), job.id), jobs_aps)
+    removed = [(scheduler_remove_job(job_id=job_id), job_id) for job_id in valid_job_ids]
     return removed
 
 
@@ -360,3 +395,42 @@ def serialize_task(task, is_admin_api=False):
                 task_dict['user_email'] = user.email
 
     return task_dict
+
+
+def get_user_job_ids(user_id):
+    """
+    Return job_ids of a specific user
+    :param user_id:
+    :type user_id: int
+    :param count: number of job ids needed. By default, returns all job ids of a user.
+    :type count: int
+    :return:
+    """
+    start_index = 0
+    end_index = -1
+    job_ids = redis_store.lrange(SchedulerUtils.REDIS_SCHEDULER_USER_TASK % user_id, start_index,
+                                 end_index)
+    return job_ids
+
+
+def get_general_job_id(task_name):
+    """
+    Return id of scheduled general task
+    :param task_name: general task name which is scheduled
+    :type task_name: str
+    :return:
+    """
+    start_index = 0
+    end_index = -1
+    job_id = redis_store.lrange(SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % task_name, start_index, end_index)
+    return next(job_id)
+
+
+def get_all_general_job_ids():
+    """
+    Return id of scheduled general task
+    :return:
+    """
+    general_task_keys = redis_store.keys(SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % '*')
+    general_task_ids = [next(iter(redis_store.lrange(key, 0, -1)), None) for key in general_task_keys]
+    return general_task_ids

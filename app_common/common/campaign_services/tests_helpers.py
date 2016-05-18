@@ -11,6 +11,7 @@ import json
 from datetime import datetime, timedelta
 
 # Third Party
+import pytz
 import requests
 from requests import Response
 from polling import poll, TimeoutException
@@ -370,8 +371,6 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(user_id, (int, long))
         raise_if_not_instance_of(_type, (int, long))
         raise_if_not_instance_of(source_id, (int, long))
-        # Need to commit the session because Celery has its own session, and our session does not
-        # know about the changes that Celery session has made.
         activity = poll(_get_activity, args=(user_id, _type, source_id), step=3, timeout=60)
         assert activity
 
@@ -443,7 +442,7 @@ class CampaignsTestsHelpers(object):
         return blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
 
     @staticmethod
-    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=10):
+    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=20):
         """
         This polls the result of blasts of a campaign for given timeout (default 10s).
         """
@@ -456,7 +455,7 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     def get_blast_by_index_with_polling(campaign, blast_index=0, access_token=None,
-                                        blasts_url=None, timeout=10):
+                                        blasts_url=None, timeout=20):
         """
         This polls the result of get_blasts_with_index() for given timeout (default 10s).
         """
@@ -511,7 +510,7 @@ class CampaignsTestsHelpers(object):
             return response.json()['blast']['sends'] == expected_count
 
     @staticmethod
-    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=30,
+    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=60,
                            blast_url=None, access_token=None):
         """
         This function asserts that particular blast of given campaign has expected number of sends
@@ -565,7 +564,7 @@ class CampaignsTestsHelpers(object):
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1,
                                         data=None, emails_list=False, create_phone=False,
                                         assign_role=False, assert_candidates=True,
-                                        smartlist_name=fake.word(), timeout=120):
+                                        smartlist_name=fake.word(), timeout=150):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
@@ -618,6 +617,18 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(user, User)
         raise_if_not_instance_of(roles, (list, tuple))
         add_role_to_test_user(user, roles)
+
+    @staticmethod
+    def assert_valid_datetime_range(datetime_str, minutes=2):
+        """
+        This asserts that given datetime is in valid range i.e. in neighboured of current datetime.
+        1) It should be greater than current datetime - minutes (default=2)
+        2) It should be less than current datetime + minutes (default=2)
+        """
+        raise_if_not_instance_of(datetime_str, basestring)
+        current_datetime = datetime.utcnow().replace(tzinfo=pytz.utc)
+        assert DatetimeUtils.utc_isoformat_to_datetime(datetime_str) > current_datetime - timedelta(minutes=minutes)
+        assert DatetimeUtils.utc_isoformat_to_datetime(datetime_str) < current_datetime + timedelta(minutes=minutes)
 
 
 class FixtureHelpers(object):

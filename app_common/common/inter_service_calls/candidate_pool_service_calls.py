@@ -63,7 +63,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
             response_body = response.json()
             candidates.extend(response_body['candidates'])
     if candidate_ids_only:
-        return [candidate['id'] for candidate in candidates]
+        return [long(candidate['id']) for candidate in candidates]
     return candidates
 
 
