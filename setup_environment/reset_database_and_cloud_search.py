@@ -15,11 +15,13 @@ from common.talent_flask import TalentFlask
 from common.redis_cache import redis_store
 from common.models.db import db
 from candidate_service.candidate_app import app
+from scheduler_service import SchedulerUtils
 
 static_tables = ['candidate_status', 'classification_type', 'country', 'culture', 'email_label', 'phone_label',
                  'frequency', 'organization', 'product', 'rating_tag', 'social_network', 'web_auth_group', 'email_client']
 
-flush_redis_entries = ['apscheduler.jobs', 'apscheduler.run_times']
+flush_redis_entries = ['apscheduler.jobs', 'apscheduler.run_times', SchedulerUtils.REDIS_SCHEDULER_USER_TASK % '*',
+                       SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % '*']
 
 app = TalentFlask(__name__)
 load_gettalent_config(app.config)
