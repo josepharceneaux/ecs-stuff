@@ -5,6 +5,7 @@ from urllib import urlencode
 
 import pytest
 import requests
+from time import sleep
 from werkzeug.security import gen_salt
 from auth_service.oauth import app
 from auth_service.common.models.user import *
@@ -157,6 +158,8 @@ def app_context(request):
 
 
 def test_auth_service_v2(app_context):
+
+    sleep(10)
 
     # Fetch Bearer Token
     app_context.access_token, app_context.secret_key_id, status_code = app_context.token_handler_v2()
