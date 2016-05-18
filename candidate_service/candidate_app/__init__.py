@@ -17,7 +17,7 @@ try:
     from candidate_service.candidate_app.api.v1_candidates import (
         CandidateResource, CandidateAddressResource, CandidateAreaOfInterestResource,
         CandidateEducationResource, CandidateEducationDegreeResource, CandidateEducationDegreeBulletResource,
-        CandidateExperienceResource, CandidateExperienceBulletResource, CandidateWorkPreferenceResource,
+        CandidateWorkExperienceResource, CandidateWorkExperienceBulletResource, CandidateWorkPreferenceResource,
         CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
         CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
@@ -122,13 +122,13 @@ try:
     )
 
     # ****** CandidateExperienceResource ******
-    api.add_resource(CandidateExperienceResource, CandidateApi.EXPERIENCES, endpoint='candidate_experience_1')
-    api.add_resource(CandidateExperienceResource, CandidateApi.EXPERIENCE, endpoint='candidate_experience_2')
+    api.add_resource(CandidateWorkExperienceResource, CandidateApi.EXPERIENCES, endpoint='candidate_experience_1')
+    api.add_resource(CandidateWorkExperienceResource, CandidateApi.EXPERIENCE, endpoint='candidate_experience_2')
 
     # ****** CandidateExperienceBulletResource ******
-    api.add_resource(CandidateExperienceBulletResource, CandidateApi.EXPERIENCE_BULLETS,
+    api.add_resource(CandidateWorkExperienceBulletResource, CandidateApi.EXPERIENCE_BULLETS,
                      endpoint='candidate_experience_bullet_1')
-    api.add_resource(CandidateExperienceBulletResource, CandidateApi.EXPERIENCE_BULLET,
+    api.add_resource(CandidateWorkExperienceBulletResource, CandidateApi.EXPERIENCE_BULLET,
                      endpoint='candidate_experience_bullet_2')
 
     # ****** CandidateEmailResource ******

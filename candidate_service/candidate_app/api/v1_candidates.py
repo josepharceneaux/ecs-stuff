@@ -910,7 +910,7 @@ class CandidateEducationDegreeBulletResource(Resource):
         return '', 204
 
 
-class CandidateExperienceResource(Resource):
+class CandidateWorkExperienceResource(Resource):
     decorators = [require_oauth()]
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
@@ -960,7 +960,7 @@ class CandidateExperienceResource(Resource):
         return '', 204
 
 
-class CandidateExperienceBulletResource(Resource):
+class CandidateWorkExperienceBulletResource(Resource):
     decorators = [require_oauth()]
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
