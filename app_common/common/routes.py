@@ -74,8 +74,7 @@ def get_web_app_url():
 def _get_api_relative_version(api_version):
     """
     Given version of API, this returns e.g. /v1/%s
-    :param api_version:
-    :return:
+    :param (str) api_version: version of API. e.g. v1 or v2 etc
     """
     return '/%s/%s' % (api_version, '%s')
 
@@ -84,7 +83,7 @@ def _get_url_prefix(api_version):
     """
     For given API version this gives url_prefix to be used for API registration
     e.g if api_version is v1, it will return /v1/
-    :param api_version: version of API
+    :param (str) api_version: version of API
     """
     return '/' + api_version + '/'
 
@@ -92,7 +91,7 @@ def _get_url_prefix(api_version):
 def _get_health_check_url(host_name):
     """
     This returns the healthcheck url appended with host name. e.g.http://127.0.0.1:8001/healthcheck
-    :param host_name: name of host. e.g.http://127.0.0.1:8001
+    :param (str) host_name: name of host. e.g.http://127.0.0.1:8001
     """
     return host_name % HEALTH_CHECK
 
@@ -140,27 +139,28 @@ class GTApis(object):
                                        "http://localhost"]}}
 
 
-class AuthApi(object):
+class AuthApiRoutes(object):
     """
     API relative URLs for auth_service. e.g. /v1/oauth2/token
+    It also returns Rest URLs of auth_service
+
+    ** Usage **
+    >>> AuthApiRoutes().TOKEN_CREATE
+    /v1/oauth2/token
+
+    >>> AuthApiRoutes(url=True).TOKEN_CREATE
+    https://127.0.0.1:8001/v1/oauth2/token
     """
     VERSION = 'v1'
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
-    TOKEN_CREATE = RELATIVE_VERSION % 'oauth2/token'
-    TOKEN_REVOKE = RELATIVE_VERSION % 'oauth2/revoke'
-    AUTHORIZE = RELATIVE_VERSION % 'oauth2/authorize'
-
-
-class AuthApiUrl(object):
-    """
-    Rest URLs of auth_service
-    """
-    HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME,
-                               GTApis.AUTH_SERVICE_PORT)
+    HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME, GTApis.AUTH_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    TOKEN_CREATE = HOST_NAME % AuthApi.TOKEN_CREATE
-    TOKEN_REVOKE = HOST_NAME % AuthApi.TOKEN_REVOKE
-    AUTHORIZE = HOST_NAME % AuthApi.AUTHORIZE
+
+    def __init__(self, url=False):
+        initial_str = self.HOST_NAME if url else '%s'
+        self.TOKEN_CREATE = initial_str % self.RELATIVE_VERSION % 'oauth2/token'
+        self.TOKEN_REVOKE = initial_str % self.RELATIVE_VERSION % 'oauth2/revoke'
+        self.AUTHORIZE = initial_str % self.RELATIVE_VERSION % 'oauth2/authorize'
 
 
 class ActivityApi(object):

@@ -6,28 +6,28 @@ from auth_service.oauth import gt_oauth
 from auth_service.oauth import logger
 from flask import request, jsonify
 from auth_service.common.error_handling import *
-from auth_service.common.routes import AuthApi
+from auth_service.common.routes import AuthApiRoutes
 
 
 gt_oauth.grantgetter(lambda *args, **kwargs: None)
 gt_oauth.grantsetter(lambda *args, **kwargs: None)
 
 
-@app.route(AuthApi.TOKEN_CREATE, methods=['POST'])
+@app.route(AuthApiRoutes().TOKEN_CREATE, methods=['POST'])
 @gt_oauth.token_handler
 def access_token(*args, **kwargs):
     """ Create a new access_token for a user and store it in Token table """
     return None
 
 
-@app.route(AuthApi.TOKEN_REVOKE, methods=['POST'])
+@app.route(AuthApiRoutes().TOKEN_REVOKE, methods=['POST'])
 @gt_oauth.revoke_handler
 def revoke_token():
     """ Revoke or delete an access_token from Token table """
     pass
 
 
-@app.route(AuthApi.AUTHORIZE)
+@app.route(AuthApiRoutes().AUTHORIZE)
 @gt_oauth.require_oauth()
 def authorize():
     """ Authorize an access token which is stored in Authorization header """

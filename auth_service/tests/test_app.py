@@ -8,8 +8,9 @@ import requests
 from werkzeug.security import gen_salt
 from auth_service.oauth import app
 from auth_service.common.models.user import *
-from auth_service.common.routes import AuthApiUrl
+from auth_service.common.routes import AuthApiRoutes
 from auth_service.common.utils.auth_utils import gettalent_generate_password_hash
+
 
 class AuthServiceTestsContext:
     def __init__(self):
@@ -59,7 +60,7 @@ class AuthServiceTestsContext:
 
     def authorize_token(self):
         headers = {'Authorization': 'Bearer %s' % self.access_token}
-        response = requests.get(AuthApiUrl.AUTHORIZE, headers=headers)
+        response = requests.get(AuthApiRoutes(url=True).AUTHORIZE, headers=headers)
         if response.status_code == 200:
             response_data = json.loads(response.text)
             return response.status_code, response_data.get('user_id') if response_data else ''
@@ -83,8 +84,8 @@ class AuthServiceTestsContext:
             raise Exception("%s is not a valid action" % action)
 
         headers['Origin'] = 'https://app.gettalent.com'  # To verify that CORS headers work
-        response = requests.post(AuthApiUrl.TOKEN_REVOKE if action == 'revoke' else
-                                 AuthApiUrl.TOKEN_CREATE, data=urlencode(params), headers=headers)
+        response = requests.post(AuthApiRoutes(url=True).TOKEN_REVOKE if action == 'revoke' else
+                                 AuthApiRoutes(url=True).TOKEN_CREATE, data=urlencode(params), headers=headers)
         db.session.commit()
         if action == 'revoke':
             return response.status_code
@@ -158,9 +159,9 @@ def test_auth_service(app_context):
 
 def test_health_check():
     import requests
-    response = requests.get(AuthApiUrl.HEALTH_CHECK)
+    response = requests.get(AuthApiRoutes.HEALTH_CHECK)
     assert response.status_code == 200
 
     # Testing Health Check URL with trailing slash
-    response = requests.get(AuthApiUrl.HEALTH_CHECK + '/')
+    response = requests.get(AuthApiRoutes.HEALTH_CHECK + '/')
     assert response.status_code == 200

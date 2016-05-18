@@ -8,7 +8,7 @@ from faker import Faker
 
 from ..tests.conftest import randomword
 from ..error_codes import ErrorCodes
-from ..routes import UserServiceApiUrl, AuthApiUrl, CandidateApiUrl, CandidatePoolApiUrl, \
+from ..routes import UserServiceApiUrl, AuthApiRoutes, CandidateApiUrl, CandidatePoolApiUrl, \
     SchedulerApiUrl
 
 fake = Faker()
@@ -89,7 +89,7 @@ def get_token(info):
             'password': info.get('password'),
             'grant_type': 'password'
             }
-    resp = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
+    resp = requests.post(AuthApiRoutes(url=True).TOKEN_CREATE, data=data)
     assert resp.status_code == HttpStatus.OK
     token = resp.json()['access_token']
     return token
