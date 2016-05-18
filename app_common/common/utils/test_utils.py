@@ -20,7 +20,7 @@ from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
 fake = Faker()
 
 
-def send_request(method, url, access_token, data=None, is_json=True, verify=True):
+def send_request(method, url, access_token, data=None, params=None, is_json=True, verify=True):
     """
     This is a generic method to send HTTP request. We can just pass our data/ payload
     and it will make it json and send it to target url with application/json as content-type
@@ -41,7 +41,7 @@ def send_request(method, url, access_token, data=None, is_json=True, verify=True
     if is_json:
         headers['Content-Type'] = 'application/json'
         data = json.dumps(data)
-    return request_method(url, data=data, headers=headers, verify=verify)
+    return request_method(url, data=data, params=params, headers=headers, verify=verify)
 
 
 def response_info(response):
@@ -284,6 +284,21 @@ def get_candidate(candidate_id, token, expected_status=(200,)):
     :rtype dict
     """
     response = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, token)
+    print('common_tests : get_candidate: ', response.content)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+def search_candidates(candidate_ids, token, expected_status=(200,)):
+    """
+    This method sends a GET request to Candidate Search API to get candidates from CloudSearch.
+    :type candidate_ids: list[int | long]
+    :type token: str
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
+    params = {'candidate_ids': candidate_ids}
+    response = send_request('get', CandidateApiUrl.CANDIDATE_SEARCH_URI, token, data=params)
     print('common_tests : get_candidate: ', response.content)
     assert response.status_code in expected_status
     return response.json()

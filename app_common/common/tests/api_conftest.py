@@ -18,9 +18,10 @@ from redo import retry
 from requests import codes
 
 from ..test_config_manager import load_test_config
-from ..utils.test_utils import (create_candidate, get_candidate, delete_candidate,
+from ..utils.test_utils import (create_candidate, delete_candidate,
                                 create_smartlist, delete_smartlist, delete_talent_pool,
-                                create_talent_pools, create_talent_pipelines, get_smartlist_candidates, get_talent_pool)
+                                create_talent_pools, create_talent_pipelines, get_smartlist_candidates, get_talent_pool,
+                                search_candidates)
 
 
 test_config = load_test_config()
@@ -98,9 +99,9 @@ def candidate_first(request, talent_pool, token_first, user_first):
     """
     response = create_candidate(talent_pool['id'], token_first)
     candidate_id = response['candidates'][0]['id']
-    response = retry(get_candidate, max_sleeptime=60, retry_exceptions=(AssertionError,),
-                     args=(candidate_id, token_first))
-    candidate = response['candidate']
+    response = retry(search_candidates, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                     args=([candidate_id], token_first))
+    candidate = response['candidates'][0]
 
     def tear_down():
         delete_candidate(candidate_id, token_first,
@@ -121,9 +122,9 @@ def candidate_same_domain(request, user_same_domain, talent_pool, token_same_dom
     """
     response = create_candidate(talent_pool['id'], token_same_domain)
     candidate_id = response['candidates'][0]['id']
-    response = retry(get_candidate, max_sleeptime=60, retry_exceptions=(AssertionError,),
-                     args=(candidate_id, token_same_domain))
-    candidate = response['candidate']
+    response = retry(search_candidates, max_sleeptime=60, retry_exceptions=(AssertionError,),
+                     args=([candidate_id], token_same_domain))
+    candidate = response['candidates'][0]
 
     def tear_down():
         delete_candidate(candidate_id, token_same_domain,
@@ -144,9 +145,9 @@ def candidate_second(request, token_second, talent_pool_second, user_second):
     """
     response = create_candidate(talent_pool_second['id'], token_second)
     candidate_id = response['candidates'][0]['id']
-    response = retry(get_candidate, max_sleeptime=60, sleeptime=3, retry_exceptions=(AssertionError,),
-                     args=(candidate_id, token_second))
-    candidate = response['candidate']
+    response = retry(search_candidates, sleeptime=3, retry_exceptions=(AssertionError,),
+                     args=([candidate_id], token_second))
+    candidate = response['candidates'][0]
 
     def tear_down():
         delete_candidate(candidate_id, token_second,
