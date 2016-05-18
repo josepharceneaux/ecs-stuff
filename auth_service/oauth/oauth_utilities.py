@@ -1,5 +1,6 @@
 __author__ = 'ufarooqi'
 
+from dateutil.parser import parse
 from flask_oauthlib.provider import OAuth2RequestValidator
 from werkzeug.security import check_password_hash
 from auth_service.common.models.user import *
@@ -51,13 +52,15 @@ def save_token_v2(user):
     expires_at = expires.strftime("%d/%m/%Y %H:%M:%S")
 
     secret_key_id = str(uuid.uuid4())[0:10]
-    secret_key = os.urandom(24)
+    secret_key = os.urandom(24).encode('hex')
     redis_store.setex(secret_key_id, secret_key, app.config['JWT_OAUTH_EXPIRATION'])
     s = Serializer(secret_key, expires_in=app.config['JWT_OAUTH_EXPIRATION'])
 
     payload = dict(
-        user_id=user.id
+        user_id=user.id,
+        created_at=current_date_time.isoformat()
     )
+
     return jsonify(dict(
         user_id=user.id,
         access_token=s.dumps(payload),
@@ -68,7 +71,7 @@ def save_token_v2(user):
     ))
 
 
-def verify_jw_token(secret_key_id, token):
+def verify_jwt(secret_key_id, token):
     """
     This method will authenticate/verify a json web token
     :param secret_key_id: Redis key of SECRET_KEY
@@ -78,19 +81,37 @@ def verify_jw_token(secret_key_id, token):
     s = Serializer(redis_store.get(secret_key_id) or '')
     try:
         data = s.loads(token)
-    except SignatureExpired:
-        raise UnauthorizedError(error_message="Your Token has been expired", error_code=12)
     except BadSignature:
-        raise UnauthorizedError(error_message="Your Token is not found", error_code=11)
+        raise UnauthorizedError("Your Token is not found", error_code=11)
+    except SignatureExpired:
+            raise UnauthorizedError("Your Token has expired", error_code=12)
     except Exception:
-        raise UnauthorizedError(error_message="Your Token is not found", error_code=11)
+        raise UnauthorizedError("Your Token is not found", error_code=11)
 
     if data['user_id']:
         user = User.query.get(data['user_id'])
         if user:
-            return user
+            if user.password_reset_time <= parse(data['created_at']):
+                return user
+            else:
+                redis_store.delete(secret_key_id)
+                raise UnauthorizedError("Your token has expired due to password reset", error_code=12)
 
     raise UnauthorizedError(error_message="Your Token is invalid", error_code=13)
+
+
+def authenticate_request():
+    """
+    This method will authenticate jwt in request headers
+    :return: None
+    """
+    try:
+        secret_key_id = request.headers['X-Talent-Secret-Key-ID']
+        json_web_token = request.headers['Authorization'].replace('Bearer', '').strip()
+    except KeyError:
+        raise UnauthorizedError("`X-Talent-Secret-Key-ID` or `Authorization` Header is missing")
+
+    return secret_key_id, verify_jwt(secret_key_id, json_web_token)
 
 
 def load_client(client_id):

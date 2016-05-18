@@ -158,6 +158,7 @@ class AuthApiV2(object):
     VERSION = 'v2'
     RELATIVE_VERSION = _get_api_relative_version(VERSION)
     TOKEN_CREATE = RELATIVE_VERSION % 'oauth2/token'
+    TOKEN_REFRESH = RELATIVE_VERSION % 'oauth2/refresh'
     TOKEN_REVOKE = RELATIVE_VERSION % 'oauth2/revoke'
     AUTHORIZE = RELATIVE_VERSION % 'oauth2/authorize'
 
@@ -182,6 +183,7 @@ class AuthApiUrlV2(object):
                                GTApis.AUTH_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     TOKEN_CREATE = HOST_NAME % AuthApiV2.TOKEN_CREATE
+    TOKEN_REFRESH = HOST_NAME % AuthApiV2.TOKEN_REFRESH
     TOKEN_REVOKE = HOST_NAME % AuthApiV2.TOKEN_REVOKE
     AUTHORIZE = HOST_NAME % AuthApiV2.AUTHORIZE
 

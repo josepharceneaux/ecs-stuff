@@ -119,6 +119,13 @@ class AuthServiceTestsContext:
             access_token = json_response.get('access_token', '') if json_response else ''
             secret_key_id = json_response.get('secret_key_id', '') if json_response else ''
             return access_token, secret_key_id, response.status_code
+        elif action == 'refresh':
+            headers = {'Authorization': 'Bearer %s' % self.access_token, 'X-Talent-Secret-Key-ID': self.secret_key_id}
+            response = requests.post(AuthApiUrlV2.TOKEN_REFRESH, headers=headers)
+            json_response = json.loads(response.text)
+            access_token = json_response.get('access_token', '') if response else ''
+            secret_key_id = json_response.get('secret_key_id', '') if response else ''
+            return access_token, secret_key_id, response.status_code
         else:
             headers = {'Authorization': 'Bearer %s' % self.access_token, 'X-Talent-Secret-Key-ID': self.secret_key_id}
             response = requests.post(AuthApiUrlV2.TOKEN_REVOKE, headers=headers)
@@ -156,6 +163,20 @@ def test_auth_service_v2(app_context):
     assert status_code == 200
 
     # Authorize Bearer Token
+    status_code, authorized_user_id = app_context.authorize_token_v2()
+    assert status_code == 200
+
+    # Refresh Bearer Token
+    access_token, secret_key_id, status_code = app_context.token_handler_v2(action='refresh')
+    assert status_code == 200
+
+    # Authorize Old Bearer Token
+    status_code, authorized_user_id = app_context.authorize_token_v2()
+    assert status_code == 401
+
+    # Authorize new bearer token
+    app_context.access_token = access_token
+    app_context.secret_key_id = secret_key_id
     status_code, authorized_user_id = app_context.authorize_token_v2()
     assert status_code == 200
 
