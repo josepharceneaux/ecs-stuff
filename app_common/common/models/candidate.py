@@ -726,6 +726,14 @@ class ReferenceWebAddress(db.Model):
     def __repr__(self):
         return "<ReferenceWebAddress (url=' %r')>" % self.url
 
+    @classmethod
+    def get_by_reference_id(cls, reference_id):
+        """
+        :type reference_id:  int|long
+        :rtype: ReferenceWebAddress
+        """
+        return cls.query.filter_by(reference_id=reference_id).first()
+
 
 class CandidateAssociation(db.Model):
     __tablename__ = 'candidate_association'
