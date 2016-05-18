@@ -7,9 +7,13 @@
 
   SidebarController.$inject = ['$state', 'routerHelper'];
   /* @ngInject */
+  //Get all states except login and build NavRoutes.
   function SidebarController($state, routerHelper) {
     var vm = this;
     var states = routerHelper.getStates();
+
+    removeLoginState(states);
+
     vm.isCurrent = isCurrent;
 
     activate();
@@ -30,6 +34,16 @@
       }
       var menuName = route.title;
       return $state.current.title.substr(0, menuName.length) === menuName ? 'current' : '';
+    }
+
+    function removeLoginState(states){
+
+        for(var i = states.length -1; i >= 0 ; i--){
+            if(states[i].name == 'login'){
+              states.splice(i, 1);
+            break;
+          }
+      }
     }
   }
 })();

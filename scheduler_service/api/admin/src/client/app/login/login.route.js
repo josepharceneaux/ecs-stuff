@@ -2,8 +2,8 @@
   'use strict';
 
   angular
-    .module('app.login');
-    //.run(appRun);
+    .module('app.login')
+    .run(appRun);
 
   //appRun.$inject = ['routerHelper'];
   /* @ngInject */
@@ -21,7 +21,6 @@
           controller: 'LoginController',
           controllerAs: 'vm',
           title: 'Login',
-          auth_required: false,
           settings: {
             nav: 2,
             content: '<i class="fa fa-lock"></i> Login'

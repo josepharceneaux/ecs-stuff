@@ -5,10 +5,10 @@
     .module('app.dashboard')
     .controller('DashboardController', DashboardController);
 
-  DashboardController.$inject = ['$q', '$location', 'logger', 'usertoken'];
+  DashboardController.$inject = ['$q', '$state', '$location', 'logger', 'UserToken'];
 
   /* @ngInject */
-  function DashboardController($q, $location, logger, usertoken) {
+  function DashboardController($q, $state, $location, logger, UserToken) {
 
     var vm = this;
     vm.news = {
@@ -19,11 +19,7 @@
     vm.people = [];
     vm.title = 'Dashboard';
 
-    if(!usertoken.is_authenticated){
-      logger.info('User not authenticated. Navigating to Login page.');
-      $location.path('/user/login');
-      //$location.url('/user/login');
-    }
+    UserToken.goToLogin($state);
 
     activate();
 

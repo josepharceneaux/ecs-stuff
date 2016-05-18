@@ -3,7 +3,8 @@
 
   angular.module('app.scheduler_admin', [
     'app.core',
-    'app.widgets'
+    'app.widgets',
+    'app.components'
   ]);
 
 })();
