@@ -129,8 +129,6 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
         domain_areas_of_interest = get_or_create_areas_of_interest(user.domain_id, include_child_aois=True)
 
-        logger.info("import CSV table: %s", table)
-
         candidate_ids, error_messages = [], []
         for row in table:
             first_name, middle_name, last_name, formatted_name, status_id,  = None, None, None, None, None
