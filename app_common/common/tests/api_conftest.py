@@ -36,7 +36,7 @@ def token_first():
 
 
 @pytest.fixture(scope='session')
-def token_same_domain(request):
+def token_same_domain():
     """
     Authentication token for user that belongs to same domain as user_first.
     """
@@ -44,7 +44,7 @@ def token_same_domain(request):
 
 
 @pytest.fixture(scope='session')
-def token_second(request):
+def token_second():
     """
      Authentication token for user_second.
     """
@@ -52,7 +52,7 @@ def token_second(request):
 
 
 @pytest.fixture(scope='session')
-def user_first(request, token_first):
+def user_first(token_first):
     """
     This fixture will be used to get user from UserService using id from config.
     :param request: request object

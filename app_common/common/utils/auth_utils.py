@@ -172,7 +172,7 @@ def refresh_token(access_token):
     if access_token and isinstance(access_token, basestring):
         token = Token.get_token(access_token=access_token)
         if not token:
-            raise InternalServerError('No matching token found for given token: %s' % access_token)
+            raise InternalServerError('No token object found for given access token: %s' % access_token)
     token = token if token else access_token
     if token and isinstance(token, Token):
         # Sends a refresh request to the Oauth2 server.
