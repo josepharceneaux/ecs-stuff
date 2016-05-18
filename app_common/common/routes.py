@@ -317,14 +317,14 @@ class CandidateApiWords(object):
     EDUCATIONS = "/educations"
     DEGREES = "/degrees"
     BULLETS = "/bullets"
-    EXPERIENCES = "/experiences"
+    EXPERIENCES = "/work_experiences"
     EMAILS = "/emails"
     MILITARY_SERVICES = "/military_services"
     PHONES = "/phones"
     PREFERRED_LOCATIONS = "/preferred_locations"
     SKILLS = "/skills"
     SOCIAL_NETWORKS = "/social_networks"
-    WORK_PREFERENCES = "/work_preference"
+    WORK_PREFERENCES = "/work_preferences"
     EDITS = "/edits"
     SEARCH = "/search"
     DOCUMENTS = "/documents"
@@ -405,7 +405,8 @@ class CandidateApi(object):
     SOCIAL_NETWORKS = _CANDIDATE_ID + CandidateApiWords.SOCIAL_NETWORKS
     SOCIAL_NETWORK = SOCIAL_NETWORKS + _INT_ID
 
-    WORK_PREFERENCE = _CANDIDATE_ID + CandidateApiWords.WORK_PREFERENCES + _INT_ID
+    WORK_PREFERENCES = _CANDIDATE_ID + CandidateApiWords.WORK_PREFERENCES
+    WORK_PREFERENCE = WORK_PREFERENCES + _INT_ID
     CANDIDATE_EDIT = CANDIDATE_ID + CandidateApiWords.EDITS
 
     CANDIDATE_SEARCH = CANDIDATES + CandidateApiWords.SEARCH
@@ -490,8 +491,8 @@ class CandidateApiUrl(object):
     SOCIAL_NETWORKS = CANDIDATE + CandidateApiWords.SOCIAL_NETWORKS
     SOCIAL_NETWORK = SOCIAL_NETWORKS + "/%s"
 
-    WORK_PREFERENCE = CANDIDATE + CandidateApiWords.WORK_PREFERENCES
-    WORK_PREFERENCE_ID = CANDIDATE + CandidateApiWords.WORK_PREFERENCES + "/%s"
+    WORK_PREFERENCES = CANDIDATE + CandidateApiWords.WORK_PREFERENCES
+    WORK_PREFERENCE_ID = WORK_PREFERENCES + "/%s"
     CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
     CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCE = CANDIDATE + CandidateApiWords.PREFERENCE

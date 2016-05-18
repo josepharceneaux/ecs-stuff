@@ -225,14 +225,14 @@ class GenerateCandidateData(object):
         return data
 
     @staticmethod
-    def phones(talent_pool_ids=None, candidate_id=None, phone_id=None, internationalize=False):
+    def phones(talent_pool_ids=None, candidate_id=None, phone_id=None, internationalize=False, extension=False):
         """
         :type talent_pool_ids:  list[int]
         :param internationalize:  If True, the phone number value will be internationalized, e.g. +14085067789
         :rtype:  dict[list]
         """
         # Generate phone number
-        value = generate_international_phone_number(fake.boolean()) if internationalize else sample_phone_number()
+        value = generate_international_phone_number(extension) if internationalize else sample_phone_number()
         data = {'candidates': [
             {
                 'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids},
