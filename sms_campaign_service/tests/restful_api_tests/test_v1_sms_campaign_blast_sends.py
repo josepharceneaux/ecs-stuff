@@ -52,6 +52,7 @@ class TestSmsCampaignBlastSends(object):
         This runs for both users
         1) Who created the campaign and 2) Some other user of same domain
         """
+        # TODO access_tokens_for_different_users_of_same_domain has one token or multiple? If one, then need to rename
         campaign, blast_ids = sent_campaign_and_blast_ids
         candidate_ids = candidate_ids_associated_with_campaign(campaign,
                                                                access_tokens_for_different_users_of_same_domain)

@@ -312,6 +312,9 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         Some other user of same domain tries to delete the sms-campaign created by some other user.
         It should get OK response.
         """
+        # TODO--just curious, do we've a test that tests deleting campaign of a user from some other domain?
+        # TODO--also can we kindly rename user_same_domain and sms_campaign_of_current_user. May be we can rename them to
+        # user_one_domain_d1 and user_two_domain_d1 and etc. Kindly also improve on headers_same_domain
         response = requests.delete(self.URL % sms_campaign_of_current_user['id'],
                                    headers=headers_same_domain)
         assert_campaign_delete(response, user_same_domain.id, sms_campaign_of_current_user['id'])
