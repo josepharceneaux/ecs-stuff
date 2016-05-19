@@ -514,11 +514,12 @@ class CampaignsTestsHelpers(object):
             raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
             db.session.commit()
             assert campaign.blasts[blast_index].sends == expected_count
-        raise_if_not_instance_of(access_token, basestring)
-        raise_if_not_instance_of(blast_url, basestring)
-        response = send_request('get', blast_url, access_token)
-        if response.ok:
-            assert response.json()['blast']['sends'] == expected_count
+        else:
+            raise_if_not_instance_of(access_token, basestring)
+            raise_if_not_instance_of(blast_url, basestring)
+            response = send_request('get', blast_url, access_token)
+            if response.ok:
+                assert response.json()['blast']['sends'] == expected_count
 
     @staticmethod
     def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=60,
