@@ -15,12 +15,13 @@ PROD_TD_SUFFIX = '-td'
 # Base of our namespace for several structures
 ECS_BASE_PATH = 'gettalent'
 
+
 def validate_http_status(request_name, response):
     """
     Validate that we got a good status on our request.
 
-    :param request_name: Caller name to put in error message.
-    :param response: The response to be validated.
+    :param str request_name: Caller name to put in error message.
+    :param json response: The response to be validated.
     :return: None.
     """
   
@@ -34,12 +35,13 @@ def validate_http_status(request_name, response):
         print "Error with {}. HTTP Status: {}".format(request_name, http_status)
         exit(1)
 
+
 def tag_exists_in_repo(repo_path, tag):
     """
     Search for an image with a specific tag in a docker repository.
 
-    :param repo_name: The path of the repository to search.
-    :param tag: The tag to search for.
+    :param str repo_name: The path of the repository to search.
+    :param str tag: The tag to search for.
     :rtype: bool
     """
 
@@ -47,7 +49,6 @@ def tag_exists_in_repo(repo_path, tag):
 
     response = ecr_client.list_images(repositoryName=repo_path)
     validate_http_status('list_images', response)
-    count = 0
     while True:
         image_ids = response['imageIds']
         for image in image_ids:
@@ -62,12 +63,13 @@ def tag_exists_in_repo(repo_path, tag):
 
     return False
 
+
 def image_exists_in_repo(service_name, image):
     """
     Search for an image with a specific tag in a docker repository.
 
-    :param service_name: The name of the repository to search.
-    :param image: The image and tag to search for.
+    :param str service_name: The name of the repository to search.
+    :param str image: The image and tag to search for.
     :rtype: bool
     """
 

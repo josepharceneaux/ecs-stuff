@@ -19,6 +19,12 @@ if args.tags:
 ECS_CLIENT = boto3.client('ecr')
 
 def describe_image(image):
+    """
+    Print information about an ECR image.
+
+    :param json image: JSON description of image.
+    """
+
     if 'imageTag' in image:
         if tags_only:
             print "{}".format(image['imageTag'])

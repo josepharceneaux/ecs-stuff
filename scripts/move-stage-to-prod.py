@@ -1,23 +1,24 @@
-'''
+"""
 Look for a service running on production and create a new task definition based upon that service's image
 in staging, but with the tag we are passed.
 
 Syntax: python move-stage-to-prod.py <service-name> <tag-name>
 
-'''
+"""
 
 import boto3
 import argparse
 
 import ecs_utils
 
+
 def get_task_definition(client, td_name):
-    '''
+    """
     Get a task definition by name.
 
-    :param client: The boto ECS client.
-    :td_name: The name of the task description.
-    '''
+    :param obj client: The boto ECS client.
+    :param str td_name: The name of the task description.
+    """
 
     try:
         # This returns the latest ACTIVE revision
@@ -29,15 +30,16 @@ def get_task_definition(client, td_name):
 
     return task_definition
 
+
 def copy_stage_values_to_prod(service, source_td, destination_td, tag):
-    '''
+    """
     Copy the docker image from source to destination, and add a tag.
 
-    :param service: Name of the service we're updating.
-    :param source_td: The task description from which to copy the image.
-    :param destination_td: The task description in which to place the image.
-    :param tag: The docker tag to use on the image.
-    '''
+    :param str service: Name of the service we're updating.
+    :param json source_td: The task description from which to copy the image.
+    :param json destination_td: The task description in which to place the image.
+    :param str tag: The docker tag to use on the image.
+    """
 
     source_container_defs = source_td['taskDefinition']['containerDefinitions']
     destination_container_defs = destination_td['taskDefinition']['containerDefinitions']
@@ -56,33 +58,36 @@ def copy_stage_values_to_prod(service, source_td, destination_td, tag):
         destination_definition['image'] = new_image
         index += 1
 
+
 def update_prod_task_definition(client, family_name, definitions):
-    '''
+    """
     Create a new revision of a task definition.
 
-    :param client: The boto ECS client.
-    :param family_name: The task name.
-    :param definitions: Container definitions (may only be one)
-    '''
+    :param obj client: The boto ECS client.
+    :param str family_name: The task name.
+    :param json definitions: Container definitions (may only be one)
+    """
 
     try:
         response = client.register_task_definition(family=family_name, containerDefinitions=definitions)
         ecs_utils.validate_http_status('update_prod_task_definition', response)
     except Exception as e:
-        print "Exception {} registering task definition for {}".format(e.message, service_svc)
+        print "Exception {} registering task definition for {}".format(e.message, family_name)
         exit(1)
 
     td = response['taskDefinition']
     print "Task definition for {} updated to revision {}.".format(td['family'], td['revision'])
     return td['taskDefinitionArn']
 
+
 def update_service(client, prod_service_name, new_td_arn):
-    '''
+    """
     Update production service to use a new task definition revision.
 
-    :param service: The getTalent service name.
-    :param tag: The tag to be used (as in a version tag).
-    '''
+    :param client obj: The boto client object.
+    :param str prod_service_name: The getTalent service name.
+    :param str new_td_arn: The AWS resource name for the task definition.
+    """
 
     try:
         response = client.describe_services(cluster=ecs_utils.PROD_CLUSTER_NAME, services=[ prod_service_name ])
@@ -103,13 +108,14 @@ def update_service(client, prod_service_name, new_td_arn):
 
     print "Successfully updated AWS service for {}".format(prod_service_name)
 
+
 def migrate_stage_image_to_prod(service, tag):
-    '''
+    """
     Update production to use the docker image currently in staging.
 
-    :param service: The getTalent service name.
-    :param tag: The tag to be used (as in a version tag).
-    '''
+    :param str service: The getTalent service name.
+    :param str tag: The tag to be used (as in a version tag).
+    """
 
     print "Migrating {} to production".format(service)
 
@@ -132,6 +138,7 @@ def migrate_stage_image_to_prod(service, tag):
     new_td_arn = update_prod_task_definition(client, prod_td_name, prod_td['taskDefinition']['containerDefinitions'])
     # update the service and restart it
     update_service(client, prod_service_name, new_td_arn)
+
 
 # Command line arguments
 SERVICE_NAME = 'service-name' # Service means getTalent micro service, not ECS service.
