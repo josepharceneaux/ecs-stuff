@@ -3,7 +3,7 @@
 # Push containers built by Jenkins to either staging or production
 echo "Pushing containers"
 
-eval $(aws ecr get-login --region us-east-1)
+eval "$(aws ecr get-login --region us-east-1)"
 
 # Skipping push-campaign-service
 FLASK_APPS="auth-service activity-service resume-parsing-service user-service candidate-service social-network-service candidate-pool-service spreadsheet-import-service scheduler-service sms-campaign-service email-campaign-service"
