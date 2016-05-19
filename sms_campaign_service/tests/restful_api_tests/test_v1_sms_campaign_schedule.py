@@ -206,18 +206,17 @@ class TestSmsCampaignScheduleHTTPPUT(object):
             self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_user_first['id'],
             access_token_first, data)
 
-    # TODO: Filed a JIRA for saad GET-1286
-    # def test_reschedule_campaign_with_other_user_of_same_domain(
-    #         self, access_token_same, scheduled_sms_campaign_of_user_first):
-    #     """
-    #     Campaign is scheduled one time. Here we try to re-schedule it periodically with valid data
-    #     with some other user of same domain. It should be re-scheduled.
-    #     """
-    #     data = generate_campaign_schedule_data()
-    #     data['frequency_id'] = Frequency.DAILY  # for Periodic job
-    #     CampaignsTestsHelpers.request_for_ok_response(
-    #         self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_user_first['id'],
-    #         access_token_same, data)
+    def test_reschedule_campaign_with_other_user_of_same_domain(
+            self, access_token_same, scheduled_sms_campaign_of_user_first):
+        """
+        Campaign is scheduled one time. Here we try to re-schedule it periodically with valid data
+        with some other user of same domain. It should be re-scheduled.
+        """
+        data = generate_campaign_schedule_data()
+        data['frequency_id'] = Frequency.DAILY  # for Periodic job
+        CampaignsTestsHelpers.request_for_ok_response(
+            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_user_first['id'],
+            access_token_same, data)
 
     def test_reschedule_campaign_with_invalid_token(self, sms_campaign_of_user_first):
         """

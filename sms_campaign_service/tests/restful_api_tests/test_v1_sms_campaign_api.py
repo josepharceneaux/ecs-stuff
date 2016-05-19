@@ -103,7 +103,7 @@ class TestSmsCampaignHTTPGet(object):
         assert_valid_campaign_get(campaigns[0], sorted_campaigns[0])
         assert_valid_campaign_get(campaigns[1], sorted_campaigns[1])
 
-    def test_get_all_campaigns_by_other_user_of_same_domain(self, headers_second_domain_d1,
+    def test_get_all_campaigns_by_other_user_of_same_domain(self, headers_same_domain,
                                                             sms_campaign_of_user_first,
                                                             sms_campaign_of_other_user_in_same_domain,
                                                             sms_campaign_with_no_candidate):
@@ -111,7 +111,7 @@ class TestSmsCampaignHTTPGet(object):
         Here other user of same domain tries to get all campaigns in its domain. It should result
         in OK response and count of campaigns should be 2 as 2 user have created campaign in its domain.
         """
-        response = requests.get(self.URL, headers=headers_second_domain_d1)
+        response = requests.get(self.URL, headers=headers_same_domain)
         campaigns = _sort_campaigns(_assert_campaign_count_and_fields(response, count=3,
                                                                       assert_fields=False))
         sorted_campaigns = _sort_campaigns([sms_campaign_of_other_user_in_same_domain,
@@ -315,14 +315,14 @@ class TestSmsCampaignHTTPPost(object):
         assert_campaign_creation(response, user_first.id, requests.codes.CREATED)
 
     def test_campaign_creation_with_other_user_of_same_domain(self, user_same_domain,
-                                                              headers_second_domain_d1,
+                                                              headers_same_domain,
                                                               campaign_valid_data):
         """
         Here some other user of same domain tries to create an sms-campaign.
         He should be able to create the campaign without any error.
         """
         response = requests.post(self.URL,
-                                 headers=headers_second_domain_d1,
+                                 headers=headers_same_domain,
                                  data=json.dumps(campaign_valid_data))
         assert_campaign_creation(response, user_same_domain.id, requests.codes.CREATED)
 
@@ -461,7 +461,7 @@ class TestSmsCampaignHTTPDelete(object):
                                    }))
         assert_campaign_delete(response, user_first.id, sms_campaign_of_user_first['id'])
 
-    def test_delete_campaign_of_some_other_user_in_same_domain(self, headers_second_domain_d1,
+    def test_delete_campaign_of_some_other_user_in_same_domain(self, headers_same_domain,
                                                                user_same_domain,
                                                                sms_campaign_of_user_first):
         """
@@ -469,7 +469,7 @@ class TestSmsCampaignHTTPDelete(object):
         Response should be OK.
         """
         response = requests.delete(self.URL,
-                                   headers=headers_second_domain_d1,
+                                   headers=headers_same_domain,
                                    data=json.dumps({
                                        'ids': [sms_campaign_of_user_first['id']]
                                    }))
