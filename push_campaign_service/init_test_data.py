@@ -38,7 +38,7 @@ if app.config[TalentConfigKeys.ENV_KEY] != TalentEnvs.DEV:
 def create_test_domain(names):
     ids = []
     for domain_name in names:
-        domain = Domain.query.filter_by(name=domain_name).one()
+        domain = Domain.query.filter_by(name=domain_name).first()
         if not domain:
             domain = Domain(name=domain_name, organization_id=1)
             Domain.save(domain)
@@ -53,7 +53,7 @@ def create_user_groups(group_names, domain_ids):
     for group_name, domain_id in zip(group_names, domain_ids):
         user_group = UserGroup.get_by_name(group_name)
         if not user_group:
-            user_group = UserGroup.add_groups({'name': group_name}, domain_id)[0]
+            user_group = UserGroup.add_groups([{'name': group_name}], domain_id)[0]
         logger.debug('User Group: %s', user_group.name)
         ids.append(user_group.id)
     return ids
@@ -116,13 +116,13 @@ group_names = ["test_group_first", "test_group_second"]
 group_ids = create_user_groups(group_names, domain_ids)
 
 # Create 3 users
-user_emails = ["test_email@test.com", "test_email_same_domain@test.com", "test_email_second@test.com"]
+user_emails = [("test_email@test.com", "test_email_same_domain@test.com"), ("test_email_second@test.com",)]
 user_data = zip(user_emails, domain_ids, group_ids)
 
-user_ids = []
 users = []
-for email, domain_id, group_id in user_data:
-    users.append(create_test_user(email, domain_id, group_id))
+for emails, domain_id, group_id in user_data:
+    for email in emails:
+        users.append(create_test_user(email, domain_id, group_id))
 user_ids = [user.id for user in users]
 
 # Add domain roles in db
@@ -141,6 +141,7 @@ for user_id in user_ids:
 # # Now write test config file
 CONFIG_FILE_NAME = "common_test.cfg"
 LOCAL_CONFIG_PATH = os.path.expanduser('~') + "/.talent/%s" % CONFIG_FILE_NAME
+user_emails = [email for emails in user_emails for email in emails]
 with open(LOCAL_CONFIG_PATH, mode='w+') as cfg:
     for user_id, email, order in zip(user_ids, user_emails, ['FIRST', 'SAME_DOMAIN', 'SECOND']):
         cfg.write('[USER_%s]\n' % order)
