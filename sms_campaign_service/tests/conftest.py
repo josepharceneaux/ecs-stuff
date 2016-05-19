@@ -91,7 +91,7 @@ def headers(access_token_first):
 
 
 @pytest.fixture()
-def headers_second_domain_d1(access_token_same):
+def headers_same_domain(access_token_same):
     """
     Returns the header (for other user of same domain) containing access token and content-type
     to make POST/DELETE requests.
@@ -101,7 +101,7 @@ def headers_second_domain_d1(access_token_same):
 
 
 @pytest.fixture(params=['user_first', 'user_same_domain'])
-def headers_for_different_users_of_same_domain(request, headers, headers_second_domain_d1,
+def headers_for_different_users_of_same_domain(request, headers, headers_same_domain,
                                                user_same_domain):
     """
     This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
@@ -111,12 +111,12 @@ def headers_for_different_users_of_same_domain(request, headers, headers_second_
         return headers
     elif request.param == 'user_same_domain':
         CampaignsTestsHelpers.assign_roles(user_same_domain)
-        return headers_second_domain_d1
+        return headers_same_domain
 
 
 @pytest.fixture(params=['user_first', 'user_same_domain'])
 def access_token_for_different_users_of_same_domain(request, access_token_first, access_token_same,
-                                                     user_same_domain):
+                                                    user_same_domain):
     """
     This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
     using their access_tokens.
@@ -226,7 +226,7 @@ def smartlist_with_two_candidates_in_other_domain(access_token_other, talent_pip
 
 @pytest.fixture()
 def sms_campaign_of_user_first(request, campaign_valid_data, talent_pipeline,
-                                 headers, smartlist_with_two_candidates, user_phone_1):
+                               headers, smartlist_with_two_candidates, user_phone_1):
     """
     This creates the SMS campaign for user_first using valid data.
     """
@@ -341,7 +341,7 @@ def sms_campaign_with_no_candidate(request, campaign_valid_data,
 
 @pytest.fixture()
 def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data,
-                                              user_same_domain, headers_second_domain_d1,
+                                              user_same_domain, headers_same_domain,
                                               user_phone_3,
                                               smartlist_with_two_candidates):
     """
@@ -351,7 +351,7 @@ def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data,
     smartlist_id, _ = smartlist_with_two_candidates
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data,
-                                                    headers_second_domain_d1,
+                                                    headers_same_domain,
                                                     user_same_domain.id)
 
     def fin():
@@ -460,7 +460,7 @@ def one_time_and_periodic(request, headers):
 
 @pytest.fixture()
 def scheduled_sms_campaign_of_user_first(request, user_first, headers,
-                                           sms_campaign_of_user_first):
+                                         sms_campaign_of_user_first):
     """
     This creates the SMS campaign for user_first using valid data.
     """

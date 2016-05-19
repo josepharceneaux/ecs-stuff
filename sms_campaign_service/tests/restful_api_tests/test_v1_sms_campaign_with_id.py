@@ -305,7 +305,7 @@ class TestSmsCampaignWithIdHTTPDelete(object):
                                    headers=headers)
         assert_campaign_delete(response, user_first.id, sms_campaign_of_user_first['id'])
 
-    def test_delete_campaign_with_other_user_of_same_domain(self, headers_second_domain_d1,
+    def test_delete_campaign_with_other_user_of_same_domain(self, headers_same_domain,
                                                             user_same_domain,
                                                             sms_campaign_of_user_first):
         """
@@ -313,7 +313,7 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         It should get OK response.
         """
         response = requests.delete(self.URL % sms_campaign_of_user_first['id'],
-                                   headers=headers_second_domain_d1)
+                                   headers=headers_same_domain)
         assert_campaign_delete(response, user_same_domain.id, sms_campaign_of_user_first['id'])
 
     def test_with_sms_campaign_in_other_domain(self, headers, sms_campaign_in_other_domain):
