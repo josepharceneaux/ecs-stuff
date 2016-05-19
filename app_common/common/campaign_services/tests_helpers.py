@@ -428,7 +428,7 @@ class CampaignsTestsHelpers(object):
         return response
 
     @staticmethod
-    def get_blasts(campaign, access_token=None, blasts_url=None, count=None):
+    def get_blasts(campaign, access_token=None, blasts_url=None):
         """
         This returns all the blasts associated with given campaign
         """
@@ -436,15 +436,13 @@ class CampaignsTestsHelpers(object):
             raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
             db.session.commit()
             blasts = campaign.blasts.all()
-            if count is not None:
-                assert len(blasts)
+            assert blasts
             return blasts
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(blasts_url, basestring)
         blasts_get_response = send_request('get', blasts_url, access_token)
-        blasts = blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
-        if count is not None:
-            assert len(blasts)
+        blasts =  blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
+        assert blasts
         return blasts
 
     @staticmethod
@@ -456,9 +454,9 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
-        attempts = int(timeout/3) + 1
-        return retry(CampaignsTestsHelpers.get_blasts, sleeptime=3,  attempts=attempts, sleepscale=1,
-                     retry_exceptions=(AssertionError,), args=(campaign, access_token, blasts_url, 1))
+        attempts = int(timeout / 3) + 1
+        return retry(CampaignsTestsHelpers.get_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
+                     args=(campaign, access_token, blasts_url), retry_exceptions=(AssertionError,))
 
     @staticmethod
     def get_blast_by_index_with_polling(campaign, blast_index=0, access_token=None,
@@ -471,9 +469,9 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
-        return poll(CampaignsTestsHelpers.get_blast_with_index, step=3,
-                    args=(campaign, blast_index, access_token, blasts_url), timeout=timeout)
-
+        attempts = int(timeout/3) + 1
+        return retry(CampaignsTestsHelpers.get_blast_with_index, sleeptime=3, attempts=attempts, sleepscale=1,
+                     args=(campaign, blast_index, access_token, blasts_url), retry_exceptions=(AssertionError,))
 
     @staticmethod
     def get_blast_with_index(campaign, blast_index=0, access_token=None, blasts_url=None):
@@ -488,14 +486,19 @@ class CampaignsTestsHelpers(object):
             try:
                 raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
                 db.session.commit()
-                return campaign.blasts[blast_index]
+                blasts = campaign.blasts[blast_index]
+                assert blasts
+                return blasts
+
             except IndexError:
                 return []
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(blasts_url, basestring)
         blasts_get_response = send_request('get', blasts_url, access_token)
         if blasts_get_response.ok:
-            return blasts_get_response.json()['blast']
+            blasts = blasts_get_response.json()['blast']
+            assert blasts
+            return blasts
 
     @staticmethod
     def verify_sends(campaign, expected_count, blast_index, blast_url=None, access_token=None):
@@ -510,12 +513,12 @@ class CampaignsTestsHelpers(object):
         if not blast_url:
             raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
             db.session.commit()
-            return campaign.blasts[blast_index].sends == expected_count
+            assert campaign.blasts[blast_index].sends == expected_count
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(blast_url, basestring)
         response = send_request('get', blast_url, access_token)
         if response.ok:
-            return response.json()['blast']['sends'] == expected_count
+            assert response.json()['blast']['sends'] == expected_count
 
     @staticmethod
     def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=60,
@@ -529,10 +532,10 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(abort_time_for_sends, int)
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blast_url, basestring) if blast_url else None
-        sends_verified = poll(CampaignsTestsHelpers.verify_sends, step=3,
-                              args=(campaign, expected_count, blast_index, blast_url, access_token),
-                              timeout=abort_time_for_sends)
-        assert sends_verified
+        attempts = int(abort_time_for_sends/3) + 1
+        retry(CampaignsTestsHelpers.verify_sends, sleeptime=3, attempts=attempts, sleepscale=1,
+              args=(campaign, expected_count, blast_index, blast_url, access_token),
+              retry_exceptions=(AssertionError,))
 
     @staticmethod
     def verify_blasts(campaign, access_token, blasts_url, expected_count):
@@ -547,12 +550,9 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         received_blasts_count = len(CampaignsTestsHelpers.get_blasts(campaign, access_token,
                                                                      blasts_url))
-        if received_blasts_count == expected_count:
-            return True
-        else:
-            print 'Expected Blasts:%s' % expected_count
-            print 'Received Blasts:%s' % received_blasts_count
-            return False
+        print 'Expected Blasts:%s' % expected_count
+        print 'Received Blasts:%s' % received_blasts_count
+        assert received_blasts_count == expected_count
 
     @staticmethod
     def assert_campaign_blasts(campaign, expected_count, access_token=None, blasts_url=None, timeout=10):
@@ -565,8 +565,10 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
-        poll(CampaignsTestsHelpers.verify_blasts, args=(campaign, access_token, blasts_url, expected_count),
-             step=3, timeout=timeout)
+        attempts = int(timeout/3) + 1
+        retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
+              args=(campaign, access_token, blasts_url, expected_count),
+              retry_exceptions=(AssertionError,))
 
     @staticmethod
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1,
@@ -606,13 +608,9 @@ class CampaignsTestsHelpers(object):
         smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
         smartlist_id = smartlists['smartlist']['id']
         if assert_candidates:
-            try:
-                retry(assert_smartlist_candidates, sleeptime=3,  attempts=20, sleepscale=1,
-                      retry_exceptions=(AssertionError,), args=(smartlist_id, len(candidate_ids),
-                                                                access_token))
-            except AssertionError:
-                raise InternalServerError('Candidates not found for smartlist(id:%s) '
-                                          'within given time range' % smartlist_id)
+            attempts = int(timeout/3) + 1
+            retry(assert_smartlist_candidates, sleeptime=3, attempts=attempts, sleepscale=1,
+                  args=(smartlist_id, len(candidate_ids), access_token), retry_exceptions=(AssertionError,))
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
         return smartlist_id, candidate_ids
 
