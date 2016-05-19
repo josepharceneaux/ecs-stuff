@@ -130,7 +130,7 @@ def migrate_stage_image_to_prod(service, tag):
     print "Prod:  {}".format(prod_td['taskDefinition']['containerDefinitions'][0]['image'])
 
     new_td_arn = update_prod_task_definition(client, prod_td_name, prod_td['taskDefinition']['containerDefinitions'])
-    update the service and restart it
+    # update the service and restart it
     update_service(client, prod_service_name, new_td_arn)
 
 # Command line arguments
