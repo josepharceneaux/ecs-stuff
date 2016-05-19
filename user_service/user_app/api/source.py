@@ -33,12 +33,11 @@ class DomainSourceResource(Resource):
         Function will create a source for domain
         Note: "description" is a required field
         Endpoint:  POST /v1/sources
-        Example:
-            >>> url = 'host/v1/sources'
+        :return:  {'source': {'id': int}}
+        Usage:
             >>> headers = {'Authorization': 'Bearer {access_token}', 'content-type': 'application/json'}
             >>> data = {"source": {"description": "job fair", "notes": "recruiter initials: ahb"}}
-            >>> requests.post(url=url, headers=headers, data=json.dumps(data))
-        :return:  {'source': {'id': int}}
+            >>> requests.post(url="host/v1/sources", headers=headers, data=json.dumps(data))
         """
         authed_user = request.user  # Authenticated user
         domain_id = authed_user.domain_id  # user's domain ID

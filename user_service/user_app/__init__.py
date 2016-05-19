@@ -6,6 +6,9 @@ from user_service.common.talent_config_manager import load_gettalent_config, Tal
 from user_service.common.utils.talent_ec2 import get_ec2_instance_id
 from user_service.common.talent_flask import TalentFlask
 from user_service.common.models.db import db
+from user_service.common.talent_api import TalentApi
+from user_service.common.routes import UserServiceApi
+from user_service.user_app.api.custom_fields import DomainCustomFieldsResource
 
 # TODO: clean up imports
 from user_service.common.talent_api import TalentApi
@@ -25,6 +28,10 @@ try:
     api = TalentApi(app)
     api.add_resource(DomainSourceResource, UserServiceApi.DOMAIN_SOURCES, endpoint='domain_sources')
     api.add_resource(DomainSourceResource, UserServiceApi.DOMAIN_SOURCE, endpoint='domain_source')
+
+    # Register & add resource for Domain Custom Field API
+    api = TalentApi(app)
+    api.add_resource(DomainCustomFieldsResource, UserServiceApi.DOMAIN_CUSTOM_FIELDS, endpoint='domain_custom_fields')
 
     from views import users_utilities_blueprint
     from api.users_v1 import users_blueprint
