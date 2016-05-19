@@ -16,13 +16,13 @@ PROD_TD_SUFFIX = '-td'
 ECS_BASE_PATH = 'gettalent'
 
 def validate_http_status(request_name, response):
-    '''
+    """
     Validate that we got a good status on our request.
 
     :param request_name: Caller name to put in error message.
     :param response: The response to be validated.
     :return: None.
-    '''
+    """
   
     try:
         http_status = response['ResponseMetadata']['HTTPStatusCode']
@@ -35,12 +35,13 @@ def validate_http_status(request_name, response):
         exit(1)
 
 def tag_exists_in_repo(repo_path, tag):
-    '''
+    """
     Search for an image with a specific tag in a docker repository.
 
     :param repo_name: The path of the repository to search.
-    :param image: The tag to search for.
-    '''
+    :param tag: The tag to search for.
+    :rtype: bool
+    """
 
     ecr_client = boto3.client('ecr')
 
@@ -62,12 +63,13 @@ def tag_exists_in_repo(repo_path, tag):
     return False
 
 def image_exists_in_repo(service_name, image):
-    '''
+    """
     Search for an image with a specific tag in a docker repository.
 
     :param service_name: The name of the repository to search.
     :param image: The image and tag to search for.
-    '''
+    :rtype: bool
+    """
 
     repo_path = ECS_BASE_PATH + "/" + service_name
     tag = image.split(':')[1]
