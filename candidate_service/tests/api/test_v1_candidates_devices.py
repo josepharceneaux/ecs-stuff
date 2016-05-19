@@ -211,4 +211,4 @@ def test_delete_candidate_device_with_invalid_candidate_id(access_token_first, a
     candidate_id = sys.maxint
     response = send_request('delete', CandidateApiUrl.DEVICES % candidate_id, access_token_first, data)
     logger.info(response.content)
-    assert response.status_code == requests.codes.FOUND
+    assert response.status_code == requests.codes.NOT_FOUND
