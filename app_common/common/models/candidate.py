@@ -248,9 +248,9 @@ class CandidatePhone(db.Model):
     @classmethod
     def search_phone_number_in_user_domain(cls, phone_value, current_user):
         """
-        This searches given candidate phone in logged-in user's domain and return list of all
+        This searches given candidate's phone in logged-in user's domain and return list of all
         CandidatePhone records
-        :param (str) phone_value: Candidate Phone value
+        :param (basestring) phone_value: Candidate Phone value
         :param (User) current_user: Logged-in user's object
         :rtype: list[CandidatePhone]
         """
@@ -261,7 +261,7 @@ class CandidatePhone(db.Model):
             raise InternalServerError('Invalid User object given')
         return cls.query.join(Candidate).\
             join(User, User.domain_id == current_user.domain_id).\
-            filter(and_(Candidate.user_id == User.id, cls.value == phone_value)).all()
+            filter(Candidate.user_id == User.id, cls.value == phone_value.strip()).all()
 
 
 class EmailLabel(db.Model):

@@ -44,7 +44,7 @@ class TestSmsCampaignBlastSends(object):
             campaign, SmsCampaignApiUrl.CAMPAIGN,
             self.URL % ('%s', blast_id), self.HTTP_METHOD, access_token_first)
 
-    def test_get_with_one_campaign_send(self, access_tokens_for_different_users_of_same_domain,
+    def test_get_with_one_campaign_send(self, access_token_for_different_users_of_same_domain,
                                         sent_campaign_and_blast_ids):
         """
         This is the case where we assume we have sent the campaign to 2 candidates.
@@ -54,14 +54,16 @@ class TestSmsCampaignBlastSends(object):
         """
         campaign, blast_ids = sent_campaign_and_blast_ids
         candidate_ids = candidate_ids_associated_with_campaign(campaign,
-                                                               access_tokens_for_different_users_of_same_domain)
+                                                               access_token_for_different_users_of_same_domain)
         expected_count = 2
         CampaignsTestsHelpers.assert_blast_sends(campaign, 2,
-                                                 blast_url=SmsCampaignApiUrl.BLAST % (campaign['id'], blast_ids[0]),
-                                                 access_token=access_tokens_for_different_users_of_same_domain)
+                                                 blast_url=SmsCampaignApiUrl.BLAST % (
+                                                 campaign['id'], blast_ids[0]),
+                                                 access_token=access_token_for_different_users_of_same_domain)
         response = requests.get(
             self.URL % (campaign['id'], blast_ids[0]),
-            headers=dict(Authorization='Bearer %s' % access_tokens_for_different_users_of_same_domain))
+            headers=dict(
+                Authorization='Bearer %s' % access_token_for_different_users_of_same_domain))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=expected_count)
         received_send_obj = response.json()[self.ENTITY]
         for send_obj in received_send_obj:
@@ -81,7 +83,7 @@ class TestSmsCampaignBlastSends(object):
             access_token_first)
 
     def test_get_with_blast_id_associated_with_campaign_in_other_domain(
-            self, access_token_first, sms_campaign_of_current_user,
+            self, access_token_first, sms_campaign_of_user_first,
             sent_campaign_and_blast_ids_in_other_domain):
         """
         Here we assume that requested blast_id is associated with such a campaign which
@@ -90,7 +92,7 @@ class TestSmsCampaignBlastSends(object):
         campaign_in_other_domain, blast_ids = sent_campaign_and_blast_ids_in_other_domain
         CampaignsTestsHelpers.request_for_forbidden_error(
             self.HTTP_METHOD,
-            self.URL % (sms_campaign_of_current_user['id'], blast_ids[0]),
+            self.URL % (sms_campaign_of_user_first['id'], blast_ids[0]),
             access_token_first)
 
     def test_get_with_invalid_campaign_id(self, access_token_first, sent_campaign_and_blast_ids):
@@ -103,13 +105,13 @@ class TestSmsCampaignBlastSends(object):
             access_token_first,
             None)
 
-    def test_get_with_invalid_blast_id(self, access_token_first, sms_campaign_of_current_user):
+    def test_get_with_invalid_blast_id(self, access_token_first, sms_campaign_of_user_first):
         """
         This is a test to get blasts of a campaign using non-existing blast_id
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(
             SmsCampaignBlast, self.HTTP_METHOD,
-            self.URL % (sms_campaign_of_current_user['id'], '%s'),
+            self.URL % (sms_campaign_of_user_first['id'], '%s'),
             access_token_first, None)
 
     def test_get_blast_sends_with_paginated_response(self, headers, access_token_first,
@@ -130,9 +132,11 @@ class TestSmsCampaignBlastSends(object):
                                                  abort_time_for_sends=60)
         response_blasts = requests.get(SmsCampaignApiUrl.BLASTS % sent_campaign['id'],
                                        headers=headers)
-        CampaignsTestsHelpers.assert_ok_response_and_counts(response_blasts, count=1, entity='blasts')
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response_blasts, count=1,
+                                                            entity='blasts')
         received_blast_obj = response_blasts.json()['blasts'][0]
-        assert_valid_blast_object(received_blast_obj, blast_ids[0], sent_campaign['id'], expected_sends)
+        assert_valid_blast_object(received_blast_obj, blast_ids[0], sent_campaign['id'],
+                                  expected_sends)
         blast_id = received_blast_obj['id']
         # URL to GET sends1
         url = self.URL % (sent_campaign['id'], blast_id)
@@ -146,7 +150,7 @@ class TestSmsCampaignBlastSends(object):
         for send_obj in received_send_objects:
             assert_valid_send_object(send_obj, blast_id, candidate_ids)
 
-        #  Test GET sends of SMS campaign with 4 results per_page using page = 2
+        # Test GET sends of SMS campaign with 4 results per_page using page = 2
         response = requests.get(url + '?per_page=4&page=2', headers=headers)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=4, entity=self.ENTITY)
         received_send_objects = response.json()[self.ENTITY]

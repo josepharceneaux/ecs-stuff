@@ -70,7 +70,8 @@ class TestSmsCampaignBlastReplies(object):
         received_reply_objects = response.json()[self.ENTITY]
         # Assert all reply objects have valid fields
         for received_reply_object in received_reply_objects:
-            assert_valid_reply_object(received_reply_object, blast_ids[0], [candidate_and_phone_1[1]['id']])
+            assert_valid_reply_object(received_reply_object, blast_ids[0],
+                                      [candidate_and_phone_1[1]['id']])
 
     def test_get_with_not_owned_campaign(self, access_token_first, sms_campaign_in_other_domain,
                                          sent_campaign_and_blast_ids):
@@ -85,7 +86,7 @@ class TestSmsCampaignBlastReplies(object):
             access_token_first)
 
     def test_get_with_blast_id_associated_with_not_owned_campaign(
-            self, access_token_first, sms_campaign_of_current_user,
+            self, access_token_first, sms_campaign_of_user_first,
             sent_campaign_and_blast_ids_in_other_domain):
         """
         Here we assume that requested blast_id is associated with such a campaign which does not
@@ -94,7 +95,7 @@ class TestSmsCampaignBlastReplies(object):
         _, blast_ids = sent_campaign_and_blast_ids_in_other_domain
         CampaignsTestsHelpers.request_for_forbidden_error(
             self.HTTP_METHOD,
-            self.URL % (sms_campaign_of_current_user['id'], blast_ids[0]),
+            self.URL % (sms_campaign_of_user_first['id'], blast_ids[0]),
             access_token_first)
 
     def test_get_with_invalid_campaign_id(self, access_token_first, sent_campaign_and_blast_ids):
@@ -107,18 +108,19 @@ class TestSmsCampaignBlastReplies(object):
             access_token_first,
             None)
 
-    def test_get_with_invalid_blast_id(self, access_token_first, sms_campaign_of_current_user):
+    def test_get_with_invalid_blast_id(self, access_token_first, sms_campaign_of_user_first):
         """
         This is a test to get blasts of a campaign using non-existing blast_id
         """
         CampaignsTestsHelpers.request_with_invalid_resource_id(
-            SmsCampaignBlast, self.HTTP_METHOD, self.URL % (sms_campaign_of_current_user['id'], '%s'),
+            SmsCampaignBlast, self.HTTP_METHOD, self.URL % (sms_campaign_of_user_first['id'], '%s'),
             access_token_first, None)
 
     def test_get_blast_replies_with_paginated_response(self,
-                                                 sent_campaign_and_blast_ids,
-                                                 create_bulk_replies, headers,
-                                                 candidate_and_phone_1, candidate_and_phone_2):
+                                                       sent_campaign_and_blast_ids,
+                                                       create_bulk_replies, headers,
+                                                       candidate_and_phone_1,
+                                                       candidate_and_phone_2):
         """
         Here we test the paginated response of GET call on endpoint
         /v1/sms-campaigns/:campaign_id/replies
@@ -135,7 +137,8 @@ class TestSmsCampaignBlastReplies(object):
         CampaignsTestsHelpers.assert_ok_response_and_counts(response_blasts,
                                                             count=1, entity='blasts')
         json_resp = response_blasts.json()['blasts'][0]
-        assert_valid_blast_object(json_resp, expected_blast_id, sent_campaign['id'], expected_sends=2, expected_replies=10)
+        assert_valid_blast_object(json_resp, expected_blast_id, sent_campaign['id'],
+                                  expected_sends=2, expected_replies=10)
 
         # URL to GET replies
         url = self.URL % (sent_campaign['id'], expected_blast_id)

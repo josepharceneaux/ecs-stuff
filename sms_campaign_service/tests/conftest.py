@@ -83,14 +83,15 @@ remove_any_user_phone_record_with_twilio_test_number()
 @pytest.fixture()
 def headers(access_token_first):
     """
-    Returns the header containing access token and content-type to make POST/DELETE requests.
+    Returns the header containing access token and content-type to make POST/DELETE requests
+    for "user_first".
     :param access_token_first: fixture to get access token of user
     """
     return _get_auth_header(access_token_first)
 
 
 @pytest.fixture()
-def headers_same_domain(access_token_same):
+def headers_second_domain_d1(access_token_same):
     """
     Returns the header (for other user of same domain) containing access token and content-type
     to make POST/DELETE requests.
@@ -100,7 +101,7 @@ def headers_same_domain(access_token_same):
 
 
 @pytest.fixture(params=['user_first', 'user_same_domain'])
-def headers_for_different_users_of_same_domain(request, headers, headers_same_domain,
+def headers_for_different_users_of_same_domain(request, headers, headers_second_domain_d1,
                                                user_same_domain):
     """
     This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
@@ -110,11 +111,11 @@ def headers_for_different_users_of_same_domain(request, headers, headers_same_do
         return headers
     elif request.param == 'user_same_domain':
         CampaignsTestsHelpers.assign_roles(user_same_domain)
-        return headers_same_domain
+        return headers_second_domain_d1
 
 
 @pytest.fixture(params=['user_first', 'user_same_domain'])
-def access_tokens_for_different_users_of_same_domain(request, access_token_first, access_token_same,
+def access_token_for_different_users_of_same_domain(request, access_token_first, access_token_same,
                                                      user_same_domain):
     """
     This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
@@ -224,7 +225,7 @@ def smartlist_with_two_candidates_in_other_domain(access_token_other, talent_pip
 
 
 @pytest.fixture()
-def sms_campaign_of_current_user(request, campaign_valid_data, talent_pipeline,
+def sms_campaign_of_user_first(request, campaign_valid_data, talent_pipeline,
                                  headers, smartlist_with_two_candidates, user_phone_1):
     """
     This creates the SMS campaign for user_first using valid data.
@@ -340,7 +341,7 @@ def sms_campaign_with_no_candidate(request, campaign_valid_data,
 
 @pytest.fixture()
 def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data,
-                                              user_same_domain, headers_same_domain,
+                                              user_same_domain, headers_second_domain_d1,
                                               user_phone_3,
                                               smartlist_with_two_candidates):
     """
@@ -350,7 +351,7 @@ def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data,
     smartlist_id, _ = smartlist_with_two_candidates
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data,
-                                                    headers_same_domain,
+                                                    headers_second_domain_d1,
                                                     user_same_domain.id)
 
     def fin():
@@ -458,12 +459,12 @@ def one_time_and_periodic(request, headers):
 
 
 @pytest.fixture()
-def scheduled_sms_campaign_of_current_user(request, user_first, headers,
-                                           sms_campaign_of_current_user):
+def scheduled_sms_campaign_of_user_first(request, user_first, headers,
+                                           sms_campaign_of_user_first):
     """
     This creates the SMS campaign for user_first using valid data.
     """
-    campaign = _get_scheduled_campaign(user_first, sms_campaign_of_current_user, headers)
+    campaign = _get_scheduled_campaign(user_first, sms_campaign_of_user_first, headers)
 
     def delete_scheduled_task():
         _unschedule_campaign(campaign, headers)
@@ -549,7 +550,7 @@ def candidate_and_phone_2(request, sent_campaign_and_blast_ids, access_token_fir
 @pytest.fixture()
 def candidate_phone_2(request, candidate_second):
     """
-    This associates sample_smartlist with the sms_campaign_of_current_user
+    This associates sample_smartlist with the sms_campaign_of_user_first
     :param candidate_second: fixture to create candidate
     """
     candidate_phone = _create_candidate_mobile_phone(candidate_second, fake.phone_number())
@@ -582,7 +583,7 @@ def candidate_in_other_domain(request, user_from_diff_domain):
 @pytest.fixture()
 def candidate_phone_in_other_domain(request, candidate_in_other_domain):
     """
-    This associates sample_smartlist with the sms_campaign_of_current_user
+    This associates sample_smartlist with the sms_campaign_of_user_first
     """
     candidate_phone = _create_candidate_mobile_phone(candidate_in_other_domain, fake.phone_number())
 
@@ -640,16 +641,16 @@ def users_with_same_phone(request, user_first, user_same_domain):
 
 
 @pytest.fixture()
-def sent_campaign(access_token_first, sms_campaign_of_current_user):
+def sent_campaign(access_token_first, sms_campaign_of_user_first):
     """
     This function serves the sending part of SMS campaign.
     This sends campaign to two candidates.
     """
     response_post = CampaignsTestsHelpers.send_campaign(
-        SmsCampaignApiUrl.SEND, sms_campaign_of_current_user,
+        SmsCampaignApiUrl.SEND, sms_campaign_of_user_first,
         access_token_first, SmsCampaignApiUrl.BLASTS)
-    assert_api_send_response(sms_campaign_of_current_user, response_post, requests.codes.OK)
-    return sms_campaign_of_current_user
+    assert_api_send_response(sms_campaign_of_user_first, response_post, requests.codes.OK)
+    return sms_campaign_of_user_first
 
 
 @pytest.fixture()
@@ -859,7 +860,7 @@ def _delete_campaign(sms_campaign, headers):
     try:
         campaign_id = sms_campaign.id if hasattr(sms_campaign, 'id') else sms_campaign['id']
         response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % campaign_id, headers=headers)
-        assert_campaign_delete(response, user_first.id, sms_campaign_of_current_user['id'])
+        assert_campaign_delete(response, user_first.id, sms_campaign_of_user_first['id'])
     except Exception:  # campaign may have been deleted in case of DELETE request
         pass
 

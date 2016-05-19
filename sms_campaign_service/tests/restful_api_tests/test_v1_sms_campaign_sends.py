@@ -23,19 +23,20 @@ class TestSmsCampaignSends(object):
     HTTP_METHOD = 'get'
     ENTITY = 'sends'
 
-    def test_get_with_invalid_token(self, sms_campaign_of_current_user):
+    def test_get_with_invalid_token(self, sms_campaign_of_user_first):
         """
          User auth token is invalid. It should result in Unauthorized error.
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
-                                                         self.URL % sms_campaign_of_current_user['id'])
+                                                         self.URL % sms_campaign_of_user_first[
+                                                             'id'])
 
-    def test_get_with_no_campaign_sent(self, access_token_first, sms_campaign_of_current_user):
+    def test_get_with_no_campaign_sent(self, access_token_first, sms_campaign_of_user_first):
         """
         Here we are assuming that SMS campaign has not been sent to any of candidates,
         So no blast should be saved for the campaign. Sends count should be 0.
         """
-        response = requests.get(self.URL % sms_campaign_of_current_user['id'],
+        response = requests.get(self.URL % sms_campaign_of_user_first['id'],
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response)
 
@@ -45,7 +46,7 @@ class TestSmsCampaignSends(object):
         Here we are assuming that SMS campaign has been sent but no candidate was associated with
         the associated smartlists. So, sends count should be 0.
 
-        This uses fixture "sms_campaign_of_current_user" to create an SMS campaign and
+        This uses fixture "sms_campaign_of_user_first" to create an SMS campaign and
         "create_sms_campaign_blast" to create an entry in database table "sms_campaign_blast",
         and then gets the "sends" of that campaign.
         """
@@ -53,35 +54,36 @@ class TestSmsCampaignSends(object):
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response)
 
-    def test_get_with_deleted_campaign(self, access_token_first, sms_campaign_of_current_user):
+    def test_get_with_deleted_campaign(self, access_token_first, sms_campaign_of_user_first):
         """
         It first deletes a campaign from database and try to get its sends.
         It should result in ResourceNotFound error.
         """
-        CampaignsTestsHelpers.request_after_deleting_campaign(sms_campaign_of_current_user,
+        CampaignsTestsHelpers.request_after_deleting_campaign(sms_campaign_of_user_first,
                                                               SmsCampaignApiUrl.CAMPAIGN,
                                                               self.URL, self.HTTP_METHOD,
                                                               access_token_first)
 
     def test_get_with_valid_token_and_two_sends(self,
-                                                access_tokens_for_different_users_of_same_domain,
+                                                access_token_for_different_users_of_same_domain,
                                                 sent_campaign_and_blast_ids):
         """
         This is the case where we assume we have sent the campaign to 2 candidates. We are
         using fixtures to create campaign blast and campaign sends.
-        This uses fixture "sms_campaign_of_current_user" to create an SMS campaign and
+        This uses fixture "sms_campaign_of_user_first" to create an SMS campaign and
         "create_sms_campaign_sends" to create an entry in database table "sms_campaign_sends",
         and then gets the "sends" of that campaign. Sends count should be 2.
 
         This runs for both users
         1) Who created the campaign and 2) Some other user of same domain
         """
-        access_token = access_tokens_for_different_users_of_same_domain
+        access_token = access_token_for_different_users_of_same_domain
         campaign, blast_ids = sent_campaign_and_blast_ids
         candidate_ids = candidate_ids_associated_with_campaign(campaign, access_token)
         CampaignsTestsHelpers.assert_blast_sends(campaign, 2,
-                                                 blast_url=SmsCampaignApiUrl.BLAST % (campaign['id'],
-                                                                                      blast_ids[0]),
+                                                 blast_url=SmsCampaignApiUrl.BLAST % (
+                                                     campaign['id'],
+                                                     blast_ids[0]),
                                                  access_token=access_token)
         response = requests.get(self.URL % campaign['id'],
                                 headers=dict(Authorization='Bearer %s' % access_token))
@@ -96,7 +98,8 @@ class TestSmsCampaignSends(object):
         some other user. It should result in Forbidden error.
         """
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
-                                                          self.URL % sms_campaign_in_other_domain['id'],
+                                                          self.URL % sms_campaign_in_other_domain[
+                                                              'id'],
                                                           access_token_first)
 
     def test_get_with_invalid_campaign_id(self, access_token_first):
@@ -123,15 +126,17 @@ class TestSmsCampaignSends(object):
         CampaignsTestsHelpers.assert_blast_sends(sent_campaign, expected_sends,
                                                  blast_url=SmsCampaignApiUrl.BLAST
                                                            % (sent_campaign['id'], blast_ids[0]),
-                                                 access_token=access_token_first,
-                                                 abort_time_for_sends=60)
+                                                 access_token=access_token_first)
         # GET blasts of campaign, sends should be 10
-        response_blasts = requests.get(SmsCampaignApiUrl.BLASTS % sent_campaign['id'], headers=headers)
+        response_blasts = requests.get(SmsCampaignApiUrl.BLASTS % sent_campaign['id'],
+                                       headers=headers)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response_blasts,
                                                             count=1, entity='blasts')
-        CampaignsTestsHelpers.assert_ok_response_and_counts(response_blasts, count=1, entity='blasts')
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response_blasts, count=1,
+                                                            entity='blasts')
         received_blast_obj = response_blasts.json()['blasts'][0]
-        assert_valid_blast_object(received_blast_obj, blast_ids[0], sent_campaign['id'], expected_sends)
+        assert_valid_blast_object(received_blast_obj, blast_ids[0], sent_campaign['id'],
+                                  expected_sends)
 
         blast_id = received_blast_obj['id']
 
