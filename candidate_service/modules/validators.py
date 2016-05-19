@@ -28,8 +28,6 @@ from candidate_service.common.utils.validators import format_phone_number
 # Json schema validation
 from jsonschema import validate, ValidationError, FormatChecker
 
-SPECIAL_CHARS = r'+-!(){}[]^"~*?\:'
-
 
 def get_json_if_exist(_request):
     """ Function will ensure data's content-type is JSON, and it isn't empty
@@ -218,15 +216,6 @@ def validate_fields(key, value):
     return fields
 
 
-def format_query(query):
-    """
-    This method will escape special characters in query and enclose it with double quotes
-    :param query: Query Strinf
-    :return:
-    """
-    return ''.join(map(lambda char: '\%s' % char if char in SPECIAL_CHARS else char, query))
-
-
 def convert_date(key, value):
     """
     Convert the given date into cloudsearch's desired format and return.
@@ -245,7 +234,7 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "sort_by": 'sorting',
     "limit": 'digit',
     "page": 'string_list',
-    "query": 'query',
+    "query": '',
     # Facets
     "date_from": 'date_range',
     "date_to": 'date_range',
@@ -352,8 +341,6 @@ def validate_and_format_data(request_data):
             request_vars[key] = validate_fields(key, value)
         if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
             request_vars[key] = convert_date(key, value)
-        if SEARCH_INPUT_AND_VALIDATIONS[key] == "query":
-            request_vars[key] = format_query(value)
         # Custom fields. Add custom fields to request_vars.
         if key.startswith('cf-'):
             request_vars[key] = value
