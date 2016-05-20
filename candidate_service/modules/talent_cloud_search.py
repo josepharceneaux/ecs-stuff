@@ -715,7 +715,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     filter_query = "(and %s %s %s)" % (filter_query, domain_filter, talent_pool_filter)
 
-    params = dict(query=search_query, sort=sort, size=search_limit, query_parser='lucene', options={'fields': QUERY_OPTIONS})
+    params = dict(query=search_query, sort=sort, size=search_limit, query_parser='lucene', query_options={'fields': QUERY_OPTIONS})
     if offset:
         params['start'] = offset
     else:
