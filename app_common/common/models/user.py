@@ -42,6 +42,7 @@ class User(db.Model):
     last_name = db.Column('lastName', db.String(255))
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.utcnow)
     updated_time = db.Column('updatedTime', db.DateTime, default=datetime.datetime.utcnow)
+    password_reset_time = db.Column('passwordResetTime', db.DateTime, default=datetime.datetime.utcnow)
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.Id', ondelete='CASCADE'))
     last_read_datetime = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
@@ -94,7 +95,7 @@ class User(db.Model):
             request.user = None
             return
 
-        raise UnauthorizedError(error_message="User with id=%s doesn't exist in database" % data['user_id'])
+        raise UnauthorizedError(error_message="User %s doesn't exist in database" % data['user_id'])
 
     def is_authenticated(self):
         return True

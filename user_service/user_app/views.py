@@ -3,6 +3,7 @@ __author__ = 'ufarooqi'
 import random
 import string
 from . import app
+from datetime import datetime
 from flask import request, Blueprint
 from user_service.common.models.user import User
 from user_service.common.redis_cache import redis_store
@@ -63,6 +64,9 @@ def update_password():
 
     # Change user's password & clear out all user's access tokens
     request.user.password = gettalent_generate_password_hash(new_password)
+    request.user.password_reset_time = datetime.utcnow()
+
+    db.session.commit()
 
     # Delete all existing tokens for logged-in user
     tokens = Token.query.filter_by(user_id=request.user.id).all()
@@ -146,6 +150,7 @@ def reset_password(token):
 
         user.reset_password_key = ''
         user.password = gettalent_generate_password_hash(password)
+        user.password_reset_time = datetime.utcnow()
         db.session.commit()
         return '', 204
 

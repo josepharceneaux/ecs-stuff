@@ -283,17 +283,28 @@ def parse_candidate_skills(bg_skills_xml_list):
     :param bs4.element.Tag bg_skills_xml_list:
     :return list output: List of dicts containing skill data.
     """
+    skills_parsed = {}
     output = []
+
     for skill in bg_skills_xml_list:
         name = skill.get('name')
         skill_text = skill.text.strip()
-        # TODO months used doesnt appear to be a valid tag anymore.
-        # Should instead use start and end (count in days).
-        months_used = skill.get('experience', '').strip()
-        skill = dict(name=name or skill_text)
+        start_days = skill.get('start')
+        end_days = skill.get('end')
+        months_used = None
+        parsed_name = name or skill_text
+        processed_skill = {'name': parsed_name}
+
+        if start_days and end_days:
+            months_used = (int(end_days) - int(start_days)) / 30
+
         if months_used:
-            skill['months_used'] = int(months_used)
-        output.append(skill)
+            processed_skill['months_used'] = int(months_used)
+
+        if processed_skill['name'] not in skills_parsed:
+            output.append(processed_skill)
+            skills_parsed[processed_skill['name']] = True
+
     return output
 
 

@@ -1,6 +1,9 @@
 """
 This file contains Pipeline-restful-services
 """
+# Standard library
+import requests
+
 # Flask specific
 from flask import request
 from flask_restful import Resource
@@ -20,8 +23,7 @@ from candidate_service.common.models.user import DomainRole, User
 from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.talent_pools_pipelines import TalentPipeline
 
-from candidate_service.common.utils.test_utils import send_request
-from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.inter_service_calls.candidate_service_calls import search_candidates_from_params
 
 
 class CandidatePipelineResource(Resource):
@@ -32,7 +34,10 @@ class CandidatePipelineResource(Resource):
         """
         Function will return user's 5 most recently added Pipelines. One of the pipelines will
           include the specified candidate.
-        :return:
+        :rtype:  dict[list[dict]]
+        Usage:
+            >>> requests.get('host/v1/candidates/:candidate_id/pipelines')
+            <Response [200]>
         """
         # Authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']
@@ -44,27 +49,35 @@ class CandidatePipelineResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
-        # Get User-domain's five most recent talent pipelines in order of added time
+        # Maximum number of Talent Pipeline objects used for searching.
+        # This is to prevent client from waiting too long for a response
+        max_requests = 10
+
+        # Get User-domain's 10 most recent talent pipelines in order of added time
         talent_pipelines = TalentPipeline.query.join(User).filter(
-            User.domain_id == authed_user.domain_id).order_by(TalentPipeline.added_time.desc()).limit(5).all()
+            User.domain_id == authed_user.domain_id).order_by(
+            TalentPipeline.added_time.desc()).limit(max_requests).all()
 
         # Use Search API to retrieve candidate's domain-pipeline inclusion
-        smart_list_ids = ','.join(map(str, [talent_pipeline.id for talent_pipeline in talent_pipelines]))
-        url = CandidateApiUrl.CANDIDATE_SEARCH_URI + '?id={}&smart_list_ids={}'.format(candidate_id, smart_list_ids)
-        search_response = send_request('get', url, access_token=authed_user.token[0].access_token)
+        found_candidate_ids = []
+        access_token = authed_user.token[0].access_token
+        for count, talent_pipeline in enumerate(talent_pipelines, start=1):
+            search_response = search_candidates_from_params(talent_pipeline.search_params, access_token)
+            found_candidate_ids.extend(candidate['id'] for candidate in search_response['candidates'])
 
-        found_candidate_ids = [candidate['id'] for candidate in search_response.json()['candidates']]
-        if candidate_id not in found_candidate_ids:
-            return {'candidate_pipelines': []}
+            # Return if candidate_id is found in one of the Pipelines AND 5 or more requests have been made
+            if (unicode(candidate_id) in found_candidate_ids) and count >= 5:
+                break
 
-        else:
-            return [{
-                        'id': talent_pipeline.id,
-                        'candidate_id': Candidate.query.filter_by(user_id=talent_pipeline.user_id).first().id,
-                        'name': talent_pipeline.name,
-                        'description': talent_pipeline.description,
-                        'open_positions': talent_pipeline.positions,
-                        'datetime_needed': str(talent_pipeline.date_needed),
-                        'user_id': talent_pipeline.user_id,
-                        'added_datetime': str(talent_pipeline.added_time)
-                    } for talent_pipeline in talent_pipelines]
+        # Return only five pipelines if candidate is found in more than 5 domain pipelines
+        return {'candidate_pipelines': [
+            {
+                'id': talent_pipeline.id,
+                'candidate_id': Candidate.query.filter_by(user_id=talent_pipeline.user_id).first().id,
+                'name': talent_pipeline.name,
+                'description': talent_pipeline.description,
+                'open_positions': talent_pipeline.positions,
+                'datetime_needed': str(talent_pipeline.date_needed),
+                'user_id': talent_pipeline.user_id,
+                'added_datetime': str(talent_pipeline.added_time)
+            } for talent_pipeline in talent_pipelines]}

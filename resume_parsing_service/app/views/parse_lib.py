@@ -126,9 +126,7 @@ def parse_resume(file_obj, filename_str):
     if not file_ext.startswith("."):
         file_ext = ".{}".format(file_ext)
     if file_ext not in IMAGE_FORMATS and file_ext not in DOC_FORMATS:
-        logger.error(
-            'file_ext {} not in image_formats and file_ext not in doc_formats'.format(file_ext))
-        return dict(error='file_ext not in image_formats and file_ext not in doc_formats')
+        raise InvalidUsage('File ext \'{}\' not in accepted image or document formats'.format(file_ext))
     # Find out if the file is an image
     is_resume_image = False
     if file_ext in IMAGE_FORMATS:

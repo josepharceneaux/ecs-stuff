@@ -17,7 +17,7 @@ try:
     from candidate_service.candidate_app.api.v1_candidates import (
         CandidateResource, CandidateAddressResource, CandidateAreaOfInterestResource,
         CandidateEducationResource, CandidateEducationDegreeResource, CandidateEducationDegreeBulletResource,
-        CandidateExperienceResource, CandidateExperienceBulletResource, CandidateWorkPreferenceResource,
+        CandidateWorkExperienceResource, CandidateWorkExperienceBulletResource, CandidateWorkPreferenceResource,
         CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
         CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
@@ -122,107 +122,50 @@ try:
     )
 
     # ****** CandidateExperienceResource ******
-    api.add_resource(
-        CandidateExperienceResource,
-        CandidateApi.EXPERIENCES,
-        endpoint='candidate_experience_1'
-    )
-    api.add_resource(
-        CandidateExperienceResource,
-        CandidateApi.EXPERIENCE,
-        endpoint='candidate_experience_2'
-    )
+    api.add_resource(CandidateWorkExperienceResource, CandidateApi.EXPERIENCES, endpoint='candidate_experience_1')
+    api.add_resource(CandidateWorkExperienceResource, CandidateApi.EXPERIENCE, endpoint='candidate_experience_2')
 
     # ****** CandidateExperienceBulletResource ******
-    api.add_resource(
-        CandidateExperienceBulletResource,
-        CandidateApi.EXPERIENCE_BULLETS,
-        endpoint='candidate_experience_bullet_1'
-    )
-    api.add_resource(
-        CandidateExperienceBulletResource,
-        CandidateApi.EXPERIENCE_BULLET,
-        endpoint='candidate_experience_bullet_2'
-    )
+    api.add_resource(CandidateWorkExperienceBulletResource, CandidateApi.EXPERIENCE_BULLETS,
+                     endpoint='candidate_experience_bullet_1')
+    api.add_resource(CandidateWorkExperienceBulletResource, CandidateApi.EXPERIENCE_BULLET,
+                     endpoint='candidate_experience_bullet_2')
 
     # ****** CandidateEmailResource ******
-    api.add_resource(
-        CandidateEmailResource,
-        CandidateApi.EMAILS,
-        endpoint='candidate_email_1'
-    )
-    api.add_resource(
-        CandidateEmailResource,
-        CandidateApi.EMAIL,
-        endpoint='candidate_email_2'
-    )
+    api.add_resource(CandidateEmailResource, CandidateApi.EMAILS,endpoint='candidate_email_1')
+    api.add_resource(CandidateEmailResource, CandidateApi.EMAIL, endpoint='candidate_email_2')
 
     # ****** CandidateMilitaryServiceResource ******
-    api.add_resource(
-        CandidateMilitaryServiceResource,
-        CandidateApi.MILITARY_SERVICES,
-        endpoint='candidate_military_service_1'
-    )
-    api.add_resource(
-        CandidateMilitaryServiceResource,
-        CandidateApi.MILITARY_SERVICE,
-        endpoint='candidate_military_service_2'
-    )
+    api.add_resource(CandidateMilitaryServiceResource, CandidateApi.MILITARY_SERVICES,
+                     endpoint='candidate_military_service_1')
+    api.add_resource(CandidateMilitaryServiceResource, CandidateApi.MILITARY_SERVICE,
+                     endpoint='candidate_military_service_2')
 
     # ****** CandidatePhoneResource ******
-    api.add_resource(
-        CandidatePhoneResource,
-        CandidateApi.PHONES,
-        endpoint='candidate_phone_1'
-    )
-    api.add_resource(
-        CandidatePhoneResource,
-        CandidateApi.PHONE,
-        endpoint='candidate_phone_2'
-    )
+    api.add_resource(CandidatePhoneResource, CandidateApi.PHONES, endpoint='candidate_phone_1')
+    api.add_resource(CandidatePhoneResource, CandidateApi.PHONE, endpoint='candidate_phone_2')
 
     # ****** CandidatePreferredLocationResource ******
-    api.add_resource(
-        CandidatePreferredLocationResource,
-        CandidateApi.PREFERRED_LOCATIONS,
-        endpoint='candidate_preferred_location_1'
-    )
-    api.add_resource(
-        CandidatePreferredLocationResource,
-        CandidateApi.PREFERRED_LOCATION,
-        endpoint='candidate_preferred_location_2'
-    )
+    api.add_resource(CandidatePreferredLocationResource, CandidateApi.PREFERRED_LOCATIONS,
+                     endpoint='candidate_preferred_location_1')
+    api.add_resource(CandidatePreferredLocationResource, CandidateApi.PREFERRED_LOCATION,
+                     endpoint='candidate_preferred_location_2')
 
     # ****** CandidateSkillResource ******
-    api.add_resource(
-        CandidateSkillResource,
-        CandidateApi.SKILLS,
-        endpoint='candidate_skill_1'
-    )
-    api.add_resource(
-        CandidateSkillResource,
-        CandidateApi.SKILL,
-        endpoint='candidate_skill_2'
-    )
+    api.add_resource(CandidateSkillResource, CandidateApi.SKILLS, endpoint='candidate_skill_1')
+    api.add_resource(CandidateSkillResource, CandidateApi.SKILL, endpoint='candidate_skill_2')
 
     # ****** CandidateSocialNetworkResource ******
-    api.add_resource(
-        CandidateSocialNetworkResource,
-        CandidateApi.SOCIAL_NETWORKS,
-        endpoint='candidate_social_networks_1'
-    )
-    api.add_resource(
-        CandidateSocialNetworkResource,
-        CandidateApi.SOCIAL_NETWORK,
-        endpoint='candidate_social_networks_2'
-    )
+    api.add_resource(CandidateSocialNetworkResource, CandidateApi.SOCIAL_NETWORKS,
+                     endpoint='candidate_social_networks_1')
+    api.add_resource(CandidateSocialNetworkResource, CandidateApi.SOCIAL_NETWORK,
+                     endpoint='candidate_social_networks_2')
 
     # ****** CandidateWorkPreferenceResource ******
-    api.add_resource(
-        CandidateWorkPreferenceResource,
-        '/v1/candidates/<int:candidate_id>/work_preference',
-        endpoint='candidate_work_preference'
-    )
+    api.add_resource(CandidateWorkPreferenceResource, CandidateApi.WORK_PREFERENCES,
+                     endpoint='candidate_work_preferences')
+    api.add_resource(CandidateWorkPreferenceResource, CandidateApi.WORK_PREFERENCE,
+                     endpoint='candidate_work_preference')
 
     # ****** CandidateEditResource ******
     api.add_resource(CandidateEditResource, '/v1/candidates/<int:id>/edits', endpoint='candidate_edit')
@@ -231,10 +174,7 @@ try:
     api.add_resource(CandidateViewResource, CandidateApi.CANDIDATE_VIEWS, endpoint='candidate_views')
 
     # ****** CandidateDeviceResource ******
-    api.add_resource(
-        CandidateDeviceResource, CandidateApi.DEVICES,
-        endpoint='candidate_devices'
-    )
+    api.add_resource(CandidateDeviceResource, CandidateApi.DEVICES, endpoint='candidate_devices')
 
     # ****** CandidatePhotosResource ******
     api.add_resource(CandidatePhotosResource, CandidateApi.PHOTOS, endpoint='candidate_photos')

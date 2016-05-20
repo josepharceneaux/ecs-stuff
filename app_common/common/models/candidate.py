@@ -170,7 +170,7 @@ class CandidateSource(db.Model):
     notes = db.Column('Notes', db.String(500))
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
-    added_datetime = db.Column(db.TIMESTAMP)
+    added_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # Relationships
     candidates = relationship('Candidate', backref='candidate_source')
