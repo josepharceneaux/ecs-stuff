@@ -18,11 +18,11 @@ from common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from common.models.user import Domain, DomainRole, User, UserScopedRoles, UserGroup, Token, Client
 
 Roles = DomainRole.Roles
-roles = [Roles.CAN_ADD_USER_ROLES, Roles.CAN_DELETE_USER_ROLES, Roles.CAN_ADD_USERS,
+roles = (Roles.CAN_ADD_USER_ROLES, Roles.CAN_DELETE_USER_ROLES, Roles.CAN_ADD_USERS,
          Roles.CAN_GET_USERS, Roles.CAN_DELETE_USERS, Roles.CAN_ADD_TALENT_POOLS, Roles.CAN_GET_TALENT_POOLS,
          Roles.CAN_DELETE_TALENT_POOLS, Roles.CAN_ADD_TALENT_POOLS_TO_GROUP, Roles.CAN_ADD_CANDIDATES,
          Roles.CAN_GET_CANDIDATES, Roles.CAN_DELETE_CANDIDATES, Roles.CAN_ADD_TALENT_PIPELINE_SMART_LISTS,
-         Roles.CAN_DELETE_TALENT_PIPELINE_SMART_LISTS, Roles.CAN_ADD_TALENT_PIPELINES]
+         Roles.CAN_DELETE_TALENT_PIPELINE_SMART_LISTS, Roles.CAN_ADD_TALENT_PIPELINES)
 
 CLIENT_ID = 'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z'
 CLIENT_SECRET = 'DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj1Z'

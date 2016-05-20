@@ -1,8 +1,9 @@
 """
 This module contains utility methods will be used in API based tests.
 """
-# builtin imports
-import json, uuid
+# Standard imports
+import json
+import uuid
 from datetime import datetime, timedelta
 
 # 3rd party imports
@@ -29,6 +30,7 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
     :param url: target url
     :param access_token: authentication token, token can be empty, None or invalid
     :param data: payload data for request
+    :param params: query params
     :param is_json: a flag to determine, whether we need to dump given data or not.
             default value is true because most of the APIs are using json content-type.
     :param verify: set this to false 
