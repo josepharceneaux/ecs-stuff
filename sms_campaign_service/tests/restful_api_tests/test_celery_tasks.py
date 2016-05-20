@@ -58,6 +58,8 @@ class TestCeleryTasks(object):
     processing on Celery.
     """
 
+    EXPECTED_SENDS = 2
+
     @staticmethod
     def send_campaign(campaign, access_token):
         """
@@ -82,8 +84,8 @@ class TestCeleryTasks(object):
                                   'http://www.123.com or http://www.xyz.com')
         response_send = self.send_campaign(campaign, access_token_first)
         assert_api_send_response(campaign, response_send, codes.OK)
-        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id,
-                                                           access_token_first)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
+                                                           campaign_id, access_token_first)
 
     def test_campaign_send_with_two_candidates_with_one_phone(
             self, access_token_first, user_first, sms_campaign_with_one_valid_candidate):
@@ -95,8 +97,10 @@ class TestCeleryTasks(object):
                                            access_token_first)
         assert_api_send_response(sms_campaign_with_one_valid_candidate, response_send,
                                  codes.OK)
-        assert_on_blasts_sends_url_conversion_and_activity(
-            user_first.id, 1, sms_campaign_with_one_valid_candidate['id'], access_token_first)
+        expected_sends = 1
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, expected_sends,
+                                                           sms_campaign_with_one_valid_candidate['id'],
+                                                           access_token_first)
 
     def test_campaign_send_with_two_candidates_having_different_phones_one_link_in_text(
             self, access_token_first, user_first, sms_campaign_of_user_first):
@@ -108,8 +112,8 @@ class TestCeleryTasks(object):
         campaign_id = sms_campaign_of_user_first['id']
         response_send = self.send_campaign(sms_campaign_of_user_first, access_token_first)
         assert_api_send_response(sms_campaign_of_user_first, response_send, codes.OK)
-        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id,
-                                                           access_token_first)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
+                                                           campaign_id, access_token_first)
 
     def test_campaign_send_with_other_user_of_same_domain(self, access_token_same,
                                                           user_same_domain,
@@ -124,8 +128,8 @@ class TestCeleryTasks(object):
         campaign_id = sms_campaign_of_user_first['id']
         response_send = self.send_campaign(sms_campaign_of_user_first, access_token_same)
         assert_api_send_response(sms_campaign_of_user_first, response_send, codes.OK)
-        assert_on_blasts_sends_url_conversion_and_activity(user_same_domain.id, 2, campaign_id,
-                                                           access_token_same)
+        assert_on_blasts_sends_url_conversion_and_activity(user_same_domain.id, self.EXPECTED_SENDS,
+                                                           campaign_id, access_token_same)
 
     def test_campaign_send_with_two_candidates_with_different_phones_no_link_in_text(
             self, access_token_first, user_first, sms_campaign_of_user_first):
@@ -140,8 +144,8 @@ class TestCeleryTasks(object):
         campaign.update(body_text='Hi,all')
         response_send = self.send_campaign(sms_campaign_of_user_first, access_token_first)
         assert_api_send_response(campaign, response_send, codes.OK)
-        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id,
-                                                           access_token_first)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
+                                                           campaign_id, access_token_first)
 
     def test_campaign_send_with_multiple_smartlists(
             self, access_token_first, user_first, sms_campaign_with_two_smartlists):
@@ -154,8 +158,8 @@ class TestCeleryTasks(object):
         campaign_id = sms_campaign_with_two_smartlists['id']
         response_post = self.send_campaign(sms_campaign_with_two_smartlists, access_token_first)
         assert_api_send_response(sms_campaign_with_two_smartlists, response_post, codes.OK)
-        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id,
-                                                           access_token_first)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
+                                                           campaign_id, access_token_first)
 
     def test_campaign_send_with_same_candidate_in_multiple_smartlists(
             self, access_token_first, user_first,
@@ -171,9 +175,10 @@ class TestCeleryTasks(object):
         response_post = self.send_campaign(sms_campaign_with_same_candidate_in_multiple_smartlists,
                                            access_token_first)
         assert_api_send_response(sms_campaign_with_same_candidate_in_multiple_smartlists,
+
                                  response_post, codes.OK)
-        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id,
-                                                           access_token_first)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
+                                                           campaign_id, access_token_first)
 
 # TODO: Assigned a JIRA GET-1277 to saad for these
 # class TestCampaignSchedule(object):

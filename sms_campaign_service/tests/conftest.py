@@ -300,10 +300,11 @@ def sms_campaign_with_same_candidate_in_multiple_smartlists(request, campaign_va
                                                             headers):
     """
     This fixture creates an SMS campaign with two smartlists.
-    Smartlist 1 will have two candidates and smartlist 2 will have one candidates(which will be
+    Smartlist 1 will have two candidates and smartlist 2 will have one candidate (which will be
     same as one of the two candidates of smartlist 1).
     """
     smartlist_1_id, candidate_ids = smartlist_with_two_candidates
+    # Going to assign a candidate belonging to smartlist_1 to smartlist_2 so both will have same candidate
     candidate_ids_for_smartlist_2 = [candidate_ids[0]]
     smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
                                                                               talent_pipeline,
