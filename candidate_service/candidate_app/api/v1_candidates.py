@@ -913,15 +913,15 @@ class CandidateEducationDegreeBulletResource(Resource):
         return '', 204
 
 
-class CandidateExperienceResource(Resource):
+class CandidateWorkExperienceResource(Resource):
     decorators = [require_oauth()]
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
-        Endpoints:
-             i. DELETE /v1/candidates/:candidate_id/experiences
-            ii. DELETE /v1/candidates/:candidate_id/experiences/:id
+        Resources:
+             i. DELETE /v1/candidates/:candidate_id/work_experiences
+            ii. DELETE /v1/candidates/:candidate_id/work_experiences/:id
         Depending on the endpoint requested, function will delete all of Candidate's
         work_experiences or just a single one.
         """
@@ -929,17 +929,17 @@ class CandidateExperienceResource(Resource):
         authed_user = request.user
 
         # Get candidate_id and experience_id
-        candidate_id, experience_id = kwargs.get('candidate_id'), kwargs.get('id')
+        candidate_id, experience_id = kwargs['candidate_id'], kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if experience_id:  # Delete specified experience
-            experience = CandidateExperience.get_by_id(_id=experience_id)
+            experience = CandidateExperience.get_by_id(experience_id)
             if not experience:
                 raise NotFoundError('Candidate experience not found', custom_error.EXPERIENCE_NOT_FOUND)
 
@@ -963,7 +963,7 @@ class CandidateExperienceResource(Resource):
         return '', 204
 
 
-class CandidateExperienceBulletResource(Resource):
+class CandidateWorkExperienceBulletResource(Resource):
     decorators = [require_oauth()]
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
@@ -1311,7 +1311,9 @@ class CandidateWorkPreferenceResource(Resource):
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
-        Endpoint: DELETE /v1/candidates/:candidate_id/work_preference
+        Resource:
+             i. DELETE /v1/candidates/:candidate_id/work_preference
+            ii. DELETE /v1/candidates/:candidate_id/work_preference/:id
         Function will delete Candidate's work_preference
         """
         # Get authenticated user
@@ -1327,10 +1329,6 @@ class CandidateWorkPreferenceResource(Resource):
         work_preference = CandidateWorkPreference.get_by_candidate_id(candidate_id)
         if not work_preference:
             raise NotFoundError('Candidate does not have a work preference', custom_error.WORK_PREF_NOT_FOUND)
-
-        # CandidateWorkPreference must belong to Candidate
-        if work_preference.candidate_id != candidate_id:
-            raise ForbiddenError('Not authorized', custom_error.WORK_PREF_FORBIDDEN)
 
         db.session.delete(work_preference)
         db.session.commit()
@@ -1375,13 +1373,12 @@ class CandidateOpenWebResource(Resource):
         """
         # Get authenticated user
         authed_user = request.user
-        url = request.args.get('url')
-        email = request.args.get('email')
+        url, email, is_gt_candidate = request.args.get('url'), request.args.get('email'), None
+
         if url:
             is_gt_candidate, find_candidate = match_candidate_from_openweb(url, authed_user)
         elif email:
             is_gt_candidate, find_candidate = find_in_openweb_by_email(email)
-        candidate = None
 
         if is_gt_candidate:
             candidate = {'candidate': fetch_candidate_info(find_candidate)}

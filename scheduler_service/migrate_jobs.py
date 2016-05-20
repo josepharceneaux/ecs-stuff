@@ -15,6 +15,7 @@ from scheduler_service import redis_store, scheduler, logger
 
 
 def migrate_sched_jobs():
+    logger.info("Running migration script for scheduler service")
     jobs = scheduler.get_jobs()
 
     for job in jobs:
@@ -27,4 +28,6 @@ def migrate_sched_jobs():
             logger.error('Message: {0}, User_ID: {1}, Job_ID: {2}, Job_Name: {3}'
                          .format(ex.message, job.args[0] if job.args else None,
                                    job.id, job.name))
+
+    logger.info("Migrations completed.")
 

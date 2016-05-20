@@ -434,7 +434,7 @@ class ScheduleSmsCampaign(Resource):
         """
         # create object of class SmsCampaignBase
         sms_camp_obj = SmsCampaignBase(request.user.id, campaign_id)
-        # call method schedule() to schedule the campaign and get the task_id
+        # call method reschedule() to re-schedule the campaign and get the task_id
         task_id = sms_camp_obj.reschedule(request, campaign_id)
         if task_id:
             message = 'Campaign(id:%s) has been re-scheduled.' % campaign_id
