@@ -145,10 +145,10 @@ class AuthApiRoutes(object):
     It also returns Rest URLs of auth_service
 
     ** Usage **
-    >>> AuthApiRoutes().TOKEN_CREATE
+    >>> AuthApiRoutes(url=False).TOKEN_CREATE
     /v1/oauth2/token
 
-    >>> AuthApiRoutes(url=True).TOKEN_CREATE
+    >>> AuthApiRoutes().TOKEN_CREATE
     https://127.0.0.1:8001/v1/oauth2/token
     """
     VERSION = 'v1'
@@ -156,11 +156,36 @@ class AuthApiRoutes(object):
     HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME, GTApis.AUTH_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
 
-    def __init__(self, url=False):
+    def __init__(self, url=True):
         initial_str = self.HOST_NAME if url else '%s'
         self.TOKEN_CREATE = initial_str % self.RELATIVE_VERSION % 'oauth2/token'
         self.TOKEN_REVOKE = initial_str % self.RELATIVE_VERSION % 'oauth2/revoke'
         self.AUTHORIZE = initial_str % self.RELATIVE_VERSION % 'oauth2/authorize'
+
+
+class AuthApiV2(object):
+    """
+    API relative URLs for auth_service. e.g. /v1/oauth2/token
+    """
+    VERSION = 'v2'
+    RELATIVE_VERSION = _get_api_relative_version(VERSION)
+    TOKEN_CREATE = RELATIVE_VERSION % 'oauth2/token'
+    TOKEN_REFRESH = RELATIVE_VERSION % 'oauth2/refresh'
+    TOKEN_REVOKE = RELATIVE_VERSION % 'oauth2/revoke'
+    AUTHORIZE = RELATIVE_VERSION % 'oauth2/authorize'
+
+
+class AuthApiUrlV2(object):
+    """
+    Rest URLs of auth_service
+    """
+    HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME,
+                               GTApis.AUTH_SERVICE_PORT)
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+    TOKEN_CREATE = HOST_NAME % AuthApiV2.TOKEN_CREATE
+    TOKEN_REFRESH = HOST_NAME % AuthApiV2.TOKEN_REFRESH
+    TOKEN_REVOKE = HOST_NAME % AuthApiV2.TOKEN_REVOKE
+    AUTHORIZE = HOST_NAME % AuthApiV2.AUTHORIZE
 
 
 class ActivityApi(object):
@@ -292,14 +317,14 @@ class CandidateApiWords(object):
     EDUCATIONS = "/educations"
     DEGREES = "/degrees"
     BULLETS = "/bullets"
-    EXPERIENCES = "/experiences"
+    EXPERIENCES = "/work_experiences"
     EMAILS = "/emails"
     MILITARY_SERVICES = "/military_services"
     PHONES = "/phones"
     PREFERRED_LOCATIONS = "/preferred_locations"
     SKILLS = "/skills"
     SOCIAL_NETWORKS = "/social_networks"
-    WORK_PREFERENCES = "/work_preference"
+    WORK_PREFERENCES = "/work_preferences"
     EDITS = "/edits"
     SEARCH = "/search"
     DOCUMENTS = "/documents"
@@ -380,7 +405,8 @@ class CandidateApi(object):
     SOCIAL_NETWORKS = _CANDIDATE_ID + CandidateApiWords.SOCIAL_NETWORKS
     SOCIAL_NETWORK = SOCIAL_NETWORKS + _INT_ID
 
-    WORK_PREFERENCE = _CANDIDATE_ID + CandidateApiWords.WORK_PREFERENCES + _INT_ID
+    WORK_PREFERENCES = _CANDIDATE_ID + CandidateApiWords.WORK_PREFERENCES
+    WORK_PREFERENCE = WORK_PREFERENCES + _INT_ID
     CANDIDATE_EDIT = CANDIDATE_ID + CandidateApiWords.EDITS
 
     CANDIDATE_SEARCH = CANDIDATES + CandidateApiWords.SEARCH
@@ -465,8 +491,8 @@ class CandidateApiUrl(object):
     SOCIAL_NETWORKS = CANDIDATE + CandidateApiWords.SOCIAL_NETWORKS
     SOCIAL_NETWORK = SOCIAL_NETWORKS + "/%s"
 
-    WORK_PREFERENCE = CANDIDATE + CandidateApiWords.WORK_PREFERENCES
-    WORK_PREFERENCE_ID = CANDIDATE + CandidateApiWords.WORK_PREFERENCES + "/%s"
+    WORK_PREFERENCES = CANDIDATE + CandidateApiWords.WORK_PREFERENCES
+    WORK_PREFERENCE_ID = WORK_PREFERENCES + "/%s"
     CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
     CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCE = CANDIDATE + CandidateApiWords.PREFERENCE

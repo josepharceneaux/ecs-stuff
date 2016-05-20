@@ -89,7 +89,7 @@ def get_token(info):
             'password': info.get('password'),
             'grant_type': 'password'
             }
-    resp = requests.post(AuthApiRoutes(url=True).TOKEN_CREATE, data=data)
+    resp = requests.post(AuthApiRoutes().TOKEN_CREATE, data=data)
     assert resp.status_code == HttpStatus.OK
     token = resp.json()['access_token']
     return token

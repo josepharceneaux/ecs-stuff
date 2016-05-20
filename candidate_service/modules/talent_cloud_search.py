@@ -392,7 +392,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
                 if 'literal' in index_field_type:
                     if isinstance(field_name_to_sql_value[field_name], (list, set, tuple)):
-                        resume_text += ' '.join(field_name_to_sql_value[field_name])
+                        resume_text += ' ' + ' '.join(field_name_to_sql_value[field_name])
                     else:
                         resume_text += ' ' + field_name_to_sql_value[field_name]
 

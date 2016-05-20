@@ -43,7 +43,7 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
                     pass
 
             try:
-                response = requests.get(AuthApiRoutes(url=True).AUTHORIZE, headers={'Authorization': oauth_token})
+                response = requests.get(AuthApiRoutes().AUTHORIZE, headers={'Authorization': oauth_token})
             except Exception as e:
                 raise InternalServerError(error_message=e.message)
             if response.status_code == 429:
@@ -156,7 +156,7 @@ def refresh_expired_token(token, client_id, client_secret):
     # Sends a refresh request to the Oauth2 server.
     payload = {'grant_type': 'refresh_token', 'client_id': client_id,
                'client_secret': client_secret, 'refresh_token': token.refresh_token}
-    r = requests.post(AuthApiRoutes(url=True).TOKEN_CREATE, data=payload)
+    r = requests.post(AuthApiRoutes().TOKEN_CREATE, data=payload)
     # TODO: Add bad request handling.
     return json.loads(r.text)['access_token']
 
