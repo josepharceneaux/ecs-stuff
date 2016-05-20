@@ -39,6 +39,14 @@ class ReferenceEmail(db.Model):
     def __repr__(self):
         return "<ReferenceEmail (reference_id=' %r')>" % self.reference_id
 
+    @classmethod
+    def get_by_reference_id(cls, reference_id):
+        """
+        :type reference_id:  int|long
+        :rtype:  ReferenceEmail
+        """
+        return cls.query.filter_by(reference_id=reference_id).first()
+
 
 class ReferencePhone(db.Model):
     __tablename__ = 'reference_phone'
@@ -51,3 +59,11 @@ class ReferencePhone(db.Model):
 
     def __repr__(self):
         return "<ReferencePhone (reference_id=' %r')>" % self.reference_id
+
+    @classmethod
+    def get_by_reference_id(cls, reference_id):
+        """
+        :type reference_id:  int|long
+        :rtype:  ReferencePhone
+        """
+        return cls.query.filter_by(reference_id=reference_id).first()
