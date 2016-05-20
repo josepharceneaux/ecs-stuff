@@ -1,4 +1,3 @@
-import multiprocessing
 import math
 # import operator
 import os
@@ -251,7 +250,7 @@ def index_documents():
     conn.layer1.index_documents(_cloud_search_domain.name)
 
 
-def _build_candidate_documents(candidate_ids, response_queue, domain_id=None):
+def _build_candidate_documents(candidate_ids, domain_id=None):
     """
     Returns dicts like: {type="add", id="{candidate_id}", fields={dict of fields to values}}
 
@@ -417,7 +416,7 @@ def _build_candidate_documents(candidate_ids, response_queue, domain_id=None):
             action_dict['fields'] = field_name_to_sql_value
             action_dicts.append(action_dict)
 
-    response_queue.put(action_dicts)
+    return action_dicts
 
 
 @celery_app.task()
@@ -436,16 +435,7 @@ def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_cand
         logger.info("Uploading %s candidate documents. Generating action dicts...",
                     len(candidate_ids[i:i + max_number_of_candidate]))
         start_time = time.time()
-        response_queue = multiprocessing.Queue()
-        process = multiprocessing.Process(target=_build_candidate_documents, args=(
-            candidate_ids[i:i + max_number_of_candidate], response_queue, domain_id))
-        process.start()
-        process.join(60)
-        if process.is_alive():
-            process.terminate()
-            continue
-
-        action_dicts = response_queue.get()
+        action_dicts = _build_candidate_documents(candidate_ids[i:i + max_number_of_candidate], domain_id)
         logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
                     len(action_dicts))
         adds, deletes = _send_batch_request(action_dicts)
