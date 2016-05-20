@@ -418,8 +418,7 @@ class CampaignsTestsHelpers(object):
         campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
         send_url = url % campaign_id
         response = send_request('post', send_url, access_token)
-        print response.json()
-        assert response.ok
+        assert response.ok, response.text
         if blasts_url:
             blasts_url = blasts_url % campaign_id
         blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, access_token,
@@ -562,10 +561,10 @@ class CampaignsTestsHelpers(object):
              step=3, timeout=timeout)
 
     @staticmethod
-    def create_smartlist_with_candidate(access_token, talent_pipeline, count=1,
-                                        data=None, emails_list=False, create_phone=False,
-                                        assign_role=False, assert_candidates=True,
-                                        smartlist_name=fake.word(), candidate_ids=(), timeout=150):
+    def create_smartlist_with_candidate(access_token, talent_pipeline, count=1, data=None,
+                                        emails_list=False, create_phone=False, assign_role=False,
+                                        assert_candidates=True, smartlist_name=fake.word(),
+                                        candidate_ids=(), timeout=300):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
@@ -591,8 +590,8 @@ class CampaignsTestsHelpers(object):
         if not candidate_ids:
             candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                                  return_candidate_ids_only=True)
-        if assert_candidates:
-            time.sleep(10)  # TODO: Need to remove this and use polling instead
+        # if assert_candidates:
+        #     time.sleep(10)  # TODO: Need to remove this and use polling instead
         smartlist_data = {'name': smartlist_name,
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}
