@@ -8,6 +8,7 @@ import json
 from datetime import (datetime, timedelta)
 
 # Third Party
+from requests import codes
 from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm.exc import ObjectDeletedError
 
@@ -649,7 +650,7 @@ def sent_campaign(access_token_first, sms_campaign_of_user_first):
     response_post = CampaignsTestsHelpers.send_campaign(
         SmsCampaignApiUrl.SEND, sms_campaign_of_user_first,
         access_token_first, SmsCampaignApiUrl.BLASTS)
-    assert_api_send_response(sms_campaign_of_user_first, response_post, requests.codes.OK)
+    assert_api_send_response(sms_campaign_of_user_first, response_post, codes.OK)
     return sms_campaign_of_user_first
 
 
@@ -673,7 +674,7 @@ def sent_campaign_in_other_domain(access_token_other, sms_campaign_in_other_doma
     response_post = CampaignsTestsHelpers.send_campaign(
         SmsCampaignApiUrl.SEND, sms_campaign_in_other_domain,
         access_token_other, SmsCampaignApiUrl.BLASTS)
-    assert_api_send_response(sms_campaign_in_other_domain, response_post, requests.codes.OK)
+    assert_api_send_response(sms_campaign_in_other_domain, response_post, codes.OK)
     return sms_campaign_in_other_domain
 
 
@@ -787,7 +788,7 @@ def create_sms_campaign_via_api(campaign_data, headers, user_id):
     response = requests.post(SmsCampaignApiUrl.CAMPAIGNS,
                              headers=headers,
                              data=json.dumps(campaign_data))
-    campaign_id = assert_campaign_creation(response, user_id, requests.codes.CREATED)
+    campaign_id = assert_campaign_creation(response, user_id, codes.CREATED)
     response = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign_id,
                             headers=headers)
     assert response.status_code == 200, 'Response should be ok (200)'
