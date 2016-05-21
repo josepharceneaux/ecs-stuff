@@ -163,7 +163,7 @@ def _assert_search_results(domain_id, search_vars, candidate_ids, wait=True,
     # it's not worth waiting
     # so don't sleep as cloud_search is already updated
     if wait:
-        time.sleep(30)  # Wait for cloud_search to update
+        time.sleep(35)  # Wait for cloud_search to update
 
     response = search_candidates(domain_id=domain_id, request_vars=search_vars)
     resultant_candidate_ids = [long(candidate['id']) for candidate in response['candidates']]
