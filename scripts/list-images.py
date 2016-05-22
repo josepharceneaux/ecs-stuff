@@ -1,3 +1,11 @@
+"""
+List images in ECR repository.
+
+Usage: python list-images.py <service-name> [ --tags none | --tags only ]
+
+Optionally list images with no tags, list only images with tags, list all images.
+"""
+
 import boto3
 import argparse
 
