@@ -763,4 +763,4 @@ def test_reference_parsing():
     soup = bs4(REFERENCE_XML)
     references_list = soup.findAll('references')
     references = parse_candidate_reference(references_list)
-    assert references is not None
+    assert references == u'References\n\nDerek Framer - (408) 835-6219\nJamtry Jonas - (408) 923-7259\nJoaquín Rodrigo'

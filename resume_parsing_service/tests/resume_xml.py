@@ -1,5 +1,5 @@
 # coding=utf-8
-DOCX = """
+DOCX = u"""
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -576,7 +576,7 @@ Available upon request.
   </resdoc>
 """
 
-GET_642 = """
+GET_642 = u"""
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -1576,7 +1576,7 @@ Microsoft Certified Professional
   </resdoc>
 """
 
-GET_646 = """
+GET_646 = u"""
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -2154,7 +2154,7 @@ Photography, video games, underwater basket weaving, and long walks on the beach
   </resdoc>
 """
 
-PDF = """
+PDF = u"""
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -2661,7 +2661,7 @@ PDF = """
 
 """
 
-PDF_13 = """
+PDF_13 = u"""
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -3022,7 +3022,7 @@ PMI Certification Training
 
 """
 
-PDF_14 = """
+PDF_14 = u"""
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -3477,7 +3477,7 @@ jlchavez.ca   ·   203108 Oak Street   ·   Vancouver, BC. V6H 2L1   ·   604.60
   </resdoc>
 """
 
-GET_626a = """
+GET_626a = u"""
 <ResDoc>
 <resume canonversion="2" dateversion="2" iso8601="2015-12-16" present="735950" xml:space="preserve">Yetunde (Yeh-tun-day) Laniran
 <contact><address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.567589" lma="MT413890" lon="-122.642487" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><street>1602 NE Junior St.</street> * <city majorcity="portland">Portland</city>, <state abbrev="OR">Oregon</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.567589" lma="MT413890" lon="-122.642487" msa="38900: METROPOLITAN STATISTICAL AREA">97211</postalcode></address> * <email>ylaniran@gmail.com</email> * <phone area="503">503.333.0350</phone></contact>
@@ -3960,7 +3960,7 @@ Address:  <job end="728296" id="38" inferred-naics="611310" naics="611310" naics
 </ResDoc>
 """
 
-GET_626b = """<ResDoc>
+GET_626b = u"""<ResDoc>
 <resume canonversion="2" dateversion="2" iso8601="2015-12-16" present="735950" xml:space="preserve"><contact><name><givenname>Kate</givenname> <surname>Begonia</surname></name> <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.544044" lma="MT413890" lon="-122.639214" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><street>4014 NE Failing Street</street>, <city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.544044" lma="MT413890" lon="-122.639214" msa="38900: METROPOLITAN STATISTICAL AREA">97212</postalcode></address>       503.<phone>493.1548</phone>
 <email>k_begonia@yahoo.com</email></contact>
 
@@ -4194,7 +4194,7 @@ Report (<job end="727200" id="11" pos="10" span="1" start="726835"><daterange><s
 """
 
 
-GET_1301 = """
+GET_1301 = u"""
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ParseResumeResponse><Status>true</Status><StatusCode>OK</StatusCode><RequestId>c5ff8e0b-df6f-4b52-b8f5-7d65988d9472</RequestId><ResponseData><?xml version='1.0' encoding='iso-8859-1'?>
 <ResDoc>
@@ -4708,7 +4708,7 @@ Resume -</description></skills> <contact><name><givenname>Fred</givenname> <surn
 """
 
 
-REFERENCE_XML = """
+REFERENCE_XML = u"""
 <ResDoc>
 <resume canonversion="2" dateversion="2" iso8601="2016-05-20" present="736106" xml:space="preserve">          <summary>Objective: <objective>A senior level design engineer position specializing in the design of integrated circuits for switched mode power supply systems.</objective></summary>
 
@@ -4756,7 +4756,8 @@ Voltage mode buck dual channel synchronous controller. Phase locked loop based t
 <references>References
 
 Derek Framer - (408) 835-6219
-Jamtry Jonas - (408) 923-7259</references>
+Jamtry Jonas - (408) 923-7259
+Joaquín Rodrigo</references>
 </resume>
 
 <skillrollup version="1">
