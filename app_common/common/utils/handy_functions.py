@@ -418,16 +418,26 @@ def define_and_send_request(access_token, request, url, data=None):
                       data=json.dumps(data))
 
 
-def purge_dict(dictionary, strip=True):
+def purge_dict(dictionary, strip=True, remove_empty_strings_only=False):
     """
     Function will "remove" dict's keys with empty values
-    :param strip:  if True, it will strip each value
-    :type strip:  bool
+    :param strip: if True, it will strip each value
+    :type strip: bool
+    :type remove_empty_strings_only: bool
+    :param remove_empty_strings_only: if True, keys with None values will not be removed
     :type dictionary:  dict
     :rtype:  dict
     """
-    def clean(value): return value.strip() if isinstance(value, basestring) else value
-    if strip:
+
+    def clean(value):
+        return value.strip() if isinstance(value, basestring) else value
+
+    # strip all values & return all keys except keys with empty-string values
+    if remove_empty_strings_only:
+        return {k: clean(v) for k, v in dictionary.items() if (clean(v) or v is None)}
+    # strip all values & return keys with values that aren't None
+    elif strip and not remove_empty_strings_only:
         return {k: clean(v) for k, v in dictionary.items() if (v or clean(v))}
+    # return keys with values that aren't None
     else:
         return {k: v for k, v in dictionary.items() if (v or clean(v))}

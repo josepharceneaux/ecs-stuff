@@ -173,3 +173,16 @@ def get_country_code_from_name(country_name):
     except KeyError:
         return
     return country.alpha2
+
+
+def get_int_version(x):
+    """
+    Function will only return input if it's an integer convertible
+    :rtype:  int
+    """
+    try:
+        return int(float(x))
+    except ValueError:
+        pass
+    except TypeError:
+        pass
