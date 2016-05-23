@@ -16,7 +16,8 @@ Get Blast Sends: /v1/push-campaigns/:id/blasts/:id/sends [GET]
 import sys
 
 # 3rd party imports
-from requests import codes as HttpStatus
+from redo import retry
+from requests import codes
 
 # Application specific imports
 from push_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
@@ -40,7 +41,7 @@ class TestCampaignBlastSends(object):
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
         get_blast_sends(blast_id, campaign_id, 'invalid_token',
-                        expected_status=(HttpStatus.UNAUTHORIZED,))
+                        expected_status=(codes.UNAUTHORIZED,))
 
     def test_get_campaign_blast_sends_with_invalid_campaign_id(self, token_first, campaign_blast):
         """
@@ -51,7 +52,7 @@ class TestCampaignBlastSends(object):
         blast_id = campaign_blast['id']
         campaign_id = sys.maxint
         get_blast_sends(blast_id, campaign_id, token_first,
-                        expected_status=(HttpStatus.NOT_FOUND,))
+                        expected_status=(codes.NOT_FOUND,))
 
     def test_get_campaign_blast_sends_with_invalid_blast_id(self, token_first, campaign_in_db):
         """
@@ -62,9 +63,9 @@ class TestCampaignBlastSends(object):
         invalid_blast_id = sys.maxint
         campaign_id = campaign_in_db['id']
         get_blast_sends(invalid_blast_id, campaign_id, token_first,
-                        expected_status=(HttpStatus.NOT_FOUND,))
+                        expected_status=(codes.NOT_FOUND,))
 
-    def test_get_campaign_blast_sends(self, token_first, campaign_blast):
+    def test_get_campaign_blast_sends_with_valid_data(self, token_first, campaign_blast):
         """
         Try to get sends with a valid campaign and blast id and we hope that we will get
         200 (OK) response.
@@ -74,15 +75,15 @@ class TestCampaignBlastSends(object):
         # 200 case: Got Campaign Sends successfully
         blast_id = campaign_blast['id']
         campaign_id = campaign_blast['campaign_id']
-        response = get_blast_sends(blast_id, campaign_id, token_first,
-                                   expected_status=(HttpStatus.OK,))
+        response = retry(get_blast_sends, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
+                         args=(blast_id, campaign_id, token_first), kwargs={'count': 1})
         # Since each blast have one send, so total sends will be equal to number of blasts
         assert len(response['sends']) == 1
 
         # if page size is greater than maximum allowed page size, it will raise InvalidUsage exception
         per_page = MAX_PAGE_SIZE + 1
         get_blast_sends(blast_id, campaign_id, token_first, per_page=per_page,
-                        expected_status=(HttpStatus.BAD_REQUEST,))
+                        expected_status=(codes.BAD_REQUEST,))
 
     def test_get_campaign_blast_sends_with_user_from_same_domain(self, token_same_domain, campaign_blast):
         """
@@ -93,7 +94,7 @@ class TestCampaignBlastSends(object):
         blast_id = campaign_blast['id']
         campaign_id = campaign_blast['campaign_id']
         get_blast_sends(blast_id, campaign_id, token_same_domain,
-                        expected_status=(HttpStatus.OK,))
+                        expected_status=(codes.OK,))
 
     def test_get_campaign_blast_sends_with_user_from_diff_domain(self, token_second, campaign_blast):
         """
@@ -105,4 +106,4 @@ class TestCampaignBlastSends(object):
         blast_id = campaign_blast['id']
         campaign_id = campaign_blast['campaign_id']
         get_blast_sends(blast_id, campaign_id, token_second,
-                        expected_status=(HttpStatus.FORBIDDEN,))
+                        expected_status=(codes.FORBIDDEN,))

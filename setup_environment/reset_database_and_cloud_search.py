@@ -8,7 +8,7 @@ Run:
 python setup_environment/reset_database_and_cloud_search.py
 
 """
-
+from sqlalchemy import text
 from common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from common.talent_flask import TalentFlask
 # Flush redis-cache
@@ -71,6 +71,35 @@ db.session.connection().execute('SET FOREIGN_KEY_CHECKS = 1;')
 
 print 'DB reset is successful'
 
+print 'Generating initial test data'
+
+
+q = '''INSERT INTO domain (name,organizationId, is_disabled) VALUES ("test_domain_first",1, 0);
+INSERT INTO domain (name,organizationId, is_disabled) VALUES ("test_domain_second",1,0);
+INSERT INTO user_group (name, DomainId) VALUES ("test_group_first", 1), ("test_group_second", 2);
+INSERT INTO user (email, password, domainId, userGroupId, is_disabled)
+VALUES ("test_email@test.com", "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6", 1, 1, 0);
+INSERT INTO user (email, password, domainId, userGroupId, is_disabled)
+VALUES ("test_email_same_domain@test.com", "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6", 1, 1, 0);
+INSERT INTO user (email, password, domainId, userGroupId, is_disabled)
+VALUES ("test_email_second@test.com", "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6", 2, 2, 0);
+INSERT INTO client (client_id, client_secret, client_name)
+VALUES ("KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z", "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj1Z", "test_client");
+INSERT INTO token VALUES (1,'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z',1,'Bearer','uTl6zNUdoNATwwUg0GOuSFvyrtyCCW','N1tLeTlP7LZUt3QILZyQw957s38AKB','2017-03-11 08:44:18',''),
+(2,'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z',2,'Bearer','9ery8pVOxTOvQU0oJsENRek4lj6ZT6','oRojE4Gu4KY29TXO11yh1AcZLGjOhM','2017-03-25 12:29:49',''),
+(3,'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z',3,'Bearer','iM0WU5y76laIJph5LS1jidKcdjWk4a','JdRrBdcm9N7cfhjjcUUIRWGU7UVBuy','2017-03-27 00:40:30','');
+INSERT INTO domain_role (role_name) VALUES ("CAN_ADD_USER_ROLES"),("CAN_DELETE_USER_ROLES"), ("CAN_ADD_USERS"),
+("CAN_GET_USERS"),("CAN_DELETE_USERS"),("CAN_ADD_TALENT_POOLS"),("CAN_GET_TALENT_POOLS"),("CAN_DELETE_TALENT_POOLS"),("CAN_ADD_TALENT_POOLS_TO_GROUP"),("CAN_ADD_CANDIDATES"),("CAN_GET_CANDIDATES"),
+("CAN_DELETE_CANDIDATES"),("CAN_ADD_TALENT_PIPELINE_SMART_LISTS"), ("CAN_DELETE_TALENT_PIPELINE_SMART_LISTS"), ("CAN_ADD_TALENT_PIPELINES");
+INSERT INTO user_scoped_roles (UserId, RoleId) select 1, id from domain_role;
+INSERT INTO user_scoped_roles (UserId, RoleId) select 2, id from domain_role;
+INSERT INTO user_scoped_roles (UserId, RoleId) select 3, id from domain_role;
+'''
+
+sql = text(q)
+result = db.engine.execute(sql)
+
+from candidate_service.candidate_app import app
 
 with app.app_context():
     from candidate_service.modules.talent_cloud_search import delete_all_candidate_documents

@@ -17,7 +17,7 @@ Any service can inherit from this class to implement/override functionality acco
 # Standard Library
 import json
 from abc import ABCMeta
-from datetime import datetime
+from datetime import datetime, timedelta
 from abc import abstractmethod
 
 # Third Party
@@ -25,6 +25,7 @@ from celery import chord
 from flask import current_app
 
 # Database Models
+from ..utils.auth_utils import refresh_token
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
 from ..models.push_campaign import PushCampaignBlast
@@ -39,8 +40,9 @@ from ..talent_config_manager import TalentConfigKeys
 from campaign_utils import (get_model, CampaignUtils)
 from ..utils.validators import raise_if_not_instance_of
 from custom_errors import (CampaignException, EmptyDestinationUrl)
-from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
+from ..routes import (ActivityApiUrl, SchedulerApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
+from ..inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 from validators import (validate_form_data,
                         validation_of_data_to_schedule_campaign,
                         validate_blast_candidate_url_conversion_in_db,
@@ -272,6 +274,11 @@ class CampaignBase(object):
         """
         pass
 
+    @property
+    def auth_token(self):
+        auth_header = self.get_authorization_header(self.user.id)
+        return auth_header['Authorization'].replace('Bearer ', '')
+
     @staticmethod
     def get_authorization_header(user_id, bearer_access_token=None):
         """
@@ -299,10 +306,14 @@ class CampaignBase(object):
             if not user_token_obj:
                 raise ResourceNotFound('No auth token record found for user(id:%s)'
                                        % user_id, error_code=ResourceNotFound.http_status_code())
+
             user_access_token = user_token_obj.access_token
         if not user_access_token:
             raise ForbiddenError('User(id:%s) has no auth token associated.'
                                  % user_id)
+        one_minute_later = datetime.utcnow() + timedelta(seconds=60)
+        if user_token_obj.expires < one_minute_later:
+            user_access_token = refresh_token(user_token_obj)
         return {'Authorization': 'Bearer %s' % user_access_token}
 
     def pre_process_save_or_update(self, campaign_data):
@@ -1160,17 +1171,10 @@ class CampaignBase(object):
         # we just log the error and move on to next iteration. In case of any error, we return
         # empty list.
         try:
-            # other campaigns need to update this
             raise_if_not_instance_of(campaign_smartlist, CampaignUtils.SMARTLIST_MODELS)
-            params = {'fields': 'id'}
-            # HTTP GET call to candidate_service to get candidates associated with given
-            # smartlist_id.
-            response = http_request('GET', CandidatePoolApiUrl.SMARTLIST_CANDIDATES
-                                    % campaign_smartlist.smartlist_id,
-                                    headers=self.oauth_header, params=params, user_id=self.user.id)
-            # get candidate objects
-            candidates = [Candidate.get_by_id(candidate['id'])
-                          for candidate in response.json()['candidates']]
+            candidates_ids = get_candidates_of_smartlist(campaign_smartlist.smartlist_id, candidate_ids_only=True,
+                                                         access_token=self.auth_token)
+            candidates = [Candidate.get_by_id(candidate_id) for candidate_id in candidates_ids]
         except Exception:
             logger.exception('get_smartlist_candidates: Error while fetching candidates for '
                              'smartlist(id:%s)' % campaign_smartlist.smartlist_id)

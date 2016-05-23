@@ -319,6 +319,7 @@ class CampaignUtils(object):
             logger.error("post_campaign_sent_processing: Celery task's result is not a list")
         total_sends = sends_result.count(True)
         blast_model = get_model(campaign_type, campaign_type + '_blast')
+        db.session.commit()
         blast_obj = blast_model.get_by_id(blast_id)
         campaign = blast_obj.campaign
         if total_sends:
