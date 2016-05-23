@@ -16,6 +16,7 @@ Any service can inherit from this class to implement/override functionality acco
 
 # Standard Library
 import json
+import itertools
 from abc import ABCMeta
 from datetime import datetime
 from abc import abstractmethod
@@ -1082,8 +1083,7 @@ class CampaignBase(object):
         if not isinstance(self.campaign, CampaignUtils.MODELS):
             raise InvalidUsage('campaign object was not set properly')
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        logger.debug('send: %s(id:%s) is being sent. User(id:%s)' % (self.campaign_type,
-                                                                     self.campaign.id,
+        logger.debug('send: %s(id:%s) is being sent. User(id:%s)' % (self.campaign_type, self.campaign.id,
                                                                      self.user.id))
         if not self.campaign.body_text:
             # body_text is empty
@@ -1093,18 +1093,20 @@ class CampaignBase(object):
         # Get smartlists associated to this campaign
         campaign_smartlists = self.campaign.smartlists
         if not campaign_smartlists:
-            raise InvalidUsage(
-                'No smartlist is associated with %s(id:%s). (User(id:%s))'
-                % (self.campaign_type, self.campaign.id, self.user.id),
-                error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
-        candidates = list(set(sum(map(self.get_smartlist_candidates, campaign_smartlists), [])))
+            raise InvalidUsage('No smartlist is associated with %s(id:%s). (User(id:%s))' % (self.campaign_type,
+                                                                                             self.campaign.id,
+                                                                                             self.user.id),
+                               error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
+        # GET smartlist candidates
+        lists_of_smartlist_candidates = map(self.get_smartlist_candidates, campaign_smartlists)
+        # Making a flat list out of "lists_of_smartlist_candidates"
+        candidates = list(itertools.chain.from_iterable(lists_of_smartlist_candidates))
         if not candidates:
-            raise InvalidUsage(
-                'No candidate is associated with smartlist(s). %s(id:%s). '
-                'campaign smartlist ids are %s' % (self.campaign_type, self.campaign.id,
-                                                   [smartlist.id for smartlist in campaign_smartlists]),
-                error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
-        # create SMS campaign blast
+            raise InvalidUsage('No candidate is associated with smartlist(s). %s(id:%s). campaign smartlist ids are %s'
+                               % (self.campaign_type, self.campaign.id,
+                                  [smartlist.id for smartlist in campaign_smartlists]),
+                               error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
+        # create campaign blast object
         self.campaign_blast_id = self.create_campaign_blast(self.campaign)
         self.send_campaign_to_candidates(candidates)
 
