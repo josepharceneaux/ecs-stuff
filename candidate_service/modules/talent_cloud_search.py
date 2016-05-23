@@ -137,6 +137,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
                                                                                            'ReturnEnabled': False})
 }
 
+# Filter all text, text-array, literal and literal-array index fields
 QUERY_OPTIONS = filter(lambda field: 'text' in field[1]['IndexFieldType'] or 'literal' in field[1]['IndexFieldType'],
                        INDEX_FIELD_NAME_TO_OPTIONS.items())
 
@@ -145,7 +146,7 @@ QUERY_OPTIONS = map(lambda option: option[0], QUERY_OPTIONS)
 QUERY_OPTIONS.remove('position')
 QUERY_OPTIONS.append('position^1.5')
 QUERY_OPTIONS.remove('skill_description')
-QUERY_OPTIONS.append('skill_description^1.5')
+QUERY_OPTIONS.append('skill_description^1.2')
 
 coordinates = []
 geo_params = dict()
