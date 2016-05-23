@@ -1284,32 +1284,50 @@ reference_schema = {
             "type": "array",
             "items": {
                 "type": "object",
-                "required": ["name", "comments"],
                 "properties": {
-                    "name": {"type": "string"},
-                    "position_title": {"type": ["string", "null"]},
-                    "comments": {"type": "string"},
+                    "name": {
+                        "type": ["string", "null"]
+                    },
+                    "position_title": {
+                        "type": ["string", "null"]
+                    },
+                    "comments": {
+                        "type": ["string", "null"],
+                        "maxLength": 5000
+                    },
                     "reference_email": {
                         "type": "object",
                         "properties": {
                             "is_default": {"type": ["boolean", "null"]},
-                            "address": {"type": ["string", "null"]},
-                            "label": {"type": ["string", "null"]}
+                            "address": {
+                                "type": ["string", "null"]
+                            },
+                            "label": {
+                                "type": ["string", "null"]
+                            }
                         }
                     },
                     "reference_phone": {
                         "type": "object",
                         "properties": {
                             "is_default": {"type": ["boolean", "null"]},
-                            "value": {"type": ["string", "null"]},
-                            "label": {"type": ["string", "null"]}
+                            "value": {
+                                "type": ["string", "null"]
+                            },
+                            "label": {
+                                "type": ["string", "null"]
+                            }
                         }
                     },
                     "reference_web_address": {
                         "type": "object",
                         "properties": {
-                            "url": {"type": ["string", "null"]},
-                            "description": {"type": ["string", "null"]}
+                            "url": {
+                                "type": ["string", "null"]
+                            },
+                            "description": {
+                                "type": ["string", "null"]
+                            }
                         }
                     }
                 }
