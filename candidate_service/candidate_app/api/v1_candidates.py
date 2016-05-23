@@ -28,7 +28,7 @@ from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
     get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid,
-    does_candidate_cf_exist, get_json_data_if_it_passed_validation
+    does_candidate_cf_exist, get_json_data_if_validated
 )
 
 # JSON Schemas
@@ -45,8 +45,7 @@ from candidate_service.common.utils.auth_utils import require_oauth, require_all
 
 # Error handling
 from candidate_service.common.error_handling import (
-    ForbiddenError, InvalidUsage, NotFoundError, InternalServerError,
-    ResourceNotFound
+    ForbiddenError, InvalidUsage, NotFoundError, InternalServerError, ResourceNotFound
 )
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
@@ -87,8 +86,7 @@ from candidate_service.modules.talent_openweb import (
 from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 from onesignalsdk.one_signal_sdk import OneSignalSdk
 
-from candidate_service.common.inter_service_calls.candidate_pool_service_calls import \
-    assert_smartlist_candidates
+from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 
 
 class CandidatesResource(Resource):
@@ -272,7 +270,7 @@ class CandidatesResource(Resource):
         start_time = time()
 
         # Validate and retrieve json data
-        body_dict = get_json_data_if_it_passed_validation(request, candidates_resource_schema_patch)
+        body_dict = get_json_data_if_validated(request, candidates_resource_schema_patch)
 
         # Get authenticated user & candidate ID
         authed_user, candidate_id_from_url = request.user, kwargs.get('id')
@@ -294,6 +292,10 @@ class CandidatesResource(Resource):
             candidate_id = candidate_id_from_url or _candidate_dict.get('id')
             if not candidate_id:
                 raise InvalidUsage("Candidate ID is required", custom_error.INVALID_USAGE)
+
+            # Candidate must belong to user's domain
+            if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
+                raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
             # Check for candidate's existence
             candidate = Candidate.get_by_id(candidate_id)
@@ -446,7 +448,7 @@ class CandidateResource(Resource):
         # Check for candidate's existence and web-hidden status
         candidate = get_candidate_if_exists(candidate_id=candidate_id)
 
-        # Candidate must belong to user, and must be in the same domain as the user's domain
+        # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
@@ -908,15 +910,15 @@ class CandidateEducationDegreeBulletResource(Resource):
         return '', 204
 
 
-class CandidateExperienceResource(Resource):
+class CandidateWorkExperienceResource(Resource):
     decorators = [require_oauth()]
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
-        Endpoints:
-             i. DELETE /v1/candidates/:candidate_id/experiences
-            ii. DELETE /v1/candidates/:candidate_id/experiences/:id
+        Resources:
+             i. DELETE /v1/candidates/:candidate_id/work_experiences
+            ii. DELETE /v1/candidates/:candidate_id/work_experiences/:id
         Depending on the endpoint requested, function will delete all of Candidate's
         work_experiences or just a single one.
         """
@@ -924,17 +926,17 @@ class CandidateExperienceResource(Resource):
         authed_user = request.user
 
         # Get candidate_id and experience_id
-        candidate_id, experience_id = kwargs.get('candidate_id'), kwargs.get('id')
+        candidate_id, experience_id = kwargs['candidate_id'], kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = get_candidate_if_exists(candidate_id=candidate_id)
+        candidate = get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user and its domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
         if experience_id:  # Delete specified experience
-            experience = CandidateExperience.get_by_id(_id=experience_id)
+            experience = CandidateExperience.get_by_id(experience_id)
             if not experience:
                 raise NotFoundError('Candidate experience not found', custom_error.EXPERIENCE_NOT_FOUND)
 
@@ -958,7 +960,7 @@ class CandidateExperienceResource(Resource):
         return '', 204
 
 
-class CandidateExperienceBulletResource(Resource):
+class CandidateWorkExperienceBulletResource(Resource):
     decorators = [require_oauth()]
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
@@ -1306,7 +1308,9 @@ class CandidateWorkPreferenceResource(Resource):
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
-        Endpoint: DELETE /v1/candidates/:candidate_id/work_preference
+        Resource:
+             i. DELETE /v1/candidates/:candidate_id/work_preference
+            ii. DELETE /v1/candidates/:candidate_id/work_preference/:id
         Function will delete Candidate's work_preference
         """
         # Get authenticated user
@@ -1322,10 +1326,6 @@ class CandidateWorkPreferenceResource(Resource):
         work_preference = CandidateWorkPreference.get_by_candidate_id(candidate_id)
         if not work_preference:
             raise NotFoundError('Candidate does not have a work preference', custom_error.WORK_PREF_NOT_FOUND)
-
-        # CandidateWorkPreference must belong to Candidate
-        if work_preference.candidate_id != candidate_id:
-            raise ForbiddenError('Not authorized', custom_error.WORK_PREF_FORBIDDEN)
 
         db.session.delete(work_preference)
         db.session.commit()
@@ -1370,13 +1370,12 @@ class CandidateOpenWebResource(Resource):
         """
         # Get authenticated user
         authed_user = request.user
-        url = request.args.get('url')
-        email = request.args.get('email')
+        url, email, is_gt_candidate = request.args.get('url'), request.args.get('email'), None
+
         if url:
             is_gt_candidate, find_candidate = match_candidate_from_openweb(url, authed_user)
         elif email:
             is_gt_candidate, find_candidate = find_in_openweb_by_email(email)
-        candidate = None
 
         if is_gt_candidate:
             candidate = {'candidate': fetch_candidate_info(find_candidate)}
@@ -1500,6 +1499,8 @@ class CandidateClientEmailCampaignResource(Resource):
             created_smartlist_id = created_smartlist.get('smartlist', {}).get('id')
 
         # Pool the Smartlist API to assert candidate(s) have been associated with smartlist
+        error_message = 'Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)' \
+                        % (candidate_ids, created_smartlist_id)
         try:
             if poll(assert_smartlist_candidates, step=3,
                     args=(created_smartlist_id, len(candidate_ids), request.headers.get('authorization')),
@@ -1509,11 +1510,10 @@ class CandidateClientEmailCampaignResource(Resource):
                 logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
                             % (len(candidate_ids), created_smartlist_id))
             else:
-                raise InternalServerError('Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)'
-                                          % (candidate_ids, created_smartlist_id))
+                raise InternalServerError(error_message)
         except TimeoutException:
-            raise InternalServerError('Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)'
-                                      % (candidate_ids, created_smartlist_id))
+            logger.exception(error_message)
+            raise InternalServerError(error_message)
 
         # create campaign
         email_campaign_object = {
@@ -2220,7 +2220,7 @@ class CandidateReferencesResource(Resource):
                     status code: 201
         """
         # Get json data if exists and validate its schema
-        body_dict = get_json_data_if_it_passed_validation(request, reference_schema)
+        body_dict = get_json_data_if_validated(request, reference_schema)
 
         # Get authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']

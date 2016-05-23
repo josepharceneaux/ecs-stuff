@@ -8,6 +8,11 @@
     'app.scheduler_admin',
     'app.dashboard',
     'app.layout'
-  ]);
+  ])
+  //  .config(function($locationProvider) {
+  //  $locationProvider.html5Mode(false);
+  //  $locationProvider.hashPrefix('!');
+  //})
+  ;
 
 })();

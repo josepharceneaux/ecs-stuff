@@ -7,8 +7,7 @@ from candidate_pool_service.common.models.smartlist import SmartlistCandidate, S
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_smartlist_candidates
 from candidate_pool_service.common.inter_service_calls.candidate_service_calls import update_candidates_on_cloudsearch
 
-__author__ = 'jitesh'
-
+__all__ = ["create_smartlist_dict", "get_all_smartlists", "save_smartlist"]
 
 @cache.memoize(timeout=86400)
 def search_and_count_candidates_from_params(smartlist):

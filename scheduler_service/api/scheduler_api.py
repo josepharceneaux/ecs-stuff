@@ -9,31 +9,22 @@ import json
 import types
 
 # Third party imports
-from datetime import datetime, timedelta
-
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 
 # Application imports
-from werkzeug.exceptions import BadRequest
-
-from scheduler_service import TalentConfigKeys, flask_app, redis_store
-from scheduler_service.common.models import db
-from scheduler_service.common.models.user import Token, User
 from scheduler_service import logger, SchedulerUtils
 from scheduler_service.api.scheduler_tests_api import raise_if_scheduler_not_running, check_job_state, \
-    dummy_request_method, test_dummy_endpoint_hits
-from scheduler_service.common.models.user import DomainRole
+    dummy_request_method
+from scheduler_service.common.models.user import DomainRole, User
 from scheduler_service.common.routes import SchedulerApi
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse, get_pagination_params
 from scheduler_service.common.talent_api import TalentApi
-from scheduler_service.custom_exceptions import JobAlreadyPausedError, PendingJobError, JobAlreadyRunningError, \
-    SchedulerNotRunningError
-from scheduler_service.modules.CONSTANTS import REQUEST_COUNTER
 from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound
 from scheduler_service.common.utils.auth_utils import require_oauth, require_all_roles
 from scheduler_service.custom_exceptions import SchedulerServiceApiException
-from scheduler_service.modules.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, run_job
+from scheduler_service.modules.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, \
+    scheduler_remove_job
 from scheduler_service.modules.scheduler_admin import filter_jobs_using_task_type, \
     filter_jobs_using_task_category, filter_paused_jobs
 
@@ -532,7 +523,7 @@ class TaskByName(Resource):
         task = [task for task in tasks if task.name == _name and task.args[0] is None]
         # Check if task is valid and belongs to the logged-in user
         if task and user_id is None:
-            scheduler.remove_job(task[0].id)
+            scheduler_remove_job(task[0].id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task with name %s not found" % _name)
 
@@ -612,11 +603,15 @@ class TaskById(Resource):
         user_id = request.user.id if request.user else None
         raise_if_scheduler_not_running()
         task = scheduler.get_job(_id)
-        # Make sure task is valid and belongs to logged-in user
-        if task and task.args[0] == user_id:
-            task = serialize_task(task)
-            if task:
-                return dict(task=task)
+        if task:
+            task_owner_id = task.args[0]
+            is_same_domain = user_id and User.get_by_id(task_owner_id).domain_id == request.user.domain_id
+            # Make sure task is valid and belongs to logged-in user or user which is in same domain as requesting user
+            is_owner = task_owner_id == user_id
+            if is_owner or is_same_domain:
+                task = serialize_task(task)
+                if task:
+                    return dict(task=task)
         raise ResourceNotFound(error_message="Task not found")
 
     @require_oauth(allow_null_user=True)
@@ -655,7 +650,7 @@ class TaskById(Resource):
         task = scheduler.get_job(_id)
         # Check if task is valid and belongs to the logged-in user
         if task and task.args[0] == user_id:
-            scheduler.remove_job(task.id)
+            scheduler_remove_job(task.id)
             logger.info('Job with id %s removed successfully.' % _id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task not found")
@@ -902,13 +897,12 @@ class AdminTasks(Resource):
 @api.route(SchedulerApi.SCHEDULER_TASKS_TEST)
 class SendRequestTest(Resource):
     """
-    Endpoint:
+    POST Method:
         This resource is dummy endpoint which is used to call send_request method for testing
         This dummy endpoint serve two purposes.
         1. To check if endpoint is working then send response 201 (run callback function directly)
         2. To check if authentication token is refreshed after expiry.
         3. Test that scheduler sends GET, POST, DELETE, PUT, PATCH request
-        4. Test how many times a endpoint hits when scheduler send requests
     """
     @require_oauth()
     def post(self):
@@ -918,42 +912,24 @@ class SendRequestTest(Resource):
 
     @require_oauth()
     def put(self):
-        test_dummy_endpoint_hits(_request=request)
         dummy_request_method(_request=request)
 
         return dict(message='Dummy PUT Endpoint called')
 
     @require_oauth()
     def patch(self):
-        test_dummy_endpoint_hits(_request=request)
         dummy_request_method(_request=request)
 
         return dict(message='Dummy PATCH Endpoint called')
 
     @require_oauth()
     def delete(self):
-        test_dummy_endpoint_hits(_request=request)
         dummy_request_method(_request=request)
 
         return dict(message='Dummy DELETE Endpoint called')
 
     @require_oauth()
     def get(self):
-        test_dummy_endpoint_hits(_request=request)
         dummy_request_method(_request=request)
 
         return dict(message='Dummy GET Endpoint called')
-
-
-@api.route(SchedulerApi.SCHEDULER_TASKS_TEST_POST)
-class SendRequestTestPost(Resource):
-    """
-    POST Method:
-        Test how many times post request method is being hit
-    """
-    @require_oauth()
-    def post(self):
-        test_dummy_endpoint_hits(_request=request)
-        dummy_request_method(_request=request)
-
-        return dict(message='Dummy hits testing POST Endpoint called')

@@ -32,7 +32,7 @@ switch (environment) {
       four0four.send404(req, res);
     });
     // Any deep link calls should return index.html
-    app.use('/*', express.static('./build/login.html'));
+    app.use('/*', express.static('./build/index.html'));
     break;
   default:
     console.log('** DEV **');
@@ -44,7 +44,7 @@ switch (environment) {
       four0four.send404(req, res);
     });
     // Any deep link calls should return index.html
-    app.use('/*', express.static('./src/client/login.html'));
+    app.use('/*', express.static('./src/client/index.html'));
     break;
 }
 

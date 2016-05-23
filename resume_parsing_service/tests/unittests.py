@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Unit tests for formatting and accuracy for offline testing."""
 __author__ = 'erik@gettalent.com'
 # pylint: disable=wrong-import-position
@@ -12,6 +13,7 @@ from .resume_xml import GET_646
 from .resume_xml import PDF
 from .resume_xml import PDF_13
 from .resume_xml import PDF_14
+from .resume_xml import GET_1301
 # Modules being tested.
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_addresses
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_educations
@@ -20,6 +22,12 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_exp
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_name
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_phones
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_skills
+
+# XML Combinations:
+import edu_combinations
+import contact_combinations
+import job_combinations
+import skill_combinations
 
 
 EDUCATIONS_KEYS = ('city', 'country', 'degrees', 'state', 'school_name')
@@ -44,22 +52,22 @@ XML_MAPS = [
     # The resume below has 6 experience but BG incorrectly returns 7.
     # The resume below has 1 address but BG incorrectly returns 2.
     {'tree_name': DOCX, 'name': 'Veena Nithoo', 'email_len': 0, 'phone_len': 1, 'education_len': 1,
-     'experience_len': 7, 'skills_len': 48, 'addresses_len': 2},
+     'experience_len': 7, 'skills_len': 47, 'addresses_len': 2},
     # The resume below has 12 experience but BG incorrectly returns 13.
     # The resume below has 1 address but BG incorrectly returns 2.
     {'tree_name': GET_642, 'name': 'Bobby Breland', 'email_len': 1, 'phone_len': 2,
-     'education_len': 1, 'experience_len': 13, 'skills_len': 80, 'addresses_len': 2},
+     'education_len': 1, 'experience_len': 13, 'skills_len': 71, 'addresses_len': 2},
     # The resume below has 2 addresses but BG incorrectly returns 1.
     {'tree_name': GET_646, 'name': 'Patrick Kaldawy', 'email_len': 3, 'phone_len': 6,
-     'education_len': 2, 'experience_len': 4, 'skills_len': 42, 'addresses_len': 1},
+     'education_len': 2, 'experience_len': 4, 'skills_len': 35, 'addresses_len': 1},
     {'tree_name': PDF, 'name': 'Mark Greene', 'email_len': 1, 'phone_len': 1, 'education_len': 1,
-     'experience_len': 11, 'skills_len': 20, 'addresses_len': 1},
+     'experience_len': 11, 'skills_len': 17, 'addresses_len': 1},
     {'tree_name': PDF_13, 'name': 'Bruce Parkey', 'email_len': 1, 'phone_len': 1,
      'education_len': 1, 'experience_len': 3, 'skills_len': 24, 'addresses_len': 1},
     # This PDF currently does not get its email/phone parsed out of the footer.
     # This PDF currently parses out the wrong education count.
     {'tree_name': PDF_14, 'name': 'Jose Chavez', 'email_len': 0, 'phone_len': 0, 'education_len': 2,
-     'experience_len': 4, 'skills_len': 36, 'addresses_len': 1}
+     'experience_len': 4, 'skills_len': 32, 'addresses_len': 1}
 ]
 
 
@@ -160,6 +168,16 @@ def test_skill_parsing():
         assert len(skills) == xml['skills_len']
         for skill in skills:
             assert 'name' in skill
+
+
+def test_skills_duplicates():
+    soup = bs4(GET_1301, 'lxml')
+    skill_xml_list = soup.findAll('canonskill')
+    skills = parse_candidate_skills(skill_xml_list)
+    skills_set = set()
+    for skill in skills:
+        skills_set.add(skill['name'])
+    assert len(skills) == len(skills_set)
 
 
 def test_address_parsing():
@@ -675,3 +693,65 @@ def test_pdf14_accuracy():
     # edu2 = next((edu for edu in educations if edu["school_name"] == u'ITESM University'), None)
     edu3 = next((edu for edu in educations if edu["school_name"] == u'British Columbia Institute of Technology'), None)
     assert edu3
+
+
+def test_parsing_edu_combinations():
+    xml_combos = [xml for xml in dir(edu_combinations) if "__" not in xml]
+    for combo in xml_combos:
+        combo_to_parse = bs4(getattr(edu_combinations, combo), 'lxml').findAll('education')
+        successful_parse = parse_candidate_educations(combo_to_parse)
+        # Sometime it may return an empty array so we cannot just assert on this.
+        assert successful_parse is not None
+
+
+def test_parsing_addresses():
+    xml_combos = [xml for xml in dir(contact_combinations) if "__" not in xml]
+    for combo in xml_combos:
+        combo_to_parse = bs4(getattr(contact_combinations, combo), 'lxml').findAll('contact')
+        successful_parse = parse_candidate_addresses(combo_to_parse)
+        # Sometime it may return an empty array so we cannot just assert on this.
+        assert successful_parse is not None
+
+
+def test_parsing_emails():
+    xml_combos = [xml for xml in dir(contact_combinations) if "__" not in xml]
+    for combo in xml_combos:
+        combo_to_parse = bs4(getattr(contact_combinations, combo), 'lxml').findAll('contact')
+        successful_parse = parse_candidate_emails(combo_to_parse)
+        # Sometime it may return an empty array so we cannot just assert on this.
+        assert successful_parse is not None
+
+
+def test_parsing_names():
+    xml_combos = [xml for xml in dir(contact_combinations) if "__" not in xml]
+    for combo in xml_combos:
+        combo_to_parse = bs4(getattr(contact_combinations, combo), 'lxml').findAll('contact')
+        successful_parse = parse_candidate_name(combo_to_parse)
+        # Sometime it may return an empty array so we cannot just assert on this.
+        assert successful_parse is not None
+
+
+def test_parsing_phones():
+    xml_combos = [xml for xml in dir(contact_combinations) if "__" not in xml]
+    for combo in xml_combos:
+        combo_to_parse = bs4(getattr(contact_combinations, combo), 'lxml').findAll('contact')
+        successful_parse = parse_candidate_phones(combo_to_parse)
+        # Sometime it may return an empty array so we cannot just assert on this.
+        assert successful_parse is not None
+
+
+def test_parsing_experiences():
+    xml_combos = [xml for xml in dir(job_combinations) if "__" not in xml]
+    for combo in xml_combos:
+        combo_to_parse = bs4(getattr(job_combinations, combo), 'lxml').findAll('experience')
+        successful_parse = parse_candidate_experiences(combo_to_parse)
+        # Sometime it may return an empty array so we cannot just assert on this.
+        assert successful_parse is not None
+
+def test_parsing_skills():
+    xml_combos = [xml for xml in dir(skill_combinations) if "__" not in xml]
+    for combo in xml_combos:
+        combo_to_parse = bs4(getattr(skill_combinations, combo), 'lxml').findAll('canonskill')
+        successful_parse = parse_candidate_skills(combo_to_parse)
+        # Sometime it may return an empty array so we cannot just assert on this.
+        assert successful_parse is not None

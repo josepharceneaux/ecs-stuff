@@ -151,6 +151,18 @@ class AuthApi(object):
     AUTHORIZE = RELATIVE_VERSION % 'oauth2/authorize'
 
 
+class AuthApiV2(object):
+    """
+    API relative URLs for auth_service. e.g. /v1/oauth2/token
+    """
+    VERSION = 'v2'
+    RELATIVE_VERSION = _get_api_relative_version(VERSION)
+    TOKEN_CREATE = RELATIVE_VERSION % 'oauth2/token'
+    TOKEN_REFRESH = RELATIVE_VERSION % 'oauth2/refresh'
+    TOKEN_REVOKE = RELATIVE_VERSION % 'oauth2/revoke'
+    AUTHORIZE = RELATIVE_VERSION % 'oauth2/authorize'
+
+
 class AuthApiUrl(object):
     """
     Rest URLs of auth_service
@@ -161,6 +173,19 @@ class AuthApiUrl(object):
     TOKEN_CREATE = HOST_NAME % AuthApi.TOKEN_CREATE
     TOKEN_REVOKE = HOST_NAME % AuthApi.TOKEN_REVOKE
     AUTHORIZE = HOST_NAME % AuthApi.AUTHORIZE
+
+
+class AuthApiUrlV2(object):
+    """
+    Rest URLs of auth_service
+    """
+    HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME,
+                               GTApis.AUTH_SERVICE_PORT)
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+    TOKEN_CREATE = HOST_NAME % AuthApiV2.TOKEN_CREATE
+    TOKEN_REFRESH = HOST_NAME % AuthApiV2.TOKEN_REFRESH
+    TOKEN_REVOKE = HOST_NAME % AuthApiV2.TOKEN_REVOKE
+    AUTHORIZE = HOST_NAME % AuthApiV2.AUTHORIZE
 
 
 class ActivityApi(object):
@@ -224,6 +249,8 @@ class UserServiceApiWords(object):
     RESET_PASSWORD = '/reset-password'
     UPDATE_PASSWORD = '/update-password'
     FORGOT_PASSWORD = '/forgot-password'
+    SOURCES = 'sources'
+    CUSTOM_FIELDS = 'custom_fields'
 
 
 class UserServiceApi(object):
@@ -241,10 +268,15 @@ class UserServiceApi(object):
     DOMAIN_ROLES = UserServiceApiWords.DOMAIN + '/<int:domain_id>' + UserServiceApiWords.ROLES
     DOMAIN_GROUPS = UserServiceApiWords.DOMAIN + "/<int:domain_id>/" + UserServiceApiWords.GROUPS
     DOMAIN_GROUPS_UPDATE = UserServiceApiWords.DOMAIN + "/" + UserServiceApiWords.GROUPS + '/<int:group_id>'
+
+    DOMAIN_SOURCES = '/' + VERSION + '/' + UserServiceApiWords.SOURCES
+    DOMAIN_SOURCE = DOMAIN_SOURCES + '/<int:id>'
+
     USER_GROUPS = _GROUP + UserServiceApiWords.USERS
     UPDATE_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.UPDATE_PASSWORD
     FORGOT_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.FORGOT_PASSWORD
     RESET_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.RESET_PASSWORD + '/<token>'
+    DOMAIN_CUSTOM_FIELDS = '/' + VERSION + '/' + UserServiceApiWords.CUSTOM_FIELDS
 
 
 class UserServiceApiUrl(object):
@@ -263,10 +295,15 @@ class UserServiceApiUrl(object):
     DOMAIN_ROLES_API = API_URL % (UserServiceApiWords.DOMAIN + '/%s' + UserServiceApiWords.ROLES)
     DOMAIN_GROUPS_API = API_URL % (UserServiceApiWords.DOMAIN + '/%s/' + UserServiceApiWords.GROUPS)
     DOMAIN_GROUPS_UPDATE_API = API_URL % (UserServiceApiWords.DOMAIN + '/' + UserServiceApiWords.GROUPS + '/%s')
+
+    DOMAIN_SOURCES = API_URL % UserServiceApiWords.SOURCES
+    DOMAIN_SOURCE = DOMAIN_SOURCES + '/%s'
+
     USER_GROUPS_API = API_URL % (UserServiceApiWords.GROUPS + '/%s/' + UserServiceApiWords.USERS)
     UPDATE_PASSWORD_API = API_URL % UserServiceApi.UPDATE_PASSWORD
     FORGOT_PASSWORD_API = API_URL % UserServiceApi.FORGOT_PASSWORD
     RESET_PASSWORD_API = USERS + UserServiceApiWords.RESET_PASSWORD + '/%s'
+    DOMAIN_CUSTOM_FIELDS = API_URL % UserServiceApiWords.CUSTOM_FIELDS
 
 
 class CandidateApiWords(object):
@@ -280,14 +317,14 @@ class CandidateApiWords(object):
     EDUCATIONS = "/educations"
     DEGREES = "/degrees"
     BULLETS = "/bullets"
-    EXPERIENCES = "/experiences"
+    EXPERIENCES = "/work_experiences"
     EMAILS = "/emails"
     MILITARY_SERVICES = "/military_services"
     PHONES = "/phones"
     PREFERRED_LOCATIONS = "/preferred_locations"
     SKILLS = "/skills"
     SOCIAL_NETWORKS = "/social_networks"
-    WORK_PREFERENCES = "/work_preference"
+    WORK_PREFERENCES = "/work_preferences"
     EDITS = "/edits"
     SEARCH = "/search"
     DOCUMENTS = "/documents"
@@ -300,6 +337,8 @@ class CandidateApiWords(object):
     NOTES = "/notes"
     LANGUAGES = "/languages"
     REFERENCES = "/references"
+    TAGS = "/tags"
+    PIPELINES = "/pipelines"
 
 
 class CandidateApi(object):
@@ -366,7 +405,8 @@ class CandidateApi(object):
     SOCIAL_NETWORKS = _CANDIDATE_ID + CandidateApiWords.SOCIAL_NETWORKS
     SOCIAL_NETWORK = SOCIAL_NETWORKS + _INT_ID
 
-    WORK_PREFERENCE = _CANDIDATE_ID + CandidateApiWords.WORK_PREFERENCES + _INT_ID
+    WORK_PREFERENCES = _CANDIDATE_ID + CandidateApiWords.WORK_PREFERENCES
+    WORK_PREFERENCE = WORK_PREFERENCES + _INT_ID
     CANDIDATE_EDIT = CANDIDATE_ID + CandidateApiWords.EDITS
 
     CANDIDATE_SEARCH = CANDIDATES + CandidateApiWords.SEARCH
@@ -382,6 +422,11 @@ class CandidateApi(object):
 
     REFERENCES = _CANDIDATE_ID + CandidateApiWords.REFERENCES
     REFERENCE = REFERENCES + _INT_ID
+
+    TAGS = _CANDIDATE_ID + CandidateApiWords.TAGS
+    TAG = TAGS + _INT_ID
+
+    PIPELINES = _CANDIDATE_ID + CandidateApiWords.PIPELINES
 
 
 class CandidateApiUrl(object):
@@ -446,8 +491,8 @@ class CandidateApiUrl(object):
     SOCIAL_NETWORKS = CANDIDATE + CandidateApiWords.SOCIAL_NETWORKS
     SOCIAL_NETWORK = SOCIAL_NETWORKS + "/%s"
 
-    WORK_PREFERENCE = CANDIDATE + CandidateApiWords.WORK_PREFERENCES
-    WORK_PREFERENCE_ID = CANDIDATE + CandidateApiWords.WORK_PREFERENCES + "/%s"
+    WORK_PREFERENCES = CANDIDATE + CandidateApiWords.WORK_PREFERENCES
+    WORK_PREFERENCE_ID = WORK_PREFERENCES + "/%s"
     CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
     CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
     CANDIDATE_PREFERENCE = CANDIDATE + CandidateApiWords.PREFERENCE
@@ -460,6 +505,11 @@ class CandidateApiUrl(object):
 
     REFERENCES = CANDIDATE + CandidateApiWords.REFERENCES
     REFERENCE = REFERENCES + "/%s"
+
+    TAGS = CANDIDATE + CandidateApiWords.TAGS
+    TAG = TAGS + "/%s"
+
+    PIPELINES = CANDIDATE + CandidateApiWords.PIPELINES
 
 
 class WidgetApi(object):
@@ -557,8 +607,8 @@ class CandidatePoolApiUrl(object):
     TALENT_POOL_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + "/%s" + CandidatePoolApiWords.STATS)
     TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = API_URL % CandidatePoolApiWords.TALENT_POOLS + '/%s/' \
                                                 + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
-    TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_POOLS +'/%s'+CandidatePoolApiWords.CANDIDATES)
-    TALENT_POOL_GROUP = API_URL % (CandidatePoolApiWords.GROUPS+'/%s/'+CandidatePoolApiWords.TALENT_POOLS)
+    TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_POOLS + '/%s' + CandidatePoolApiWords.CANDIDATES)
+    TALENT_POOL_GROUP = API_URL % (CandidatePoolApiWords.GROUPS + '/%s/' + CandidatePoolApiWords.TALENT_POOLS)
     TALENT_PIPELINES_OF_TALENT_POOLS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + '/%s/' +
                                                   CandidatePoolApiWords.TALENT_PIPELINES)
 

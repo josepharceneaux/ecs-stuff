@@ -26,7 +26,9 @@ EMAIL_FILES_ROOT = os.path.join(CURRENT_DIR, 'email_files/')
 VALID_EMAILS = [
     EMAIL_FILES_ROOT + 'valid1',
     EMAIL_FILES_ROOT + 'valid2',
-    EMAIL_FILES_ROOT + 'valid3'
+    EMAIL_FILES_ROOT + 'valid3',
+    EMAIL_FILES_ROOT + 'appleEmailValid',
+    EMAIL_FILES_ROOT + 'nestedAttachment'
 ]
 ####################################
 # No database connections required
@@ -63,6 +65,7 @@ def test_get_email_attachment_with_content():
         with open(electronic_mail, 'r') as infile:
             email_file = email.message_from_file(infile)
         raw_attachment = get_email_attachment(email_file, 'unused Key')
+        print raw_attachment.get_filename()
         assert raw_attachment
         assert isinstance(raw_attachment, email.message.Message)
 
@@ -184,6 +187,12 @@ def test_lambda_handler(token_fixture, talent_pool_fixture, user_fixture):
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS,
                                          DomainRole.Roles.CAN_GET_CANDIDATES])
     with open(EMAIL_FILES_ROOT + 'valid1', 'r') as infile:
+        email_file = email.message_from_file(infile)
+    raw_attachment = get_email_attachment(email_file, 'unused Key')
+    send_resume_to_service(token_fixture.access_token, raw_attachment,
+                                  talent_pool_fixture.id, 'test')
+
+    with open(EMAIL_FILES_ROOT + 'nestedAttachment', 'r') as infile:
         email_file = email.message_from_file(infile)
     raw_attachment = get_email_attachment(email_file, 'unused Key')
     send_resume_to_service(token_fixture.access_token, raw_attachment,

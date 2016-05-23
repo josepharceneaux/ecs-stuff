@@ -1,12 +1,14 @@
 
 __author__ = 'ufarooqi'
 
+import hashlib
 import json
 import requests
 from flask import Blueprint
 from flask_restful import Resource
 from datetime import datetime, timedelta
 from sqlalchemy import and_
+from sqlalchemy.exc import IntegrityError
 from dateutil.parser import parse
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
@@ -19,6 +21,7 @@ from candidate_pool_service.common.utils.auth_utils import require_oauth, requir
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
     get_stats_generic_function, get_talent_pipeline_stat_for_given_day, update_smartlist_stats,
     update_talent_pipeline_stats, update_talent_pool_stats, get_candidates_of_talent_pool)
+from candidate_pool_service.common.utils.handy_functions import random_word
 from candidate_pool_service.common.models.user import DomainRole
 
 talent_pool_blueprint = Blueprint('talent_pool_api', __name__)
@@ -237,6 +240,20 @@ class TalentPoolApi(Resource):
                                            user_group_id=request.user.user_group_id))
 
         db.session.commit()
+
+        for talent_pool in talent_pool_objects:
+            hash = hashlib.md5()
+            hash.update(str(talent_pool.id))
+            talent_pool.simple_hash = hash.hexdigest()[:8]
+            pool_saved = False
+            while not pool_saved:
+                try:
+                    db.session.add(talent_pool)
+                    db.session.commit()
+                    pool_saved = True
+                except IntegrityError:
+                    hash.update(random_word(8))
+
         return {'talent_pools': [talent_pool_object.id for talent_pool_object in talent_pool_objects]}
 
 

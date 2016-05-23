@@ -16,14 +16,11 @@ from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfinterp import process_pdf
 from pdfminer.pdfparser import PDFDocument
 from pdfminer.pdfparser import PDFParser
-import magic
 import requests
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
-# from resume_parsing_service.app.views.sovren_parse_lib import fetch_sovren_response
-# from resume_parsing_service.app.views.sovren_parse_lib import parse_sovren_xml
 from resume_parsing_service.app.views.utils import update_candidate_from_resume
 from resume_parsing_service.app.views.utils import create_parsed_resume_candidate
 from resume_parsing_service.app.views.utils import gen_hash_from_file
@@ -129,9 +126,7 @@ def parse_resume(file_obj, filename_str):
     if not file_ext.startswith("."):
         file_ext = ".{}".format(file_ext)
     if file_ext not in IMAGE_FORMATS and file_ext not in DOC_FORMATS:
-        logger.error(
-            'file_ext {} not in image_formats and file_ext not in doc_formats'.format(file_ext))
-        return dict(error='file_ext not in image_formats and file_ext not in doc_formats')
+        raise InvalidUsage('File ext \'{}\' not in accepted image or document formats'.format(file_ext))
     # Find out if the file is an image
     is_resume_image = False
     if file_ext in IMAGE_FORMATS:

@@ -20,7 +20,7 @@
 
     function getMessageCount() { return $q.when(72); }
 
-    function getTasks(user_id) {
+    function getTasks(filters) {
 
       return $http.get(getUserTasksURL,
         {
@@ -33,7 +33,6 @@
         .catch(fail);
 
       function success(response) {
-        debugger;
         return response.data;
       }
 

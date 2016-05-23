@@ -12,9 +12,20 @@
     vm.title = 'Scheduler Service Admin';
 
     UserToken.goToLogin($state);
-    activate();
 
-    console.log(SchedulerClientService.getTasks(4));
+     SchedulerClientService.getTasks(4)
+      .then(function (data) {
+        if ("tasks" in data) {
+          vm.tasks = data.tasks;
+          console.log(vm.tasks);
+        }
+      }, function (error) {
+        console.log('error', error);
+      });
+    //debugger;
+
+
+    activate();
 
     function activate() {
       logger.info('Activated Scheduler Admin View');
