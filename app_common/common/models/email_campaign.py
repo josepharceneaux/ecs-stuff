@@ -141,7 +141,8 @@ class EmailCampaignBlast(db.Model):
     @classmethod
     def get_by_send(cls, send_obj):
         """
-        This method takes EmailCampaignSend object as input an returns associated EmailCampaignBlast object.
+        This method takes EmailCampaignSend object as input and returns associated EmailCampaignBlast object.
+        It first tries to retrieve blast from backref. If that is None, then get blast by matching sent_datetime
         :param EmailCampaignSend send_obj: campaign send object
         :rtype EmailCampaignBlast | None
         """
