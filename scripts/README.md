@@ -19,7 +19,13 @@ python scripts/ecs_task_update.py ${app} ${timestamp_tag} stage restart
 This script updates production to use the docker image currently running on staging. So, for example, if the most recent build is running on staging with a tag of **built-at-2016-05-09-17-37-01** production can be upgraded to use this image with:
 
 ```
-python move-stage-to-prod.py candidate-service built-at-2016-05-09-17-37-01
+python move-stage-to-prod.py candidate-service
+```
+
+Additionally, if an image exists in the repository with a particular tag, say `v3.4.1`, this image can be placed into production with the command:
+
+```
+python move-stage-to-prod.py candidate-service --tag v3.4.1
 ```
 
 Note that this script relies on strict naming conventions for ECS task definitions and services.
@@ -39,6 +45,14 @@ candidate-service-svc ACTIVE Deployments: 1
 Task: Family: candidate-service-td Revision: 18 Status: ACTIVE
 Image: 528222547498.dkr.ecr.us-east-1.amazonaws.com/gettalent/candidate-service:built-at-2016-05-09-17-37-01
 CPU: 1024 Memory 1500: 
+```
+
+## **__list-images.py__**
+
+List all images in a repository, using the service name to identify the repository. If the --tags option is given, list only images with tags. E.g.,
+
+```
+python list-images.py candidate-service --tags
 ```
 
 ## **__scan-candidates.py__**

@@ -24,22 +24,22 @@ class TestSendSmsCampaign(object):
     URL = SmsCampaignApiUrl.SEND
     HTTP_METHOD = 'post'
 
-    def test_post_with_invalid_token(self, sms_campaign_of_current_user):
+    def test_post_with_invalid_token(self, sms_campaign_of_user_first):
         """
         User auth token is invalid, it should result in Unauthorized error.
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
-                                                         self.URL % sms_campaign_of_current_user['id'],
+                                                         self.URL % sms_campaign_of_user_first['id'],
                                                          None)
 
     def test_post_with_id_of_deleted_record(self, access_token_first,
-                                            sms_campaign_of_current_user):
+                                            sms_campaign_of_user_first):
         """
         User auth token is valid. It first deletes the campaign from database and then tries
         to update the record. It should result in ResourceNotFound error.
         """
         CampaignsTestsHelpers.request_after_deleting_campaign(
-            sms_campaign_of_current_user, SmsCampaignApiUrl.CAMPAIGN,
+            sms_campaign_of_user_first, SmsCampaignApiUrl.CAMPAIGN,
             self.URL, self.HTTP_METHOD, access_token_first)
 
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
@@ -98,7 +98,7 @@ class TestSendSmsCampaign(object):
             sms_campaign_with_no_valid_candidate['id'])
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone(
-            self, user_first, sms_campaign_of_current_user, candidates_with_same_phone):
+            self, user_first, sms_campaign_of_user_first, candidates_with_same_phone):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. Both candidates have same phone numbers. It should get an empty list which
@@ -106,7 +106,7 @@ class TestSendSmsCampaign(object):
         """
         candidate_1, candidate_2 = candidates_with_same_phone
         with app.app_context():
-            obj = SmsCampaignBase(user_first.id, campaign_id=sms_campaign_of_current_user['id'])
+            obj = SmsCampaignBase(user_first.id, campaign_id=sms_campaign_of_user_first['id'])
             try:
                 obj.pre_process_celery_task([candidate_1, candidate_2])
                 assert None, 'Invalid usage should occur'
@@ -114,29 +114,31 @@ class TestSendSmsCampaign(object):
                 assert error.status_code == CampaignException.NO_VALID_CANDIDATE_FOUND
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone_in_diff_domain(
-            self, user_first, sms_campaign_of_current_user, candidates_with_same_phone_in_diff_domains):
+            self, user_first, sms_campaign_of_user_first,
+            candidates_with_same_phone_in_diff_domains):
         """
         User auth token is valid. Campaign has one smartlist associated. Smartlist has two
         candidates. One candidate exists in more than one domains with same phone. It should
         not result in any error.
         """
         with app.app_context():
-            obj = SmsCampaignBase(user_first.id, campaign_id=sms_campaign_of_current_user['id'])
+            obj = SmsCampaignBase(user_first.id, campaign_id=sms_campaign_of_user_first['id'])
             candidate_1, candidate_2 = candidates_with_same_phone_in_diff_domains
             assert len(obj.pre_process_celery_task([candidate_1, candidate_2])) == 1
 
     def test_pre_process_celery_task_with_valid_data(self, user_first,
-                                                     sms_campaign_of_current_user):
+                                                     sms_campaign_of_user_first):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. Both candidates have different phone numbers. It should not result in any error.
         """
         with app.app_context():
-            obj = SmsCampaignBase(user_first.id, campaign_id=sms_campaign_of_current_user['id'])
-            assert len(obj.pre_process_celery_task([user_first.candidates[0], user_first.candidates[1]])) == 2
+            obj = SmsCampaignBase(user_first.id, campaign_id=sms_campaign_of_user_first['id'])
+            assert len(obj.pre_process_celery_task(
+                [user_first.candidates[0], user_first.candidates[1]])) == 2
 
     def test_does_candidate_have_unique_mobile_phone_with_two_candidates_having_same_phone(
-            self, user_first, candidates_with_same_phone, sms_campaign_of_current_user):
+            self, user_first, candidates_with_same_phone, sms_campaign_of_user_first):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. Both candidates have same phone numbers. It should raise custom exception
@@ -151,7 +153,7 @@ class TestSendSmsCampaign(object):
             assert error.error_code == CampaignException.MULTIPLE_CANDIDATES_FOUND
 
     def test_does_candidate_have_unique_mobile_phone_with_candidate_in_other_domain(
-            self, user_first, sms_campaign_of_current_user, candidate_phone_in_other_domain):
+            self, user_first, sms_campaign_of_user_first, candidate_phone_in_other_domain):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has one
         candidate but candidate belongs to some other domain.

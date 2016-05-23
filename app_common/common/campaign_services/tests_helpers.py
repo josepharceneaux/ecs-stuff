@@ -30,8 +30,9 @@ from ..models.email_campaign import EmailCampaign
 from campaign_utils import get_model, CampaignUtils
 from ..utils.validators import raise_if_not_instance_of
 from ..models.talent_pools_pipelines import TalentPipeline
-from ..utils.handy_functions import (JSON_CONTENT_TYPE_HEADER,
-                                     add_role_to_test_user)
+from ..utils.handy_functions import (add_role_to_test_user,
+                                     JSON_CONTENT_TYPE_HEADER)
+from ..utils.test_utils import get_fake_dict
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
                               ResourceNotFound, UnprocessableEntity, InternalServerError)
@@ -510,7 +511,7 @@ class CampaignsTestsHelpers(object):
             return response.json()['blast']['sends'] == expected_count
 
     @staticmethod
-    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=60,
+    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=80,
                            blast_url=None, access_token=None):
         """
         This function asserts that particular blast of given campaign has expected number of sends
@@ -670,26 +671,6 @@ def send_request(method, url, access_token, data=None, is_json=True, data_dumps=
     if data_dumps:
         data = json.dumps(data)
     return request_method(url, data=data, headers=headers)
-
-
-def get_fake_dict():
-    """
-    This method just creates a dictionary with 3 random keys and values
-
-    : Example:
-
-        data = {
-                    'excepturi': 'qui',
-                    'unde': 'ipsam',
-                    'magni': 'voluptate'
-                }
-    :return: data
-    :rtype dict
-    """
-    data = dict()
-    for _ in range(3):
-        data[fake.word()] = fake.word()
-    return data
 
 
 def get_invalid_fake_dict():
