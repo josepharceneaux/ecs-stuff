@@ -18,7 +18,7 @@ TASKS_SUFFIX_DICT = { STAGE_CLUSTER_NAME : STAGE_TD_SUFFIX, PROD_CLUSTER_NAME : 
 # Base of our namespace for several structures
 ECS_BASE_PATH = 'gettalent'
 
-# How many previous Task Definitions (and related ECR images) to keep, including the currently running one
+# How many previous Task Definitions (and related ECR images) to keep, not including the currently running one
 GC_THRESHOLD = 3
 
 def validate_http_status(request_name, response):
@@ -134,10 +134,28 @@ def sort_image_list_by_tag(image_list):
     return sorted(image_list, key=lambda x:x['imageTag'])
 
 
+def delete_images_from_repository(ecr_client, image, service_name):
+    """
+    """
+
+    components = image.split(':')
+    image_ids = [ { 'imageDigest' : components[0], 'imageTag': components[1] } ]
+    repository_uri = ECS_BASE_PATH + '/' + service_name
+
+    response = ecr_client.batch_delete_image(repositoryName=repository_uri, imageIds=image_ids)
+    validate_http_status('batch_delete_image', response)
+
+    failures = len(response['failures'])
+    if failures > 0:
+        print "{} failures"
+
+    print response
+
+
 # Task Definition functions
 
 
-def gather_task_definitions(service, cluster):
+def gather_task_definitions(ecs_client, service, cluster):
     """
     Collect all task definitions for getTalent service in a cluster.
 
@@ -150,8 +168,6 @@ def gather_task_definitions(service, cluster):
         raise Exception("gather_task_definitions called with invalid cluster name {}".format(cluster))
     service = service + TASKS_SUFFIX_DICT[cluster]
 
-    ecs_client = boto3.client('ecs')
-
     response = ecs_client.list_task_definitions(familyPrefix=service, status='ACTIVE', sort='DESC')
     validate_http_status('list_task_definitions', response)
 
@@ -160,7 +176,6 @@ def gather_task_definitions(service, cluster):
 
         arn_list = response['taskDefinitionArns']
         for arn in arn_list:
-            # print arn
             td_list.append(arn)
 
         if 'nextToken' not in response:
@@ -172,8 +187,66 @@ def gather_task_definitions(service, cluster):
     return td_list
 
 
+def task_definition_image(ecs_client, td_arn):
+    """
+    Return the image used by a task definition.
+    """
+
+    response = ecs_client.describe_task_definition(taskDefinition=td_arn)
+    validate_http_status('describe_task_definition', response)
+    if len(response['taskDefinition']['containerDefinitions']) > 1:
+        return None
+
+    return response['taskDefinition']['containerDefinitions'][0]['image']
+
+
+def deregister_task(ecs_client, td_arn):
+    """
+    """
+
+    response = ecs_client.deregister_task_definition(taskDefinition=td_arn)
+    validate_http_status('derigester_task_definition', response)
+    print response['taskDefinition']['status']
+
+
+# Service functions
+
+
+def gather_all_services_for_cluster(ecs_client, cluster):
+    """
+    """
+
+    # Adjust to our ECS naming convention
+    if cluster not in TASKS_SUFFIX_DICT:
+        raise Exception("gather_task_definitions called with invalid cluster name {}".format(cluster))
+
+    response = ecs_client.list_services(cluster=cluster)
+    validate_http_status('gather_all_services_for_cluster', response)
+
+    service_list = []
+    while True:
+        arn_list = response['serviceArns']
+        for arn in arn_list:
+            service_list.append(arn)
+
+        if 'nextToken' not in response:
+            break
+
+        response = ecs_client.list_services(cluster=cluster, nextToken=response['nextToken'])
+        validate_http_status('gather_all_services_for_cluster', response)
+
+    return service_list
+
+
+# Garbage collect task definitions and their images
+
+
 def garbage_collect_ecs(service, cluster):
     """
+    Garbage collect Task Definitions revisions and their associated ECR images.
+
+    :param str service: Name of the getTalent service.
+    :param str cluster: name of the cluster to inspect.
     """
 
     # Adjust to our ECS naming convention
@@ -189,11 +262,12 @@ def garbage_collect_ecs(service, cluster):
     if len(response['services']) != 1:
         raise Exception("garbage_collect_ecs: More than one service returned for {}".format(service_name))
     current_td = response['services'][0]['taskDefinition']
+    current_image = task_definition_image(ecs_client, current_td)
 
     print "Currently Running TD: {}".format(current_td)
 
     # Get a list of all ACTIVE task definitions
-    td_arn_list = gather_task_definitions(service, cluster)
+    td_arn_list = gather_task_definitions(ecs_client, service, cluster)
 
     # Remove the task definition attached to the currently active service
     print "Found {} task definitions.".format(len(td_arn_list))
@@ -204,8 +278,37 @@ def garbage_collect_ecs(service, cluster):
     else:
         print "WARNING: Currently running task definition {} for {} not found in Task Definition list.".format(current_td, service_name)
 
-    # Prune the newest revisions that we want to keep
+    # Cull the newest revisions that we want to keep out of the list
+    for arn in td_arn_list:
+        print arn
+    print
+    count = 0
+    while count < GC_THRESHOLD:
+        del td_arn_list[0] 
+        count += 1
     for arn in td_arn_list:
         print arn
 
-    # Now go through the remaining list and remove the ECR image and task definition
+    # Gather all the images from our updated task def list
+    image_delete_list = []
+    for arn in td_arn_list:
+        image = task_definition_image(ecs_client, arn)
+        if not image:
+            print "WARNING: service {} Task Definition {} container numbers not 0.".format(service_name, arn)
+            td_arn_list.remove(arn)
+        else:
+            image_delete_list.append(image)
+
+    # Remove the task definitions on our list
+    for arn in td_arn_list:
+        print "DELETE {}".format(arn)
+
+    print
+    # Remove the images from our list, unless the current service uses it
+    for image in image_delete_list:
+        if image == current_image:
+            print "WARNING: image {} in use by task {}. Not removed.".format(image, td_arn)
+        else:
+            print "DELETE {}".format(image)
+
+    # TODO: go through all images and remove any dangling ones (those not attached to a task definition)

@@ -13,4 +13,9 @@ cluster = vars(args)[CLUSTER_NAME]
 service = vars(args)[SERVICE_NAME][0]
 
 # ecs_utils.gather_task_definitions(service, cluster)
-ecs_utils.garbage_collect_ecs(service, cluster)
+# ecs_utils.garbage_collect_ecs(service, cluster)
+
+
+ecs_client = boto3.client('ecs')
+
+ecs_utils.delete_images_from_repository(ecs_client, '528222547498.dkr.ecr.us-east-1.amazonaws.com/gettalent/candidate-service:built-at-2016-05-04-14-52-52', 'candidate-service')
