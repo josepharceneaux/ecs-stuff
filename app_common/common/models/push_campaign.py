@@ -22,6 +22,7 @@ import datetime
 from db import db
 from sqlalchemy.orm import relationship
 from candidate import Candidate
+from ..error_handling import InvalidUsage
 
 
 __author__ = 'Zohaib Ijaz <mzohaib.qc@gmail.com>'

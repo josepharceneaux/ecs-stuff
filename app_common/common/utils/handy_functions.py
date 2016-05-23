@@ -232,9 +232,11 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     error_message = e.message
             else:
                 # raise any Server error
-                log_exception("http_request: Server error from %s on %s call. "
-                              "Make sure requested server is running. Data: %s, Headers: %s" % (url, method_type,
-                                                                                                data, headers))
+                log_exception('''http_request: Server error, make sure requested server is running.
+                                 URL:     %s
+                                 Method:  %s
+                                 Data:    %s
+                                 Headers: %s''' % (url, method_type, data, headers))
                 raise
         except ConnectionError:
             # This check is for if any talent service is not running. It logs the URL on
@@ -249,9 +251,8 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                           (e.message, url, headers, data))
             raise
         except requests.RequestException as e:
-            log_exception('http_request: HTTP request failed, %s. URL: %s, Headers: %s, Data: %s' % (e.message,
-                                                                                                     url, headers,
-                                                                                                     data))
+            log_exception('http_request: HTTP request failed, %s. URL: %s, Headers: %s, Data: %s,'
+                          'Response: %s' % (e.message, url, headers, data, e.response))
             raise
         if error_message:
             log_exception('http_request: HTTP request failed, %s, '

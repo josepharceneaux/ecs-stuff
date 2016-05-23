@@ -44,6 +44,9 @@
     <!-- The user that is active in this session is now assigned to the "breakingnews" and "sports" segments, which can be used to target messages to them later." -->
 </head>
 <body>
+<div class="container">
+    <div id="device_id"></div>
+</div>
 <a href="#" id="registerForPushLink">Subscribe to Notifications</a>
 
 <div class="col-lg-6">
@@ -94,6 +97,7 @@
       console.log("getIdsAvailable:"
               + "\nUserID: " + ids.userId
               + "\nRegistration ID: " + ids.registrationId);
+        $('#device_id').html('<h4> Push Notification DeviceId : ' + ids.userId +'</h4>');
     }]);
     $('#subscribe').click(function(){
         OneSignal.push(["setSubscription", true]);
