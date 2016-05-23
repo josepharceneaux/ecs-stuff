@@ -96,6 +96,23 @@ def _get_health_check_url(host_name):
     return host_name % HEALTH_CHECK
 
 
+def _get_route_url(route):
+    """
+    This function will give us the route for a particular resource to be used in tests.
+    Input:
+    >>> '/candidates/<int:id>/phones/<int:phone_id>'
+    Output:
+    >>> '/candidates/%s/phones/%s'
+    """
+    new_sub_str = []
+    for sub_str in route.split('/'):
+        if sub_str.startswith('<'):
+            new_sub_str.append('%s')
+        else:
+            new_sub_str.append(sub_str)
+    return '/'.join(new_sub_str)
+
+
 class GTApis(object):
     """
     This class contains the getTalent flask micro services' name and respective port numbers.
