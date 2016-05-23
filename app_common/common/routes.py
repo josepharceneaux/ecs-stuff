@@ -210,13 +210,12 @@ class ActivityApi(object):
     API relative URLs for activity_service. e.g /v1/activities/
     """
     VERSION = 'v1'
-    RELATIVE_VERSION = _get_api_relative_version(VERSION)
     # /v1/activities/
-    ACTIVITIES = RELATIVE_VERSION % 'activities/'
+    ACTIVITIES = '/' + VERSION + '/activities/'
     # /v1/activities/<page>
-    ACTIVITIES_PAGE = ACTIVITIES + '<page>'
-    ACTIVITY_MESSAGES = RELATIVE_VERSION % 'messages'
-    LAST_READ = RELATIVE_VERSION % 'last-read'
+    ACTIVITIES_PAGE = '/' + VERSION + '/activities/<page>'
+    ACTIVITY_MESSAGES = '/' + VERSION + '/messages'
+    LAST_READ = '/' + VERSION + '/last-read'
 
 
 class ActivityApiUrl(object):
@@ -254,46 +253,28 @@ class ResumeApiUrl(object):
     BATCH_PROCESS = '{}/{}'.format(BATCH_URL, '<int:user_id>')
 
 
-class UserServiceApiWords(object):
-    """
-    This class contains words used for endpoints of user_service API.
-    """
-    USERS = 'users'
-    DOMAINS = 'domains'
-    DOMAIN = 'domain'
-    ROLES = '/roles'
-    GROUPS = 'groups'
-    RESET_PASSWORD = '/reset-password'
-    UPDATE_PASSWORD = '/update-password'
-    FORGOT_PASSWORD = '/forgot-password'
-    SOURCES = 'sources'
-    CUSTOM_FIELDS = 'custom_fields'
-
-
 class UserServiceApi(object):
     """
     API relative URLs for user_service. e.g. /v1/users
     """
     VERSION = 'v1'
-    USERS = UserServiceApiWords.USERS
-    DOMAINS = UserServiceApiWords.DOMAINS
     URL_PREFIX = _get_url_prefix(VERSION)
-    _GROUP = UserServiceApiWords.GROUPS + '/<int:group_id>/'
-    USER = UserServiceApiWords.USERS + "/<int:id>"
-    DOMAIN = UserServiceApiWords.DOMAINS + "/<int:id>"
-    USER_ROLES = UserServiceApiWords.USERS + "/<int:user_id>" + UserServiceApiWords.ROLES
-    DOMAIN_ROLES = UserServiceApiWords.DOMAIN + '/<int:domain_id>' + UserServiceApiWords.ROLES
-    DOMAIN_GROUPS = UserServiceApiWords.DOMAIN + "/<int:domain_id>/" + UserServiceApiWords.GROUPS
-    DOMAIN_GROUPS_UPDATE = UserServiceApiWords.DOMAIN + "/" + UserServiceApiWords.GROUPS + '/<int:group_id>'
+    USERS = "users"
+    USER = "users/<int:id>"
+    DOMAINS = "domains"
+    DOMAIN = "domains/<int:id>"
+    USER_ROLES = "users/<int:user_id>/roles"
+    DOMAIN_ROLES = "domain/<int:domain_id>/roles"
+    DOMAIN_GROUPS = "domain/<int:domain_id>/groups"
+    DOMAIN_GROUPS_UPDATE = "domain/groups/<int:group_id>"
+    USER_GROUPS = "groups/<int:group_id>/users"
+    UPDATE_PASSWORD = "users/update-password"
+    FORGOT_PASSWORD = "users/forgot-password"
+    RESET_PASSWORD = "users/reset-password/<token>"
 
-    DOMAIN_SOURCES = '/' + VERSION + '/' + UserServiceApiWords.SOURCES
-    DOMAIN_SOURCE = DOMAIN_SOURCES + '/<int:id>'
-
-    USER_GROUPS = _GROUP + UserServiceApiWords.USERS
-    UPDATE_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.UPDATE_PASSWORD
-    FORGOT_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.FORGOT_PASSWORD
-    RESET_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.RESET_PASSWORD + '/<token>'
-    DOMAIN_CUSTOM_FIELDS = '/' + VERSION + '/' + UserServiceApiWords.CUSTOM_FIELDS
+    DOMAIN_SOURCES = '/' + VERSION + '/sources'
+    DOMAIN_SOURCE = '/' + VERSION + '/sources/<int:id>'
+    DOMAIN_CUSTOM_FIELDS = '/' + VERSION + '/custom_fields'
 
 
 class UserServiceApiUrl(object):
@@ -304,23 +285,23 @@ class UserServiceApiUrl(object):
                                GTApis.USER_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     API_URL = HOST_NAME % _get_api_relative_version(UserServiceApi.VERSION)
-    USERS = API_URL % UserServiceApiWords.USERS
-    USER = USERS + '/%s'
-    DOMAINS = API_URL % UserServiceApiWords.DOMAINS
-    DOMAIN = DOMAINS + '/%s'
-    USER_ROLES_API = API_URL % (UserServiceApiWords.USERS + '/%s' + UserServiceApiWords.ROLES)
-    DOMAIN_ROLES_API = API_URL % (UserServiceApiWords.DOMAIN + '/%s' + UserServiceApiWords.ROLES)
-    DOMAIN_GROUPS_API = API_URL % (UserServiceApiWords.DOMAIN + '/%s/' + UserServiceApiWords.GROUPS)
-    DOMAIN_GROUPS_UPDATE_API = API_URL % (UserServiceApiWords.DOMAIN + '/' + UserServiceApiWords.GROUPS + '/%s')
+    USERS = API_URL % 'users'
+    USER = API_URL % 'users/%s'
+    DOMAINS = API_URL % "domains"
+    DOMAIN = API_URL % "domains/%s"
+    USER_ROLES_API = API_URL % 'users/%s/roles'
+    DOMAIN_ROLES_API = API_URL % 'domain/%s/roles'
+    DOMAIN_GROUPS_API = API_URL % 'domain/%s/groups'
+    DOMAIN_GROUPS_UPDATE_API = API_URL % 'domain/groups/%s'
 
-    DOMAIN_SOURCES = API_URL % UserServiceApiWords.SOURCES
-    DOMAIN_SOURCE = DOMAIN_SOURCES + '/%s'
+    DOMAIN_SOURCES = API_URL % "sources"
+    DOMAIN_SOURCE = API_URL % "sources/%s"
 
-    USER_GROUPS_API = API_URL % (UserServiceApiWords.GROUPS + '/%s/' + UserServiceApiWords.USERS)
+    USER_GROUPS_API = API_URL % "groups/%s/users"
     UPDATE_PASSWORD_API = API_URL % UserServiceApi.UPDATE_PASSWORD
     FORGOT_PASSWORD_API = API_URL % UserServiceApi.FORGOT_PASSWORD
-    RESET_PASSWORD_API = USERS + UserServiceApiWords.RESET_PASSWORD + '/%s'
-    DOMAIN_CUSTOM_FIELDS = API_URL % UserServiceApiWords.CUSTOM_FIELDS
+    RESET_PASSWORD_API = USERS + '/reset-password/%s'
+    DOMAIN_CUSTOM_FIELDS = API_URL % "custom_fields"
 
 
 class CandidateApiWords(object):
