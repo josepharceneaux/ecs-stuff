@@ -138,6 +138,21 @@ class EmailCampaignBlast(db.Model):
         return cls.query.filter(
             cls.campaign_id == campaign_id).order_by(desc(cls.sent_datetime)).first()
 
+    @classmethod
+    def get_by_send(cls, send_obj):
+        """
+        This method takes EmailCampaignSend object as input an returns associated EmailCampaignBlast object.
+        :param EmailCampaignSend send_obj: campaign send object
+        :rtype EmailCampaignBlast | None
+        """
+        assert isinstance(send_obj, EmailCampaignSend), 'send_obj must be EmailCampaignSend instance, found: %s, type: %s' % (send_obj, type(send_obj))
+        blast = send_obj.blast
+        if isinstance(blast, EmailCampaignBlast):
+            return blast
+        # if blast_id is not there, match by sent_datetime as we are doing in web2py app:
+        # https://github.com/Veechi/Talent-Web/blob/master/web2py/applications/web/controllers/campaign.py#L63
+        return cls.query.filter_by(sent_datetime=send_obj.sent_datetime).first()
+
     def __repr__(self):
         return "<EmailCampaignBlast (Sends: %s, Opens: %s)>" % (self.sends, self.opens)
 

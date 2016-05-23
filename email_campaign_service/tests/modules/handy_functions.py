@@ -442,7 +442,7 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
             }
 
 
-def send_campaign_email_to_candidate(campaign, email, candidate_id, blast_id):
+def send_campaign_email_to_candidate(campaign, email, candidate_id, blast_id=None):
     """
     This function will create a campaign send object and then it will send the email to given email address.
     :param campaign: EmailCampaign object
