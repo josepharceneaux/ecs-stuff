@@ -717,6 +717,9 @@ class CandidateReference(db.Model):
     reference_phone = relationship('ReferencePhone', cascade='all, delete-orphan', passive_deletes=True)
     reference_web_addresses = relationship('ReferenceWebAddress', cascade='all, delete-orphan', passive_deletes=True)
 
+    # TODO: Below tables should be removed once all models codes & databases are synched
+    resume_id = db.Column('ResumeId', db.BIGINT, nullable=True)
+
     def __repr__(self):
         return "<CandidateReference (candidate_id=' %r')>" % self.candidate_id
 
