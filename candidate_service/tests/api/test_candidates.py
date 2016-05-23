@@ -20,7 +20,7 @@ from candidate_service.common.routes import CandidateApiUrl, UserServiceApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 
 
-class TestCreateCandidate(object):
+class TestCandidateSourceId(object):
     SOURCE_URL = UserServiceApiUrl.DOMAIN_SOURCES
     CANDIDATE_URL = CandidateApiUrl.CANDIDATE
     CANDIDATES_URL = CandidateApiUrl.CANDIDATES
@@ -85,6 +85,40 @@ class TestCreateCandidate(object):
         print response_info(get_resp)
         assert get_resp.status_code == http_status_codes.ALL_OK
         assert get_resp.json()['candidate']['source_id'] == source_id
+
+    def test_remove_candidate_source_id(self, user_first, access_token_first, talent_pool):
+        """
+        Test: Remove candidate's source ID by sending in a "None" value
+        """
+        AddUserRoles.all_roles(user_first)
+
+        # Add source to candidate's domain
+        source_data = {"source": {"description": "testing_{}".format(str(uuid.uuid4())[:5])}}
+        resp = send_request('post', self.SOURCE_URL, access_token_first, source_data)
+        print response_info(resp)
+        source_id = resp.json()['source']['id']
+
+        # Create candidate
+        data = {'candidates': [{'source_id': source_id, 'talent_pool_ids': {'add': [talent_pool.id]}}]}
+        create_resp = send_request('post', self.CANDIDATES_URL, access_token_first, data)
+        print response_info(create_resp)
+
+        candidate_id = create_resp.json()['candidates'][0]['id']
+
+        # Retrieve candidate
+        get_resp = send_request('get', self.CANDIDATE_URL % candidate_id, access_token_first)
+        print response_info(get_resp)
+        assert get_resp.json()['candidate']['source_id'] == source_id
+
+        # Remove candidate's source ID
+        update_data = {'candidates': [{'source_id': None}]}
+        update_resp = send_request('patch', self.CANDIDATE_URL % candidate_id, access_token_first, update_data)
+        print response_info(update_resp)
+
+        # Retrieve candidate
+        get_resp = send_request('get', self.CANDIDATE_URL % candidate_id, access_token_first)
+        print response_info(get_resp)
+        assert get_resp.json()['candidate']['source_id'] is None
 
 
 class TestUpdateCandidateName(object):
