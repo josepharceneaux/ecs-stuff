@@ -1099,8 +1099,10 @@ class CampaignBase(object):
                                error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
         # GET smartlist candidates
         lists_of_smartlist_candidates = map(self.get_smartlist_candidates, campaign_smartlists)
-        # Making a flat list out of "lists_of_smartlist_candidates"
-        candidates = list(itertools.chain.from_iterable(lists_of_smartlist_candidates))
+        # Making a flat list out of "lists_of_smartlist_candidates" and removing duplicate candidate ids
+        # which ensures that if one candidate is associated with multiple smartlists, then that candidate receives
+        # only one campaign.
+        candidates = list(set(itertools.chain(*lists_of_smartlist_candidates)))
         if not candidates:
             raise InvalidUsage('No candidate is associated with smartlist(s). %s(id:%s). campaign smartlist ids are %s'
                                % (self.campaign_type, self.campaign.id,
