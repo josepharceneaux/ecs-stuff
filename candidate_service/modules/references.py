@@ -91,7 +91,6 @@ def create_references(candidate_id, references):
     created_reference_ids = []
     for reference in references:
         candidate_reference_dict = dict(
-            resume_id=candidate_id,
             candidate_id=candidate_id,
             person_name=reference.get('name'),
             position_title=reference.get('position_title'),

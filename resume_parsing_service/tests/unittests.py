@@ -6,6 +6,7 @@ __author__ = 'erik@gettalent.com'
 from bs4 import BeautifulSoup as bs4
 # JSON outputs.
 from .resume_xml import DOCX
+from .resume_xml import GET_1301
 from .resume_xml import GET_626a
 from .resume_xml import GET_626b
 from .resume_xml import GET_642
@@ -13,7 +14,7 @@ from .resume_xml import GET_646
 from .resume_xml import PDF
 from .resume_xml import PDF_13
 from .resume_xml import PDF_14
-from .resume_xml import GET_1301
+from .resume_xml import REFERENCE_XML
 # Modules being tested.
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_addresses
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_educations
@@ -22,6 +23,7 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_exp
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_name
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_phones
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_skills
+from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_reference
 
 # XML Combinations:
 import edu_combinations
@@ -755,3 +757,10 @@ def test_parsing_skills():
         successful_parse = parse_candidate_skills(combo_to_parse)
         # Sometime it may return an empty array so we cannot just assert on this.
         assert successful_parse is not None
+
+
+def test_reference_parsing():
+    soup = bs4(REFERENCE_XML)
+    references_list = soup.findAll('references')
+    references = parse_candidate_reference(references_list)
+    assert references is not None

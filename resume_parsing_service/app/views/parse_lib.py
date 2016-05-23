@@ -83,6 +83,7 @@ def process_resume(parse_params):
         parsed_resume['candidate']['resume_url'] = filename_str
     except Exception as e:
         logger.exception('Failure during s3 upload; reason: {}'.format(e.message))
+    candidate_references = parsed_resume['candidate'].pop('references', None)
     candidate_post_response = create_parsed_resume_candidate(parsed_resume['candidate'],
                                                              oauth_string)
     response_dict = json.loads(candidate_post_response.content)
@@ -104,8 +105,25 @@ def process_resume(parse_params):
         response_dict = json.loads(update_response.content)
         logger.info('Response Dict: {}'.format(response_dict))
 
+
     candidate_id = response_dict.get('candidates')[0]['id']
     logger.debug('Candidate created with id: {}'.format(candidate_id))
+    if candidate_references:
+        post_body = {
+            'candidate_references': [
+                {'comments': candidate_references}
+            ]
+        }
+        try:
+            references_response = requests.post(
+                CandidateApiUrl.REFERENCES % candidate_id, data=json.dumps(post_body),
+                headers={'Authorization': oauth_string,
+                         'Content-Type': 'application/json'})
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+            logger.warn("process_resume. Connection error creating candidate {} references.".format(candidate_id))
+        if references_response.status_code is not requests.codes.created:
+            logger.warn("process_resume. Error creating candidate {} references. {}".format(
+                candidate_id, references_response.content))
     candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id,
                                           headers={'Authorization': oauth_string})
     if candidate_get_response.status_code is not requests.codes.ok:
