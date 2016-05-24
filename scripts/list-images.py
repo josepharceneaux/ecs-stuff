@@ -37,7 +37,7 @@ tags_only = 'all'
 if args.tags:
     tags_only = args.tags
 
-image_list = ecs_utils.gather_images_from_repo(service, tags_only)
+image_list = ecs_utils.gather_images_from_repository(service, tags_only)
 
 if tags_only == 'only':
     image_list = ecs_utils.sort_image_list_by_tag(image_list)
