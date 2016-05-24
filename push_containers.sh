@@ -34,8 +34,12 @@ if [ $production ] ; then
 	# Update the task definition and restart the service
 	# Can only do this once we know there's such an image
 	# python scripts/move-stage-to-prod.py ${app} ${version_tag}
+
 	echo python scripts/move-stage-to-prod.py ${app}
 	python scripts/move-stage-to-prod.py ${app}
+
+	# Garbage collect task definitions and container images
+	python scripts/garbage-collect-ecs.py ${app} stage
     done
 
 else
@@ -55,6 +59,9 @@ else
 	# Update task definition for this service and restart staging services
 	echo "python ecs_task_update.py ${app} ${timestamp_tag} stage restart"
 	python scripts/ecs_task_update.py ${app} ${timestamp_tag} stage restart
+
+	# Garbage collect task definitions and container images
+	python scripts/garbage-collect-ecs.py ${app} stage
     done
 
     # If we've pushed and tagged all the images, tag the branch
