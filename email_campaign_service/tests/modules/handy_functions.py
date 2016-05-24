@@ -5,7 +5,6 @@ import imaplib
 import datetime
 
 # Third Party
-from redo import retry
 import requests
 
 # Application Specific

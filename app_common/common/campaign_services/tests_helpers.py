@@ -372,7 +372,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(user_id, (int, long))
         raise_if_not_instance_of(_type, (int, long))
         raise_if_not_instance_of(source_id, (int, long))
-        retry(_get_activity, args=(user_id, _type, source_id), sleeptime=3, attempts=20, sleepscale=1,
+        retry(_assert_activity, args=(user_id, _type, source_id), sleeptime=3, attempts=20, sleepscale=1,
               retry_exceptions=(AssertionError,))
 
     @staticmethod
@@ -437,12 +437,11 @@ class CampaignsTestsHelpers(object):
             raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
             db.session.commit()
             blasts = campaign.blasts.all()
-            assert blasts
-            return blasts
-        raise_if_not_instance_of(access_token, basestring)
-        raise_if_not_instance_of(blasts_url, basestring)
-        blasts_get_response = send_request('get', blasts_url, access_token)
-        blasts = blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
+        else:
+            raise_if_not_instance_of(access_token, basestring)
+            raise_if_not_instance_of(blasts_url, basestring)
+            blasts_get_response = send_request('get', blasts_url, access_token)
+            blasts = blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
         assert blasts
         return blasts
 
@@ -488,13 +487,12 @@ class CampaignsTestsHelpers(object):
             db.session.commit()
             assert len(campaign.blasts.all()) > blast_index
             blasts = campaign.blasts[blast_index]
-            assert blasts
-            return blasts
-        raise_if_not_instance_of(access_token, basestring)
-        raise_if_not_instance_of(blasts_url, basestring)
-        blasts_get_response = send_request('get', blasts_url, access_token)
-        assert blasts_get_response.ok
-        blasts = blasts_get_response.json()['blast']
+        else:
+            raise_if_not_instance_of(access_token, basestring)
+            raise_if_not_instance_of(blasts_url, basestring)
+            blasts_get_response = send_request('get', blasts_url, access_token)
+            assert blasts_get_response.ok
+            blasts = blasts_get_response.json()['blast']
         assert blasts
         return blasts
 
@@ -833,7 +831,7 @@ def _get_invalid_id_and_status_code_pair(invalid_ids):
             (invalid_ids[1], ResourceNotFound.http_status_code())]
 
 
-def _get_activity(user_id, _type, source_id):
+def _assert_activity(user_id, _type, source_id):
     """
     This gets that activity from database table Activity for given params
     :param (int, long) user_id: Id of user
@@ -848,4 +846,3 @@ def _get_activity(user_id, _type, source_id):
     db.session.commit()
     activity = Activity.get_by_user_id_type_source_id(user_id, _type, source_id)
     assert activity
-    return activity

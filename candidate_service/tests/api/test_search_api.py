@@ -1276,7 +1276,8 @@ def get_response(access_token, arguments_to_url, expected_count, timeout=100):
     # Wait for cloudsearch to update the candidates
     url = CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
-    for _ in retrier(attempts=10, sleeptime=3):
+    attempts = timeout / 3 + 1
+    for _ in retrier(attempts=attempts, sleeptime=3):
         if len(requests.get(url, headers=headers).json()['candidates']) >= expected_count:
             return requests.get(url=url, headers=headers)
     raise NotFoundError('Unable to get expected number of candidates')
