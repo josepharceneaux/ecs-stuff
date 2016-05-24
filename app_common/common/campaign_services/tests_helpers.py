@@ -442,7 +442,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(blasts_url, basestring)
         blasts_get_response = send_request('get', blasts_url, access_token)
-        blasts =  blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
+        blasts = blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
         assert blasts
         return blasts
 
@@ -455,7 +455,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
-        attempts = int(timeout / 3) + 1
+        attempts = timeout / 3 + 1
         return retry(CampaignsTestsHelpers.get_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
                      args=(campaign, access_token, blasts_url), retry_exceptions=(AssertionError,))
 
@@ -470,7 +470,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
-        attempts = int(timeout/3) + 1
+        attempts = timeout / 3 + 1
         return retry(CampaignsTestsHelpers.get_blast_with_index, sleeptime=3, attempts=attempts, sleepscale=1,
                      args=(campaign, blast_index, access_token, blasts_url), retry_exceptions=(AssertionError,))
 
@@ -484,22 +484,19 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         if not blasts_url:
-            try:
-                raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
-                db.session.commit()
-                blasts = campaign.blasts[blast_index]
-                assert blasts
-                return blasts
-
-            except IndexError:
-                return []
+            raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
+            db.session.commit()
+            assert len(campaign.blasts.all()) > blast_index
+            blasts = campaign.blasts[blast_index]
+            assert blasts
+            return blasts
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(blasts_url, basestring)
         blasts_get_response = send_request('get', blasts_url, access_token)
-        if blasts_get_response.ok:
-            blasts = blasts_get_response.json()['blast']
-            assert blasts
-            return blasts
+        assert blasts_get_response.ok
+        blasts = blasts_get_response.json()['blast']
+        assert blasts
+        return blasts
 
     @staticmethod
     def verify_sends(campaign, expected_count, blast_index, blast_url=None, access_token=None):
@@ -534,7 +531,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(abort_time_for_sends, int)
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blast_url, basestring) if blast_url else None
-        attempts = int(abort_time_for_sends/3) + 1
+        attempts = abort_time_for_sends / 3 + 1
         retry(CampaignsTestsHelpers.verify_sends, sleeptime=3, attempts=attempts, sleepscale=1,
               args=(campaign, expected_count, blast_index, blast_url, access_token),
               retry_exceptions=(AssertionError,))
@@ -567,7 +564,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
-        attempts = int(timeout/3) + 1
+        attempts = timeout / 3 + 1
         retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
               args=(campaign, access_token, blasts_url, expected_count),
               retry_exceptions=(AssertionError,))
@@ -611,7 +608,7 @@ class CampaignsTestsHelpers(object):
         smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
         smartlist_id = smartlists['smartlist']['id']
         if assert_candidates:
-            attempts = int(timeout/3) + 1
+            attempts = timeout / 3 + 1
             retry(assert_smartlist_candidates, sleeptime=3, attempts=attempts, sleepscale=1,
                   args=(smartlist_id, len(candidate_ids), access_token), retry_exceptions=(AssertionError,))
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)

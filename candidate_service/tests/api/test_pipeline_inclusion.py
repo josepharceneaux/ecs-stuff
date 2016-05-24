@@ -50,11 +50,11 @@ class TestSearchCandidatePipeline(object):
             if len(search(params, access_token_first)['candidates']) >= 1:
                 get_resp = send_request('get', self.PIPELINE_INCLUSION_URL % candidate_id, access_token_first)
                 print response_info(get_resp)
-                if get_resp.status_code == self.OK and len(get_resp.json()['candidate_pipelines']) == len(data['talent_pipelines']):
+                if get_resp.ok and len(get_resp.json()['candidate_pipelines']) == len(data['talent_pipelines']):
                     break
         else:
             get_resp = send_request('get', self.PIPELINE_INCLUSION_URL % candidate_id, access_token_first)
-            assert get_resp.status_code == self.OK and len(get_resp.json()['candidate_pipelines']) == len(data['talent_pipelines'])
+            assert get_resp.ok and len(get_resp.json()['candidate_pipelines']) == len(data['talent_pipelines'])
 
     def test_search_for_non_existing_candidate_in_pipeline(self, user_first, access_token_first, candidate_first):
         """
