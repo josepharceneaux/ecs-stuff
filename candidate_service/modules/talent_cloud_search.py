@@ -137,6 +137,17 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
                                                                                            'ReturnEnabled': False})
 }
 
+# Filter all text, text-array, literal and literal-array index fields
+QUERY_OPTIONS = filter(lambda field: 'text' in field[1]['IndexFieldType'] or 'literal' in field[1]['IndexFieldType'],
+                       INDEX_FIELD_NAME_TO_OPTIONS.items())
+
+QUERY_OPTIONS = map(lambda option: option[0], QUERY_OPTIONS)
+
+QUERY_OPTIONS.remove('position')
+QUERY_OPTIONS.append('position^1.5')
+QUERY_OPTIONS.remove('skill_description')
+QUERY_OPTIONS.append('skill_description^1.2')
+
 coordinates = []
 geo_params = dict()
 
@@ -447,7 +458,7 @@ def upload_candidate_documents_in_domain(domain_id):
                                                                                User.domain_id == domain_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of domain id %s", len(candidate_ids), domain_id)
-    return upload_candidate_documents.delay(candidate_ids, domain_id, 50)
+    return upload_candidate_documents.delay(candidate_ids, domain_id, 10)
 
 
 def upload_candidate_documents_of_user(user_id):
@@ -695,7 +706,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     filter_query = "(and %s %s %s)" % (filter_query, domain_filter, talent_pool_filter)
 
-    params = dict(query=search_query, sort=sort, size=search_limit, query_parser='lucene')
+    params = dict(query=search_query, sort=sort, size=search_limit, query_parser='lucene', query_options={'fields': QUERY_OPTIONS})
     if offset:
         params['start'] = offset
     else:

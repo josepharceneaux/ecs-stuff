@@ -843,7 +843,7 @@ def handle_email_bounce(message_id, bounce, emails):
     # Mark the send object as bounced.
     else:
         send_obj.update(is_ses_bounce=True)
-        blast = send_obj.blast
+        blast = EmailCampaignBlast.get_by_send(send_obj)
 
         if not blast:
             logger.error('Unable to find email campaign blast associated with email campaign send (id:%s).'
