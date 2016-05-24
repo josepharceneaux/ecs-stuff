@@ -360,7 +360,7 @@ class CandidatesResource(Resource):
             # Provided source ID must belong to candidate's domain
             source_id = _candidate_dict.get('source_id')
             if source_id:
-                source = CandidateSource.get_by(source_id=source_id, domain_id=domain_id)
+                source = CandidateSource.get_by(id=source_id, domain_id=domain_id)
                 if not source:
                     raise InvalidUsage("Provided source ID ({source_id}) not "
                                        "recognized for candidate's domain (id = {domain_id})"
