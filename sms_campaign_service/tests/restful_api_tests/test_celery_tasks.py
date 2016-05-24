@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 
 # Third Party
 import requests
+from requests import codes
 
 # Common Utils
 from sms_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
@@ -51,13 +52,13 @@ from sms_campaign_service.tests.modules.common_functions import \
      assert_api_send_response, assert_campaign_schedule, delete_test_scheduled_task)
 
 
-# TODO: Add a test where two smartlists have same candidate associated with them.
-# TODO: Sends should be 1 not 2. (GET-1287)
 class TestCeleryTasks(object):
     """
     This class contains tasks that run on celery or if  the fixture they use has some
     processing on Celery.
     """
+
+    EXPECTED_SENDS = 2
 
     @staticmethod
     def send_campaign(campaign, access_token):
@@ -82,9 +83,9 @@ class TestCeleryTasks(object):
         campaign.update(body_text='Hi all, please visit http://www.abc.com or '
                                   'http://www.123.com or http://www.xyz.com')
         response_send = self.send_campaign(campaign, access_token_first)
-        assert_api_send_response(campaign, response_send, requests.codes.OK)
-        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id,
-                                                           access_token_first)
+        assert_api_send_response(campaign, response_send, codes.OK)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
+                                                           campaign_id, access_token_first)
 
     def test_campaign_send_with_two_candidates_with_one_phone(
             self, access_token_first, user_first, sms_campaign_with_one_valid_candidate):
@@ -95,9 +96,11 @@ class TestCeleryTasks(object):
         response_send = self.send_campaign(sms_campaign_with_one_valid_candidate,
                                            access_token_first)
         assert_api_send_response(sms_campaign_with_one_valid_candidate, response_send,
-                                 requests.codes.OK)
-        assert_on_blasts_sends_url_conversion_and_activity(
-            user_first.id, 1, sms_campaign_with_one_valid_candidate['id'], access_token_first)
+                                 codes.OK)
+        expected_sends = 1
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, expected_sends,
+                                                           sms_campaign_with_one_valid_candidate['id'],
+                                                           access_token_first)
 
     def test_campaign_send_with_two_candidates_having_different_phones_one_link_in_text(
             self, access_token_first, user_first, sms_campaign_of_user_first):
@@ -108,9 +111,9 @@ class TestCeleryTasks(object):
         """
         campaign_id = sms_campaign_of_user_first['id']
         response_send = self.send_campaign(sms_campaign_of_user_first, access_token_first)
-        assert_api_send_response(sms_campaign_of_user_first, response_send, requests.codes.OK)
-        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id,
-                                                           access_token_first)
+        assert_api_send_response(sms_campaign_of_user_first, response_send, codes.OK)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
+                                                           campaign_id, access_token_first)
 
     def test_campaign_send_with_other_user_of_same_domain(self, access_token_same,
                                                           user_same_domain,
@@ -124,9 +127,9 @@ class TestCeleryTasks(object):
         CampaignsTestsHelpers.assign_roles(user_same_domain)
         campaign_id = sms_campaign_of_user_first['id']
         response_send = self.send_campaign(sms_campaign_of_user_first, access_token_same)
-        assert_api_send_response(sms_campaign_of_user_first, response_send, requests.codes.OK)
-        assert_on_blasts_sends_url_conversion_and_activity(user_same_domain.id, 2, campaign_id,
-                                                           access_token_same)
+        assert_api_send_response(sms_campaign_of_user_first, response_send, codes.OK)
+        assert_on_blasts_sends_url_conversion_and_activity(user_same_domain.id, self.EXPECTED_SENDS,
+                                                           campaign_id, access_token_same)
 
     def test_campaign_send_with_two_candidates_with_different_phones_no_link_in_text(
             self, access_token_first, user_first, sms_campaign_of_user_first):
@@ -140,9 +143,9 @@ class TestCeleryTasks(object):
         campaign = SmsCampaign.get_by_id(str(campaign_id))
         campaign.update(body_text='Hi,all')
         response_send = self.send_campaign(sms_campaign_of_user_first, access_token_first)
-        assert_api_send_response(campaign, response_send, requests.codes.OK)
-        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id,
-                                                           access_token_first)
+        assert_api_send_response(campaign, response_send, codes.OK)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
+                                                           campaign_id, access_token_first)
 
     def test_campaign_send_with_multiple_smartlists(
             self, access_token_first, user_first, sms_campaign_with_two_smartlists):
@@ -154,10 +157,28 @@ class TestCeleryTasks(object):
         """
         campaign_id = sms_campaign_with_two_smartlists['id']
         response_post = self.send_campaign(sms_campaign_with_two_smartlists, access_token_first)
-        assert_api_send_response(sms_campaign_with_two_smartlists, response_post, requests.codes.OK)
-        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2, campaign_id,
-                                                           access_token_first)
+        assert_api_send_response(sms_campaign_with_two_smartlists, response_post, codes.OK)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
+                                                           campaign_id, access_token_first)
 
+    def test_campaign_send_with_same_candidate_in_multiple_smartlists(
+            self, access_token_first, user_first,
+            sms_campaign_with_same_candidate_in_multiple_smartlists):
+        """
+        - This tests the endpoint /v1/sms-campaigns/:id/send
+
+        User auth token is valid, campaign has two smartlists associated, Smartlists have one
+        common candidate. One smartlist has 2 candidate and other smartlist has 1 candidate.
+        Total number of sends should be 2.
+        """
+        campaign_id = sms_campaign_with_same_candidate_in_multiple_smartlists['id']
+        response_post = self.send_campaign(sms_campaign_with_same_candidate_in_multiple_smartlists,
+                                           access_token_first)
+        assert_api_send_response(sms_campaign_with_same_candidate_in_multiple_smartlists,
+
+                                 response_post, codes.OK)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
+                                                           campaign_id, access_token_first)
 
 # TODO: Assigned a JIRA GET-1277 to saad for these
 # class TestCampaignSchedule(object):
@@ -258,7 +279,7 @@ class TestURLRedirectionApi(object):
                                                       campaign_in_db)
         response_get = _use_ngrok_or_local_address(
             'get', url_conversion_by_send_test_sms_campaign.source_url)
-        assert response_get.status_code == requests.codes.OK, 'Response should be ok'
+        assert response_get.status_code == codes.OK, 'Response should be ok'
         # stats after making HTTP GET request to source URL
         hit_count_after, clicks_after = _get_hit_count_and_clicks(
             url_conversion_by_send_test_sms_campaign,
@@ -466,7 +487,7 @@ def _delete_sms_campaign(campaign, header):
     """
     campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
     response = requests.delete(SmsCampaignApiUrl.CAMPAIGN % campaign_id, headers=header)
-    assert response.status_code == requests.codes.OK, 'It should get ok response (200)'
+    assert response.status_code == codes.OK, 'It should get ok response (200)'
     db.session.commit()
 
 

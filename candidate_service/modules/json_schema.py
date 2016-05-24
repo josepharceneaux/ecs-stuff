@@ -1,8 +1,10 @@
 """
 JSON Schemas for validating data sent to CandidatesResource
 """
+import sys
 from datetime import datetime
 
+MAX_INT = sys.maxint
 CURRENT_YEAR = datetime.now().year
 
 candidates_resource_schema_post = {
@@ -44,7 +46,9 @@ candidates_resource_schema_post = {
                         "type": ["string", "null"]
                     },
                     "source_id": {
-                        "type": ["integer", "null"]
+                        "type": ["integer", "null"],
+                        "minimum": 1,
+                        "maximum": MAX_INT
                     },
                     "objective": {
                         "type": ["string", "null"]
@@ -598,7 +602,9 @@ candidates_resource_schema_patch = {
                         "type": ["string", "null"]
                     },
                     "source_id": {
-                        "type": ["integer", "null"]
+                        "type": ["integer", "null"],
+                        "minimum": 1,
+                        "maximum": MAX_INT
                     },
                     "objective": {
                         "type": ["string", "null"]

@@ -58,7 +58,8 @@ from candidate_service.common.models.candidate import (
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
-    CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment, CandidateReference
+    CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment,
+    CandidateReference, CandidateSource
 )
 from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
@@ -111,14 +112,13 @@ class CandidatesResource(Resource):
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
         start_time = time()
-        # Get authenticated user
-        authed_user, body_dict = request.user, get_json_if_exist(request)
 
-        # Validate json data
-        try:
-            validate(instance=body_dict, schema=candidates_resource_schema_post, format_checker=FormatChecker())
-        except ValidationError as e:
-            raise InvalidUsage("Schema validation error: %s" % e.message, custom_error.INVALID_INPUT)
+        # Validate and retrieve json data
+        body_dict = get_json_data_if_validated(request, candidates_resource_schema_post)
+
+        # Get authenticated user & user's domain ID
+        authed_user = request.user
+        domain_id = authed_user.domain_id
 
         candidates = body_dict.get('candidates')
 
@@ -140,7 +140,7 @@ class CandidatesResource(Resource):
 
                 # Check for candidate's email in authed_user's domain
                 candidate_email_obj = CandidateEmail.query.join(Candidate).join(User) \
-                    .filter(User.domain_id == authed_user.domain_id) \
+                    .filter(User.domain_id == domain_id) \
                     .filter(CandidateEmail.address == email_address).first()
 
                 # If candidate's email is found, check if it's web-hidden
@@ -159,6 +159,16 @@ class CandidatesResource(Resource):
                         raise InvalidUsage('Candidate with email: {}, already exists'.format(email_address),
                                            error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
                                            additional_error_info={'id': candidate_id})
+
+            # Provided source ID must belong to candidate's domain
+            source_id = _candidate_dict.get('source_id')
+            if source_id:
+                source = CandidateSource.get_by(id=source_id, domain_id=domain_id)
+                if not source:
+                    raise InvalidUsage("Provided source ID ({source_id}) not "
+                                       "recognized for candidate's domain (id = {domain_id})"
+                                       .format(source_id=source_id, domain_id=domain_id),
+                                       error_code=custom_error.INVALID_SOURCE_ID)
 
             for custom_field in _candidate_dict.get('custom_fields') or []:
                 custom_field_id = custom_field.get('custom_field_id')
@@ -194,12 +204,12 @@ class CandidatesResource(Resource):
 
         # Custom fields must belong to user's domain
         if all_cf_ids:
-            if not is_custom_field_authorized(authed_user.domain_id, all_cf_ids):
+            if not is_custom_field_authorized(domain_id, all_cf_ids):
                 raise ForbiddenError("Unauthorized custom field IDs", custom_error.CUSTOM_FIELD_FORBIDDEN)
 
         # Areas of interest must belong to user's domain
         if all_aoi_ids:
-            if not is_area_of_interest_authorized(authed_user.domain_id, all_aoi_ids):
+            if not is_area_of_interest_authorized(domain_id, all_aoi_ids):
                 raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
 
         # Create candidate(s)
@@ -278,6 +288,8 @@ class CandidatesResource(Resource):
         # Get authenticated user & candidate ID
         authed_user, candidate_id_from_url = request.user, kwargs.get('id')
 
+        domain_id = authed_user.domain_id
+
         # If candidate ID is provided via url, only one candidate update is permitted
         candidates = body_dict['candidates']
         if candidate_id_from_url and len(candidates) > 1:
@@ -345,6 +357,16 @@ class CandidatesResource(Resource):
                             raise InvalidUsage("Military service's date must be in a date format",
                                                error_code=custom_error.MILITARY_INVALID_DATE)
 
+            # Provided source ID must belong to candidate's domain
+            source_id = _candidate_dict.get('source_id')
+            if source_id:
+                source = CandidateSource.get_by(source_id=source_id, domain_id=domain_id)
+                if not source:
+                    raise InvalidUsage("Provided source ID ({source_id}) not "
+                                       "recognized for candidate's domain (id = {domain_id})"
+                                       .format(source_id=source_id, domain_id=domain_id),
+                                       error_code=custom_error.INVALID_SOURCE_ID)
+
         if skip:
             db.session.commit()
             # Update candidates in cloud search
@@ -353,12 +375,12 @@ class CandidatesResource(Resource):
 
         # Custom fields must belong to user's domain
         if all_cf_ids:
-            if not is_custom_field_authorized(authed_user.domain_id, all_cf_ids):
+            if not is_custom_field_authorized(domain_id, all_cf_ids):
                 raise ForbiddenError("Unauthorized custom field IDs", custom_error.CUSTOM_FIELD_FORBIDDEN)
 
         # Areas of interest must belong to user's domain
         if all_aoi_ids:
-            if not is_area_of_interest_authorized(authed_user.domain_id, all_aoi_ids):
+            if not is_area_of_interest_authorized(domain_id, all_aoi_ids):
                 raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
 
         # Candidates must belong to user's domain
