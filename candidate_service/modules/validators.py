@@ -258,6 +258,7 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "military_highest_grade": 'string_list',
     "military_end_date_from": 'digit',
     "military_end_date_to": 'digit',
+    "tags": "string_list",
     # return fields
     "fields": 'return_fields',
     # Id of a talent_pool from where to search candidates

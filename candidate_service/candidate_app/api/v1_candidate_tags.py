@@ -14,8 +14,10 @@ from candidate_service.modules.validators import (
 )
 
 # Modules
-from candidate_service.modules.tags import (create_tags, get_tags, update_candidate_tag,
-                                            update_candidate_tags, delete_tag, delete_tags)
+from candidate_service.modules.tags import (
+    create_tags, get_tags, update_candidate_tag, update_candidate_tags, delete_tag, delete_tags
+)
+from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 
 # Models
 from candidate_service.common.models.user import DomainRole
@@ -69,6 +71,10 @@ class CandidateTagResource(Resource):
 
         # Create tags
         created_tag_ids = create_tags(candidate_id=candidate_id, tags=body_dict['tags'])
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
+
         return {'tags': [{'id': tag_id} for tag_id in created_tag_ids]}, 201
 
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
@@ -143,6 +149,10 @@ class CandidateTagResource(Resource):
 
         # Update tag(s)
         updated_tag_ids = update_candidate_tags(candidate_id=candidate_id, tags=tags)
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
+
         return {'updated_tags': [{'id': tag_id} for tag_id in updated_tag_ids]}
 
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
@@ -170,6 +180,9 @@ class CandidateTagResource(Resource):
         # Delete specified tag
         if tag_id:
             return {'deleted_tag': delete_tag(candidate_id=candidate_id, tag_id=tag_id)}
+
+        # Update cloud search
+        upload_candidate_documents([candidate_id])
 
         # Delete all of candidate's tags
         return {'deleted_tags': delete_tags(candidate_id)}
