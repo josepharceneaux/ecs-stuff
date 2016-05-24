@@ -96,7 +96,7 @@ def _get_health_check_url(host_name):
     return host_name % HEALTH_CHECK
 
 
-def _get_route_url(route):
+def _get_modified_route(route):
     """
     This function will give us the route for a particular resource to be used in tests.
     Input:
@@ -398,8 +398,8 @@ class CandidateApiUrl(object):
     CANDIDATES = HOST_NAME % CandidateApi.CANDIDATES
     CANDIDATE = CANDIDATES + "/%s"
 
-    ADDRESSES = CANDIDATE + '/addresses'
-    ADDRESS = ADDRESSES + "/%s"
+    ADDRESSES = HOST_NAME % _get_modified_route(CandidateApi.ADDRESSES)
+    ADDRESS = HOST_NAME % _get_modified_route(CandidateApi.ADDRESS)
 
     AOIS = CANDIDATE + '/areas_of_interest'
     AOI = AOIS + "/%s"
@@ -470,7 +470,7 @@ class CandidateApiUrl(object):
 
     PIPELINES = CANDIDATE + '/pipelines'
 
-
+ 
 class WidgetApi(object):
     """
     API relative URLs for widget_service. e.g. /v1/universities
@@ -478,10 +478,9 @@ class WidgetApi(object):
     VERSION = 'v1'
     URL_PREFIX = _get_url_prefix(VERSION)
     DOMAINS = 'domains'
-    _ENCRYPTED_DOMAIN_ID = '/<path:encrypted_domain_id>'
-    DOMAIN_WIDGETS = DOMAINS + _ENCRYPTED_DOMAIN_ID + '/widgets/<path:encrypted_widget_id>'
-    DOMAIN_INTERESTS = DOMAINS + _ENCRYPTED_DOMAIN_ID + '/interests'
-    DOMAIN_MAJORS = DOMAINS + _ENCRYPTED_DOMAIN_ID + '/majors'
+    DOMAIN_WIDGETS = 'domains/<path:encrypted_domain_id>/widgets/<path:encrypted_widget_id>'
+    DOMAIN_INTERESTS = 'domains/<path:encrypted_domain_id>/interests'
+    DOMAIN_MAJORS = 'domains/<path:encrypted_domain_id>/majors'
     UNIVERSITIES = 'universities'
 
 
@@ -596,9 +595,8 @@ class SpreadsheetImportApi(object):
     VERSION = 'v1'
     # This is /v1/
     URL_PREFIX = _get_url_prefix(VERSION)
-    _PARSE_SPREADSHEET = 'parse_spreadsheet'
-    CONVERT_TO_TABLE = _PARSE_SPREADSHEET + '/convert_to_table'
-    IMPORT_CANDIDATES = _PARSE_SPREADSHEET + '/import_candidates'
+    CONVERT_TO_TABLE = 'parse_spreadsheet/convert_to_table'
+    IMPORT_CANDIDATES = 'parse_spreadsheet/import_candidates'
 
 
 class SpreadsheetImportApiUrl(object):
