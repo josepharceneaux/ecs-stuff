@@ -304,127 +304,88 @@ class UserServiceApiUrl(object):
     DOMAIN_CUSTOM_FIELDS = API_URL % "custom_fields"
 
 
-class CandidateApiWords(object):
-    """
-    This class contains words used for endpoints of Candidate API.
-    """
-    CANDIDATES = "candidates"
-    ADDRESSES = "/addresses"
-    AOIS = "/areas_of_interest"
-    CUSTOM_FIELD = "/custom_fields"
-    EDUCATIONS = "/educations"
-    DEGREES = "/degrees"
-    BULLETS = "/bullets"
-    EXPERIENCES = "/work_experiences"
-    EMAILS = "/emails"
-    MILITARY_SERVICES = "/military_services"
-    PHONES = "/phones"
-    PREFERRED_LOCATIONS = "/preferred_locations"
-    SKILLS = "/skills"
-    SOCIAL_NETWORKS = "/social_networks"
-    WORK_PREFERENCES = "/work_preferences"
-    EDITS = "/edits"
-    SEARCH = "/search"
-    DOCUMENTS = "/documents"
-    OPENWEB = '/openweb'
-    CANDIDATE_CLIENT_CAMPAIGN = '/client_email_campaign'
-    VIEWS = "/views"
-    PREFERENCE = "/preferences"
-    PHOTOS = "/photos"
-    DEVICES = '/devices'
-    NOTES = "/notes"
-    LANGUAGES = "/languages"
-    REFERENCES = "/references"
-    TAGS = "/tags"
-    PIPELINES = "/pipelines"
-
-
 class CandidateApi(object):
     """
-    API relative URLs for candidate_service. e,g /v1/candidates
+    API relative URLs for candidate_service. e.g /v1/candidates
     """
     VERSION = 'v1'
-    _INT_ID = "/<int:id>"
-    HOST_NAME = _get_host_name(GTApis.CANDIDATE_SERVICE_NAME,
-                               GTApis.CANDIDATE_SERVICE_PORT)
-    RELATIVE_VERSION = '/%s/%s' % (VERSION, '%s')
+    HOST_NAME = _get_host_name(GTApis.CANDIDATE_SERVICE_NAME, GTApis.CANDIDATE_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
 
-    CANDIDATES = RELATIVE_VERSION % CandidateApiWords.CANDIDATES
-    _CANDIDATE_ID = CANDIDATES + "/<int:candidate_id>"
-    CANDIDATE_ID = RELATIVE_VERSION % (CandidateApiWords.CANDIDATES + _INT_ID)
-    CANDIDATE_EMAIL = RELATIVE_VERSION % (CandidateApiWords.CANDIDATES + "/<email>")
+    CANDIDATES = '/' + VERSION + '/candidates'
+    CANDIDATE_ID = '/' + VERSION + '/candidates/<int:id>'
+    CANDIDATE_EMAIL = '/' + VERSION + '/candidates/<email>'
 
-    ADDRESSES = _CANDIDATE_ID + CandidateApiWords.ADDRESSES
-    ADDRESS = ADDRESSES + _INT_ID
+    ADDRESSES = '/' + VERSION + '/candidates/<int:candidate_id>/addresses'
+    ADDRESS = '/' + VERSION + '/candidates/<int:candidate_id>/addresses/<int:id>'
 
-    AOIS = _CANDIDATE_ID + CandidateApiWords.AOIS
-    AOI = AOIS + _INT_ID
+    AOIS = '/' + VERSION + '/candidates/<int:candidate_id>/areas_of_interest'
+    AOI = '/' + VERSION + '/candidates/<int:candidate_id>/areas_of_interest/<int:id>'
 
-    CUSTOM_FIELDS = _CANDIDATE_ID + CandidateApiWords.CUSTOM_FIELD
-    CUSTOM_FIELD = CUSTOM_FIELDS + _INT_ID
+    CUSTOM_FIELDS = '/' + VERSION + '/candidates/<int:candidate_id>/custom_fields'
+    CUSTOM_FIELD = '/' + VERSION + '/candidates/<int:candidate_id>/custom_fields/<int:id>'
 
-    EDUCATIONS = _CANDIDATE_ID + CandidateApiWords.EDUCATIONS
-    EDUCATION = EDUCATIONS + _INT_ID
+    EDUCATIONS = '/' + VERSION + '/candidates/<int:candidate_id>/educations'
+    EDUCATION = '/' + VERSION + '/candidates/<int:candidate_id>/educations/<int:id>'
 
-    DEGREES = EDUCATIONS + '/<int:education_id>' + CandidateApiWords.DEGREES
-    DEGREE = DEGREES + _INT_ID
+    DEGREES = '/' + VERSION + '/candidates/<int:candidate_id>/educations/<int:education_id>/degrees'
+    DEGREE = '/' + VERSION + '/candidates/<int:candidate_id>/educations/<int:education_id>/degrees/<int:id>'
 
-    DEGREE_BULLETS = DEGREES + "/<int:degree_id>" + CandidateApiWords.BULLETS
-    DEGREE_BULLET = DEGREE_BULLETS + _INT_ID
+    DEGREE_BULLETS = '/' + VERSION + '/candidates/<int:candidate_id>/educations/<int:education_id>/degrees/<int:degree_id>/bullets'
+    DEGREE_BULLET = '/' + VERSION + '/candidates/<int:candidate_id>/educations/<int:education_id>/degrees/<int:degree_id>/bullets/<int:id>'
 
-    DEVICES = CANDIDATE_ID + CandidateApiWords.DEVICES
-    DEVICE = CANDIDATE_ID + CandidateApiWords.DEVICES + _INT_ID
+    DEVICES = '/' + VERSION + '/candidates/<int:id>/devices'
+    DEVICE = '/' + VERSION + '/candidates/<int:id>/devices/<int:id>'
 
-    EXPERIENCES = _CANDIDATE_ID + CandidateApiWords.EXPERIENCES
-    EXPERIENCE = EXPERIENCES + _INT_ID
+    EXPERIENCES = '/' + VERSION + '/candidates/<int:candidate_id>/work_experiences'
+    EXPERIENCE = '/' + VERSION + '/candidates/<int:candidate_id>/work_experiences/<int:id>'
 
-    EXPERIENCE_BULLETS = EXPERIENCES + "/<int:experience_id>" + CandidateApiWords.BULLETS
-    EXPERIENCE_BULLET = EXPERIENCE_BULLETS + _INT_ID
+    EXPERIENCE_BULLETS = '/' + VERSION + '/candidates/<int:candidate_id>/work_experiences/<int:experience_id>/bullets'
+    EXPERIENCE_BULLET = '/' + VERSION + '/candidates/<int:candidate_id>/work_experiences/<int:experience_id>/bullets/<int:id>'
 
-    EMAILS = _CANDIDATE_ID + CandidateApiWords.EMAILS
-    EMAIL = EMAILS + _INT_ID
+    EMAILS = '/' + VERSION + '/candidates/<int:candidate_id>/emails'
+    EMAIL = '/' + VERSION + '/candidates/<int:candidate_id>/emails/<int:id>'
 
-    MILITARY_SERVICES = _CANDIDATE_ID + CandidateApiWords.MILITARY_SERVICES
-    MILITARY_SERVICE = MILITARY_SERVICES + _INT_ID
+    MILITARY_SERVICES = '/' + VERSION + '/candidates/<int:candidate_id>/military_services'
+    MILITARY_SERVICE = '/' + VERSION + '/candidates/<int:candidate_id>/military_services/<int:id>'
 
-    PHONES = _CANDIDATE_ID + CandidateApiWords.PHONES
-    PHONE = PHONES + _INT_ID
+    PHONES = '/' + VERSION + '/candidates/<int:candidate_id>/phones'
+    PHONE = '/' + VERSION + '/candidates/<int:candidate_id>/phones/<int:id>'
 
-    PREFERRED_LOCATIONS = _CANDIDATE_ID + CandidateApiWords.PREFERRED_LOCATIONS
-    PREFERRED_LOCATION = PREFERRED_LOCATIONS + _INT_ID
+    PREFERRED_LOCATIONS = '/' + VERSION + '/candidates/<int:candidate_id>/preferred_locations'
+    PREFERRED_LOCATION = '/' + VERSION + '/candidates/<int:candidate_id>/preferred_locations/<int:id>'
 
-    SKILLS = _CANDIDATE_ID + CandidateApiWords.SKILLS
-    SKILL = SKILLS + _INT_ID
+    SKILLS = '/' + VERSION + '/candidates/<int:candidate_id>/skills'
+    SKILL = '/' + VERSION + '/candidates/<int:candidate_id>/skills/<int:id>'
 
-    PHOTOS = _CANDIDATE_ID + CandidateApiWords.PHOTOS
-    PHOTO = PHOTOS + _INT_ID
+    PHOTOS = '/' + VERSION + '/candidates/<int:candidate_id>/photos'
+    PHOTO = '/' + VERSION + '/candidates/<int:candidate_id>/photos/<int:id>'
 
-    SOCIAL_NETWORKS = _CANDIDATE_ID + CandidateApiWords.SOCIAL_NETWORKS
-    SOCIAL_NETWORK = SOCIAL_NETWORKS + _INT_ID
+    SOCIAL_NETWORKS = '/' + VERSION + '/candidates/<int:candidate_id>/social_networks'
+    SOCIAL_NETWORK = '/' + VERSION + '/candidates/<int:candidate_id>/social_networks/<int:id>'
 
-    WORK_PREFERENCES = _CANDIDATE_ID + CandidateApiWords.WORK_PREFERENCES
-    WORK_PREFERENCE = WORK_PREFERENCES + _INT_ID
-    CANDIDATE_EDIT = CANDIDATE_ID + CandidateApiWords.EDITS
+    WORK_PREFERENCES = '/' + VERSION + '/candidates/<int:candidate_id>/work_preferences'
+    WORK_PREFERENCE = '/' + VERSION + '/candidates/<int:candidate_id>/work_preferences/<int:id>'
+    CANDIDATE_EDIT = '/' + VERSION + '/candidates/<int:id>/edits'
 
-    CANDIDATE_SEARCH = CANDIDATES + CandidateApiWords.SEARCH
-    CANDIDATES_DOCUMENTS = CANDIDATES + CandidateApiWords.DOCUMENTS
-    OPENWEB = CANDIDATES + CandidateApiWords.OPENWEB
-    CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
-    CANDIDATE_VIEWS = CANDIDATE_ID + CandidateApiWords.VIEWS
-    CANDIDATE_PREFERENCES = CANDIDATE_ID + CandidateApiWords.PREFERENCE
-    CANDIDATE_NOTES = CANDIDATE_ID + CandidateApiWords.NOTES
+    CANDIDATE_SEARCH = '/' + VERSION + '/candidates/search'
+    CANDIDATES_DOCUMENTS = '/' + VERSION + '/candidates/documents'
+    OPENWEB = '/' + VERSION + '/candidates/openweb'
+    CANDIDATE_CLIENT_CAMPAIGN = '/' + VERSION + '/candidates/client_email_campaign'
+    CANDIDATE_VIEWS = '/' + VERSION + '/candidates/<int:id>/views'
+    CANDIDATE_PREFERENCES = '/' + VERSION + '/candidates/<int:id>/preferences'
+    CANDIDATE_NOTES = '/' + VERSION + '/candidates/<int:id>/notes'
 
-    LANGUAGES = _CANDIDATE_ID + CandidateApiWords.LANGUAGES
-    LANGUAGE = LANGUAGES + _INT_ID
+    LANGUAGES = '/' + VERSION + '/candidates/<int:candidate_id>/languages'
+    LANGUAGE = '/' + VERSION + '/candidates/<int:candidate_id>/languages/<int:id>'
 
-    REFERENCES = _CANDIDATE_ID + CandidateApiWords.REFERENCES
-    REFERENCE = REFERENCES + _INT_ID
+    REFERENCES = '/' + VERSION + '/candidates/<int:candidate_id>/references'
+    REFERENCE = '/' + VERSION + '/candidates/<int:candidate_id>/references/<int:id>'
 
-    TAGS = _CANDIDATE_ID + CandidateApiWords.TAGS
-    TAG = TAGS + _INT_ID
+    TAGS = '/' + VERSION + '/candidates/<int:candidate_id>/tags'
+    TAG = '/' + VERSION + '/candidates/<int:candidate_id>/tags/<int:id>'
 
-    PIPELINES = _CANDIDATE_ID + CandidateApiWords.PIPELINES
+    PIPELINES = '/' + VERSION + '/candidates/<int:candidate_id>/pipelines'
 
 
 class CandidateApiUrl(object):
@@ -437,77 +398,77 @@ class CandidateApiUrl(object):
     CANDIDATES = HOST_NAME % CandidateApi.CANDIDATES
     CANDIDATE = CANDIDATES + "/%s"
 
-    ADDRESSES = CANDIDATE + CandidateApiWords.ADDRESSES
+    ADDRESSES = CANDIDATE + '/addresses'
     ADDRESS = ADDRESSES + "/%s"
 
-    AOIS = CANDIDATE + CandidateApiWords.AOIS
+    AOIS = CANDIDATE + '/areas_of_interest'
     AOI = AOIS + "/%s"
 
-    CUSTOM_FIELDS = CANDIDATE + CandidateApiWords.CUSTOM_FIELD
+    CUSTOM_FIELDS = CANDIDATE + '/custom_fields'
     CUSTOM_FIELD = CUSTOM_FIELDS + "/%s"
 
-    CANDIDATE_SEARCH_URI = CANDIDATES + CandidateApiWords.SEARCH
+    CANDIDATE_SEARCH_URI = CANDIDATES + '/search'
 
-    CANDIDATES_DOCUMENTS_URI = CANDIDATES + CandidateApiWords.DOCUMENTS
+    CANDIDATES_DOCUMENTS_URI = CANDIDATES + '/documents'
 
-    EDUCATIONS = CANDIDATE + CandidateApiWords.EDUCATIONS
+    EDUCATIONS = CANDIDATE + '/educations'
     EDUCATION = EDUCATIONS + "/%s"
 
-    DEGREES = EDUCATION + CandidateApiWords.DEGREES
+    DEGREES = EDUCATION + '/degrees'
     DEGREE = DEGREES + "/%s"
 
-    DEGREE_BULLETS = DEGREE + CandidateApiWords.BULLETS
+    DEGREE_BULLETS = DEGREE + '/bullets'
     DEGREE_BULLET = DEGREE_BULLETS + "/%s"
 
-    DEVICES = CANDIDATE + CandidateApiWords.DEVICES
-    DEVICE = CANDIDATE + CandidateApiWords.DEVICES + '/%s'
+    DEVICES = CANDIDATE + '/devices'
+    DEVICE = DEVICES + '/%s'
 
-    EMAILS = CANDIDATE + CandidateApiWords.EMAILS
+    EMAILS = CANDIDATE + '/emails'
     EMAIL = EMAILS + "/%s"
 
-    EXPERIENCES = CANDIDATE + CandidateApiWords.EXPERIENCES
+    EXPERIENCES = CANDIDATE + '/work_experiences'
     EXPERIENCE = EXPERIENCES + "/%s"
 
-    EXPERIENCE_BULLETS = EXPERIENCE + CandidateApiWords.BULLETS
+    EXPERIENCE_BULLETS = EXPERIENCE + '/bullets'
     EXPERIENCE_BULLET = EXPERIENCE_BULLETS + "/%s"
 
-    MILITARY_SERVICES = CANDIDATE + CandidateApiWords.MILITARY_SERVICES
+    MILITARY_SERVICES = CANDIDATE + '/military_services'
     MILITARY_SERVICE = MILITARY_SERVICES + "/%s"
 
-    PHONES = CANDIDATE + CandidateApiWords.PHONES
+    PHONES = CANDIDATE + '/phones'
     PHONE = PHONES + "/%s"
 
-    PREFERRED_LOCATIONS = CANDIDATE + CandidateApiWords.PREFERRED_LOCATIONS
+    PREFERRED_LOCATIONS = CANDIDATE + '/preferred_locations'
     PREFERRED_LOCATION = PREFERRED_LOCATIONS + "/%s"
 
-    SKILLS = CANDIDATE + CandidateApiWords.SKILLS
+    SKILLS = CANDIDATE + '/skills'
     SKILL = SKILLS + "/%s"
 
-    PHOTOS = CANDIDATE + CandidateApiWords.PHOTOS
+    PHOTOS = CANDIDATE + '/photos'
     PHOTO = PHOTOS + "/%s"
 
-    SOCIAL_NETWORKS = CANDIDATE + CandidateApiWords.SOCIAL_NETWORKS
+    SOCIAL_NETWORKS = CANDIDATE + '/social_networks'
     SOCIAL_NETWORK = SOCIAL_NETWORKS + "/%s"
 
-    WORK_PREFERENCES = CANDIDATE + CandidateApiWords.WORK_PREFERENCES
+    WORK_PREFERENCES = CANDIDATE + '/work_preferences'
     WORK_PREFERENCE_ID = WORK_PREFERENCES + "/%s"
-    CANDIDATE_EDIT = CANDIDATE + CandidateApiWords.EDITS
-    CANDIDATE_VIEW = CANDIDATE + CandidateApiWords.VIEWS
-    CANDIDATE_PREFERENCE = CANDIDATE + CandidateApiWords.PREFERENCE
-    NOTES = CANDIDATE + CandidateApiWords.NOTES
+    CANDIDATE_EDIT = CANDIDATE + '/edits'
+    CANDIDATE_VIEW = CANDIDATE + '/views'
+    CANDIDATE_PREFERENCE = CANDIDATE + '/preferences'
+    NOTES = CANDIDATE + '/notes'
 
-    CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + CandidateApiWords.CANDIDATE_CLIENT_CAMPAIGN
+    CANDIDATE_CLIENT_CAMPAIGN = CANDIDATES + '/client_email_campaign'
 
-    LANGUAGES = CANDIDATE + CandidateApiWords.LANGUAGES
+    LANGUAGES = CANDIDATE + '/languages'
     LANGUAGE = LANGUAGES + "/%s"
 
-    REFERENCES = CANDIDATE + CandidateApiWords.REFERENCES
+    REFERENCES = CANDIDATE + '/references'
     REFERENCE = REFERENCES + "/%s"
 
-    TAGS = CANDIDATE + CandidateApiWords.TAGS
+    TAGS = CANDIDATE + '/tags'
     TAG = TAGS + "/%s"
 
-    PIPELINES = CANDIDATE + CandidateApiWords.PIPELINES
+    PIPELINES = CANDIDATE + '/pipelines'
 
 
 class WidgetApi(object):
@@ -515,7 +476,6 @@ class WidgetApi(object):
     API relative URLs for widget_service. e.g. /v1/universities
     """
     VERSION = 'v1'
-    # This is /v1/
     URL_PREFIX = _get_url_prefix(VERSION)
     DOMAINS = 'domains'
     _ENCRYPTED_DOMAIN_ID = '/<path:encrypted_domain_id>'
