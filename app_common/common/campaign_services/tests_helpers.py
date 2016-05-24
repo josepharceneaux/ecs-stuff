@@ -419,7 +419,7 @@ class CampaignsTestsHelpers(object):
         campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
         send_url = url % campaign_id
         response = send_request('post', send_url, access_token)
-        assert response.ok
+        assert response.ok, response.text
         if blasts_url:
             blasts_url = blasts_url % campaign_id
         blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, access_token,
@@ -511,7 +511,7 @@ class CampaignsTestsHelpers(object):
             return response.json()['blast']['sends'] == expected_count
 
     @staticmethod
-    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=80,
+    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=100,
                            blast_url=None, access_token=None):
         """
         This function asserts that particular blast of given campaign has expected number of sends
@@ -562,10 +562,10 @@ class CampaignsTestsHelpers(object):
              step=3, timeout=timeout)
 
     @staticmethod
-    def create_smartlist_with_candidate(access_token, talent_pipeline, count=1,
-                                        data=None, emails_list=False, create_phone=False,
-                                        assign_role=False, assert_candidates=True,
-                                        smartlist_name=fake.word(), timeout=150):
+    def create_smartlist_with_candidate(access_token, talent_pipeline, count=1, data=None,
+                                        emails_list=False, create_phone=False, assign_role=False,
+                                        assert_candidates=True, smartlist_name=fake.word(),
+                                        candidate_ids=(), timeout=150):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
@@ -579,6 +579,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(assign_role, bool)
         raise_if_not_instance_of(assert_candidates, bool)
         raise_if_not_instance_of(smartlist_name, basestring)
+        raise_if_not_instance_of(candidate_ids, (list, tuple)) if candidate_ids else None
         raise_if_not_instance_of(timeout, int)
         if assign_role:
             CampaignsTestsHelpers.assign_roles(talent_pipeline.user)
@@ -587,9 +588,9 @@ class CampaignsTestsHelpers(object):
             data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
                                              emails_list=emails_list, create_phone=create_phone,
                                              count=count)
-
-        candidate_ids = create_candidates_from_candidate_api(access_token, data,
-                                                             return_candidate_ids_only=True)
+        if not candidate_ids:
+            candidate_ids = create_candidates_from_candidate_api(access_token, data,
+                                                                 return_candidate_ids_only=True)
         if assert_candidates:
             time.sleep(10)  # TODO: Need to remove this and use polling instead
         smartlist_data = {'name': smartlist_name,
