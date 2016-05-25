@@ -1420,7 +1420,7 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     # Tags
     tags = request_vars.get('tags')
     if isinstance(tags, list):
-        tags_facets = ["tags:'{}'".format(tag for tag in tags)]
+        tags_facets = ["tags:'{}'".format(tag) for tag in tags]
         filter_queries.append("(or {})".format(" ".join(tags_facets)))
     elif tags:
         filter_queries.append("(term field=tags '{}')".format(tags))
