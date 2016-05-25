@@ -134,7 +134,8 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'start_date_at_current_job':     dict(IndexFieldType='date',             DateOptions={'FacetEnabled': False,
                                                                                           'ReturnEnabled': True}),
     'candidate_engagement_score':    dict(IndexFieldType='double',          DoubleOptions={'FacetEnabled': True,
-                                                                                           'ReturnEnabled': False})
+                                                                                           'ReturnEnabled': False}),
+    'tags':                          dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': False})
 }
 
 # Filter all text, text-array, literal and literal-array index fields
@@ -728,7 +729,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
                           "user_id:{size:50},status_id:{size:50},skill_description:{size:500}," \
                           "position:{size:50},organization:{size:50},school_name:{size:500},degree_type:{size:50}," \
                           "concentration_type:{size:50},military_service_status:{size:50}," \
-                          "military_branch:{size:50},military_highest_grade:{size:50}," \
+                          "military_branch:{size:50},military_highest_grade:{size:50},tags:{size:12}," \
                           "custom_field_id_and_value:{size:1000},candidate_engagement_score:{size:50}}"
     else:
         params['facet'] = "{added_time_hour:{size:24}}"
@@ -828,6 +829,7 @@ def get_faceting_information(facets):
     facet_custom_field_id_and_value = facets.get('custom_field_id_and_value').get('buckets')
     facet_candidate_engagement_score = facets.get('candidate_engagement_score').get('buckets')
     facet_total_months_experience = facets.get('total_months_experience').get('buckets')
+    facet_tags = facets.get('tags').get('buckets')
 
     if facet_owner:
         search_facets_values['username'] = get_username_facet_info_with_ids(facet_owner)
@@ -874,6 +876,9 @@ def get_faceting_information(facets):
 
     if facet_total_months_experience:
         search_facets_values['total_months_experience'] = get_bucket_facet_value_count(facet_total_months_experience)
+
+    if facet_tags:
+        search_facets_values['tags'] = get_bucket_facet_value_count(facet_tags)
 
     # TODO: productFacet, customFieldKP facets are remaining, how to do it?
     if facet_custom_field_id_and_value:
@@ -1286,10 +1291,7 @@ def _get_candidates_fields_with_given_filters(fields_data):
 def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     """
     Get the filter query from requested filters
-    :param request_vars:
-    :return: filter_query
     """
-
     filter_queries = []
 
     # If source_id has product_id in it, then remove it and add product_id to filter request_vars
@@ -1414,6 +1416,15 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
             request_vars.get('military_end_date_from'), request_vars.get('military_end_date_to'))
         if from_datetime_str is not None and to_datetime_str is not None:
             filter_queries.append("military_end_date:%s,%s" % (from_datetime_str, to_datetime_str))
+
+    # Tags
+    tags = request_vars.get('tags')
+    if isinstance(tags, list):
+        tags_facets = ["tags:'{}'".format(tag) for tag in tags]
+        filter_queries.append("(or {})".format(" ".join(tags_facets)))
+    elif tags:
+        filter_queries.append("(term field=tags '{}')".format(tags))
+
     # Handling custom fields
     for key, value in request_vars.items():
         if 'cf-' in key:
