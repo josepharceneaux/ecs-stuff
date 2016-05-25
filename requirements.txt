@@ -92,3 +92,5 @@ boltons==16.1.1
 polling==0.3.0
 redo==1.5.0
 nameparser==0.3.16
+pycontracts==1.7.9
+
