@@ -12,7 +12,7 @@ from time import time
 from datetime import date
 
 # Third Party
-from polling import poll, TimeoutException
+from redo import retry
 
 # Flask specific
 from flask import request
@@ -1527,17 +1527,15 @@ class CandidateClientEmailCampaignResource(Resource):
         error_message = 'Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)' \
                         % (candidate_ids, created_smartlist_id)
         try:
-            if poll(assert_smartlist_candidates, step=3,
-                    args=(created_smartlist_id, len(candidate_ids), request.headers.get('authorization')),
-                    timeout=60):
-                # timeout=60 is just an upper limit to poll the Smartlist API
-                # (needed this for some tests, it shouldn't affect normal API flow)
-                logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
-                            % (len(candidate_ids), created_smartlist_id))
-            else:
-                raise InternalServerError(error_message)
-        except TimeoutException:
-            logger.exception(error_message)
+            # timeout=60 is just an upper limit to poll the Smartlist API
+            # (needed this for some tests, it shouldn't affect normal API flow)
+            retry(assert_smartlist_candidates, sleeptime=3,  attempts=20, sleepscale=1,
+                  retry_exceptions=(AssertionError,), args=(created_smartlist_id, len(candidate_ids),
+                                                            request.headers.get('authorization')))
+
+            logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
+                        % (len(candidate_ids), created_smartlist_id))
+        except AssertionError:
             raise InternalServerError(error_message)
 
         # create campaign
