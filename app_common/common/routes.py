@@ -110,7 +110,10 @@ def _get_modified_route(route):
             new_sub_str.append('%s')
         else:
             new_sub_str.append(sub_str)
-    return '/'.join(new_sub_str)
+    if route.startswith('/'):
+        return '/'.join(new_sub_str)
+    else:
+        return new_sub_str[0] + '/' + '/'.join(new_sub_str[1::])
 
 
 class GTApis(object):
@@ -499,21 +502,6 @@ class WidgetApiUrl(object):
     UNIVERSITIES = API_URL % WidgetApi.UNIVERSITIES
 
 
-class CandidatePoolApiWords(object):
-    """
-    This class contains words used for endpoints of candidate_pool API.
-    """
-    TALENT_POOLS = 'talent-pools'
-    TALENT_POOL = 'talent-pool'
-    TALENT_PIPELINES = 'talent-pipelines'
-    TALENT_PIPELINE = 'talent-pipeline'
-    STATS = '/stats'
-    CANDIDATES = '/candidates'
-    CAMPAIGNS = '/campaigns'
-    GROUPS = 'groups'
-    SMART_LISTS = '/smartlists'
-
-
 class CandidatePoolApi(object):
     """
     API relative URLs for candidate_pool_service. e.g. /v1/smartlists
@@ -521,32 +509,30 @@ class CandidatePoolApi(object):
     VERSION = 'v1'
     # /v1/
     URL_PREFIX = _get_url_prefix(VERSION)
-    _INT_ID = '/<int:id>'
     # Talent Pools
-    TALENT_PIPELINES = CandidatePoolApiWords.TALENT_PIPELINES
-    TALENT_POOLS = CandidatePoolApiWords.TALENT_POOLS
-    TALENT_POOL = CandidatePoolApiWords.TALENT_POOLS + _INT_ID
-    TALENT_POOL_CANDIDATES = TALENT_POOL + CandidatePoolApiWords.CANDIDATES
-    TALENT_PIPELINES_OF_TALENT_POOLS = TALENT_POOL + '/' + CandidatePoolApiWords.TALENT_PIPELINES
-    TALENT_POOL_GROUPS = CandidatePoolApiWords.GROUPS + '/<int:group_id>/' + CandidatePoolApiWords.TALENT_POOLS
-    TALENT_POOL_UPDATE_STATS = CandidatePoolApiWords.TALENT_POOLS + CandidatePoolApiWords.STATS
-    TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOLS + '/<int:talent_pool_id>' + CandidatePoolApiWords.STATS
-    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = CandidatePoolApiWords.TALENT_POOLS + '/<int:talent_pool_id>/' \
-                                                + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
+    TALENT_PIPELINES = 'talent-pipelines'
+    TALENT_POOLS = 'talent-pools'
+    TALENT_POOL = 'talent-pools/<int:id>'
+    TALENT_POOL_CANDIDATES = 'talent-pools/<int:id>/candidates'
+    TALENT_PIPELINES_OF_TALENT_POOLS = 'talent-pools/<int:id>/candidates'
+    TALENT_POOL_GROUPS = 'groups/<int:group_id>/talent-pools'
+    TALENT_POOL_UPDATE_STATS = 'talent-pools/stats'
+    TALENT_POOL_GET_STATS = 'talent-pools/<int:talent_pool_id>/stats'
+    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = 'talent-pools/<int:talent_pool_id>/talent-pipelines/stats'
     # Talent Pipelines
-    TALENT_PIPELINE = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID
-    TALENT_PIPELINE_SMARTLISTS = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.SMART_LISTS
-    TALENT_PIPELINE_CANDIDATES = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.CANDIDATES
-    TALENT_PIPELINE_CAMPAIGNS = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.CAMPAIGNS
-    TALENT_PIPELINE_UPDATE_STATS = CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
-    TALENT_PIPELINE_GET_STATS = CandidatePoolApiWords.TALENT_PIPELINES + '/<int:talent_pipeline_id>' + CandidatePoolApiWords.STATS
+    TALENT_PIPELINE = 'talent-pipelines/<int:id>'
+    TALENT_PIPELINE_SMARTLISTS = 'talent-pipelines/<int:id>/smartlists'
+    TALENT_PIPELINE_CANDIDATES = 'talent-pipelines/<int:id>/candidates'
+    TALENT_PIPELINE_CAMPAIGNS = 'talent-pipelines/<int:id>/campaigns'
+    TALENT_PIPELINE_UPDATE_STATS = 'talent-pipelines/stats'
+    TALENT_PIPELINE_GET_STATS = 'talent-pipelines/<int:talent_pipeline_id>/stats'
     # Smartlists
     SMARTLISTS = 'smartlists'
-    SMARTLIST = SMARTLISTS + _INT_ID
-    SMARTLIST_CANDIDATES = SMARTLISTS + '/<int:smartlist_id>' + CandidatePoolApiWords.CANDIDATES
-    SMARTLIST_UPDATE_STATS = SMARTLISTS + CandidatePoolApiWords.STATS
-    SMARTLIST_GET_STATS = SMARTLISTS + '/<int:smartlist_id>' + CandidatePoolApiWords.STATS
-    SMARTLIST_IN_TALENT_PIPELINE_GET_STATS = CandidatePoolApiWords.TALENT_PIPELINES + '/<int:talent_pipeline_id>' + '/smartlists' + CandidatePoolApiWords.STATS
+    SMARTLIST = 'smartlists/<int:id>'
+    SMARTLIST_CANDIDATES = 'smartlists/<int:smartlist_id>/candidates'
+    SMARTLIST_UPDATE_STATS = 'smartlists/stats'
+    SMARTLIST_GET_STATS = 'smartlists/<int:smartlist_id>/stats'
+    SMARTLIST_IN_TALENT_PIPELINE_GET_STATS = 'talent-pipelines/<int:talent_pipeline_id>/smartlists/stats'
 
 
 class CandidatePoolApiUrl(object):
@@ -558,34 +544,28 @@ class CandidatePoolApiUrl(object):
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     API_URL = HOST_NAME % _get_api_relative_version(CandidatePoolApi.VERSION)
     # Talent Pool
-    TALENT_POOLS = API_URL % CandidatePoolApiWords.TALENT_POOLS
-    TALENT_POOL = TALENT_POOLS + '/%s'
+    TALENT_POOLS = API_URL % CandidatePoolApi.TALENT_POOLS
+    TALENT_POOL = API_URL % _get_modified_route(CandidatePoolApi.TALENT_POOL)
     TALENT_POOL_UPDATE_STATS = API_URL % CandidatePoolApi.TALENT_POOL_UPDATE_STATS
-    TALENT_POOL_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + "/%s" + CandidatePoolApiWords.STATS)
-    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = API_URL % CandidatePoolApiWords.TALENT_POOLS + '/%s/' \
-                                                + CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
-    TALENT_POOL_CANDIDATE = API_URL % (CandidatePoolApiWords.TALENT_POOLS + '/%s' + CandidatePoolApiWords.CANDIDATES)
-    TALENT_POOL_GROUP = API_URL % (CandidatePoolApiWords.GROUPS + '/%s/' + CandidatePoolApiWords.TALENT_POOLS)
-    TALENT_PIPELINES_OF_TALENT_POOLS = API_URL % (CandidatePoolApiWords.TALENT_POOLS + '/%s/' +
-                                                  CandidatePoolApiWords.TALENT_PIPELINES)
-
+    TALENT_POOL_GET_STATS = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINE_GET_STATS)
+    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS)
+    TALENT_POOL_CANDIDATE = API_URL % _get_modified_route(CandidatePoolApi.TALENT_POOL_CANDIDATES)
+    TALENT_POOL_GROUP = API_URL % _get_modified_route(CandidatePoolApi.TALENT_POOL_GROUPS)
+    TALENT_PIPELINES_OF_TALENT_POOLS = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINES_OF_TALENT_POOLS)
     # Talent Pipeline
-    TALENT_PIPELINES = API_URL % CandidatePoolApiWords.TALENT_PIPELINES
-    TALENT_PIPELINE = TALENT_PIPELINES + '/%s'
+    TALENT_PIPELINES = API_URL % CandidatePoolApi.TALENT_PIPELINES
+    TALENT_PIPELINE = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINE)
     TALENT_PIPELINE_UPDATE_STATS = API_URL % CandidatePoolApi.TALENT_PIPELINE_UPDATE_STATS
-    TALENT_PIPELINE_CANDIDATE = API_URL % (
-        CandidatePoolApiWords.TALENT_PIPELINES + '/%s' + CandidatePoolApiWords.CANDIDATES)
-    TALENT_PIPELINE_CAMPAIGN = API_URL % (
-        CandidatePoolApiWords.TALENT_PIPELINES + '/%s' + CandidatePoolApiWords.CAMPAIGNS)
-    TALENT_PIPELINE_SMARTLISTS = API_URL % (
-        CandidatePoolApiWords.TALENT_PIPELINES + '/%s' + CandidatePoolApiWords.SMART_LISTS)
-    TALENT_PIPELINE_GET_STATS = API_URL % (CandidatePoolApiWords.TALENT_PIPELINES + "/%s" + CandidatePoolApiWords.STATS)
+    TALENT_PIPELINE_CANDIDATE = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINE_CANDIDATES)
+    TALENT_PIPELINE_CAMPAIGN = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINE_CAMPAIGNS)
+    TALENT_PIPELINE_SMARTLISTS = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINE_SMARTLISTS)
+    TALENT_PIPELINE_GET_STATS = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINE_GET_STATS)
     # Smartlists
     SMARTLISTS = API_URL % CandidatePoolApi.SMARTLISTS
-    SMARTLIST = SMARTLISTS + '/%s'
+    SMARTLIST = API_URL % _get_modified_route(CandidatePoolApi.SMARTLIST)
     SMARTLIST_UPDATE_STATS = API_URL % CandidatePoolApi.SMARTLIST_UPDATE_STATS
-    SMARTLIST_GET_STATS = SMARTLISTS + "/%s" + CandidatePoolApiWords.STATS
-    SMARTLIST_CANDIDATES = SMARTLISTS + '/%s' + CandidatePoolApiWords.CANDIDATES
+    SMARTLIST_GET_STATS = API_URL % _get_modified_route(CandidatePoolApi.SMARTLIST_GET_STATS)
+    SMARTLIST_CANDIDATES = API_URL % _get_modified_route(CandidatePoolApi.SMARTLIST_CANDIDATES)
 
 
 class SpreadsheetImportApi(object):
