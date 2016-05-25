@@ -514,7 +514,7 @@ class CandidatePoolApi(object):
     TALENT_POOLS = 'talent-pools'
     TALENT_POOL = 'talent-pools/<int:id>'
     TALENT_POOL_CANDIDATES = 'talent-pools/<int:id>/candidates'
-    TALENT_PIPELINES_OF_TALENT_POOLS = 'talent-pools/<int:id>/candidates'
+    TALENT_PIPELINES_OF_TALENT_POOLS = 'talent-pools/<int:id>/talent-pipelines'
     TALENT_POOL_GROUPS = 'groups/<int:group_id>/talent-pools'
     TALENT_POOL_UPDATE_STATS = 'talent-pools/stats'
     TALENT_POOL_GET_STATS = 'talent-pools/<int:talent_pool_id>/stats'
