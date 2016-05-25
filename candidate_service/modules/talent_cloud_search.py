@@ -263,7 +263,6 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
     sql_query = """
     SELECT
-                # Candidate table info
                 candidate.id AS `id`, candidate.firstName AS `first_name`, candidate.lastName AS `last_name`,
                 candidate.statusId AS `status_id`, DATE_FORMAT(candidate.addedTime, :date_format) AS `added_time`,
                 candidate.ownerUserId AS `user_id`, candidate.objective AS `objective`,
