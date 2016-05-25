@@ -225,8 +225,8 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
     xml = BeautifulSoup(response.text)
     logger.info("ocr_image() - Abby response to processImage: %s", response.text)
 
-    task_id = xml.response.task['id']
     task = xml.response.task
+    task_id = task['id']
 
     if task.get('status') == 'NotEnoughCredits':
         send_abbyy_email()
