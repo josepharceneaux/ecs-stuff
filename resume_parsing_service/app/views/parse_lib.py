@@ -24,12 +24,14 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.utils import update_candidate_from_resume
 from resume_parsing_service.app.views.utils import create_parsed_resume_candidate
 from resume_parsing_service.app.views.utils import gen_hash_from_file
+from resume_parsing_service.app.views.utils import send_abbyy_email
 from resume_parsing_service.common.error_handling import ForbiddenError
 from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.routes import CandidateApiUrl
 from resume_parsing_service.common.utils.talent_s3 import download_file
 from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
 from resume_parsing_service.common.utils.talent_s3 import upload_to_s3
+
 
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
                  '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
@@ -216,16 +218,23 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
                              files=files,
                              data={'profile': 'documentConversion', 'exportFormat': export_format}
                              )
+
     if response.status_code != 200:
         raise ForbiddenError('Error connecting to Abby OCR instance.')
 
     xml = BeautifulSoup(response.text)
     logger.info("ocr_image() - Abby response to processImage: %s", response.text)
 
-    task_id = xml.response.task['id']
+    task = xml.response.task
+    task_id = task['id']
+
+    if task.get('status') == 'NotEnoughCredits':
+        send_abbyy_email()
+        raise InternalServerError(error_message='Error with image/pdf to text conversion.')
+
     estimated_processing_time = int(xml.response.task['estimatedprocessingtime'])
 
-    if xml.response.task['status'] != 'Queued':
+    if task.get('status') != 'Queued':
         logger.error('ocr_image() - Non queued status in ABBY OCR')
 
     # Keep pinging Abby to get task status. Quit if tried too many times
