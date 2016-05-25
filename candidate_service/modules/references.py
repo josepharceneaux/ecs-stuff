@@ -14,6 +14,9 @@ from candidate_service.common.utils.handy_functions import purge_dict
 # Common validators
 from candidate_service.common.utils.validators import format_phone_number
 
+# Error handling
+from candidate_service.common.error_handling import InvalidUsage, ForbiddenError
+
 
 def get_references(candidate):
     """
@@ -78,7 +81,7 @@ def get_references(candidate):
     return return_list
 
 
-def create_references(candidate_id, references):
+def create_or_update_references(candidate_id, references, is_updating=False, reference_id_from_url=None):
     """
     Function will insert candidate's references' information into db.
     References' information must include: person_name and comments.
@@ -91,8 +94,6 @@ def create_references(candidate_id, references):
     created_reference_ids = []
     for reference in references:
         candidate_reference_dict = dict(
-            resume_id=candidate_id,
-            candidate_id=candidate_id,
             person_name=reference.get('name'),
             position_title=reference.get('position_title'),
             comments=reference.get('comments')
@@ -104,14 +105,26 @@ def create_references(candidate_id, references):
         if not candidate_reference_dict:
             continue
 
-        candidate_reference = CandidateReference(**candidate_reference_dict)
-        db.session.add(candidate_reference)
-        db.session.flush()
-        reference_id = candidate_reference.id
+        reference_id = reference_id_from_url or reference.get('id')
+        if not reference_id and is_updating:
+            raise InvalidUsage("Reference ID is required for updating")
 
-        reference_email, reference_phone = reference.get('reference_email'), reference.get('reference_phone')
+        candidate_reference_dict.update(resume_id=candidate_id, candidate_id=candidate_id)
+
+        # Prevent adding duplicate records
+        if not does_reference_exists(candidate_id, candidate_reference_dict.get('person_name')) and not is_updating:
+            candidate_reference = CandidateReference(**candidate_reference_dict)
+            db.session.add(candidate_reference)
+            db.session.flush()
+            reference_id = candidate_reference.id
+        elif is_updating:  # Update
+            update_reference(candidate_id, reference_id, candidate_reference_dict)
+
+        reference_email = reference.get('reference_email')
+        reference_phone = reference.get('reference_phone')
         reference_web_address = reference.get('reference_web_address')
-        if reference_email:  # add reference's email info if provided
+
+        if reference_email:  # add reference's email info
             email_label = 'Primary' if not reference_email.get('label') else reference_email['label'].strip().title()
             value = reference_email['address'].strip() if reference_email.get('address') else None
             reference_email_dict = dict(
@@ -123,9 +136,13 @@ def create_references(candidate_id, references):
             reference_email_dict = purge_dict(reference_email_dict, strip=False)
 
             # Prevent adding empty records to db
-            if reference_email_dict:
-                reference_email_dict.update(reference_id=reference_id)
-                db.session.add(ReferenceEmail(**reference_email_dict))
+            if reference_email_dict and not is_updating:
+                # Prevent adding duplicate records
+                if not ReferenceEmail.query.filter_by(reference_id=reference_id).first():
+                    reference_email_dict.update(reference_id=reference_id)
+                    db.session.add(ReferenceEmail(**reference_email_dict))
+            elif reference_email_dict and is_updating:  # Update
+                update_reference_email(reference_id, reference_email_dict)
 
         if reference_phone:  # add reference's phone info if provided
             phone_label = 'Home' if not reference_phone.get('label') else reference_phone['label'].strip().title()
@@ -141,9 +158,14 @@ def create_references(candidate_id, references):
             reference_phone_dict = purge_dict(reference_phone_dict, strip=False)
 
             # Prevent adding empty records to db
-            if reference_phone_dict:
-                reference_phone_dict.update(reference_id=reference_id)
-                db.session.add(ReferencePhone(**reference_phone_dict))
+            if reference_phone_dict and not is_updating:
+                # Prevent adding duplicate records
+                if not ReferencePhone.query.filter_by(reference_id=reference_id).first():
+                    reference_phone_dict.update(reference_id=reference_id)
+                    db.session.add(ReferencePhone(**reference_phone_dict))
+            elif reference_phone_dict and is_updating:  # Update
+                # ReferencePhone must already exist
+                update_reference_phone(reference_id, reference_phone_dict)
 
         if reference_web_address:
             reference_web_address_dict = dict(
@@ -154,14 +176,79 @@ def create_references(candidate_id, references):
             reference_web_address_dict = purge_dict(reference_web_address_dict)
 
             # Prevent inserting empty records into db
-            if reference_web_address_dict:
-                reference_web_address_dict.update(reference_id=reference_id)
-                db.session.add(ReferenceWebAddress(**reference_web_address_dict))
+            if reference_web_address_dict and not is_updating:
+                # Prevent adding duplicate records
+                if not ReferencePhone.query.filter_by(reference_id=reference_id).first():
+                    reference_web_address_dict.update(reference_id=reference_id)
+                    db.session.add(ReferenceWebAddress(**reference_web_address_dict))
+            elif reference_web_address_dict and is_updating:  # Update
+                update_reference_web_address(reference_id, reference_web_address_dict)
 
         db.session.commit()  # Commit transactions to db
         created_reference_ids.append(reference_id)
 
     return created_reference_ids
+
+
+def update_reference(candidate_id, reference_id, reference_dict):
+    """
+    Function will validate and update Candidate Reference
+    """
+    candidate_reference_query = CandidateReference.query.filter_by(id=reference_id)
+    candidate_reference_obj = candidate_reference_query.first()
+
+    # Reference ID must be recognized
+    if not candidate_reference_obj:
+        raise InvalidUsage("Reference ID ({}) not recognized".format(reference_id))
+
+    # CandidateReference must belong to specified candidate
+    if candidate_reference_obj.candidate_id != candidate_id:
+        raise ForbiddenError("Reference (id={}) does not belong to candidate (id={})".
+                             format(reference_id, candidate_id))
+
+    candidate_reference_query.update(reference_dict)
+    return
+
+
+def update_reference_email(reference_id, reference_email_dict):
+    """
+    Function will update Reference Email
+    """
+    # Reference Email must already exist
+    reference_email_query = ReferenceEmail.query.filter_by(reference_id=reference_id)
+    if not reference_email_query.first():
+        raise InvalidUsage("Unable to update. Reference email does not exist.")
+
+    reference_email_dict.update(reference_id=reference_id)
+    reference_email_query.update(reference_email_dict)
+    return
+
+
+def update_reference_phone(reference_id, reference_phone_dict):
+    """
+    Function will update Reference Phone
+    """
+    reference_phone_query = ReferencePhone.query.filter_by(reference_id=reference_id)
+    if not reference_phone_query.first():
+        raise InvalidUsage("Unable to update. Reference phone does not exist.")
+
+    reference_phone_dict.update(reference_id=reference_id)
+    reference_phone_query.update(reference_phone_dict)
+    return
+
+
+def update_reference_web_address(reference_id, reference_web_address_dict):
+    """
+    Function will update Reference Web Address
+    """
+    # ReferenceWebAddress must already exist
+    reference_web_query = ReferenceWebAddress.query.filter_by(reference_id=reference_id)
+    if not reference_web_query.first():
+        raise InvalidUsage("Unable to update. Reference web address does not exist.")
+
+    reference_web_address_dict.update(reference_id=reference_id)
+    reference_web_query.update(reference_web_address_dict)
+    return
 
 
 def delete_reference(candidate_reference):
@@ -183,3 +270,14 @@ def delete_all_references(candidate_references):
     for reference in candidate_references:
         deleted_candidate_references.append(delete_reference(reference))
     return deleted_candidate_references
+
+
+def does_reference_exists(candidate_id, reference_name):
+    """
+    Function checks if candidate's reference already exists
+    :param reference_dict: dict of candidate's reference's information
+    :rtype:  bool
+    """
+    if CandidateReference.query.filter_by(candidate_id=candidate_id, person_name=reference_name).first():
+        return True
+    return False
