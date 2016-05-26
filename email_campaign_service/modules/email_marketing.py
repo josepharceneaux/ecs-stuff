@@ -29,7 +29,7 @@ from email_campaign_service.common.models.user import Domain
 from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignUrl
+from email_campaign_service.common.routes import SchedulerApiUrl, EmailCampaignApiUrl
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.campaign_services.custom_errors import CampaignException
@@ -122,7 +122,7 @@ def create_email_campaign(user_id, oauth_token, name, subject,
         return {'id': email_campaign.id}
 
     # Schedule the sending of emails & update email_campaign scheduler fields
-    schedule_task_params = {"url": EmailCampaignUrl.SEND % email_campaign.id}
+    schedule_task_params = {"url": EmailCampaignApiUrl.SEND % email_campaign.id}
     schedule_task_params.update(JSON_CONTENT_TYPE_HEADER)
     if frequency:  # It means its a periodic job, because frequency is 0 in case of one time job.
         schedule_task_params["frequency"] = frequency

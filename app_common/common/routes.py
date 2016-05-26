@@ -787,7 +787,7 @@ class PushCampaignApiUrl(object):
     URL_CONVERSION_BY_SEND_ID = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/send-url-conversions/%s')
 
 
-class EmailCampaignEndpoints(object):
+class EmailCampaignApi(object):
     """
     REST URLs for Email Campaign Service endpoints
     """
@@ -812,7 +812,7 @@ class EmailCampaignEndpoints(object):
     SEND_BY_ID = '/' + VERSION + '/email-campaigns/<int:campaign_id>/sends/<int:send_id>'
 
 
-class EmailCampaignUrl(object):
+class EmailCampaignApiUrl(object):
     """
     This class contains URLs to be used in Py-tests
     """
@@ -820,10 +820,10 @@ class EmailCampaignUrl(object):
     CAMPAIGNS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/email-campaigns')
     CAMPAIGN = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/email-campaigns/%s')
     SEND = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/email-campaigns/%s/send')
-    URL_REDIRECT = HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION + '/redirect/%s')
+    URL_REDIRECT = HOST_NAME % ('/' + EmailCampaignApi.VERSION + '/redirect/%s')
     BLASTS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/email-campaigns/%s/blasts')
     BLAST = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/email-campaigns/%s/blasts/%s')
-    TEMPLATES = HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION + '/email-templates')
-    TEMPLATES_FOLDER = HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION + '/email-template-folders')
+    TEMPLATES = HOST_NAME % ('/' + EmailCampaignApi.VERSION + '/email-templates')
+    TEMPLATES_FOLDER = HOST_NAME % ('/' + EmailCampaignApi.VERSION + '/email-template-folders')
     SENDS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/email-campaigns/%s/sends')
     SEND_BY_ID = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/email-campaigns/%s/sends/%s')

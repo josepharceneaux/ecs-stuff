@@ -2,7 +2,7 @@ import json
 import requests
 from ..utils.api_utils import DEFAULT_PAGE
 from ..utils.validators import raise_if_not_instance_of
-from ..routes import CandidatePoolApiUrl, EmailCampaignUrl
+from ..routes import CandidatePoolApiUrl, EmailCampaignApiUrl
 from ..utils.handy_functions import http_request, create_oauth_headers
 
 
@@ -21,7 +21,7 @@ def create_smartlist_from_api(data, access_token):
 def create_campaign_from_api(data, access_token):
     access_token = access_token if "Bearer" in access_token else "Bearer %s" % access_token
     response = requests.post(
-            url=EmailCampaignUrl.CAMPAIGNS,
+            url=EmailCampaignApiUrl.CAMPAIGNS,
             data=json.dumps(data),
             headers={'Authorization': access_token,
                      'content-type': 'application/json'}
@@ -33,7 +33,7 @@ def create_campaign_from_api(data, access_token):
 def create_campaign_send_from_api(campaign_id, access_token):
     access_token = access_token if "Bearer" in access_token else "Bearer %s" % access_token
     response = requests.post(
-            url=EmailCampaignUrl.SEND % campaign_id,
+            url=EmailCampaignApiUrl.SEND % campaign_id,
             headers={'Authorization': access_token,
                      'content-type': 'application/json'}
             )
