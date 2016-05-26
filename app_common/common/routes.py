@@ -452,7 +452,7 @@ class CandidateApiUrl(object):
     CANDIDATE_PREFERENCE = HOST_NAME % ('/' + CandidateApi.VERSION + '/candidates/%s/preferences')
     NOTES = HOST_NAME % ('/' + CandidateApi.VERSION + '/candidates/%s/notes')
 
-    CANDIDATE_CLIENT_CAMPAIGN = HOST_NAME % ('/' + CandidateApi.VERSION + '/candidates/%s/client_email_campaign')
+    CANDIDATE_CLIENT_CAMPAIGN = HOST_NAME % ('/' + CandidateApi.VERSION + '/candidates/client_email_campaign')
 
     LANGUAGES = HOST_NAME % ('/' + CandidateApi.VERSION + '/candidates/%s/languages')
     LANGUAGE = HOST_NAME % ('/' + CandidateApi.VERSION + '/candidates/%s/languages/%s')
