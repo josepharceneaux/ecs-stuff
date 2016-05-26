@@ -504,11 +504,13 @@ def offset_date_time(date_object, offset):
     return date_object + ((1 if offset < 0 else -1) * timedelta(hours=abs(offset)))
 
 
-def top_five_most_engaged_candidates_of_pipeline(talent_pipeline_id):
+def top_most_engaged_candidates_of_pipeline(talent_pipeline_id, limit):
     """
     This endpoint will candidate_ids of top 5 most engaged candidates of a talent_pipeline
     :param talent_pipeline_id: Id of talent_pipeline
-    :return: List of candidate Ids of top 5 most engaged candidates
+    :param limit: Number of results returned by this method
+    :return: List of candidate Ids of top (limit) most engaged candidates
+    :rtype: list
     """
 
     sql_query = """
@@ -534,13 +536,15 @@ def top_five_most_engaged_candidates_of_pipeline(talent_pipeline_id):
                    email_campaign_send.CandidateId) AS engagement_score_for_each_sent
        GROUP BY engagement_score_for_each_sent.EmailCampaignId) AS candidates_engagement_score
     GROUP BY candidates_engagement_score.CandidateId
-    ORDER BY engagement_score DESC LIMIT 5;
+    ORDER BY engagement_score DESC LIMIT :limit;
     """
 
     try:
-        engagement_scores = db.session.connection().execute(text(sql_query), talent_pipeline_id=talent_pipeline_id)
-        return [{'candidate_id': engagement_score['CandidateId'], 'engagement_score': str(
-                engagement_score['engagement_score'])} for engagement_score in engagement_scores]
+        engagement_scores = db.session.connection().execute(text(sql_query),
+                                                            talent_pipeline_id=talent_pipeline_id, limit=limit)
+        return [{'candidate_id': engagement_score['CandidateId'], 'engagement_score': float(str(
+                engagement_score['engagement_score']))} for engagement_score in engagement_scores]
     except Exception as e:
-        logger.error("Couldn't get top five most engaged candidates of talent-pipeline(%s)" % talent_pipeline_id)
+        logger.exception("Couldn't get top most engaged candidates of talent-pipeline(%s) "
+                     "because (%s)" % (talent_pipeline_id, e.message))
         return []

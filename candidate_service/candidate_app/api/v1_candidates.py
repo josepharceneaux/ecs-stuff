@@ -73,8 +73,9 @@ from candidate_service.modules.talent_candidates import (
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
-    add_languages, update_candidate_languages, calculate_candidate_engagement_score
+    add_languages, update_candidate_languages
 )
+from candidate_service.modules.candidate_engagement import calculate_candidate_engagement_score
 from candidate_service.modules.references import (
     get_references, create_references, delete_reference, delete_all_references
 )

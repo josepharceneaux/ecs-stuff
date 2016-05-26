@@ -15,7 +15,7 @@ from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
     get_pipeline_growth, TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline,
-    get_stats_generic_function, top_five_most_engaged_candidates_of_pipeline)
+    get_stats_generic_function, top_most_engaged_candidates_of_pipeline)
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 
 talent_pipeline_blueprint = Blueprint('talent_pipeline_api', __name__)
@@ -504,13 +504,17 @@ class TalentPipelineMostEngagedCandidates(Resource):
     @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES)
     def get(self, **kwargs):
         """
-        GET /talent-pipeline/<id>/candidates/engagement  Fetch candidates of a talent-pipeline
-        :return A dictionary containing list of 5 most engaged candidates belonging to a talent-pipeline
+        GET /talent-pipelines/<id>/candidates/engagement?limit=5  Fetch candidates of a talent-pipeline
+        :return A dictionary containing list of most engaged candidates belonging to a talent-pipeline
 
         :rtype: dict
         """
 
         talent_pipeline_id = kwargs.get('id')
+        limit = request.args.get('limit', 5)
+
+        if not is_number(limit) or int(limit) < 1:
+            raise InvalidUsage("Limit should be a positive integer")
 
         talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
 
@@ -521,7 +525,7 @@ class TalentPipelineMostEngagedCandidates(Resource):
         if talent_pipeline.user.domain_id != request.user.domain_id:
             raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
-        return {'candidates': top_five_most_engaged_candidates_of_pipeline(talent_pipeline_id)}
+        return {'candidates': top_most_engaged_candidates_of_pipeline(talent_pipeline_id, int(limit))}
 
 class TalentPipelineCampaigns(Resource):
     # Access token decorator
