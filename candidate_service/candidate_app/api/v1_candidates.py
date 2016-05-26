@@ -704,6 +704,7 @@ class CandidateCustomFieldResource(Resource):
 
             return {
                 'candidate_custom_field': {
+                    'id': can_cf_id,
                     'custom_field_id': custom_field_id,
                     'value': candidate_custom_field.value,
                     'created_at_datetime': candidate_custom_field.added_time.isoformat()
@@ -716,7 +717,8 @@ class CandidateCustomFieldResource(Resource):
                 {
                     'id': ccf.id,
                     'custom_field_id': ccf.custom_field_id,
-                    'value': ccf.value, 'created_at_datetime': ccf.added_time.isoformat()
+                    'value': ccf.value,
+                    'created_at_datetime': ccf.added_time.isoformat()
                 } for ccf in CandidateCustomField.get_candidate_custom_fields(candidate_id)]}
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
