@@ -70,23 +70,6 @@ def get_web_app_url():
                         % (TalentEnvs.DEV, TalentEnvs.JENKINS, TalentEnvs.QA, TalentEnvs.PROD))
 
 
-def _get_api_relative_version(api_version):
-    """
-    Given version of API, this returns e.g. /v1/%s
-    :param (str) api_version: version of API. e.g. v1 or v2 etc
-    """
-    return '/%s/%s' % (api_version, '%s')
-
-
-def _get_url_prefix(api_version):
-    """
-    For given API version this gives url_prefix to be used for API registration
-    e.g if api_version is v1, it will return /v1/
-    :param (str) api_version: version of API
-    """
-    return '/' + api_version + '/'
-
-
 def _get_health_check_url(host_name):
     """
     This returns the healthcheck url appended with host name. e.g.http://127.0.0.1:8001/healthcheck
@@ -210,8 +193,7 @@ class ResumeApi(object):
     API relative URLs for resume_parsing_service. e.g. /v1/parse_resume
     """
     VERSION = 'v1'
-    URL_PREFIX = _get_url_prefix(VERSION)
-    RELATIVE_VERSION = _get_api_relative_version(VERSION)
+    URL_PREFIX = '/' + VERSION + '/'
     PARSE = 'parse_resume'
     BATCH = 'batch'
 
@@ -222,7 +204,7 @@ class ResumeApiUrl(object):
     """
     HOST_NAME = _get_host_name(GTApis.RESUME_PARSING_SERVICE_NAME, GTApis.RESUME_PARSING_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    BASE_URL = HOST_NAME % ResumeApi.RELATIVE_VERSION
+    BASE_URL = HOST_NAME % ('/' + ResumeApi.VERSION + '/%s')
     PARSE = HOST_NAME % ('/' + ResumeApi.VERSION + '/parse_resume')
     BATCH_URL = HOST_NAME % ('/' + ResumeApi.VERSION + '/batch')
     BATCH_PROCESS = HOST_NAME % ('/' + ResumeApi.VERSION + '/batch/<int:user_id>')
@@ -233,7 +215,7 @@ class UserServiceApi(object):
     API relative URLs for user_service. e.g. /v1/users
     """
     VERSION = 'v1'
-    URL_PREFIX = _get_url_prefix(VERSION)
+    URL_PREFIX = '/' + VERSION + '/'
     USERS = "users"
     USER = "users/<int:id>"
     DOMAINS = "domains"
@@ -446,7 +428,7 @@ class WidgetApi(object):
     API relative URLs for widget_service. e.g. /v1/universities
     """
     VERSION = 'v1'
-    URL_PREFIX = _get_url_prefix(VERSION)
+    URL_PREFIX = '/' + VERSION + '/'
     DOMAINS = 'domains'
     DOMAIN_WIDGETS = 'domains/<path:encrypted_domain_id>/widgets/<path:encrypted_widget_id>'
     DOMAIN_INTERESTS = 'domains/<path:encrypted_domain_id>/interests'
@@ -473,7 +455,7 @@ class CandidatePoolApi(object):
     """
     VERSION = 'v1'
     # /v1/
-    URL_PREFIX = _get_url_prefix(VERSION)
+    URL_PREFIX = '/' + VERSION + '/'
     # Talent Pools
     TALENT_POOLS = 'talent-pools'
     TALENT_POOL = 'talent-pools/<int:id>'
@@ -540,7 +522,7 @@ class SpreadsheetImportApi(object):
     """
     VERSION = 'v1'
     # This is /v1/
-    URL_PREFIX = _get_url_prefix(VERSION)
+    URL_PREFIX = '/' + VERSION + '/'
     CONVERT_TO_TABLE = 'parse_spreadsheet/convert_to_table'
     IMPORT_CANDIDATES = 'parse_spreadsheet/import_candidates'
 
@@ -627,7 +609,6 @@ class SocialNetworkApiUrl(object):
 
     # TODO: Make this URL dynamic i.e different for staging, dev or prod
     UI_APP_URL = 'http://localhost:3000'
-    API_URL = HOST_NAME % _get_api_relative_version(SocialNetworkApi.VERSION)
     EVENTS = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/events')
     EVENT = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/events/%s')
     SOCIAL_NETWORKS = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/social-networks')
