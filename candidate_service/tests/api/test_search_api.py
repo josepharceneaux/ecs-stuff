@@ -1,6 +1,7 @@
 """
 Test cases for candidate-search-service-API
 """
+from candidate_service.common.error_handling import NotFoundError
 from candidate_service.tests.modules.test_talent_cloud_search import (
     populate_candidates, VARIOUS_US_LOCATIONS, create_area_of_interest_facets
 )
@@ -10,7 +11,7 @@ from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 from helpers import AddUserRoles
-from polling import poll
+from redo import retrier
 
 
 class TestCandidateSearchGet(object):
@@ -1275,6 +1276,8 @@ def get_response(access_token, arguments_to_url, expected_count, timeout=100):
     # Wait for cloudsearch to update the candidates
     url = CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
-    if poll(lambda: len(requests.get(url, headers=headers).json()['candidates']) >= expected_count, step=5,
-            timeout=timeout):
-        return requests.get(url=url, headers=headers)
+    attempts = timeout / 3 + 1
+    for _ in retrier(attempts=attempts, sleeptime=3):
+        if len(requests.get(url, headers=headers).json()['candidates']) >= expected_count:
+            return requests.get(url=url, headers=headers)
+    raise NotFoundError('Unable to get expected number of candidates')

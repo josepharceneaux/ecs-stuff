@@ -68,6 +68,7 @@ def parse_optic_xml(resume_xml_unicode):
     experience_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('experience')
     educations_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('education')
     skill_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('canonskill')
+    references_xml = bs4(resume_xml_unicode, 'lxml').findAll('references')
     name = parse_candidate_name(contact_xml_list)
     emails = parse_candidate_emails(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
@@ -75,6 +76,7 @@ def parse_optic_xml(resume_xml_unicode):
     educations = parse_candidate_educations(educations_xml_list)
     skills = parse_candidate_skills(skill_xml_list)
     addresses = parse_candidate_addresses(contact_xml_list)
+    references = parse_candidate_reference(references_xml)
     candidate = dict(
         first_name=name['first_name'],
         last_name=name['last_name'],
@@ -84,7 +86,8 @@ def parse_optic_xml(resume_xml_unicode):
         educations=educations,
         skills=skills,
         addresses=addresses,
-        talent_pool_ids={'add': None}
+        talent_pool_ids={'add': None},
+        references=references
     )
     return candidate
 
@@ -324,6 +327,20 @@ def parse_candidate_addresses(bg_xml_list):
             'zip_code': sanitize_zip_code(_tag_text(address, 'postalcode'))
         })
     return output
+
+
+def parse_candidate_reference(xml_references_list):
+    """
+    :param bs4.element.Tag xml_references_list:
+    :return: str | None
+    """
+    reference_comments = []
+    comment_string = None
+    for references in xml_references_list:
+        reference_comments.append(references.text.strip())
+    if reference_comments:
+        comment_string = ' '.join(reference_comments)
+    return comment_string
 
 
 ###################################################################################################

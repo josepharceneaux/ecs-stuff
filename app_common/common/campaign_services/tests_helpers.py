@@ -13,8 +13,8 @@ from datetime import datetime, timedelta
 # Third Party
 import pytz
 import requests
+from redo import retry
 from requests import Response
-from polling import poll, TimeoutException
 
 # Application Specific
 from ..models.db import db
@@ -372,8 +372,8 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(user_id, (int, long))
         raise_if_not_instance_of(_type, (int, long))
         raise_if_not_instance_of(source_id, (int, long))
-        activity = poll(_get_activity, args=(user_id, _type, source_id), step=3, timeout=60)
-        assert activity
+        retry(_assert_activity, args=(user_id, _type, source_id), sleeptime=3, attempts=20, sleepscale=1,
+              retry_exceptions=(AssertionError,))
 
     @staticmethod
     def assert_ok_response_and_counts(response, count=0, entity='sends', check_count=True):
@@ -436,11 +436,14 @@ class CampaignsTestsHelpers(object):
         if not blasts_url:
             raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
             db.session.commit()
-            return campaign.blasts.all()
-        raise_if_not_instance_of(access_token, basestring)
-        raise_if_not_instance_of(blasts_url, basestring)
-        blasts_get_response = send_request('get', blasts_url, access_token)
-        return blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
+            blasts = campaign.blasts.all()
+        else:
+            raise_if_not_instance_of(access_token, basestring)
+            raise_if_not_instance_of(blasts_url, basestring)
+            blasts_get_response = send_request('get', blasts_url, access_token)
+            blasts = blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
+        assert blasts
+        return blasts
 
     @staticmethod
     def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=20):
@@ -451,8 +454,9 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
-        return poll(CampaignsTestsHelpers.get_blasts, step=3,
-                    args=(campaign, access_token, blasts_url), timeout=timeout)
+        attempts = timeout / 3 + 1
+        return retry(CampaignsTestsHelpers.get_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
+                     args=(campaign, access_token, blasts_url), retry_exceptions=(AssertionError,))
 
     @staticmethod
     def get_blast_by_index_with_polling(campaign, blast_index=0, access_token=None,
@@ -465,8 +469,9 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
-        return poll(CampaignsTestsHelpers.get_blast_with_index, step=3,
-                    args=(campaign, blast_index, access_token, blasts_url), timeout=timeout)
+        attempts = timeout / 3 + 1
+        return retry(CampaignsTestsHelpers.get_blast_with_index, sleeptime=3, attempts=attempts, sleepscale=1,
+                     args=(campaign, blast_index, access_token, blasts_url), retry_exceptions=(AssertionError,))
 
     @staticmethod
     def get_blast_with_index(campaign, blast_index=0, access_token=None, blasts_url=None):
@@ -478,17 +483,18 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         if not blasts_url:
-            try:
-                raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
-                db.session.commit()
-                return campaign.blasts[blast_index]
-            except IndexError:
-                return []
-        raise_if_not_instance_of(access_token, basestring)
-        raise_if_not_instance_of(blasts_url, basestring)
-        blasts_get_response = send_request('get', blasts_url, access_token)
-        if blasts_get_response.ok:
-            return blasts_get_response.json()['blast']
+            raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
+            db.session.commit()
+            assert len(campaign.blasts.all()) > blast_index
+            blasts = campaign.blasts[blast_index]
+        else:
+            raise_if_not_instance_of(access_token, basestring)
+            raise_if_not_instance_of(blasts_url, basestring)
+            blasts_get_response = send_request('get', blasts_url, access_token)
+            assert blasts_get_response.ok
+            blasts = blasts_get_response.json()['blast']
+        assert blasts
+        return blasts
 
     @staticmethod
     def verify_sends(campaign, expected_count, blast_index, blast_url=None, access_token=None):
@@ -503,12 +509,13 @@ class CampaignsTestsHelpers(object):
         if not blast_url:
             raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
             db.session.commit()
-            return campaign.blasts[blast_index].sends == expected_count
-        raise_if_not_instance_of(access_token, basestring)
-        raise_if_not_instance_of(blast_url, basestring)
-        response = send_request('get', blast_url, access_token)
-        if response.ok:
-            return response.json()['blast']['sends'] == expected_count
+            assert campaign.blasts[blast_index].sends == expected_count
+        else:
+            raise_if_not_instance_of(access_token, basestring)
+            raise_if_not_instance_of(blast_url, basestring)
+            response = send_request('get', blast_url, access_token)
+            if response.ok:
+                assert response.json()['blast']['sends'] == expected_count
 
     @staticmethod
     def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=100,
@@ -522,10 +529,10 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(abort_time_for_sends, int)
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blast_url, basestring) if blast_url else None
-        sends_verified = poll(CampaignsTestsHelpers.verify_sends, step=3,
-                              args=(campaign, expected_count, blast_index, blast_url, access_token),
-                              timeout=abort_time_for_sends)
-        assert sends_verified
+        attempts = abort_time_for_sends / 3 + 1
+        retry(CampaignsTestsHelpers.verify_sends, sleeptime=3, attempts=attempts, sleepscale=1,
+              args=(campaign, expected_count, blast_index, blast_url, access_token),
+              retry_exceptions=(AssertionError,))
 
     @staticmethod
     def verify_blasts(campaign, access_token, blasts_url, expected_count):
@@ -540,12 +547,9 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         received_blasts_count = len(CampaignsTestsHelpers.get_blasts(campaign, access_token,
                                                                      blasts_url))
-        if received_blasts_count == expected_count:
-            return True
-        else:
-            print 'Expected Blasts:%s' % expected_count
-            print 'Received Blasts:%s' % received_blasts_count
-            return False
+        print 'Expected Blasts:%s' % expected_count
+        print 'Received Blasts:%s' % received_blasts_count
+        assert received_blasts_count == expected_count
 
     @staticmethod
     def assert_campaign_blasts(campaign, expected_count, access_token=None, blasts_url=None, timeout=10):
@@ -558,8 +562,10 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
-        poll(CampaignsTestsHelpers.verify_blasts, args=(campaign, access_token, blasts_url, expected_count),
-             step=3, timeout=timeout)
+        attempts = timeout / 3 + 1
+        retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
+              args=(campaign, access_token, blasts_url, expected_count),
+              retry_exceptions=(AssertionError,))
 
     @staticmethod
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1, data=None,
@@ -600,12 +606,9 @@ class CampaignsTestsHelpers(object):
         smartlists = create_smartlist_from_api(data=smartlist_data, access_token=access_token)
         smartlist_id = smartlists['smartlist']['id']
         if assert_candidates:
-            try:
-                poll(assert_smartlist_candidates, step=3,
-                     args=(smartlist_id, len(candidate_ids), access_token), timeout=timeout)
-            except TimeoutException:
-                raise InternalServerError('Candidates not found for smartlist(id:%s) '
-                                          'within given time range' % smartlist_id)
+            attempts = timeout / 3 + 1
+            retry(assert_smartlist_candidates, sleeptime=3, attempts=attempts, sleepscale=1,
+                  args=(smartlist_id, len(candidate_ids), access_token), retry_exceptions=(AssertionError,))
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
         return smartlist_id, candidate_ids
 
@@ -828,7 +831,7 @@ def _get_invalid_id_and_status_code_pair(invalid_ids):
             (invalid_ids[1], ResourceNotFound.http_status_code())]
 
 
-def _get_activity(user_id, _type, source_id):
+def _assert_activity(user_id, _type, source_id):
     """
     This gets that activity from database table Activity for given params
     :param (int, long) user_id: Id of user
@@ -841,4 +844,5 @@ def _get_activity(user_id, _type, source_id):
     # Need to commit the session because Celery has its own session, and our session does not
     # know about the changes that Celery session has made.
     db.session.commit()
-    return Activity.get_by_user_id_type_source_id(user_id, _type, source_id)
+    activity = Activity.get_by_user_id_type_source_id(user_id, _type, source_id)
+    assert activity

@@ -12,7 +12,7 @@ from time import time
 from datetime import date
 
 # Third Party
-from polling import poll, TimeoutException
+from redo import retry
 
 # Flask specific
 from flask import request
@@ -76,6 +76,7 @@ from candidate_service.modules.talent_candidates import (
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
     add_languages, update_candidate_languages
 )
+from candidate_service.modules.candidate_engagement import calculate_candidate_engagement_score
 from candidate_service.modules.references import (
     get_references, create_references, delete_reference, delete_all_references
 )
@@ -360,7 +361,7 @@ class CandidatesResource(Resource):
             # Provided source ID must belong to candidate's domain
             source_id = _candidate_dict.get('source_id')
             if source_id:
-                source = CandidateSource.get_by(source_id=source_id, domain_id=domain_id)
+                source = CandidateSource.get_by(id=source_id, domain_id=domain_id)
                 if not source:
                     raise InvalidUsage("Provided source ID ({source_id}) not "
                                        "recognized for candidate's domain (id = {domain_id})"
@@ -478,6 +479,7 @@ class CandidateResource(Resource):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
         candidate_data_dict = fetch_candidate_info(candidate=candidate)
+        candidate_data_dict['engagement_score'] = calculate_candidate_engagement_score(candidate_id)
 
         logger.info('BENCHMARK - candidate GET: {}'.format(time() - start_time))
         return {'candidate': candidate_data_dict}
@@ -1527,17 +1529,15 @@ class CandidateClientEmailCampaignResource(Resource):
         error_message = 'Candidate(s) (id(s): %s) could not be found for smartlist(id:%s)' \
                         % (candidate_ids, created_smartlist_id)
         try:
-            if poll(assert_smartlist_candidates, step=3,
-                    args=(created_smartlist_id, len(candidate_ids), request.headers.get('authorization')),
-                    timeout=60):
-                # timeout=60 is just an upper limit to poll the Smartlist API
-                # (needed this for some tests, it shouldn't affect normal API flow)
-                logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
-                            % (len(candidate_ids), created_smartlist_id))
-            else:
-                raise InternalServerError(error_message)
-        except TimeoutException:
-            logger.exception(error_message)
+            # timeout=60 is just an upper limit to poll the Smartlist API
+            # (needed this for some tests, it shouldn't affect normal API flow)
+            retry(assert_smartlist_candidates, sleeptime=3,  attempts=20, sleepscale=1,
+                  retry_exceptions=(AssertionError,), args=(created_smartlist_id, len(candidate_ids),
+                                                            request.headers.get('authorization')))
+
+            logger.info('candidate_client_email_campaign:%s candidate(s) found for smartlist(id:%s)'
+                        % (len(candidate_ids), created_smartlist_id))
+        except AssertionError:
             raise InternalServerError(error_message)
 
         # create campaign

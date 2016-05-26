@@ -5,8 +5,7 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-import sys
-from polling import poll
+from redo import retrier
 from helpers import AddUserRoles
 from candidate_service.common.routes import CandidateApiUrl, CandidatePoolApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
@@ -47,11 +46,15 @@ class TestSearchCandidatePipeline(object):
         print response_info(create_resp)
 
         params = data['talent_pipelines'][0]['search_params']
-        if poll(lambda: len(search(params, access_token_first)['candidates']) >= 1, step=1, timeout=100):
+        for _ in retrier(attempts=100, sleeptime=1, sleepscale=1):
+            if len(search(params, access_token_first)['candidates']) >= 1:
+                get_resp = send_request('get', self.PIPELINE_INCLUSION_URL % candidate_id, access_token_first)
+                print response_info(get_resp)
+                if get_resp.ok and len(get_resp.json()['candidate_pipelines']) == len(data['talent_pipelines']):
+                    break
+        else:
             get_resp = send_request('get', self.PIPELINE_INCLUSION_URL % candidate_id, access_token_first)
-            print response_info(get_resp)
-            assert get_resp.status_code == self.OK
-            assert len(get_resp.json()['candidate_pipelines']) == len(data['talent_pipelines'])
+            assert get_resp.ok and len(get_resp.json()['candidate_pipelines']) == len(data['talent_pipelines'])
 
     def test_search_for_non_existing_candidate_in_pipeline(self, user_first, access_token_first, candidate_first):
         """

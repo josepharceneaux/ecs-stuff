@@ -470,6 +470,7 @@ class CandidatePoolApi(object):
     TALENT_PIPELINE = 'talent-pipelines/<int:id>'
     TALENT_PIPELINE_SMARTLISTS = 'talent-pipelines/<int:id>/smartlists'
     TALENT_PIPELINE_CANDIDATES = 'talent-pipelines/<int:id>/candidates'
+    TALENT_PIPELINE_ENGAGED_CANDIDATES = 'talent-pipelines/<int:id>/candidates/engagement'
     TALENT_PIPELINE_CAMPAIGNS = 'talent-pipelines/<int:id>/campaigns'
     TALENT_PIPELINE_UPDATE_STATS = 'talent-pipelines/stats'
     TALENT_PIPELINE_GET_STATS = 'talent-pipelines/<int:talent_pipeline_id>/stats'
@@ -506,7 +507,6 @@ class CandidatePoolApiUrl(object):
     TALENT_PIPELINE_CANDIDATE = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pipelines/%s/candidates')
     TALENT_PIPELINE_CAMPAIGN = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pipelines/%s/campaigns')
     TALENT_PIPELINE_UPDATE_STATS = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pipelines/stats')
-
     TALENT_PIPELINE_GET_STATS = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pipelines/%s/stats')
     # Smartlists
     SMARTLISTS = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/smartlists')

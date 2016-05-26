@@ -14,6 +14,7 @@ from datetime import date
 from nameparser import HumanName
 
 # Database connection and logger
+from sqlalchemy.sql import text
 from candidate_service.common.models.db import db
 from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.candidate_app import logger

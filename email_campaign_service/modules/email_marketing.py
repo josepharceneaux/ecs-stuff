@@ -6,6 +6,7 @@ This file contains function used by email-campaign-api.
 """
 # Standard Imports
 import re
+import os
 import json
 import datetime
 import itertools
@@ -538,8 +539,16 @@ def send_campaign_emails_to_candidate(user, campaign, candidate, candidate_addre
         _handle_email_sending_error(email_campaign_send, candidate, to_addresses, blast_params,
                                     email_campaign_blast_id, e)
         return False
+
+    environment = os.getenv(TalentConfigKeys.ENV_KEY) or 'local'
+
     # Save SES message ID & request ID
-    logger.info("Marketing email sent to %s. Email response=%s", to_addresses, email_response)
+    logger.info('''Marketing email sent successfully.
+                   Recipients    : %s,
+                   UserId        : %s,
+                   Environment   : %s,
+                   Email Response: %s
+                ''', to_addresses, user.id, environment, email_response)
     request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
     message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
     email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
