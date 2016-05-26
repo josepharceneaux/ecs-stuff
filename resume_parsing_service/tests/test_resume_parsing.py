@@ -43,7 +43,7 @@ REDIS_EXPIRE_TIME = 10
 ####################################################################################################
 def test_base_url():
     """Test that the application root lists the endpoint."""
-    base_response = requests.get(ResumeApiUrl.API_URL % '')
+    base_response = requests.get(ResumeApiUrl.BASE_URL % '')
     assert ResumeApi.PARSE in base_response.content
 
 
