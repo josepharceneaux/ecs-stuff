@@ -465,7 +465,7 @@ class CandidateApiUrl(object):
 
     PIPELINES = HOST_NAME % ('/' + CandidateApi.VERSION + '/candidates/%s/pipelines')
 
- 
+
 class WidgetApi(object):
     """
     API relative URLs for widget_service. e.g. /v1/universities
@@ -540,7 +540,7 @@ class CandidatePoolApiUrl(object):
     TALENT_POOL_GROUP = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/groups/%s/talent-pools')
     TALENT_POOL_UPDATE_STATS = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pools/stats')
     TALENT_POOL_GET_STATS = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pools/%s/stats')
-    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS =\
+    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = \
         HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pools/<int:talent_pool_id>/talent-pipelines/stats')
     # Talent Pipeline
     TALENT_PIPELINES = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pipelines')
@@ -627,64 +627,47 @@ class SocialNetworkApi(object):
     """
     VERSION = 'v1'
     # URLs, in case of API
-    RELATIVE_VERSION = _get_api_relative_version(VERSION)
-    EVENTS = RELATIVE_VERSION % 'events'
-    EVENT = RELATIVE_VERSION % 'events/<int:event_id>'
-    SOCIAL_NETWORKS = RELATIVE_VERSION % 'social-networks'
-    MEETUP_GROUPS = RELATIVE_VERSION % 'social-networks/meetup-groups'
-    TOKEN_VALIDITY = RELATIVE_VERSION % 'social-networks/<int:social_network_id>/token/validity'
-    TOKEN_REFRESH = RELATIVE_VERSION % 'social-networks/<int:social_network_id>/token/refresh'
-    USER_SOCIAL_NETWORK_CREDENTIALS = RELATIVE_VERSION % 'social-networks/<int:social_network_id>/user/credentials'
-    VENUES = RELATIVE_VERSION % 'venues'
-    VENUE = RELATIVE_VERSION % 'venues/<int:venue_id>'
-    EVENT_ORGANIZERS = RELATIVE_VERSION % 'event-organizers'
-    EVENT_ORGANIZER = RELATIVE_VERSION % 'event-organizers/<int:organizer_id>'
-    TIMEZONES = RELATIVE_VERSION % 'data/timezones'
-    RSVP = RELATIVE_VERSION % 'rsvp'
-    CODE = RELATIVE_VERSION % 'code'
+    EVENTS = '/' + VERSION + '/events'
+    EVENT = '/' + VERSION + '/events/<int:event_id>'
+    SOCIAL_NETWORKS = '/' + VERSION + '/social-networks'
+    MEETUP_GROUPS = '/' + VERSION + '/social-networks/meetup-groups'
+    TOKEN_VALIDITY = '/' + VERSION + '/social-networks/<int:social_network_id>/token/validity'
+    TOKEN_REFRESH = '/' + VERSION + '/social-networks/<int:social_network_id>/token/refresh'
+    USER_SOCIAL_NETWORK_CREDENTIALS = '/' + VERSION + '/social-networks/<int:social_network_id>/user/credentials'
+    VENUES = '/' + VERSION + '/venues'
+    VENUE = '/' + VERSION + '/venues/<int:venue_id>'
+    EVENT_ORGANIZERS = '/' + VERSION + '/event-organizers'
+    EVENT_ORGANIZER = '/' + VERSION + '/event-organizers/<int:organizer_id>'
+    TIMEZONES = '/' + VERSION + '/data/timezones'
+    RSVP = '/' + VERSION + '/rsvp'
+    CODE = '/' + VERSION + '/code'
 
 
 class SocialNetworkApiUrl(object):
     """
     API relative URLs for social_network_service
     """
-    HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME,
-                               GTApis.SOCIAL_NETWORK_SERVICE_PORT)
+    HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME, GTApis.SOCIAL_NETWORK_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
 
     # TODO: Make this URL dynamic i.e different for staging, dev or prod
     UI_APP_URL = 'http://localhost:3000'
     API_URL = HOST_NAME % _get_api_relative_version(SocialNetworkApi.VERSION)
-    EVENTS = API_URL % 'events'
-    EVENT = API_URL % 'events/%s'
-    SOCIAL_NETWORKS = API_URL % 'social-networks'
-    VENUES = API_URL % 'venues'
-    VENUE = API_URL % 'venues/%s'
-    EVENT_ORGANIZERS = API_URL % 'event-organizers'
-    EVENT_ORGANIZER = API_URL % 'event-organizers/%s'
-    TIMEZONES = API_URL % 'data/timezones'
-    MEETUP_GROUPS = API_URL % 'social-networks/meetup-groups'
-    TOKEN_VALIDITY = API_URL % 'social-networks/%s/token/validity'
-    TOKEN_REFRESH = API_URL % 'social-networks/%s/token/refresh'
-    USER_SOCIAL_NETWORK_CREDENTIALS = API_URL % 'social-networks/%s/user/credentials'
-    RSVP = API_URL % 'rsvp'
-    CODE = API_URL % 'code'
-
-
-class CampaignWords(object):
-    """
-    This class contains words used for endpoints of SMS Campaign API.
-    """
-    CAMPAIGNS = 'campaigns'
-    SCHEDULE = '/schedule'
-    REDIRECT = 'redirect'
-    RECEIVE = 'receive'
-    SENDS = '/sends'
-    SEND = '/send'
-    BLASTS = '/blasts'
-    REPLIES = '/replies'
-    SMS_CAMPAIGNS = 'sms-' + CAMPAIGNS
-    EMAIL_CAMPAIGNS = 'email-' + CAMPAIGNS
+    EVENTS = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/events')
+    EVENT = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/events/%s')
+    SOCIAL_NETWORKS = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/social-networks')
+    VENUES = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/venues')
+    VENUE = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/venues/%s')
+    EVENT_ORGANIZERS = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/event-organizers')
+    EVENT_ORGANIZER = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/event-organizers/%s')
+    TIMEZONES = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/data/timezones')
+    MEETUP_GROUPS = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/social-networks/meetup-groups')
+    TOKEN_VALIDITY = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/social-networks/%s/token/validity')
+    TOKEN_REFRESH = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/social-networks/%s/token/refresh')
+    USER_SOCIAL_NETWORK_CREDENTIALS = \
+        HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/social-networks/%s/user/credentials')
+    RSVP = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/rsvp')
+    CODE = HOST_NAME % ('/' + SocialNetworkApi.VERSION + '/code')
 
 
 class SmsCampaignApi(object):
@@ -736,22 +719,20 @@ class SmsCampaignApiUrl(object):
     """
     """ Endpoints' complete URLs for pyTests """
     # HOST_NAME is http://127.0.0.1:8012 for dev
-    HOST_NAME = _get_host_name(GTApis.SMS_CAMPAIGN_SERVICE_NAME,
-                               GTApis.SMS_CAMPAIGN_SERVICE_PORT)
+    HOST_NAME = _get_host_name(GTApis.SMS_CAMPAIGN_SERVICE_NAME, GTApis.SMS_CAMPAIGN_SERVICE_PORT)
 
-    CAMPAIGNS = HOST_NAME % SmsCampaignApi.CAMPAIGNS
-    CAMPAIGN = CAMPAIGNS + '/%s'
-    SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
-    SEND = CAMPAIGN + CampaignWords.SEND
-    REDIRECT = HOST_NAME % '/%s/%s' % (SmsCampaignApi.VERSION,
-                                       CampaignWords.REDIRECT + '/%s')
-    RECEIVE = HOST_NAME % SmsCampaignApi.RECEIVE
-    BLASTS = CAMPAIGN + CampaignWords.BLASTS
-    BLAST = BLASTS + '/%s'
-    SENDS = CAMPAIGN + CampaignWords.SENDS
-    REPLIES = CAMPAIGN + CampaignWords.REPLIES
-    BLAST_SENDS = BLAST + CampaignWords.SENDS
-    BLAST_REPLIES = BLAST + CampaignWords.REPLIES
+    CAMPAIGNS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns')
+    CAMPAIGN = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns/%s')
+    SCHEDULE = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns/%s/schedule')
+    SEND = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns/%s/send')
+    REDIRECT = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/redirect/%s')
+    RECEIVE = HOST_NAME % HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/receive')
+    BLASTS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns/%s/blasts')
+    BLAST = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns/%s/blasts/%s')
+    SENDS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns/%s/sends')
+    REPLIES = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns/%s/replies')
+    BLAST_SENDS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns/%s/blasts/%s/sends')
+    BLAST_REPLIES = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns/%s/blasts/%s/replies')
 
 
 class PushCampaignApi(object):
@@ -792,26 +773,25 @@ class PushCampaignApiUrl(object):
     """
     """ Endpoints' complete URLs for pyTests """
     # HOST_NAME is http://127.0.0.1:8013 for dev
-    HOST_NAME = _get_host_name(GTApis.PUSH_CAMPAIGN_SERVICE_NAME,
-                               GTApis.PUSH_CAMPAIGN_SERVICE_PORT)
-    CAMPAIGNS = HOST_NAME % PushCampaignApi.CAMPAIGNS
-    CAMPAIGN = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'push-campaigns/%s')
-    SENDS = CAMPAIGN + CampaignWords.SENDS
-    BLASTS = CAMPAIGN + CampaignWords.BLASTS
-    BLAST = BLASTS + '/%s'
-    BLAST_SENDS = BLAST + CampaignWords.SENDS
-    SEND = CAMPAIGN + CampaignWords.SEND
-    SCHEDULE = CAMPAIGN + CampaignWords.SCHEDULE
-    REDIRECT = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'redirect/%s')
-    URL_CONVERSION = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'url-conversions/%s')
-    URL_CONVERSION_BY_SEND_ID = HOST_NAME % '/%s/%s' % (PushCampaignApi.VERSION, 'send-url-conversions/%s')
+    HOST_NAME = _get_host_name(GTApis.PUSH_CAMPAIGN_SERVICE_NAME, GTApis.PUSH_CAMPAIGN_SERVICE_PORT)
+    CAMPAIGNS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/push-campaigns')
+    CAMPAIGN = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/push-campaigns/%s')
+    SENDS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/push-campaigns/%s/sends')
+    BLASTS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/push-campaigns/%s/blasts')
+    BLAST = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/push-campaigns/%s/blasts/%s')
+    BLAST_SENDS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/push-campaigns/%s/blasts/%s/sends')
+    SEND = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/push-campaigns/%s/send')
+    SCHEDULE = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/push-campaigns/%s/schedule')
+    REDIRECT = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/redirect/%s')
+    URL_CONVERSION = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/url-conversions/%s')
+    URL_CONVERSION_BY_SEND_ID = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/send-url-conversions/%s')
 
 
 class EmailCampaignEndpoints(object):
+    """
+    REST URLs for Email Campaign Service endpoints
+    """
     VERSION = 'v1'
-
-    HOST_NAME = _get_host_name(GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
-                               GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
     CAMPAIGNS = '/' + VERSION + '/email-campaigns'
     CAMPAIGN = '/' + VERSION + '/email-campaigns/<int:id>'
     # endpoint /v1/email-campaigns/:id/send
@@ -836,17 +816,14 @@ class EmailCampaignUrl(object):
     """
     This class contains URLs to be used in Py-tests
     """
-    CAMPAIGNS = EmailCampaignEndpoints.HOST_NAME % EmailCampaignEndpoints.CAMPAIGNS
-    CAMPAIGN = CAMPAIGNS + "/%s"
-    SEND = CAMPAIGN + CampaignWords.SEND
-    URL_REDIRECT = EmailCampaignEndpoints.HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION
-                                                       + '/' + CampaignWords.REDIRECT + '/%s')
-    BLASTS = CAMPAIGN + CampaignWords.BLASTS
-    BLAST = BLASTS + '/%s'
-
-    TEMPLATES = EmailCampaignEndpoints.HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION + '/email-templates')
-    TEMPLATES_FOLDER = EmailCampaignEndpoints.HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION +
-                                                           '/email-template-folders')
-
-    SENDS = CAMPAIGN + CampaignWords.SENDS
-    SEND_BY_ID = SENDS + '/%s'
+    HOST_NAME = _get_host_name(GTApis.EMAIL_CAMPAIGN_SERVICE_NAME, GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
+    CAMPAIGNS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/email-campaigns')
+    CAMPAIGN = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/email-campaigns/%s')
+    SEND = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/email-campaigns/%s/send')
+    URL_REDIRECT = HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION + '/redirect/%s')
+    BLASTS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/email-campaigns/%s/blasts')
+    BLAST = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/email-campaigns/%s/blasts/%s')
+    TEMPLATES = HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION + '/email-templates')
+    TEMPLATES_FOLDER = HOST_NAME % ('/' + EmailCampaignEndpoints.VERSION + '/email-template-folders')
+    SENDS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/email-campaigns/%s/sends')
+    SEND_BY_ID = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/email-campaigns/%s/sends/%s')
