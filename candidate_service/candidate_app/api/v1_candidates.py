@@ -76,6 +76,7 @@ from candidate_service.modules.talent_candidates import (
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
     add_languages, update_candidate_languages
 )
+from candidate_service.modules.candidate_engagement import calculate_candidate_engagement_score
 from candidate_service.modules.references import (
     get_references, create_references, delete_reference, delete_all_references
 )
@@ -478,6 +479,7 @@ class CandidateResource(Resource):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
         candidate_data_dict = fetch_candidate_info(candidate=candidate)
+        candidate_data_dict['engagement_score'] = calculate_candidate_engagement_score(candidate_id)
 
         logger.info('BENCHMARK - candidate GET: {}'.format(time() - start_time))
         return {'candidate': candidate_data_dict}
