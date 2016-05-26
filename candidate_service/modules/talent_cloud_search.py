@@ -10,11 +10,13 @@ from sqlalchemy.sql import text
 from copy import deepcopy
 from datetime import datetime
 from flask import request
+from flask_sqlalchemy import Model
 from candidate_service.candidate_app import app, celery_app, logger
 from candidate_service.common.utils.validators import is_number
 from candidate_service.common.talent_celery import OneTimeSQLConnection
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User, Domain
+from candidate_service.common.models.tag import Tag
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.talent_config_manager import TalentConfigKeys
 from candidate_service.common.error_handling import InternalServerError, InvalidUsage
@@ -314,7 +316,10 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
                 # Rating and comments
                 GROUP_CONCAT(DISTINCT CONCAT(candidate_rating.ratingTagId, '|', candidate_rating.value) SEPARATOR :sep) AS `candidate_rating_id_and_value`,
-                GROUP_CONCAT(DISTINCT candidate_text_comment.comment SEPARATOR :sep) AS `text_comment`
+                GROUP_CONCAT(DISTINCT candidate_text_comment.comment SEPARATOR :sep) AS `text_comment`,
+
+                # Tags
+                GROUP_CONCAT(DISTINCT candidate_tag.tag_id SEPARATOR :sep) AS `tags`
 
     FROM        candidate
 
@@ -342,6 +347,8 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
     LEFT JOIN   candidate_rating ON (candidate.id = candidate_rating.candidateId)
     LEFT JOIN   candidate_text_comment ON (candidate.id = candidate_text_comment.candidateId)
+
+    LEFT JOIN   candidate_tag ON (candidate.id = candidate_tag.candidate_id)
 
     WHERE       candidate.id IN :candidate_ids_string
 
@@ -878,7 +885,7 @@ def get_faceting_information(facets):
         search_facets_values['total_months_experience'] = get_bucket_facet_value_count(facet_total_months_experience)
 
     if facet_tags:
-        search_facets_values['tags'] = get_bucket_facet_value_count(facet_tags)
+        search_facets_values['tags'] = get_facet_info_with_ids(Tag, facet_tags, 'name')
 
     # TODO: productFacet, customFieldKP facets are remaining, how to do it?
     if facet_custom_field_id_and_value:
@@ -908,11 +915,11 @@ def get_facet_info_with_ids(table_name, facet, field_name):
     Few facets are filtering using ids, for those facets with ids, get their names (from db) for displaying on html
     also send ids so as to ease search with filter queries,
     returned ids will serve as values to checkboxes.
+    :type table_name: Model
     :param facet: Facet as received from cloudsearch (bucket value contains id of facet)
     :param field_name: Name which is to be returned for UI. This is name of field from table
     :return: Dictionary with field name as key and count of candidates + facet id as value
     """
-
     facets_list = []
     for bucket in facet:
         tmp_dict = {}
