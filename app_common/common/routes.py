@@ -726,7 +726,7 @@ class SmsCampaignApiUrl(object):
     SCHEDULE = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns/%s/schedule')
     SEND = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns/%s/send')
     REDIRECT = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/redirect/%s')
-    RECEIVE = HOST_NAME % HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/receive')
+    RECEIVE = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/receive')
     BLASTS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns/%s/blasts')
     BLAST = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns/%s/blasts/%s')
     SENDS = HOST_NAME % ('/' + SmsCampaignApi.VERSION + '/sms-campaigns/%s/sends')
