@@ -1100,7 +1100,7 @@ def _search_with_location(location, radius):
     # Convert miles to kilometers, required by geo_location calculator
     # if no radius is given set default distance to 80.47 (50 miles)
     distance_in_km = float(radius)/0.62137 if radius else 80.47
-    coords_dict = get_geocoordinates_bounding(location, distance_in_km)
+    coords_dict = get_geocoordinates_bounding(location, distance_in_km, logger)
     if coords_dict and coords_dict.get('point', ''):
         # If coordinates found, then only perform location search
         filter_queries.append("coordinates:['%s,%s','%s,%s']" % (coords_dict['top_left'][0],
