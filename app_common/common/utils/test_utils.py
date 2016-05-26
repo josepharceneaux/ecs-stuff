@@ -15,7 +15,7 @@ from dateutil.parser import parse
 # Service specific imports
 from ..error_codes import ErrorCodes
 from ..tests.conftest import randomword
-from ..routes import (UserServiceApiUrl, AuthApiRoutes, CandidateApiUrl,
+from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
                       CandidatePoolApiUrl, SchedulerApiUrl)
 
 fake = Faker()
@@ -98,7 +98,7 @@ def refresh_token(data):
             'refresh_token': data.get('refresh_token'),
             'grant_type': 'refresh_token'
             }
-    resp = requests.post(AuthApiRoutes().TOKEN_CREATE, data=data)
+    resp = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
     print('common_tests : refresh_token: ', resp.content)
     assert resp.status_code == codes.OK
     resp = resp.json()
@@ -121,7 +121,7 @@ def get_token(info):
             'password': info.get('password'),
             'grant_type': 'password'
             }
-    resp = requests.post(AuthApiRoutes().TOKEN_CREATE, data=data)
+    resp = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
     print('common_tests : get_token: ', resp.content)
     assert resp.status_code == codes.OK
     resp = resp.json()

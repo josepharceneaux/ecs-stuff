@@ -95,26 +95,6 @@ def _get_health_check_url(host_name):
     return host_name % HEALTH_CHECK
 
 
-def _get_modified_route(route):
-    """
-    This function will give us the route for a particular resource to be used in tests.
-    Input:
-    >>> '/candidates/<int:id>/phones/<int:phone_id>'
-    Output:
-    >>> '/candidates/%s/phones/%s'
-    """
-    new_sub_str = []
-    for sub_str in route.split('/'):
-        if sub_str.startswith('<'):
-            new_sub_str.append('%s')
-        else:
-            new_sub_str.append(sub_str)
-    if route.startswith('/'):
-        return '/'.join(new_sub_str)
-    else:
-        return new_sub_str[0] + '/' + '/'.join(new_sub_str[1::])
-
-
 class GTApis(object):
     """
     This class contains the getTalent flask micro services' name and respective port numbers.
@@ -158,53 +138,48 @@ class GTApis(object):
                                        "http://localhost"]}}
 
 
-class AuthApiRoutes(object):
+class AuthApi(object):
     """
     API relative URLs for auth_service. e.g. /v1/oauth2/token
-    It also returns Rest URLs of auth_service
-
-    ** Usage **
-    >>> AuthApiRoutes(url=False).TOKEN_CREATE
-    /v1/oauth2/token
-
-    >>> AuthApiRoutes().TOKEN_CREATE
-    https://127.0.0.1:8001/v1/oauth2/token
     """
     VERSION = 'v1'
-    RELATIVE_VERSION = _get_api_relative_version(VERSION)
+    TOKEN_CREATE = '/' + VERSION + '/oauth2/token'
+    TOKEN_REVOKE = '/' + VERSION + '/oauth2/revoke'
+    AUTHORIZE = '/' + VERSION + '/oauth2/authorize'
+
+
+class AuthApiUrl(object):
+    """
+    Rest URLs of auth_service
+    """
     HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME, GTApis.AUTH_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-
-    def __init__(self, url=True):
-        initial_str = self.HOST_NAME if url else '%s'
-        self.TOKEN_CREATE = initial_str % self.RELATIVE_VERSION % 'oauth2/token'
-        self.TOKEN_REVOKE = initial_str % self.RELATIVE_VERSION % 'oauth2/revoke'
-        self.AUTHORIZE = initial_str % self.RELATIVE_VERSION % 'oauth2/authorize'
+    TOKEN_CREATE = HOST_NAME % ('/' + AuthApi.VERSION + '/oauth2/token')
+    TOKEN_REVOKE = HOST_NAME % ('/' + AuthApi.VERSION + '/oauth2/revoke')
+    AUTHORIZE = HOST_NAME % ('/' + AuthApi.VERSION + '/oauth2/authorize')
 
 
 class AuthApiV2(object):
     """
-    API relative URLs for auth_service. e.g. /v1/oauth2/token
+    API relative URLs for auth_service. e.g. /v2/oauth2/token
     """
     VERSION = 'v2'
-    RELATIVE_VERSION = _get_api_relative_version(VERSION)
-    TOKEN_CREATE = RELATIVE_VERSION % 'oauth2/token'
-    TOKEN_REFRESH = RELATIVE_VERSION % 'oauth2/refresh'
-    TOKEN_REVOKE = RELATIVE_VERSION % 'oauth2/revoke'
-    AUTHORIZE = RELATIVE_VERSION % 'oauth2/authorize'
+    TOKEN_CREATE = '/' + VERSION + '/oauth2/token'
+    TOKEN_REFRESH = '/' + VERSION + '/oauth2/refresh'
+    TOKEN_REVOKE = '/' + VERSION + '/oauth2/revoke'
+    AUTHORIZE = '/' + VERSION + '/oauth2/authorize'
 
 
 class AuthApiUrlV2(object):
     """
     Rest URLs of auth_service
     """
-    HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME,
-                               GTApis.AUTH_SERVICE_PORT)
+    HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME, GTApis.AUTH_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    TOKEN_CREATE = HOST_NAME % AuthApiV2.TOKEN_CREATE
-    TOKEN_REFRESH = HOST_NAME % AuthApiV2.TOKEN_REFRESH
-    TOKEN_REVOKE = HOST_NAME % AuthApiV2.TOKEN_REVOKE
-    AUTHORIZE = HOST_NAME % AuthApiV2.AUTHORIZE
+    TOKEN_CREATE = HOST_NAME % ('/' + AuthApiV2.VERSION + '/oauth2/token')
+    TOKEN_REFRESH = HOST_NAME % ('/' + AuthApiV2.VERSION + '/oauth2/refresh')
+    TOKEN_REVOKE = HOST_NAME % ('/' + AuthApiV2.VERSION + '/oauth2/revoke')
+    AUTHORIZE = HOST_NAME % ('/' + AuthApiV2.VERSION + '/oauth2/authorize')
 
 
 class ActivityApi(object):

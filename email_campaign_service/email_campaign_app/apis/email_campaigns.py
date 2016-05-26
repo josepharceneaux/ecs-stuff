@@ -84,7 +84,7 @@ api.route = types.MethodType(api_route, api)
 
 
 @api.route(EmailCampaignApi.CAMPAIGNS, EmailCampaignApi.CAMPAIGN)
-class EmailCampaignApi(Resource):
+class EmailCampaigns(Resource):
 
     # Access token decorator
     decorators = [require_oauth()]

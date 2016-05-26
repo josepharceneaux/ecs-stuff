@@ -26,7 +26,7 @@ from scheduler_service import logger, TalentConfigKeys, flask_app, redis_store
 from scheduler_service.apscheduler_config import executors, job_store, jobstores, job_defaults
 from scheduler_service.common.models.user import User
 from scheduler_service.common.error_handling import InvalidUsage
-from scheduler_service.common.routes import AuthApiRoutes
+from scheduler_service.common.routes import AuthApiUrl
 from scheduler_service.common.talent_config_manager import TalentEnvs
 from scheduler_service.common.utils.datetime_utils import DatetimeUtils
 from scheduler_service.common.utils.handy_functions import http_request
@@ -205,7 +205,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
             # We need to refresh token if token is expired. For that send request to auth service and request a
             # refresh token.
             with flask_app.app_context():
-                resp = http_request('POST', AuthApiRoutes(url=True).TOKEN_CREATE, headers=headers,
+                resp = http_request('POST', AuthApiUrl.TOKEN_CREATE, headers=headers,
                                     data=urlencode(data))
                 logger.info('Token refreshed %s' % resp.json()['expires_at'])
                 access_token = "Bearer " + resp.json()['access_token']

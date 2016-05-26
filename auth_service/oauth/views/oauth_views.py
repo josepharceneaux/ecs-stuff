@@ -4,7 +4,7 @@ __author__ = 'ufarooqi'
 from auth_service.oauth import app, logger
 from auth_service.oauth import gt_oauth
 from auth_service.common.error_handling import *
-from auth_service.common.routes import AuthApiRoutes, AuthApiV2
+from auth_service.common.routes import AuthApi, AuthApiV2
 from auth_service.oauth.oauth_utilities import authenticate_user, save_token_v2, redis_store, authenticate_request
 
 
@@ -50,24 +50,23 @@ def authorize_v2():
 
 gt_oauth.grantgetter(lambda *args, **kwargs: None)
 gt_oauth.grantsetter(lambda *args, **kwargs: None)
-AuthApiV1 = AuthApiRoutes(url=False)
 
 
-@app.route(AuthApiV1.TOKEN_CREATE, methods=['POST'])
+@app.route(AuthApi.TOKEN_CREATE, methods=['POST'])
 @gt_oauth.token_handler
 def access_token(*args, **kwargs):
     """ Create a new access_token for a user and store it in Token table """
     return None
 
 
-@app.route(AuthApiV1.TOKEN_REVOKE, methods=['POST'])
+@app.route(AuthApi.TOKEN_REVOKE, methods=['POST'])
 @gt_oauth.revoke_handler
 def revoke_token():
     """ Revoke or delete an access_token from Token table """
     pass
 
 
-@app.route(AuthApiV1.AUTHORIZE)
+@app.route(AuthApi.AUTHORIZE)
 @gt_oauth.require_oauth()
 def authorize():
     """ Authorize an access token which is stored in Authorization header """
