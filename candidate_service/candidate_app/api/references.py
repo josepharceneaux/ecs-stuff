@@ -47,7 +47,9 @@ class CandidateReferencesResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
-        created_reference_ids = create_or_update_references(candidate_id, body_dict['candidate_references'])
+        created_reference_ids = create_or_update_references(candidate_id=candidate_id,
+                                                            references=body_dict['candidate_references'],
+                                                            is_creating=True)
         return {'candidate_references': [{'id': reference_id} for reference_id in created_reference_ids]}, 201
 
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
@@ -78,18 +80,20 @@ class CandidateReferencesResource(Resource):
         body_dict = get_json_data_if_validated(request, references_schema)
 
         # Authenticated user, candidate ID, and reference ID
-        authed_user, candidate_id, reference_id = request.user, kwargs['candidate_id'], kwargs.get('id')
+        authed_user, candidate_id = request.user, kwargs['candidate_id']
+        reference_id_from_url = kwargs.get('id')
 
         # Check if candidate exists & is web-hidden
-        candidate = get_candidate_if_exists(candidate_id)
+        get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user's domain
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
-        updated_reference_ids = create_or_update_references(
-            candidate_id, body_dict['candidate_references'], is_updating=True
-        )
+        updated_reference_ids = create_or_update_references(candidate_id=candidate_id,
+                                                            references=body_dict['candidate_references'],
+                                                            is_updating=True,
+                                                            reference_id_from_url=reference_id_from_url)
         return {'updated_candidate_references': [{'id': reference_id} for reference_id in updated_reference_ids]}
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
