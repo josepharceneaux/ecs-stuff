@@ -25,44 +25,6 @@ def get_references(candidate):
     :type candidate:  Candidate
     :rtype:  list[dict]
     """
-
-    def _get_reference_emails(reference_id):
-        """
-        Function will return candidate's reference's email information
-        :type reference_id:  int|long
-        :rtype:  dict
-        """
-        reference_email = ReferenceEmail.get_by_reference_id(reference_id)
-        if reference_email:
-            return dict(label=EmailLabel.get_description_from_id(reference_email.email_label_id),
-                        is_default=reference_email.is_default,
-                        address=reference_email.value)
-
-    def _get_reference_phones(reference_id):
-        """
-        Function will return candidate's reference's phone information
-        :type reference_id:  int|long
-        :rtype:  dict
-        """
-        reference_phone = ReferencePhone.get_by_reference_id(reference_id)
-        if reference_phone:
-            return dict(label=PhoneLabel.get_description_from_id(reference_phone.phone_label_id),
-                        is_default=reference_phone.is_default,
-                        value=reference_phone.value,
-                        extension=reference_phone.extension)
-
-    def _get_reference_web_addresses(reference_id):
-        """
-        Function will return candidate's reference's web address information
-        :type reference_id:  int|long
-        :rtype:  dict
-        """
-        reference_web_address = ReferenceWebAddress.get_by_reference_id(reference_id)
-        if reference_web_address:
-            return dict(id=reference_web_address.id,
-                        url=reference_web_address.url,
-                        description=reference_web_address.description)
-
     return_list = []  # Aggregate all of candidate's references' information
     for reference in candidate.references:
         reference_id = reference.id
@@ -71,15 +33,55 @@ def get_references(candidate):
             name=reference.person_name,
             position_title=reference.position_title,
             comments=reference.comments,
-            reference_email=_get_reference_emails(reference_id),
-            reference_phone=_get_reference_phones(reference_id),
-            reference_web_address=_get_reference_web_addresses(reference_id)
+            reference_email=get_reference_emails(reference_id),
+            reference_phone=get_reference_phones(reference_id),
+            reference_web_address=get_reference_web_addresses(reference_id)
         )
         # Remove keys with empty values and strip each value
         return_dict = purge_dict(dictionary=return_dict, strip=False)
         return_list.append(return_dict)
 
     return return_list
+
+
+def get_reference_emails(reference_id):
+    """
+    Function will return candidate's reference's email information
+    :type reference_id:  int|long
+    :rtype:  dict
+    """
+    reference_email = ReferenceEmail.get_by_reference_id(reference_id)
+    if reference_email:
+        return dict(label=EmailLabel.get_description_from_id(reference_email.email_label_id),
+                    is_default=reference_email.is_default,
+                    address=reference_email.value)
+
+
+def get_reference_phones(reference_id):
+    """
+    Function will return candidate's reference's phone information
+    :type reference_id:  int|long
+    :rtype:  dict
+    """
+    reference_phone = ReferencePhone.get_by_reference_id(reference_id)
+    if reference_phone:
+        return dict(label=PhoneLabel.get_description_from_id(reference_phone.phone_label_id),
+                    is_default=reference_phone.is_default,
+                    value=reference_phone.value,
+                    extension=reference_phone.extension)
+
+
+def get_reference_web_addresses(reference_id):
+    """
+    Function will return candidate's reference's web address information
+    :type reference_id:  int|long
+    :rtype:  dict
+    """
+    reference_web_address = ReferenceWebAddress.get_by_reference_id(reference_id)
+    if reference_web_address:
+        return dict(id=reference_web_address.id,
+                    url=reference_web_address.url,
+                    description=reference_web_address.description)
 
 
 def create_or_update_references(candidate_id, references, is_creating=False,

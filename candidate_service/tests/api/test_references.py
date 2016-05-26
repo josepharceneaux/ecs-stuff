@@ -170,3 +170,27 @@ class TestDeleteCandidateReference(object):
         print response_info(del_resp)
         assert del_resp.status_code == 403
         assert del_resp.json()['error']['code'] == custom_errors.REFERENCE_FORBIDDEN
+
+
+class TestGetCandidateReference(object):
+    URL = CandidateApiUrl.REFERENCES
+    REFERENCE_URL = CandidateApiUrl.REFERENCE
+
+    def test_get_candidate_reference(self, access_token_first, user_first, candidate_first):
+        """
+        Test: Retrieve a single candidate reference by providing its ID
+        """
+        # Create references for candidate
+        AddUserRoles.add_and_get(user_first)
+        create_resp = send_request('post', self.URL % candidate_first.id, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == 201
+
+        reference_id = create_resp.json()['candidate_references'][0]['id']
+
+        # Retrieve candidate's references
+        get_resp = send_request('get', self.REFERENCE_URL % (candidate_first.id, reference_id), access_token_first)
+        print response_info(get_resp)
+        assert get_resp.status_code == 200
+        assert get_resp.json()['candidate_reference']['comments'] == data['candidate_references'][0]['comments']
+        assert get_resp.json()['candidate_reference']['name'] == data['candidate_references'][0]['name']

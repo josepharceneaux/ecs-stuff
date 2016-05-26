@@ -20,7 +20,8 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 from candidate_service.common.models.candidate import CandidateReference
 from candidate_service.common.models.user import DomainRole
 from candidate_service.modules.references import (
-    get_references, create_or_update_references, delete_reference, delete_all_references
+    get_references, get_reference_emails, get_reference_phones, get_reference_web_addresses,
+    create_or_update_references, delete_reference, delete_all_references
 )
 
 
@@ -55,7 +56,9 @@ class CandidateReferencesResource(Resource):
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
-        Endpoints: GET /v1/candidates/:candidate_id/references
+        Endpoints:
+             i. GET /v1/candidates/:candidate_id/references
+            ii. GET /v1/candidates/:candidate_id/references/:id
         """
         # Get authenticated user, candidate ID, and reference ID
         authed_user, candidate_id, reference_id = request.user, kwargs['candidate_id'], kwargs.get('id')
@@ -68,7 +71,24 @@ class CandidateReferencesResource(Resource):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
         if reference_id:
-            pass
+            # Reference ID must be recognized
+            reference = CandidateReference.get(reference_id)
+            if not reference:
+                raise NotFoundError("Reference ID ({}) not recognized.".format(reference_id),
+                                    custom_error.REFERENCE_NOT_FOUND)
+
+            # Reference must belong to candidate
+            if reference.candidate_id != candidate_id:
+                raise ForbiddenError("Reference (id={}) does not belong to candidate (id={})".
+                                     format(reference_id, candidate_id), custom_error.REFERENCE_FORBIDDEN)
+
+            return dict(candidate_reference=dict(id=reference_id,
+                                                 name=reference.person_name,
+                                                 position_title=reference.position_title,
+                                                 comments=reference.comments,
+                                                 reference_email=get_reference_emails(reference_id),
+                                                 reference_phone=get_reference_phones(reference_id),
+                                                 reference_web_address=get_reference_web_addresses(reference_id)))
 
         return {'candidate_references': get_references(candidate)}
 
