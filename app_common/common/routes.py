@@ -483,15 +483,13 @@ class WidgetApiUrl(object):
     """
     Rest URLs of widget_service
     """
-    HOST_NAME = _get_host_name(GTApis.WIDGET_SERVICE_NAME,
-                               GTApis.WIDGET_SERVICE_PORT)
+    HOST_NAME = _get_host_name(GTApis.WIDGET_SERVICE_NAME, GTApis.WIDGET_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    API_URL = HOST_NAME % _get_api_relative_version(WidgetApi.VERSION)
-    DOMAIN_WIDGETS = API_URL % (WidgetApi.DOMAINS + '/%s/widgets/%s')
-    DOMAIN_INTERESTS = API_URL % (WidgetApi.DOMAINS + '/%s/interests')
-    DOMAIN_MAJORS = API_URL % (WidgetApi.DOMAINS + '/%s/majors')
-    DOMAINS = API_URL % WidgetApi.DOMAINS
-    UNIVERSITIES = API_URL % WidgetApi.UNIVERSITIES
+    DOMAINS = HOST_NAME % ('/' + WidgetApi.VERSION + '/domains')
+    DOMAIN_WIDGETS = HOST_NAME % ('/' + WidgetApi.VERSION + '/domains/%s/widgets/%s')
+    DOMAIN_INTERESTS = HOST_NAME % ('/' + WidgetApi.VERSION + '/domains/%s/interests')
+    DOMAIN_MAJORS = HOST_NAME % ('/' + WidgetApi.VERSION + '/domains/%s/majors')
+    UNIVERSITIES = HOST_NAME % ('/' + WidgetApi.VERSION + '/universities')
 
 
 class CandidatePoolApi(object):
@@ -502,7 +500,6 @@ class CandidatePoolApi(object):
     # /v1/
     URL_PREFIX = _get_url_prefix(VERSION)
     # Talent Pools
-    TALENT_PIPELINES = 'talent-pipelines'
     TALENT_POOLS = 'talent-pools'
     TALENT_POOL = 'talent-pools/<int:id>'
     TALENT_POOL_CANDIDATES = 'talent-pools/<int:id>/candidates'
@@ -512,6 +509,7 @@ class CandidatePoolApi(object):
     TALENT_POOL_GET_STATS = 'talent-pools/<int:talent_pool_id>/stats'
     TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = 'talent-pools/<int:talent_pool_id>/talent-pipelines/stats'
     # Talent Pipelines
+    TALENT_PIPELINES = 'talent-pipelines'
     TALENT_PIPELINE = 'talent-pipelines/<int:id>'
     TALENT_PIPELINE_SMARTLISTS = 'talent-pipelines/<int:id>/smartlists'
     TALENT_PIPELINE_CANDIDATES = 'talent-pipelines/<int:id>/candidates'
@@ -531,33 +529,34 @@ class CandidatePoolApiUrl(object):
     """
     Rest URLs of candidate_pool_service
     """
-    HOST_NAME = _get_host_name(GTApis.CANDIDATE_POOL_SERVICE_NAME,
-                               GTApis.CANDIDATE_POOL_SERVICE_PORT)
+    HOST_NAME = _get_host_name(GTApis.CANDIDATE_POOL_SERVICE_NAME, GTApis.CANDIDATE_POOL_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    API_URL = HOST_NAME % _get_api_relative_version(CandidatePoolApi.VERSION)
     # Talent Pool
-    TALENT_POOLS = API_URL % CandidatePoolApi.TALENT_POOLS
-    TALENT_POOL = API_URL % _get_modified_route(CandidatePoolApi.TALENT_POOL)
-    TALENT_POOL_UPDATE_STATS = API_URL % CandidatePoolApi.TALENT_POOL_UPDATE_STATS
-    TALENT_POOL_GET_STATS = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINE_GET_STATS)
-    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS)
-    TALENT_POOL_CANDIDATE = API_URL % _get_modified_route(CandidatePoolApi.TALENT_POOL_CANDIDATES)
-    TALENT_POOL_GROUP = API_URL % _get_modified_route(CandidatePoolApi.TALENT_POOL_GROUPS)
-    TALENT_PIPELINES_OF_TALENT_POOLS = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINES_OF_TALENT_POOLS)
+    TALENT_POOLS = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pools')
+    TALENT_POOL = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pools/%s')
+    TALENT_POOL_CANDIDATE = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pools/%s/candidates')
+    TALENT_PIPELINES_OF_TALENT_POOLS = \
+        HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pools/%s/talent-pipelines')
+    TALENT_POOL_GROUP = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/groups/%s/talent-pools')
+    TALENT_POOL_UPDATE_STATS = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pools/stats')
+    TALENT_POOL_GET_STATS = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pools/%s/stats')
+    TALENT_PIPELINES_IN_TALENT_POOL_GET_STATS =\
+        HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pools/<int:talent_pool_id>/talent-pipelines/stats')
     # Talent Pipeline
-    TALENT_PIPELINES = API_URL % CandidatePoolApi.TALENT_PIPELINES
-    TALENT_PIPELINE = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINE)
-    TALENT_PIPELINE_UPDATE_STATS = API_URL % CandidatePoolApi.TALENT_PIPELINE_UPDATE_STATS
-    TALENT_PIPELINE_CANDIDATE = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINE_CANDIDATES)
-    TALENT_PIPELINE_CAMPAIGN = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINE_CAMPAIGNS)
-    TALENT_PIPELINE_SMARTLISTS = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINE_SMARTLISTS)
-    TALENT_PIPELINE_GET_STATS = API_URL % _get_modified_route(CandidatePoolApi.TALENT_PIPELINE_GET_STATS)
+    TALENT_PIPELINES = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pipelines')
+    TALENT_PIPELINE = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pipelines/%s')
+    TALENT_PIPELINE_SMARTLISTS = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pipelines/%s/smartlists')
+    TALENT_PIPELINE_CANDIDATE = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pipelines/%s/candidates')
+    TALENT_PIPELINE_CAMPAIGN = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pipelines/%s/campaigns')
+    TALENT_PIPELINE_UPDATE_STATS = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pipelines/stats')
+
+    TALENT_PIPELINE_GET_STATS = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/talent-pipelines/%s/stats')
     # Smartlists
-    SMARTLISTS = API_URL % CandidatePoolApi.SMARTLISTS
-    SMARTLIST = API_URL % _get_modified_route(CandidatePoolApi.SMARTLIST)
-    SMARTLIST_UPDATE_STATS = API_URL % CandidatePoolApi.SMARTLIST_UPDATE_STATS
-    SMARTLIST_GET_STATS = API_URL % _get_modified_route(CandidatePoolApi.SMARTLIST_GET_STATS)
-    SMARTLIST_CANDIDATES = API_URL % _get_modified_route(CandidatePoolApi.SMARTLIST_CANDIDATES)
+    SMARTLISTS = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/smartlists')
+    SMARTLIST = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/smartlists/%s')
+    SMARTLIST_CANDIDATES = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/smartlists/%s/candidates')
+    SMARTLIST_UPDATE_STATS = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/smartlists/stats')
+    SMARTLIST_GET_STATS = HOST_NAME % ('/' + CandidatePoolApi.VERSION + '/smartlists/%s/stats')
 
 
 class SpreadsheetImportApi(object):
@@ -575,59 +574,48 @@ class SpreadsheetImportApiUrl(object):
     """
     Rest URLs of spreadsheet_import_service
     """
-    HOST_NAME = _get_host_name(GTApis.SPREADSHEET_IMPORT_SERVICE_NAME,
-                               GTApis.SPREADSHEET_IMPORT_SERVICE_PORT)
+    HOST_NAME = _get_host_name(GTApis.SPREADSHEET_IMPORT_SERVICE_NAME, GTApis.SPREADSHEET_IMPORT_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    API_URL = HOST_NAME % _get_api_relative_version(SpreadsheetImportApi.VERSION)
-    CONVERT_TO_TABLE = API_URL % SpreadsheetImportApi.CONVERT_TO_TABLE
-    IMPORT_CANDIDATES = API_URL % SpreadsheetImportApi.IMPORT_CANDIDATES
+    CONVERT_TO_TABLE = HOST_NAME % ('/' + SpreadsheetImportApi.VERSION + '/parse_spreadsheet/convert_to_table')
+    IMPORT_CANDIDATES = HOST_NAME % ('/' + SpreadsheetImportApi.VERSION + '/parse_spreadsheet/import_candidates')
 
 
 class SchedulerApi(object):
     """
     Rest Relative URLs of scheduler_service
     """
-
     VERSION = 'v1'
-
     # URLs, in case of API
-    RELATIVE_VERSION = _get_api_relative_version(VERSION)
-    SCHEDULER_MULTIPLE_TASKS = RELATIVE_VERSION % "tasks"
-    SCHEDULER_TASKS_TEST = RELATIVE_VERSION % "tasks/test"
-    SCHEDULER_ONE_TASK = RELATIVE_VERSION % "tasks/id/<string:_id>"
-    SCHEDULER_NAMED_TASK = RELATIVE_VERSION % "tasks/name/<string:_name>"
-    SCHEDULER_ONE_TASK_NAME = RELATIVE_VERSION % "tasks/name/<string:_name>"
-    SCHEDULER_MULTIPLE_TASK_RESUME = RELATIVE_VERSION % "tasks/resume"
-    SCHEDULER_MULTIPLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/pause"
-    SCHEDULER_SINGLE_TASK_RESUME = RELATIVE_VERSION % "tasks/<string:_id>/resume"
-    SCHEDULER_SINGLE_TASK_PAUSE = RELATIVE_VERSION % "tasks/<string:_id>/pause"
-    SCHEDULER_ADMIN_TASKS = RELATIVE_VERSION % "admin/tasks"
+    SCHEDULER_MULTIPLE_TASKS = '/' + VERSION + '/tasks'
+    SCHEDULER_TASKS_TEST = '/' + VERSION + '/tasks/test'
+    SCHEDULER_ONE_TASK = '/' + VERSION + '/tasks/id/<string:_id>'
+    SCHEDULER_NAMED_TASK = '/' + VERSION + '/tasks/name/<string:_name>'
+    SCHEDULER_ONE_TASK_NAME = '/' + VERSION + '/tasks/name/<string:_name>'
+    SCHEDULER_MULTIPLE_TASK_RESUME = '/' + VERSION + '/tasks/resume'
+    SCHEDULER_MULTIPLE_TASK_PAUSE = '/' + VERSION + '/tasks/pause'
+    SCHEDULER_SINGLE_TASK_RESUME = '/' + VERSION + '/tasks/<string:_id>/resume'
+    SCHEDULER_SINGLE_TASK_PAUSE = '/' + VERSION + '/tasks/<string:_id>/pause'
+    SCHEDULER_ADMIN_TASKS = '/' + VERSION + '/admin/tasks'
 
 
 class SchedulerApiUrl(object):
     """
     Rest URLs of scheduler_service
     """
-    HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME,
-                               GTApis.SCHEDULER_SERVICE_PORT)
-
-    VERSION = 'v1'
-
-    RELATIVE_VERSION = HOST_NAME % _get_api_relative_version(VERSION)
-
+    HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME, GTApis.SCHEDULER_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     # URLs, in case of test cases
-    TASKS = RELATIVE_VERSION % "tasks"
-    TASK = RELATIVE_VERSION % 'tasks/id/%s'
-    TASK_NAME = RELATIVE_VERSION % 'tasks/name/%s'
-    PAUSE_TASK = RELATIVE_VERSION % 'tasks/%s/pause'
-    RESUME_TASK = RELATIVE_VERSION % 'tasks/%s/resume'
-    PAUSE_TASKS = RELATIVE_VERSION % 'tasks/pause'
-    RESUME_TASKS = RELATIVE_VERSION % 'tasks/resume'
-    TEST_TASK = RELATIVE_VERSION % 'tasks/test'
+    TASKS = HOST_NAME % ('/' + SchedulerApi.VERSION + '/tasks')
+    TASK = HOST_NAME % ('/' + SchedulerApi.VERSION + '/tasks/id/%s')
+    TASK_NAME = HOST_NAME % ('/' + SchedulerApi.VERSION + '/tasks/name/%s')
+    PAUSE_TASK = HOST_NAME % ('/' + SchedulerApi.VERSION + '/tasks/%s/pause')
+    RESUME_TASK = HOST_NAME % ('/' + SchedulerApi.VERSION + '/tasks/%s/resume')
+    PAUSE_TASKS = HOST_NAME % ('/' + SchedulerApi.VERSION + '/tasks/pause')
+    RESUME_TASKS = HOST_NAME % ('/' + SchedulerApi.VERSION + '/tasks/resume')
+    TEST_TASK = HOST_NAME % ('/' + SchedulerApi.VERSION + '/tasks/test')
 
     # Scheduler Admin API
-    ADMIN_TASKS = RELATIVE_VERSION % "admin/tasks"
+    ADMIN_TASKS = HOST_NAME % ('/' + SchedulerApi.VERSION + '/admin/tasks')
 
     # Use different port of scheduler service URL
     FLOWER_MONITORING_PORT = '--port=5511'
