@@ -48,7 +48,7 @@ def get_reference_emails(reference_id):
     """
     Function will return candidate's reference's email information
     :type reference_id:  int|long
-    :rtype:  dict
+    :rtype:  dict | None
     """
     reference_email = ReferenceEmail.get_by_reference_id(reference_id)
     if reference_email:
@@ -61,7 +61,7 @@ def get_reference_phones(reference_id):
     """
     Function will return candidate's reference's phone information
     :type reference_id:  int|long
-    :rtype:  dict
+    :rtype:  dict | None
     """
     reference_phone = ReferencePhone.get_by_reference_id(reference_id)
     if reference_phone:
@@ -75,7 +75,7 @@ def get_reference_web_addresses(reference_id):
     """
     Function will return candidate's reference's web address information
     :type reference_id:  int|long
-    :rtype:  dict
+    :rtype:  dict | None
     """
     reference_web_address = ReferenceWebAddress.get_by_reference_id(reference_id)
     if reference_web_address:
@@ -129,7 +129,8 @@ def create_or_update_references(candidate_id, references, is_creating=False,
         reference_web_address = reference.get('reference_web_address')
 
         if reference_email:  # add reference's email info
-            email_label = 'Primary' if not reference_email.get('label') else reference_email['label'].strip().title()
+            default_label = EmailLabel.PRIMARY_DESCRIPTION
+            email_label = default_label if not reference_email.get('label') else reference_email['label'].strip().title()
             value = reference_email['address'].strip() if reference_email.get('address') else None
             reference_email_dict = dict(
                 email_label_id=EmailLabel.email_label_id_from_email_label(email_label) if value else None,
@@ -145,7 +146,8 @@ def create_or_update_references(candidate_id, references, is_creating=False,
                 update_reference_email(reference_id, reference_email_dict)
 
         if reference_phone:  # add reference's phone info if provided
-            phone_label = 'Home' if not reference_phone.get('label') else reference_phone['label'].strip().title()
+            default_label = PhoneLabel.DEFAULT_LABEL
+            phone_label = default_label if not reference_phone.get('label') else reference_phone['label'].strip().title()
             value = reference_phone['value'].strip() if reference_phone.get('value') else None
             phone_number_dict = format_phone_number(value) if value else None
             reference_phone_dict = dict(

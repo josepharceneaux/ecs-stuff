@@ -1,7 +1,6 @@
 # Flask specific
 from flask import request
 from flask_restful import Resource
-from candidate_service.candidate_app import logger
 
 # Validators
 from candidate_service.modules.validators import (
@@ -28,7 +27,7 @@ from candidate_service.modules.references import (
 class CandidateReferencesResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:   POST /v1/candidates/:candidate_id/references
@@ -41,7 +40,7 @@ class CandidateReferencesResource(Resource):
         # Get authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
-        # Check if candidate exists & is web-hidden
+        # Check if candidate exists & is not web-hidden
         get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user's domain
@@ -95,6 +94,11 @@ class CandidateReferencesResource(Resource):
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
+        Function will update candidate's references' information
+        Candidate Reference ID must be provided for a successful response
+        Endpoints:
+             i. PATCH /v1/candidates/:candidate_id/references
+            ii. PATCH /v1/candidates/:candidate_id/references/:id
         """
         # Get json data if provided and passed schema validation
         body_dict = get_json_data_if_validated(request, references_schema)
@@ -116,7 +120,7 @@ class CandidateReferencesResource(Resource):
                                                             reference_id_from_url=reference_id_from_url)
         return {'updated_candidate_references': [{'id': reference_id} for reference_id in updated_reference_ids]}
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:

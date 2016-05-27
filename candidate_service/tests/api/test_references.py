@@ -37,7 +37,7 @@ class TestCreateCandidateReference(object):
         Expect: 201
         """
         # Create references for candidate
-        AddUserRoles.add_and_get(user_first)
+        AddUserRoles.all_roles(user_first)
         create_resp = send_request('post', self.URL % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
         assert create_resp.status_code == 201
@@ -57,7 +57,7 @@ class TestCreateCandidateReference(object):
         Expect: 201, but ReferenceEmail, ReferencePhone, and ReferenceWebAddress should not be added to db
         """
         # Create references for candidate
-        AddUserRoles.add_and_get(user_first)
+        AddUserRoles.all_roles(user_first)
         data = {'candidate_references': [
             {
                 'name': fake.name(), 'position_title': fake.job(), 'comments': 'red chili pepper!',
@@ -181,7 +181,7 @@ class TestGetCandidateReference(object):
         Test: Retrieve a single candidate reference by providing its ID
         """
         # Create references for candidate
-        AddUserRoles.add_and_get(user_first)
+        AddUserRoles.all_roles(user_first)
         create_resp = send_request('post', self.URL % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
         assert create_resp.status_code == 201
