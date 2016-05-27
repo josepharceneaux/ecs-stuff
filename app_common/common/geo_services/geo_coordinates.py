@@ -13,7 +13,7 @@ def get_geocoordinates(location, logger=None):
     :param location
     :param logger: Logging instance
     """
-    r = requests.get(url, params=dict(address=location, sensor='false'))
+    r = requests.get(url, params=dict(address=location, sensor='false', key="AIzaSyD4i4j-8C5jLvQJeJnLmoFW6boGkUhxSuw"))
     try:
         geo_data = r.json()
     except Exception as e:
