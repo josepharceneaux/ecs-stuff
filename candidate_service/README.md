@@ -5,7 +5,13 @@ Candidate service uses oAuth2 for user authentication. See [AuthService](https:/
 ## APIs
 ##### Version
 1
-##### Documentation
-API Documentation are available on [apiary.io](http://docs.candidateservice.apiary.io/#reference)
+#### API DOCS
+- [Candidate](http://docs.gettalentcandidateservice.apiary.io/#reference/candidate)
+- [Candidates](http://docs.gettalentcandidateservice.apiary.io/#reference/candidates)
+- [Search](http://docs.gettalentcandidateservice.apiary.io/#reference/search)
+- [Tags](http://docs.candidatetags.apiary.io/#reference/tags)
+- [Pipelines](http://docs.candidatetags.apiary.io/#reference/pipelines)
+- [References](http://docs.candidatetags.apiary.io/#reference/candidate-references)
+
 ##### Custom Error Codes
 All custom error codes are in the 3000s range. Please see [this file](https://github.com/gettalent/talent-flask-services/blob/develop/candidate_service/custom_error_codes.py).

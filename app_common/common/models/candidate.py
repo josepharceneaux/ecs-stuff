@@ -134,6 +134,8 @@ class PhoneLabel(db.Model):
     description = db.Column('Description', db.String(20))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
+    DEFAULT_LABEL = 'Home'
+
     # Relationships
     candidate_phones = relationship('CandidatePhone', backref='phone_label')
     reference_phones = relationship('ReferencePhone', backref='phone_label')

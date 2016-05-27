@@ -1,5 +1,5 @@
 # coding=utf-8
-DOCX = """
+DOCX = u"""
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -576,7 +576,7 @@ Available upon request.
   </resdoc>
 """
 
-GET_642 = """
+GET_642 = u"""
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -1576,7 +1576,7 @@ Microsoft Certified Professional
   </resdoc>
 """
 
-GET_646 = """
+GET_646 = u"""
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -2154,7 +2154,7 @@ Photography, video games, underwater basket weaving, and long walks on the beach
   </resdoc>
 """
 
-PDF = """
+PDF = u"""
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -2661,7 +2661,7 @@ PDF = """
 
 """
 
-PDF_13 = """
+PDF_13 = u"""
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -3022,7 +3022,7 @@ PMI Certification Training
 
 """
 
-PDF_14 = """
+PDF_14 = u"""
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -3477,7 +3477,7 @@ jlchavez.ca   ·   203108 Oak Street   ·   Vancouver, BC. V6H 2L1   ·   604.60
   </resdoc>
 """
 
-GET_626a = """
+GET_626a = u"""
 <ResDoc>
 <resume canonversion="2" dateversion="2" iso8601="2015-12-16" present="735950" xml:space="preserve">Yetunde (Yeh-tun-day) Laniran
 <contact><address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.567589" lma="MT413890" lon="-122.642487" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><street>1602 NE Junior St.</street> * <city majorcity="portland">Portland</city>, <state abbrev="OR">Oregon</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.567589" lma="MT413890" lon="-122.642487" msa="38900: METROPOLITAN STATISTICAL AREA">97211</postalcode></address> * <email>ylaniran@gmail.com</email> * <phone area="503">503.333.0350</phone></contact>
@@ -3960,7 +3960,7 @@ Address:  <job end="728296" id="38" inferred-naics="611310" naics="611310" naics
 </ResDoc>
 """
 
-GET_626b = """<ResDoc>
+GET_626b = u"""<ResDoc>
 <resume canonversion="2" dateversion="2" iso8601="2015-12-16" present="735950" xml:space="preserve"><contact><name><givenname>Kate</givenname> <surname>Begonia</surname></name> <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.544044" lma="MT413890" lon="-122.639214" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><street>4014 NE Failing Street</street>, <city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.544044" lma="MT413890" lon="-122.639214" msa="38900: METROPOLITAN STATISTICAL AREA">97212</postalcode></address>       503.<phone>493.1548</phone>
 <email>k_begonia@yahoo.com</email></contact>
 
@@ -4194,7 +4194,7 @@ Report (<job end="727200" id="11" pos="10" span="1" start="726835"><daterange><s
 """
 
 
-GET_1301 = """
+GET_1301 = u"""
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <ParseResumeResponse><Status>true</Status><StatusCode>OK</StatusCode><RequestId>c5ff8e0b-df6f-4b52-b8f5-7d65988d9472</RequestId><ResponseData><?xml version='1.0' encoding='iso-8859-1'?>
 <ResDoc>
@@ -4705,4 +4705,77 @@ Resume -</description></skills> <contact><name><givenname>Fred</givenname> <surn
 <CanonCertification/></DataElementsRollup>
 </ResDoc>
 </ResponseData><TimeStamp>2016-05-16 13:34:32.414</TimeStamp><ProcessedWithLocale>en_us</ProcessedWithLocale></ParseResumeResponse>
+"""
+
+
+REFERENCE_XML = u"""
+<ResDoc>
+<resume canonversion="2" dateversion="2" iso8601="2016-05-20" present="736106" xml:space="preserve">          <summary>Objective: <objective>A senior level design engineer position specializing in the design of integrated circuits for switched mode power supply systems.</objective></summary>
+
+<experience end="733530" start="724278">Employment History
+
+<job end="733530" id="1" pos="1" span="13" start="728661"><daterange><start days="728661" iso8601="1996-01-01">1996</start> * <end days="733530" iso8601="2009-05-01">May, 2009</end></daterange>: PCD
+<description>Designed a series of switched mode power supply integrated circuit semiconductor controllers, all using BiCMOS+DMOS processes. Extensive experience with CAD simulation and laboratory analysis/debug as well as getting parts through reliability and ESD qualification. Worked with process development group to define next generation BiCMOS+DMOS process. Designed qualification vehicle for this process which was also a released product for production. Experience defining product functions and specifications with marketing and application engineers as well as interfacing with product and test engineers. Experience doing full chip layouts on highly complex switching controllers as well as the design of PCB boards for product evaluations.</description></job>
+
+<job bgtocc="17-2041.00" end="728661" id="2" inferred-naics="6111" naics="334413" naics2="33" onet="17-2041.00" onetrank="1" pos="2" sic="367400" sic2="36" span="12" start="724278"><daterange><start days="724278" iso8601="1984-01-01">1984</start> * <end days="728661" iso8601="1996-01-01">1996</end></daterange>: <title bgonetmodel-topic-onet="17-2141.00|17-2041.00" clean="Principal Process Development Engineer" inferred-naics="6111" internship-flag="false" onet="17-2141.00|17-2041.00" onetrank="1" std="Process Engineer">Principal Process Development Engineer</title>, <employer city="SANTA CLARA" clean="National Semiconductor Corp" consolidated="NATIONAL SEMICONDUCTOR CORPORATION" employees="10,100" invalid="false" name="NATIONAL SEMICONDUCTOR CORPORATION" priority="2" referenced-naics="3344" sales="1983100000" sic="367400" state="CA" zipcode="95052-8090">National Semiconductor Corp</employer>.
+
+<description>Developed BiCMOS processes for 1.5, 1.0, and 0.8 um technologies which were designed to be highly fab compatible with existing baseline CMOS technologies. Worked with fab process engineers to develop necessary process steps. Designed, did layout, and wrote test routines for process development test patterns which were used to evaluate new processes. Experience with process simulators and mos/bipolar device characterization as well as yield analysis.
+
+Products
+
+LM3477
+
+An 8-pin non-synchronous buck controller. 500KHz fixed frequency with peak current mode control architecture. 36V max input voltage with adjustable output voltage.
+
+LM3478
+
+An 8-pin non-synchronous boost/low side switch controller. Adjustable frequency with frequency synchronization option. Peak current mode control architecture. 36V max input voltage with adjustable output voltage.
+
+LM2723/LM27231
+
+IMVP3/IMVP5 multi phase synchronous buck controllers. Selectable 2, 3, or 4 phase operation. Voltage mode control architecture with provisions for channel current sharing.
+
+LM3487
+
+A 10-pin non-synchronous buck controller. Adjustable frequency with frequency synchronization option. Peak current mode control architecture. 36V max input voltage with adjustable output voltage. This part was designed for a specific customer.
+
+LM3481
+
+A 10-pin non-synchronous boost/low side switch controller. Adjustable frequency with frequency synchronization option. Peak current mode control architecture. 50V max input voltage with adjustable output voltage. Adjustable input voltage under voltage lock out with an external Vcc pin for improved driver output resistance. This part was a process qualification vehicle for National*s newest 50V *ABCD5* BiCMOS+DMOS process as well as a released product. It was the first product to be released on ABCD5. It was necessary to work with process development engineers to make modifications to the process and design rules so that acceptable device specifications could be obtained.
+
+LM2649
+
+Voltage mode buck dual channel synchronous controller. Phase locked loop based timing system with adjustable frequency above 2Mz as well as a frequency synchronization mode. Capable of low on times (about 35 nsec) and nearly no inter-channel interference. Max input voltage of 48V with an adjustable output voltage. A wide variety of features including voltage tracking and various fault detection circuits. I did the complete layout of this product entirely by myself. First silicon has been sampled to primary and secondary customers with very positive feedback.</description></job></experience>
+
+<education>Education
+
+<school id="3"><degree level="18" name="Master's">Master of Science</degree>, <major code="1203">Electrical Engineering</major>, <institution>University of California</institution>, <address inferred-city="SANTA BARBARA" inferred-state="CA" lat="34.4198" lon="-119.709" majorcity="SANTA BARBARA" state="CA"><city majorcity="santa barbara">Santa Barbara</city></address>, <completiondate days="724278" iso8601="1984-01-01">1984</completiondate></school>.
+
+<school id="4"><degree level="16" name="Bachelor's">Bachelor of Science</degree>, <major cipcode="14.0000|15.0399" code="1203" std-major="ELECTRICAL AND ELECTRONIC ENGINEERING TECHNOLOGIES/TECHNICIANS, OTHER|ENGINEERING">Electrical Engineering</major>, <institution>University of California</institution>, <address inferred-city="SANTA BARBARA" inferred-state="CA" lat="34.4198" lon="-119.709" majorcity="SANTA BARBARA" state="CA"><city majorcity="santa barbara">Santa Barbara</city></address>, <completiondate days="723548" iso8601="1982-01-01">1982</completiondate></school></education>.
+
+<references>References
+
+Derek Framer - (408) 835-6219
+Jamtry Jonas - (408) 923-7259
+Joaquín Rodrigo</references>
+</resume>
+
+<skillrollup version="1">
+  <canonskill name="Complementary Metal Oxide Semiconductor (CMOS)" skill-cluster="Specialized Skills">
+    <variant>CMOS</variant>
+  </canonskill>
+  <canonskill end="733530" experience="1" expidrefs="1" idrefs="1" lastused="2009" name="Computer Aided Drafting/Design (CAD)" posrefs="1" skill-cluster="Software and Programming Skills; Specialized Skills" start="728661">
+    <variant>CAD</variant>
+  </canonskill>
+  <canonskill education="1" eduidrefs="3,4" idrefs="3,4" name="Electrical Engineering" skill-cluster="Engineering: Electrical and Electronic; Specialized Skills">
+    <variant>Electrical Engineering</variant>
+  </canonskill>
+  <canonskill end="733530" experience="1" expidrefs="1" idrefs="1" lastused="2009" name="SIMULATION" posrefs="1" skill-cluster="Specialized Skills" start="728661">
+    <variant>simulation</variant>
+  </canonskill>
+</skillrollup>
+<DataElementsRollup version="5.5.18 TalentMine v3.2.5.3">
+<Certification />
+<CanonCertification /></DataElementsRollup>
+</ResDoc>
 """

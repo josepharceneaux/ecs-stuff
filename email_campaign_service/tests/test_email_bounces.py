@@ -18,8 +18,9 @@ from email_campaign_service.modules.email_marketing import create_email_campaign
 from email_campaign_service.tests.modules.handy_functions import send_campaign_email_to_candidate
 
 
+@pytest.mark.parametrize("blast_foreign_key", [True, False])
 def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles_to_user_first, email_campaign_of_user_first,
-                                                candidate_first, user_first, talent_pipeline):
+                                                candidate_first, user_first, talent_pipeline, blast_foreign_key):
     """
     In this test, we will send an email campaign to one candidate with invalid email address.
     After bounce, this email will be marked as bounced and when we will try to send this campaign
@@ -31,16 +32,15 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         email_campaign_blast, smartlist_id, candidate_ids = create_campaign_data(access_token_first, campaign.id,
                                                                                  talent_pipeline, candidate_count=1)
 
-        email_campaign_send = EmailCampaignSend(campaign_id=campaign.id,
-                                                candidate_id=candidate_ids[0],
-                                                sent_datetime=datetime.now(),
-                                                blast_id=email_campaign_blast.id)
-        EmailCampaignSend.save(email_campaign_send)
         invalid_email = 'invalid_' + fake.uuid4() + '@gmail.com'
         email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
         email.update(address=invalid_email)
         db.session.commit()
-        send_campaign_email_to_candidate(campaign, email, candidate_ids[0], email_campaign_blast.id)
+        if blast_foreign_key:
+            send_campaign_email_to_candidate(campaign, email, candidate_ids[0], blast_id=email_campaign_blast.id)
+        else:
+            send_campaign_email_to_candidate(campaign, email, candidate_ids[0], blast_id=None)
+
         # TODO: Basit is working on removing sleep and using polling. Impliment polling when code is in develop.
         time.sleep(30)
         db.session.commit()
