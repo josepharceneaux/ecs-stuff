@@ -1338,7 +1338,7 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
             request_vars.get('minimum_years_experience') else 0
         # set default to 480 (max for 40 years)
         max_months = int(request_vars.get('maximum_years_experience')) * 12 if \
-            request_vars.get('maximum_years_experience') else 480
+            request_vars.get('maximum_years_experience') else 1200
         filter_queries.append("(range field=total_months_experience [%s,%s])" % (min_months, max_months))
 
     # date filtering
