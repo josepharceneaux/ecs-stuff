@@ -38,6 +38,7 @@ if [ $production ] ; then
 	python scripts/move-stage-to-prod.py ${app}
 
 	# Garbage collect task definitions and container images
+	echo python scripts/garbage-collect-ecs.py ${app} prod
 	python scripts/garbage-collect-ecs.py ${app} prod
     done
 
@@ -60,6 +61,7 @@ else
 	python scripts/ecs_task_update.py ${app} ${timestamp_tag} stage restart
 
 	# Garbage collect task definitions and container images
+	echo python scripts/garbage-collect-ecs.py ${app} stage
 	python scripts/garbage-collect-ecs.py ${app} stage
     done
 
