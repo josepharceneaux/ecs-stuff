@@ -269,6 +269,7 @@ def schedule_job(data, user_id=None, access_token=None):
         job_config['is_jwt_request'] = is_jwt_request if is_jwt_request and str(is_jwt_request).lower() == 'true' else None
 
     trigger = str(job_config['task_type']).lower().strip()
+    request_method = job_config.get('request_method', 'post')
 
     callback_method = 'scheduler_service.modules.scheduler:run_job'
 
@@ -305,7 +306,8 @@ def schedule_job(data, user_id=None, access_token=None):
                                     run_date=valid_data['run_datetime'],
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
-                                          job_config['post_data'], job_config.get('is_jwt_request')]
+                                          job_config['post_data'], job_config.get('is_jwt_request'),
+                                          request_method]
                                     )
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
             return job.id
@@ -346,6 +348,7 @@ def serialize_task(task):
         task_dict = dict(
                 id=task.id,
                 url=task.args[2],
+                request_method=task.args[6] if len(task.args) >= 7 else "post",
                 start_datetime=task.trigger.start_date,
                 end_datetime=task.trigger.end_date,
                 next_run_datetime=task.next_run_time,
@@ -370,6 +373,7 @@ def serialize_task(task):
                 id=task.id,
                 url=task.args[2],
                 run_datetime=task.trigger.run_date,
+                request_method=task.args[6] if len(task.args) >= 7 else "post",
                 post_data=task.args[4],
                 is_jwt_request=task.args[5],
                 pending=task.pending,
@@ -393,16 +397,27 @@ def serialize_task_admin(task):
     :return: JSON converted dict object
     """
     task_dict = serialize_task(task)
+
+    # Create a new field `data` and add all request info in it
     task_dict['data'] = dict(URL=task_dict.get('url'),
-                             )
+                             RequestMethod=task_dict.get('request_method'),
+                             post_data=task_dict.get('post_data'))
+
+    # Delete redundant fields
+    for entry in ['post_data', 'url', 'request_method']:
+        del task_dict[entry]
+
     if task.args[0]:
         task_dict['user_id'] = task.args[0]
+        task_dict['task_category'] = 'user'
         user = User.get_by_id(task.args[0])
         if not user:
             logger.error("serialize_task: user with id %s doesn't exist." % task.args[0])
             task_dict['user_email'] = 'user_id: %s, User Deleted' % task.args[0]
         else:
             task_dict['user_email'] = user.email
+    else:
+        task_dict['task_category'] = 'general'
 
     return task_dict
 

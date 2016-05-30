@@ -1,0 +1,41 @@
+{
+  "local": {
+    "apiInfo": {
+      "authService": {
+        "baseUrl": "http://localhost:8001/v1",
+        "clientId": "KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921UX1",
+        "clientSecret": "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYjMw",
+        "grantPath": "http://localhost:8001/v1/oauth2/token"
+      },
+      "schedulerServiceAdmin": {
+        "taskUrl": "http://localhost:8011/v1/admin/tasks"
+      }
+    }
+  },
+  "development": {
+    "apiInfo": {
+      "authService": {
+        "baseUrl": "https://auth-service-staging.gettalent.com/v1",
+        "clientId": "KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921UX1",
+        "clientSecret": "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYjMw",
+        "grantPath": "https://auth-service-staging.gettalent.com/v1/oauth2/token"
+      },
+      "schedulerServiceAdmin": {
+        "taskUrl": "https://scheduler-service-staging.gettalent.com/v1/admin/tasks"
+      }
+    }
+  },
+  "production": {
+    "apiInfo": {
+      "authService": {
+        "baseUrl": "https://auth-service.gettalent.com/v1",
+        "clientId": "KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921UX1",
+        "clientSecret": "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYjMw",
+        "grantPath": "https://auth-service.gettalent.com/v1/oauth2/token"
+      },
+      "schedulerServiceAdmin": {
+        "taskUrl": "https://scheduler-service.gettalent.com/v1/admin/tasks"
+      }
+    }
+  }
+}

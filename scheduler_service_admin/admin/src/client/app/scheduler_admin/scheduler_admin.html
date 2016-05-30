@@ -1,0 +1,100 @@
+<section class="mainbar">
+  <section class="matter">
+    <div class="container">
+      <div class="row">
+          <div class="col-md-10">
+            <div class="widget wblue">
+              <div ht-widget-header title="{{vm.title}}"><button>Reload</button></div>
+              <div class="widget-content user">
+                <h3></h3>
+                <table dt-options="vm.dtOptions" datatable="ng" class="row-border hover" width="100%">
+                <thead>
+                  <tr>
+                    <th>Task ID</th>
+                    <th>Owner</th>
+                    <th>Task type</th>
+                    <th>Task Category</th>
+                    <th>Data</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr ng-repeat="task in vm.tasks">
+                    <td>{{task.id}}</td>
+                    <td>{{task.user_email}}</td>
+                    <td>{{task.task_type}}</td>
+                    <td>{{task.task_category}}</td>
+                    <td>
+                      <div ng-switch on="task.task_type">
+                        <div ng-switch-when="one_time">
+                          <!-- one_time task block-->
+                          <summary class="overflow-text">{{task.data | json}}</summary>
+                          <details>
+                          <pre><code>{{task.data}}</code></pre>
+                            </details>
+                        </div>
+                        <div ng-switch-when="periodic">
+                            <!-- periodic task block-->
+                          <summary class="overflow-text">{{task.data}}</summary>
+                          <details>
+                            <pre><code>{{task.data | json}}</code></pre>
+                            </details>
+                        </div><div ng-switch-default>Invalid task_type</div></div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              </div>
+              <div class="widget-foot">
+                <div class="clearfix">
+                  <uib-pagination total-items="vm.totalItems" items-per-page="vm.itemsPerPage"
+                                  ng-model="vm.currentPage" ng-change="vm.pageChanged()"></uib-pagination>
+
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-2">
+              <div class="widget worange">
+              <div ht-widget-header title="Filters"></div>
+              <div class="widget-content user">
+                <h3></h3>
+                <md-list>
+                  <md-list-item>
+                    <p> {{ vm.paused.name }} </p>
+                    <md-switch ng-change="vm.apply_filter()" class="md-secondary" ng-model="vm.paused.enabled"></md-switch>
+                  </md-list-item>
+                  <md-input-container class="md-block">
+                    <label>User ID</label>
+                    <input ng-model="vm.user_id" ng-change="vm.apply_filter()" ng-disabled="(vm.selected_task_category === 'general')" min="1" type="number" step="1">
+                  </md-input-container>
+  <md-divider></md-divider>
+                  <md-subheader class="md-no-sticky">Task type</md-subheader>
+                  <md-list-item>
+                    <md-radio-group ng-change="vm.apply_filter()" ng-model="vm.selected_task_type">
+                      <md-radio-button ng-class="{'md-primary' : $first}"  ng-repeat="option in vm.task_type" ng-value="option.value">
+                        {{option.title}}
+                      </md-radio-button>
+                    </md-radio-group>
+                  </md-list-item>
+  <md-divider></md-divider>
+                  <md-subheader class="md-no-sticky">Task Category</md-subheader>
+                  <md-list-item>
+                    <md-radio-group ng-change="vm.apply_filter()" ng-model="vm.selected_task_category">
+                      <md-radio-button ng-class="{'md-primary' : $first}"  ng-repeat="option in vm.task_category" ng-value="option.value">
+                        {{option.title}}
+                      </md-radio-button>
+                    </md-radio-group>
+                  </md-list-item>
+                </md-list>
+
+              </div>
+              <div class="widget-foot">
+                <div class="clearfix"></div>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+  </section>
+</section>

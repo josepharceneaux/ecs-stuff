@@ -1,0 +1,51 @@
+<main class="gt-login full-blue state-login">
+
+    <!-- Main view -->
+    <md-content class="auth-form-wrapper" layout="column" flex layout-fill>
+        <md-content flex="40" layout="column" layout-align="end center">
+            <h1 class="logo">
+                <span>getTalent</span>
+            </h1>
+            <div class="md-subhead fadeIn" ng-hide="vm.successMessage || vm.errorMessage">Please Login To Your Account</div>
+            <div class="md-subhead fadeIn" ng-show="vm.successMessage">{{vm.successMessage}}</div>
+            <div class="md-subhead fadeIn error-message" ng-show="vm.errorMessage" ng-bind-html="vm.errorMessage"></div>
+        </md-content>
+        <md-content flex="55" layout="row" layout-align="center start">
+            <div flex="25" class="slide-modulate" layout-align="center center" layout>
+              <div class="widget wblue">
+              <div ht-widget-header title="{{vm.title}}"><button>Reload</button></div>
+              <div class="widget-content user">
+                <form name="loginForm" ng-submit="loginForm.$valid && vm.login()" novalidate>
+
+                  <md-input-container md-no-float class="md-block" flex-gt-sm="">
+                    <label>Email</label>
+                    <input name="email" ng-model="vm.email" placeholder="user@domain.com" required="" type="email">
+
+                    <div ng-messages="vm.email.$error">
+                      <div ng-message="required" class="error-msg">You must provide a valid email address</div>
+                    </div>
+                  </md-input-container>
+
+                  <md-input-container md-no-float class="md-block" flex-gt-sm="">
+                    <label>Password</label>
+                    <input name="password" type="password" ng-model="vm.password">
+
+                  </md-input-container>
+
+                    <div role="alert">
+                      <div class="error-msg">{{vm.error_message}}</div>
+                    </div>
+
+                    <div layout="row" layout-align="center center">
+                        <md-button flex type="submit" class="md-primary md-raised">Login</md-button>
+                    </div>
+                </form>
+                </div>
+                </div>
+              </div>
+            </div>
+        </md-content>
+        <gt-account-footer></gt-account-footer>
+    </md-content>
+
+</main>

@@ -24,7 +24,7 @@ from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFou
 from scheduler_service.common.utils.auth_utils import require_oauth, require_all_roles
 from scheduler_service.custom_exceptions import SchedulerServiceApiException
 from scheduler_service.modules.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, \
-    scheduler_remove_job
+    scheduler_remove_job, serialize_task_admin
 from scheduler_service.modules.scheduler_admin import filter_jobs_using_task_type, \
     filter_jobs_using_task_category, filter_paused_jobs
 
@@ -811,14 +811,16 @@ class AdminTasks(Resource):
                         "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
                         "user_email": "saad_lhr@hotmail.com",
                         "task_type": "user",
-                        "post_data": {
+                        "data":{
                             "url": "http://getTalent.com/sms/send/",
-                            "phone_number": "09230862348",
-                            "smart_list_id": 123456,
-                            "content": "text to be sent as sms"
-                            "some_other_kwarg": "abc",
-                            "campaign_name": "SMS Campaign"
-                        },
+                            "request_method": "post",
+                            "post_data": {
+                                "phone_number": "09230862348",
+                                "smart_list_id": 123456,
+                                "content": "text to be sent as sms"
+                                "some_other_kwarg": "abc",
+                                "campaign_name": "SMS Campaign"
+                            },
                         "frequency": 3601,      # in seconds
                         "start_datetime": "2015-11-05T08:00:00",
                         "end_datetime": "2015-12-05T08:00:00"
@@ -848,7 +850,8 @@ class AdminTasks(Resource):
         tasks = scheduler.get_jobs()
 
         # Get all param filters
-        user_id, paused, task_type, task_category = request.args.get('user_id'), request.args.get('paused'), \
+        user_id, paused, task_type, task_category = request.args.get('user_id'), \
+                                                                 request.args.get('paused'), \
                                                        request.args.get('task_type'), \
                                                        request.args.get('task_category')
 
@@ -868,7 +871,7 @@ class AdminTasks(Resource):
 
         # If task_category is given then return only specified `user` or `general` job
         if task_category:
-            filter_jobs_using_task_category(tasks, task_category=task_category)
+            tasks = filter_jobs_using_task_category(tasks, task_category=task_category)
 
         # The following case should never occur. As the general jobs are independent of user. So, if user use such
         # a filter then raise Invalid usage api exception.
@@ -881,7 +884,7 @@ class AdminTasks(Resource):
         # If page is 1, and per_page is 30 then task_indices will look like list of integers e.g [0-29]
         task_indices = range((page-1) * per_page, page * per_page)
 
-        tasks = [serialize_task(tasks[index], is_admin_api=True)
+        tasks = [serialize_task_admin(tasks[index])
                  for index in task_indices if index < tasks_count and tasks[index]]
 
         tasks = [task for task in tasks if task]
@@ -889,7 +892,8 @@ class AdminTasks(Resource):
         header = {
             'X-Total': tasks_count,
             'X-Per-Page': per_page,
-            'X-Page': page
+            'X-Page': page,
+            'Access-Control-Expose-Headers': 'X-Page, X-Total, X-Per-Page'
         }
         return ApiResponse(response=dict(tasks=tasks), headers=header)
 

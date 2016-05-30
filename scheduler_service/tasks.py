@@ -53,7 +53,7 @@ def send_request(access_token, secret_key_id, url, content_type, post_data, is_j
                 del headers['X-Talent-Secret-Key-ID']
 
         # Send request to URL with job post data
-        logger.info("Sending post request to %s" % url)
+        logger.info("Sending %s request to %s" % (request_method, url))
         response = http_request(method_type=request_method, url=url, data=post_data, headers=headers)
 
         try:
