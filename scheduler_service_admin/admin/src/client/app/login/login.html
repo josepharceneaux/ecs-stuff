@@ -21,7 +21,7 @@
                     <label>Email</label>
                     <input name="email" ng-model="vm.email" placeholder="user@domain.com" required="" type="email">
 
-                    <div ng-messages="vm.email.$error">
+                    <div ng-messages="loginForm.email.$error">
                       <div ng-message="required" class="error-msg">You must provide a valid email address</div>
                     </div>
                   </md-input-container>
