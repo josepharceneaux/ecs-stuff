@@ -14,6 +14,7 @@ from datetime import date
 from nameparser import HumanName
 
 # Database connection and logger
+from sqlalchemy.sql import text
 from candidate_service.common.models.db import db
 from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.candidate_app import logger
@@ -428,11 +429,11 @@ def candidate_custom_fields(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    assert isinstance(candidate, Candidate)
     return [{'id': custom_field.id,
+             'custom_field_id': custom_field.custom_field_id,
              'value': custom_field.value,
              'created_at_datetime': custom_field.added_time.isoformat()
-             } for custom_field in db.session.query(CandidateCustomField).filter_by(candidate_id=candidate.id).all()]
+             } for custom_field in CandidateCustomField.query.filter_by(candidate_id=candidate.id).all()]
 
 
 def candidate_social_networks(candidate):

@@ -38,7 +38,6 @@ from candidate_service.modules.validators import (
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
     resource_schema_photos_post, resource_schema_photos_patch, notes_schema, language_schema, ccf_schema,
-    reference_schema
 )
 from jsonschema import validate, FormatChecker, ValidationError
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
@@ -76,8 +75,9 @@ from candidate_service.modules.talent_candidates import (
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
     add_languages, update_candidate_languages
 )
+from candidate_service.modules.candidate_engagement import calculate_candidate_engagement_score
 from candidate_service.modules.references import (
-    get_references, create_references, delete_reference, delete_all_references
+    get_references, create_or_update_references, delete_reference, delete_all_references
 )
 from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
 from candidate_service.modules.talent_cloud_search import (
@@ -478,6 +478,7 @@ class CandidateResource(Resource):
             raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
         candidate_data_dict = fetch_candidate_info(candidate=candidate)
+        candidate_data_dict['engagement_score'] = calculate_candidate_engagement_score(candidate_id)
 
         logger.info('BENCHMARK - candidate GET: {}'.format(time() - start_time))
         return {'candidate': candidate_data_dict}
@@ -704,6 +705,7 @@ class CandidateCustomFieldResource(Resource):
 
             return {
                 'candidate_custom_field': {
+                    'id': can_cf_id,
                     'custom_field_id': custom_field_id,
                     'value': candidate_custom_field.value,
                     'created_at_datetime': candidate_custom_field.added_time.isoformat()
@@ -716,7 +718,8 @@ class CandidateCustomFieldResource(Resource):
                 {
                     'id': ccf.id,
                     'custom_field_id': ccf.custom_field_id,
-                    'value': ccf.value, 'created_at_datetime': ccf.added_time.isoformat()
+                    'value': ccf.value,
+                    'created_at_datetime': ccf.added_time.isoformat()
                 } for ccf in CandidateCustomField.get_candidate_custom_fields(candidate_id)]}
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
@@ -2231,83 +2234,3 @@ class CandidateLanguageResource(Resource):
 
         db.session.commit()
         return '', 204
-
-
-class CandidateReferencesResource(Resource):
-    decorators = [require_oauth()]
-
-    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
-    def post(self, **kwargs):
-        """
-        Endpoint:   POST /v1/candidates/:candidate_id/references
-        :return     {'candidate_references': [{'id': int}, {'id': int}, ...]}
-                    status code: 201
-        """
-        # Get json data if exists and validate its schema
-        body_dict = get_json_data_if_validated(request, reference_schema)
-
-        # Get authenticated user & candidate ID
-        authed_user, candidate_id = request.user, kwargs['candidate_id']
-
-        # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
-
-        created_reference_ids = create_references(candidate_id, body_dict['candidate_references'])
-        return {'candidate_references': [{'id': reference_id} for reference_id in created_reference_ids]}, 201
-
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
-    def get(self, **kwargs):
-        """
-        Endpoints: GET /v1/candidates/:candidate_id/references
-        """
-        # Get authenticated user, candidate ID, and reference ID
-        authed_user, candidate_id = request.user, kwargs['candidate_id']
-
-        # Check if candidate exists & is web-hidden
-        candidate = get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
-
-        return {'candidate_references': get_references(candidate)}
-
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
-    def delete(self, **kwargs):
-        """
-        Endpoints:
-             i. DELETE /v1/candidates/:candidate_id/references
-            ii. DELETE /v1/candidates/:candidate_id/references/:id
-        :return
-            {'candidate_reference': {'id': int}}                        If a single reference was deleted, OR
-            {'candidate_references': [{'id': int}, {'id': int}, ...]}   If all references were deleted
-            status code: 200
-        """
-        # Get authenticated user, candidate ID, and reference ID
-        authed_user, candidate_id, reference_id = request.user, kwargs['candidate_id'], kwargs.get('id')
-
-        # Check if candidate exists & is web-hidden
-        candidate = get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
-
-        if reference_id:  # Delete specified reference
-            candidate_reference = CandidateReference.get_by_id(reference_id)
-            if not candidate_reference:  # Reference must be recognized
-                raise NotFoundError("Candidate reference ({}) not found.".format(reference_id),
-                                    custom_error.REFERENCE_NOT_FOUND)
-
-            if candidate_reference.candidate_id != candidate_id:  # reference must belong to candidate
-                raise ForbiddenError("Not authorized", custom_error.REFERENCE_FORBIDDEN)
-
-            # Delete candidate reference and return its ID
-            return {'candidate_reference': delete_reference(candidate_reference)}
-
-        else:  # Delete all of candidate's references
-            return {'candidate_references': delete_all_references(candidate.references)}
