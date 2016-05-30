@@ -30,7 +30,7 @@ class TestDeleteCandidateEmail(object):
         print response_info(resp)
         assert resp.status_code == 401
 
-    def test_delete_candidate_email_with_bad_input(self):
+    def test_delete_candidate_email_with_bad_input(self, access_token_first):
         """
         Test:   Attempt to delete candidate email with non integer values for candidate_id & email_id
         Expect: 404

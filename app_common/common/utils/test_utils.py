@@ -37,7 +37,7 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
     header.
     :param http_method method: standard HTTP method like post, get (in lowercase)
     :param string url: target url
-    :param string access_token: authentication token, token can be empty, None or invalid
+    :param (string | None)  access_token: authentication token, token can be empty, None or invalid
     :param (dict | None) data: payload data for request
     :param (dict | None) params: query params
     :param bool is_json: a flag to determine, whether we need to dump given data or not.
@@ -143,7 +143,7 @@ def unauthorize_test(method, url, data=None):
     This method is used to test for unauthorized requests (401).
     :param http_method method: http method
     :param string url: target url
-    :param dict data: dictionary payload
+    :param (dict | None) data: dictionary payload
     :return:
     """
     response = send_request(method, url, 'invalid_token',  data)

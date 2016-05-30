@@ -322,7 +322,7 @@ def get_campaign_sends(campaign_id, token, page=DEFAULT_PAGE, per_page=DEFAULT_P
     :type page: int | long
     :type per_page: int | long
     :type expected_status: tuple[int]
-    :type count: int | long
+    :type count: int | None
     :rtype dict
     """
     query = '?page=%s&per_page=%s' % (page, per_page)
