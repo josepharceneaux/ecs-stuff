@@ -1,5 +1,5 @@
 # coding=utf-8
-DOCX = u"""
+DOCX = """
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -576,7 +576,7 @@ Available upon request.
   </resdoc>
 """
 
-GET_642 = u"""
+GET_642 = """
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -1576,7 +1576,7 @@ Microsoft Certified Professional
   </resdoc>
 """
 
-GET_646 = u"""
+GET_646 = """
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -2154,7 +2154,7 @@ Photography, video games, underwater basket weaving, and long walks on the beach
   </resdoc>
 """
 
-PDF = u"""
+PDF = """
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -2661,7 +2661,7 @@ PDF = u"""
 
 """
 
-PDF_13 = u"""
+PDF_13 = """
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -2742,7 +2742,7 @@ Distribution Program.
    · Go! Team Go! Baseball Scorecard for iPad manages a baseball team's schedule, roster, scoring,
        and calculates complex statistics for batting, pitching and fielding. Syncs data with website and
        web app for displaying play by play scoring results. Easy to use but very complex application
-       with storyboard, popovers, settings and asynchronous user_auth with server.
+       with storyboard, popovers, settings and asynchronous communication with server.
    ·   Survey for iPad enables Healthcare consultants to interview hospital employees and collect data
        for sync with server. Saves $500,000 annually in labor costs compared to prior method of
        manually compiling and editing reports. App sync with website for updating questions and
@@ -3022,7 +3022,7 @@ PMI Certification Training
 
 """
 
-PDF_14 = u"""
+PDF_14 = """
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
     <contact>
@@ -3042,7 +3042,7 @@ PDF_14 = u"""
      Professional      A creative person with strong problem solving abilities; solutionoriented who performs well under pressure.
  Skills
      <summary>
-      Detailed, methodical with strong organizational and analytical skills. Excellent written, oral user_auth
+      Detailed, methodical with strong organizational and analytical skills. Excellent written, oral communication
           and presentation skills. Flexible and energetic team player. Accountable selfstarter and quick learner.
           ·   Experience managing, testing and implementing projects for Webbased and Client/Server applications.
           ·   Experience writing requirements, test, integration and implementation plans.
@@ -3301,7 +3301,7 @@ jlchavez.ca   ·   203108 Oak Street   ·   Vancouver, BC. V6H 2L1   ·   604.60
     </canonskill>
     <canonskill name="Communication Skills" skill-cluster="Common Skills: Communication and Coordination">
      <variant>
-      oral user_auth
+      oral communication
      </variant>
     </canonskill>
     <canonskill name="Computer Hardware/Software Knowledge" skill-cluster="Customer Service: Basic Assistance: Technical and Electronic; Specialized Skills">
@@ -3477,7 +3477,7 @@ jlchavez.ca   ·   203108 Oak Street   ·   Vancouver, BC. V6H 2L1   ·   604.60
   </resdoc>
 """
 
-GET_626a = u"""
+GET_626a = """
 <ResDoc>
 <resume canonversion="2" dateversion="2" iso8601="2015-12-16" present="735950" xml:space="preserve">Yetunde (Yeh-tun-day) Laniran
 <contact><address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.567589" lma="MT413890" lon="-122.642487" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><street>1602 NE Junior St.</street> * <city majorcity="portland">Portland</city>, <state abbrev="OR">Oregon</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.567589" lma="MT413890" lon="-122.642487" msa="38900: METROPOLITAN STATISTICAL AREA">97211</postalcode></address> * <email>ylaniran@gmail.com</email> * <phone area="503">503.333.0350</phone></contact>
@@ -3496,7 +3496,7 @@ Talent for quickly learning and applying complex technologies.   *
 Effective instructor and mentor to co-workers and end-users.   *
 An effective problem solver, able to identify problems in initial stages and execute quick
  resolutions.   *
-Excellent interpersonal skills for effective user_auth with technical and non-
+Excellent interpersonal skills for effective communication with technical and non-
 technical colleagues .  * Ability to self-motivate and work independently .  *
 Data collection and creation for analysis (speech production, speech recognition and synth
 esis).  * Experimental design and stimulus preparation.  *
@@ -3536,7 +3536,7 @@ Targeting certain areas that will require additional outreach and promotion effo
 orking with
 Complete Count Committees (CCCs) to encourage the community to cooperate with enumerators
 during  NRFU.  *
-Maintaining user_auth with state/local/tribal governments as well as regional corporat
+Maintaining communication with state/local/tribal governments as well as regional corporat
 ions and
 businesses and civic groups about recruitment, census activities and the overall partners
 hip strategy is vital  in gaining the support of these partners.  *
@@ -3720,7 +3720,7 @@ Address:  <job end="728296" id="38" inferred-naics="611310" naics="611310" naics
     <variant>business processes</variant>
   </canonskill>
   <canonskill name="Communication Skills" skill-cluster="Common Skills: Communication and Coordination">
-    <variant>effective user_auth</variant>
+    <variant>effective communication</variant>
   </canonskill>
   <canonskill name="Communication Skills" skill-cluster="Common Skills: Communication and Coordination">
     <variant>Excellent interpersonal skills</variant>
@@ -3960,7 +3960,7 @@ Address:  <job end="728296" id="38" inferred-naics="611310" naics="611310" naics
 </ResDoc>
 """
 
-GET_626b = u"""<ResDoc>
+GET_626b = """<ResDoc>
 <resume canonversion="2" dateversion="2" iso8601="2015-12-16" present="735950" xml:space="preserve"><contact><name><givenname>Kate</givenname> <surname>Begonia</surname></name> <address inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.544044" lma="MT413890" lon="-122.639214" majorcity="PORTLAND" msa="38900: METROPOLITAN STATISTICAL AREA" state="OR"><street>4014 NE Failing Street</street>, <city majorcity="portland">Portland</city>, <state abbrev="OR">OR</state> <postalcode inferred-city="PORTLAND" inferred-country="USA" inferred-county="MULTNOMAH" inferred-phone-area-code="503" inferred-state="OR" lat="45.544044" lma="MT413890" lon="-122.639214" msa="38900: METROPOLITAN STATISTICAL AREA">97212</postalcode></address>       503.<phone>493.1548</phone>
 <email>k_begonia@yahoo.com</email></contact>
 
@@ -4185,593 +4185,6 @@ Report (<job end="727200" id="11" pos="10" span="1" start="726835"><daterange><s
   </canonskill>
   <canonskill end="735950" experience="1" expidrefs="1" idrefs="1" lastused="2015" name="Web Site Design" posrefs="1" skill-cluster="Digital Media and Design: Tech Development and Design; Specialized Skills; Digital Media and Design: Visual and Graphic Design" start="733775">
     <variant>website</variant>
-  </canonskill>
-</skillrollup>
-<DataElementsRollup version="5.5.18 TalentMine v3.2.5.3">
-<Certification />
-<CanonCertification /></DataElementsRollup>
-</ResDoc>
-"""
-
-
-GET_1301 = u"""
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<ParseResumeResponse><Status>true</Status><StatusCode>OK</StatusCode><RequestId>c5ff8e0b-df6f-4b52-b8f5-7d65988d9472</RequestId><ResponseData><?xml version='1.0' encoding='iso-8859-1'?>
-<ResDoc>
-<resume canonversion='2' dateversion='2' iso8601='2016-05-16' present='736102' xml:space='preserve'><contact><name><givenname>FRED</givenname> <surname>BENEDICTO</surname></name>
-
-<address division-code='35004: METROPOLITAN DIVISION' inferred-city='GLEN COVE' inferred-country='USA' inferred-county='NASSAU' inferred-phone-area-code='516' inferred-state='NY' lat='40.864902' lma='DV363500|MT363562' lon='-73.625908' majorcity='GLEN COVE' msa='35620: METROPOLITAN STATISTICAL AREA' state='NY'><street>36 Hitching Post Lane</street>
-<city majorcity='glen cove'>Glen Cove</city>, <state abbrev='NY'>NY</state>  <postalcode division-code='35004: METROPOLITAN DIVISION' inferred-city='GLEN COVE' inferred-country='USA' inferred-county='NASSAU' inferred-phone-area-code='516' inferred-state='NY' lat='40.864902' lma='DV363500|MT363562' lon='-73.625908' msa='35620: METROPOLITAN STATISTICAL AREA'>11542</postalcode></address>
-<phone area='646'>(646) 483-1121</phone>
-email:  <email>fbenedi@optonline.net</email></contact>
-
-<summary><summary>Seasoned Information Technology professional with over 20years of broad hands-on
-experience in desktop computing, network design and integration and information security
-solutions.  Successful in managing multiple projects with tight deadlines.  Excellent
-verbal and written communication skills.  Multilingual.</summary></summary>
-
-<experience end='present' start='722452'>EXPERIENCE
-
-<job end='present' id='1' inferred-naics='5221' pos='1' sic='602101' sic2='60' span='11' start='731949'><employer city='NEW YORK' clean='Carver Federal Savings Bank' consolidated='CARVER FEDERAL SAVINGS BANK' employees='10' inferred-naics='5221' invalid='false' name='CARVER FEDERAL SAVINGS BANK' priority='2' referenced-naics='5221|5222' sales='3010000' sic='602101' state='NY' zipcode='10026-2503'>Carver Federal Savings Bank</employer>, <address division-code='35644: METROPOLITAN DIVISION' inferred-city='NEW YORK' inferred-country='USA' inferred-county='NEW YORK' inferred-phone-area-code='212|646|718|917' inferred-state='NY' lat='40.75' lma='DV363564|MT363562' lon='-74' majorcity='NEW YORK' msa='35620: METROPOLITAN STATISTICAL AREA |408: COMBINED STATISTICAL AREA' state='NY'><city majorcity='new york'>New York</city>, <state abbrev='NY'>NY</state></address>      <daterange><start days='731949' iso8601='2005-01-01'>Jan 2005</start>- <end days='present' iso8601='2016-05-16'>Present</end></daterange>
-
-<employer clean='CIO &amp; CISO' consolidated='CIO &amp; CISO' invalid='false' priority='3'>CIO &amp; CISO</employer>
-<description>Manage and responsible for all technology for the Bank.  Also responsible for information
-technology security.
-* Provide and plan for the bank's strategic direction to leverage technology.
-* Manage the back and front end of the retail banking, including their ATM network
-* Provide technical support for  mortgage origination and servicing operations
-* Network, desktop operations and telecommunications - LAN/WAN, VOIP, Enterprise
-Blackberry, Cisco Call Manager, Call Center,
-* Implemented a Help Desk System, Numara Footprints which is now being used by two units
-of the bank besides IT.  This system provides Tier1, Tier2 and Tier3 support for IT
-related issues as well as establishing agreed-upon SLA's with each department
-* Manage external vendors - including contract negotiation, and performance (SLA's)
-monitoring
-* Security and disaster recovery - Checkpoint Firewalls, IPS/IDS, Postini, Penetration
-Testing, DR/BC Planning, internet access monitoring and control through Websense
-* Compliance - GLBA, SOX 404, HIPAA, BSA/AML, Patriot Act
-* Review of all vendor provided SAS70's and preparing the assessment reports.  Also use
-ITIL guidelines in preparing IT related bank policies and procedures
-* Accomplishments to date:
-* Major cleanup of the two data centers as well as the computer rooms in all branches;
-this effort included disposing of outdated servers and communications equipment and
-replacing them with more efficient and fault-tolerant and &quot;green&quot; devices
-* Standardized acquisition of desktops and laptops resulting in reduced time to rollout
-and maintain
-* Redesigned wide area network from a point to point configuration to a fully meshed,
-redundant and load balanced network running on Verizon's MPLS network
-* Buildout of new backoffice operations location at Metrotech (Brooklyn, NY)
-* Outsourced core processing
-* Implemented new loan origination system (Easy Lender from Fiserv), converted GL system
-* Reduced telephone (voice) expenses - a cost saving of $36K per year
-* Inventory of hardware, software, telephone lines, communication lines
-* Standardized, &quot;templatized' and documented all IT functions and procedures
-* Planning for Datawarehouse  implementation
-* Re-design of website, online banking, bill pay (in progress)</description></job>
-<job bgtocc='15-1199.09' end='731918' id='2' inferred-naics='5417' inferred-naics-jobtext='5417' onet='11-9199.00|17-2051.00' onetrank='1' pos='2' sic='737902' sic2='73' span='1' start='731583'><employer city='FORT LEE' clean='Moozatech, Inc' consolidated='MOOZATECH INCORPORATED' invalid='false' name='MOOZATECH INCORPORATED' priority='2' referenced-naics='5182|5415' sic='737902' state='NJ'>Moozatech, Inc</employer>., <address division-code='35644: METROPOLITAN DIVISION' inferred-city='FORT LEE' inferred-country='USA' inferred-county='BERGEN' inferred-phone-area-code='201' inferred-state='NJ' lat='40.85' lma='DV363564|MT363562' lon='-73.97' majorcity='FORT LEE' msa='35620: METROPOLITAN STATISTICAL AREA' state='NJ'><city majorcity='fort lee'>Fort Lee</city>, <state abbrev='NJ'>NJ</state></address>        <daterange><start days='731583' iso8601='2004-01-01'>Jan 2004</start> - <end days='731918' iso8601='2004-12-01'>Dec 2004</end></daterange>
-
-<title bgonetmodel-topic-onet='17-2051.00|15-1199.11' clean='Senior Project Manager' internship-flag='false' onet='17-2051.00|15-1199.11' onetrank='1'>Sr. Project Manager</title>
-<description>Manage all engagements and research and development efforts
-* Drafted the practice methodology for the whole company and retrofitting same document
-to cover HIPAA, GLBA and Sarbanes-Oxley  compliance
-* Manage all existing and new projects and engagements ranging from VPN implementations,
-IDS/IPS installations  to security audits
-* Research, test and demo of new products to be included in the company's security
-toolbox.
-* Participated in sales and marketing efforts</description></job>
-<job bgtocc='11-9033.00' end='731338' id='3' onet='11-9033.00|11-2021.00' onetrank='1' pos='4' span='2' start='730669'><employer clean='New Media Consultants, Inc' consolidated='New Media Consultants, Inc' invalid='false' priority='3'>New Media Consultants, Inc</employer>.,  <address division-code='35644: METROPOLITAN DIVISION' inferred-city='NEW YORK' inferred-country='USA' inferred-county='NEW YORK' inferred-phone-area-code='212|646|718|917' inferred-state='NY' lat='40.75' lma='DV363564|MT363562' lon='-74' majorcity='NEW YORK' msa='35620: METROPOLITAN STATISTICAL AREA |408: COMBINED STATISTICAL AREA' state='NY'><city majorcity='new york'>New York</city>, <state abbrev='NY'>NY</state></address>          <daterange><start days='730669' iso8601='2001-07-01'>July 2001</start> - <end days='731338' iso8601='2003-05-01'>May 2003</end></daterange>
-
-<title bgonetmodel-topic-onet='11-9033.00|11-2021.00' clean='Director of Customer Support' internship-flag='false' onet='11-9033.00|11-2021.00' onetrank='1'>Director of Customer Support</title>
-<description>Charged with putting together the help desk infrastructure for this international
-internet-based casino and the switch from email-based support to live, 24 x 7 telephone
-support.
-* Reviewed and documented current procedures, maintained support scripts and
-knowledgebase and provided activity reports to management.
-* Provided functional specifications for various games and tested the resulting builds.
-* Also responsible for marketing and promotion initiatives, mass mailings, data mining
-and improving the hit ratio of our website on internet search engines,
-* Prepare technical requirements for office network infrastructure, secured communication
-links with backend servers located off-shore by tightening security policies, implementing
-a PIX firewall, PGP email encryption, personal firewalls and anti-virus and anti-spam
-filters on all PC's and other such measures.
-* Installed Epicor Clientele CRM/Help Desk System</description></job>
-<job bgtocc='41-4011.00' end='731583' id='4' inferred-naics='624110' onet='41-4012.00|41-9091.00' onetrank='1' pos='3' sic='637101' sic2='63' span='3' start='730608'><employer city='NEW YORK' clean='YWCA Retirement Fund' consolidated='YWCA' inferred-naics='624110' invalid='false' name='YWCA RETIREMENT FUND INCORPORATED' priority='1' referenced-naics='5239|5242' sic='637101' state='NY' std='YWCA' zipcode='10017-3847'>YWCA Retirement Fund</employer>, <address division-code='35644: METROPOLITAN DIVISION' inferred-city='NEW YORK' inferred-country='USA' inferred-county='NEW YORK' inferred-phone-area-code='212|646|718|917' inferred-state='NY' lat='40.75' lma='DV363564|MT363562' lon='-74' majorcity='NEW YORK' msa='35620: METROPOLITAN STATISTICAL AREA |408: COMBINED STATISTICAL AREA' state='NY'><city majorcity='new york'>New York</city>, <state abbrev='NY'>NY</state></address>          <daterange><start days='730608' iso8601='2001-05-01'>May 2001</start> - <end days='731583' iso8601='2004-01-01'>2004</end></daterange>
-
-<title bgonetmodel-topic-onet='41-4012.00|41-9091.00' clean='Independent Consultant' internship-flag='false' onet='41-4012.00|41-9091.00' onetrank='1'>Independent Consultant</title>
-* <description>Installed their local area network infrastructure, Netware, Groupwise and Windows 2000
-servers, 35 new workstations.
-* Reviewed their security policy and acceptable usage policies. Applied results to their
-access control policies in the configuration of Watchguard Firebox II firewall  and Trend
-Micro's Interscan Viruswall, and eManager.  Performed several internal scans of their
-network, monitored all internet traffic and adjusted ACL's accordingly (including setting
-up a DMZ zone).  Also recommended and arranged for an intrusion detection and ethical
-hacking by a third party (ISS).
-* Designing and programming of their website and web-based application</description></job>
-
-<job end='730578' id='5' inferred-naics='6111' onet='13-1071.00|15-1121.00' onetrank='1' pos='5' sic='872101' sic2='87' span='1' start='730122'><employer city='NEW YORK' clean='Pricewaterhouse Coopers, LLC' consolidated='PRICEWATERHOUSE COOPERS' invalid='false' name='PRICEWATERHOUSE COOPERS' priority='2' referenced-naics='5412' sic='872101' state='NY'>Pricewaterhouse Coopers, LLC</employer> - <address division-code='35644: METROPOLITAN DIVISION' inferred-city='NEW YORK' inferred-country='USA' inferred-county='NEW YORK' inferred-phone-area-code='212|646|718|917' inferred-state='NY' lat='40.75' lma='DV363564|MT363562' lon='-74' majorcity='NEW YORK' msa='35620: METROPOLITAN STATISTICAL AREA |408: COMBINED STATISTICAL AREA' state='NY'><city majorcity='new york'>New York</city>, <state abbrev='NY'>NY</state></address>                <daterange><start days='730122' iso8601='2000-01-01'>2000</start> - <end days='730578' iso8601='2001-04-01'>April 2001</end></daterange>
-
-<title bgonetmodel-topic-onet='13-1071.00|15-1121.00' clean='Principal Consultant' inferred-naics='6111' internship-flag='false' onet='13-1071.00|15-1121.00' onetrank='1'>Principal Consultant</title>
-<description>Member of an elite group practice focusing on emerging technologies - in particular,
-remote access solutions, VPN and host-based personal firewalls.
-* Wrote delivery methodology for VPN practice. Document defined  processes required to
-deliver a VPN solution from the initial contact with the client to post-implementation
-phase. Also included templates for project deliverables.
-* Prepared an extensive product review of personal firewalls that resulted in the
-recommendation of  products to be included in practice portfolio and developing
-partnerships with their respective vendors.  Also performed lab testing on some of these
-products.
-* Headed preparation of responses to RFP's and RFI's.  These responses included the
-identification, design and configuration of specific solutions such as remote/mobile
-global connectivity (iPass and GRIC), the VPN solutions (Nortel, V-One, Cisco, Checkpoint,
-InfoExpress), Radius Servers (Cisco, Funk), on-going monitoring and support (Genuity),
-email encryption and content scanning (TenFour Systems) and host-based personal firewalls
-(Network Ice, Zone Labs, InfoExpress), wireless (VPN) access from Palm and HP Jornada to
-email and CRM applications.
-* Participated in vendor selection and negotiation of partnership agreements, development
-of joint value propositions and business plans.</description></job>
-<job end='730122' id='6' onet='11-1021.00|43-1011.00' onetrank='1' pos='6' span='1' start='729757'><employer clean='MIS Corporate Defence Solutions' consolidated='MIS Corporate Defence Solutions' invalid='false' priority='3'>MIS Corporate Defence Solutions</employer> - <address division-code='35644: METROPOLITAN DIVISION' inferred-city='FORT LEE' inferred-country='USA' inferred-county='BERGEN' inferred-phone-area-code='201' inferred-state='NJ' lat='40.85' lma='DV363564|MT363562' lon='-73.97' majorcity='FORT LEE' msa='35620: METROPOLITAN STATISTICAL AREA' state='NJ'><city majorcity='fort lee'>Fort Lee</city>, <state abbrev='NJ'>NJ</state></address> <daterange><start days='729757' iso8601='1999-01-01'>1999</start>  -  <end days='730122' iso8601='2000-01-01'>2000</end></daterange>
-
-<title bgonetmodel-topic-onet='43-1011.00|11-9111.00' clean='Vice President Technical services' internship-flag='false' onet='43-1011.00|11-9111.00' onetrank='1'>Vice President Technical Services</title>
-
-<description>Charged with opening up and running US office of this UK company, including hiring all
-staff, building premises, HR services and technical infrastructure.  Also responsible for
-providing technical support to existing customers.
-* Reviewed business plan and made changes appropriate for US market.
-* Managed vendor selection and partnership agreements.
-* Lab tested security related products such Watchguard's firewalls (Firebox II &amp; SOHO
-firewall), Elron internet access management tools (Internet Manager, Message Inspector and
-Bandwidth Optimizer), Axent Technologies security tools (Enterprise Security Manager &amp;
-NetRecon) and Ten-Four Secure Email, TrendMicro (Viruswall), ISS (Internet Scanner).
-* Organized and supervised mail-out and &quot;cold calling&quot; campaign.
-* Provided sales staff with pre and post sales technical support including configuration
-of firewalls, VPN's, security and acceptable usage policies and other security and
-internet usage optimization tools.</description></job>
-<job end='729757' id='7' inferred-naics='5221' onet='11-1021.00|11-3031.02' onetrank='1' pos='7' sic='602101' sic2='60' span='8' start='726835'><employer city='UNIONDALE' clean='Dime Savings Bank' consolidated='DIME SAVINGS BANK' inferred-naics='5221' invalid='false' name='DIME SAVINGS BANK' priority='2' referenced-naics='5221|5222' sic='602101' state='NY'>Dime Savings Bank</employer> - <address division-code='35004: METROPOLITAN DIVISION' inferred-city='UNIONDALE' inferred-country='USA' inferred-county='NASSAU' inferred-phone-area-code='516' inferred-state='NY' lat='40.7' lma='DV363500|MT363562' lon='-73.59' majorcity='UNIONDALE' msa='35620: METROPOLITAN STATISTICAL AREA' state='NY'><city majorcity='uniondale'>Uniondale</city>, <state abbrev='NY'>NY</state></address> <daterange><start days='726835' iso8601='1991-01-01'>1991</start>  -  <end days='729757' iso8601='1999-01-01'>1999</end></daterange>
-
-<title bgonetmodel-topic-onet='11-3031.02|11-9033.00' clean='Vice President' internship-flag='false' onet='11-3031.02|11-9033.00' onetrank='1'>Vice President</title>, <description>Network Services
-
-Managed group of 15 technical people to support all PC and LAN activity in a retail-
-banking environment.
-* Played a key role in all merger and acquisition initiatives including the merger of
-Dime Savings Bank and Anchor Savings Bank. Project involved redesigning the local and wide
-area network infrastructure for all of the combined bank's branch and back-office
-locations in New York, New Jersey and Florida.  Under very tight timeframes and a small
-staff, installed a new frame-relay based WAN that included 150 (new) Netware 4.11 servers,
-3000 workstations and several Novell SAA gateways for IBM Mainframes (3270), AS/400 (5250)
-and internet mail (SMTP).  Project was successfully completed on time, without downtime,
-and system is still being used.
-* Designed and implemented technical infrastructure to support a new state-of-art call
-center as well as Help Desk System (Remedy)
-* Established standards for all hardware/software and infrastructure installations.  This
-resulted in a common operating environment that facilitated support, eliminated
-redundancies and reduced time to delivery.  Ensured compatibility of  all new desktop,
-server and network products (hardware and software) with existing environment and
-&quot;templatized&quot; all new installations.
-* Implemented help desk system to support all hardware, software and networking level
-users enabling IT to quantify support efforts, identify resource requirements and
-ultimately improve end-user support.
-* Introduced first bank-wide email system (pre-internet), resulting in better
-communications between back-office operations and the retail branches and drastically
-reduced staffing requirements. Expanded to a sophisticated email system (Novell Groupwise)
-which included internet (SMTP) gateways and automated rules-based processing of customer
-email (KANA system).
-* Introduced the bank to internet and intranet solutions with foresight of registering
-the Dime domain name at least 18 months ahead of competition.  Drafted the bank's
-acceptable usage policies and played in key role in overhauling its security policies
-resulting in the implementation security and internet traffic analysis tools such as
-Checkpoint Firewall I, TrendMicro's Viruswall, Axent's ESM, WebTrends Reporting, Kean
-Security (for all Netware Servers).
-* Played a key role in the introduction of the bank's internet-based banking.  Evaluated
-all ISP's, negotiated terms and SLA's and designed the server configuration and
-connectivity from the ISP hosted servers to the back-end mainframes.
-* Installed imaging system to store client insurance records.  Besides addressing audit
-(internal, external and regulatory agency) issues related to the existing manual system,
-it reduced staff, storage requirements and time to retrieve records.  Customer record
-requests could be fulfilled on a &quot;while-you-wait&quot; basis.
-* Key member of disaster recovery and business continuity team.  Prepared the disaster
-recovery requirements for all desktop, server and network and configuration of &quot;hot&quot; and
-&quot;cold&quot; sites.  Actively participated in quarterly reviews and the annual disaster recover
-testing.</description></job>
-<job bgtocc='15-1151.00' end='726835' id='8' onet='15-1151.00|15-1141.00' onetrank='1' pos='8' span='1' start='726470'><jobtype>Independent</jobtype> <title bgonetmodel-topic-onet='15-1151.00|15-1141.00' clean='PC &amp; Networking Consultant' internship-flag='false' onet='15-1151.00|15-1141.00' onetrank='1'>PC &amp; Networking Consultant</title> - <address division-code='35644: METROPOLITAN DIVISION' inferred-city='NEW YORK' inferred-country='USA' inferred-county='NEW YORK' inferred-phone-area-code='212|646|718|917' inferred-state='NY' lat='40.75' lma='DV363564|MT363562' lon='-74' majorcity='NEW YORK' msa='35620: METROPOLITAN STATISTICAL AREA |408: COMBINED STATISTICAL AREA' state='NY'><city majorcity='new york'>New York</city>, <state abbrev='NY'>NY</state></address>          <daterange><start days='726470' iso8601='1990-01-01'>1990</start>  -  <end days='726835' iso8601='1991-01-01'>1991</end></daterange></job>
-
-Worked as an <job bgtocc='41-4011.00' id='9' onet='41-4012.00|41-9091.00' onetrank='1'><title bgonetmodel-topic-onet='41-4012.00|41-9091.00' clean='independent Consultant' internship-flag='false' onet='41-4012.00|41-9091.00' onetrank='1'>independent consultant</title>, including the following assignments:
-
-* <employer clean='BankAct, Inc' consolidated='BankAct, Inc' invalid='false' priority='3'>BankAct, Inc</employer>., <address division-code='22744: METROPOLITAN DIVISION' inferred-city='FORT LAUDERDALE' inferred-country='USA' inferred-county='BROWARD' inferred-phone-area-code='754|786|954' inferred-state='FL' lat='26.12' lma='DV122274|MT123310' lon='-80.13' majorcity='FORT LAUDERDALE' msa='33100: METROPOLITAN STATISTICAL AREA' state='FL'><city majorcity='fort lauderdale'>Fort Lauderdale</city>, <state abbrev='FL'>Florida</state></address>.  <description>Installed and supported company's PC-based
-international banking software for clients in New York metro area.  Support included
-technical aspects of the client and server PC's, as well as assistance in the applications
-such as GL reconciliation, foreign currency processing, loan setup and SWIFT.
-* Penta Hotel, NYC.  Reorganized Novell Netware client and server setup, and inventoried
-all hardware, software and cabling specifications.</description></job>
-
-<job bgtocc='11-3031.01' end='726470' id='10' inferred-naics='5221' onet='11-3031.01|11-1011.00' onetrank='1' pos='9' sic='6021' sic2='60' span='6' start='724278'><employer clean='Midland Bank' consolidated='Midland Bank' inferred-naics='5221' invalid='false' priority='3' referenced-naics='5221|5222' sic='6021'>Midland Bank</employer>, Plc/Midland Int'l Trade Services, <address division-code='35644: METROPOLITAN DIVISION' inferred-city='NEW YORK' inferred-country='USA' inferred-county='NEW YORK' inferred-phone-area-code='212|646|718|917' inferred-state='NY' lat='40.75' lma='DV363564|MT363562' lon='-74' majorcity='NEW YORK' msa='35620: METROPOLITAN STATISTICAL AREA |408: COMBINED STATISTICAL AREA' state='NY'><city majorcity='new york'>New York</city>, <state abbrev='NY'>NY</state></address> <daterange><start days='724278' iso8601='1984-01-01'>1984</start>  -  <end days='726470' iso8601='1990-01-01'>1990</end></daterange>
-<title bgonetmodel-topic-onet='11-3031.01|11-1011.00' clean='Assistant Treasurer' internship-flag='false' onet='11-3031.01|11-1011.00' onetrank='1'>Assistant Treasurer</title>, Wang and PC Systems
-
-<description>Managed a group of five technicians supporting all PC and LAN operations including a 75-
-position trading floor.  Responsible for development and maintenance of the Wang VS-based
-securities and international finance systems.
-* Installed Novell Netware local area network with 230 workstations and several file
-servers.  Consolidated three locations in NYC and San Francisco.  Designed and provided
-specifications for the network infrastructure.
-* Installed gateways to different back-end processors, including DEC VAX's, Wang VS,
-AS/400 and also X.25 links to UK home office.
-* Directed all programming activity in personal computer area including development of
-financial applications in FoxPro, Clipper and Pascal.  Also managed two senior programmer
-analysts supporting Wang-based systems including custom software to support government
-securities division.
-* Managed the DEC-based (PDP 11/50) that supported the international trade finance
-operations.
-* Project led development of  credit facility management system.  Involved programmers in
-US and UK and business analysts in US, UK, Mexico and Venezuela.</description></job>
-
-<job bgtocc='15-1199.07' end='724278' id='11' onet='15-1199.07|11-3021.00' onetrank='1' pos='10' sic='602101' sic2='60' span='2' start='723548'><employer clean='Banco De Credito Nacional' consolidated='Banco De Credito Nacional' invalid='false' priority='3'>Banco De Credito Nacional</employer>, <address division-code='35644: METROPOLITAN DIVISION' inferred-city='NEW YORK' inferred-country='USA' inferred-county='NEW YORK' inferred-phone-area-code='212|646|718|917' inferred-state='NY' lat='40.75' lma='DV363564|MT363562' lon='-74' majorcity='NEW YORK' msa='35620: METROPOLITAN STATISTICAL AREA |408: COMBINED STATISTICAL AREA' state='NY'><city majorcity='new york'>New York</city>, <state abbrev='NY'>NY</state></address> <daterange><start days='723548' iso8601='1982-01-01'>1982</start>  -  <end days='724278' iso8601='1984-01-01'>1984</end></daterange>
-<title bgonetmodel-topic-onet='11-3021.00|11-3031.02' clean='Data Processing Manager' internship-flag='false' onet='11-3021.00|11-3031.02' onetrank='1'>Data Processing Manager</title></job>
-<job end='723548' id='12' onet='15-1199.11|11-9199.00' onetrank='1' pos='11' sic='874201' sic2='87' span='1' start='723183'><employer city='SYOSSET' clean='Purvis Systems, Inc' consolidated='PURVIS SYSTEMS INCORPORATED' employees='2' invalid='false' name='PURVIS SYSTEMS INCORPORATED' priority='2' referenced-naics='5416' sales='478000' sic='874201' state='NY' zipcode='11791-4441'>Purvis Systems, Inc</employer>., <address division-code='35004: METROPOLITAN DIVISION' inferred-city='SYOSSET' inferred-country='USA' inferred-county='NASSAU' inferred-phone-area-code='516' inferred-state='NY' lat='40.83' lma='DV363500|MT363562' lon='-73.5' majorcity='SYOSSET' msa='35620: METROPOLITAN STATISTICAL AREA' state='NY'><city majorcity='syosset'>Syosset</city>, <state abbrev='NY'>NY</state></address> <daterange><start days='723183' iso8601='1981-01-01'>1981</start>  -  <end days='723548' iso8601='1982-01-01'>1982</end></daterange>
-<title bgonetmodel-topic-onet='15-1199.11|11-9199.00' clean='Project Leader' internship-flag='false' onet='15-1199.11|11-9199.00' onetrank='1'>Project Leader</title></job>
-<job bgtocc='15-1131.91' end='723183' id='13' onet='15-1131.00' onetrank='1' pos='12' span='2' start='722452'><employer clean='Drake America Corporation' consolidated='Drake America Corporation' invalid='false' priority='3'>Drake America Corporation</employer>, <address division-code='35644: METROPOLITAN DIVISION' inferred-city='NEW YORK' inferred-country='USA' inferred-county='NEW YORK' inferred-phone-area-code='212|646|718|917' inferred-state='NY' lat='40.75' lma='DV363564|MT363562' lon='-74' majorcity='NEW YORK' msa='35620: METROPOLITAN STATISTICAL AREA |408: COMBINED STATISTICAL AREA' state='NY'><city majorcity='new york'>New York</city>, <state abbrev='NY'>NY</state></address> <daterange><start days='722452' iso8601='1979-01-01'>1979</start>  -  <end days='723183' iso8601='1981-01-01'>1981</end></daterange>
-<title bgonetmodel-topic-onet='15-1121.00|15-1131.00' clean='Senior Programmer' internship-flag='false' onet='15-1121.00|15-1131.00' onetrank='1'>Senior Programmer</title></job></experience>
-<education>EDUCATION
-
-<school id='14'><institution>Baruch College, CUNY</institution> - Completion of all academic requirements for an <degree level='18' name='Master of Business Administration'>MBA</degree> in <major code='(0401|0402|1201)'>Computer
-Methodology</major></school>.
-<school id='15'><institution>Divine Word Seminary</institution>, Philippines - <degree level='16' name='Bachelor of Arts'>B.A</degree>. (Major in <major cipcode='38.0100' code='2801' std-major='PHILOSOPHY'>Philosophy</major>), <honors>Magna Cum Laude</honors></school>
-<school id='16'><institution>Universidad de Navarra</institution>, <major cipcode='39.0601' code='4902' std-major='THEOLOGY/THEOLOGICAL STUDIES'>Spain - Theology</major></school></education>
-<skills>ADDITIONAL TRAINING
-
-<description>Digital Equipment Corporation Training Center - DEC Programming &amp; PDP-11 Systems
-Electronic Computer Programming Institute - Cobol, BAL, RPG
-
-Various vendor-based training programs including Novell (Netware &amp; Groupwise), Netframe,
-Help Desk Institute, NCR/AT&amp;T (Unix), Bay Networks, Cabletron, TimeStep, Elron, Ten-Four,
-iPass, V-One, Epicor Clientele
-
-Resume -</description></skills> <contact><name><givenname>Fred</givenname> <surname>Benedicto</surname></name>   Page</contact>
-</resume>
-
-<skillrollup version='1'>
-  <canonskill end='729757' experience='1' expidrefs='7,10' idrefs='7,10' lastused='1999' name='AS/400' posrefs='7,9' skill-cluster='Software and Programming Skills; IT: Network Administration and Security; Specialized Skills' start='724278'>
-    <variant>AS/400</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1' idrefs='1' lastused='2016' name='ATM Network' posrefs='1' skill-cluster='Specialized Skills' start='731949'>
-    <variant>ATM network</variant>
-  </canonskill>
-  <canonskill name='Bay Networks' skill-cluster='Specialized Skills'>
-    <variant>Bay Networks</variant>
-  </canonskill>
-  <canonskill end='730122' experience='1' expidrefs='6' idrefs='6' lastused='2000' name='Business Planning' posrefs='6' skill-cluster='Business: Process and Planning; Specialized Skills' start='729757'>
-    <variant>business plan</variant>
-  </canonskill>
-  <canonskill end='730578' experience='1' expidrefs='5' idrefs='5' lastused='2001' name='Business Planning' posrefs='5' skill-cluster='Business: Process and Planning; Specialized Skills' start='730122'>
-    <variant>business plans</variant>
-  </canonskill>
-  <canonskill name='COBOL' skill-cluster='Software and Programming Skills; IT: Programming, Development, and Engineering; Specialized Skills'>
-    <variant>Cobol</variant>
-  </canonskill>
-  <canonskill name='Cabletron' skill-cluster='Specialized Skills'>
-    <variant>Cabletron</variant>
-  </canonskill>
-  <canonskill experience='1' expidrefs='9' idrefs='9' name='Cabling' skill-cluster='Specialized Skills'>
-    <variant>cabling</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1,5' idrefs='1,5' lastused='2016' name='Cisco' posrefs='1,5' skill-cluster='Software and Programming Skills; IT: Network Administration and Security; Specialized Skills' start='730122'>
-    <variant>Cisco</variant>
-  </canonskill>
-  <canonskill end='726470' experience='1' expidrefs='10' idrefs='10' lastused='1990' name='Clipper' posrefs='9' skill-cluster='IT: Programming, Development, and Engineering; Specialized Skills' start='724278'>
-    <variant>Clipper</variant>
-  </canonskill>
-  <canonskill end='730122' experience='1' expidrefs='6' idrefs='6' lastused='2000' name='Cold Calling' posrefs='6' skill-cluster='Specialized Skills' start='729757'>
-    <variant>cold calling</variant>
-  </canonskill>
-  <canonskill end='729757' experience='1' expidrefs='7' idrefs='7' lastused='1999' name='Computer Installation and Setup' posrefs='7' skill-cluster='Customer Service: Basic Assistance: Technical and Electronic; Specialized Skills' start='726835'>
-    <variant>desktop</variant>
-  </canonskill>
-  <canonskill name='Computer Programming' skill-cluster='IT: Programming, Development, and Engineering; Specialized Skills'>
-    <variant>Computer Programming</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1' idrefs='1' lastused='2016' name='Contract Negotiation' posrefs='1' skill-cluster='Specialized Skills' start='731949'>
-    <variant>contract negotiation</variant>
-  </canonskill>
-  <canonskill end='731338' experience='1' expidrefs='3,5' idrefs='3,5' lastused='2003' name='Cryptography' posrefs='4,5' skill-cluster='IT: Network Administration and Security; Specialized Skills' start='730122'>
-    <variant>encryption</variant>
-  </canonskill>
-  <canonskill experience='1' expidrefs='9' idrefs='9' name='Currency Exchange' skill-cluster='Customer Service: Basic Assistance: Financial; Specialized Skills'>
-    <variant>foreign currency</variant>
-  </canonskill>
-  <canonskill experience='1' expidrefs='9' idrefs='9' name='Currency Exchange' skill-cluster='Customer Service: Basic Assistance: Financial; Specialized Skills'>
-    <variant>processing</variant>
-  </canonskill>
-  <canonskill end='730578' experience='1' expidrefs='5' idrefs='5' lastused='2001' name='Customer Relationship Management (CRM)' posrefs='5' skill-cluster='Specialized Skills' start='730122'>
-    <variant>CRM applications</variant>
-  </canonskill>
-  <canonskill end='731338' experience='1' expidrefs='3' idrefs='3' lastused='2003' name='Customer Service' posrefs='4' skill-cluster='Customer Service: Basic Assistance; Common Skills: Communication and Coordination' start='730669'>
-    <variant>Customer Support</variant>
-  </canonskill>
-  <canonskill end='726470' experience='1' expidrefs='10' idrefs='10' lastused='1990' name='DEC VAX' posrefs='9' skill-cluster='IT: Operating Systems; Specialized Skills' start='724278'>
-    <variant>DEC VAX</variant>
-  </canonskill>
-  <canonskill end='724278' experience='1' expidrefs='11' idrefs='11' lastused='1984' name='Data Management' posrefs='10' skill-cluster='Specialized Skills' start='723548'>
-    <variant>Data Processing</variant>
-  </canonskill>
-  <canonskill end='731338' experience='1' expidrefs='3' idrefs='3' lastused='2003' name='Data Mining' posrefs='4' skill-cluster='Data Mining: General; Specialized Skills' start='730669'>
-    <variant>data mining</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1,7' idrefs='1,7' lastused='2016' name='Disaster Recovery Planning' posrefs='1,7' skill-cluster='Specialized Skills' start='726835'>
-    <variant>disaster recovery</variant>
-  </canonskill>
-  <canonskill end='726470' experience='1' expidrefs='10' idrefs='10' lastused='1990' name='Facility Management' posrefs='9' skill-cluster='Specialized Skills' start='726470'>
-    <variant>facility management</variant>
-  </canonskill>
-  <canonskill end='731583' experience='1' expidrefs='3,4,6,7' idrefs='3,4,6,7' lastused='2004' name='Firewalls' posrefs='4,3,6,7' skill-cluster='IT: Network Administration and Security; Specialized Skills' start='726835'>
-    <variant>Firewall</variant>
-    <variant>firewall</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1,3,5,6' idrefs='1,3,5,6' lastused='2016' name='Firewalls' posrefs='1,4,5,6' skill-cluster='IT: Network Administration and Security; Specialized Skills' start='729757'>
-    <variant>Firewalls</variant>
-    <variant>firewalls</variant>
-  </canonskill>
-  <canonskill end='726470' experience='1' expidrefs='10' idrefs='10' lastused='1990' name='FoxPro' posrefs='9' skill-cluster='Software and Programming Skills; IT: Databases and Data Warehousing; IT: Programming, Development, and Engineering; Specialized Skills' start='724278'>
-    <variant>FoxPro</variant>
-  </canonskill>
-  <canonskill end='731583' experience='1' expidrefs='4' idrefs='4' lastused='2004' name='Groupwise' posrefs='3' skill-cluster='Common Skills' start='730608'>
-    <variant>Groupwise</variant>
-  </canonskill>
-  <canonskill end='729757' experience='1' expidrefs='7' idrefs='7' lastused='1999' name='Groupwise' posrefs='7' skill-cluster='Common Skills' start='726835'>
-    <variant>Novell Groupwise</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1,2' idrefs='1,2' lastused='2016' name='HIPAA' posrefs='1,2' skill-cluster='HR: Employee Benefits and Compensation; Specialized Skills' start='731583'>
-    <variant>HIPAA</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1,3,7' idrefs='1,3,7' lastused='2016' name='Help Desk Support' posrefs='1,4,7' skill-cluster='IT: Support; Specialized Skills' start='726835'>
-    <variant>Help Desk</variant>
-    <variant>help desk</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1' idrefs='1' lastused='2016' name='ITIL' posrefs='1' skill-cluster='Software and Programming Skills; IT: Software Testing and QA; Specialized Skills' start='731949'>
-    <variant>ITIL</variant>
-  </canonskill>
-  <canonskill name='Information Security' skill-cluster='IT: Network Administration and Security; Specialized Skills'>
-    <variant>information security</variant>
-  </canonskill>
-  <canonskill end='730122' experience='1' expidrefs='6' idrefs='6' lastused='2000' name='Inspection' posrefs='6' skill-cluster='Specialized Skills' start='729757'>
-    <variant>Inspector</variant>
-  </canonskill>
-  <canonskill end='729757' experience='1' expidrefs='7' idrefs='7' lastused='1999' name='Internet Service Provider (ISP)' posrefs='7' skill-cluster='Specialized Skills' start='726835'>
-    <variant>ISP</variant>
-  </canonskill>
-  <canonskill end='730578' experience='1' expidrefs='5' idrefs='5' lastused='2001' name='Laboratory Testing' posrefs='5' skill-cluster='Sciences: General; Specialized Skills' start='730122'>
-    <variant>lab testing</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1' idrefs='1' lastused='2016' name='Loan Origination' posrefs='1' skill-cluster='Finance: Lending: Credit; Specialized Skills' start='731949'>
-    <variant>loan origination</variant>
-  </canonskill>
-  <canonskill end='731583' experience='1' expidrefs='4,10' idrefs='4,10' lastused='2004' name='Local Area Network (LAN)' posrefs='3,9' skill-cluster='Specialized Skills' start='724278'>
-    <variant>local area network</variant>
-  </canonskill>
-  <canonskill end='729757' experience='1' expidrefs='7' idrefs='7' lastused='1999' name='Mainframe' posrefs='7' skill-cluster='IT: Operating Systems; Specialized Skills' start='726835'>
-    <variant>IBM Mainframes</variant>
-  </canonskill>
-  <canonskill end='729757' experience='1' expidrefs='7' idrefs='7' lastused='1999' name='Mainframe' posrefs='7' skill-cluster='IT: Operating Systems; Specialized Skills' start='726835'>
-    <variant>mainframes</variant>
-  </canonskill>
-  <canonskill name='Meeting Deadlines' skill-cluster='Common Skills: Business Environment Skills'>
-    <variant>tight deadlines</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1' idrefs='1' lastused='2016' name='Microsoft BackOffice' posrefs='1' skill-cluster='Software and Programming Skills; Common Skills' start='731949'>
-    <variant>backoffice</variant>
-  </canonskill>
-  <canonskill end='731583' experience='1' expidrefs='4' idrefs='4' lastused='2004' name='Microsoft Windows' posrefs='3' skill-cluster='Software and Programming Skills; Common Skills' start='730608'>
-    <variant>Windows 2000</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1' idrefs='1' lastused='2016' name='Mortgage Loan Origination' posrefs='1' skill-cluster='Finance: Lending: Mortgage; Specialized Skills' start='731949'>
-    <variant>mortgage origination</variant>
-  </canonskill>
-  <canonskill name='NCR /AT&amp;T' skill-cluster='Specialized Skills'>
-    <variant>NCR/AT&amp;T</variant>
-  </canonskill>
-  <canonskill end='729757' experience='1' expidrefs='7' idrefs='7' lastused='1999' name='NOVELL' posrefs='7' skill-cluster='Specialized Skills' start='726835'>
-    <variant>Novell</variant>
-  </canonskill>
-  <canonskill name='Network Engineering' skill-cluster='IT: Network Administration and Security; Specialized Skills'>
-    <variant>network design</variant>
-  </canonskill>
-  <canonskill end='731583' experience='1' expidrefs='4,7' idrefs='4,7' lastused='2004' name='Novell NetWare' posrefs='3,7' skill-cluster='Software and Programming Skills; IT: Operating Systems; Specialized Skills' start='726835'>
-    <variant>Netware</variant>
-  </canonskill>
-  <canonskill end='729757' experience='1' expidrefs='7' idrefs='7' lastused='1999' name='Novell NetWare' posrefs='7' skill-cluster='Software and Programming Skills; IT: Operating Systems; Specialized Skills' start='726835'>
-    <variant>Netware 4.11</variant>
-  </canonskill>
-  <canonskill end='726470' experience='1' expidrefs='9,10' idrefs='9,10' lastused='1990' name='Novell NetWare' posrefs='9' skill-cluster='Software and Programming Skills; IT: Operating Systems; Specialized Skills' start='724278'>
-    <variant>Novell Netware</variant>
-  </canonskill>
-  <canonskill end='731338' experience='1' expidrefs='3' idrefs='3' lastused='2003' name='Online Research' posrefs='4' skill-cluster='Common Skills: Problem Solving' start='730669'>
-    <variant>internet search engines</variant>
-  </canonskill>
-  <canonskill end='730122' experience='1' expidrefs='6' idrefs='6' lastused='2000' name='Optimization' posrefs='6' skill-cluster='Specialized Skills' start='729757'>
-    <variant>optimization</variant>
-  </canonskill>
-  <canonskill end='730122' experience='1' expidrefs='6' idrefs='6' lastused='2000' name='Organizational Skills' posrefs='6' skill-cluster='Common Skills: Business Environment Skills' start='729757'>
-    <variant>Organized</variant>
-  </canonskill>
-  <canonskill end='726470' experience='1' expidrefs='10' idrefs='10' lastused='1990' name='PASCAL' posrefs='9' skill-cluster='Software and Programming Skills; IT: Programming, Development, and Engineering; Specialized Skills' start='724278'>
-    <variant>Pascal</variant>
-  </canonskill>
-  <canonskill end='726470' experience='1' expidrefs='10' idrefs='10' lastused='1990' name='PC Systems' posrefs='9' skill-cluster='Specialized Skills' start='724278'>
-    <variant>PC Systems</variant>
-  </canonskill>
-  <canonskill end='726470' experience='1' expidrefs='10' idrefs='10' lastused='1990' name='PDP-11' posrefs='9' skill-cluster='IT: Operating Systems; Specialized Skills' start='724278'>
-    <variant>PDP 11</variant>
-  </canonskill>
-  <canonskill end='726470' experience='1' expidrefs='10' idrefs='10' lastused='1990' name='Personal Computers' posrefs='9' skill-cluster='Specialized Skills' start='724278'>
-    <variant>personal computer</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1' idrefs='1' lastused='2016' name='Planning' posrefs='1' skill-cluster='Common Skills: Business Environment Skills' start='731949'>
-    <variant>Planning</variant>
-  </canonskill>
-  <canonskill end='726470' experience='1' expidrefs='10' idrefs='10' lastused='1990' name='Programmable Logic Controller (PLC) Programming' posrefs='9' skill-cluster='Specialized Skills' start='724278'>
-    <variant>Plc</variant>
-  </canonskill>
-  <canonskill end='723548' experience='1' expidrefs='12' idrefs='12' lastused='1982' name='Project Management' posrefs='11' skill-cluster='Common Skills: Project and Process Flow Skills' start='723183'>
-    <variant>Project Leader</variant>
-  </canonskill>
-  <canonskill end='731918' experience='1' expidrefs='2' idrefs='2' lastused='2004' name='Project Management' posrefs='2' skill-cluster='Common Skills: Project and Process Flow Skills' start='731583'>
-    <variant>Project Manager</variant>
-  </canonskill>
-  <canonskill end='730578' experience='1' expidrefs='5' idrefs='5' lastused='2001' name='RFI' posrefs='5' skill-cluster='Specialized Skills' start='730122'>
-    <variant>RFI</variant>
-  </canonskill>
-  <canonskill end='730578' experience='1' expidrefs='5' idrefs='5' lastused='2001' name='RFP' posrefs='5' skill-cluster='Specialized Skills' start='730122'>
-    <variant>RFP</variant>
-  </canonskill>
-  <canonskill end='731918' experience='1' expidrefs='2' idrefs='2' lastused='2004' name='Research' posrefs='2' skill-cluster='Common Skills: Problem Solving' start='731583'>
-    <variant>Research</variant>
-    <variant>research</variant>
-  </canonskill>
-  <canonskill end='731918' experience='1' expidrefs='2' idrefs='2' lastused='2004' name='Retrofitting' posrefs='2' skill-cluster='Specialized Skills; Green: Energy Efficiency' start='731583'>
-    <variant>retrofitting</variant>
-  </canonskill>
-  <canonskill name='Role Playing Games(RPG)' skill-cluster='Digital Media and Design: Tech Development and Design; Specialized Skills'>
-    <variant>RPG</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1' idrefs='1' lastused='2016' name='SAS' posrefs='1' skill-cluster='Software and Programming Skills; IT: Business Intelligence; Research: Quantitative; Specialized Skills' start='731949'>
-    <variant>SAS</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1' idrefs='1' lastused='2016' name='Sarbanes-Oxley (SOX) 404' posrefs='1' skill-cluster='Finance: Financial Compliance and Risk Management: Compliance; Specialized Skills' start='731949'>
-    <variant>SOX 404</variant>
-  </canonskill>
-  <canonskill end='731918' experience='1' expidrefs='2' idrefs='2' lastused='2004' name='Sarbanes-Oxley (SOX)' posrefs='2' skill-cluster='Finance: Financial Compliance and Risk Management: Compliance; Specialized Skills' start='731583'>
-    <variant>Sarbanes-Oxley</variant>
-  </canonskill>
-  <canonskill end='730578' experience='1' expidrefs='5' idrefs='5' lastused='2001' name='Scanners' posrefs='5' skill-cluster='Specialized Skills' start='730122'>
-    <variant>scanning</variant>
-  </canonskill>
-  <canonskill end='729757' experience='1' expidrefs='7' idrefs='7' lastused='1999' name='Server Configuration' posrefs='7' skill-cluster='IT: Network Administration and Security; Specialized Skills' start='726835'>
-    <variant>server configuration</variant>
-  </canonskill>
-  <canonskill end='729757' experience='1' expidrefs='7' idrefs='7' lastused='1999' name='Simple Mail Transfer Protocol (SMTP)' posrefs='7' skill-cluster='Specialized Skills' start='726835'>
-    <variant>SMTP</variant>
-  </canonskill>
-  <canonskill end='729757' experience='1' expidrefs='7' idrefs='7' lastused='1999' name='Software Installation' posrefs='7' skill-cluster='IT: Support; Specialized Skills' start='726835'>
-    <variant>hardware</variant>
-  </canonskill>
-  <canonskill end='729757' experience='1' expidrefs='7' idrefs='7' lastused='1999' name='Software Installation' posrefs='7' skill-cluster='IT: Support; Specialized Skills' start='726835'>
-    <variant>software</variant>
-  </canonskill>
-  <canonskill end='729757' experience='1' expidrefs='7' idrefs='7' lastused='1999' name='System and Network Configuration' posrefs='7' skill-cluster='IT: Network Administration and Security; Specialized Skills' start='726835'>
-    <variant>network</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1,6' idrefs='1,6' lastused='2016' name='Technical Support' posrefs='1,6' skill-cluster='IT: Support; Specialized Skills' start='729757'>
-    <variant>technical support</variant>
-  </canonskill>
-  <canonskill end='729757' experience='1' expidrefs='7' idrefs='7' lastused='1999' name='Technical Support' posrefs='7' skill-cluster='IT: Support; Specialized Skills' start='726835'>
-    <variant>user support</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1' idrefs='1' lastused='2016' name='Telecommunications' posrefs='1' skill-cluster='Specialized Skills' start='731949'>
-    <variant>telecommunications</variant>
-  </canonskill>
-  <canonskill end='726470' experience='1' expidrefs='10' idrefs='10' lastused='1990' name='Trading Floor' posrefs='9' skill-cluster='Finance: Financial Markets and Instruments: Trading Operations; Specialized Skills' start='724278'>
-    <variant>trading floor</variant>
-  </canonskill>
-  <canonskill name='Training Programs' skill-cluster='HR: Employee Training; Specialized Skills'>
-    <variant>training programs</variant>
-  </canonskill>
-  <canonskill name='UNIX' skill-cluster='Software and Programming Skills; IT: Operating Systems; Specialized Skills'>
-    <variant>Unix</variant>
-  </canonskill>
-  <canonskill end='731918' experience='1' expidrefs='2,5,6' idrefs='2,5,6' lastused='2004' name='Virtual Private Networking (VPN)' posrefs='2,5,6' skill-cluster='Software and Programming Skills; Specialized Skills' start='729757'>
-    <variant>VPN</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1' idrefs='1' lastused='2016' name='VoIP' posrefs='1' skill-cluster='IT: Network Administration and Security; Specialized Skills' start='731949'>
-    <variant>VOIP</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1,4' idrefs='1,4' lastused='2016' name='Web Site Design' posrefs='1,3' skill-cluster='Digital Media and Design: Tech Development and Design; Specialized Skills; Digital Media and Design: Visual and Graphic Design' start='730608'>
-    <variant>website</variant>
-  </canonskill>
-  <canonskill end='729757' experience='1' expidrefs='7' idrefs='7' lastused='1999' name='Webtrends' posrefs='7' skill-cluster='IT: Business Intelligence; Specialized Skills' start='726835'>
-    <variant>WebTrends</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1,7' idrefs='1,7' lastused='2016' name='Wide Area Network (WAN)' posrefs='1,7' skill-cluster='Specialized Skills' start='726835'>
-    <variant>WAN</variant>
-  </canonskill>
-  <canonskill end='736102' experience='1' expidrefs='1' idrefs='1' lastused='2016' name='Wide Area Network (WAN)' posrefs='1' skill-cluster='Specialized Skills' start='731949'>
-    <variant>wide area network</variant>
-  </canonskill>
-  <canonskill end='731583' experience='1' expidrefs='4,7,10' idrefs='4,7,10' lastused='2004' name='Workstations' posrefs='3,7,9' skill-cluster='Specialized Skills' start='724278'>
-    <variant>workstations</variant>
-  </canonskill>
-  <canonskill name='Writing' skill-cluster='Common Skills: Communication and Coordination'>
-    <variant>written communication skills</variant>
-  </canonskill>
-</skillrollup>
-<DataElementsRollup version='5.5.18 TalentMine v3.2.5.3'>
-<Certification></Certification>
-<CanonCertification/></DataElementsRollup>
-</ResDoc>
-</ResponseData><TimeStamp>2016-05-16 13:34:32.414</TimeStamp><ProcessedWithLocale>en_us</ProcessedWithLocale></ParseResumeResponse>
-"""
-
-
-REFERENCE_XML = u"""
-<ResDoc>
-<resume canonversion="2" dateversion="2" iso8601="2016-05-20" present="736106" xml:space="preserve">          <summary>Objective: <objective>A senior level design engineer position specializing in the design of integrated circuits for switched mode power supply systems.</objective></summary>
-
-<experience end="733530" start="724278">Employment History
-
-<job end="733530" id="1" pos="1" span="13" start="728661"><daterange><start days="728661" iso8601="1996-01-01">1996</start> * <end days="733530" iso8601="2009-05-01">May, 2009</end></daterange>: PCD
-<description>Designed a series of switched mode power supply integrated circuit semiconductor controllers, all using BiCMOS+DMOS processes. Extensive experience with CAD simulation and laboratory analysis/debug as well as getting parts through reliability and ESD qualification. Worked with process development group to define next generation BiCMOS+DMOS process. Designed qualification vehicle for this process which was also a released product for production. Experience defining product functions and specifications with marketing and application engineers as well as interfacing with product and test engineers. Experience doing full chip layouts on highly complex switching controllers as well as the design of PCB boards for product evaluations.</description></job>
-
-<job bgtocc="17-2041.00" end="728661" id="2" inferred-naics="6111" naics="334413" naics2="33" onet="17-2041.00" onetrank="1" pos="2" sic="367400" sic2="36" span="12" start="724278"><daterange><start days="724278" iso8601="1984-01-01">1984</start> * <end days="728661" iso8601="1996-01-01">1996</end></daterange>: <title bgonetmodel-topic-onet="17-2141.00|17-2041.00" clean="Principal Process Development Engineer" inferred-naics="6111" internship-flag="false" onet="17-2141.00|17-2041.00" onetrank="1" std="Process Engineer">Principal Process Development Engineer</title>, <employer city="SANTA CLARA" clean="National Semiconductor Corp" consolidated="NATIONAL SEMICONDUCTOR CORPORATION" employees="10,100" invalid="false" name="NATIONAL SEMICONDUCTOR CORPORATION" priority="2" referenced-naics="3344" sales="1983100000" sic="367400" state="CA" zipcode="95052-8090">National Semiconductor Corp</employer>.
-
-<description>Developed BiCMOS processes for 1.5, 1.0, and 0.8 um technologies which were designed to be highly fab compatible with existing baseline CMOS technologies. Worked with fab process engineers to develop necessary process steps. Designed, did layout, and wrote test routines for process development test patterns which were used to evaluate new processes. Experience with process simulators and mos/bipolar device characterization as well as yield analysis.
-
-Products
-
-LM3477
-
-An 8-pin non-synchronous buck controller. 500KHz fixed frequency with peak current mode control architecture. 36V max input voltage with adjustable output voltage.
-
-LM3478
-
-An 8-pin non-synchronous boost/low side switch controller. Adjustable frequency with frequency synchronization option. Peak current mode control architecture. 36V max input voltage with adjustable output voltage.
-
-LM2723/LM27231
-
-IMVP3/IMVP5 multi phase synchronous buck controllers. Selectable 2, 3, or 4 phase operation. Voltage mode control architecture with provisions for channel current sharing.
-
-LM3487
-
-A 10-pin non-synchronous buck controller. Adjustable frequency with frequency synchronization option. Peak current mode control architecture. 36V max input voltage with adjustable output voltage. This part was designed for a specific customer.
-
-LM3481
-
-A 10-pin non-synchronous boost/low side switch controller. Adjustable frequency with frequency synchronization option. Peak current mode control architecture. 50V max input voltage with adjustable output voltage. Adjustable input voltage under voltage lock out with an external Vcc pin for improved driver output resistance. This part was a process qualification vehicle for National*s newest 50V *ABCD5* BiCMOS+DMOS process as well as a released product. It was the first product to be released on ABCD5. It was necessary to work with process development engineers to make modifications to the process and design rules so that acceptable device specifications could be obtained.
-
-LM2649
-
-Voltage mode buck dual channel synchronous controller. Phase locked loop based timing system with adjustable frequency above 2Mz as well as a frequency synchronization mode. Capable of low on times (about 35 nsec) and nearly no inter-channel interference. Max input voltage of 48V with an adjustable output voltage. A wide variety of features including voltage tracking and various fault detection circuits. I did the complete layout of this product entirely by myself. First silicon has been sampled to primary and secondary customers with very positive feedback.</description></job></experience>
-
-<education>Education
-
-<school id="3"><degree level="18" name="Master's">Master of Science</degree>, <major code="1203">Electrical Engineering</major>, <institution>University of California</institution>, <address inferred-city="SANTA BARBARA" inferred-state="CA" lat="34.4198" lon="-119.709" majorcity="SANTA BARBARA" state="CA"><city majorcity="santa barbara">Santa Barbara</city></address>, <completiondate days="724278" iso8601="1984-01-01">1984</completiondate></school>.
-
-<school id="4"><degree level="16" name="Bachelor's">Bachelor of Science</degree>, <major cipcode="14.0000|15.0399" code="1203" std-major="ELECTRICAL AND ELECTRONIC ENGINEERING TECHNOLOGIES/TECHNICIANS, OTHER|ENGINEERING">Electrical Engineering</major>, <institution>University of California</institution>, <address inferred-city="SANTA BARBARA" inferred-state="CA" lat="34.4198" lon="-119.709" majorcity="SANTA BARBARA" state="CA"><city majorcity="santa barbara">Santa Barbara</city></address>, <completiondate days="723548" iso8601="1982-01-01">1982</completiondate></school></education>.
-
-<references>References
-
-Derek Framer - (408) 835-6219
-Jamtry Jonas - (408) 923-7259
-Joaquín Rodrigo</references>
-</resume>
-
-<skillrollup version="1">
-  <canonskill name="Complementary Metal Oxide Semiconductor (CMOS)" skill-cluster="Specialized Skills">
-    <variant>CMOS</variant>
-  </canonskill>
-  <canonskill end="733530" experience="1" expidrefs="1" idrefs="1" lastused="2009" name="Computer Aided Drafting/Design (CAD)" posrefs="1" skill-cluster="Software and Programming Skills; Specialized Skills" start="728661">
-    <variant>CAD</variant>
-  </canonskill>
-  <canonskill education="1" eduidrefs="3,4" idrefs="3,4" name="Electrical Engineering" skill-cluster="Engineering: Electrical and Electronic; Specialized Skills">
-    <variant>Electrical Engineering</variant>
-  </canonskill>
-  <canonskill end="733530" experience="1" expidrefs="1" idrefs="1" lastused="2009" name="SIMULATION" posrefs="1" skill-cluster="Specialized Skills" start="728661">
-    <variant>simulation</variant>
   </canonskill>
 </skillrollup>
 <DataElementsRollup version="5.5.18 TalentMine v3.2.5.3">

@@ -6,7 +6,6 @@ __author__ = 'erik@gettalent.com'
 from bs4 import BeautifulSoup as bs4
 # JSON outputs.
 from .resume_xml import DOCX
-from .resume_xml import GET_1301
 from .resume_xml import GET_626a
 from .resume_xml import GET_626b
 from .resume_xml import GET_642
@@ -14,7 +13,6 @@ from .resume_xml import GET_646
 from .resume_xml import PDF
 from .resume_xml import PDF_13
 from .resume_xml import PDF_14
-from .resume_xml import REFERENCE_XML
 # Modules being tested.
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_addresses
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_educations
@@ -23,7 +21,6 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_exp
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_name
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_phones
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_skills
-from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_reference
 
 # XML Combinations:
 import edu_combinations
@@ -54,22 +51,22 @@ XML_MAPS = [
     # The resume below has 6 experience but BG incorrectly returns 7.
     # The resume below has 1 address but BG incorrectly returns 2.
     {'tree_name': DOCX, 'name': 'Veena Nithoo', 'email_len': 0, 'phone_len': 1, 'education_len': 1,
-     'experience_len': 7, 'skills_len': 47, 'addresses_len': 2},
+     'experience_len': 7, 'skills_len': 48, 'addresses_len': 2},
     # The resume below has 12 experience but BG incorrectly returns 13.
     # The resume below has 1 address but BG incorrectly returns 2.
     {'tree_name': GET_642, 'name': 'Bobby Breland', 'email_len': 1, 'phone_len': 2,
-     'education_len': 1, 'experience_len': 13, 'skills_len': 71, 'addresses_len': 2},
+     'education_len': 1, 'experience_len': 13, 'skills_len': 80, 'addresses_len': 2},
     # The resume below has 2 addresses but BG incorrectly returns 1.
     {'tree_name': GET_646, 'name': 'Patrick Kaldawy', 'email_len': 3, 'phone_len': 6,
-     'education_len': 2, 'experience_len': 4, 'skills_len': 35, 'addresses_len': 1},
+     'education_len': 2, 'experience_len': 4, 'skills_len': 42, 'addresses_len': 1},
     {'tree_name': PDF, 'name': 'Mark Greene', 'email_len': 1, 'phone_len': 1, 'education_len': 1,
-     'experience_len': 11, 'skills_len': 17, 'addresses_len': 1},
+     'experience_len': 11, 'skills_len': 20, 'addresses_len': 1},
     {'tree_name': PDF_13, 'name': 'Bruce Parkey', 'email_len': 1, 'phone_len': 1,
      'education_len': 1, 'experience_len': 3, 'skills_len': 24, 'addresses_len': 1},
     # This PDF currently does not get its email/phone parsed out of the footer.
     # This PDF currently parses out the wrong education count.
     {'tree_name': PDF_14, 'name': 'Jose Chavez', 'email_len': 0, 'phone_len': 0, 'education_len': 2,
-     'experience_len': 4, 'skills_len': 32, 'addresses_len': 1}
+     'experience_len': 4, 'skills_len': 36, 'addresses_len': 1}
 ]
 
 
@@ -170,16 +167,6 @@ def test_skill_parsing():
         assert len(skills) == xml['skills_len']
         for skill in skills:
             assert 'name' in skill
-
-
-def test_skills_duplicates():
-    soup = bs4(GET_1301, 'lxml')
-    skill_xml_list = soup.findAll('canonskill')
-    skills = parse_candidate_skills(skill_xml_list)
-    skills_set = set()
-    for skill in skills:
-        skills_set.add(skill['name'])
-    assert len(skills) == len(skills_set)
 
 
 def test_address_parsing():
@@ -757,10 +744,3 @@ def test_parsing_skills():
         successful_parse = parse_candidate_skills(combo_to_parse)
         # Sometime it may return an empty array so we cannot just assert on this.
         assert successful_parse is not None
-
-
-def test_reference_parsing():
-    soup = bs4(REFERENCE_XML)
-    references_list = soup.findAll('references')
-    references = parse_candidate_reference(references_list)
-    assert references == u'References\n\nDerek Framer - (408) 835-6219\nJamtry Jonas - (408) 923-7259\nJoaquín Rodrigo'

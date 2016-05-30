@@ -15,11 +15,10 @@ Get Campaign's Blast: /v1/push-campaigns/:id/blasts/:id [GET]
 # Standard imports
 import sys
 
-from redo import retry
-from requests import codes
+from requests import codes as HttpStatus
 
 # Application specific imports
-from push_campaign_service.tests.test_utilities import get_blast, get_blast_sends
+from push_campaign_service.tests.test_utilities import get_blast
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
 URL = PushCampaignApiUrl.BLAST
@@ -37,7 +36,7 @@ class TestCampaignBlastById(object):
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
         get_blast(blast_id, campaign_id, 'invalid_token',
-                  expected_status=(codes.UNAUTHORIZED,))
+                  expected_status=(HttpStatus.UNAUTHORIZED,))
 
     def test_get_campaign_blast_with_non_existing_campaign(self, token_first, campaign_blast,
                                                            campaign_in_db):
@@ -52,7 +51,7 @@ class TestCampaignBlastById(object):
         blast_id = campaign_blast['id']
         invalid_campaign_id = sys.maxint
         get_blast(blast_id, invalid_campaign_id, token_first,
-                  expected_status=(codes.NOT_FOUND,))
+                  expected_status=(HttpStatus.NOT_FOUND,))
 
     def test_get_campaign_blast_with_invalid_blast_id(self, token_first, campaign_blast,
                                                       campaign_in_db):
@@ -67,7 +66,7 @@ class TestCampaignBlastById(object):
         invalid_blast_id = sys.maxint
         campaign_id = campaign_in_db['id']
         get_blast(invalid_blast_id, campaign_id, token_first,
-                  expected_status=(codes.NOT_FOUND,))
+                  expected_status=(HttpStatus.NOT_FOUND,))
 
     def test_get_campaign_blast_from_diff_domain(self, token_second, campaign_blast, campaign_in_db):
         """
@@ -80,27 +79,27 @@ class TestCampaignBlastById(object):
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
         get_blast(blast_id, campaign_id, token_second,
-                  expected_status=(codes.FORBIDDEN,))
+                  expected_status=(HttpStatus.FORBIDDEN,))
 
-    def test_get_campaign_blast_with_valid_data(self, token_first, campaign_blast, campaign_in_db):
+    def test_get_campaign_blast(self, token_first, campaign_blast, campaign_in_db):
         # 200 case: Campaign Blast successfully
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
-        response = retry(get_blast, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
-                         args=(blast_id, campaign_id, token_first), kwargs={'sends': 1})
+        response = get_blast(blast_id, campaign_id, token_first,
+                             expected_status=(HttpStatus.OK,))
         blast = response['blast']
-        assert blast['sends'] == 1
-        assert blast['clicks'] == 0
-        assert blast['id'] == blast_id
+        assert blast['sends'] == campaign_blast['sends']
+        assert blast['clicks'] == campaign_blast['clicks']
+        assert blast['id'] == campaign_blast['id']
 
     def test_get_campaign_blast_with_same_domain_user(self, token_same_domain,
                                                       campaign_blast, campaign_in_db):
         # 200 case: Campaign Blast successfully
         blast_id = campaign_blast['id']
         campaign_id = campaign_in_db['id']
-        response = retry(get_blast, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
-                         args=(blast_id, campaign_id, token_same_domain), kwargs={'sends': 1})
+        response = get_blast(blast_id, campaign_id, token_same_domain,
+                             expected_status=(HttpStatus.OK,))
         blast = response['blast']
-        assert blast['sends'] == 1
-        assert blast['clicks'] == 0
-        assert blast['id'] == blast_id
+        assert blast['sends'] == campaign_blast['sends']
+        assert blast['clicks'] == campaign_blast['clicks']
+        assert blast['id'] == campaign_blast['id']

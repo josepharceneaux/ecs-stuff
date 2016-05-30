@@ -14,7 +14,7 @@ Get Campaign's Blast: /v1/push-campaigns/:id/blasts [GET]
 import sys
 
 # 3rd party imports
-from requests import codes
+from requests import codes as HttpStatus
 
 # Application specific imports
 from push_campaign_service.tests.test_utilities import get_blasts
@@ -30,7 +30,7 @@ class TestCampaignBlasts(object):
         :param campaign_in_db: campaign object
         """
         campaign_id = campaign_in_db['id']
-        get_blasts(campaign_id, 'invalid_token', expected_status=(codes.UNAUTHORIZED,))
+        get_blasts(campaign_id, 'invalid_token', expected_status=(HttpStatus.UNAUTHORIZED,))
 
     def test_get_campaign_blasts_with_invalid_campaign_id(self, token_first):
         """
@@ -38,10 +38,9 @@ class TestCampaignBlasts(object):
         :param token_first: auth token
         """
         invalid_campaign_id = sys.maxint
-        get_blasts(invalid_campaign_id, token_first, expected_status=(codes.NOT_FOUND,))
+        get_blasts(invalid_campaign_id, token_first, expected_status=(HttpStatus.NOT_FOUND,))
 
-    def test_get_campaign_blasts_with_valid_data(self, token_first, candidate_first, candidate_device_first,
-                                 campaign_in_db, campaign_blasts):
+    def test_get_campaign_blasts(self, token_first, campaign_in_db, campaign_blasts):
         """
         Try to get blasts of a valid campaign and it should return OK response
         :param token_first: auth token
@@ -50,11 +49,11 @@ class TestCampaignBlasts(object):
         """
         # 200 case: Campaign Blast successfully
         campaign_id = campaign_in_db['id']
-        response = get_blasts(campaign_id, token_first, expected_status=(codes.OK,))
+        response = get_blasts(campaign_id, token_first, expected_status=(HttpStatus.OK,))
         assert len(response['blasts']) == len(campaign_blasts)
 
-    def test_get_campaign_blasts_from_same_domain(self, token_same_domain, candidate_first, candidate_device_first,
-                                                  campaign_in_db, campaign_blasts):
+    def test_get_campaign_blasts_from_same_domain(self, token_same_domain, campaign_in_db,
+                                                  campaign_blasts):
         """
         Try to get blasts of a valid campaign where user is not owner of campaign but he is from
         same domain as the owner of campaign so we are expecting 200 status code.
@@ -63,11 +62,11 @@ class TestCampaignBlasts(object):
         :param campaign_blasts: campaign blast list
         """
         campaign_id = campaign_in_db['id']
-        response = get_blasts(campaign_id, token_same_domain, expected_status=(codes.OK,))
+        response = get_blasts(campaign_id, token_same_domain, expected_status=(HttpStatus.OK,))
         assert len(response['blasts']) == len(campaign_blasts)
 
-    def test_get_campaign_blasts_from_diff_domain(self, token_second, candidate_first, candidate_device_first,
-                                                  campaign_in_db, campaign_blast):
+    def test_get_campaign_blasts_from_diff_domain(self, token_second, campaign_in_db,
+                                                  campaign_blast):
         """
         Try to get blasts of a valid campaign where user is not owner of campaign and also he is from
         different domain so we are expecting 403 status code.
@@ -76,4 +75,4 @@ class TestCampaignBlasts(object):
         :param campaign_blast: campaign blast JSON object
         """
         campaign_id = campaign_in_db['id']
-        get_blasts(campaign_id, token_second, expected_status=(codes.FORBIDDEN,))
+        get_blasts(campaign_id, token_second, expected_status=(HttpStatus.FORBIDDEN,))
