@@ -538,9 +538,10 @@ class SchedulePushCampaignResource(Resource):
         pre_processed_data = PushCampaignBase.data_validation_for_campaign_schedule(
             request, campaign_id, CampaignUtils.PUSH)
         campaign_obj = PushCampaignBase(user.id)
+        PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user, CampaignUtils.PUSH)
         campaign_obj.campaign = pre_processed_data['campaign']
         task_id = campaign_obj.schedule(pre_processed_data['data_to_schedule'])
-        message = 'Campaign(id:%s) has been re-scheduled.' % campaign_id
+        message = 'Campaign(id:%s) has been scheduled.' % campaign_id
         return dict(message=message, task_id=task_id), 200
 
     def put(self, campaign_id):
@@ -669,9 +670,8 @@ class SendPushCampaign(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         """
         user = request.user
-        campaign_obj = PushCampaignBase(user_id=user.id)
-        campaign_obj.campaign_id = campaign_id
-        campaign_obj.send(campaign_id)
+        campaign_obj = PushCampaignBase(user_id=user.id, campaign_id=campaign_id)
+        campaign_obj.send()
         return dict(message='Campaign(id:%s) is being sent to candidates' % campaign_id), 200
 
 
@@ -970,10 +970,10 @@ class PushCampaignUrlRedirection(Resource):
                                                         requested_url=request.full_path)
             return redirect(redirection_url)
         # In case any type of exception occurs, candidate should only get internal server error
-        except Exception:
+        except Exception as e:
             # As this endpoint is hit by client, so we log the error, and return internal server
             # error.
-            logger.exception("Error occurred while URL redirection for Push campaign.")
+            logger.exception("Error occurred while URL redirection for Push campaign.\nError: %s" % str(e))
         return dict(message='Internal Server Error'), 500
 
 
