@@ -20,12 +20,7 @@ from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
                       CandidatePoolApiUrl, SchedulerApiUrl)
 from ..custom_contracts import define_custom_contracts
 
-try:
-    define_custom_contracts()
-except ValueError:
-    # ignore in case of ValueError which means it is already defined
-    pass
-
+define_custom_contracts()
 fake = Faker()
 
 
