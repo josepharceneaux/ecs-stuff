@@ -1,6 +1,8 @@
 # Scripts
 
-Scripts which are run manually, or by processes such as Jenkins
+Scripts which are run manually, or by processes such as Jenkins. Jenkins builds on the `develop` branch push the container images built to the AWS repository,
+creates a new task definition using the image, and restarts the service. An image running on `staging` can be promoted to production with the `move-stage-to-prod.py` script
+described below.
 
 ## **__ecs_task_update.py__**
 
@@ -17,12 +19,18 @@ python scripts/ecs_task_update.py ${app} ${timestamp_tag} stage restart
 This script updates production to use the docker image currently running on staging. So, for example, if the most recent build is running on staging with a tag of **built-at-2016-05-09-17-37-01** production can be upgraded to use this image with:
 
 ```
-python move-stage-to-prod.py candidate-service built-at-2016-05-09-17-37-01
+python move-stage-to-prod.py candidate-service
+```
+
+Additionally, if an image exists in the repository with a particular tag, say `v3.4.1`, this image can be placed into production with the command:
+
+```
+python move-stage-to-prod.py candidate-service --tag v3.4.1
 ```
 
 Note that this script relies on strict naming conventions for ECS task definitions and services.
 
-## scan-cluster.py
+## **__scan-cluster.py__**
 
 Scan an ECS cluster to describe the services and tasks currently running. Syntax is:
 
@@ -30,7 +38,24 @@ Scan an ECS cluster to describe the services and tasks currently running. Syntax
 python scan-cluster.py [ stage | prod ]
 ```
 
-## scan-candidates.py
+It's output (per service) looks like:
+
+```
+candidate-service-svc ACTIVE Deployments: 1
+Task: Family: candidate-service-td Revision: 18 Status: ACTIVE
+Image: 528222547498.dkr.ecr.us-east-1.amazonaws.com/gettalent/candidate-service:built-at-2016-05-09-17-37-01
+CPU: 1024 Memory 1500: 
+```
+
+## **__list-images.py__**
+
+List all images in a repository, using the service name to identify the repository. If the --tags option is given, list only images with tags. E.g.,
+
+```
+python list-images.py candidate-service --tags
+```
+
+## **__scan-candidates.py__**
 
 Scan a database for inconsistencies between ```candidate``` and ```talent_pool``` entries. If ```--stage``` or ```--prod``` options are not specified, it uses the database locator:
 
@@ -44,6 +69,6 @@ Otherwise the password for staging or production password must be provided as in
 scan-candidates.py --stage password
 ```
 
-## add-column.py
+## **__add-column.py__**
 
 Adds a column to a database table. Deprecated - use the service [migration system](https://github.com/gettalent/talent-flask-services/wiki/Database-Migrations-on-the-Cheap) instead.

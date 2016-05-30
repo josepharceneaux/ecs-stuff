@@ -29,7 +29,7 @@ class Candidate(db.Model):
     dice_profile_id = db.Column('DiceProfileId', db.String(128))
     source_id = db.Column('SourceId', db.Integer, db.ForeignKey('candidate_source.Id'))
     source_product_id = db.Column('SourceProductId', db.Integer, db.ForeignKey('product.Id'),
-                                  nullable=False, default=2) # Web = 2
+                                  nullable=False, default=2)  # Web = 2
     filename = db.Column('Filename', db.String(100))
     objective = db.Column('Objective', db.Text)
     summary = db.Column('Summary', db.Text)
@@ -50,7 +50,8 @@ class Candidate(db.Model):
     emails = relationship('CandidateEmail', cascade='all, delete-orphan', passive_deletes=True)
     experiences = relationship('CandidateExperience', cascade='all, delete-orphan', passive_deletes=True)
     languages = relationship('CandidateLanguage', cascade='all, delete-orphan', passive_deletes=True)
-    license_certifications = relationship('CandidateLicenseCertification', cascade='all, delete-orphan', passive_deletes=True)
+    license_certifications = relationship('CandidateLicenseCertification', cascade='all, delete-orphan',
+                                          passive_deletes=True)
     military_services = relationship('CandidateMilitaryService', cascade='all, delete-orphan', passive_deletes=True)
     patent_histories = relationship('CandidatePatentHistory', cascade='all, delete-orphan', passive_deletes=True)
     phones = relationship('CandidatePhone', cascade='all, delete-orphan', passive_deletes=True, backref='candidate')
@@ -64,8 +65,10 @@ class Candidate(db.Model):
     work_preferences = relationship('CandidateWorkPreference', cascade='all, delete-orphan', passive_deletes=True)
     unidentifieds = relationship('CandidateUnidentified', cascade='all, delete-orphan', passive_deletes=True)
     email_campaign_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan', passive_deletes=True)
-    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all, delete-orphan', passive_deletes=True, backref='candidate')
-    push_campaign_sends = relationship('PushCampaignSend', cascade='all, delete-orphan', passive_deletes=True, backref='candidate')
+    sms_campaign_sends = relationship('SmsCampaignSend', cascade='all, delete-orphan', passive_deletes=True,
+                                      backref='candidate')
+    push_campaign_sends = relationship('PushCampaignSend', cascade='all, delete-orphan', passive_deletes=True,
+                                       backref='candidate')
 
     voice_comments = relationship('VoiceComment', cascade='all, delete-orphan', passive_deletes=True)
     devices = relationship('CandidateDevice', cascade='all, delete-orphan', passive_deletes=True,
@@ -131,6 +134,8 @@ class PhoneLabel(db.Model):
     description = db.Column('Description', db.String(20))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
+    DEFAULT_LABEL = 'Home'
+
     # Relationships
     candidate_phones = relationship('CandidatePhone', backref='phone_label')
     reference_phones = relationship('ReferencePhone', backref='phone_label')
@@ -167,6 +172,7 @@ class CandidateSource(db.Model):
     notes = db.Column('Notes', db.String(500))
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
+    added_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # Relationships
     candidates = relationship('Candidate', backref='candidate_source')
@@ -183,6 +189,21 @@ class CandidateSource(db.Model):
                 cls.notes == source_description,
             )
         ).first()
+
+    @classmethod
+    def get_by(cls, **kwargs):
+        """
+        Function will get the first Candidate Source by filtering via kwargs
+        """
+        return cls.query.filter_by(**kwargs).first()
+
+    @classmethod
+    def domain_sources(cls, domain_id):
+        """
+        :type domain_id:  int | long
+        :rtype:  list[CandidateSource]
+        """
+        return cls.query.filter_by(domain_id=domain_id).all()
 
 
 class PublicCandidateSharing(db.Model):
@@ -227,13 +248,22 @@ class CandidatePhone(db.Model):
             phone.is_default = False
 
     @classmethod
-    def search_phone_number_in_user_domain(cls, phone_value, candidate_ids):
+    def search_phone_number_in_user_domain(cls, phone_value, current_user):
+        """
+        This searches given candidate's phone in logged-in user's domain and return list of all
+        CandidatePhone records
+        :param (basestring) phone_value: Candidate Phone value
+        :param (User) current_user: Logged-in user's object
+        :rtype: list[CandidatePhone]
+        """
         if not isinstance(phone_value, basestring):
-            raise InvalidUsage('Include phone_value as a str|unicode.')
-        if not isinstance(candidate_ids, list):
-            raise InvalidUsage('Include candidate_ids as a list.')
-        return cls.query.filter(db.and_(cls.value == phone_value,
-                                        cls.candidate_id.in_(candidate_ids))).all()
+            raise InternalServerError('Include phone_value as a str|unicode.')
+        from user import User  # This has to be here to avoid circular import
+        if not isinstance(current_user, User):
+            raise InternalServerError('Invalid User object given')
+        return cls.query.join(Candidate).\
+            join(User, User.domain_id == current_user.domain_id).\
+            filter(Candidate.user_id == User.id, cls.value == phone_value.strip()).all()
 
 
 class EmailLabel(db.Model):
@@ -284,7 +314,7 @@ class CandidateEmail(db.Model):
     __tablename__ = 'candidate_email'
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'), nullable=False)
-    email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.Id')) # 1 = Primary
+    email_label_id = db.Column('EmailLabelId', db.Integer, db.ForeignKey('email_label.Id'))  # 1 = Primary
     address = db.Column('Address', db.String(100))
     is_default = db.Column('IsDefault', db.Boolean)
     is_bounced = db.Column('IsBounced', db.Boolean, default=False)
@@ -312,9 +342,9 @@ class CandidateEmail(db.Model):
         :param email: email-address to be searched in user's domain
         :return:
         """
-        return cls.query.with_entities(cls.address, cls.candidate_id).group_by(cls.candidate_id).\
+        return cls.query.with_entities(cls.address, cls.candidate_id).group_by(cls.candidate_id). \
             join(Candidate, cls.candidate_id == Candidate.id).join(user_model,
-                                                                   Candidate.user_id == user_model.id).\
+                                                                   Candidate.user_id == user_model.id). \
             filter(and_(user_model.domain_id == user.domain_id,
                         cls.address == email)).all()
 
@@ -719,6 +749,14 @@ class ReferenceWebAddress(db.Model):
     def __repr__(self):
         return "<ReferenceWebAddress (url=' %r')>" % self.url
 
+    @classmethod
+    def get_by_reference_id(cls, reference_id):
+        """
+        :type reference_id:  int|long
+        :rtype: ReferenceWebAddress
+        """
+        return cls.query.filter_by(reference_id=reference_id).first()
+
 
 class CandidateAssociation(db.Model):
     __tablename__ = 'candidate_association'
@@ -825,7 +863,8 @@ class CandidateAddress(db.Model):
     iso3166_country = db.Column(db.String(2))
     zip_code = db.Column('ZipCode', db.String(10))
     po_box = db.Column('POBox', db.String(20))
-    is_default = db.Column('IsDefault', db.Boolean, default=False)  # todo: check other is_default fields for their default values
+    is_default = db.Column('IsDefault', db.Boolean,
+                           default=False)  # todo: check other is_default fields for their default values
     coordinates = db.Column('Coordinates', db.String(100))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
@@ -992,7 +1031,7 @@ class CandidateExperienceBullet(db.Model):
 
     # Relationship
     candidate_experience = relationship('CandidateExperience', backref=backref(
-            'candidate_experience_bullet', cascade='all, delete-orphan', passive_deletes=True))
+        'candidate_experience_bullet', cascade='all, delete-orphan', passive_deletes=True))
 
     def __repr__(self):
         return "<CandidateExperienceBullet (candidate_experience_id=' %r')>" % self.candidate_experience_id
@@ -1127,7 +1166,7 @@ class CandidateDevice(db.Model):
 
     def __repr__(self):
         return "<CandidateDevice (Id: %s, OneSignalDeviceId: %s)>" % (self.id,
-                                                                self.one_signal_device_id)
+                                                                      self.one_signal_device_id)
 
     @classmethod
     def get_devices_by_candidate_id(cls, candidate_id):
@@ -1137,7 +1176,7 @@ class CandidateDevice(db.Model):
 
     @classmethod
     def get_candidate_ids_from_one_signal_device_ids(cls, device_ids):
-        assert isinstance(device_ids, list) and len(device_ids),\
+        assert isinstance(device_ids, list) and len(device_ids), \
             'device_ids should be a list containing at least one id'
         return cls.query.filter_by(cls.one_signal_device_id.in_(device_ids)).all()
 
@@ -1150,7 +1189,7 @@ class CandidateDevice(db.Model):
     @classmethod
     def get_device_by_one_signal_id_and_domain_id(cls, one_signal_id, domain_id):
         assert one_signal_id, 'one_signal_id must be a valid string'
-        assert domain_id and isinstance(domain_id, (int, long)),\
+        assert domain_id and isinstance(domain_id, (int, long)), \
             'domain_id must be a positive number'
         from user import User, Domain
         query = cls.query.join(Candidate).join(User).join(Domain)

@@ -94,3 +94,6 @@ class CandidateCustomErrors(object):
     TAG_NOT_FOUND = 3170
     TAG_FORBIDDEN = 3172
     TAG_EXISTS = 3173
+
+    # Error codes for Candidate Source
+    INVALID_SOURCE_ID = 3180

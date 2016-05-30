@@ -14,7 +14,8 @@ from candidate_pool_service.common.models.user import DomainRole
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
-    get_pipeline_growth, TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, get_stats_generic_function)
+    get_pipeline_growth, TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline,
+    get_stats_generic_function, top_most_engaged_candidates_of_pipeline)
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 
 talent_pipeline_blueprint = Blueprint('talent_pipeline_api', __name__)
@@ -496,6 +497,36 @@ class TalentPipelineCandidates(Resource):
         return get_candidates_of_talent_pipeline(talent_pipeline, request.oauth_token, request_params)
 
 
+class TalentPipelineMostEngagedCandidates(Resource):
+    # Access token decorator
+    decorators = [require_oauth()]
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        GET /talent-pipelines/<id>/candidates/engagement?limit=5  Fetch candidates of a talent-pipeline
+        :return A dictionary containing list of most engaged candidates belonging to a talent-pipeline
+
+        :rtype: dict
+        """
+
+        talent_pipeline_id = kwargs.get('id')
+        limit = request.args.get('limit', 5)
+
+        if not is_number(limit) or int(limit) < 1:
+            raise InvalidUsage("Limit should be a positive integer")
+
+        talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
+
+        if not talent_pipeline:
+            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
+                                              talent_pipeline_id)
+
+        if talent_pipeline.user.domain_id != request.user.domain_id:
+            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
+
+        return {'candidates': top_most_engaged_candidates_of_pipeline(talent_pipeline_id, int(limit))}
+
 class TalentPipelineCampaigns(Resource):
     # Access token decorator
     decorators = [require_oauth()]
@@ -633,4 +664,5 @@ api = TalentApi(talent_pipeline_blueprint)
 api.add_resource(TalentPipelineApi, CandidatePoolApi.TALENT_PIPELINE, CandidatePoolApi.TALENT_PIPELINES)
 api.add_resource(TalentPipelineSmartListApi, CandidatePoolApi.TALENT_PIPELINE_SMARTLISTS)
 api.add_resource(TalentPipelineCandidates, CandidatePoolApi.TALENT_PIPELINE_CANDIDATES)
+api.add_resource(TalentPipelineMostEngagedCandidates, CandidatePoolApi.TALENT_PIPELINE_ENGAGED_CANDIDATES)
 api.add_resource(TalentPipelineCampaigns, CandidatePoolApi.TALENT_PIPELINE_CAMPAIGNS)

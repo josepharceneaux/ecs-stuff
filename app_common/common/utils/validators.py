@@ -6,6 +6,7 @@ import re
 import phonenumbers
 from phonenumbers.phonenumber import PhoneNumber
 import pycountry
+from jsonschema import validate, FormatChecker, ValidationError
 
 # Application Specific
 from ..error_handling import InvalidUsage
@@ -112,10 +113,10 @@ def format_phone_number(phone_number, country_code='US'):
             return dict(formatted_number=str(formatted_number), extension=parsed_phone_number.extension)
         except phonenumbers.NumberParseException:
             raise InvalidUsage(error_message="format_phone_number(%s, %s): Couldn't parse phone number" %
-                               (phone_number, country_code))
+                                             (phone_number, country_code))
     except:
         raise InvalidUsage(error_message="format_phone_number(%s, %s): Received other exception" %
-                           (phone_number, country_code))
+                                         (phone_number, country_code))
 
 
 def sanitize_zip_code(zip_code):
@@ -229,3 +230,33 @@ def raise_if_not_instance_of(obj, instances, exception=InvalidUsage):
                                                        for instance in instances]))
         else:
             raise exception(error_message % instances.__name__)
+
+
+def get_json_if_exist(_request):
+    """ Function will ensure data's content-type is JSON, and it isn't empty
+    :type _request:  request
+    """
+    if "application/json" not in _request.content_type:
+        raise InvalidUsage("Request body must be a JSON object")
+    if not _request.get_data():
+        raise InvalidUsage("Request body cannot be empty")
+    return _request.get_json()
+
+
+def get_json_data_if_validated(request_body, json_schema, format_checker=True):
+    """
+    Function will compare requested json data with provided json schema
+    :type request_body:  request
+    :type json_schema:  dict
+    :param format_checker:  If True, specified formats will need to be validated, e.g. datetime
+    :return:  JSON data if validation passes
+    """
+    try:
+        body_dict = get_json_if_exist(request_body)
+        if format_checker:
+            validate(instance=body_dict, schema=json_schema, format_checker=FormatChecker())
+        else:
+            validate(instance=body_dict, schema=json_schema)
+    except ValidationError as e:
+        raise InvalidUsage('JSON schema validation error: {}'.format(e))
+    return body_dict

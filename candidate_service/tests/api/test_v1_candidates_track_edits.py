@@ -8,7 +8,7 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles
+from helpers import AddUserRoles, get_int_version
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
 
@@ -87,8 +87,8 @@ class TestTrackCandidateAddressEdits(object):
         candidate_edits = edit_resp.json()['candidate']['edits']
         assert edit_resp.status_code == 200
         assert new_address_dict['address_line_1'] != old_address_dict['address_line_1']
-        assert candidate_edits[0]['old_value'] == old_address_dict['address_line_1']
-        assert candidate_edits[0]['new_value'] == new_address_dict['address_line_1']
+        assert old_address_dict['address_line_1'] in [edit['old_value'] for edit in candidate_edits]
+        assert new_address_dict['address_line_1'] in [edit['new_value'] for edit in candidate_edits]
 
 
 class TestTrackCandidateCustomFieldEdits(object):
@@ -124,8 +124,8 @@ class TestTrackCandidateCustomFieldEdits(object):
         print response_info(edit_resp)
         candidate_edits = edit_resp.json()['candidate']['edits']
         assert edit_resp.status_code == 200
-        assert candidate_edits[0]['old_value'] == old_custom_field_dict['value']
-        assert candidate_edits[0]['new_value'] == new_custom_field_dict['value']
+        assert old_custom_field_dict['value'] in [edit['old_value'] for edit in candidate_edits]
+        assert new_custom_field_dict['value'] in [edit['new_value'] for edit in candidate_edits]
 
 
 class TestTrackCandidateEducationEdits(object):
@@ -162,8 +162,10 @@ class TestTrackCandidateEducationEdits(object):
         candidate_edits = edit_resp.json()['candidate']['edits']
         assert edit_resp.status_code == 200
         assert new_education_dict['school_name'] != old_education_dict['school_name']
-        assert candidate_edits[0]['old_value'] == old_education_dict['school_name']
-        assert candidate_edits[0]['new_value'] == new_education_dict['school_name']
+        old_values = [edit['old_value'] for edit in candidate_edits]
+        new_values = [edit['new_value'] for edit in candidate_edits]
+        assert old_education_dict['school_name'] in old_values
+        assert new_education_dict['school_name'] in new_values
 
     def test_edit_candidate_education_degree(self, access_token_first, user_first, talent_pool):
         """
@@ -202,10 +204,13 @@ class TestTrackCandidateEducationEdits(object):
         assert edit_resp.status_code == 200
         assert new_education_dict['degrees'][0]['type'] != old_education_dict['degrees'][0]['type']
         assert new_education_dict['degrees'][0]['title'] != old_education_dict['degrees'][0]['title']
-        assert candidate_edits[0]['old_value'] == old_education_dict['degrees'][0]['type']
-        assert candidate_edits[0]['new_value'] == new_education_dict['degrees'][0]['type']
-        assert candidate_edits[1]['old_value'] == old_education_dict['degrees'][0]['title']
-        assert candidate_edits[1]['new_value'] == new_education_dict['degrees'][0]['title']
+
+        old_values = [edit['old_value'] for edit in candidate_edits]
+        new_values = [edit['new_value'] for edit in candidate_edits]
+        assert old_education_dict['degrees'][0]['type'] in old_values
+        assert old_education_dict['degrees'][0]['title'] in old_values
+        assert new_education_dict['degrees'][0]['type'] in new_values
+        assert new_education_dict['degrees'][0]['title'] in new_values
 
     def test_edit_candidate_education_degree_bullet(self, access_token_first, user_first, talent_pool):
         """
@@ -247,8 +252,8 @@ class TestTrackCandidateEducationEdits(object):
         candidate_edits = edit_resp.json()['candidate']['edits']
         assert edit_resp.status_code == 200
         assert new_degree_bullet_dict['major'] != old_degree_bullet_dict['major']
-        assert candidate_edits[0]['old_value'] == old_degree_bullet_dict['major']
-        assert candidate_edits[0]['new_value'] == new_degree_bullet_dict['major']
+        assert old_degree_bullet_dict['major'] in [edit['old_value'] for edit in candidate_edits]
+        assert new_degree_bullet_dict['major'] in [edit['new_value'] for edit in candidate_edits]
 
 
 class TestTrackCandidateExperienceEdits(object):
@@ -370,10 +375,12 @@ class TestTrackCandidateWorkPreferenceEdits(object):
 
         candidate_edits = edit_resp.json()['candidate']['edits']
         assert edit_resp.status_code == 200
-        assert int(float(candidate_edits[0]['old_value'])) == int(float(old_work_pref_dict['salary']))
-        assert int(float(candidate_edits[1]['old_value'])) == int(float(old_work_pref_dict['hourly_rate']))
-        assert int(float(candidate_edits[0]['new_value'])) == int(float(new_work_pref_dict['salary']))
-        assert int(float(candidate_edits[1]['new_value'])) == int(float(new_work_pref_dict['hourly_rate']))
+        old_values = map(get_int_version, [edit['old_value'] for edit in candidate_edits])
+        new_values = map(get_int_version, [edit['new_value'] for edit in candidate_edits])
+        assert get_int_version(old_work_pref_dict['salary']) in old_values
+        assert get_int_version(old_work_pref_dict['hourly_rate']) in old_values
+        assert get_int_version(new_work_pref_dict['salary']) in new_values
+        assert get_int_version(new_work_pref_dict['hourly_rate']) in new_values
 
 
 class TestTrackCandidateEmailEdits(object):
@@ -408,8 +415,8 @@ class TestTrackCandidateEmailEdits(object):
 
         candidate_edits = edit_resp.json()['candidate']['edits']
         assert edit_resp.status_code == 200
-        assert candidate_edits[0]['old_value'] == old_email_dict['address']
-        assert candidate_edits[0]['new_value'] == new_email_dict['address']
+        assert old_email_dict['address'] in [edit['old_value'] for edit in candidate_edits]
+        assert new_email_dict['address'] in [edit['new_value'] for edit in candidate_edits]
 
 
 class TestTrackCandidatePhoneEdits(object):
@@ -436,7 +443,7 @@ class TestTrackCandidatePhoneEdits(object):
 
         # Retrieve Candidate
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        new_email_dict = get_resp.json()['candidate']['phones'][0]
+        new_phone_dict = get_resp.json()['candidate']['phones'][0]
 
         # Retrieve Candidate Edits
         edit_resp = send_request('get', CandidateApiUrl.CANDIDATE_EDIT % candidate_id, access_token_first)
@@ -444,8 +451,8 @@ class TestTrackCandidatePhoneEdits(object):
 
         candidate_edits = edit_resp.json()['candidate']['edits']
         assert edit_resp.status_code == 200
-        assert candidate_edits[1]['old_value'] == old_phone_dict['value']
-        assert candidate_edits[1]['new_value'] == new_email_dict['value']
+        assert old_phone_dict['value'] in [edit['old_value'] for edit in candidate_edits]
+        assert new_phone_dict['value'] in [edit['new_value'] for edit in candidate_edits]
 
 
 class TestTrackCandidateMilitaryServiceEdits(object):
@@ -477,11 +484,10 @@ class TestTrackCandidateMilitaryServiceEdits(object):
         # Retrieve Candidate Edits
         edit_resp = send_request('get', CandidateApiUrl.CANDIDATE_EDIT % candidate_id, access_token_first)
         print response_info(edit_resp)
-
         candidate_edits = edit_resp.json()['candidate']['edits']
         assert edit_resp.status_code == 200
-        assert candidate_edits[0]['old_value'] == old_military_service_dict['branch']
-        assert candidate_edits[0]['new_value'] == new_military_service_dict['branch']
+        assert old_military_service_dict['branch'] in [edit['old_value'] for edit in candidate_edits]
+        assert new_military_service_dict['branch'] in [edit['new_value'] for edit in candidate_edits]
 
 
 class TestTrackCandidatePreferredLocationEdits(object):
@@ -518,8 +524,10 @@ class TestTrackCandidatePreferredLocationEdits(object):
 
         candidate_edits = edit_resp.json()['candidate']['edits']
         assert edit_resp.status_code == 200
-        assert candidate_edits[0]['old_value'] == old_preferred_location_dict['city']
-        assert candidate_edits[0]['new_value'] == new_preferred_location_dict['city']
+        old_values = [edit['old_value'] for edit in candidate_edits]
+        new_values = [edit['new_value'] for edit in candidate_edits]
+        assert old_preferred_location_dict['city'] in old_values
+        assert new_preferred_location_dict['city'] in new_values
 
 
 class TestTrackCandidateSkillEdits(object):
@@ -556,8 +564,8 @@ class TestTrackCandidateSkillEdits(object):
 
         candidate_edits = edit_resp.json()['candidate']['edits']
         assert edit_resp.status_code == 200
-        assert candidate_edits[0]['old_value'] == old_skill_dict['name']
-        assert candidate_edits[0]['new_value'] == new_skill_dict['name']
+        assert old_skill_dict['name'] in [edit['old_value'] for edit in candidate_edits]
+        assert new_skill_dict['name'] in [edit['new_value'] for edit in candidate_edits]
 
 
 class TestTrackCandidateSocialNetworkEdits(object):
@@ -586,7 +594,7 @@ class TestTrackCandidateSocialNetworkEdits(object):
 
         # Retrieve Candidate social networks
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        new_skill_dict = get_resp.json()['candidate']['social_networks'][0]
+        new_sn_dict = get_resp.json()['candidate']['social_networks'][0]
 
         # Retrieve Candidate Edits
         edit_resp = send_request('get', CandidateApiUrl.CANDIDATE_EDIT % candidate_id, access_token_first)
@@ -594,5 +602,5 @@ class TestTrackCandidateSocialNetworkEdits(object):
 
         candidate_edits = edit_resp.json()['candidate']['edits']
         assert edit_resp.status_code == 200
-        assert candidate_edits[0]['old_value'] == old_sn_dict['profile_url']
-        assert candidate_edits[0]['new_value'] == new_skill_dict['profile_url']
+        assert old_sn_dict['profile_url'] in [edit['old_value'] for edit in candidate_edits]
+        assert new_sn_dict['profile_url'] in [edit['new_value'] for edit in candidate_edits]

@@ -5,6 +5,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 """
 # Standard Imports
 import json
+from operator import itemgetter
 
 # Third Party Imports
 import requests
@@ -17,25 +18,26 @@ from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import (assert_for_activity,
                                                                  assert_campaign_delete,
-                                                                 assert_campaign_creation)
+                                                                 assert_campaign_creation,
+                                                                 assert_valid_campaign_get)
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 # Models
-from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.misc import Activity
+from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.smartlist import Smartlist
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (InvalidUsage, InternalServerError,
-                                                        ForbiddenError,ResourceNotFound)
+                                                        ForbiddenError, ResourceNotFound)
 
 
 class TestSmsCampaignHTTPGet(object):
     """
-    This class contains tests for endpoint /campaigns/ and HTTP method GET.
+    This class contains tests for endpoint /v1/sms-campaigns and HTTP method GET.
     """
     URL = SmsCampaignApiUrl.CAMPAIGNS
 
@@ -51,7 +53,7 @@ class TestSmsCampaignHTTPGet(object):
         user silently.
         """
         response = requests.get(self.URL, headers=headers)
-        _assert_counts_and_campaigns(response)
+        _assert_campaign_count_and_fields(response)
         _delete_created_number_of_user(user_first)
 
     def test_campaigns_get_with_one_user_twilio_number(self, headers, user_phone_1):
@@ -60,7 +62,7 @@ class TestSmsCampaignHTTPGet(object):
         has been created yet.
         """
         response = requests.get(self.URL, headers=headers)
-        _assert_counts_and_campaigns(response)
+        _assert_campaign_count_and_fields(response)
 
     def test_campaigns_get_with_user_having_multiple_twilio_numbers(self,
                                                                     headers,
@@ -77,23 +79,47 @@ class TestSmsCampaignHTTPGet(object):
             'Internal Server Error should occur (500)'
         assert response.json()['error']['code'] == SmsCampaignApiException.MULTIPLE_TWILIO_NUMBERS
 
-    def test_get_with_one_campaign(self, headers, sms_campaign_of_current_user):
+    def test_get_with_one_campaign(self, headers, sms_campaign_of_user_first):
         """
         We have created one campaign for user. It should result in OK response and count of campaigns
         should be 1,
         """
         response = requests.get(self.URL, headers=headers)
-        _assert_counts_and_campaigns(response, count=1)
+        _assert_campaign_count_and_fields(response, sms_campaign_of_user_first, count=1)
 
     def test_get_all_campaigns_in_user_domain(self, headers,
-                                              sms_campaign_of_current_user,
+                                              sms_campaign_of_user_first,
                                               sms_campaign_of_other_user_in_same_domain):
         """
-        We have created one campaign for user. It should result in OK response and count of campaigns
-        should be 2 as 2 user have created campaign in one domain.
+        Here user gets all campaigns in its domain. It should result in OK response and count of
+        campaigns should be 2 as 2 users have created campaign in one domain.
         """
         response = requests.get(self.URL, headers=headers)
-        _assert_counts_and_campaigns(response, count=2)
+        campaigns = _sort_campaigns(_assert_campaign_count_and_fields(response, count=2,
+                                                                      assert_fields=False))
+        sorted_campaigns = _sort_campaigns([sms_campaign_of_other_user_in_same_domain,
+                                            sms_campaign_of_user_first])
+
+        assert_valid_campaign_get(campaigns[0], sorted_campaigns[0])
+        assert_valid_campaign_get(campaigns[1], sorted_campaigns[1])
+
+    def test_get_all_campaigns_by_other_user_of_same_domain(self, headers_same_domain,
+                                                            sms_campaign_of_user_first,
+                                                            sms_campaign_of_other_user_in_same_domain,
+                                                            sms_campaign_with_no_candidate):
+        """
+        Here other user of same domain tries to get all campaigns in its domain. It should result
+        in OK response and count of campaigns should be 2 as 2 user have created campaign in its domain.
+        """
+        response = requests.get(self.URL, headers=headers_same_domain)
+        campaigns = _sort_campaigns(_assert_campaign_count_and_fields(response, count=3,
+                                                                      assert_fields=False))
+        sorted_campaigns = _sort_campaigns([sms_campaign_of_other_user_in_same_domain,
+                                            sms_campaign_of_user_first,
+                                            sms_campaign_with_no_candidate])
+        assert_valid_campaign_get(campaigns[0], sorted_campaigns[0])
+        assert_valid_campaign_get(campaigns[1], sorted_campaigns[1])
+        assert_valid_campaign_get(campaigns[2], sorted_campaigns[2])
 
     def test_get_campaigns_with_paginated_response(self, headers, bulk_sms_campaigns):
         """
@@ -103,32 +129,35 @@ class TestSmsCampaignHTTPGet(object):
 
         # This should get 4 campaign objects on page 1
         response = requests.get(self.URL + '?per_page=4', headers=headers)
-        _assert_counts_and_campaigns(response, count=4)
+        _assert_campaign_count_and_fields(response, bulk_sms_campaigns[0], count=4,
+                                          compare_fields=False)
 
         for campaign in response.json()['campaigns']:
             assert campaign['id'] in campaign_ids
 
         # This should also get 4 campaign objects on page 2
         response = requests.get(self.URL + '?per_page=4&page=2', headers=headers)
-        _assert_counts_and_campaigns(response, count=4)
+        _assert_campaign_count_and_fields(response, bulk_sms_campaigns[0], count=4,
+                                          compare_fields=False)
         for campaign in response.json()['campaigns']:
             assert campaign['id'] in campaign_ids
 
         # This should also get 2 campaign objects on page 3
         response = requests.get(self.URL + '?per_page=4&page=3', headers=headers)
-        _assert_counts_and_campaigns(response, count=2)
+        _assert_campaign_count_and_fields(response, bulk_sms_campaigns[0], count=2,
+                                          compare_fields=False)
         for campaign in response.json()['campaigns']:
             assert campaign['id'] in campaign_ids
 
         # This should not campaign objects as total campaigns are 10 and we are trying
         # to access 4th page with per_page=4.
         response = requests.get(self.URL + '?per_page=4&page=4', headers=headers)
-        _assert_counts_and_campaigns(response, count=0)
+        _assert_campaign_count_and_fields(response, count=0)
 
 
 class TestSmsCampaignHTTPPost(object):
     """
-    This class contains tests for endpoint /campaigns/ and HTTP method POST.
+    This class contains tests for endpoint /v1/sms-campaigns and HTTP method POST.
     """
     URL = SmsCampaignApiUrl.CAMPAIGNS
 
@@ -283,7 +312,19 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(self.URL,
                                  headers=headers,
                                  data=json.dumps(campaign_valid_data))
-        assert_campaign_creation(response, user_first.id, 201)
+        assert_campaign_creation(response, user_first.id, requests.codes.CREATED)
+
+    def test_campaign_creation_with_other_user_of_same_domain(self, user_same_domain,
+                                                              headers_same_domain,
+                                                              campaign_valid_data):
+        """
+        Here some other user of same domain tries to create an sms-campaign.
+        He should be able to create the campaign without any error.
+        """
+        response = requests.post(self.URL,
+                                 headers=headers_same_domain,
+                                 data=json.dumps(campaign_valid_data))
+        assert_campaign_creation(response, user_same_domain.id, requests.codes.CREATED)
 
     def test_campaign_creation_with_multiple_user_phone_and_valid_data(self,
                                                                        headers,
@@ -329,7 +370,8 @@ class TestSmsCampaignHTTPPost(object):
         """
         data = campaign_valid_data.copy()
         non_existing_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
-        data['smartlist_ids'] = [non_existing_id, 0, smartlist_with_two_candidates_in_other_domain[0]]
+        data['smartlist_ids'] = [non_existing_id, 0,
+                                 smartlist_with_two_candidates_in_other_domain[0]]
         response = requests.post(self.URL,
                                  headers=headers,
                                  data=json.dumps(data))
@@ -338,7 +380,7 @@ class TestSmsCampaignHTTPPost(object):
 
 class TestSmsCampaignHTTPDelete(object):
     """
-    This class contains tests for endpoint /campaigns/ and HTTP method DELETE.
+    This class contains tests for endpoint /v1/sms-campaigns and HTTP method DELETE.
     """
 
     URL = SmsCampaignApiUrl.CAMPAIGNS
@@ -349,13 +391,12 @@ class TestSmsCampaignHTTPDelete(object):
         """
         CampaignsTestsHelpers.request_with_invalid_token('delete', self.URL)
 
-    def test_campaigns_delete_with_invalid_header(self, access_token_first):
+    def test_campaigns_delete_with_invalid_header(self, headers):
         """
         User auth token is valid, but no content-type provided in header.
         It should result in bad request error.
         """
-        response = requests.delete(self.URL,
-                                   headers={'Authorization': 'Bearer %s' % access_token_first})
+        response = requests.delete(self.URL, headers=headers)
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
 
@@ -408,7 +449,7 @@ class TestSmsCampaignHTTPDelete(object):
             'It should be a bad request (400)'
 
     def test_campaigns_delete_with_authorized_ids(self, headers, user_first,
-                                                  sms_campaign_of_current_user):
+                                                  sms_campaign_of_user_first):
         """
         User auth token is valid, data type is valid and ids are valid
         (campaign corresponds to user). Response should be OK.
@@ -416,9 +457,23 @@ class TestSmsCampaignHTTPDelete(object):
         response = requests.delete(self.URL,
                                    headers=headers,
                                    data=json.dumps({
-                                       'ids': [sms_campaign_of_current_user['id']]
+                                       'ids': [sms_campaign_of_user_first['id']]
                                    }))
-        assert_campaign_delete(response, user_first.id, sms_campaign_of_current_user['id'])
+        assert_campaign_delete(response, user_first.id, sms_campaign_of_user_first['id'])
+
+    def test_delete_campaign_of_some_other_user_in_same_domain(self, headers_same_domain,
+                                                               user_same_domain,
+                                                               sms_campaign_of_user_first):
+        """
+        Here one user tries to delete campaign of some other user in same domain.
+        Response should be OK.
+        """
+        response = requests.delete(self.URL,
+                                   headers=headers_same_domain,
+                                   data=json.dumps({
+                                       'ids': [sms_campaign_of_user_first['id']]
+                                   }))
+        assert_campaign_delete(response, user_same_domain.id, sms_campaign_of_user_first['id'])
 
     def test_campaigns_delete_with_unauthorized_id(self, headers,
                                                    sms_campaign_in_other_domain):
@@ -436,7 +491,7 @@ class TestSmsCampaignHTTPDelete(object):
 
     def test_delete_campaigns_of_multiple_users(self, headers, user_first,
                                                 sms_campaign_of_other_user_in_same_domain,
-                                                sms_campaign_of_current_user):
+                                                sms_campaign_of_user_first):
         """
         Test with one authorized and one unauthorized SMS campaign. It should result in 207
         status code.
@@ -445,13 +500,13 @@ class TestSmsCampaignHTTPDelete(object):
                                    headers=headers,
                                    data=json.dumps({
                                        'ids': [sms_campaign_of_other_user_in_same_domain['id'],
-                                               sms_campaign_of_current_user['id']]
+                                               sms_campaign_of_user_first['id']]
                                    }))
-        assert_campaign_delete(response, user_first.id, sms_campaign_of_current_user['id'])
+        assert_campaign_delete(response, user_first.id, sms_campaign_of_user_first['id'])
 
     def test_campaigns_delete_authorized_and_unauthorized_ids(self, headers, user_first,
                                                               sms_campaign_in_other_domain,
-                                                              sms_campaign_of_current_user):
+                                                              sms_campaign_of_user_first):
         """
         Test with one authorized and one unauthorized SMS campaign. It should result in 207
         status code.
@@ -460,15 +515,15 @@ class TestSmsCampaignHTTPDelete(object):
                                    headers=headers,
                                    data=json.dumps({
                                        'ids': [sms_campaign_in_other_domain['id'],
-                                               sms_campaign_of_current_user['id']]
+                                               sms_campaign_of_user_first['id']]
                                    }))
         assert response.status_code == 207
         assert sms_campaign_in_other_domain['id'] in response.json()['not_owned_ids']
         assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_DELETE,
-                            sms_campaign_of_current_user['id'])
+                            sms_campaign_of_user_first['id'])
 
     def test_campaigns_delete_with_existing_and_non_existing_ids(self, headers, user_first,
-                                                                 sms_campaign_of_current_user):
+                                                                 sms_campaign_of_user_first):
         """
         Test with one existing, and one non existing ids of SMS campaign.
         It should result in 207 status code.
@@ -477,15 +532,15 @@ class TestSmsCampaignHTTPDelete(object):
         response = requests.delete(self.URL,
                                    headers=headers,
                                    data=json.dumps({
-                                       'ids': [non_existing_id, sms_campaign_of_current_user['id']]
+                                       'ids': [non_existing_id, sms_campaign_of_user_first['id']]
                                    }))
         assert response.status_code == 207
         assert non_existing_id in response.json()['not_found_ids']
         assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_DELETE,
-                            sms_campaign_of_current_user['id'])
+                            sms_campaign_of_user_first['id'])
 
     def test_campaigns_delete_with_valid_and_invalid_ids(self, headers, user_first,
-                                                         sms_campaign_of_current_user):
+                                                         sms_campaign_of_user_first):
         """
         Test with one valid, and one invalid id of SMS campaign.
         It should result in 207 status code.
@@ -493,20 +548,20 @@ class TestSmsCampaignHTTPDelete(object):
         response = requests.delete(self.URL,
                                    headers=headers,
                                    data=json.dumps({
-                                       'ids': [0, sms_campaign_of_current_user['id']]
+                                       'ids': [0, sms_campaign_of_user_first['id']]
                                    }))
         assert response.status_code == 207
         assert 0 in response.json()['not_deleted_ids']
         assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_DELETE,
-                            sms_campaign_of_current_user['id'])
+                            sms_campaign_of_user_first['id'])
 
     def test_campaigns_delete_with_deleted_record(self, headers, user_first,
-                                                  sms_campaign_of_current_user):
+                                                  sms_campaign_of_user_first):
         """
         We first delete an SMS campaign, and again try to delete it. It should result in
         ResourceNotFound error.
         """
-        campaign_id = sms_campaign_of_current_user['id']
+        campaign_id = sms_campaign_of_user_first['id']
         response = requests.delete(self.URL,
                                    headers=headers,
                                    data=json.dumps({
@@ -521,27 +576,35 @@ class TestSmsCampaignHTTPDelete(object):
         assert response_after_delete.status_code == ResourceNotFound.http_status_code()
 
 
-def _assert_counts_and_campaigns(response, count=0):
+def _delete_created_number_of_user(user):
+    # Need to commit the session here as we have saved the user_phone in another session.
+    # And we do not have any user_phone for this session.
+    db.session.commit()
+    UserPhone.delete(user.user_phones[0])
+
+
+def _assert_campaign_count_and_fields(response, referenced_campaign=None, count=0,
+                                      assert_fields=True, compare_fields=True):
     """
-    This function is used to asserts that we ger expected number of SMS campaigns
+    This function is used to asserts that we get expected number of SMS campaigns.
+    It then asserts that the campaign object has all the fields that we are expecting
     """
     assert response.status_code == requests.codes.OK, 'Status should be Ok (200)'
     assert response.json()
     resp = response.json()
     assert 'campaigns' in resp
     assert len(resp['campaigns']) == count
-    for campaign in resp['campaigns']:
-        # TODO: Update this for user-defined fields in GET-1260
-        assert campaign['id']
-        assert campaign['name']
-        assert campaign['body_text']
-        assert campaign['list_ids']
-        assert campaign['user_id']
-        assert campaign['added_datetime']
+    if assert_fields:
+        for campaign in resp['campaigns']:
+            assert_valid_campaign_get(campaign, referenced_campaign, compare_fields=compare_fields)
+    return resp['campaigns']
 
 
-def _delete_created_number_of_user(user):
-    # Need to commit the session here as we have saved the user_phone in another session.
-    # And we do not have any user_phone for this session.
-    db.session.commit()
-    UserPhone.delete(user.user_phones[0])
+def _sort_campaigns(campaigns_list, field='id', reverse=False):
+    """
+    This sorts the given list of campaigns on the bases of their ids.
+    :param (list) campaigns_list: List of campaigns
+    :param (str) field: Name of field on which we want to sort
+    :param (bool) reverse: If we want to order in reverse order, this should be True.
+    """
+    return sorted(campaigns_list, key=itemgetter(field), reverse=reverse)

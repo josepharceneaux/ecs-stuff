@@ -24,12 +24,14 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.utils import update_candidate_from_resume
 from resume_parsing_service.app.views.utils import create_parsed_resume_candidate
 from resume_parsing_service.app.views.utils import gen_hash_from_file
+from resume_parsing_service.app.views.utils import send_abbyy_email
 from resume_parsing_service.common.error_handling import ForbiddenError
 from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.routes import CandidateApiUrl
 from resume_parsing_service.common.utils.talent_s3 import download_file
 from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
 from resume_parsing_service.common.utils.talent_s3 import upload_to_s3
+
 
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
                  '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
@@ -83,6 +85,7 @@ def process_resume(parse_params):
         parsed_resume['candidate']['resume_url'] = filename_str
     except Exception as e:
         logger.exception('Failure during s3 upload; reason: {}'.format(e.message))
+    candidate_references = parsed_resume['candidate'].pop('references', None)
     candidate_post_response = create_parsed_resume_candidate(parsed_resume['candidate'],
                                                              oauth_string)
     response_dict = json.loads(candidate_post_response.content)
@@ -104,8 +107,25 @@ def process_resume(parse_params):
         response_dict = json.loads(update_response.content)
         logger.info('Response Dict: {}'.format(response_dict))
 
+
     candidate_id = response_dict.get('candidates')[0]['id']
     logger.debug('Candidate created with id: {}'.format(candidate_id))
+    if candidate_references:
+        post_body = {
+            'candidate_references': [
+                {'comments': candidate_references}
+            ]
+        }
+        try:
+            references_response = requests.post(
+                CandidateApiUrl.REFERENCES % candidate_id, data=json.dumps(post_body),
+                headers={'Authorization': oauth_string,
+                         'Content-Type': 'application/json'})
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+            logger.warn("process_resume. Connection error creating candidate {} references.".format(candidate_id))
+        if references_response.status_code is not requests.codes.created:
+            logger.warn("process_resume. Error creating candidate {} references. {}".format(
+                candidate_id, references_response.content))
     candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id,
                                           headers={'Authorization': oauth_string})
     if candidate_get_response.status_code is not requests.codes.ok:
@@ -126,9 +146,7 @@ def parse_resume(file_obj, filename_str):
     if not file_ext.startswith("."):
         file_ext = ".{}".format(file_ext)
     if file_ext not in IMAGE_FORMATS and file_ext not in DOC_FORMATS:
-        logger.error(
-            'file_ext {} not in image_formats and file_ext not in doc_formats'.format(file_ext))
-        return dict(error='file_ext not in image_formats and file_ext not in doc_formats')
+        raise InvalidUsage('File ext \'{}\' not in accepted image or document formats'.format(file_ext))
     # Find out if the file is an image
     is_resume_image = False
     if file_ext in IMAGE_FORMATS:
@@ -200,16 +218,23 @@ def ocr_image(img_file_obj, export_format='pdfSearchable'):
                              files=files,
                              data={'profile': 'documentConversion', 'exportFormat': export_format}
                              )
+
     if response.status_code != 200:
         raise ForbiddenError('Error connecting to Abby OCR instance.')
 
     xml = BeautifulSoup(response.text)
     logger.info("ocr_image() - Abby response to processImage: %s", response.text)
 
-    task_id = xml.response.task['id']
+    task = xml.response.task
+    task_id = task['id']
+
+    if task.get('status') == 'NotEnoughCredits':
+        send_abbyy_email()
+        raise InternalServerError(error_message='Error with image/pdf to text conversion.')
+
     estimated_processing_time = int(xml.response.task['estimatedprocessingtime'])
 
-    if xml.response.task['status'] != 'Queued':
+    if task.get('status') != 'Queued':
         logger.error('ocr_image() - Non queued status in ABBY OCR')
 
     # Keep pinging Abby to get task status. Quit if tried too many times

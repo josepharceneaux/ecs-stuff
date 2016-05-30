@@ -67,7 +67,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
             response_body = response.json()
             candidates.extend(response_body['candidates'])
     if candidate_ids_only:
-        return [candidate['id'] for candidate in candidates]
+        return [long(candidate['id']) for candidate in candidates]
     return candidates
 
 
@@ -101,7 +101,6 @@ def assert_smartlist_candidates(smartlist_id, expected_count, access_token=None)
     :param (int, long) smartlist_id: id of smartlist
     :param (int, long) expected_count: expected number of candidates
     :param (str) access_token: access token of user to make HTTP request on smartlist API
-    :rtype: bool
     """
     raise_if_not_instance_of(smartlist_id, (int, long))
     raise_if_not_instance_of(expected_count, (int, long))
