@@ -14,6 +14,7 @@ from datetime import date
 from nameparser import HumanName
 
 # Database connection and logger
+from sqlalchemy.sql import text
 from candidate_service.common.models.db import db
 from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.candidate_app import logger
@@ -153,9 +154,9 @@ def fetch_candidate_info(candidate, fields=None):
     if (get_all_fields or 'resume_url' in fields) and candidate.filename:
         resume_url = get_s3_url(folder_path="OriginalFiles", name=candidate.filename)
 
-    return_dict = {
+    return {
         'id': candidate_id,
-        'owner': candidate.user_id,
+        'owner_id': candidate.user_id,
         'first_name': candidate.first_name,
         'middle_name': candidate.middle_name,
         'last_name': candidate.last_name,
@@ -181,10 +182,6 @@ def fetch_candidate_info(candidate, fields=None):
         'resume_url': resume_url,
         'source_id': candidate.source_id
     }
-
-    # Remove keys with None values
-    return_dict = dict((k, v) for k, v in return_dict.iteritems() if v is not None)
-    return return_dict
 
 
 def format_candidate_full_name(candidate):
@@ -432,11 +429,11 @@ def candidate_custom_fields(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    assert isinstance(candidate, Candidate)
     return [{'id': custom_field.id,
+             'custom_field_id': custom_field.custom_field_id,
              'value': custom_field.value,
              'created_at_datetime': custom_field.added_time.isoformat()
-             } for custom_field in db.session.query(CandidateCustomField).filter_by(candidate_id=candidate.id).all()]
+             } for custom_field in CandidateCustomField.query.filter_by(candidate_id=candidate.id).all()]
 
 
 def candidate_social_networks(candidate):
@@ -1117,8 +1114,8 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
 
     update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url, 'source_id': source_id}
 
-    # Remove keys with empty values and strip each value
-    update_dict = purge_dict(update_dict)
+    # Strip each key-value and remove keys with empty-string-values
+    update_dict = purge_dict(update_dict, remove_empty_strings_only=True)
 
     # Update request dict with candidate names
     # Candidate name(s) will be removed if empty string is provided; None values will be ignored
@@ -2263,7 +2260,7 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
 
 class CachedData(object):
     """
-    This class will contain data that may be required by other functions but should be cleared
-      when its data is no longer needed
+    This class will contain data that may be required by other functions.
+    Should be cleared when its data is no longer needed
     """
     country_codes = []

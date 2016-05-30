@@ -232,9 +232,11 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     error_message = e.message
             else:
                 # raise any Server error
-                log_exception("http_request: Server error from %s on %s call. "
-                              "Make sure requested server is running. Data: %s, Headers: %s" % (url, method_type,
-                                                                                                data, headers))
+                log_exception('''http_request: Server error, make sure requested server is running.
+                                 URL:     %s
+                                 Method:  %s
+                                 Data:    %s
+                                 Headers: %s''' % (url, method_type, data, headers))
                 raise
         except ConnectionError:
             # This check is for if any talent service is not running. It logs the URL on
@@ -249,9 +251,8 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                           (e.message, url, headers, data))
             raise
         except requests.RequestException as e:
-            log_exception('http_request: HTTP request failed, %s. URL: %s, Headers: %s, Data: %s' % (e.message,
-                                                                                                     url, headers,
-                                                                                                     data))
+            log_exception('http_request: HTTP request failed, %s. URL: %s, Headers: %s, Data: %s,'
+                          'Response: %s' % (e.message, url, headers, data, e.response))
             raise
         if error_message:
             log_exception('http_request: HTTP request failed, %s, '
@@ -417,16 +418,26 @@ def define_and_send_request(access_token, request, url, data=None):
                       data=json.dumps(data))
 
 
-def purge_dict(dictionary, strip=True):
+def purge_dict(dictionary, strip=True, remove_empty_strings_only=False):
     """
     Function will "remove" dict's keys with empty values
-    :param strip:  if True, it will strip each value
-    :type strip:  bool
+    :param strip: if True, it will strip each value
+    :type strip: bool
+    :type remove_empty_strings_only: bool
+    :param remove_empty_strings_only: if True, keys with None values will not be removed
     :type dictionary:  dict
     :rtype:  dict
     """
-    def clean(value): return value.strip() if isinstance(value, basestring) else value
-    if strip:
+
+    def clean(value):
+        return value.strip() if isinstance(value, basestring) else value
+
+    # strip all values & return all keys except keys with empty-string values
+    if remove_empty_strings_only:
+        return {k: clean(v) for k, v in dictionary.items() if (clean(v) or v is None)}
+    # strip all values & return keys with values that aren't None
+    elif strip and not remove_empty_strings_only:
         return {k: clean(v) for k, v in dictionary.items() if (v or clean(v))}
+    # return keys with values that aren't None
     else:
         return {k: v for k, v in dictionary.items() if (v or clean(v))}

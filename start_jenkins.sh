@@ -10,7 +10,7 @@ sudo usermod -aG docker jenkins
 # Sopping all containers and removing all dangling images from Jenkins container
 docker stop $(docker ps -a -q)
 docker rm $(docker ps -a -q)
-docker images -qf dangling=true | xargs docker rmi
+docker images -qf "dangling=true" | xargs docker rmi
 
 cd base_service_container && tar -czh . | docker build -t gettalent/base-service-container:latest - && cd ../
 cd auth_service && tar -czh . | docker build -t gettalent/auth-service:latest - && cd ../
@@ -56,4 +56,4 @@ done
 
 sleep 10
 
-py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_service/tests spreadsheet_import_service/tests email_campaign_service/tests sms_campaign_service/tests candidate_pool_service/tests resume_parsing_service/tests
+py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_service/tests spreadsheet_import_service/tests email_campaign_service/tests sms_campaign_service/tests candidate_pool_service/tests resume_parsing_service/tests push_campaign_service/tests

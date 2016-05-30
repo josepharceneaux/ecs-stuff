@@ -1,6 +1,7 @@
 """
 Test cases for candidate-search-service-API
 """
+from candidate_service.common.error_handling import NotFoundError
 from candidate_service.tests.modules.test_talent_cloud_search import (
     populate_candidates, VARIOUS_US_LOCATIONS, create_area_of_interest_facets
 )
@@ -10,7 +11,7 @@ from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 from helpers import AddUserRoles
-from polling import poll
+from redo import retrier
 
 
 class TestCandidateSearchGet(object):
@@ -55,17 +56,18 @@ def test_search_all_candidates_in_domain(user_first, access_token_first, talent_
     response = get_response(access_token_first, '', len(candidate_ids))
     _assert_results(candidate_ids, response.json())
 
-# TODO: Commenting this test for amir (basit)
-# def test_search_location(user_first, access_token_first, talent_pool):
-#     """
-#     Test to search candidates using location
-#     """
-#     AddUserRoles.add_and_get(user_first)
-#     city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
-#     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
-#                                         city=city, state=state, zip_code=zip_code)
-#     response = get_response(access_token_first, '?location=%s,%s' % (city, state), expected_count=len(candidate_ids))
-#     _assert_results(candidate_ids, response.json())
+
+def test_search_location(user_first, access_token_first, talent_pool):
+    """
+    Test to search candidates using location
+    """
+    AddUserRoles.add_and_get(user_first)
+    city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
+    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
+                                        city=city, state=state, zip_code=zip_code)
+    response = get_response(access_token_first, '?location=%s,%s' % (city, state), expected_count=len(candidate_ids),
+                            timeout=300)
+    _assert_results(candidate_ids, response.json())
 
 
 def test_search_user_ids(user_first, access_token_first, talent_pool):
@@ -261,6 +263,7 @@ def test_search_get_only_requested_fields(user_first, access_token_first, talent
     resultant_keys = response.json()['candidates'][0].keys()
     assert len(resultant_keys) == 1
     assert 'email' in resultant_keys
+
 
 # TODO: Commenting this flaky test for Amir - (basit)
 # def test_search_paging(user_first, access_token_first, talent_pool):
@@ -1273,6 +1276,8 @@ def get_response(access_token, arguments_to_url, expected_count, timeout=100):
     # Wait for cloudsearch to update the candidates
     url = CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
-    if poll(lambda: len(requests.get(url, headers=headers).json()['candidates']) >= expected_count, step=5,
-            timeout=timeout):
-        return requests.get(url=url, headers=headers)
+    attempts = timeout / 3 + 1
+    for _ in retrier(attempts=attempts, sleeptime=3):
+        if len(requests.get(url, headers=headers).json()['candidates']) >= expected_count:
+            return requests.get(url=url, headers=headers)
+    raise NotFoundError('Unable to get expected number of candidates')

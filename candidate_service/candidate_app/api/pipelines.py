@@ -60,20 +60,14 @@ class CandidatePipelineResource(Resource):
 
         # Use Search API to retrieve candidate's domain-pipeline inclusion
         found_candidate_ids = []
-        found = False
         access_token = authed_user.token[0].access_token
         for count, talent_pipeline in enumerate(talent_pipelines, start=1):
             search_response = search_candidates_from_params(talent_pipeline.search_params, access_token)
             found_candidate_ids.extend(candidate['id'] for candidate in search_response['candidates'])
 
             # Return if candidate_id is found in one of the Pipelines AND 5 or more requests have been made
-            found = unicode(candidate_id) in found_candidate_ids
-            if found and count >= 5:
+            if (unicode(candidate_id) in found_candidate_ids) and count >= 5:
                 break
-
-        # If candidate is not found in the 10 most recently added domain pipelines, return empty list
-        if not found:
-            return {'candidate_pipelines': []}
 
         # Return only five pipelines if candidate is found in more than 5 domain pipelines
         return {'candidate_pipelines': [

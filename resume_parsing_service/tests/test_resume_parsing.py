@@ -257,12 +257,26 @@ def test_2448_3264_jpg_by_post(token_fixture, user_fixture):
 
 
 def test_jpg_in_pdf(token_fixture, user_fixture):
-    """Test that large jpgs files can be posted."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_post_response(token_fixture, 'jpg_in_pdf.pdf')
+    """Test that large jpgs files can be posted."""
     assert_non_create_content_and_status(content, status)
 
+
+def test_no_multiple_skills(token_fixture, user_fixture):
+    """
+    Test for GET-1301 where multiple skills are being parsed out for a single new candidate.
+    """
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'GET_1301.doc')
+    assert_non_create_content_and_status(content, status)
+    skills = content['candidate']['skills']
+    skills_set = set()
+    for skill in skills:
+        skills_set.add(skill['name'])
+    assert len(skills) == len(skills_set)
 
 ####################################################################################################
 # Test Candidate Creation
@@ -314,6 +328,15 @@ def test_create_candidate_from_no_address_resume(token_fixture, user_fixture):
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_post_response(token_fixture, 'no_address.doc', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+
+
+def test_create_with_references(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'GET_1210.doc', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 

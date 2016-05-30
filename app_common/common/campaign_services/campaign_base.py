@@ -16,8 +16,9 @@ Any service can inherit from this class to implement/override functionality acco
 
 # Standard Library
 import json
+import itertools
 from abc import ABCMeta
-from datetime import datetime
+from datetime import datetime, timedelta
 from abc import abstractmethod
 
 # Third Party
@@ -25,6 +26,7 @@ from celery import chord
 from flask import current_app
 
 # Database Models
+from ..utils.auth_utils import refresh_token
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
 from ..models.push_campaign import PushCampaignBlast
@@ -39,8 +41,9 @@ from ..talent_config_manager import TalentConfigKeys
 from campaign_utils import (get_model, CampaignUtils)
 from ..utils.validators import raise_if_not_instance_of
 from custom_errors import (CampaignException, EmptyDestinationUrl)
-from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
+from ..routes import (ActivityApiUrl, SchedulerApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
+from ..inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 from validators import (validate_form_data,
                         validation_of_data_to_schedule_campaign,
                         validate_blast_candidate_url_conversion_in_db,
@@ -272,6 +275,11 @@ class CampaignBase(object):
         """
         pass
 
+    @property
+    def auth_token(self):
+        auth_header = self.get_authorization_header(self.user.id)
+        return auth_header['Authorization'].replace('Bearer ', '')
+
     @staticmethod
     def get_authorization_header(user_id, bearer_access_token=None):
         """
@@ -299,10 +307,14 @@ class CampaignBase(object):
             if not user_token_obj:
                 raise ResourceNotFound('No auth token record found for user(id:%s)'
                                        % user_id, error_code=ResourceNotFound.http_status_code())
+
             user_access_token = user_token_obj.access_token
         if not user_access_token:
             raise ForbiddenError('User(id:%s) has no auth token associated.'
                                  % user_id)
+        one_minute_later = datetime.utcnow() + timedelta(seconds=60)
+        if user_token_obj.expires < one_minute_later:
+            user_access_token = refresh_token(user_token_obj)
         return {'Authorization': 'Bearer %s' % user_access_token}
 
     def pre_process_save_or_update(self, campaign_data):
@@ -1082,8 +1094,7 @@ class CampaignBase(object):
         if not isinstance(self.campaign, CampaignUtils.MODELS):
             raise InvalidUsage('campaign object was not set properly')
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        logger.debug('send: %s(id:%s) is being sent. User(id:%s)' % (self.campaign_type,
-                                                                     self.campaign.id,
+        logger.debug('send: %s(id:%s) is being sent. User(id:%s)' % (self.campaign_type, self.campaign.id,
                                                                      self.user.id))
         if not self.campaign.body_text:
             # body_text is empty
@@ -1093,18 +1104,22 @@ class CampaignBase(object):
         # Get smartlists associated to this campaign
         campaign_smartlists = self.campaign.smartlists
         if not campaign_smartlists:
-            raise InvalidUsage(
-                'No smartlist is associated with %s(id:%s). (User(id:%s))'
-                % (self.campaign_type, self.campaign.id, self.user.id),
-                error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
-        candidates = sum(map(self.get_smartlist_candidates, campaign_smartlists), [])
+            raise InvalidUsage('No smartlist is associated with %s(id:%s). (User(id:%s))' % (self.campaign_type,
+                                                                                             self.campaign.id,
+                                                                                             self.user.id),
+                               error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
+        # GET smartlist candidates
+        lists_of_smartlist_candidates = map(self.get_smartlist_candidates, campaign_smartlists)
+        # Making a flat list out of "lists_of_smartlist_candidates" and removing duplicate candidate ids
+        # which ensures that if one candidate is associated with multiple smartlists, then that candidate receives
+        # only one campaign.
+        candidates = list(set(itertools.chain(*lists_of_smartlist_candidates)))
         if not candidates:
-            raise InvalidUsage(
-                'No candidate is associated with smartlist(s). %s(id:%s). '
-                'campaign smartlist ids are %s' % (self.campaign_type, self.campaign.id,
-                                                   [smartlist.id for smartlist in campaign_smartlists]),
-                error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
-        # create SMS campaign blast
+            raise InvalidUsage('No candidate is associated with smartlist(s). %s(id:%s). campaign smartlist ids are %s'
+                               % (self.campaign_type, self.campaign.id,
+                                  [smartlist.id for smartlist in campaign_smartlists]),
+                               error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
+        # create campaign blast object
         self.campaign_blast_id = self.create_campaign_blast(self.campaign)
         self.send_campaign_to_candidates(candidates)
 
@@ -1160,17 +1175,10 @@ class CampaignBase(object):
         # we just log the error and move on to next iteration. In case of any error, we return
         # empty list.
         try:
-            # other campaigns need to update this
             raise_if_not_instance_of(campaign_smartlist, CampaignUtils.SMARTLIST_MODELS)
-            params = {'fields': 'id'}
-            # HTTP GET call to candidate_service to get candidates associated with given
-            # smartlist_id.
-            response = http_request('GET', CandidatePoolApiUrl.SMARTLIST_CANDIDATES
-                                    % campaign_smartlist.smartlist_id,
-                                    headers=self.oauth_header, params=params, user_id=self.user.id)
-            # get candidate objects
-            candidates = [Candidate.get_by_id(candidate['id'])
-                          for candidate in response.json()['candidates']]
+            candidates_ids = get_candidates_of_smartlist(campaign_smartlist.smartlist_id, candidate_ids_only=True,
+                                                         access_token=self.auth_token)
+            candidates = [Candidate.get_by_id(candidate_id) for candidate_id in candidates_ids]
         except Exception:
             logger.exception('get_smartlist_candidates: Error while fetching candidates for '
                              'smartlist(id:%s)' % campaign_smartlist.smartlist_id)

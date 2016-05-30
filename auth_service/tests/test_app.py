@@ -5,11 +5,13 @@ from urllib import urlencode
 
 import pytest
 import requests
+from time import sleep
 from werkzeug.security import gen_salt
 from auth_service.oauth import app
 from auth_service.common.models.user import *
-from auth_service.common.routes import AuthApiUrl
+from auth_service.common.routes import AuthApiUrl, AuthApiUrlV2
 from auth_service.common.utils.auth_utils import gettalent_generate_password_hash
+
 
 class AuthServiceTestsContext:
     def __init__(self):
@@ -18,6 +20,7 @@ class AuthServiceTestsContext:
         self.client_id = ''
         self.client_secret = ''
         self.access_token = ''
+        self.secret_key_id = ''
         self.test_domain = None
 
     def set_up(self):
@@ -59,7 +62,18 @@ class AuthServiceTestsContext:
 
     def authorize_token(self):
         headers = {'Authorization': 'Bearer %s' % self.access_token}
+        if self.secret_key_id:
+            headers['X-Talent-Secret-Key-ID'] = self.secret_key_id
         response = requests.get(AuthApiUrl.AUTHORIZE, headers=headers)
+        if response.status_code == 200:
+            response_data = json.loads(response.text)
+            return response.status_code, response_data.get('user_id') if response_data else ''
+        else:
+            return response.status_code, ''
+
+    def authorize_token_v2(self):
+        headers = {'Authorization': 'Bearer %s' % self.access_token, 'X-Talent-Secret-Key-ID': self.secret_key_id}
+        response = requests.get(AuthApiUrlV2.AUTHORIZE, headers=headers)
         if response.status_code == 200:
             response_data = json.loads(response.text)
             return response.status_code, response_data.get('user_id') if response_data else ''
@@ -95,6 +109,29 @@ class AuthServiceTestsContext:
 
         return access_token, refresh_token, response.status_code
 
+    def token_handler_v2(self, action='fetch'):
+
+        headers = {'content-type': 'application/x-www-form-urlencoded', 'Origin': 'https://app.gettalent.com'}
+
+        if action == 'fetch':
+            params = {'username': self.email, 'password': self.password}
+            response = requests.post(AuthApiUrlV2.TOKEN_CREATE, data=urlencode(params), headers=headers)
+            json_response = json.loads(response.text)
+            access_token = json_response.get('access_token', '') if json_response else ''
+            secret_key_id = json_response.get('secret_key_id', '') if json_response else ''
+            return access_token, secret_key_id, response.status_code
+        elif action == 'refresh':
+            headers = {'Authorization': 'Bearer %s' % self.access_token, 'X-Talent-Secret-Key-ID': self.secret_key_id}
+            response = requests.post(AuthApiUrlV2.TOKEN_REFRESH, headers=headers)
+            json_response = json.loads(response.text)
+            access_token = json_response.get('access_token', '') if response else ''
+            secret_key_id = json_response.get('secret_key_id', '') if response else ''
+            return access_token, secret_key_id, response.status_code
+        else:
+            headers = {'Authorization': 'Bearer %s' % self.access_token, 'X-Talent-Secret-Key-ID': self.secret_key_id}
+            response = requests.post(AuthApiUrlV2.TOKEN_REVOKE, headers=headers)
+            return response.status_code
+
 
 @pytest.fixture()
 def app_context(request):
@@ -120,7 +157,42 @@ def app_context(request):
     return context
 
 
-def test_auth_service(app_context):
+def test_auth_service_v2(app_context):
+
+    sleep(10)
+
+    # Fetch Bearer Token
+    app_context.access_token, app_context.secret_key_id, status_code = app_context.token_handler_v2()
+    assert status_code == 200
+
+    # Authorize Bearer Token
+    status_code, authorized_user_id = app_context.authorize_token_v2()
+    assert status_code == 200
+
+    # Refresh Bearer Token
+    access_token, secret_key_id, status_code = app_context.token_handler_v2(action='refresh')
+    assert status_code == 200
+
+    # Authorize Old Bearer Token
+    status_code, authorized_user_id = app_context.authorize_token_v2()
+    assert status_code == 401
+
+    # Authorize new bearer token
+    app_context.access_token = access_token
+    app_context.secret_key_id = secret_key_id
+    status_code, authorized_user_id = app_context.authorize_token_v2()
+    assert status_code == 200
+
+    # Revoke a Bearer Token
+    assert app_context.token_handler_v2(action='revoke') == 200
+
+    # Authorize Revoked bearer token Bearer Token
+    status_code, authorized_user_id = app_context.authorize_token_v2()
+    assert status_code == 401
+
+
+def test_auth_service_v1(app_context):
+
     headers = {'content-type': 'application/x-www-form-urlencoded'}
     params = {'grant_type': 'password', 'client_id': app_context.client_id, 'client_secret': app_context.client_secret}
 

@@ -748,114 +748,6 @@ class TestCreateCandidateEducationDegree(object):
         assert len(candidate_educations[0]['degrees']) == 0
 
 
-class TestCreateWorkExperience(object):
-    def test_create_work_experience_successfully(self, access_token_first, user_first, talent_pool):
-        """
-        Test:  Create candidate + work experience
-        Expect: 201
-        """
-        # Create candidate +  work experience
-        AddUserRoles.add_and_get(user_first)
-        data = GenerateCandidateData.work_experiences([talent_pool.id])
-        country_code = data['candidates'][0]['work_experiences'][0]['country_code']
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == 201
-
-        # Retrieve candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        print response_info(get_resp)
-        assert get_resp.status_code == 200
-        assert get_country_code_from_name(get_resp.json()['candidate']['work_experiences'][0]['country']) == country_code
-
-    def test_create_experiences(self, access_token_first, user_first, talent_pool):
-        """
-        Test:  Add candidate work experience and check for total months of experiences accumulated
-        """
-        AddUserRoles.add_and_get(user_first)
-        data = {'candidates': [
-            {
-                'talent_pool_ids': {'add': [talent_pool.id]},
-                'work_experiences': [
-                    {'start_year': 2005, 'end_year': 2007},  # 12*2 = 24 months of experience
-                    {'start_year': 2008, 'end_year': None},  # 12*1 = 12 months of experience
-                    {'start_year': 2011, 'end_year': 2016}   # 12*5 = 60 months of experience
-                ]
-            }
-        ]}
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == 201
-
-        # Check candidate's total_months_experience from db
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        db.session.commit()
-        assert Candidate.get_by_id(candidate_id).total_months_experience == 96  # 24 + 12 + 60
-
-    def test_create_candidate_experience(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Create CandidateExperience for Candidate
-        Expect: 201
-        """
-        AddUserRoles.add_and_get(user=user_first)
-
-        # Create Candidate
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == 201
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-
-        # Assert data sent in = data retrieved
-        can_experiences = candidate_dict['work_experiences']
-        can_exp_data = data['candidates'][0]['work_experiences'][0]
-        assert isinstance(can_experiences, list)
-
-        assert can_experiences[0]['organization'] == can_exp_data['organization']
-        assert can_experiences[0]['position'] == can_exp_data['position']
-        assert can_experiences[0]['city'] == can_exp_data['city']
-        assert can_experiences[0]['is_current'] == can_exp_data['is_current']
-
-        can_exp_bullets = can_experiences[0]['bullets']
-        assert isinstance(can_exp_bullets, list)
-        assert can_exp_bullets[0]['description'] == can_exp_data['bullets'][0]['description']
-
-    def test_create_candidate_experiences_with_no_bullets(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Create CandidateEducation for Candidate
-        Expect: 201
-        """
-        # Create Candidate without degrees
-        AddUserRoles.add_and_get(user_first)
-        data = {'candidates': [
-            {'work_experiences': [
-                {'organization': 'Apple', 'city': 'Cupertino', 'state': None, 'country': None,
-                 'start_month': None, 'start_year': None, 'end_month': None, 'end_year': None,
-                 'position': None, 'is_current': None, 'bullets': None}],
-                'talent_pool_ids': {'add': [talent_pool.id]}
-            }
-        ]}
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == 201
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-
-        can_experiences = candidate_dict['work_experiences']
-        assert isinstance(can_experiences, list)
-        assert can_experiences[0]['organization'] == 'Apple'
-        assert can_experiences[0]['city'] == 'Cupertino'
-        can_experience_bullets = can_experiences[0]['bullets']
-        assert isinstance(can_experience_bullets, list)
-
 class TestCreateWorkPreference(object):
     def test_create_candidate_work_preference(self, access_token_first, user_first, talent_pool):
         """
@@ -1040,9 +932,8 @@ class TestCreatePhones(object):
         print response_info(get_resp)
         candidate_phones = get_resp.json()['candidate']['phones']
         phone_number_from_data = data['candidates'][0]['phones'][0]['value']
-        assert candidate_phones[0]['value'] in data['candidates'][0]['phones'][0]['value']
+        # assert candidate_phones[0]['value'] in data['candidates'][0]['phones'][0]['value']
         assert get_phone_number_extension_if_exists(phone_number_from_data)[-1] == candidate_phones[0]['extension']
-
 
     def test_create_candidate_without_phone_label(self, access_token_first, user_first, talent_pool):
         """
@@ -1338,7 +1229,6 @@ class TestCreateSkills(object):
         candidate_skills = get_resp.json()['candidate']['skills']
         assert len(candidate_skills) == 3, "Of the six records provided, 3 of them should not be " \
                                            "inserted into db because they do not have a 'name' value"
-        print "\nskills = {}".format(candidate_skills)
         assert candidate_skills[0]['name'] == data['candidates'][0]['skills'][0]['name'].strip()
         assert candidate_skills[1]['name'] == data['candidates'][0]['skills'][1]['name'].strip()
         assert candidate_skills[2]['name'] == data['candidates'][0]['skills'][2]['name'].strip()
