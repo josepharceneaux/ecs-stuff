@@ -269,6 +269,7 @@ def schedule_job(data, user_id=None, access_token=None):
         job_config['is_jwt_request'] = is_jwt_request if is_jwt_request and str(is_jwt_request).lower() == 'true' else None
 
     trigger = str(job_config['task_type']).lower().strip()
+    request_method = job_config.get('request_method', 'post')
 
     callback_method = 'scheduler_service.modules.scheduler:run_job'
 
@@ -284,7 +285,8 @@ def schedule_job(data, user_id=None, access_token=None):
                                     end_date=valid_data['end_datetime'],
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
-                                          job_config['post_data'], job_config.get('is_jwt_request')]
+                                          job_config['post_data'], job_config.get('is_jwt_request'),
+                                          request_method]
                                     )
             # Due to request timeout delay, there will be a delay in scheduling job sometimes.
             # And if start time is passed due to this request delay, then job should be run
@@ -347,6 +349,7 @@ def serialize_task(task, is_admin_api=False):
         task_dict = dict(
                 id=task.id,
                 url=task.args[2],
+                request_method=task.args[6] if len(task.args) >= 7 else "post",
                 start_datetime=task.trigger.start_date,
                 end_datetime=task.trigger.end_date,
                 next_run_datetime=task.next_run_time,
@@ -371,6 +374,7 @@ def serialize_task(task, is_admin_api=False):
                 id=task.id,
                 url=task.args[2],
                 run_datetime=task.trigger.run_date,
+                request_method=task.args[6] if len(task.args) >= 7 else "post",
                 post_data=task.args[4],
                 is_jwt_request=task.args[5],
                 pending=task.pending,
