@@ -7,7 +7,7 @@ from flask_restful import Resource
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
 # Validations
 from candidate_service.modules.validators import validate_and_format_data
-from jsonschema import validate
+from jsonschema import validate, ValidationError
 from candidate_service.modules.json_schema import candidates_resource_schema_get
 from candidate_service.modules.validators import (
     do_candidates_belong_to_users_domain, get_candidate_if_exists
@@ -41,7 +41,7 @@ class CandidateSearch(Resource):
         if body_dict:  # In case req-body is empty
             try:
                 validate(instance=body_dict, schema=candidates_resource_schema_get)
-            except Exception as e:
+            except ValidationError as e:
                 raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
 
             candidate_ids = body_dict.get('candidate_ids')

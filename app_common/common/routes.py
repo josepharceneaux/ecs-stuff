@@ -552,6 +552,7 @@ class CandidatePoolApiWords(object):
     TALENT_PIPELINE = 'talent-pipeline'
     STATS = '/stats'
     CANDIDATES = '/candidates'
+    ENGAGEMENT = '/engagement'
     CAMPAIGNS = '/campaigns'
     GROUPS = 'groups'
     SMART_LISTS = '/smartlists'
@@ -580,6 +581,7 @@ class CandidatePoolApi(object):
     TALENT_PIPELINE = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID
     TALENT_PIPELINE_SMARTLISTS = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.SMART_LISTS
     TALENT_PIPELINE_CANDIDATES = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.CANDIDATES
+    TALENT_PIPELINE_ENGAGED_CANDIDATES = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.CANDIDATES + CandidatePoolApiWords.ENGAGEMENT
     TALENT_PIPELINE_CAMPAIGNS = CandidatePoolApiWords.TALENT_PIPELINES + _INT_ID + CandidatePoolApiWords.CAMPAIGNS
     TALENT_PIPELINE_UPDATE_STATS = CandidatePoolApiWords.TALENT_PIPELINES + CandidatePoolApiWords.STATS
     TALENT_PIPELINE_GET_STATS = CandidatePoolApiWords.TALENT_PIPELINES + '/<int:talent_pipeline_id>' + CandidatePoolApiWords.STATS
