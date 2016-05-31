@@ -176,6 +176,7 @@ def send_email_campaign(user_id, campaign, new_candidates_only=False):
 
     if not isinstance(campaign, EmailCampaign):
         raise InternalServerError(error_message='Must provide valid email campaign object.')
+    campaign_id = campaign.id
     if campaign.email_client_id:
         candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(campaign=campaign,
                                                                                new_candidates_only=new_candidates_only)
@@ -216,7 +217,7 @@ def send_email_campaign(user_id, campaign, new_candidates_only=False):
             return list_of_new_email_html_or_text
     else:
         # For each candidate, create URL conversions and send the email via Celery task
-        get_smartlist_candidates_via_celery(user_id, campaign.id, new_candidates_only)
+        get_smartlist_candidates_via_celery(user_id, campaign_id, new_candidates_only)
 
 
 def send_campaign_to_candidates(user_id, candidate_ids_and_emails, blast_params, email_campaign_blast_id,
@@ -933,7 +934,7 @@ def get_smartlist_candidates_via_celery(user_id, campaign_id, new_candidates_onl
             campaign_type), queue=campaign_type) for list_id in list_ids]
 
     # Register function to be called after all candidates are fetched from smartlists
-    callback = process_campaign_send.subtask((user_id, campaign.id, list_ids, new_candidates_only, ),
+    callback = process_campaign_send.subtask((user_id, campaign_id, list_ids, new_candidates_only, ),
                                              queue=campaign_type)
     # This runs all tasks asynchronously and sets callback function to be hit once all
     # tasks in list finish running without raising any error. Otherwise callback

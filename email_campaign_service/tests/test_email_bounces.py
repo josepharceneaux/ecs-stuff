@@ -10,13 +10,13 @@ from redo import retry
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.tests.conftest import *
 
-from custom_errors import CampaignException
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.routes import EmailCampaignUrl
-from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import EmailCampaignBlast
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
+from email_campaign_service.common.campaign_services.custom_errors import CampaignException
 from email_campaign_service.tests.modules.handy_functions import send_campaign_email_to_candidate
+from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 @pytest.mark.parametrize("blast_foreign_key", [True, False])

@@ -165,9 +165,9 @@ class EmailCampaignSendApi(Resource):
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
         campaign = EmailCampaign.query.get(campaign_id)
-        email_client_id = campaign.email_client_id
         if not isinstance(campaign, EmailCampaign):
             raise NotFoundError("Given campaign_id: %s does not exists." % campaign_id)
+        email_client_id = campaign.email_client_id
 
         if not campaign.user.domain_id == request.user.domain_id:
             raise ForbiddenError("Email campaign doesn't belongs to user's domain")
