@@ -49,10 +49,11 @@ CPU: 1024 Memory 1500:
 
 ## **__list-images.py__**
 
-List all images in a repository, using the service name to identify the repository. If the --tags option is given, list only images with tags. E.g.,
+List all images in a repository, using the service name to identify the repository. If the --tags option is absent, list all images. Otherwise list only images with tags
+or images with no tags.
 
 ```
-python list-images.py candidate-service --tags
+python list-images.py candidate-service [ --tags none | --tags only ]
 ```
 
 ## **__scan-candidates.py__**
