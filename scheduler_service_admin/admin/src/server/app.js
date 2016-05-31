@@ -10,7 +10,7 @@ var logger = require('morgan');
 var port = process.env.PORT || 4000;
 var four0four = require('./utils/404')();
 
-app.use(cors({credentials: true, origin: true}));
+app.use(cors({origin: true}));
 
 var environment = process.env.NODE_ENV;
 
