@@ -24,7 +24,7 @@ from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFou
 from scheduler_service.common.utils.auth_utils import require_oauth, require_all_roles
 from scheduler_service.custom_exceptions import SchedulerServiceApiException
 from scheduler_service.modules.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, \
-    scheduler_remove_job
+    scheduler_remove_job, get_user_job_ids, get_general_job_id, get_all_general_job_ids
 from scheduler_service.modules.scheduler_admin import filter_jobs_using_task_type, \
     filter_jobs_using_task_category, filter_paused_jobs
 
@@ -134,8 +134,12 @@ class Tasks(Resource):
         user_id = request.user.id if request.user else None
 
         raise_if_scheduler_not_running()
-        tasks = scheduler.get_jobs()
-        tasks = filter(lambda _task: _task.args[0] == user_id, tasks)
+        if user_id:
+            task_ids = get_user_job_ids(user_id=user_id)
+        else:
+            task_ids = get_all_general_job_ids()
+
+        tasks = [scheduler.get_job(task_id) for task_id in task_ids]
         tasks_count = len(tasks)
         # If page is 1, and per_page is 10 then task_indices will look like list of integers e.g [0-9]
         task_indices = range((page-1) * per_page, page * per_page)
@@ -482,11 +486,12 @@ class TaskByName(Resource):
         """
         user_id = request.user.id if request.user else None
         raise_if_scheduler_not_running()
-        tasks = scheduler.get_jobs()
-        task = [task for task in tasks if task.name == _name and task.args[0] is None]
+        task_id = get_general_job_id(_name)
+        task = scheduler.get_job(task_id)
         # Make sure task is valid and belongs to non-logged-in user
-        if task and user_id is None:
-            task = serialize_task(task[0])
+        # task.arg[0] contains user_id and if it is none then it is a general job
+        if task and not user_id and not task.args[0]:
+            task = serialize_task(task)
             if task:
                 return dict(task=task)
         raise ResourceNotFound(error_message="Task with name %s not found" % _name)
@@ -519,11 +524,11 @@ class TaskByName(Resource):
         """
         user_id = request.user.id if request.user else None
         raise_if_scheduler_not_running()
-        tasks = scheduler.get_jobs()
-        task = [task for task in tasks if task.name == _name and task.args[0] is None]
+        task_id = get_general_job_id(_name)
+        task = scheduler.get_job(task_id)
         # Check if task is valid and belongs to the logged-in user
-        if task and user_id is None:
-            scheduler_remove_job(task[0].id)
+        if task and user_id is None and user_id == task.args[0]:
+            scheduler_remove_job(task.id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task with name %s not found" % _name)
 
