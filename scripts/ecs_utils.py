@@ -159,7 +159,7 @@ def image_digest_from_tag(digest_list, tag):
     """
     Look for a container image with a certain tag.
 
-    :param list digest_list: A list of container digests and tags.
+    :param list[str] digest_list: A list of container digests and tags in JSON.
     :param str tag: The tag to search for.
     """
 
@@ -178,7 +178,7 @@ def delete_images_from_repository_by_digest(ecr_client, repository_name, digest_
 
     :param obj ecr_client: The boto ECR (EC2 Container Registry) object.
     :param str repository_name: Name of the repository we're deleting from.
-    :param list digest_list: List of tagged containers found for the particular repository.
+    :param list[str] digest_list: List of tagged containers found for the particular repository (in JSON).
 
     """
 
@@ -204,8 +204,8 @@ def delete_images_from_repository_by_uri(ecr_client, image_list, digest_list):
     a URI to specify a container on a task definition, but deleting the container requires the digest.
 
     :param obj ecr_client: The boto ECR (EC2 Container Registry) object.
-    :param list image_list: List of ECR container URIs to be removed.
-    :param list digest_list: List of tagged containers found for the particular service.
+    :param list[str] image_list: List of ECR container URIs to be removed.
+    :param list[str] digest_list: List of tagged containers found for the particular service (in JSON).
     """
 
     to_delete = []
