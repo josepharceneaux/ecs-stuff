@@ -50,7 +50,7 @@ if [ $production ] ; then
 	fi
 
 	# Update the task definition and restart the service
-	move_command="python scripts/move-stage-to-prod.py ${app} ${version_tag}"
+	move_command="python scripts/move-stage-to-prod.py ${app} --tag ${version_tag}"
 	echo $move_command
 	eval $move_command
     done
