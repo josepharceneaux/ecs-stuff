@@ -446,14 +446,11 @@ class CampaignsTestsHelpers(object):
         if not blasts_url:
             raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
             db.session.commit()
-            blasts = campaign.blasts.all()
-        else:
-            raise_if_not_instance_of(access_token, basestring)
-            raise_if_not_instance_of(blasts_url, basestring)
-            blasts_get_response = send_request('get', blasts_url, access_token)
-            blasts = blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
-        assert blasts
-        return blasts
+            return campaign.blasts.all()
+        raise_if_not_instance_of(access_token, basestring)
+        raise_if_not_instance_of(blasts_url, basestring)
+        blasts_get_response = send_request('get', blasts_url, access_token)
+        return blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
 
     @staticmethod
     def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=20):
@@ -519,13 +516,6 @@ class CampaignsTestsHelpers(object):
         if not blast_url:
             raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
             db.session.commit()
-            assert campaign.blasts[blast_index].sends == expected_count
-        else:
-            raise_if_not_instance_of(access_token, basestring)
-            raise_if_not_instance_of(blast_url, basestring)
-            response = send_request('get', blast_url, access_token)
-            if response.ok:
-                assert response.json()['blast']['sends'] == expected_count
             try:
                 if campaign.blasts[blast_index].sends == expected_count:
                     return campaign.blasts[blast_index].sends
@@ -533,12 +523,13 @@ class CampaignsTestsHelpers(object):
                     return False
             except IndexError:
                 return False
+        else:
+            raise_if_not_instance_of(access_token, basestring)
+            raise_if_not_instance_of(blast_url, basestring)
+            response = send_request('get', blast_url, access_token)
+            if response.ok:
+                assert response.json()['blast']['sends'] == expected_count
 
-        raise_if_not_instance_of(access_token, basestring)
-        raise_if_not_instance_of(blast_url, basestring)
-        response = send_request('get', blast_url, access_token)
-        if response.ok:
-            return response.json()['blast']['sends'] == expected_count
 
     @staticmethod
     def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=100,
@@ -664,12 +655,12 @@ class CampaignsTestsHelpers(object):
                          create_smartlist_from_api(data=smartlist_data2, access_token=access_token)['smartlist']['id']]
         if assert_candidates:
             for smartlist_id in smartlist_ids:
-                assert poll(assert_smartlist_candidates, step=3,
-                            args=(smartlist_id, len(candidate_id), access_token), timeout=timeout), \
-                            'Candidates not found for smartlist(id:%s)' % smartlist_id
+                attempts = timeout / 3 + 1
+                assert retry(assert_smartlist_candidates, sleeptime=3, attempts=attempts, sleepscale=1,
+                             args=(smartlist_id, len(candidate_id), access_token), retry_exceptions=(AssertionError,)),\
+                    'Candidates not found for smartlist(id:%s)' % smartlist_id
+
         return smartlist_ids
-
-
 
     @staticmethod
     def assign_roles(user, roles=(DomainRole.Roles.CAN_ADD_CANDIDATES,
