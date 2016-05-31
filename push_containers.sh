@@ -61,6 +61,7 @@ else
 
     for app in ${FLASK_APPS}
     do
+	# Tag the image with a timestamp
 	tag_command="docker tag -f gettalent/${app} ${ecr_registry_url}/gettalent/${app}:${timestamp_tag}"
 	echo $tag_command
         eval $tag_command
@@ -68,6 +69,7 @@ else
 	    continue
 	fi
 
+	# Push the image to our repository
 	push_command="docker push ${ecr_registry_url}/gettalent/${app}:${timestamp_tag}"
 	echo $push_command
         eval $push_command
@@ -85,4 +87,5 @@ else
     echo "Tagging branch with ${timestamp_tag}"
     git tag -a ${timestamp_tag} -m "Adding timestamp tag"
     git push origin ${timestamp_tag}
+
 fi
