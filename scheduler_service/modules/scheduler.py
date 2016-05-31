@@ -165,7 +165,7 @@ def validate_periodic_job(data):
     return valid_data
 
 
-def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=False):
+def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=False, request_method="post"):
     """
     Function callback to run when job time comes, this method is called by APScheduler
     :param user_id:
@@ -216,7 +216,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
 
     logger.info('Queueing data send. User ID: %s, URL: %s, Content-Type: %s', user_id, url, content_type)
     # Call celery task to send post_data to URL
-    send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, is_jwt_request],
+    send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, is_jwt_request, request_method],
                              serializer='json',
                              queue=SchedulerUtils.QUEUE,
                              routing_key=SchedulerUtils.CELERY_ROUTING_KEY)
