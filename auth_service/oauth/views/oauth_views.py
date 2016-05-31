@@ -1,11 +1,16 @@
 
 __author__ = 'ufarooqi'
 
+from werkzeug.security import gen_salt
 from auth_service.oauth import app, logger
 from auth_service.oauth import gt_oauth
 from auth_service.common.error_handling import *
 from auth_service.common.routes import AuthApi, AuthApiV2
-from auth_service.oauth.oauth_utilities import authenticate_user, save_token_v2, redis_store, authenticate_request
+from user_service.common.models.user import DomainRole
+from user_service.common.utils.auth_utils import require_all_roles, require_oauth
+from auth_service.common.models.user import User
+from auth_service.oauth.oauth_utilities import (authenticate_user, save_token_v2,
+                                                redis_store, authenticate_request, load_client, save_token_v1)
 
 
 @app.route(AuthApiV2.TOKEN_CREATE, methods=['POST'])
@@ -48,6 +53,29 @@ def authorize_v2():
     return jsonify(user_id=authenticated_user.id)
 
 
+@app.route(AuthApiV2.TOKEN_OF_ANY_USER)
+@require_oauth()
+@require_all_roles(DomainRole.Roles.CAN_IMPERSONATE_USERS)
+def access_token_of_user_v2(user_id):
+    """
+    GET /users/<user_id>/access_token Create Access token for a user
+    :param user_id: Id of user
+    :return: A dictionary containing bearer token information for that user
+    :rtype: dict
+    """
+
+    user_object = User.query.get(user_id)
+
+    if not user_object:
+        raise NotFoundError("User with user_id %s doesn't exist" % user_id)
+
+    if user_object.domain_id != request.user.id:
+        raise UnauthorizedError("User %s doesn't have appropriate permission to get access_token "
+                                "of user %s of different domain", request.user.id, user_id)
+
+    return save_token_v2(user_object)
+
+
 gt_oauth.grantgetter(lambda *args, **kwargs: None)
 gt_oauth.grantsetter(lambda *args, **kwargs: None)
 
@@ -78,3 +106,40 @@ def authorize():
     user = request.oauth.user
     logger.info('User %s has been authorized to access getTalent api', user.id)
     return jsonify(user_id=user.id)
+
+
+@app.route(AuthApi.TOKEN_OF_ANY_USER)
+@require_oauth()
+@require_all_roles(DomainRole.Roles.CAN_IMPERSONATE_USERS)
+def access_token_of_user(user_id):
+    """
+    GET /users/<user_id>/access_token?client_id=HpllhpiCXjokvk2djOinLvioudW6yh29qanD7Fu3 Create Access token for a user
+    :param user_id: Id of user
+    :return: A dictionary containing bearer token information for that user
+    :rtype: dict
+    """
+
+    client_id = request.args.get('client_id', '')
+    user_object = User.query.get(user_id)
+
+    if not user_object:
+        raise NotFoundError("User with user_id %s doesn't exist" % user_id)
+
+    if user_object.domain_id != request.user.id:
+        raise UnauthorizedError("User %s doesn't have appropriate permission to get access_token "
+                                "of user %s of different domain", request.user.id, user_id)
+
+    request.client = load_client(client_id)
+    if not request.client:
+        raise NotFoundError("Either client_id is missing or invalid")
+
+    request.user = user_object
+    token = dict(
+        access_token=gen_salt(30),
+        refresh_token=gen_salt(30),
+        token_type='Bearer',
+        scope=''
+    )
+
+    save_token_v1(token, request)
+    return jsonify(token), 200

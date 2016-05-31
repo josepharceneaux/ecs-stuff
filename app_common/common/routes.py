@@ -149,6 +149,7 @@ class AuthApi(object):
     TOKEN_CREATE = RELATIVE_VERSION % 'oauth2/token'
     TOKEN_REVOKE = RELATIVE_VERSION % 'oauth2/revoke'
     AUTHORIZE = RELATIVE_VERSION % 'oauth2/authorize'
+    TOKEN_OF_ANY_USER = RELATIVE_VERSION % 'users/<int:user_id>/token'
 
 
 class AuthApiV2(object):
@@ -161,6 +162,7 @@ class AuthApiV2(object):
     TOKEN_REFRESH = RELATIVE_VERSION % 'oauth2/refresh'
     TOKEN_REVOKE = RELATIVE_VERSION % 'oauth2/revoke'
     AUTHORIZE = RELATIVE_VERSION % 'oauth2/authorize'
+    TOKEN_OF_ANY_USER = RELATIVE_VERSION % 'users/<int:user_id>/token'
 
 
 class AuthApiUrl(object):
@@ -173,6 +175,7 @@ class AuthApiUrl(object):
     TOKEN_CREATE = HOST_NAME % AuthApi.TOKEN_CREATE
     TOKEN_REVOKE = HOST_NAME % AuthApi.TOKEN_REVOKE
     AUTHORIZE = HOST_NAME % AuthApi.AUTHORIZE
+    TOKEN_OF_ANY_USER = HOST_NAME % AuthApi.TOKEN_OF_ANY_USER
 
 
 class AuthApiUrlV2(object):
@@ -186,6 +189,7 @@ class AuthApiUrlV2(object):
     TOKEN_REFRESH = HOST_NAME % AuthApiV2.TOKEN_REFRESH
     TOKEN_REVOKE = HOST_NAME % AuthApiV2.TOKEN_REVOKE
     AUTHORIZE = HOST_NAME % AuthApiV2.AUTHORIZE
+    TOKEN_OF_ANY_USER = HOST_NAME % AuthApi.TOKEN_OF_ANY_USER
 
 
 class ActivityApi(object):
