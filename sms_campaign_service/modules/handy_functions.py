@@ -49,7 +49,6 @@ class TwilioSMS(object):
         self.phone_type = 'local'
         self.sms_enabled = True
         # default value of sms_call_back_url is 'http://demo.twilio.com/docs/sms.xml'
-        # TODO: Until app is up, will use ngrok address
         self.sms_call_back_url = SmsCampaignApiUrl.RECEIVE
         self.sms_method = 'POST'
 
