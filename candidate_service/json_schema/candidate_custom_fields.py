@@ -17,7 +17,7 @@ ccf_schema = {
                     },
                     "value": {
                         "type": ["string", "null"],
-                        "minLength": 2,
+                        "minLength": 1,
                         "maxLength": 255
                     }
                 }

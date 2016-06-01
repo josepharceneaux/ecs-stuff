@@ -10,21 +10,16 @@ import sys
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles
+from helpers import AddUserRoles, get_response
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 
 # Custom errors
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
-OK = 200
-CREATED = 201
-INVALID = 400
-UNAUTHORIZED = 401
-FORBIDDEN = 403
-NOT_FOUND = 404
 VALUE = fake.word()
 MAX_INT = sys.maxint
+URL = CandidateApiUrl.CUSTOM_FIELDS
 
 
 class TestCreateCandidateCustomField(object):
@@ -40,15 +35,15 @@ class TestCreateCandidateCustomField(object):
         }
 
         # Add candidate custom fields for candidate
-        create_resp = send_request('post', CandidateApiUrl.CUSTOM_FIELDS % candidate_first.id, access_token_first, data)
+        create_resp = send_request('post', URL % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == CREATED
+        assert create_resp.status_code == requests.codes.CREATED
 
         # Retrieve candidate custom field via ID
         ccf_id = create_resp.json()['candidate_custom_fields'][0]['id']
         get_resp = send_request('get', CandidateApiUrl.CUSTOM_FIELD % (candidate_first.id, ccf_id), access_token_first)
         print response_info(get_resp)
-        assert get_resp.status_code == OK
+        assert get_resp.status_code == requests.codes.OK
         assert get_resp.json()['candidate_custom_field']['value'] == data['candidate_custom_fields'][0]['value'].strip()
 
     def test_add_candidate_custom_field_with_whitespaced_value(self, access_token_first, user_first,
@@ -64,15 +59,15 @@ class TestCreateCandidateCustomField(object):
         }
 
         # Add candidate custom fields for candidate
-        create_resp = send_request('post', CandidateApiUrl.CUSTOM_FIELDS % candidate_first.id, access_token_first, data)
+        create_resp = send_request('post', URL % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == CREATED
+        assert create_resp.status_code == requests.codes.CREATED
 
         # Retrieve candidate custom field via ID
         ccf_id = create_resp.json()['candidate_custom_fields'][0]['id']
         get_resp = send_request('get', CandidateApiUrl.CUSTOM_FIELD % (candidate_first.id, ccf_id), access_token_first)
         print response_info(get_resp)
-        assert get_resp.status_code == OK
+        assert get_resp.status_code == requests.codes.OK
         assert get_resp.json()['candidate_custom_field']['custom_field_id'] == domain_custom_fields[0].id
         assert get_resp.json()['candidate_custom_field']['value'] == data['candidate_custom_fields'][0]['value'].strip()
 
@@ -87,9 +82,9 @@ class TestCreateCandidateCustomField(object):
         data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id}]}
 
         # Add candidate custom fields for candidate
-        create_resp = send_request('post', CandidateApiUrl.CUSTOM_FIELDS % candidate_first.id, access_token_first, data)
+        create_resp = send_request('post', URL % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == INVALID
+        assert create_resp.status_code == requests.codes.BAD
 
     def test_add_using_unauthorized_user_domain(self, access_token_second, user_second, domain_custom_fields,
                                                 candidate_first):
@@ -101,10 +96,10 @@ class TestCreateCandidateCustomField(object):
         data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id, 'value': VALUE}]}
 
         # Add candidate custom fields for candidate
-        create_resp = send_request('post', CandidateApiUrl.CUSTOM_FIELDS % candidate_first.id,
+        create_resp = send_request('post', URL % candidate_first.id,
                                    access_token_second, data)
         print response_info(create_resp)
-        assert create_resp.status_code == FORBIDDEN
+        assert create_resp.status_code == requests.codes.FORBIDDEN
         assert create_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
     def test_add_using_invalid_custom_field_id(self, access_token_first, user_first, candidate_first):
@@ -116,9 +111,9 @@ class TestCreateCandidateCustomField(object):
         data = {'candidate_custom_fields': [{'custom_field_id': MAX_INT, 'value': VALUE}]}
 
         # Add candidate custom fields for candidate
-        create_resp = send_request('post', CandidateApiUrl.CUSTOM_FIELDS % candidate_first.id, access_token_first, data)
+        create_resp = send_request('post', URL % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == NOT_FOUND
+        assert create_resp.status_code == requests.codes.NOT_FOUND
         assert create_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_NOT_FOUND
 
 
@@ -133,7 +128,7 @@ class TestGetCandidateCustomField(object):
         data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id, 'value': VALUE}]}
 
         # Add candidate custom fields for candidate
-        create_resp = send_request('post', CandidateApiUrl.CUSTOM_FIELDS % candidate_first.id, access_token_first, data)
+        create_resp = send_request('post', URL % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
 
         # Retrieve ccf using a different candidate ID
@@ -141,7 +136,7 @@ class TestGetCandidateCustomField(object):
         url = CandidateApiUrl.CUSTOM_FIELD % (candidate_second.id, ccf_id)
         get_resp = send_request('get', url, access_token_first)
         print response_info(get_resp)
-        assert get_resp.status_code == FORBIDDEN
+        assert get_resp.status_code == requests.codes.FORBIDDEN
         assert get_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
 
     def test_get_non_existing_ccf(self, access_token_first, user_first, candidate_first):
@@ -154,31 +149,29 @@ class TestGetCandidateCustomField(object):
         # Retrieve ccf
         get_resp = send_request('get', CandidateApiUrl.CUSTOM_FIELD % (candidate_first.id, MAX_INT), access_token_first)
         print response_info(get_resp)
-        assert get_resp.status_code == NOT_FOUND
+        assert get_resp.status_code == requests.codes.NOT_FOUND
         assert get_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_NOT_FOUND
 
-        # TODO: Test fails consistently in CI although passes inconsistently locally - Amir
-        # def test_get_ccf_outside_of_users_domain(self, access_token_second, user_second, domain_custom_fields,
-        #                                          user_second_candidate, candidate_first, user_first, access_token_first):
-        #     """
-        #     Test:  Attempt to retrieve ccf that do not belong to user's domain
-        #     Expect: 403
-        #     """
-        #     db.session.commit()
-        #     AddUserRoles.add_and_get(user_second)
-        #     AddUserRoles.add_and_get(user_first)
-        #
-        #     # Create candidate custom field
-        #     data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id}]}
-        #     create_resp = send_request('post', CandidateApiUrl.CUSTOM_FIELDS % candidate_first.id, access_token_first, data)
-        #     print response_info(create_resp)
-        #
-        #     # Retrieve candidate custom field
-        #     url = CandidateApiUrl.CUSTOM_FIELD % (user_second_candidate.id, domain_custom_fields[0].id)
-        #     get_resp = send_request('get', url, access_token_second)
-        #     print response_info(get_resp)
-        #     assert get_resp.status_code == 403
-        #     assert get_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
+    def test_get_ccf_outside_of_users_domain(self, access_token_second, user_second, domain_custom_fields,
+                                             user_second_candidate, candidate_first, user_first, access_token_first):
+        """
+        Test:  Attempt to retrieve ccf that do not belong to user's domain
+        Expect: 403
+        """
+        AddUserRoles.all_roles(user_second)
+        AddUserRoles.all_roles(user_first)
+
+        # Create candidate custom field
+        data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id, 'value': VALUE}]}
+        create_resp = send_request('post', URL % candidate_first.id, access_token_first, data)
+        print response_info(create_resp)
+
+        # Retrieve candidate custom field
+        url = CandidateApiUrl.CUSTOM_FIELD % (user_second_candidate.id, domain_custom_fields[0].id)
+        get_resp = get_response('get', url, access_token_second, requests.codes.FORBIDDEN)
+        print response_info(get_resp)
+        assert get_resp.status_code == requests.codes.FORBIDDEN
+        assert get_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
 
 
 class TestDeleteCandidateCustomField(object):
@@ -192,7 +185,7 @@ class TestDeleteCandidateCustomField(object):
         data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id, 'value': VALUE}]}
 
         # Add candidate custom fields for candidate
-        create_resp = send_request('post', CandidateApiUrl.CUSTOM_FIELDS % candidate_first.id, access_token_first, data)
+        create_resp = send_request('post', URL % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
 
         # Retrieve ccf using a different candidate ID
@@ -200,7 +193,7 @@ class TestDeleteCandidateCustomField(object):
         url = CandidateApiUrl.CUSTOM_FIELD % (candidate_second.id, ccf_id)
         del_resp = send_request('delete', url, access_token_first)
         print response_info(del_resp)
-        assert del_resp.status_code == FORBIDDEN
+        assert del_resp.status_code == requests.codes.FORBIDDEN
         assert del_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
 
     def test_delete_non_existing_ccf(self, access_token_first, user_first, candidate_first):
@@ -214,20 +207,18 @@ class TestDeleteCandidateCustomField(object):
         url = CandidateApiUrl.CUSTOM_FIELD % (candidate_first.id, MAX_INT)
         del_resp = send_request('delete', url, access_token_first)
         print response_info(del_resp)
-        assert del_resp.status_code == NOT_FOUND
+        assert del_resp.status_code == requests.codes.NOT_FOUND
         assert del_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_NOT_FOUND
 
-        # TODO: Test fails consistently in CI although passes inconsistently locally - Amir
-        # def test_delete_ccf_outside_of_users_domain(self, access_token_second, user_second, domain_custom_fields,
-        #                                             user_second_candidate):
-        #     """
-        #     Test:  Attempt to delete ccf that do not belong to user's domain
-        #     Expect: 403
-        #     """
-        #     db.session.commit()
-        #     AddUserRoles.all_roles(user_second)
-        #     url = CandidateApiUrl.CUSTOM_FIELD % (user_second_candidate.id, domain_custom_fields[0].id)
-        #     del_resp = send_request('delete', url, access_token_second)
-        #     print response_info(del_resp)
-        #     assert del_resp.status_code == 403
-        #     assert del_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
+    def test_delete_ccf_outside_of_users_domain(self, access_token_second, user_second,
+                                                domain_custom_fields, user_second_candidate):
+        """
+        Test:  Attempt to delete ccf that do not belong to user's domain
+        Expect: 403
+        """
+        AddUserRoles.all_roles(user_second)
+        url = CandidateApiUrl.CUSTOM_FIELD % (user_second_candidate.id, domain_custom_fields[0].id)
+        del_resp = get_response('delete', url, access_token_second, requests.codes.FORBIDDEN)
+        print response_info(del_resp)
+        assert del_resp.status_code == requests.codes.FORBIDDEN
+        assert del_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
