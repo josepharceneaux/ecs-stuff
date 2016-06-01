@@ -135,7 +135,7 @@ class AuthApiUrl(object):
     """
     Rest URLs of auth_service
     """
-    VERSION = AuthApi.VERSION
+    VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME, GTApis.AUTH_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     TOKEN_CREATE = HOST_NAME % ('/' + VERSION + '/oauth2/token')
@@ -158,7 +158,7 @@ class AuthApiUrlV2(object):
     """
     Rest URLs of auth_service
     """
-    VERSION = AuthApiV2.VERSION
+    VERSION = 'v2'
     HOST_NAME = _get_host_name(GTApis.AUTH_SERVICE_NAME, GTApis.AUTH_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     TOKEN_CREATE = HOST_NAME % ('/' + VERSION + '/oauth2/token')
@@ -184,7 +184,7 @@ class ActivityApiUrl(object):
     """
     Rest URLs of activity_service
     """
-    VERSION = ActivityApi.VERSION
+    VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.ACTIVITY_SERVICE_NAME, GTApis.ACTIVITY_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     ACTIVITIES = HOST_NAME % ('/' + VERSION + '/activities/')
@@ -205,7 +205,7 @@ class ResumeApiUrl(object):
     """
     Rest URLs of resume_parsing_service
     """
-    VERSION = ResumeApi.VERSION
+    VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.RESUME_PARSING_SERVICE_NAME, GTApis.RESUME_PARSING_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     BASE_URL = HOST_NAME % ('/' + VERSION + '/%s')
@@ -242,7 +242,7 @@ class UserServiceApiUrl(object):
     """
     Rest URLs of user_service
     """
-    VERSION = UserServiceApi.VERSION
+    VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.USER_SERVICE_NAME, GTApis.USER_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     USERS = HOST_NAME % ('/' + VERSION + '/users')
@@ -350,7 +350,7 @@ class CandidateApiUrl(object):
     """
     Rest URLs of candidate_service
     """
-    VERSION = CandidateApi.VERSION
+    VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.CANDIDATE_SERVICE_NAME, GTApis.CANDIDATE_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     CANDIDATES = HOST_NAME % ('/' + VERSION + '/candidates')
@@ -446,7 +446,7 @@ class WidgetApiUrl(object):
     """
     Rest URLs of widget_service
     """
-    VERSION = WidgetApi.VERSION
+    VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.WIDGET_SERVICE_NAME, GTApis.WIDGET_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     DOMAINS = HOST_NAME % ('/' + VERSION + '/domains')
@@ -494,7 +494,7 @@ class CandidatePoolApiUrl(object):
     """
     Rest URLs of candidate_pool_service
     """
-    VERSION = CandidatePoolApi.VERSION
+    VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.CANDIDATE_POOL_SERVICE_NAME, GTApis.CANDIDATE_POOL_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     # Talent Pool
@@ -538,7 +538,7 @@ class SpreadsheetImportApiUrl(object):
     """
     Rest URLs of spreadsheet_import_service
     """
-    VERSION = SpreadsheetImportApi.VERSION
+    VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.SPREADSHEET_IMPORT_SERVICE_NAME, GTApis.SPREADSHEET_IMPORT_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     CONVERT_TO_TABLE = HOST_NAME % ('/' + VERSION + '/parse_spreadsheet/convert_to_table')
@@ -567,9 +567,9 @@ class SchedulerApiUrl(object):
     """
     Rest URLs of scheduler_service
     """
+    VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME, GTApis.SCHEDULER_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    VERSION = SchedulerApi.VERSION
     # URLs, in case of test cases
     TASKS = HOST_NAME % ('/' + VERSION + '/tasks')
     TASK = HOST_NAME % ('/' + VERSION + '/tasks/id/%s')
@@ -613,9 +613,9 @@ class SocialNetworkApiUrl(object):
     """
     API relative URLs for social_network_service
     """
+    VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME, GTApis.SOCIAL_NETWORK_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    VERSION = SocialNetworkApi.VERSION
     # TODO: Make this URL dynamic i.e different for staging, dev or prod
     UI_APP_URL = 'http://localhost:3000'
     EVENTS = HOST_NAME % ('/' + VERSION + '/events')
@@ -682,9 +682,9 @@ class SmsCampaignApiUrl(object):
     This class contains the REST URLs of sms_campaign_service
     """
     """ Endpoints' complete URLs for pyTests """
+    VERSION = 'v1'
     # HOST_NAME is http://127.0.0.1:8012 for dev
     HOST_NAME = _get_host_name(GTApis.SMS_CAMPAIGN_SERVICE_NAME, GTApis.SMS_CAMPAIGN_SERVICE_PORT)
-    VERSION = SmsCampaignApi.VERSION
     CAMPAIGNS = HOST_NAME % ('/' + VERSION + '/sms-campaigns')
     CAMPAIGN = HOST_NAME % ('/' + VERSION + '/sms-campaigns/%s')
     SCHEDULE = HOST_NAME % ('/' + VERSION + '/sms-campaigns/%s/schedule')
@@ -735,7 +735,7 @@ class PushCampaignApiUrl(object):
     """
     This class contains the REST URLs of push_campaign_service
     """
-    VERSION = PushCampaignApi.VERSION
+    VERSION = 'v1'
     """ Endpoints' complete URLs for pyTests """
     # HOST_NAME is http://127.0.0.1:8013 for dev
     HOST_NAME = _get_host_name(GTApis.PUSH_CAMPAIGN_SERVICE_NAME, GTApis.PUSH_CAMPAIGN_SERVICE_PORT)
@@ -781,7 +781,7 @@ class EmailCampaignApiUrl(object):
     """
     This class contains URLs to be used in Py-tests
     """
-    VERSION = EmailCampaignApi.VERSION
+    VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.EMAIL_CAMPAIGN_SERVICE_NAME, GTApis.EMAIL_CAMPAIGN_SERVICE_PORT)
     CAMPAIGNS = HOST_NAME % ('/' + VERSION + '/email-campaigns')
     CAMPAIGN = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s')
