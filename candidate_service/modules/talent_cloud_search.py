@@ -885,7 +885,7 @@ def get_faceting_information(facets):
         search_facets_values['total_months_experience'] = get_bucket_facet_value_count(facet_total_months_experience)
 
     if facet_tags:
-        search_facets_values['tag_ids'] = get_facet_info_with_ids(Tag, facet_tags, 'name')
+        search_facets_values['tags'] = get_facet_info_with_ids(Tag, facet_tags, 'name')
 
     # TODO: productFacet, customFieldKP facets are remaining, how to do it?
     if facet_custom_field_id_and_value:
