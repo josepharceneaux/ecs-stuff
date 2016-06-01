@@ -47,89 +47,124 @@ def process_resume(parse_params):
     :param dict parse_params:
     :return: dict: {'candidate': {...}, 'raw': {...}}
     """
+
     filepicker_key = parse_params.get('filepicker_key')
     # None may be explicitly passed so the normal .get('attr', default) doesn't apply here.
     create_candidate = parse_params.get('create_candidate', False)
     talent_pools = parse_params.get('talent_pools')
+
     # Talent pools are the ONLY thing required to create a candidate.
     if create_candidate and not talent_pools:
         raise InvalidUsage('Talent Pools required for candidate creation')
+
     if filepicker_key:
         file_picker_bucket, unused_conn = get_s3_filepicker_bucket_and_conn()
         filename_str = filepicker_key
         resume_bin = resume_file = download_file(file_picker_bucket, filename_str)
+
     elif parse_params.get('filename'):
         resume_bin = parse_params.get('resume_file')
         resume_file = StringIO(resume_bin.read())
         filename_str = parse_params.get('filename')
+
     else:
         raise InvalidUsage('Invalid query params for /parse_resume')
+
     # Parse the actual resume content.
     hashed_file_name = gen_hash_from_file(resume_file)
     cached_resume = redis_store.get(hashed_file_name)
+
     if cached_resume:
         parsed_resume = json.loads(cached_resume)
-        logger.info('Resume %s has been loaded from cache and its hashed_key is %s' % (filename_str, hashed_file_name))
+        logger.info('Resume {} has been loaded from cache and its hashed_key is {}'.format(
+            filename_str, hashed_file_name))
+
     else:
-        logger.info("Couldn't find Resume %s in cache with hashed_key: %s" % (filename_str, hashed_file_name))
+        logger.info('Couldn\'t find Resume {} in cache with hashed_key: {}'.format(filename_str, hashed_file_name))
         parsed_resume = parse_resume(file_obj=resume_file, filename_str=filename_str)
         redis_store.set(hashed_file_name, json.dumps(parsed_resume))
         redis_store.expire(hashed_file_name, RESUME_EXPIRE_TIME)
+
     if not create_candidate:
         return parsed_resume
+
     oauth_string = parse_params.get('oauth')
     parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
+
+    # Upload resumes we want to create candidates from.
     try:
         resume_bin.seek(0)
         s3_url, key = upload_to_s3(resume_bin.read(), 'OriginalFiles', filename_str)
         parsed_resume['candidate']['resume_url'] = filename_str
+
     except Exception as e:
         logger.exception('Failure during s3 upload; reason: {}'.format(e.message))
+
     candidate_references = parsed_resume['candidate'].pop('references', None)
     candidate_post_response = create_parsed_resume_candidate(parsed_resume['candidate'],
                                                              oauth_string)
     response_dict = json.loads(candidate_post_response.content)
+
     if candidate_post_response.status_code is not requests.codes.created:
         # If there was an issue with candidate creation we want to forward the error message and
         # the error code supplied by Candidate Service.
         existing_candidate_id = response_dict.get('error', {}).get('id')
+
         if not existing_candidate_id:
-            raise InvalidUsage(error_message=response_dict.get('error', {}).get(
-                'message', 'Error in candidate creating from resume service.'))
+            candidate_error_message = response_dict.get('error', {}).get('message')
+
+            if candidate_error_message:
+                error_text = candidate_error_message + ' Filename: {}'.format(filename_str)
+
+            else:
+                error_text = 'Error in candidate creating from resume service. Filename {}'.format(
+                    filename_str)
+
+            raise InvalidUsage(error_message=error_text)
+
         # We have a candidate already with this email so lets patch it up
         parsed_resume['candidate']['id'] = existing_candidate_id
         update_response = update_candidate_from_resume(parsed_resume['candidate'], oauth_string)
+
         if update_response.status_code is not requests.codes.ok:
             logger.info("ResumetoCandidateError. {} received from CandidateService (update)".format(
                 update_response.status_code))
+
             raise InternalServerError(
                 'Candidate from {} exists, error updating info'.format(filename_str))
+
         response_dict = json.loads(update_response.content)
         logger.info('Response Dict: {}'.format(response_dict))
 
-
     candidate_id = response_dict.get('candidates')[0]['id']
     logger.debug('Candidate created with id: {}'.format(candidate_id))
+
     if candidate_references:
         post_body = {
             'candidate_references': [
                 {'comments': candidate_references}
             ]
         }
+
         try:
             references_response = requests.post(
                 CandidateApiUrl.REFERENCES % candidate_id, data=json.dumps(post_body),
                 headers={'Authorization': oauth_string,
                          'Content-Type': 'application/json'})
+
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
             logger.warn("process_resume. Connection error creating candidate {} references.".format(candidate_id))
+
         if references_response.status_code is not requests.codes.created:
             logger.warn("process_resume. Error creating candidate {} references. {}".format(
                 candidate_id, references_response.content))
+
     candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id,
                                           headers={'Authorization': oauth_string})
+
     if candidate_get_response.status_code is not requests.codes.ok:
         raise InvalidUsage(error_message='Error retrieving created candidate')
+
     candidate = json.loads(candidate_get_response.content)
     return candidate
 
