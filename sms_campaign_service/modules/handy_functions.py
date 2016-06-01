@@ -25,11 +25,11 @@ from sms_campaign_service.modules.sms_campaign_app_constants import (NGROK_URL, 
 from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
 from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
                                                         ForbiddenError)
-from sms_campaign_service.common.routes import (GTApis, SmsCampaignApi)
 from sms_campaign_service.common.campaign_services.campaign_utils import \
     (raise_if_dict_values_are_not_int_or_long, CampaignUtils)
 from sms_campaign_service.common.utils.validators import format_phone_number
 from sms_campaign_service.common.utils.validators import raise_if_not_instance_of
+from sms_campaign_service.common.routes import (GTApis, SmsCampaignApi, SmsCampaignApiUrl)
 
 # Database models
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast
@@ -50,8 +50,7 @@ class TwilioSMS(object):
         self.sms_enabled = True
         # default value of sms_call_back_url is 'http://demo.twilio.com/docs/sms.xml'
         # TODO: Until app is up, will use ngrok address
-        # self.sms_call_back_url = SmsCampaignApi.RECEIVE
-        self.sms_call_back_url = NGROK_URL % SmsCampaignApi.RECEIVE
+        self.sms_call_back_url = SmsCampaignApiUrl.RECEIVE
         self.sms_method = 'POST'
 
     def validate_a_number(self, phone_number):
