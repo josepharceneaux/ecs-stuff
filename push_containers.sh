@@ -38,8 +38,8 @@ if [ $production ] ; then
 	python scripts/move-stage-to-prod.py ${app}
 
 	# Garbage collect task definitions and container images
-	echo python scripts/garbage-collect-ecs.py ${app} prod
-	python scripts/garbage-collect-ecs.py ${app} prod
+	# echo python scripts/garbage-collect-ecs.py ${app} prod
+	# python scripts/garbage-collect-ecs.py ${app} prod
     done
 
 else
@@ -61,8 +61,8 @@ else
 	python scripts/ecs_task_update.py ${app} ${timestamp_tag} stage restart
 
 	# Garbage collect task definitions and container images
-	echo python scripts/garbage-collect-ecs.py ${app} stage
-	python scripts/garbage-collect-ecs.py ${app} stage
+	# echo python scripts/garbage-collect-ecs.py ${app} stage
+	# python scripts/garbage-collect-ecs.py ${app} stage
     done
 
     # If we've pushed and tagged all the images, tag the branch
