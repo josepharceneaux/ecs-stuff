@@ -165,7 +165,7 @@ def validate_periodic_job(data):
     return valid_data
 
 
-def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=False):
+def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=False, request_method="post"):
     """
     Function callback to run when job time comes, this method is called by APScheduler
     :param user_id:
@@ -216,7 +216,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
 
     logger.info('Queueing data send. User ID: %s, URL: %s, Content-Type: %s', user_id, url, content_type)
     # Call celery task to send post_data to URL
-    send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, is_jwt_request],
+    send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, is_jwt_request, request_method],
                              serializer='json',
                              queue=SchedulerUtils.QUEUE,
                              routing_key=SchedulerUtils.CELERY_ROUTING_KEY)
@@ -269,6 +269,7 @@ def schedule_job(data, user_id=None, access_token=None):
         job_config['is_jwt_request'] = is_jwt_request if is_jwt_request and str(is_jwt_request).lower() == 'true' else None
 
     trigger = str(job_config['task_type']).lower().strip()
+    request_method = job_config.get('request_method', 'post')
 
     callback_method = 'scheduler_service.modules.scheduler:run_job'
 
@@ -284,7 +285,8 @@ def schedule_job(data, user_id=None, access_token=None):
                                     end_date=valid_data['end_datetime'],
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
-                                          job_config['post_data'], job_config.get('is_jwt_request')]
+                                          job_config['post_data'], job_config.get('is_jwt_request'),
+                                          request_method]
                                     )
             # Due to request timeout delay, there will be a delay in scheduling job sometimes.
             # And if start time is passed due to this request delay, then job should be run
@@ -347,6 +349,7 @@ def serialize_task(task, is_admin_api=False):
         task_dict = dict(
                 id=task.id,
                 url=task.args[2],
+                request_method=task.args[6] if len(task.args) >= 7 else "post",
                 start_datetime=task.trigger.start_date,
                 end_datetime=task.trigger.end_date,
                 next_run_datetime=task.next_run_time,
@@ -371,6 +374,7 @@ def serialize_task(task, is_admin_api=False):
                 id=task.id,
                 url=task.args[2],
                 run_datetime=task.trigger.run_date,
+                request_method=task.args[6] if len(task.args) >= 7 else "post",
                 post_data=task.args[4],
                 is_jwt_request=task.args[5],
                 pending=task.pending,
@@ -423,7 +427,7 @@ def get_general_job_id(task_name):
     start_index = 0
     end_index = -1
     job_id = redis_store.lrange(SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % task_name, start_index, end_index)
-    return next(job_id)
+    return job_id[0] if job_id else None
 
 
 def get_all_general_job_ids():
