@@ -172,7 +172,7 @@ def parse_candidate_phones(bs_contact_xml_list):
             if raw_phone and len(raw_phone) <= 20:
 
                 try:
-                    validated_phone = phonenumbers.parse(raw_phone)
+                    unused_validated_phone = phonenumbers.parse(raw_phone)
                     output.append({'value': raw_phone})
 
                 except UnicodeEncodeError:
