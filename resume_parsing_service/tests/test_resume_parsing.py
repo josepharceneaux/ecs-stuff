@@ -399,7 +399,7 @@ def test_already_exists_candidate(token_fixture, user_fixture):
 #     assert response['quantity'] == 1, "Single queue-add count is not 1"
 #
 #
-# # Integration test of the above.
+# Integration test of the above.
 # def test_integration_add_single_item(user_fixture, token_fixture):
 #     print "Single batch item integration test"
 #     """Test adding a single item via end point."""
@@ -422,6 +422,7 @@ def test_already_exists_candidate(token_fixture, user_fixture):
 #     redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
 #     unused_delete_request = requests.delete(SchedulerApiUrl.TASK % (job_id),
 #                                             headers={'Authorization': 'bearer {}'.format(token_fixture.access_token)})
+#
 #
 # def test_add_multiple_queue_items(token_fixture):
 #     """Tests adding n-100 items to a users queue stored in Redis"""
