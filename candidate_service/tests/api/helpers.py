@@ -1,8 +1,11 @@
 """
 Helper functions for tests written for the candidate_service
 """
+import requests
+
 # Third party
 import pycountry as pc
+from redo import retrier
 
 # Models
 from candidate_service.common.models.user import DomainRole
@@ -10,11 +13,15 @@ from candidate_service.common.models.user import DomainRole
 # User Roles
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
+# Error handling
+from candidate_service.common.error_handling import NotFoundError
+
 
 class AddUserRoles(object):
     """
     Class entails functions that will help add specific roles to test-user
     """
+
     @staticmethod
     def get(user):
         return add_role_to_test_user(user, [DomainRole.Roles.CAN_GET_CANDIDATES])
@@ -186,3 +193,22 @@ def get_int_version(x):
         pass
     except TypeError:
         pass
+
+
+def get_response(method, url, access_token, expected_status_code, attempts=10, timeout=100):
+    """
+    Function will make a request to resource until it obtains expected status code or times out
+    :param method:  string | request method, e.g. "get", "post", etc.
+    :param url:     string | resource url
+    :param access_token: string | hashed token for authorization
+    :param expected_status_code:  integer | expected http status code
+    :param timeout: integer | seconds to execute/wait before stopping
+    """
+    assert method.lower() in ["get", "post", "patch", "put", "delete"], "Invalid method"
+    request_method = getattr(requests, method.lower())
+    headers = {"Authorization": "Bearer {}".format(access_token), "content-type": "application/json"}
+    for _ in retrier(attempts=attempts, sleeptime=3, max_sleeptime=timeout):
+        resp = request_method(url, headers=headers)
+        if resp.status_code == expected_status_code:
+            return resp
+    raise NotFoundError('Unable to get expected number of candidates')

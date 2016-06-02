@@ -53,6 +53,10 @@ if [ $production ] ; then
 	move_command="python scripts/move-stage-to-prod.py ${app} --tag ${version_tag}"
 	echo $move_command
 	eval $move_command
+
+	# Garbage collect task definitions and container images
+	gc_command="python scripts/garbage-collect-ecs.py ${app} prod"
+	eval $gc_command
     done
 
 else
@@ -81,6 +85,10 @@ else
 	move_command="python ecs_task_update.py ${app} ${timestamp_tag} stage restart"
 	echo $move_command
 	eval $move_command
+
+	# Garbage collect task definitions and container images
+	gc_command="python scripts/garbage-collect-ecs.py ${app} stage"
+	eval $gc_command
     done
 
     # If we've pushed and tagged all the images, tag the branch
