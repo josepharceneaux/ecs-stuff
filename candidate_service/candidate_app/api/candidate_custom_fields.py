@@ -12,13 +12,14 @@ from candidate_service.common.models.misc import CustomField
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 from candidate_service.modules.validators import (
-    get_candidate_if_validated, does_candidate_belong_to_users_domain,
-    does_candidate_cf_exist, is_custom_field_authorized, get_json_data_if_validated
+    get_candidate_if_validated, does_candidate_cf_exist, is_custom_field_authorized, get_json_data_if_validated
 )
 from candidate_service.json_schema.candidate_custom_fields import ccf_schema
 # Error handling
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
+# Cloud search
+from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 
 
 class CandidateCustomFieldResource(Resource):
@@ -74,6 +75,7 @@ class CandidateCustomFieldResource(Resource):
                 db.session.commit()
                 created_ccf_ids.append(candidate_custom_field.id)
 
+        upload_candidate_documents([candidate_id])
         return {'candidate_custom_fields': [{'id': custom_field_id} for custom_field_id in created_ccf_ids]}, 201
 
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)

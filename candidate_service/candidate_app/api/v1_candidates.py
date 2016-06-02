@@ -76,9 +76,7 @@ from candidate_service.modules.talent_candidates import (
 )
 from candidate_service.modules.candidate_engagement import calculate_candidate_engagement_score
 from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
-from candidate_service.modules.talent_cloud_search import (
-    upload_candidate_documents, delete_candidate_documents
-)
+from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 from candidate_service.modules.talent_openweb import (
     match_candidate_from_openweb, convert_dice_candidate_dict_to_gt_candidate_dict,
     find_in_openweb_by_email
