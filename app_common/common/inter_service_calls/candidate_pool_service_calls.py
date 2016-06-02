@@ -105,6 +105,4 @@ def assert_smartlist_candidates(smartlist_id, expected_count, access_token=None)
     raise_if_not_instance_of(smartlist_id, (int, long))
     raise_if_not_instance_of(expected_count, (int, long))
     candidates = get_candidates_of_smartlist(list_id=smartlist_id, candidate_ids_only=True, access_token=access_token)
-    if len(candidates) == expected_count:
-        return True
-    return False
+    assert len(candidates) == expected_count

@@ -433,7 +433,7 @@ class CampaignsTestsHelpers(object):
         if blasts_url:
             blasts_url = blasts_url % campaign_id
         blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, access_token,
-                                                               blasts_url=blasts_url)
+                                                               blasts_url=blasts_url, timeout=100)
         if not blasts:
             raise UnprocessableEntity('blasts not found in given time range.')
         return response
@@ -453,7 +453,7 @@ class CampaignsTestsHelpers(object):
         return blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
 
     @staticmethod
-    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=100):
+    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=200):
         """
         This polls the result of blasts of a campaign for given timeout (default 10s).
         """
@@ -462,8 +462,8 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
         attempts = timeout / 3 + 1
-        return retry(CampaignsTestsHelpers.get_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
-                     args=(campaign, access_token, blasts_url), retry_exceptions=(AssertionError,))
+        return retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
+                     args=(campaign, access_token, blasts_url, 1), retry_exceptions=(AssertionError,))
 
     @staticmethod
     def get_blast_by_index_with_polling(campaign, blast_index=0, access_token=None,
@@ -515,13 +515,8 @@ class CampaignsTestsHelpers(object):
         if not blast_url:
             raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
             db.session.commit()
-            try:
-                if campaign.blasts[blast_index].sends == expected_count:
-                    return campaign.blasts[blast_index].sends
-                else:
-                    return False
-            except IndexError:
-                return False
+            assert campaign.blasts[blast_index].sends == expected_count
+            return campaign.blasts[blast_index].sends
 
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(blast_url, basestring)
@@ -543,8 +538,8 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(blast_url, basestring) if blast_url else None
         attempts = abort_time_for_sends / 3 + 1
         sends_verified = retry(CampaignsTestsHelpers.verify_sends, sleeptime=3, attempts=attempts, sleepscale=1,
-              args=(campaign, expected_count, blast_index, blast_url, access_token),
-              retry_exceptions=(AssertionError,))
+                               args=(campaign, expected_count, blast_index, blast_url, access_token),
+                               retry_exceptions=(AssertionError,))
         assert sends_verified
 
     @staticmethod
@@ -559,13 +554,11 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         received_blasts = CampaignsTestsHelpers.get_blasts(campaign, access_token,
-                                                                     blasts_url)
-        if len(received_blasts) == expected_count:
-            return received_blasts
-        else:
-            print 'Expected Blasts:%s' % expected_count
-            print 'Received Blasts:%s' % len(received_blasts)
-            return False
+                                                           blasts_url)
+        print 'Expected Blasts:%s' % expected_count
+        print 'Received Blasts:%s' % len(received_blasts)
+        assert len(received_blasts) == expected_count
+        return received_blasts
 
     @staticmethod
     def assert_campaign_blasts(campaign, expected_count, access_token=None, blasts_url=None, timeout=10):

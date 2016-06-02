@@ -61,6 +61,7 @@ def check_is_bounced(email):
     :return: value of is_bounced (0 or 1)
     """
     db.session.commit()
+    assert email.is_bounced
     return email.is_bounced
 
 
