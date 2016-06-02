@@ -411,7 +411,7 @@ class CampaignsTestsHelpers(object):
                 assert json_response[entity]
 
     @staticmethod
-    def send_campaign(url, campaign, access_token, blasts_url=None):
+    def send_campaign(url, campaign, access_token, blasts_url=None, expected_count=1):
         """
         This function sends the campaign via /v1/email-campaigns/:id/send or
         /v1/sms-campaigns/:id/send depending on campaign type.
@@ -420,6 +420,7 @@ class CampaignsTestsHelpers(object):
         :param (dict | SmsCampaign | EmailCampaign | PushCampaign) campaign: Campaign object
         :param (str) access_token: Auth access_token to make HTTP request
         :param (str | None) blasts_url: URL to get blasts of given campaign
+        :param (int |ling) expected_count: Expected count for blasts
         """
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
@@ -433,7 +434,8 @@ class CampaignsTestsHelpers(object):
         if blasts_url:
             blasts_url = blasts_url % campaign_id
         blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, access_token,
-                                                               blasts_url=blasts_url, timeout=100)
+                                                               blasts_url=blasts_url, expected_count=expected_count,
+                                                               timeout=100)
         if not blasts:
             raise UnprocessableEntity('blasts not found in given time range.')
         return response
@@ -453,7 +455,7 @@ class CampaignsTestsHelpers(object):
         return blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
 
     @staticmethod
-    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=200):
+    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, expected_count=1, timeout=200):
         """
         This polls the result of blasts of a campaign for given timeout (default 10s).
         """
@@ -463,7 +465,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(timeout, int)
         attempts = timeout / 3 + 1
         return retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
-                     args=(campaign, access_token, blasts_url, 1), retry_exceptions=(AssertionError,))
+                     args=(campaign, access_token, blasts_url, expected_count), retry_exceptions=(AssertionError,))
 
     @staticmethod
     def get_blast_by_index_with_polling(campaign, blast_index=0, access_token=None,

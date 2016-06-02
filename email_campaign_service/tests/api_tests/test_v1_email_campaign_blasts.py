@@ -98,9 +98,9 @@ class TestEmailCampaignBlasts(object):
         assert received_blast_obj['sends'] == expected_sends_count
 
         # sending campaign 9 times to create  blast objects
-        for _ in xrange(1, 10):
+        for index in xrange(1, 10):
             CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND,
-                                                sent_campaign, access_token_first)
+                                                sent_campaign, access_token_first, expected_count=index+1)
         attempts = 300 / 3 + 1
         retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
               args=(sent_campaign, access_token_first, None, 10), retry_exceptions=(AssertionError,))
