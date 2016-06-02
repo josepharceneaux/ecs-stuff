@@ -2,8 +2,8 @@
 This modules run the service on specific port
 """
 from push_campaign_app.app import app
-from common.routes import GTApis
-from common.custom_contracts import define_custom_contracts
+from push_campaign_service.common.routes import GTApis
+from push_campaign_service.common.custom_contracts import define_custom_contracts
 
 if __name__ == "__main__":
     define_custom_contracts()
