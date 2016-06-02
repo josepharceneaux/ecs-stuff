@@ -21,7 +21,7 @@ from candidate_service.common.models.misc import AreaOfInterest, CustomField
 from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
                                                      SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
-from candidate_service.common.error_handling import InvalidUsage, NotFoundError
+from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from ..custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.validators import is_number
 from candidate_service.common.utils.validators import format_phone_number
@@ -56,6 +56,30 @@ def get_candidate_if_exists(candidate_id):
     if candidate.is_web_hidden:
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
                             error_code=custom_error.CANDIDATE_IS_HIDDEN)
+    return candidate
+
+
+def get_candidate_if_validated(user, candidate_id):
+    """
+    Function will return candidate if:
+        1. it exists
+        2. not hidden, and
+        3. belongs to user's domain
+    :type user: User
+    :type candidate_id: int | long
+    :rtype: Candidate
+    """
+    candidate = Candidate.get(candidate_id)
+    if not candidate:
+        raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
+                            error_code=custom_error.CANDIDATE_NOT_FOUND)
+    if candidate.is_web_hidden:
+        raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
+                            error_code=custom_error.CANDIDATE_IS_HIDDEN)
+
+    if candidate.user.domain_id != user.domain_id:
+        raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+
     return candidate
 
 
@@ -258,7 +282,7 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "military_highest_grade": 'string_list',
     "military_end_date_from": 'digit',
     "military_end_date_to": 'digit',
-    "tags": "string_list",
+    "tag_ids": "id_list",
     # return fields
     "fields": 'return_fields',
     # Id of a talent_pool from where to search candidates
