@@ -335,6 +335,7 @@ def create_smartlist(candidate_ids, talent_pipeline_id, token, expected_status=(
     :type expected_status: tuple[int]
     :rtype dict
     """
+    # TODO--preveiously we had an assert that check candidate_ids was either a list or a tuple, is the above checking too?
     data = {
         'candidate_ids': candidate_ids,
         'name': fake.word(),

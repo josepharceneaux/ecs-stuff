@@ -2,6 +2,8 @@
 This module contains our custom pyvalidators, which will be used to valid params based on docstring with the help of pycontracts.
 
 """
+
+# TODO-break the doc string so it respects the line limit
 from contracts import new_contract
 
 
@@ -10,6 +12,7 @@ def define_custom_contracts():
     This function should be called before calling any method that is using @contract decorator
     This function defined our custom validators which will be used in docstings to be validated by pycontracts library
     """
+    # TODO--I think it should say PyContracts (notice the case) (but kindly confirm from its website how do they write it
     try:
         new_contract('long', lambda n: isinstance(n, long))
         new_contract('positive', lambda n: isinstance(n, (int, long, float)) and n > 0)
