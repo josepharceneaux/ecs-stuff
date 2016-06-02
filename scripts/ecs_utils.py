@@ -86,10 +86,11 @@ def image_exists_in_repo(name, image):
     return tag_exists_in_repo(repo_path, tag)
 
 
-def gather_images_from_repository(name, tags):
+def gather_images_from_repository(ecr_client, name, tags):
     """
     Collect images from repository.
 
+    :param obj ecr_client: ECR object from boto.
     :param str name: Repository name.
     :param str tags: Can be 'none', 'only', 'all' - return untagged, tagged, or all images.
     """
@@ -97,7 +98,6 @@ def gather_images_from_repository(name, tags):
     if tags not in [ 'none', 'only', 'all' ]:
         raise Exception("gather_images_in_repo: parameter TAGS must be 'none', 'only', or 'all'. Called with {}".format(tags))
 
-    ecr_client = boto3.client('ecr')
     service_uri = ECS_BASE_PATH + '/' + name
 
     response = ecr_client.list_images(repositoryName=service_uri)
@@ -258,6 +258,26 @@ def gather_task_definitions(ecs_client, service, cluster):
     return td_list
 
 
+def gather_all_td_images(ecs_client, service):
+    """
+    Gather the images used by all ACTIVE task definitions.
+
+    :param str service: The name of the service we're collecting from.
+    :rtype: list[dict] All image URIs associated with task definitions for this service.
+    """
+
+    stage_td_list = gather_task_definitions(ecs_client, service, 'stage')
+    prod_td_list = gather_task_definitions(ecs_client, service, 'prod')
+
+    image_list = []
+    for td_arn in stage_td_list:
+        image_list.append(task_definition_image(ecs_client, td_arn))
+    for td_arn in prod_td_list:
+        image_list.append(task_definition_image(ecs_client, td_arn))
+
+    return image_list
+
+
 def task_definition_image(ecs_client, td_arn):
     """
     Return the image URI used by a task definition.
@@ -300,7 +320,7 @@ def remove_untagged_containers(ecr_client, service):
     repository_name = ECS_BASE_PATH + "/" + service
 
     # Collect all untagged containers for this service
-    digest_list = gather_images_from_repository(service, 'none')
+    digest_list = gather_images_from_repository(ecr_client, service, 'none')
     delete_images_from_repository_by_digest(ecr_client, repository_name, digest_list)
 
 
@@ -331,7 +351,7 @@ def garbage_collect_ecs(service, cluster):
     # Get a list of all ACTIVE task definitions
     td_arn_list = gather_task_definitions(ecs_client, service, cluster)
 
-    # Remove the task definition attached to the currently active service
+    # Remove the task definition attached to the currently active service from our list
     if current_td in td_arn_list:
         td_arn_list.remove(current_td)
     else:
@@ -357,16 +377,24 @@ def garbage_collect_ecs(service, cluster):
     for arn in td_arn_list:
         deregister_task(ecs_client, arn)
 
+    # Now that we've removed the TDs, gather the images from remaining definitions, stage and prod
+    live_image_uri_list = gather_all_td_images(ecs_client, service)
+    # And remove them from our deletion list, since they may be in use
+    image_delete_list = [ i for i in image_delete_list if i not in live_image_uri_list ]
+
     print
     # Remove the images from our list, unless the current service uses it
     if current_image in image_delete_list:
-        image_delete_list.remove(image)
+        image_delete_list.remove(current_image)
 
-    # Get a list of the tagged images for this repository
-    digest_list = gather_images_from_repository(service, 'only')
+    # Get a list of the tagged images for this repository so we can get the digest
+    digest_list = gather_images_from_repository(ecr_client, service, 'only')
     delete_images_from_repository_by_uri(ecr_client, image_delete_list, digest_list)
 
     # Remove any untagged containers
     remove_untagged_containers(ecr_client, service)
 
     # TODO: go through all images and remove any dangling ones (those not attached to a task definition)
+    # all_images = gather_images_from_repository(ecr_client, service, 'all')
+    # image_delete_list = [ i for i in all_images if i not in live_image_uri_list ]
+    # delete_images_from_repository_by_uri(ecr_client, image_delete_list, digest_list)
