@@ -875,8 +875,7 @@ def get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_onl
         # A subscription campaign is a campaign which needs candidates
         # to be subscribed to it in order to receive notifications regarding the campaign.
         # If the campaign is a subscription campaign,
-        # only get candidates subscribed to the campaign's frequenc
-        # y.
+        # only get candidates subscribed to the campaign's frequency.
         subscribed_candidate_ids = CandidateSubscriptionPreference.get_subscribed_candidate_ids(campaign,
                                                                                                 all_candidate_ids)
         if not subscribed_candidate_ids:

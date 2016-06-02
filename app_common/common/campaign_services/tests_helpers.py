@@ -433,7 +433,7 @@ class CampaignsTestsHelpers(object):
         if blasts_url:
             blasts_url = blasts_url % campaign_id
         blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, access_token,
-                                                               blasts_url=blasts_url, timeout=100)
+                                                               blasts_url=blasts_url)
         if not blasts:
             raise UnprocessableEntity('blasts not found in given time range.')
         return response
@@ -453,7 +453,7 @@ class CampaignsTestsHelpers(object):
         return blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
 
     @staticmethod
-    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=20):
+    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=100):
         """
         This polls the result of blasts of a campaign for given timeout (default 10s).
         """
@@ -490,18 +490,17 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         if not blasts_url:
-            raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
-            db.session.commit()
-            assert len(campaign.blasts.all()) > blast_index
-            blasts = campaign.blasts[blast_index]
-        else:
-            raise_if_not_instance_of(access_token, basestring)
-            raise_if_not_instance_of(blasts_url, basestring)
-            blasts_get_response = send_request('get', blasts_url, access_token)
-            assert blasts_get_response.ok
-            blasts = blasts_get_response.json()['blast']
-        assert blasts
-        return blasts
+            try:
+                raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
+                db.session.commit()
+                return campaign.blasts[blast_index]
+            except IndexError:
+                return []
+        raise_if_not_instance_of(access_token, basestring)
+        raise_if_not_instance_of(blasts_url, basestring)
+        blasts_get_response = send_request('get', blasts_url, access_token)
+        if blasts_get_response.ok:
+            return blasts_get_response.json()['blast']
 
     @staticmethod
     def verify_sends(campaign, expected_count, blast_index, blast_url=None, access_token=None):
@@ -523,13 +522,12 @@ class CampaignsTestsHelpers(object):
                     return False
             except IndexError:
                 return False
-        else:
-            raise_if_not_instance_of(access_token, basestring)
-            raise_if_not_instance_of(blast_url, basestring)
-            response = send_request('get', blast_url, access_token)
-            if response.ok:
-                assert response.json()['blast']['sends'] == expected_count
 
+        raise_if_not_instance_of(access_token, basestring)
+        raise_if_not_instance_of(blast_url, basestring)
+        response = send_request('get', blast_url, access_token)
+        if response.ok:
+            return response.json()['blast']['sends'] == expected_count
 
     @staticmethod
     def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=100,
@@ -544,9 +542,10 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blast_url, basestring) if blast_url else None
         attempts = abort_time_for_sends / 3 + 1
-        retry(CampaignsTestsHelpers.verify_sends, sleeptime=3, attempts=attempts, sleepscale=1,
+        sends_verified = retry(CampaignsTestsHelpers.verify_sends, sleeptime=3, attempts=attempts, sleepscale=1,
               args=(campaign, expected_count, blast_index, blast_url, access_token),
               retry_exceptions=(AssertionError,))
+        assert sends_verified
 
     @staticmethod
     def verify_blasts(campaign, access_token, blasts_url, expected_count):
@@ -588,7 +587,7 @@ class CampaignsTestsHelpers(object):
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1, data=None,
                                         emails_list=False, create_phone=False, assign_role=False,
                                         assert_candidates=True, smartlist_name=fake.word(),
-                                        candidate_ids=(), timeout=250):
+                                        candidate_ids=(), timeout=350):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
@@ -614,8 +613,6 @@ class CampaignsTestsHelpers(object):
         if not candidate_ids:
             candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                                  return_candidate_ids_only=True)
-        if assert_candidates:
-            time.sleep(10)  # TODO: Need to remove this and use polling instead
         smartlist_data = {'name': smartlist_name,
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}
@@ -631,7 +628,7 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     def create_two_smartlists_with_same_candidate(access_token, talent_pipeline, emails_list=True,
-                                    assert_candidates=True, timeout=120, data=None):
+                                                  assert_candidates=True, timeout=120, data=None):
         """
         Create two smartlists with same candidate in both of them.
         """

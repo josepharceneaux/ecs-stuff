@@ -68,7 +68,7 @@ class TestEmailCampaignBlasts(object):
         If primary email is not found then email-campaign will be sent to latest emails added for candidates.
         """
         expected_count = 2
-        CampaignsTestsHelpers.assert_blast_sends(sent_campaign_multiple_email, expected_count, abort_time_for_sends=200)
+        CampaignsTestsHelpers.assert_blast_sends(sent_campaign_multiple_email, expected_count, abort_time_for_sends=100)
         response = requests.get(
             self.URL % sent_campaign_multiple_email.id,
             headers=dict(Authorization='Bearer %s' % access_token_first))
@@ -132,6 +132,7 @@ class TestEmailCampaignBlasts(object):
         # pick second blast object and assert valid response
         # pick first blast object from the response. it will be 5th blast object
         received_blast_obj = json_resp[0]
+        db.session.commit()
         assert received_blast_obj['id'] == sent_campaign.blasts[4].id
         assert received_blast_obj['campaign_id'] == sent_campaign.id
         assert received_blast_obj['sends'] == expected_sends_count
@@ -145,6 +146,7 @@ class TestEmailCampaignBlasts(object):
         json_resp = response.json()[self.ENTITY]
         # pick second blast object from the response. it will be 10th blast object
         received_blast_obj = json_resp[1]
+        db.session.commit()
         assert received_blast_obj['id'] == sent_campaign.blasts[9].id
         assert received_blast_obj['campaign_id'] == sent_campaign.id
         assert received_blast_obj['sends'] == expected_sends_count
