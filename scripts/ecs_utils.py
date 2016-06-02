@@ -218,7 +218,8 @@ def delete_images_from_repository_by_uri(ecr_client, image_list, digest_list):
         else:
             print "WARNING: Can't find digest for {}. Not deleted.".format(image)
 
-    if len(digest_list) > 0:
+    # Note that repository_name is repeatedly set in the loop above, but it will never change in this function.
+    if len(to_delete) > 0:
         delete_images_from_repository_by_digest(ecr_client, repository_name, to_delete)
 
 
