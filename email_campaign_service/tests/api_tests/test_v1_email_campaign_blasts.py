@@ -5,7 +5,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
     email campaign API.
 """
 # Third Party
-from polling import poll
+from redo import retry
 import requests
 
 
@@ -101,8 +101,9 @@ class TestEmailCampaignBlasts(object):
         for _ in xrange(1, 10):
             CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND,
                                                 sent_campaign, access_token_first)
-        poll(CampaignsTestsHelpers.verify_blasts, args=(sent_campaign, access_token_first, None, 10),
-             step=3, timeout=300)
+        attempts = 300 / 3 + 1
+        retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
+              args=(sent_campaign, access_token_first, None, 10), retry_exceptions=(AssertionError,))
         CampaignsTestsHelpers.assert_blast_sends(sent_campaign, expected_sends_count, abort_time_for_sends=100)
         response = requests.get(url, headers=headers)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=10, entity=self.ENTITY)

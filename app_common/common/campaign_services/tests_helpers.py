@@ -646,7 +646,7 @@ class CampaignsTestsHelpers(object):
         if assert_candidates:
             for smartlist_id in smartlist_ids:
                 attempts = timeout / 3 + 1
-                assert retry(assert_smartlist_candidates, sleeptime=3, attempts=attempts, sleepscale=1,
+                retry(assert_smartlist_candidates, sleeptime=3, attempts=attempts, sleepscale=1,
                              args=(smartlist_id, len(candidate_id), access_token), retry_exceptions=(AssertionError,)),\
                     'Candidates not found for smartlist(id:%s)' % smartlist_id
 

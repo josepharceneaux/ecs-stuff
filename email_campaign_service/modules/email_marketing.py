@@ -279,11 +279,14 @@ def post_processing_campaign_sent(celery_result, campaign,
     :param email_campaign_blast_id: Id of blast object for specified campaign
     """
     if not celery_result:
-        raise InternalServerError(error_message='Celery task sending campaign(id;%s) emails failed' % campaign.id)
+        logger.error('Celery task sending campaign(id;%s) emails failed' % campaign.id)
+        return
     if not isinstance(campaign, EmailCampaign):
-        raise InternalServerError(error_message='Campaign object is not valid')
+        logger.error('Campaign object is not valid')
+        return
     if not email_campaign_blast_id:
-        raise InternalServerError(error_message='email_campaign_blast_id not provided')
+        logger.error('email_campaign_blast_id not provided')
+        return
     logger.info('celery_result: %s' % celery_result)
     sends = celery_result.count(True)
     _update_blast_sends(email_campaign_blast_id, sends, campaign,  new_candidates_only)
@@ -298,12 +301,14 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
     """
     all_candidate_ids = []
     if not celery_result:
-        raise InvalidUsage('No candidate(s) found for smartlist_ids %s.' % list_ids,
-                           error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
+        logger.error('No candidate(s) found for smartlist_ids %s.' % list_ids)
+        return
     if not campaign_id:
-        raise InvalidUsage(error_message='campaign_id must be provided')
+        logger.error('campaign_id must be provided')
+        return
     if not list_ids:
-        raise InvalidUsage(error_message='list_ids are mandatory')
+        logger.error('list_ids are mandatory')
+        return
     logger.info('celery_result: %s' % celery_result)
 
     # gather all candidates from various smartlists
