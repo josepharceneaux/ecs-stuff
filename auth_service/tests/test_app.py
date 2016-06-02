@@ -1,14 +1,9 @@
-import json
-import random
-import string
 from urllib import urlencode
-
-import pytest
-import requests
 from time import sleep
-from werkzeug.security import gen_salt
 from auth_service.oauth import app
+from auth_service.common.tests.conftest import *
 from auth_service.common.models.user import *
+from auth_service.common.utils.handy_functions import add_role_to_test_user
 from auth_service.common.routes import AuthApiUrl, AuthApiUrlV2
 from auth_service.common.utils.auth_utils import gettalent_generate_password_hash
 
@@ -236,3 +231,100 @@ def test_health_check():
     # Testing Health Check URL with trailing slash
     response = requests.get(AuthApiUrl.HEALTH_CHECK + '/')
     assert response.status_code == 200
+
+
+def test_get_token_of_any_user_endpoint_v1(sample_client, access_token_first, user_first, user_second):
+
+    headers = {'Authorization': 'Bearer %s' % access_token_first}
+
+    # Logged-in user trying to get access_token of a different user
+    response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER % user_second.id, headers=headers)
+    assert response.status_code == 401
+
+    # Adding appropriate roles to logged-in user
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_IMPERSONATE_USERS])
+
+    # Logged-in user trying to get access_token of a non-existing user
+    response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER % 119946, headers=headers)
+    assert response.status_code == 404
+
+    # Logged-in user trying to get access_token of a different user in different domain
+    response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER % user_second.id, headers=headers)
+    assert response.status_code == 401
+
+    user_second.domain_id = user_first.domain_id
+    db.session.commit()
+
+    # Logged-in user trying to get access_token of a different user but with invalid client_id
+    response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER % user_second.id, headers=headers,
+                            params={'client_id': sample_client.client_id + 'temp'})
+    assert response.status_code == 404
+
+    # Logged-in user trying to get access_token of a different user in same domain
+    response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER % user_second.id, headers=headers,
+                            params={'client_id': sample_client.client_id})
+    assert response.status_code == 200
+    response = response.json()
+    assert response['access_token']
+    assert response['refresh_token']
+
+    # Logged-in user trying to get logged-in as different user
+    headers = {'Authorization': 'Bearer %s' % response['access_token']}
+    response = requests.get(AuthApiUrl.AUTHORIZE, headers=headers)
+    assert response.status_code == 200
+    assert response.json().get('user_id') == user_second.id
+
+
+def test_get_token_of_any_user_endpoint_v2(user_first, user_second):
+
+    user_first.password = generate_password_hash('temp123', method='pbkdf2:sha512')
+    db.session.commit()
+
+    sleep(2)
+
+    # GET JWT for user_first
+    headers = {'content-type': 'application/x-www-form-urlencoded', 'Origin': 'https://app.gettalent.com'}
+    params = {'username': user_first.email, 'password': 'temp123'}
+    response = requests.post(AuthApiUrlV2.TOKEN_CREATE, data=urlencode(params), headers=headers)
+    json_response = json.loads(response.text)
+    access_token = json_response.get('access_token', '') if json_response else ''
+    secret_key_id = json_response.get('secret_key_id', '') if json_response else ''
+
+    assert access_token
+    assert secret_key_id
+
+    headers = {'Authorization': 'Bearer %s' % access_token, 'X-Talent-Secret-Key-ID': secret_key_id}
+
+    # Logged-in user trying to get access_token of a different user
+    response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER % user_second.id, headers=headers)
+    assert response.status_code == 401
+
+    # Adding appropriate roles to logged-in user
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_IMPERSONATE_USERS])
+
+    # Logged-in user trying to get access_token of a non-existing user
+    response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER % 119946, headers=headers)
+    assert response.status_code == 404
+
+    # Logged-in user trying to get access_token of a different user in different domain
+    response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER % user_second.id, headers=headers)
+    assert response.status_code == 401
+
+    user_second.domain_id = user_first.domain_id
+    db.session.commit()
+
+    # Logged-in user trying to get access_token of a different user in same domain
+    response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER % user_second.id, headers=headers)
+    assert response.status_code == 200
+    response = response.json()
+    assert response['access_token']
+    assert response['secret_key_id']
+
+    # Logged-in user trying to get logged-in as different user
+    headers = {'Authorization': 'Bearer %s' % response['access_token'], 'X-Talent-Secret-Key-ID': response['secret_key_id']}
+    response = requests.get(AuthApiUrlV2.AUTHORIZE, headers=headers)
+    assert response.status_code == 200
+    assert response.json().get('user_id') == user_second.id
+
+
+
