@@ -248,19 +248,12 @@ def test_get_token_of_any_user_endpoint_v1(sample_client, access_token_first, us
     response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER % 119946, headers=headers)
     assert response.status_code == 404
 
-    # Logged-in user trying to get access_token of a different user in different domain
-    response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER % user_second.id, headers=headers)
-    assert response.status_code == 401
-
-    user_second.domain_id = user_first.domain_id
-    db.session.commit()
-
     # Logged-in user trying to get access_token of a different user but with invalid client_id
     response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER % user_second.id, headers=headers,
                             params={'client_id': sample_client.client_id + 'temp'})
     assert response.status_code == 404
 
-    # Logged-in user trying to get access_token of a different user in same domain
+    # Logged-in user trying to get access_token of a different user
     response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER % user_second.id, headers=headers,
                             params={'client_id': sample_client.client_id})
     assert response.status_code == 200
@@ -306,14 +299,7 @@ def test_get_token_of_any_user_endpoint_v2(user_first, user_second):
     response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER % 119946, headers=headers)
     assert response.status_code == 404
 
-    # Logged-in user trying to get access_token of a different user in different domain
-    response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER % user_second.id, headers=headers)
-    assert response.status_code == 401
-
-    user_second.domain_id = user_first.domain_id
-    db.session.commit()
-
-    # Logged-in user trying to get access_token of a different user in same domain
+    # Logged-in user trying to get access_token of a different user
     response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER % user_second.id, headers=headers)
     assert response.status_code == 200
     response = response.json()

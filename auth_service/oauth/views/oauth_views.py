@@ -75,10 +75,6 @@ def access_token_of_user_v2(user_id):
     if not user_object:
         raise NotFoundError("User with user_id %s doesn't exist" % user_id)
 
-    if user_object.domain_id != authenticated_user.domain_id:
-        raise UnauthorizedError("User %s doesn't have appropriate permission to get access_token "
-                                "of user %s of different domain" % (authenticated_user.id, user_id))
-
     return save_token_v2(user_object)
 
 
@@ -140,10 +136,6 @@ def access_token_of_user(user_id):
 
     if not user_object:
         raise NotFoundError("User with user_id %s doesn't exist" % user_id)
-
-    if user_object.domain_id != request.oauth.user.domain_id:
-        raise UnauthorizedError("User %s doesn't have appropriate permission to get access_token "
-                                "of user %s of different domain" % (request.oauth.user.id, user_id))
 
     request.client = load_client(client_id)
     if not request.client:
