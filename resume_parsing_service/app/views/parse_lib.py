@@ -117,8 +117,7 @@ def process_resume(parse_params):
                 error_text = candidate_error_message + ' Filename: {}'.format(filename_str)
 
             else:
-                error_text = 'Error in candidate creating from resume service. Filename {}'.format(
-                    filename_str)
+                error_text = 'Error in candidate creating from resume service. Filename {}'.format(filename_str)
 
             raise InvalidUsage(error_message=error_text)
 

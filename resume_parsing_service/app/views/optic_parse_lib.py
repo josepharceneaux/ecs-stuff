@@ -445,7 +445,7 @@ def is_experience_already_exists(candidate_experiences, organization, position_t
 
 def scrub_candidate_name(name_unicode):
     """
-    Takes a string an formats it to gT candidate spec. Names should have no punctuation, be at most
+    Takes a string and formats it to gT candidate spec. Names should have no punctuation, be at most
     35 characters, and be in the 'string.title()' format.
 
     This uses StackOverflow Answer:
