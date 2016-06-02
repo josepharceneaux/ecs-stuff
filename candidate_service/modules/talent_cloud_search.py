@@ -885,7 +885,7 @@ def get_faceting_information(facets):
         search_facets_values['total_months_experience'] = get_bucket_facet_value_count(facet_total_months_experience)
 
     if facet_tags:
-        search_facets_values['tag_ids'] = get_facet_info_with_ids(Tag, facet_tags, 'name')
+        search_facets_values['tags'] = get_facet_info_with_ids(Tag, facet_tags, 'name')
 
     # TODO: productFacet, customFieldKP facets are remaining, how to do it?
     if facet_custom_field_id_and_value:
@@ -1431,6 +1431,14 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
         filter_queries.append("(or {})".format(" ".join(tags_facets)))
     elif tags:
         filter_queries.append("(term field=tag_ids '{}')".format(tags))
+
+    # Custom fields
+    custom_fields = request_vars.get('custom_fields')
+    if isinstance(custom_fields, list):
+        custom_fields_facets = ["custom_field_id_and_value: '{}'".format(custom_field) for custom_field in custom_fields]
+        filter_queries.append("(or {})".format(" ".join(custom_fields_facets)))
+    elif custom_fields:
+        filter_queries.append("(term field=custom_field_id_and_value'{}')".format(custom_fields))
 
     # Handling custom fields
     for key, value in request_vars.items():

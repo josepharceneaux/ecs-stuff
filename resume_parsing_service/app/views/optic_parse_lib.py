@@ -5,6 +5,8 @@ import datetime
 import HTMLParser
 import re
 import string
+import sys
+import unicodedata
 import urllib2
 # Third Party
 from bs4 import BeautifulSoup as bs4
@@ -98,17 +100,27 @@ def parse_candidate_name(bs_contact_xml_list):
     :param bs4.element.Tag bs_contact_xml_list:
     :return dict: Formatted name strings using title() in a dictionary.
     """
+
     givenname = None
     surname = None
+
     for contact in bs_contact_xml_list:
-        # If a name is already parsed we do not want to reassign it. This is to protect against
-        # multiple parsed givennames/surnames
+        # If a name is already parsed we do not want to reassign it.
         if not givenname:
             givenname = _tag_text(contact, 'givenname')
+
         if not surname:
             surname = _tag_text(contact, 'surname')
-    first_name = givenname.title() if givenname else 'Unknown'
-    last_name = surname.title() if surname else 'Unknown'
+
+    if givenname:
+        givenname = scrub_candidate_name(givenname)
+
+    if surname:
+        surname = scrub_candidate_name(surname)
+
+    first_name = givenname or 'Unknown'
+    last_name = surname or 'Unknown'
+
     return {'first_name': first_name, 'last_name': last_name}
 
 
@@ -407,3 +419,30 @@ def is_experience_already_exists(candidate_experiences, organization, position_t
                  experience['end_year'] == end_year):
             return i + 1
     return False
+
+
+def scrub_candidate_name(name_unicode):
+    """
+    Takes a string an formats it to gT candidate spec. Names should have no punctuation, be at most
+    35 characters, and be in the 'string.title()' format.
+
+    This uses StackOverflow Answer:
+    http://stackoverflow.com/questions/11066400/
+    which is reinforced here:
+    http://stackoverflow.com/questions/20529449/
+
+    String version located:
+    http://stackoverflow.com/questions/265960/
+
+    :param unicode name_unicode:
+    :return unicode:
+    """
+
+    translate_table = dict.fromkeys(i for i in xrange(sys.maxunicode)
+                if unicodedata.category(unichr(i)).startswith('P'))
+
+    name_unicode = name_unicode[:35]
+    name_unicode = name_unicode.translate(translate_table)
+    name_unicode = name_unicode.title()
+
+    return name_unicode
