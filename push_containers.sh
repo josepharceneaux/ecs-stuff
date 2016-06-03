@@ -59,6 +59,13 @@ if [ $production ] ; then
 	eval $gc_command
     done
 
+    # Garbage collect our time-stamped, unattached container images on Jenkins
+    image_list=`docker images | awk '{ print $1":"$2 }' | grep -e ':v' | sort`
+    container_list=`docker ps -a | grep built-at | awk '{ print $2 }' | sort`
+    for i in $image_list; do
+	[[ $container_list =~ $i ]] && echo "Skipping $i" || docker rmi $i
+    done
+
 else
     timestamp=`date +"%Y-%m-%d-%H-%M-%S"`
     timestamp_tag="built-at-$timestamp"
@@ -95,5 +102,12 @@ else
     echo "Tagging branch with ${timestamp_tag}"
     git tag -a ${timestamp_tag} -m "Adding timestamp tag"
     git push origin ${timestamp_tag}
+
+    # Garbage collect our time-stamped, unattached container images on Jenkins
+    image_list=`docker images | grep built-at | awk '{ print $1":"$2 }' | sort`
+    container_list=`docker ps -a | grep built-at | awk '{ print $2 }' | sort`
+    for i in $image_list; do
+	[[ $container_list =~ $i ]] && echo "Skipping $i" || docker rmi $i
+    done
 
 fi
