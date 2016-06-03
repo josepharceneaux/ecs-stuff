@@ -195,13 +195,13 @@ def campaign_valid_data(smartlist_with_two_candidates):
 
 
 @pytest.fixture()
-def campaign_data_unknown_key_text():
+def campaign_data_with_missing_body_text():
     """
     This returns invalid data to save an SMS campaign. 'body_text' required field
     name is modified to be 'text' here i.e. the correct value is 'body_text'
     """
     campaign_data = CREATE_CAMPAIGN_DATA.copy()
-    campaign_data['text'] = campaign_data.pop('body_text')
+    campaign_data.pop('body_text')
     return campaign_data
 
 
