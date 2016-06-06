@@ -395,8 +395,8 @@ class TestDeleteCandidateCustomField(object):
         Test:   Delete custom fields of a Candidate that belongs to a user in a different domain
         Expect: 204
         """
-        AddUserRoles.add(user_first)
-        AddUserRoles.delete(user_second)
+        AddUserRoles.all_roles(user_first)
+        AddUserRoles.all_roles(user_second)
 
         # Create candidate_1 & candidate_2 with user_first & user_first_2
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)

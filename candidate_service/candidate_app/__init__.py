@@ -20,14 +20,15 @@ try:
         CandidateWorkExperienceResource, CandidateWorkExperienceBulletResource, CandidateWorkPreferenceResource,
         CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
-        CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
-        CandidateViewResource, CandidatePreferenceResource, CandidateClientEmailCampaignResource,
+        CandidateEditResource, CandidatesResource, CandidateOpenWebResource, CandidateViewResource,
+        CandidatePreferenceResource, CandidateClientEmailCampaignResource,
         CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource, CandidateLanguageResource
     )
     from candidate_service.candidate_app.api.references import CandidateReferencesResource
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
     from candidate_service.candidate_app.api.v1_candidate_tags import CandidateTagResource
     from candidate_service.candidate_app.api.pipelines import CandidatePipelineResource
+    from candidate_service.candidate_app.api.candidate_custom_fields import CandidateCustomFieldResource
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)

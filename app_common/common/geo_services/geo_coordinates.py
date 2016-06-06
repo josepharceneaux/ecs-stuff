@@ -5,7 +5,7 @@ import requests
 
 from .geo_location import GeoLocation
 
-url = 'http://maps.google.com/maps/api/geocode/json'
+url = 'https://maps.google.com/maps/api/geocode/json'
 
 
 def get_geocoordinates(location, logger=None):
