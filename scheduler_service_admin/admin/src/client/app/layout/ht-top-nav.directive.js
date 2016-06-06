@@ -25,7 +25,7 @@
       var vm = this;
       $scope.isCollapsed = true;
 
-      vm.loggedIn = UserToken.is_authenticated_user() ? true: false;
+      vm.loggedIn = UserToken.access_token !== "";
 
       vm.logout_user = function () {
 

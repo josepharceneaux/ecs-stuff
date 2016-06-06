@@ -18,7 +18,7 @@
       link: '#'
     };
 
-    vm.loggedIn = UserToken.is_authenticated_user() ? true: false;
+    vm.loggedIn = UserToken.access_token !== "";
 
     $rootScope.$on('loggedIn',
       function (events, args) {

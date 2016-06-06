@@ -15,7 +15,7 @@ from flask.ext.restful import Resource
 # Application imports
 from scheduler_service import logger, SchedulerUtils
 from scheduler_service.api.scheduler_tests_api import raise_if_scheduler_not_running, check_job_state, \
-    dummy_request_method
+    dummy_request_method, test_dummy_endpoint_hits
 from scheduler_service.common.models.user import DomainRole, User
 from scheduler_service.common.routes import SchedulerApi
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse, get_pagination_params
@@ -898,10 +898,28 @@ class AdminTasks(Resource):
         return ApiResponse(response=dict(tasks=tasks), headers=header)
 
 
+@api.route(SchedulerApi.SCHEDULER_TASKS_TEST_POST)
+class SendPOSTRequestTest(Resource):
+    """
+    POST Method:
+        This resource is dummy endpoint which is used to call send_request method for testing
+        This dummy endpoint serve two purposes.
+        1. To check if endpoint is working then send response 201 (run callback function directly)
+        2. To check if authentication token is refreshed after expiry.
+        3. Test that scheduler sends POST request
+    """
+    @require_oauth()
+    def post(self):
+        dummy_request_method(_request=request)
+        test_dummy_endpoint_hits(_request=request)
+
+        return dict(message='Dummy POST Endpoint called')
+
+
 @api.route(SchedulerApi.SCHEDULER_TASKS_TEST)
 class SendRequestTest(Resource):
     """
-    POST Method:
+    Request Method:
         This resource is dummy endpoint which is used to call send_request method for testing
         This dummy endpoint serve two purposes.
         1. To check if endpoint is working then send response 201 (run callback function directly)
@@ -911,29 +929,34 @@ class SendRequestTest(Resource):
     @require_oauth()
     def post(self):
         dummy_request_method(_request=request)
+        test_dummy_endpoint_hits(_request=request)
 
         return dict(message='Dummy POST Endpoint called')
 
     @require_oauth()
     def put(self):
         dummy_request_method(_request=request)
+        test_dummy_endpoint_hits(_request=request)
 
         return dict(message='Dummy PUT Endpoint called')
 
     @require_oauth()
     def patch(self):
         dummy_request_method(_request=request)
+        test_dummy_endpoint_hits(_request=request)
 
         return dict(message='Dummy PATCH Endpoint called')
 
     @require_oauth()
     def delete(self):
         dummy_request_method(_request=request)
+        test_dummy_endpoint_hits(_request=request)
 
         return dict(message='Dummy DELETE Endpoint called')
 
     @require_oauth()
     def get(self):
         dummy_request_method(_request=request)
+        test_dummy_endpoint_hits(_request=request)
 
         return dict(message='Dummy GET Endpoint called')

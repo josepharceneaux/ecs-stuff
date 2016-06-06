@@ -71,7 +71,7 @@ class TestSchedulerGet(object):
         assert len(response.json()['tasks']) >= 10
 
     def test_retrieve_jobs_as_admin_using_task_category_filters(self, sample_user, auth_header, create_five_users,
-                                                                schedule_ten_jobs_for_each_user):
+                                                                schedule_ten_jobs_for_each_user, schedule_ten_general_jobs):
         """
         In this test, use filters to get filtered tasks from admin API
         Test covers user_id, paused, task_category, task_type filters to test response from scheduler service endpoint

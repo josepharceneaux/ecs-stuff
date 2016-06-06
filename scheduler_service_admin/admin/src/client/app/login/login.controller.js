@@ -5,41 +5,56 @@
     .module('app.login')
     .controller('LoginController', LoginController);
 
-  LoginController.$inject = ['logger', '$state', 'UserToken', '$http', 'api_info'];
+  LoginController.$inject = ['logger', '$state', 'UserToken'];
   /* @ngInject */
-  function LoginController(logger, $state, UserToken, $http, api_info) {
+
+  function LoginController(logger, $state, UserToken) {
     var vm = this;
     vm.title = 'Login';
 
-    if(UserToken.is_authenticated_user())
-      $state.go('scheduler_admin');
+    /**
+     * Send request to user service and check if user is admin or not
+     * @param _response
+     * @returns {boolean}
+       */
+    function isUserAdmin(_response){
+
+      if(_response.status == 200) {
+        for(var index=0;index < _response.data.roles.length;index++){
+          var role = _response.data.roles[index];
+          if(role.name === "CAN_GET_ALL_SCHEDULER_JOBS"){
+            return true;
+          }
+        }
+      }
+      return false;
+    }
 
     vm.login = function () {
 
-       $http({
-         method: 'POST',
-         url: api_info.apiInfo.authService.grantPath,
+      UserToken.login_user(vm.email, vm.password)
+      .then(function (response) {
+          if(response.status == 200 && "access_token" in response.data){
+            UserToken.test_authenticate_user_role(response.data["user_id"], response.data.access_token)
+              .then(function (_response) {
 
-         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
-         },
-         data: $.param({
-           username: vm.email,
-           password: vm.password,
-           grant_type: "password",
-           "client_id": "KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z",
-           "client_secret": "DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj1Z"
-         })
-       }).then(function (response) {
-         if("access_token" in response.data){
-           UserToken.authenticate_user(response.data);
-           $state.go('scheduler_admin');
+                if(isUserAdmin(_response)) {
+                  UserToken.authenticate_user(response.data);
+                  logger.info("User authenticated successfully.");
+                  $state.go('scheduler_admin');
+                }
+              },error);
          }
-       },function (err) {
-         console.log(err);
-         if(err.status == 401)
-            vm.error_message = "Unauthorized Access: You don't have access to getTalent"
-       });
+       },error);
+
+      /**
+       * Show error message to user
+       * @param err
+         */
+      function error(err){
+         vm.error_message = "Unauthorized: You don't have access to get-Talent";
+        logger.error(err);
+      }
     };
 
     activate();
