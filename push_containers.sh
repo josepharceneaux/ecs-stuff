@@ -89,7 +89,7 @@ else
 	fi
 
 	# Update task definition for this service and restart staging services
-	move_command="python ecs_task_update.py ${app} ${timestamp_tag} stage restart"
+	move_command="python scripts/ecs_task_update.py ${app} ${timestamp_tag} stage restart"
 	echo $move_command
 	eval $move_command
 
