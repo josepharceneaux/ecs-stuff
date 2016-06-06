@@ -283,11 +283,11 @@ def delete(cls, ref, app=None):
 
 
 @classmethod
-def get_unexpected_fields(cls, data_to_be_verified):
+def get_invalid_fields(cls, data_to_be_verified):
     """
-    This takes some data in dict from and checks if there is any key which is not a column
-    of given model. It then returns all such fields in a list format.
-    :param db.Model cls: Database model instance
+    This takes some data in dict from and checks if there is any key which is not a ATTRIBUTE of given model.`
+    It then returns all such fields in a list format.
+    :param db.Model cls: Database model class
     :param dict data_to_be_verified: Dictionary of data.
     :rtype: list
     """
@@ -322,7 +322,7 @@ def add_model_helpers(cls):
     # This method deletes an instance
     cls.delete = delete
     # Register get_unexpected_fields() on model instance
-    cls.get_unexpected_fields = get_unexpected_fields
+    cls.get_invalid_fields = get_invalid_fields
     # Sometimes we have lazy relationship, that is actually just a query (AppenderQuery instance)
     # it contains all methods like filter, filter_by, first, all etc but not paginate, so we are patching `paginate`
     # method from BaseQuery class to AppenderQuery class to get pagination functionality

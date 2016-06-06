@@ -165,11 +165,11 @@ class TestSmsCampaignHTTPPost(object):
         """
         CampaignsTestsHelpers.request_with_invalid_token('post', self.URL)
 
-    def test_campaign_creation_with_invalid_header(self, headers):
+    def test_campaign_creation_with_invalid_header(self, access_token_first):
         """
         User auth token is valid, but content-type is not set. It should result in bad request error.
         """
-        response = requests.post(self.URL, headers=headers)
+        response = requests.post(self.URL, headers={'Authorization': 'Bearer %s' % access_token_first})
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should be a bad request (400)'
         assert 'header' in response.json()['error']['message']
