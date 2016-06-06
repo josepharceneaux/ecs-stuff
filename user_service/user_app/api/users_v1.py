@@ -1,3 +1,4 @@
+import pytz
 from dateutil import parser
 from babel import Locale
 from flask_restful import Resource
@@ -40,19 +41,28 @@ class UserApi(Resource):
 
             if requested_user_id == request.user.id or 'CAN_GET_USERS' in request.valid_domain_roles or request.user_can_edit_other_domains:
 
-                return {'user': {
-                        'id': requested_user.id,
-                        'domain_id': requested_user.domain_id,
-                        'email': requested_user.email,
-                        'first_name': requested_user.first_name,
-                        'last_name': requested_user.last_name,
-                        'phone': requested_user.phone,
-                        'registration_id': requested_user.registration_id,
-                        'dice_user_id': requested_user.dice_user_id,
-                        'last_read_datetime': requested_user.last_read_datetime.isoformat() if requested_user.last_read_datetime else None,
-                        'thumbnail_url': requested_user.thumbnail_url,
-                        'locale': requested_user.locale
-                        }}
+                return {
+                    'user':
+                        {
+                            'id': requested_user.id,
+                            'domain_id': requested_user.domain_id,
+                            'email': requested_user.email,
+                            'first_name': requested_user.first_name,
+                            'last_name': requested_user.last_name,
+                            'phone': requested_user.phone,
+                            'registration_id': requested_user.registration_id,
+                            'dice_user_id': requested_user.dice_user_id,
+                            'user_group_id': requested_user.user_group_id,
+                            'added_time': requested_user.added_time.replace(
+                                    tzinfo=pytz.UTC).isoformat() if requested_user.added_time else None,
+                            'updated_time': requested_user.updated_time.replace(
+                                    tzinfo=pytz.UTC).isoformat() if requested_user.updated_time else None,
+                            'last_read_datetime': requested_user.last_read_datetime.replace(
+                                    tzinfo=pytz.UTC).isoformat() if requested_user.last_read_datetime else None,
+                            'thumbnail_url': requested_user.thumbnail_url,
+                            'locale': requested_user.locale
+                        }
+                }
 
         # User id is not provided so logged-in user wants to get all users of its domain
         elif 'CAN_GET_USERS' in request.valid_domain_roles or request.user_can_edit_other_domains:

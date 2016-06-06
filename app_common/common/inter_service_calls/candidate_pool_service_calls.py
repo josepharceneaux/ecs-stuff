@@ -43,8 +43,8 @@ def create_campaign_send_from_api(campaign_id, access_token):
 
 def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=None, user_id=None):
     """
-    Calls smartlist API and retrieves the candidates of specified smartlist.
-    :param (int, long) list_id: smartlist id.
+    Calls smartlist API and retrieves the candidates of a smart or dumb list.
+    :param (int | long) list_id: smartlist id.
     :param (bool) candidate_ids_only: Whether or not to get only ids of candidates
     :param access_token: Token for authorization.
     :param user_id: Id of user, needed when token is invalid or unavailable such as if called
@@ -73,8 +73,8 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
 
 def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params, access_token=None, user_id=None):
     """
-    Method to get candidates from smartlist by calling candidate pool service smartlist api.
-    :param (int, long) list_id: Id of smartlist.
+    Method to get candidates from smartlist based on smartlist id and pagination params.
+    :param (int | long) list_id: Id of smartlist.
     :param (int) per_page: Number of results per page
     :param (int) page: Number of page to fetch in response
     :param (dict| None) params: Specific params to include in request. e.g. candidates_ids_only etc
@@ -88,8 +88,8 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, para
         params = {}
     params.update({'page': page}) if page else None
     params.update({'limit': per_page}) if per_page else None
-    response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id,
-                            params=params, headers=create_oauth_headers(access_token, user_id))
+    response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % str(list_id),
+                            params=params, headers=create_oauth_headers(access_token))
     return response
 
 
@@ -98,11 +98,11 @@ def assert_smartlist_candidates(smartlist_id, expected_count, access_token=None)
     This gets the candidates for given smartlist_id.
     If number of candidates found is same as expected_count, it returns True.
     Otherwise it returns False.
-    :param (int, long) smartlist_id: id of smartlist
-    :param (int, long) expected_count: expected number of candidates
+    :param (int | long) smartlist_id: id of smartlist
+    :param (int | long) expected_count: expected number of candidates
     :param (str) access_token: access token of user to make HTTP request on smartlist API
     """
-    raise_if_not_instance_of(smartlist_id, (int, long))
-    raise_if_not_instance_of(expected_count, (int, long))
-    candidates = get_candidates_of_smartlist(list_id=smartlist_id, candidate_ids_only=True, access_token=access_token)
-    assert len(candidates) == expected_count
+    candidates = get_candidates_of_smartlist(smartlist_id, True, access_token)
+    assert len(candidates) == expected_count, \
+        'Expecting %s candidate(s). Got %s candidate(s) for smartlist(id:%s).' \
+        % (expected_count, len(candidates), smartlist_id)

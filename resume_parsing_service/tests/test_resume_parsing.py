@@ -365,7 +365,8 @@ def test_already_exists_candidate(token_fixture, user_fixture):
     assert_create_or_update_content_and_status(update_content, status)
 
 
-#TODO: Commenting this for erik (basit)
+# Removing tests for bulk endpoint currently as it is not used in production and may be
+# deprecated in favor of lambda scaling on a single endpoint.
 ####################################################################################################
 # Batch Processing tests
 ####################################################################################################
@@ -387,20 +388,18 @@ def test_already_exists_candidate(token_fixture, user_fixture):
 
 
 # Unittest Style - located here due to conversion to flask redis which requires app context.
-def test_add_single_queue_item(token_fixture):
-    """Test adding a single item to a users queue stored in Redis"""
-    user_id = random_word(6)
-    queue_string = 'batch:{}:fp_keys'.format(user_id)
-    response = add_fp_keys_to_queue(['file1a'], user_id, 'bearer {}'.format(
-        token_fixture.access_token))
-    redis_store.expire(queue_string, 1)
-    assert response['redis_key'] == queue_string, "Queue key format is not what was anticipated"
-    assert response['quantity'] == 1, "Single queue-add count is not 1"
-
-
+# def test_add_single_queue_item(token_fixture):
+#     """Test adding a single item to a users queue stored in Redis"""
+#     user_id = random_word(6)
+#     queue_string = 'batch:{}:fp_keys'.format(user_id)
+#     response = add_fp_keys_to_queue(['file1a'], user_id, 'bearer {}'.format(
+#         token_fixture.access_token))
+#     redis_store.expire(queue_string, 1)
+#     assert response['redis_key'] == queue_string, "Queue key format is not what was anticipated"
+#     assert response['quantity'] == 1, "Single queue-add count is not 1"
+#
+#
 # Integration test of the above.
-# TODO: Test consistently fails in CI - Amir
-# TODO: Error message from schedular_service: {'error': {'message': 'Unable to create job. Invalid data given', 'code': 6056}}
 # def test_integration_add_single_item(user_fixture, token_fixture):
 #     print "Single batch item integration test"
 #     """Test adding a single item via end point."""
@@ -423,27 +422,28 @@ def test_add_single_queue_item(token_fixture):
 #     redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
 #     unused_delete_request = requests.delete(SchedulerApiUrl.TASK % (job_id),
 #                                             headers={'Authorization': 'bearer {}'.format(token_fixture.access_token)})
-
-def test_add_multiple_queue_items(token_fixture):
-    """Tests adding n-100 items to a users queue stored in Redis"""
-    user_id = random_word(6)
-    file_count = random.randrange(1, 15)
-    filenames = ['file{}c'.format(i) for i in xrange(file_count)]
-    queue_string = 'batch:{}:fp_keys'.format(user_id)
-    queue_status = add_fp_keys_to_queue(filenames, user_id,
-                                        'bearer {}'.format(token_fixture.access_token))
-    assert queue_status['redis_key'] == queue_string, (
-        'Improperly Formatted redis post response for multiple items')
-    assert queue_status['quantity'] == file_count, (
-        'Improperly count in redis post response for multiple item')
-    assert len(queue_status['ids']) == file_count, (
-        'Improperly id count in redis response for multiple items')
-    redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
-    # Clean up the queue...
-    auth_headers = {'Authorization': 'bearer {}'.format(token_fixture.access_token)}
-    for id in queue_status['ids']:
-        unused_delete_request = requests.delete(SchedulerApiUrl.TASK % (id),
-                                         headers=auth_headers)
+#
+#
+# def test_add_multiple_queue_items(token_fixture):
+#     """Tests adding n-100 items to a users queue stored in Redis"""
+#     user_id = random_word(6)
+#     file_count = random.randrange(1, 15)
+#     filenames = ['file{}c'.format(i) for i in xrange(file_count)]
+#     queue_string = 'batch:{}:fp_keys'.format(user_id)
+#     queue_status = add_fp_keys_to_queue(filenames, user_id,
+#                                         'bearer {}'.format(token_fixture.access_token))
+#     assert queue_status['redis_key'] == queue_string, (
+#         'Improperly Formatted redis post response for multiple items')
+#     assert queue_status['quantity'] == file_count, (
+#         'Improperly count in redis post response for multiple item')
+#     assert len(queue_status['ids']) == file_count, (
+#         'Improperly id count in redis response for multiple items')
+#     redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
+#     # Clean up the queue...
+#     auth_headers = {'Authorization': 'bearer {}'.format(token_fixture.access_token)}
+#     for id in queue_status['ids']:
+#         unused_delete_request = requests.delete(SchedulerApiUrl.TASK % (id),
+#                                          headers=auth_headers)
 
 
 ####################################################################################################
