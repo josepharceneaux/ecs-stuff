@@ -36,7 +36,13 @@ class TestSearchCandidatePipeline(object):
         data = {"talent_pipelines": [
             {
                 "talent_pool_id": talent_pool.id,
-                "name": "testing",
+                "name": str(uuid.uuid4())[:5],
+                "date_needed": "2017-11-30",
+                "search_params": {"user_ids": str(user_first.id)}
+            },
+            {
+                "talent_pool_id": talent_pool.id,
+                "name": str(uuid.uuid4())[:5],
                 "date_needed": "2017-11-30",
                 "search_params": {"user_ids": str(user_first.id)}
             }
