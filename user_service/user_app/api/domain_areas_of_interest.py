@@ -10,9 +10,10 @@ from flask_restful import Resource
 
 # Models
 from user_service.common.models.misc import AreaOfInterest
+from user_service.common.models.user import DomainRole
 
 # Decorators
-from user_service.common.utils.auth_utils import require_oauth
+from user_service.common.utils.auth_utils import require_oauth, require_all_roles
 
 # Validators
 from user_service.common.utils.validators import get_json_data_if_validated
@@ -30,6 +31,7 @@ from user_service.common.error_handling import InvalidUsage
 class DomainAreaOfInterestResource(Resource):
     decorators = [require_oauth()]
 
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_DOMAINS)
     def post(self):
         """
         Function will create area(s) of interest for user's domain
@@ -73,6 +75,7 @@ class DomainAreaOfInterestResource(Resource):
                 "description": aoi.name
             } for aoi in AreaOfInterest.get_domain_areas_of_interest(request.user.domain_id)]}
 
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_DOMAINS)
     def put(self, **kwargs):
         """
         Function will update area(s) of interest for user's domain
@@ -99,6 +102,7 @@ class DomainAreaOfInterestResource(Resource):
                                                        aoi_id_from_url=aoi_id_from_url, is_updating=True)
         return {"areas_of_interest": [{"id": aoi_id} for aoi_id in updated_aoi_ids]}
 
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_DOMAINS)
     def delete(self, **kwargs):
         """
         Function will delete domain area(s) of interest

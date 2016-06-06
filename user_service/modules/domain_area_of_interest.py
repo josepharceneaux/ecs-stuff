@@ -34,6 +34,7 @@ def create_or_update_domain_aois(domain_id, aois, aoi_id_from_url=None, is_creat
     :rtype:  list[int]
     """
     created_or_updated_aoi_ids = []  # Aggregate created or updated aoi ids here
+
     for aoi in aois:
         aoi_id = aoi.get('id')
 
@@ -134,10 +135,10 @@ def delete_domain_aois(domain_id):
     :rtype:  list(int)
     """
     domain_aois = AreaOfInterest.get_domain_areas_of_interest(domain_id)
-    deleted_aoi_ids = [aoi.id for aoi in domain_aois]
     if not domain_aois:
         raise InvalidUsage("Domain has no area of interest")
 
+    deleted_aoi_ids = [aoi.id for aoi in domain_aois]
     map(db.session.delete, domain_aois)
     db.session.commit()
     return deleted_aoi_ids
