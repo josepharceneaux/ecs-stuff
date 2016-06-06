@@ -249,18 +249,14 @@ class TestSmsCampaignHTTPPost(object):
             'It should result in bad request error'
 
     def test_campaign_creation_with_unexpected_field_in_data(self, campaign_valid_data,
-                                                              headers, user_phone_1):
+                                                             access_token_first, user_phone_1):
         """
         User has one phone value, valid header and invalid data (having some unexpected fields) to
         create sms-campaign. It should result in Invalid usage error.
         """
-        campaign_valid_data['unexpected_key'] = fake.word()
-        campaign_valid_data['frequency'] = 0
-        response = requests.post(self.URL, headers=headers, data=json.dumps(campaign_valid_data))
-        assert response.status_code == InvalidUsage.http_status_code(), \
-            'It should result in bad request error'
-        assert 'unexpected_key' in response.json()['error']['message']
-        assert 'frequency' in response.json()['error']['message']
+        CampaignsTestsHelpers.campaign_create_or_update_with_unexpected_fields('post', self.URL,
+                                                                               access_token_first,
+                                                                               campaign_valid_data)
 
     def test_campaign_creation_with_one_user_phone_and_unknown_smartlist_ids(
             self, campaign_valid_data, headers, user_phone_1):

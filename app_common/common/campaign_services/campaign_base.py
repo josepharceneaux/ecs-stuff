@@ -350,7 +350,7 @@ class CampaignBase(object):
         # 'smartlist_ids' is not a field of sms_campaign or push_campaign tables, so
         # need to remove it from data.
         del validated_data['smartlist_ids']
-        # Check if there is any unexpected fields present in data.
+        # If there exists any unexpected field in data from UI, raise invalid usage error.
         unexpected_fields = [key for key in validated_data if key not in campaign_model.__table__.columns.keys()]
         if unexpected_fields:
             raise InvalidUsage('Unexpected field(s) `%s` found in data.' % unexpected_fields)
