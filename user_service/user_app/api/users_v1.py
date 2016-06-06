@@ -1,6 +1,8 @@
 import pytz
+from datetime import datetime
 from dateutil import parser
 from babel import Locale
+from werkzeug.security import gen_salt
 from flask_restful import Resource
 from flask import request, Blueprint
 from user_service.common.routes import UserServiceApi
@@ -8,8 +10,37 @@ from user_service.common.error_handling import *
 from user_service.common.talent_api import TalentApi
 from user_service.common.models.user import User, db, DomainRole, Token
 from user_service.common.utils.validators import is_valid_email, is_number
-from user_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
-from user_service.user_app.user_service_utilties import check_if_user_exists, create_user_for_company
+from user_service.common.utils.auth_utils import gettalent_generate_password_hash
+from user_service.common.utils.auth_utils import require_oauth, require_any_role
+from user_service.user_app.user_service_utilties import check_if_user_exists, create_user_for_company, send_new_account_email
+
+
+class UserInviteApi(Resource):
+
+    # Access token and role authentication decorators
+    decorators = [require_oauth()]
+
+    @require_any_role(DomainRole.Roles.CAN_ADD_USERS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
+    def post(self, **kwargs):
+        """
+        POST /users/<id>/invite This endpoint will send invitation email to an already existing user
+        :param kwargs:
+        :return: None
+        """
+
+        requested_user_id = kwargs.get('id')
+        requested_user = User.get(requested_user_id)
+        if not requested_user or requested_user.is_disabled == 1:
+            raise NotFoundError("User with user id %s is not found" % requested_user_id)
+
+        temp_password = gen_salt(8)
+        requested_user.password = gettalent_generate_password_hash(temp_password)
+        requested_user.password_reset_time = datetime.utcnow()
+        db.session.commit()
+
+        send_new_account_email(requested_user.email, temp_password, requested_user.email)
+
+        return '', 201
 
 
 class UserApi(Resource):
@@ -230,3 +261,4 @@ class UserApi(Resource):
 users_blueprint = Blueprint('users_api', __name__)
 api = TalentApi(users_blueprint)
 api.add_resource(UserApi, UserServiceApi.USERS, UserServiceApi.USER)
+api.add_resource(UserInviteApi, UserServiceApi.USER_INVITE)
