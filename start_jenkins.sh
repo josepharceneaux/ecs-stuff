@@ -57,10 +57,8 @@ done
 sleep 10
 
 
-py.test -n 48 user_service/tests activity_service/tests spreadsheet_import_service/tests auth_service/tests
-py.test -n 48 scheduler_service/tests
+py.test -n 48 user_service/tests activity_service/tests spreadsheet_import_service/tests auth_service/tests scheduler_service/tests resume_parsing_service/tests
 py.test -n 48 candidate_service/tests
 py.test -n 48 candidate_pool_service/tests
 py.test -n 48 sms_campaign_service/tests
-py.test -n 48 resume_parsing_service/tests
 py.test -n 48 push_campaign_service/tests
