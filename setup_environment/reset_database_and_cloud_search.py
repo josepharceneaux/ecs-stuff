@@ -43,7 +43,11 @@ def save_meetup_token_and_flushredis(_redis):
 def delete_entries(_redis, entries):
     for entry in entries:
         try:
-            _redis.delete(entry)
+            if '*' in entry:
+                for key in _redis.keys(entry):
+                    _redis.delete(key)
+            else:
+                _redis.delete(entry)
         except Exception as e:
             print e.message
 

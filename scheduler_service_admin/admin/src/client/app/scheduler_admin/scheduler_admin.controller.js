@@ -5,11 +5,13 @@
     .module('app.scheduler_admin')
     .controller('SchedulerAdminController', SchedulerAdminController);
 
-  SchedulerAdminController.$inject = ['logger','$state', 'UserToken', 'SchedulerClientService', 'api_info'];
+  SchedulerAdminController.$inject = ['logger','$state', '$rootScope', 'UserToken', 'SchedulerClientService'];
   /* @ngInject */
-  function SchedulerAdminController(logger, $state, UserToken, SchedulerClientService, api_info) {
+  function SchedulerAdminController(logger, $state, $rootScope, UserToken, SchedulerClientService) {
     var vm = this;
     vm.title = 'Scheduler Service Admin';
+
+    UserToken.goToLogin();
 
     vm.apply_filter = function(){
 
@@ -63,7 +65,6 @@
 
     vm.pageChanged = function() {
       vm.apply_filter();
-      logger.info('Page changed to: ' + vm.currentPage);
     };
 
     vm.itemsPerPage = 15;
@@ -87,12 +88,13 @@
 
     function activate() {
       logger.info('Activated Scheduler Admin View');
+
+      $rootScope.$on('loggedIn', function (events, args) {
+          vm.currentPage = 1;
+      });
     }
 
-
-    if(!UserToken.goToLogin($state))
-      return;
-    vm.apply_filter();
+    UserToken.goToLogin($state);
 
     activate();
   }
