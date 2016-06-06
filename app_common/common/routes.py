@@ -347,6 +347,7 @@ class CandidateApiWords(object):
     REFERENCES = "/references"
     TAGS = "/tags"
     PIPELINES = "/pipelines"
+    STATUSES = "/candidate_statuses"
 
 
 class CandidateApi(object):
@@ -436,6 +437,8 @@ class CandidateApi(object):
 
     PIPELINES = _CANDIDATE_ID + CandidateApiWords.PIPELINES
 
+    STATUSES = '/' + VERSION + CandidateApiWords.STATUSES
+
 
 class CandidateApiUrl(object):
     """
@@ -518,6 +521,8 @@ class CandidateApiUrl(object):
     TAG = TAGS + "/%s"
 
     PIPELINES = CANDIDATE + CandidateApiWords.PIPELINES
+
+    STATUSES = HOST_NAME % '/v1' + CandidateApiWords.STATUSES
 
 
 class WidgetApi(object):
