@@ -929,7 +929,6 @@ class SendRequestTest(Resource):
     @require_oauth()
     def post(self):
         dummy_request_method(_request=request)
-        test_dummy_endpoint_hits(_request=request)
 
         return dict(message='Dummy POST Endpoint called')
 
