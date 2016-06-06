@@ -650,7 +650,7 @@ class CampaignsTestsHelpers(object):
         campaign_data['frequency'] = 0
         response = send_request(method, url, access_token, data=campaign_data)
         assert response.status_code == InvalidUsage.http_status_code(), \
-            'It should result in bad request error'
+            'It should result in bad request error because unexpected data was given.'
         assert 'unexpected_key' in response.json()['error']['message']
         assert 'frequency' in response.json()['error']['message']
 

@@ -194,15 +194,16 @@ def campaign_valid_data(smartlist_with_two_candidates):
     return campaign_data
 
 
-@pytest.fixture()
-def campaign_data_with_missing_body_text():
+@pytest.fixture(params=['name', 'body_text', 'smartlist_ids'])
+def invalid_data_for_campaign_creation(request):
     """
-    This returns invalid data to save an SMS campaign. 'body_text' required field
-    name is modified to be 'text' here i.e. the correct value is 'body_text'
+    This function returns the data to create an sms-campaign. It also removes a required
+    field from data to make it invalid.
+    Required fields are 'name', 'body_text', 'smartlist_ids'
     """
     campaign_data = CREATE_CAMPAIGN_DATA.copy()
-    campaign_data.pop('body_text')
-    return campaign_data
+    del campaign_data[request.param]
+    return campaign_data, request.param
 
 
 @pytest.fixture()

@@ -49,7 +49,6 @@ from types import MethodType
 # Third Party
 from flask import Flask
 from sqlalchemy import inspect
-from sqlalchemy.exc import InvalidRequestError
 from flask.ext.cors import CORS
 from healthcheck import HealthCheck
 from flask.ext.sqlalchemy import BaseQuery
@@ -283,6 +282,18 @@ def delete(cls, ref, app=None):
     return True
 
 
+@classmethod
+def get_unexpected_fields(cls, data_to_be_verified):
+    """
+    This takes some data in dict from and checks if there is any key which is not a column
+    of given model. It then returns all such fields in a list format.
+    :param db.Model cls: Database model instance
+    :param dict data_to_be_verified: Dictionary of data.
+    :rtype: list
+    """
+    return [key for key in data_to_be_verified if key not in cls.__table__.columns]
+
+
 def add_model_helpers(cls):
     """
     This function adds helper methods to Model class which is passed as argument.
@@ -310,7 +321,8 @@ def add_model_helpers(cls):
     cls.get = get_by_id
     # This method deletes an instance
     cls.delete = delete
-
+    # Register get_unexpected_fields() on model instance
+    cls.get_unexpected_fields = get_unexpected_fields
     # Sometimes we have lazy relationship, that is actually just a query (AppenderQuery instance)
     # it contains all methods like filter, filter_by, first, all etc but not paginate, so we are patching `paginate`
     # method from BaseQuery class to AppenderQuery class to get pagination functionality
