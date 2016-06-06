@@ -50,3 +50,29 @@ custom_fields_schema = {
         "custom_fields"
     ]
 }
+
+aoi_schema = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "areas_of_interest": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "description": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 255
+                    }
+                },
+                "required": [
+                    "description"
+                ]
+            }
+        }
+    },
+    "required": [
+        "areas_of_interest"
+    ]
+}
