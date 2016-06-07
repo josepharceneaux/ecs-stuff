@@ -128,9 +128,10 @@ class PushCampaignBase(CampaignBase):
         for candidate in candidates:
             devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
             device_ids = [device.one_signal_device_id for device in devices]
-            if not device_ids:
-                raise InvalidUsage('There is no device associated with Candidate (id: %s)' % candidate.id)
             candidate_and_device_ids.append((candidate.id, device_ids))
+        all_device_ids = sum(map(lambda item: item[1], candidate_and_device_ids), [])
+        if not all_device_ids:
+            raise InvalidUsage('There is no device associated with any candidate. Candidate Ids: %s' % [candidate.id for candidate in candidates])
         return candidate_and_device_ids
 
     @celery_app.task(name='send_campaign_to_candidate')

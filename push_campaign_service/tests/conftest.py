@@ -13,12 +13,14 @@ but maybe some other user.
 
 """
 import pytest
+import time
 from faker import Faker
 from redo import retry
 from requests import codes
 
 from push_campaign_service.common.models.misc import Frequency
-from push_campaign_service.common.utils.test_utils import delete_scheduler_task
+from push_campaign_service.common.utils.test_utils import delete_scheduler_task, create_talent_pipelines, \
+    create_smartlist, get_smartlist_candidates, delete_smartlist
 from push_campaign_service.common.test_config_manager import load_test_config
 from push_campaign_service.common.tests.api_conftest import (token_first, token_same_domain,
                                                              token_second, user_first,
@@ -348,3 +350,34 @@ def candidate_device_second(request, token_second, candidate_second):
 
     request.addfinalizer(tear_down)
     return device
+
+
+@pytest.fixture(scope='function')
+def smartlist_with_two_candidates_with_and_without_device_associated(request, token_first, user_first, candidate_first, candidate_same_domain,
+                                                                     talent_pool, candidate_device_first):
+    """
+    This fixture creates a smartlist that contains two candidates from domain_first. One candidate has a push device associated with him,
+    but other candidate does not have any push device associated.
+    :param request: request objecttalent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
+    talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
+    talent_pipeline_obj = get_talent_pipeline(talent_pipeline_id, token_first)['talent_pipeline']
+    :param candidate_first: candidate object
+    :param candidate_same_domain: candidate object
+    :param token_first: access token for user_first
+    :return: smartlist objects (dict)
+    """
+    talent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
+    talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
+    candidate_ids = [candidate_first['id'], candidate_same_domain['id']]
+    time.sleep(10)
+    smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_first)['smartlist']
+    smartlist_id = smartlist['id']
+    retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
+          args=(smartlist_id, token_first), kwargs={'count': 2})
+
+    def tear_down():
+        delete_smartlist(smartlist_id, token_first,
+                         expected_status=(codes.OK, codes.NOT_FOUND))
+
+    request.addfinalizer(tear_down)
+    return smartlist
