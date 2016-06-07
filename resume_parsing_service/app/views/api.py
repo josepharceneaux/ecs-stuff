@@ -89,6 +89,7 @@ def resume_post_reciever():
         'filepicker_key': filepicker_key,
         'resume_file': resume_file
     }
+    logger.info('Begining to parse resume with params: {}'.format(parse_params))
     return jsonify(**process_resume(parse_params))
 
 
