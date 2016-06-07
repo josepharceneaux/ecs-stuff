@@ -1,6 +1,7 @@
 """API for the Resume Parsing App"""
 # pylint: disable=wrong-import-position, fixme
 __author__ = 'erikfarmer'
+import unicodedata
 # Framework specific
 from flask import Blueprint
 from flask import request
@@ -53,7 +54,7 @@ def resume_post_reciever():
             raise InvalidUsage('Invalid type for `talent_pool_ids`')
         filepicker_key = request_json.get('filepicker_key')
         resume_file = None
-        resume_file_name = str(filepicker_key)
+        resume_file_name = str(unicodedata.normalize("NFKD", filepicker_key))
         if not filepicker_key:
             raise InvalidUsage('Invalid JSON data for resume parsing')
     # Handle posted form data. Required for mobile app as it posts a binary file
@@ -89,7 +90,6 @@ def resume_post_reciever():
         'filepicker_key': filepicker_key,
         'resume_file': resume_file
     }
-    logger.info('Begining to parse resume with params: {}'.format(parse_params))
     return jsonify(**process_resume(parse_params))
 
 
