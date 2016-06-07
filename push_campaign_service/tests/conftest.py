@@ -28,7 +28,7 @@ from push_campaign_service.common.tests.api_conftest import (token_first, token_
                                                              candidate_first, candidate_same_domain,
                                                              candidate_second, smartlist_first,
                                                              smartlist_same_domain, smartlist_second,
-                                                             talent_pool, talent_pool_second)
+                                                             talent_pool, talent_pool_second, talent_pipeline, talent_pipeline_second)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
                                                         generate_campaign_schedule_data,
@@ -400,7 +400,7 @@ def candidate_device_second(request, token_second, candidate_second):
 
 @pytest.fixture(scope='function')
 def smartlist_with_two_candidates_with_and_without_device_associated(request, token_first, user_first, candidate_first, candidate_same_domain,
-                                                                     talent_pool, candidate_device_first):
+                                                                     talent_pipeline, candidate_device_first):
     """
     This fixture creates a smartlist that contains two candidates from domain_first. One candidate has a push device associated with him,
     but other candidate does not have any push device associated.
@@ -410,11 +410,9 @@ def smartlist_with_two_candidates_with_and_without_device_associated(request, to
     :param token_first: access token for user_first
     :return: smartlist objects (dict)
     """
-    talent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
-    talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
     candidate_ids = [candidate_first['id'], candidate_same_domain['id']]
     time.sleep(10)
-    smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_first)['smartlist']
+    smartlist = create_smartlist(candidate_ids, talent_pipeline['id'], token_first)['smartlist']
     smartlist_id = smartlist['id']
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_first), kwargs={'count': 2})
@@ -429,7 +427,7 @@ def smartlist_with_two_candidates_with_and_without_device_associated(request, to
 
 @pytest.fixture(scope='function')
 def smartlist_with_two_candidates_with_no_device_associated(request, token_first, user_first, candidate_first, candidate_same_domain,
-                                                                     talent_pool):
+                                                                     talent_pipeline):
     """
     This fixture creates a smartlist that contains two candidates from domain_first. Both candidates do not have any push device associated with them.
     :param request: request object
@@ -438,11 +436,9 @@ def smartlist_with_two_candidates_with_no_device_associated(request, token_first
     :param token_first: access token for user_first
     :return: smartlist objects (dict)
     """
-    talent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
-    talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
     candidate_ids = [candidate_first['id'], candidate_same_domain['id']]
     time.sleep(10)
-    smartlist = create_smartlist(candidate_ids, talent_pipeline_id, token_first)['smartlist']
+    smartlist = create_smartlist(candidate_ids, talent_pipeline['id'], token_first)['smartlist']
     smartlist_id = smartlist['id']
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_first), kwargs={'count': 2})
