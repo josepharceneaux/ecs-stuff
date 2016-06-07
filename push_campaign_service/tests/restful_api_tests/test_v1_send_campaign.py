@@ -123,7 +123,8 @@ class TestSendCampaign(object):
         blasts = response['blasts']
         blast_id = blasts[0]['id']
         
-        # There should be only one send because second candidate in smartlist does not have any push device associated with him.
+        # There should be only one send because second candidate in smartlist does not have any push device associated
+        # with him.
         response = retry(get_blast_sends, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(blast_id, campaign_id, token_first), kwargs={'count': 1})
         assert len(response['sends']) == 1

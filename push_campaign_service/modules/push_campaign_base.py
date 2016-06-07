@@ -133,6 +133,7 @@ class PushCampaignBase(CampaignBase):
         # get all device ids and if there is no device associated with any candidate, raise InvalidUsage
         all_device_ids = sum(map(lambda item: item[1], candidate_and_device_ids), [])
         if not all_device_ids:
+            # TODO--break the line
             raise InvalidUsage('There is no device associated with any candidate. Candidate Ids: %s' % [candidate.id for candidate in candidates])
         return candidate_and_device_ids
 

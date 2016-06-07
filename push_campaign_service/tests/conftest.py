@@ -109,6 +109,7 @@ def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, ca
     request.addfinalizer(tear_down)
     return data
 
+# TODO---respect the line limit
 
 @pytest.fixture()
 def campaign_with_two_candidates_with_and_without_push_device(request, token_first, smartlist_with_two_candidates_with_and_without_device_associated, campaign_data):
@@ -132,7 +133,7 @@ def campaign_with_two_candidates_with_and_without_push_device(request, token_fir
     request.addfinalizer(tear_down)
     return data
 
-
+# TODO--I think following comment needs to be updated as from what I gather from name 2 candidates with no push device
 @pytest.fixture()
 def campaign_with_two_candidates_with_no_push_device_associated(request, token_first, smartlist_with_two_candidates_with_no_device_associated, campaign_data):
     """
@@ -424,7 +425,8 @@ def smartlist_with_two_candidates_with_and_without_device_associated(request, to
     request.addfinalizer(tear_down)
     return smartlist
 
-
+# TODO--in almost all of the code with or without devices I could not figure out how we determine that. Gotta sit with you
+# and figure that out
 @pytest.fixture(scope='function')
 def smartlist_with_two_candidates_with_no_device_associated(request, token_first, user_first, candidate_first, candidate_same_domain,
                                                                      talent_pipeline):

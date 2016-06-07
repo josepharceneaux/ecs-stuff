@@ -86,7 +86,7 @@ def user_same_domain(request, token_same_domain):
     user_id = test_config['USER_SAME_DOMAIN']['user_id']
     return {'id': user_id}
 
-
+# TODO--we changed params and it's in common, kindly double check if it didn't break anything else
 @pytest.fixture(scope='function')
 def candidate_first(request, talent_pool, token_first):
     """
@@ -188,7 +188,7 @@ def smartlist_second(request, token_second, candidate_second, talent_pipeline_se
     :param request: request object
     :param token_second: access token for user_second
     :param candidate_second: candidate object
-    :param talent_pipeline_second: talent_pipeline assocaited with user_second
+    :param talent_pipeline_second: talent_pipeline associated with user_second
     :return: smartlist object
     """
     candidate_ids = [candidate_second['id']]
@@ -204,6 +204,7 @@ def smartlist_second(request, token_second, candidate_second, talent_pipeline_se
     request.addfinalizer(tear_down)
     return smartlist
 
+# TODO--add update params in docstring
 
 @pytest.fixture(scope='function')
 def smartlist_same_domain(request, token_same_domain, candidate_same_domain, talent_pipeline):
