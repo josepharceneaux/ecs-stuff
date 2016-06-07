@@ -111,6 +111,29 @@ def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, ca
 
 
 @pytest.fixture()
+def campaign_with_two_candidates_with_and_without_push_device(request, token_first, smartlist_with_two_candidates_with_and_without_device_associated, campaign_data):
+    """
+    This fixtures creates a campaign which is associated with one smartlist having two candidates. One candidates has a push device but other does not.
+    :param request:
+    :param token_first: at belongs to same users, and one created by other
+    user from same domain
+    :param smartlist_with_two_candidates_with_and_without_device_associated: smartlist dict object owned by user_first
+    :param campaign_data: dict data to create campaign
+    :return: campaign data
+    """
+    data = campaign_data.copy()
+    data['smartlist_ids'] = [smartlist_with_two_candidates_with_and_without_device_associated['id']]
+    campaign_id = create_campaign(data, token_first)['id']
+    data['id'] = campaign_id
+
+    def tear_down():
+        delete_campaign(campaign_id, token_first, expected_status=(codes.OK, codes.NOT_FOUND))
+
+    request.addfinalizer(tear_down)
+    return data
+
+
+@pytest.fixture()
 def campaign_in_db_same_domain(request, token_same_domain, smartlist_same_domain, campaign_data):
     """
     This fixture creates a campaign in database by hitting push campaign service api

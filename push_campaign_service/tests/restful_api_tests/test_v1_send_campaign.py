@@ -109,17 +109,18 @@ class TestSendCampaign(object):
         assert len(response['sends']) == 2
 
     def test_campaign_send_to_smartlist_with_two_candidates_with_and_without_push_device(self, token_first,
-                                                    smartlist_with_two_candidates_with_and_without_device_associated):
+                                                    campaign_with_two_candidates_with_and_without_push_device):
         """
         - This tests the endpoint /v1/push-campaigns/:id/send
         In this test I want to test that if a smartlist contains mul
         """
-        campaign_id = smartlist_with_two_candidates_with_and_without_device_associated['id']
+        campaign_id = campaign_with_two_candidates_with_and_without_push_device['id']
         send_campaign(campaign_id, token_first, expected_status=(codes.OK,))
         response = retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(campaign_id, token_first), kwargs={'count': 1})
         blasts = response['blasts']
         blast_id = blasts[0]['id']
+        
         # There should be only one send because second candidate in smartlist does not have any push device associated with him.
         response = retry(get_blast_sends, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(blast_id, campaign_id, token_first), kwargs={'count': 1})
