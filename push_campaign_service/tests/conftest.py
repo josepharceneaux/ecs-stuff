@@ -12,15 +12,15 @@ are some fixture that are postfix with '_same_domain', actually belong to domain
 but maybe some other user.
 
 """
-import pytest
 import time
+import pytest
 from faker import Faker
 from redo import retry
 from requests import codes
 
 from push_campaign_service.common.models.misc import Frequency
-from push_campaign_service.common.utils.test_utils import delete_scheduler_task, create_talent_pipelines, \
-    create_smartlist, get_smartlist_candidates, delete_smartlist
+from push_campaign_service.common.utils.test_utils import (delete_scheduler_task, create_talent_pipelines,
+                                                           create_smartlist, get_smartlist_candidates, delete_smartlist)
 from push_campaign_service.common.test_config_manager import load_test_config
 from push_campaign_service.common.tests.api_conftest import (token_first, token_same_domain,
                                                              token_second, user_first,
@@ -113,7 +113,7 @@ def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, ca
 @pytest.fixture()
 def campaign_with_two_candidates_with_and_without_push_device(request, token_first, smartlist_with_two_candidates_with_and_without_device_associated, campaign_data):
     """
-    This fixtures creates a campaign which is associated with one smartlist having two candidates. One candidates has a push device but other does not.
+    This fixtures creates a campaign which is associated with one smartlist having two candidates. One candidate has a push device but other does not.
     :param request:
     :param token_first: at belongs to same users, and one created by other
     user from same domain
@@ -381,9 +381,7 @@ def smartlist_with_two_candidates_with_and_without_device_associated(request, to
     """
     This fixture creates a smartlist that contains two candidates from domain_first. One candidate has a push device associated with him,
     but other candidate does not have any push device associated.
-    :param request: request objecttalent_pipelines = create_talent_pipelines(token_first, talent_pool['id'])
-    talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
-    talent_pipeline_obj = get_talent_pipeline(talent_pipeline_id, token_first)['talent_pipeline']
+    :param request: request object
     :param candidate_first: candidate object
     :param candidate_same_domain: candidate object
     :param token_first: access token for user_first

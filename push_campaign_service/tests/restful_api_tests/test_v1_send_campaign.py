@@ -112,7 +112,9 @@ class TestSendCampaign(object):
                                                     campaign_with_two_candidates_with_and_without_push_device):
         """
         - This tests the endpoint /v1/push-campaigns/:id/send
-        In this test I want to test that if a smartlist contains mul
+        In this test I want to test the scenario that if a push campaign is being sent to multiple candidates and there is one or more but not all
+        candidates that do not have a push device associated with them, then it should not raise an InvalidUsage error but sends should
+        be equal to number of candidates that have devices associated with them.
         """
         campaign_id = campaign_with_two_candidates_with_and_without_push_device['id']
         send_campaign(campaign_id, token_first, expected_status=(codes.OK,))
