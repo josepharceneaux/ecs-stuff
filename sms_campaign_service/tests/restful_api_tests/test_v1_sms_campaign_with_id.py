@@ -192,8 +192,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should get bad request error (400)'
 
-    def test_with_non_json_data(self, headers, campaign_valid_data,
-                                sms_campaign_of_user_first):
+    def test_with_non_json_data(self, headers, campaign_valid_data, sms_campaign_of_user_first):
         """
         This tries to update SMS campaign record (in sms_campaign table) providing data in dict
         format rather than JSON. It should get bad request error.
@@ -238,37 +237,45 @@ class TestSmsCampaignWithIdHTTPPUT(object):
 
     def test_campaign_update_with_valid_and_invalid_smartlist_ids(self, headers,
                                                                   campaign_valid_data,
-                                                                  smartlist_with_two_candidates_in_other_domain,
                                                                   sms_campaign_of_user_first):
         """
-        This is a test to update a campaign which does not exists in database.
+        This is a test to update a campaign which does not exists in database. It should result in
+        InvalidUsage error.
         """
         data = campaign_valid_data.copy()
-        last_id = CampaignsTestsHelpers.get_last_id(Smartlist)
-        data['smartlist_ids'].extend([last_id, 0, smartlist_with_two_candidates_in_other_domain[0]])
+        data['smartlist_ids'].extend([0, 'a'])
         response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_user_first['id'],
-                                headers=headers,
-                                data=json.dumps(data))
-        assert response.status_code == 207
+                                headers=headers, data=json.dumps(data))
+        assert response.status_code == InvalidUsage.http_status_code()
 
-    def test_campaign_update_with_invalid_smartlist_ids(self, headers,
-                                                        campaign_valid_data,
-                                                        smartlist_with_two_candidates_in_other_domain,
-                                                        sms_campaign_of_user_first):
+    def test_campaign_update_with_valid_and_not_owned_smartlist_ids(self, headers,
+                                                                    campaign_valid_data,
+                                                                    smartlist_with_two_candidates_in_other_domain,
+                                                                    sms_campaign_of_user_first):
         """
-        This is a test to update a campaign which does not exists in database.
+        This is a test to update a campaign with smartlist id of some other domain. It should result in
+        ForbiddenError.
+        """
+        data = campaign_valid_data.copy()
+        data['smartlist_ids'].extend([smartlist_with_two_candidates_in_other_domain[0]])
+        response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_user_first['id'], headers=headers,
+                                data=json.dumps(data))
+        assert response.status_code == ForbiddenError.http_status_code()
+
+    def test_campaign_update_with_valid_and_non_existing_smartlist_ids(self, headers, campaign_valid_data,
+                                                                       sms_campaign_of_user_first):
+        """
+        This is a test to update a campaign with non-existing smartlist id. It should result in
+        ResourceNotFound Error.
         """
         data = campaign_valid_data.copy()
         non_existing_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
-        data['smartlist_ids'] = [non_existing_id, 0,
-                                 smartlist_with_two_candidates_in_other_domain[0]]
-        response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_user_first['id'],
-                                headers=headers,
+        data['smartlist_ids'].extend([non_existing_id])
+        response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_user_first['id'], headers=headers,
                                 data=json.dumps(data))
-        assert response.status_code == InvalidUsage.http_status_code()
+        assert response.status_code == ResourceNotFound.http_status_code()
 
-    def test_campaign_update_with_invalid_campaign_id(self, access_token_first,
-                                                      campaign_valid_data):
+    def test_campaign_update_with_invalid_campaign_id(self, access_token_first, campaign_valid_data):
         """
         This is a test to update a campaign which does not exists in database.
         """

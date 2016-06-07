@@ -216,17 +216,11 @@ class SMSCampaigns(Resource):
         """
         data_from_ui = get_valid_json_data(request)
         campaign_obj = SmsCampaignBase(request.user.id)
-        campaign_id, invalid_smartlist_ids = campaign_obj.save(data_from_ui)
+        campaign_id = campaign_obj.save(data_from_ui)
         headers = {'Location': SmsCampaignApiUrl.CAMPAIGN % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
         # If any of the smartlist_id found invalid
-        if invalid_smartlist_ids['count']:
-            return ApiResponse(dict(id=campaign_id,
-                                    invalid_smartlist_ids=invalid_smartlist_ids),
-                               status=requests.codes.MULTI_STATUS, headers=headers)
-        else:
-            return ApiResponse(dict(id=campaign_id),
-                               status=requests.codes.CREATED, headers=headers)
+        return ApiResponse(dict(id=campaign_id), status=requests.codes.CREATED, headers=headers)
 
     def delete(self):
         """

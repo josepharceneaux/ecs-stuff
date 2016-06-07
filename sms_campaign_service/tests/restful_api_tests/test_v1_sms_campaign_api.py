@@ -265,6 +265,55 @@ class TestSmsCampaignHTTPPost(object):
                                  data=json.dumps(campaign_valid_data))
         assert response.status_code == InvalidUsage.http_status_code()
 
+    def test_campaign_creation_with_one_user_phone_and_one_unknown_smartlist(self, headers, campaign_valid_data,
+                                                                             user_phone_1):
+        """
+        User has one phone value, valid header and valid data. One of the Smartlist ids being sent
+        to the server is invalid (Non-integer). It should result InvalidUsage error.
+        :param headers: valid header to POST data
+        :param campaign_valid_data: valid data to create SMS campaign
+        :param user_phone_1: user_phone fixture to assign a test phone number to user
+        """
+        campaign_valid_data['smartlist_ids'].append(gen_salt(2))
+        response = requests.post(self.URL, headers=headers, data=json.dumps(campaign_valid_data))
+        assert response.status_code == InvalidUsage.http_status_code()
+
+    def test_campaign_create_with_valid_and_not_owned_smartlist_ids(self, headers, campaign_valid_data,
+                                                                    smartlist_with_two_candidates_in_other_domain,
+                                                                    smartlist_with_two_candidates):
+        """
+        This is a test to create SMS campaign with valid smartlist id and smartlist id of some other domain.
+        It should result in ForbiddenError.
+        """
+        data = campaign_valid_data.copy()
+        data['smartlist_ids'].extend([smartlist_with_two_candidates[0],
+                                      smartlist_with_two_candidates_in_other_domain[0]])
+        response = requests.post(self.URL, headers=headers, data=json.dumps(data))
+        assert response.status_code == ForbiddenError.http_status_code()
+
+    def test_campaign_create_with_valid_and_non_existing_smartlist_ids(self, headers, campaign_valid_data,
+                                                                       smartlist_with_two_candidates):
+        """
+        This is a test to create SMS campaign with valid and non-existing smartlist_ids.
+        It should result in ResourceNotFound error.
+        """
+        data = campaign_valid_data.copy()
+        non_existing_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
+        data['smartlist_ids'].extend([non_existing_id, smartlist_with_two_candidates[0]])
+        response = requests.post(self.URL, headers=headers, data=json.dumps(data))
+        assert response.status_code == ResourceNotFound.http_status_code()
+
+    def test_campaign_create_with_valid_and_invalid_smartlist_ids(self, headers, campaign_valid_data,
+                                                                  smartlist_with_two_candidates):
+        """
+        This is a test to create SMS campaign with valid and invalid smartlist_ids.
+        Status code should be 400 and campaign should not be created.
+        """
+        data = campaign_valid_data.copy()
+        data['smartlist_ids'] = [0, smartlist_with_two_candidates[0]]
+        response = requests.post(self.URL, headers=headers, data=json.dumps(data))
+        assert response.status_code == InvalidUsage.http_status_code()
+
     def test_campaign_creation_with_invalid_url_in_body_text(self, campaign_valid_data,
                                                              headers, user_phone_1):
         """
@@ -279,23 +328,6 @@ class TestSmsCampaignHTTPPost(object):
                                  data=json.dumps(campaign_valid_data))
         assert response.status_code == InvalidUsage.http_status_code()
         assert response.json()['error']['code'] == SmsCampaignApiException.INVALID_URL_FORMAT
-
-    def test_campaign_creation_with_one_user_phone_and_one_unknown_smartlist(
-            self, user_first, headers, campaign_valid_data, user_phone_1):
-        """
-        User has one phone value, valid header and valid data. One of the Smartlist ids being sent
-        to the server doesn't actually exist in the getTalent's database.
-        It should result in OK response (207 status code) as code should create campaign for valid
-        smartlist ids.
-        :param headers: valid header to POST data
-        :param campaign_valid_data: valid data to create SMS campaign
-        :param user_phone_1: user_phone fixture to assign a test phone number to user
-        """
-        campaign_valid_data['smartlist_ids'].append(gen_salt(2))
-        response = requests.post(self.URL,
-                                 headers=headers,
-                                 data=json.dumps(campaign_valid_data))
-        assert_campaign_creation(response, user_first.id, 207)
 
     def test_campaign_creation_with_one_user_phone_and_valid_data(self,
                                                                   user_first,
@@ -345,37 +377,6 @@ class TestSmsCampaignHTTPPost(object):
         assert response.status_code == InternalServerError.http_status_code(), \
             'Internal Server Error should occur (500)'
         assert response.json()['error']['code'] == SmsCampaignApiException.MULTIPLE_TWILIO_NUMBERS
-
-    def test_campaign_create_with_valid_and_non_existing_and_not_owned_smartlist_ids(
-            self, headers, user_first, campaign_valid_data,
-            smartlist_with_two_candidates_in_other_domain):
-        """
-        This is a test to create SMS campaign with valid and invalid smartlist_ids.
-        Status code should be 207 and campaign should be created.
-        """
-        data = campaign_valid_data.copy()
-        last_id = CampaignsTestsHelpers.get_last_id(Smartlist)
-        data['smartlist_ids'].extend([last_id, 0, smartlist_with_two_candidates_in_other_domain[0]])
-        response = requests.post(self.URL,
-                                 headers=headers,
-                                 data=json.dumps(data))
-        assert_campaign_creation(response, user_first.id, 207)
-
-    def test_campaign_create_with_invalid_smartlist_ids(self, headers,
-                                                        campaign_valid_data,
-                                                        smartlist_with_two_candidates_in_other_domain):
-        """
-        This is a test to create SMS campaign with invalid smartlist_ids.
-        Status code should be 400 and campaign should not be created.
-        """
-        data = campaign_valid_data.copy()
-        non_existing_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
-        data['smartlist_ids'] = [non_existing_id, 0,
-                                 smartlist_with_two_candidates_in_other_domain[0]]
-        response = requests.post(self.URL,
-                                 headers=headers,
-                                 data=json.dumps(data))
-        assert response.status_code == InvalidUsage.http_status_code()
 
 
 class TestSmsCampaignHTTPDelete(object):
