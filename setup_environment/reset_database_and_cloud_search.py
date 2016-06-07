@@ -17,7 +17,8 @@ from common.models.db import db
 from candidate_service.candidate_app import app
 
 static_tables = ['candidate_status', 'classification_type', 'country', 'culture', 'email_label', 'phone_label',
-                 'frequency', 'organization', 'product', 'rating_tag', 'social_network', 'web_auth_group', 'email_client']
+                 'frequency', 'organization', 'product', 'rating_tag', 'social_network', 'web_auth_group',
+                 'email_client', 'migration']
 
 flush_redis_entries = ['apscheduler.jobs', 'apscheduler.run_times', 'count_*_request', 'apscheduler_job_ids:user_*',
                        'apscheduler_job_ids:general_*']

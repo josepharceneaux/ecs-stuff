@@ -246,11 +246,13 @@ class UserServiceApiWords(object):
     DOMAIN = 'domain'
     ROLES = '/roles'
     GROUPS = 'groups'
+    INVITE = '/invite'
     RESET_PASSWORD = '/reset-password'
     UPDATE_PASSWORD = '/update-password'
     FORGOT_PASSWORD = '/forgot-password'
     SOURCES = 'sources'
     CUSTOM_FIELDS = 'custom_fields'
+    AOIS = 'areas_of_interest'
 
 
 class UserServiceApi(object):
@@ -263,6 +265,7 @@ class UserServiceApi(object):
     URL_PREFIX = _get_url_prefix(VERSION)
     _GROUP = UserServiceApiWords.GROUPS + '/<int:group_id>/'
     USER = UserServiceApiWords.USERS + "/<int:id>"
+    USER_INVITE = UserServiceApiWords.USERS + "/<int:id>" + UserServiceApiWords.INVITE
     DOMAIN = UserServiceApiWords.DOMAINS + "/<int:id>"
     USER_ROLES = UserServiceApiWords.USERS + "/<int:user_id>" + UserServiceApiWords.ROLES
     DOMAIN_ROLES = UserServiceApiWords.DOMAIN + '/<int:domain_id>' + UserServiceApiWords.ROLES
@@ -277,6 +280,8 @@ class UserServiceApi(object):
     FORGOT_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.FORGOT_PASSWORD
     RESET_PASSWORD = UserServiceApiWords.USERS + UserServiceApiWords.RESET_PASSWORD + '/<token>'
     DOMAIN_CUSTOM_FIELDS = '/' + VERSION + '/' + UserServiceApiWords.CUSTOM_FIELDS
+    DOMAIN_AOIS = '/' + VERSION + '/' + UserServiceApiWords.AOIS
+    DOMAIN_AOI = DOMAIN_AOIS + '/<int:id>'
 
 
 class UserServiceApiUrl(object):
@@ -289,6 +294,7 @@ class UserServiceApiUrl(object):
     API_URL = HOST_NAME % _get_api_relative_version(UserServiceApi.VERSION)
     USERS = API_URL % UserServiceApiWords.USERS
     USER = USERS + '/%s'
+    USER_INVITE = USERS + "/%s" + UserServiceApiWords.INVITE
     DOMAINS = API_URL % UserServiceApiWords.DOMAINS
     DOMAIN = DOMAINS + '/%s'
     USER_ROLES_API = API_URL % (UserServiceApiWords.USERS + '/%s' + UserServiceApiWords.ROLES)
@@ -304,6 +310,8 @@ class UserServiceApiUrl(object):
     FORGOT_PASSWORD_API = API_URL % UserServiceApi.FORGOT_PASSWORD
     RESET_PASSWORD_API = USERS + UserServiceApiWords.RESET_PASSWORD + '/%s'
     DOMAIN_CUSTOM_FIELDS = API_URL % UserServiceApiWords.CUSTOM_FIELDS
+    DOMAIN_AOIS = API_URL % UserServiceApiWords.AOIS
+    DOMAIN_AOI = DOMAIN_AOIS + '/%s'
 
 
 class CandidateApiWords(object):

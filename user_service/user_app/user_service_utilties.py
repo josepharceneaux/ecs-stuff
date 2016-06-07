@@ -1,8 +1,10 @@
 __author__ = 'ufarooqi'
 from flask import render_template
+from user_service.user_app import app
 from werkzeug.security import gen_salt
 
 from user_service.common.error_handling import InvalidUsage
+from user_service.common.talent_config_manager import TalentConfigKeys
 from user_service.common.models.email_campaign import EmailTemplateFolder, UserEmailTemplate
 from user_service.common.models.user import db, Domain, User, UserGroup
 from user_service.common.utils.amazon_ses import send_email
@@ -112,7 +114,7 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
 def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None,
                 thumbnail_url='', user_group_id=None, locale=None):
 
-    temp_password = gen_salt(20)
+    temp_password = gen_salt(8)
     hashed_password = gettalent_generate_password_hash(temp_password)
 
     user_group = None
@@ -141,16 +143,17 @@ def create_user(email, domain_id, first_name, last_name, expiration, phone="", d
     # TODO: Make new widget_page if first user in domain
     # TODO: Add activity
 
-    send_new_account_email(email, temp_password)
+    send_new_account_email(email, temp_password, 'support@gettalent.com')
 
     return user
 
 
-def send_new_account_email(email, temp_password):
-    new_user_email = render_template('new_user.html', email=email, password=temp_password)
-    send_email(source='"getTalent Registration" <registration@gettalent.com>',
-               subject='Setup Your New Account',
-               body=new_user_email, to_addresses=[email], email_format='html')
+def send_new_account_email(account_email, temp_password, to_email):
+    if app.config[TalentConfigKeys.ENV_KEY] in ('prod', 'qa'):
+        new_user_email = render_template('new_user.html', email=account_email, password=temp_password)
+        send_email(source='"getTalent Registration" <registration@gettalent.com>',
+                   subject='Setup Your New Account',
+                   body=new_user_email, to_addresses=[to_email], email_format='html')
 
 
 def send_reset_password_email(email, name, reset_password_url, six_digit_token):
