@@ -128,6 +128,16 @@ class TestSendCampaign(object):
                          args=(blast_id, campaign_id, token_first), kwargs={'count': 1})
         assert len(response['sends']) == 1
 
+    def test_campaign_send_to_smartlist_with_two_candidates_with_no_push_device(self, token_first,
+                                                    campaign_with_two_candidates_with_no_push_device_associated):
+        """
+        - This tests the endpoint /v1/push-campaigns/:id/send
+        In this test I want to test the scenario that if a push campaign is being sent to multiple candidates and there is no push device associated with
+        any candidate, then API will raise InvalidUsage error
+        """
+        campaign_id = campaign_with_two_candidates_with_no_push_device_associated['id']
+        send_campaign(campaign_id, token_first, expected_status=(codes.BAD_REQUEST,))
+
     def test_campaign_send_to_candidate_with_no_device(self, token_first, campaign_in_db):
         """
         In this test, we will send a campaign to a valid candidate (in same domain), but candidate
