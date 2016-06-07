@@ -8,23 +8,35 @@ Each handler will pull code from the resume parser library/modules and act accor
 """
 __author__ = 'erik@gettalent.com'
 
-import boto3
-
-BUCKET = 'some bucket'
+from boto_utils import get_s3_obj
+from burning_glass_utils import fetch_optic_response
+from optic_parsing_utils import parse_optic_xml
+import base64
+import time
 
 def s3_parsing(event, context):
     """
     MVP checklist:
-        Get s3 key
-        Get object
-        Send to BG
+        Get s3 key DONE
+        Get object DONE
+        Send to BG DONE
         parse response
     """
-    boto_client = boto3.client('s3')
+    start = time.time()
     s3_key = event['s3_key']
+    resume_file = get_s3_obj(s3_key)
+    print 'Obtained resume file in {}s'.format(time.time() - start)
 
-    resume_file = boto_client.get_object(Bucket=BUCKET, Key=s3_key)
-    pass
+    doc_content = resume_file['Body'].read()
+    encoded_doc = base64.b64encode(doc_content)
+    print 'File encoded in {}s'.format(time.time() - start)
+
+    bg_response = fetch_optic_response(encoded_doc)
+    print 'BG response retrieved in {}s'.format(time.time() - start)
+
+    candidate = parse_optic_xml(bg_response)
+    print 'Candidate parsed in {}s'.format(time.time() - start)
+    return candidate
 
 
 # def s3_creation(event, context):
