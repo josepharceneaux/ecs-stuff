@@ -570,15 +570,8 @@ class CampaignById(Resource):
         """
         campaign_data = get_valid_json_data(request)
         camp_obj = SmsCampaignBase(request.user.id, campaign_id)
-        invalid_smartlist_ids = camp_obj.update(campaign_data, campaign_id=campaign_id)
-        # If any of the smartlist_id found invalid
-        if invalid_smartlist_ids['count']:
-            return dict(
-                message='SMS Campaign(id:%s) has been updated successfully' % campaign_id,
-                invalid_smartlist_ids=invalid_smartlist_ids), 207
-        else:
-            return dict(message='SMS Campaign(id:%s) has been updated successfully'
-                                % campaign_id), requests.codes.OK
+        camp_obj.update(campaign_data, campaign_id=campaign_id)
+        return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id), requests.codes.OK
 
     def delete(self, campaign_id):
         """

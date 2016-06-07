@@ -399,7 +399,7 @@ class CampaignBase(object):
         """
         campaign_obj = self.get_campaign_if_domain_is_valid(campaign_id, self.user,
                                                             self.campaign_type)
-        _, validated_data, invalid_smartlist_ids = self.pre_process_save_or_update(form_data)
+        _, validated_data = self.pre_process_save_or_update(form_data)
         if not campaign_obj:
             raise ResourceNotFound('%s campaign(id=%s) not found.' % (self.campaign_type,
                                                                       campaign_id))
@@ -407,7 +407,6 @@ class CampaignBase(object):
             # update old values with new ones if provided, else preserve old ones.
             validated_data[key] = value if value else getattr(campaign_obj, key)
         campaign_obj.update(**validated_data)
-        return invalid_smartlist_ids
 
     @staticmethod
     def create_campaign_smartlist(campaign, smartlist_ids):
