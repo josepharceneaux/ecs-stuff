@@ -54,8 +54,9 @@ def resume_post_reciever():
             raise InvalidUsage('Invalid type for `talent_pool_ids`')
         filepicker_key = request_json.get('filepicker_key')
         resume_file = None
-        resume_file_name = str(unicodedata.normalize("NFKD", filepicker_key))
-        if not filepicker_key:
+        if filepicker_key:
+            resume_file_name = str(unicodedata.normalize("NFKD", filepicker_key))
+        else:
             raise InvalidUsage('Invalid JSON data for resume parsing')
     # Handle posted form data. Required for mobile app as it posts a binary file
     elif 'multipart/form-data' in content_type:
