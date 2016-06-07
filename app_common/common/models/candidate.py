@@ -127,6 +127,8 @@ class CandidateStatus(db.Model):
     def __repr__(self):
         return "<CandidateStatus(id = '%r')>" % self.description
 
+    DEFAULT_STATUS_ID = 1  # Newly added candidate
+
     @classmethod
     def get_all(cls):
         """
