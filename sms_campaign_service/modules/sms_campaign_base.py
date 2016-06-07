@@ -438,12 +438,11 @@ class SmsCampaignBase(CampaignBase):
             return candidate, get_formatted_phone_number(phone_number)
         elif len(candidate_mobile_phone) > 1:
             logger.error('filter_candidates_for_valid_phone: SMS cannot be sent as '
-                         'candidate(id:%s) has multiple mobile phone numbers. '
-                         'Campaign(id:%s). (User(id:%s))'
-                         % (candidate.id, self.campaign.id, self.user.id))
+                         'candidate(id:%s) has multiple mobile numbers. '
+                         'Campaign(id:%s). (User(id:%s))' % (candidate.id, self.campaign.id, self.user.id))
         else:
             logger.error('filter_candidates_for_valid_phone: SMS cannot be sent as '
-                         'candidate(id:%s) has no phone number associated. Campaign(id:%s). '
+                         'candidate(id:%s) has no mobile number associated. Campaign(id:%s). '
                          '(User(id:%s))' % (candidate.id, self.campaign.id, self.user.id))
 
     def pre_process_celery_task(self, candidates):
