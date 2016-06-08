@@ -89,8 +89,7 @@ def campaign_in_db(request, token_first, smartlist_first, campaign_data):
 def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, campaign_data,
                                        smartlist_same_domain, candidate_device_first, candidate_device_same_domain):
     """
-    This fixtures creates a campaign which is associated with multiple two smartlist,
-    one th
+    This fixtures creates a campaign which is associated with multiple (two) smartlists.
     :param request:
     :param token_first: at belongs to same users, and one created by other
     user from same domain
@@ -118,8 +117,7 @@ def campaign_with_two_candidates_with_and_without_push_device(request, token_fir
     This fixtures creates a campaign which is associated with one smartlist having two candidates.
     One candidate has a push device but other does not.
     :param request:
-    :param token_first: at belongs to same users, and one created by other
-    user from same domain
+    :param token_first: auth token for user_first
     :param smartlist_with_two_candidates_with_and_without_device_associated: smartlist dict object owned by user_first
     :param campaign_data: dict data to create campaign
     :return: campaign data
@@ -415,7 +413,7 @@ def smartlist_with_two_candidates_with_and_without_device_associated(request, to
     :param candidate_first: candidate object
     :param candidate_same_domain: candidate object
     :param token_first: access token for user_first
-    :return: smartlist objects (dict)
+    :return: smartlist object (dict)
     """
     candidate_ids = [candidate_first['id'], candidate_same_domain['id']]
     time.sleep(10)
@@ -442,7 +440,7 @@ def smartlist_with_two_candidates_with_no_device_associated(request, token_first
     :param candidate_first: candidate object
     :param candidate_same_domain: candidate object
     :param token_first: access token for user_first
-    :return: smartlist objects (dict)
+    :return: smartlist object (dict)
     """
     candidate_ids = [candidate_first['id'], candidate_same_domain['id']]
     time.sleep(10)

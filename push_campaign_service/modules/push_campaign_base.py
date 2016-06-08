@@ -31,6 +31,8 @@ This module contain PushCampaignVase class which is sub class of CampaignBase.
 """
 # Third Party
 import datetime
+import itertools
+
 from dateutil.relativedelta import relativedelta
 from onesignalsdk.one_signal_sdk import OneSignalSdk
 
@@ -122,16 +124,19 @@ class PushCampaignBase(CampaignBase):
         will override this if needed.
         :param candidates: list of candidates
         :type candidates: list
-        :return: generator
+        :return: list of candidates and their device ids as tuple [(device_id, [device_id1, device_id2])]
         """
         candidate_and_device_ids = []
         for candidate in candidates:
             devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
             device_ids = [device.one_signal_device_id for device in devices]
-            candidate_and_device_ids.append((candidate.id, device_ids))
+            if not device_ids:
+                logger.warn('Candidate (id: %s) does not have any push device associated', candidate.id)
+            else:
+                candidate_and_device_ids.append((candidate.id, device_ids))
 
         # get all device ids and if there is no device associated with any candidate, raise InvalidUsage
-        all_device_ids = sum(map(lambda item: item[1], candidate_and_device_ids), [])
+        all_device_ids = list(itertools.chain(*map(lambda item: item[1], candidate_and_device_ids)))
         if not all_device_ids:
             raise InvalidUsage('There is no device associated with any candidate. Candidate Ids: %s'
                                % [candidate.id for candidate in candidates])

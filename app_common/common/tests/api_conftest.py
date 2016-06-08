@@ -130,7 +130,7 @@ def candidate_same_domain(request, talent_pool, token_same_domain):
 @pytest.fixture(scope='function')
 def candidate_second(request, token_second, talent_pool_second):
     """
-    This fixture created a test candidate using for domain second and it will be deleted
+    This fixture creates a test candidate in domain second and it will be deleted
     after test has run.
     :param request: request object
     :param token_second: authentication token for user_second
@@ -247,6 +247,7 @@ def talent_pool(request, token_first):
 def talent_pool_second(request, token_second):
     """
     This fixture created a talent pool that is associated to user_second of domain_second
+    :param request: request object
     :param token_second: authentication token for user_second
     """
     talent_pools = create_talent_pools(token_second)
@@ -265,6 +266,7 @@ def talent_pool_second(request, token_second):
 def talent_pipeline(request, token_first, talent_pool):
     """
     This fixture creates a talent pipeline that is associated to user_first of domain_first
+    :param request: request object
     :param token_first: authentication token for user_first
     :param talent_pool: talent_pool associated with user_first
     """
@@ -278,6 +280,7 @@ def talent_pipeline(request, token_first, talent_pool):
 def talent_pipeline_second(request, token_second, talent_pool_second):
     """
     This fixture creates a talent pipeline that is associated to user_second of domain_second
+    :param request: request object
     :param token_second: authentication token for user_second
     :param talent_pool_second: talent_pool associated with user_second
     """
