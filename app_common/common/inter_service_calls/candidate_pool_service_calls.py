@@ -1,9 +1,9 @@
 import json
 import requests
 from ..utils.api_utils import DEFAULT_PAGE
-from ..utils.validators import raise_if_not_instance_of
 from ..routes import CandidatePoolApiUrl, EmailCampaignApiUrl
 from ..utils.handy_functions import http_request, create_oauth_headers
+from ..utils.validators import (raise_if_not_instance_of, raise_if_not_positive_int_or_long)
 
 
 def create_smartlist_from_api(data, access_token):
@@ -44,9 +44,18 @@ def create_campaign_send_from_api(campaign_id, access_token):
 def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=None):
     """
     Calls smartlist API and retrieves the candidates of a smart or dumb list.
-    :param (int | long) list_id: smartlist id.
-    :param (bool) candidate_ids_only: Whether or not to get only ids of candidates
+    :param list_id: smartlist id.
+    :param candidate_ids_only: Whether or not to get only ids of candidates
+    :param access_token: Token for authorization
+    :type list_id: int | long
+    :type: candidate_ids_only: bool
+    :type: access_token: string
+    :rtype: list
+
     """
+    raise_if_not_positive_int_or_long(list_id)
+    raise_if_not_instance_of(candidate_ids_only, bool)
+    raise_if_not_instance_of(access_token, basestring)
     per_page = 1000  # Smartlists can have a large number of candidates, hence page size of 1000
     params = {'fields': 'id'} if candidate_ids_only else {}
     response = get_candidates_from_smartlist_with_page_params(list_id, per_page, DEFAULT_PAGE,

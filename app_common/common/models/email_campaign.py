@@ -99,8 +99,14 @@ class EmailCampaignSmartlist(db.Model):
 
     @classmethod
     def get_smartlists_of_campaign(cls, campaign_id, smartlist_ids_only=False):
-        if not campaign_id:
-            raise InternalServerError(error_message='campaign id must be provided')
+        """
+        Get smartlists associated with the given campaign.
+        :param campaign_id: Id of campaign for with smartlists are to be retrieved
+        :param smartlist_ids_only: True if only ids are to be returned
+        :type: campaign_id: int | long
+        :type smartlist_ids_only: bool
+        :rtype list | dict
+        """
         records = cls.query.filter_by(campaign_id=campaign_id).all()
         if smartlist_ids_only:
             return [row.smartlist_id for row in records]
