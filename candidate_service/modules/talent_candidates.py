@@ -14,7 +14,6 @@ from datetime import date
 from nameparser import HumanName
 
 # Database connection and logger
-from sqlalchemy.sql import text
 from candidate_service.common.models.db import db
 from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.candidate_app import logger
@@ -43,7 +42,7 @@ from candidate_service.common.error_handling import InvalidUsage, NotFoundError,
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 # Validations
-from candidate_service.common.utils.validators import sanitize_zip_code, is_number, format_phone_number, parse_phone_number
+from candidate_service.common.utils.validators import sanitize_zip_code, is_number, parse_phone_number
 from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
@@ -59,6 +58,7 @@ from candidate_service.common.geo_services.geo_coordinates import get_coordinate
 
 # Handy functions
 from candidate_service.common.utils.handy_functions import purge_dict
+
 
 ##################################################
 # Helper Functions For Retrieving Candidate Info #
@@ -429,11 +429,11 @@ def candidate_custom_fields(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    assert isinstance(candidate, Candidate)
     return [{'id': custom_field.id,
+             'custom_field_id': custom_field.custom_field_id,
              'value': custom_field.value,
              'created_at_datetime': custom_field.added_time.isoformat()
-             } for custom_field in db.session.query(CandidateCustomField).filter_by(candidate_id=candidate.id).all()]
+             } for custom_field in CandidateCustomField.query.filter_by(candidate_id=candidate.id).all()]
 
 
 def candidate_social_networks(candidate):

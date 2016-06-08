@@ -127,12 +127,23 @@ class CandidateStatus(db.Model):
     def __repr__(self):
         return "<CandidateStatus(id = '%r')>" % self.description
 
+    DEFAULT_STATUS_ID = 1  # Newly added candidate
+
+    @classmethod
+    def get_all(cls):
+        """
+        :rtype:  list[CandidateStatus]
+        """
+        return cls.query.all()
+
 
 class PhoneLabel(db.Model):
     __tablename__ = 'phone_label'
     id = db.Column('Id', db.Integer, primary_key=True)
     description = db.Column('Description', db.String(20))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
+
+    DEFAULT_LABEL = 'Home'
 
     # Relationships
     candidate_phones = relationship('CandidatePhone', backref='phone_label')

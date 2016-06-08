@@ -184,7 +184,7 @@ def domain_aoi(domain_first):
     """Will add two areas-of-interest to domain
     :rtype:  list[AreaOfInterest]
     """
-    areas_of_interest = [{'name': fake.job()}, {'name': fake.job()}]
+    areas_of_interest = [{'name': fake.job().lower()}, {'name': fake.job().lower()}]
     for area_of_interest in areas_of_interest:
         db.session.add(AreaOfInterest(domain_id=domain_first.id, name=area_of_interest['name']))
 

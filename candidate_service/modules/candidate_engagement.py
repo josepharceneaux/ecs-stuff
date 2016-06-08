@@ -42,7 +42,7 @@ def calculate_candidate_engagement_score(candidate_id):
     try:
         engagement_score = db.session.connection().execute(text(sql_query), candidate_id=candidate_id)
         result = engagement_score.fetchone()
-        if not result:
+        if not result or not result['engagement_score']:
             return None
         else:
             return float(str(result['engagement_score']))

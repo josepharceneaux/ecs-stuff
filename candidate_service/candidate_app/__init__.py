@@ -20,14 +20,16 @@ try:
         CandidateWorkExperienceResource, CandidateWorkExperienceBulletResource, CandidateWorkPreferenceResource,
         CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
-        CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
-        CandidateViewResource, CandidatePreferenceResource, CandidateClientEmailCampaignResource,
-        CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource, CandidateLanguageResource,
-        CandidateReferencesResource
+        CandidateEditResource, CandidatesResource, CandidateOpenWebResource, CandidateViewResource,
+        CandidatePreferenceResource, CandidateClientEmailCampaignResource,
+        CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource, CandidateLanguageResource
     )
+    from candidate_service.candidate_app.api.references import CandidateReferencesResource
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
     from candidate_service.candidate_app.api.v1_candidate_tags import CandidateTagResource
     from candidate_service.candidate_app.api.pipelines import CandidatePipelineResource
+    from candidate_service.candidate_app.api.candidate_custom_fields import CandidateCustomFieldResource
+    from candidate_service.candidate_app.api.statuses import CandidateStatusesResources
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)
@@ -212,6 +214,9 @@ try:
 
     # ****** CandidatePipelineResource *******
     api.add_resource(CandidatePipelineResource, CandidateApi.PIPELINES, endpoint='candidate_pipelines')
+
+    # ****** CandidateStatusesResource *******
+    api.add_resource(CandidateStatusesResources, CandidateApi.STATUSES, endpoint='candidate_statuses')
 
     db.create_all()
     db.session.commit()

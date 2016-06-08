@@ -9,14 +9,10 @@ from flask import request
 from flask_restful import Resource
 
 # Validators
-from candidate_service.modules.validators import get_candidate_if_exists, does_candidate_belong_to_users_domain
+from candidate_service.modules.validators import get_candidate_if_validated
 
 # Decorators
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
-
-# Error handling
-from candidate_service.common.error_handling import ForbiddenError
-from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 # Models
 from candidate_service.common.models.user import DomainRole, User
@@ -42,12 +38,8 @@ class CandidatePipelineResource(Resource):
         # Authenticated user & candidate ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
-        # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+        # Ensure candidate exists and belongs to user's domain
+        get_candidate_if_validated(user=authed_user, candidate_id=candidate_id)
 
         # Maximum number of Talent Pipeline objects used for searching.
         # This is to prevent client from waiting too long for a response
@@ -60,24 +52,31 @@ class CandidatePipelineResource(Resource):
 
         # Use Search API to retrieve candidate's domain-pipeline inclusion
         found_candidate_ids = []
-        access_token = authed_user.token[0].access_token
         for count, talent_pipeline in enumerate(talent_pipelines, start=1):
-            search_response = search_candidates_from_params(talent_pipeline.search_params, access_token)
+            search_response = search_candidates_from_params(search_params=talent_pipeline.search_params,
+                                                            access_token=request.oauth_token)
             found_candidate_ids.extend(candidate['id'] for candidate in search_response['candidates'])
 
             # Return if candidate_id is found in one of the Pipelines AND 5 or more requests have been made
             if (unicode(candidate_id) in found_candidate_ids) and count >= 5:
                 break
 
-        # Return only five pipelines if candidate is found in more than 5 domain pipelines
-        return {'candidate_pipelines': [
-            {
-                'id': talent_pipeline.id,
-                'candidate_id': Candidate.query.filter_by(user_id=talent_pipeline.user_id).first().id,
-                'name': talent_pipeline.name,
-                'description': talent_pipeline.description,
-                'open_positions': talent_pipeline.positions,
-                'datetime_needed': str(talent_pipeline.date_needed),
-                'user_id': talent_pipeline.user_id,
-                'added_datetime': str(talent_pipeline.added_time)
-            } for talent_pipeline in talent_pipelines]}
+        result = []
+
+        # Only return pipeline data if candidate is found from pipeline's search params
+        if unicode(candidate_id) in found_candidate_ids:
+            for talent_pipeline in talent_pipelines:
+                user_id = talent_pipeline.user_id
+                user_candidate = Candidate.query.filter_by(user_id=user_id).first()
+                result.append({
+                    "id": talent_pipeline.id,
+                    "candidate_id": user_candidate.id if user_candidate else None,
+                    "name": talent_pipeline.name,
+                    "description": talent_pipeline.description,
+                    "open_positions": talent_pipeline.positions,
+                    "datetime_needed": str(talent_pipeline.date_needed),
+                    "user_id": user_id,
+                    "added_datetime": str(talent_pipeline.added_time)
+                })
+
+        return {'candidate_pipelines': result}

@@ -17,9 +17,11 @@ from common.models.db import db
 from candidate_service.candidate_app import app
 
 static_tables = ['candidate_status', 'classification_type', 'country', 'culture', 'email_label', 'phone_label',
-                 'frequency', 'organization', 'product', 'rating_tag', 'social_network', 'web_auth_group', 'email_client']
+                 'frequency', 'organization', 'product', 'rating_tag', 'social_network', 'web_auth_group',
+                 'email_client', 'migration']
 
-flush_redis_entries = ['apscheduler.jobs', 'apscheduler.run_times']
+flush_redis_entries = ['apscheduler.jobs', 'apscheduler.run_times', 'count_*_request', 'apscheduler_job_ids:user_*',
+                       'apscheduler_job_ids:general_*']
 
 app = TalentFlask(__name__)
 load_gettalent_config(app.config)
@@ -42,7 +44,11 @@ def save_meetup_token_and_flushredis(_redis):
 def delete_entries(_redis, entries):
     for entry in entries:
         try:
-            _redis.delete(entry)
+            if '*' in entry:
+                for key in _redis.keys(entry):
+                    _redis.delete(key)
+            else:
+                _redis.delete(entry)
         except Exception as e:
             print e.message
 

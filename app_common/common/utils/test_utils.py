@@ -36,6 +36,7 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
     :param verify: set this to false 
     :return:
     """
+    method = method.lower()
     assert method in ['get', 'post', 'put', 'delete', 'patch'], 'Invalid method'
     assert url and isinstance(url, basestring), 'url must have a valid string value'
     request_method = getattr(requests, method)

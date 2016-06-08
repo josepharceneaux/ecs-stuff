@@ -73,7 +73,7 @@ def get_web_app_url():
 def _get_health_check_url(host_name):
     """
     This returns the healthcheck url appended with host name. e.g.http://127.0.0.1:8001/healthcheck
-    :param  str host_name: name of host. e.g.http://127.0.0.1:8001
+    :param str host_name: name of host. e.g.http://127.0.0.1:8001
     """
     return host_name % HEALTH_CHECK
 
@@ -222,6 +222,8 @@ class UserServiceApi(object):
     URL_PREFIX = '/' + VERSION + '/'
     USERS = "users"
     USER = "users/<int:id>"
+    USER_INVITE = "users/<int:id>/invite"
+
     DOMAINS = "domains"
     DOMAIN = "domains/<int:id>"
     USER_ROLES = "users/<int:user_id>/roles"
@@ -236,6 +238,8 @@ class UserServiceApi(object):
     DOMAIN_SOURCES = '/' + VERSION + '/sources'
     DOMAIN_SOURCE = '/' + VERSION + '/sources/<int:id>'
     DOMAIN_CUSTOM_FIELDS = '/' + VERSION + '/custom_fields'
+    DOMAIN_AOIS = '/' + VERSION + '/areas_of_interest'
+    DOMAIN_AOI = '/' + VERSION + '/areas_of_interest/<int:id>'
 
 
 class UserServiceApiUrl(object):
@@ -247,6 +251,7 @@ class UserServiceApiUrl(object):
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     USERS = HOST_NAME % ('/' + VERSION + '/users')
     USER = HOST_NAME % ('/' + VERSION + '/users/%s')
+    USER_INVITE = HOST_NAME % ('/' + VERSION + '/users/%s/invite')
     DOMAINS = HOST_NAME % ('/' + VERSION + '/domains')
     DOMAIN = HOST_NAME % ('/' + VERSION + '/domains/%s')
     USER_ROLES_API = HOST_NAME % ('/' + VERSION + '/users/%s/roles')
@@ -262,6 +267,8 @@ class UserServiceApiUrl(object):
     FORGOT_PASSWORD_API = HOST_NAME % ('/' + VERSION + '/users/forgot-password')
     RESET_PASSWORD_API = HOST_NAME % ('/' + VERSION + '/users/reset-password/%s')
     DOMAIN_CUSTOM_FIELDS = HOST_NAME % ('/' + VERSION + '/custom_fields')
+    DOMAIN_AOIS = HOST_NAME % ('/' + VERSION + '/areas_of_interest')
+    DOMAIN_AOI = HOST_NAME % ('/' + VERSION + '/areas_of_interest/%s')
 
 
 class CandidateApi(object):
@@ -344,6 +351,7 @@ class CandidateApi(object):
     TAG = '/' + VERSION + '/candidates/<int:candidate_id>/tags/<int:id>'
 
     PIPELINES = '/' + VERSION + '/candidates/<int:candidate_id>/pipelines'
+    STATUSES = '/' + VERSION + '/candidate_statuses'
 
 
 class CandidateApiUrl(object):
@@ -427,6 +435,7 @@ class CandidateApiUrl(object):
     TAG = HOST_NAME % ('/' + VERSION + '/candidates/%s/tags/%s')
 
     PIPELINES = HOST_NAME % ('/' + VERSION + '/candidates/%s/pipelines')
+    STATUSES = HOST_NAME % ('/' + VERSION + '/candidate_statuses')
 
 
 class WidgetApi(object):
