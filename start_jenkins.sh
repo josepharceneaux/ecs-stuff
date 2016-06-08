@@ -79,11 +79,11 @@ if [[ "$batch_three" =~ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds ]]; then batc
 
 if [[ $(($batch_one_status * $batch_two_status * $batch_three_status)) == 1 ]]
 then
-    printf "\n========================== Build is successful ==========================\n"
-    exit 0
-else
     printf "\n========================== Build is failed ==========================\n"
     exit 1
+else
+    printf "\n========================== Build is successful ==========================\n"
+    exit 0
 fi
 
 
