@@ -41,12 +41,6 @@ REDIS_EXPIRE_TIME = 10
 ####################################################################################################
 # Static URL tests
 ####################################################################################################
-def test_base_url():
-    """Test that the application root lists the endpoint."""
-    base_response = requests.get(ResumeApiUrl.BASE_URL % '')
-    assert ResumeApi.PARSE in base_response.content
-
-
 def test_health_check():
     """HealthCheck/PingDom test endpoint."""
     response = requests.get(ResumeApiUrl.HEALTH_CHECK)
