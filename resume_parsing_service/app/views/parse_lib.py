@@ -30,6 +30,7 @@ from resume_parsing_service.common.error_handling import InvalidUsage, InternalS
 from resume_parsing_service.common.routes import CandidateApiUrl
 from resume_parsing_service.common.utils.talent_s3 import download_file
 from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
+from resume_parsing_service.common.utils.talent_s3 import boto3_get_file, boto3_put
 from resume_parsing_service.common.utils.talent_s3 import upload_to_s3
 
 
@@ -58,10 +59,11 @@ def process_resume(parse_params):
         raise InvalidUsage('Talent Pools required for candidate creation')
 
     if filepicker_key:
-        file_picker_bucket, unused_conn = get_s3_filepicker_bucket_and_conn()
+        # file_picker_bucket, unused_conn = get_s3_filepicker_bucket_and_conn()
+        # filename_str = filepicker_key
+        # resume_bin = resume_file = download_file(file_picker_bucket, filename_str)
         filename_str = filepicker_key
-        resume_bin = resume_file = download_file(file_picker_bucket, filename_str)
-
+        resume_bin = resume_file = boto3_get_file(filename_str)
     elif parse_params.get('filename'):
         resume_bin = parse_params.get('resume_file')
         resume_file = StringIO(resume_bin.read())
@@ -94,7 +96,7 @@ def process_resume(parse_params):
     # Upload resumes we want to create candidates from.
     try:
         resume_bin.seek(0)
-        s3_url, key = upload_to_s3(resume_bin.read(), 'OriginalFiles', filename_str)
+        boto3_put(resume_bin.read(), filename_str, 'OriginalFiles')
         parsed_resume['candidate']['resume_url'] = filename_str
 
     except Exception as e:

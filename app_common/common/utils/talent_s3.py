@@ -8,6 +8,7 @@ from boto.s3.key import Key
 from ..error_handling import InternalServerError, InvalidUsage
 from ..talent_config_manager import TalentConfigKeys
 from boto.s3.connection import OrdinaryCallingFormat, S3Connection
+import boto3
 
 
 def get_s3_bucket_and_conn():
@@ -224,3 +225,32 @@ def create_bucket():
             if error_body_xml.find('Code').text != 'BucketAlreadyOwnedByYou':
                 raise InternalServerError(error_message="Could not create bucket with name %s in region: %s" % (name, region))
     return bucket
+
+
+def boto3_get_file(filename):
+    BUCKET = app.config[TalentConfigKeys.S3_FILE_PICKER_BUCKET_KEY]
+    client = boto3.client(
+        's3',
+        aws_access_key_id=app.config[TalentConfigKeys.AWS_KEY],
+        aws_secret_access_key=app.config[TalentConfigKeys.AWS_SECRET]
+    )
+    s3_file = client.get_object(Bucket=BUCKET, Key=filename)
+    from cStringIO import StringIO
+    return StringIO(s3_file['Body'].read())
+
+
+def boto3_put(file_contents, filename, path):
+    BUCKET = app.config[TalentConfigKeys.S3_FILE_PICKER_BUCKET_KEY]
+    client = boto3.client(
+        's3',
+        aws_access_key_id=app.config[TalentConfigKeys.AWS_KEY],
+        aws_secret_access_key=app.config[TalentConfigKeys.AWS_SECRET]
+    )
+    try:
+        client.put_object(
+            Body=file_contents,
+            Bucket=BUCKET,
+            Key='{}/{}'.format(path, filename)
+        )
+    except Exception:
+        app.logger.info('Error uploading resume to S3 with boto3')
