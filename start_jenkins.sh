@@ -58,34 +58,26 @@ sleep 10
 
 
 printf "\n========================== Batch 1 execution start =========================="
-printf "\n User Service"
-printf "\n Activity Service"
-printf "\n Spreadsheet Import Service"
-printf "\n Auth Service"
-printf "\n Scheduler Service"
-printf "\n Resume Parsing Service"
-batch_one=`py.test -n 48 user_service/tests activity_service/tests spreadsheet_import_service/tests auth_service/tests scheduler_service/tests resume_parsing_service/tests`
+printf "\nUser Service\nActivity Service\nSpreadsheet Import Service\nAuth Service\nScheduler Service\nResume Parsing Service\nCandidate Pool Service\nPush Campaign Service"
+printf "\n"
+batch_one=`py.test -n 48 user_service/tests activity_service/tests spreadsheet_import_service/tests auth_service/tests scheduler_service/tests resume_parsing_service/tests candidate_pool_service/tests push_campaign_service/tests`
 printf "\n========================== Batch 1 execution end =========================="
 printf "\n========================== Batch 2 execution start =========================="
 printf "\n Candidate Service"
+printf "\n"
 batch_two=`py.test -n 48 candidate_service/tests`
 printf "\n========================== Batch 2 execution end =========================="
 printf "\n========================== Batch 3 execution start =========================="
-printf "\n Candidate Pool Service"
-printf "\n Push Campaign Service"
-batch_three=`py.test -n 48 candidate_pool_service/tests push_campaign_service/tests`
-printf "\n========================== Batch 3 execution end =========================="
-printf "\n========================== Batch 4 execution start =========================="
 printf "\n SMS Campaign Service"
-batch_four=`py.test -n 48 sms_campaign_service/tests`
-printf "\n========================== Batch 4 execution end =========================="
+printf "\n"
+batch_three=`py.test -n 48 sms_campaign_service/tests`
+printf "\n========================== Batch 3 execution end =========================="
 
 if [[ "$batch_one" =~ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds ]]; then batch_one_status=1; else echo batch_one_status=0 && "$batch_one"; fi
 if [[ "$batch_two" =~ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds ]]; then batch_two_status=1; else echo batch_two_status=0 && "$batch_two"; fi
 if [[ "$batch_three" =~ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds ]]; then batch_three_status=1; else echo batch_three_status=0 && "$batch_three"; fi
-if [[ "$batch_four" =~ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds ]]; then batch_four_status=1; else echo batch_four_status=0 && "$batch_four"; fi
 
-if [[ $(($batch_one_status * $batch_two_status * $batch_three_status * $batch_four_status)) == 1 ]]
+if [[ $(($batch_one_status * $batch_two_status * $batch_three_status)) == 1 ]]
 then
     printf "\n========================== Build is successful ==========================\n"
     exit 0
