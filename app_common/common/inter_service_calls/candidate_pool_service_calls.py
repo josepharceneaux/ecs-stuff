@@ -41,7 +41,7 @@ def create_campaign_send_from_api(campaign_id, access_token):
     return response.json()
 
 
-def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=None):
+def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=None, user_id=None):
     """
     Calls smartlist API and retrieves the candidates of a smart or dumb list.
     :param list_id: smartlist id.
