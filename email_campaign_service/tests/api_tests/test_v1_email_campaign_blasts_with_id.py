@@ -9,7 +9,7 @@ import requests
 
 # Common Utils
 from email_campaign_service.common.tests.sample_data import fake
-from email_campaign_service.common.routes import EmailCampaignUrl
+from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast)
 
@@ -18,7 +18,7 @@ class TestEmailCampaignBlastsWithId(object):
     """
     This class contains tests for endpoint /v1/email-campaigns/:id/blasts/:id
     """
-    URL = EmailCampaignUrl.BLAST
+    URL = EmailCampaignApiUrl.BLAST
     HTTP_METHOD = 'get'
     ENTITY = 'blast'
 

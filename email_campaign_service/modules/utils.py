@@ -21,7 +21,8 @@ from email_campaign_service.common.utils.validators import raise_if_not_instance
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
-from email_campaign_service.common.routes import (CandidateApiUrl, EmailCampaignUrl)
+from email_campaign_service.common.routes import (CandidateApiUrl,
+                                                  EmailCampaignApiUrl)
 from email_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
@@ -134,7 +135,7 @@ def create_email_campaign_url_conversion(destination_url, email_campaign_send_id
     # source_url = current.HOST_NAME + str(URL(a='web', c='default', f='url_redirect',
     # args=url_conversion_id, hmac_key=current.HMAC_KEY))
     logger.info('create_email_campaign_url_conversion: url_conversion_id:%s' % url_conversion.id)
-    signed_source_url = CampaignUtils.sign_redirect_url(EmailCampaignUrl.URL_REDIRECT % url_conversion.id,
+    signed_source_url = CampaignUtils.sign_redirect_url(EmailCampaignApiUrl.URL_REDIRECT % url_conversion.id,
                                            datetime.utcnow() + relativedelta(years=+1))
 
     # In case of prod, do not save source URL

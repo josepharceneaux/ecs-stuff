@@ -18,7 +18,6 @@ import requests
 from datetime import datetime, timedelta
 
 # Application Specific
-import sys
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.tests.conftest import fake, uuid
@@ -26,8 +25,7 @@ from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.models.misc import (UrlConversion, Frequency)
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity,
                                                           ForbiddenError)
-from email_campaign_service.common.routes import (EmailCampaignUrl, EmailCampaignEndpoints,
-                                                  HEALTH_CHECK)
+from email_campaign_service.common.routes import (EmailCampaignApiUrl, HEALTH_CHECK)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailClient)
@@ -49,7 +47,7 @@ class TestGetCampaigns(object):
         """
          User auth token is invalid. It should get Unauthorized error.
         """
-        CampaignsTestsHelpers.request_with_invalid_token('get', EmailCampaignUrl.CAMPAIGNS, None)
+        CampaignsTestsHelpers.request_with_invalid_token('get', EmailCampaignApiUrl.CAMPAIGNS, None)
 
     def test_get_campaign_of_other_domain(self, email_campaign_in_other_domain, access_token_first):
         """
@@ -57,7 +55,7 @@ class TestGetCampaigns(object):
          ForbiddenError.
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            'get', EmailCampaignUrl.CAMPAIGN % email_campaign_in_other_domain.id,
+            'get', EmailCampaignApiUrl.CAMPAIGN % email_campaign_in_other_domain.id,
             access_token_first)
 
     def test_get_by_campaign_id(self, campaign_with_candidate_having_no_email,
@@ -166,7 +164,7 @@ class TestCreateCampaign(object):
     Here are the tests for creating a campaign from endpoint /v1/email-campaigns
     """
     HTTP_METHOD = 'post'
-    URL = EmailCampaignUrl.CAMPAIGNS
+    URL = EmailCampaignApiUrl.CAMPAIGNS
 
     def test_create_campaign_with_invalid_token(self):
         """
@@ -353,7 +351,7 @@ class TestSendCampaign(object):
     Here are the tests for sending a campaign from endpoint /v1/email-campaigns/send
     """
     HTTP_METHOD = 'post'
-    URL = EmailCampaignUrl.SEND
+    URL = EmailCampaignApiUrl.SEND
 
     def test_campaign_send_with_invalid_token(self, email_campaign_of_user_first):
         """
@@ -593,9 +591,9 @@ class TestSendCampaign(object):
 
 # Test for healthcheck
 def test_health_check():
-    response = requests.get(EmailCampaignEndpoints.HOST_NAME % HEALTH_CHECK)
+    response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK)
     assert response.status_code == 200
 
     # Testing Health Check URL with trailing slash
-    response = requests.get(EmailCampaignEndpoints.HOST_NAME % HEALTH_CHECK + '/')
+    response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK + '/')
     assert response.status_code == 200

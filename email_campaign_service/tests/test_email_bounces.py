@@ -11,7 +11,7 @@ from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.tests.conftest import *
 
 from email_campaign_service.email_campaign_app import app
-from email_campaign_service.common.routes import EmailCampaignUrl
+from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaignBlast
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.campaign_services.custom_errors import CampaignException
@@ -37,18 +37,23 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         email = CandidateEmail.get_email_by_candidate_id(candidate_ids[0])
         email.update(address=invalid_email)
         db.session.commit()
-        send_campaign_email_to_candidate(campaign, email, candidate_ids[0], email_campaign_blast.id)
+        if blast_foreign_key:
+            send_campaign_email_to_candidate(campaign, email, candidate_ids[0], blast_id=email_campaign_blast.id)
+        else:
+            send_campaign_email_to_candidate(campaign, email, candidate_ids[0], blast_id=None)
+
         attempts = 100 / 3 + 1
         retry(check_is_bounced, sleeptime=3, attempts=attempts, sleepscale=1,
               args=(email,), retry_exceptions=(AssertionError,))
         campaign_blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, timeout=20)
+
         campaign_blast = campaign_blasts[0]
         assert campaign_blast.bounces == 1
 
         # Since there is no candidate associated with campaign with valid email, so we will get 400 status while
         # sending this campaign
         response = requests.post(
-            EmailCampaignUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+            EmailCampaignApiUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == 400
         response = response.json()
         assert response['error']['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
@@ -117,7 +122,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
         # Now send this campaign through API, and there should be two blasts and Only one send associated with
         # this campaign because email has been marked as bounced.
         response = requests.post(
-            EmailCampaignUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+            EmailCampaignApiUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == 200
         attempts = 200 / 3 + 1
         retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
