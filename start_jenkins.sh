@@ -61,17 +61,17 @@ TIMEFORMAT='%lR'
 printf "\n========================== Batch 1 execution starts =========================="
 printf "\nUser Service\nActivity Service\nSpreadsheet Import Service\nAuth Service\nScheduler Service\nResume Parsing Service\nCandidate Pool Service\nPush Campaign Service"
 printf "\n"
-execution_time=time batch_one=`py.test -n 48 user_service/tests activity_service/tests spreadsheet_import_service/tests auth_service/tests scheduler_service/tests resume_parsing_service/tests candidate_pool_service/tests push_campaign_service/tests`
+execution_time=$( { time batch_one=`py.test -n 48 user_service/tests activity_service/tests spreadsheet_import_service/tests auth_service/tests scheduler_service/tests resume_parsing_service/tests candidate_pool_service/tests push_campaign_service/tests`; } 2>&1 )
 printf "\n========================== Batch 1 execution ends. Took ${execution_time} =========================="
 printf "\n========================== Batch 2 execution starts =========================="
 printf "\n Candidate Service"
 printf "\n"
-execution_time=time batch_two=`py.test -n 48 candidate_service/tests`
+execution_time=$( { time batch_two=`py.test -n 48 candidate_service/tests`; } 2>&1 )
 printf "\n========================== Batch 2 execution ends. Took ${execution_time} =========================="
 printf "\n========================== Batch 3 execution starts =========================="
 printf "\n SMS Campaign Service"
 printf "\n"
-execution_time=time batch_three=`py.test -n 48 sms_campaign_service/tests`
+execution_time=$( { time batch_three=`py.test -n 48 sms_campaign_service/tests`; } 2>&1 )
 printf "\n========================== Batch 3 execution ends. Took ${execution_time} =========================="
 
 if [[ "$batch_one" =~ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds ]]; then batch_one_status=1; else echo batch_one_status=0 && "$batch_one"; fi
@@ -80,11 +80,11 @@ if [[ "$batch_three" =~ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds ]]; then batc
 
 if [[ $(($batch_one_status * $batch_two_status * $batch_three_status)) == 1 ]]
 then
-    printf "\n========================== Build is failed ==========================\n"
-    exit 1
-else
     printf "\n========================== Build is successful ==========================\n"
     exit 0
+else
+    printf "\n========================== Build is failed ==========================\n"
+    exit 1
 fi
 
 
