@@ -234,7 +234,10 @@ def boto3_get_file(filename):
         aws_access_key_id=app.config[TalentConfigKeys.AWS_KEY],
         aws_secret_access_key=app.config[TalentConfigKeys.AWS_SECRET]
     )
-    s3_file = client.get_object(Bucket=BUCKET, Key=filename)
+    try:
+        s3_file = client.get_object(Bucket=BUCKET, Key=filename)
+    except Exception:
+        raise InvalidUsage("S3 error. Error retrieving {} from {}".format(filename, BUCKET))
     from cStringIO import StringIO
     return StringIO(s3_file['Body'].read())
 
