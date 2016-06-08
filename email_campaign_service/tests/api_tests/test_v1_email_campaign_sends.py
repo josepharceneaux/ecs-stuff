@@ -7,7 +7,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 import requests
 
 # Common Utils
-from email_campaign_service.common.routes import EmailCampaignUrl
+from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
@@ -16,7 +16,7 @@ class TestEmailCampaignSends(object):
     """
     This class contains tests for endpoint /v1/email-campaigns/:id/sends/:id/sends
     """
-    URL = EmailCampaignUrl.SENDS
+    URL = EmailCampaignApiUrl.SENDS
     HTTP_METHOD = 'get'
     ENTITY = 'sends'
 

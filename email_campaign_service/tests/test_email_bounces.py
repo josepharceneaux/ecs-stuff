@@ -12,8 +12,8 @@ from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.tests.conftest import *
 
 from email_campaign_service.email_campaign_app import app
-from email_campaign_service.common.routes import EmailCampaignUrl
-from email_campaign_service.common.models.email_campaign import EmailCampaignSend, EmailCampaignBlast
+from email_campaign_service.common.routes import EmailCampaignApiUrl
+from email_campaign_service.common.models.email_campaign import EmailCampaignBlast
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.tests.modules.handy_functions import send_campaign_email_to_candidate
 
@@ -54,7 +54,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         # Since there is no candidate associated with campaign with valid email, so we will get 400 status while
         # sending this campaign
         response = requests.post(
-            EmailCampaignUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+            EmailCampaignApiUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == 400
         response = response.json()
         assert response['error']['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
@@ -120,7 +120,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
         # Now send this campaign through API, and there should be two blasts and Only one send associated with
         # this campaign because email has been marked as bounced.
         response = requests.post(
-            EmailCampaignUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+            EmailCampaignApiUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == 200
         time.sleep(30)
 

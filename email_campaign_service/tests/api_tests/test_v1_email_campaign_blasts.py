@@ -9,7 +9,7 @@ import requests
 
 # Common Utils
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.routes import EmailCampaignUrl
+from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
@@ -19,7 +19,7 @@ class TestEmailCampaignBlasts(object):
     This class contains tests for endpoint /v1/email-campaigns/:id/blasts
     """
     # URL of this endpoint
-    URL = EmailCampaignUrl.BLASTS
+    URL = EmailCampaignApiUrl.BLASTS
     # HTTP Method for this endpoint
     HTTP_METHOD = 'get'
     # Resource for this endpoint
@@ -97,7 +97,7 @@ class TestEmailCampaignBlasts(object):
 
         # sending campaign 10 times to create 10 blast objects
         for _ in xrange(1, 10):
-            CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND,
+            CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND,
                                                 sent_campaign, access_token_first)
         db.session.commit()
         CampaignsTestsHelpers.assert_blast_sends(sent_campaign, expected_sends_count, blast_index=3)
