@@ -58,6 +58,9 @@ sleep 10
 
 TIMEFORMAT='%lR'
 
+pip install pytest==2.9.2
+pip install pytest-xdist==1.14
+
 # Services tests should be distributed in a such a way that each batch takes approximately equal amount of time
 
 printf "\n========================== Batch 1 execution starts =========================="
