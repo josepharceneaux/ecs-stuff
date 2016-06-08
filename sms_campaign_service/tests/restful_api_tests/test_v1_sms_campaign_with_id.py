@@ -218,7 +218,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
     def test_campaign_update_with_invalid_url_in_body_text(self, campaign_valid_data, headers,
                                                            sms_campaign_of_user_first):
         """
-        User has one phone value, valid header and invalid URL in body text(random word).
+        User has one mobile number, valid header and invalid URL in body text(random word).
         It should get invalid usage error, Custom error should be INVALID_URL_FORMAT.
         :param headers: valid header to POST data
         """

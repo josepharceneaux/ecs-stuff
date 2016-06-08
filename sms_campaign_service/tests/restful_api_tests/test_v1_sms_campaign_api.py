@@ -196,7 +196,7 @@ class TestSmsCampaignHTTPPost(object):
                                             headers,
                                             user_phone_1):
         """
-        User has one phone value, but no data was sent. It should result in bad request error.
+        User has one mobile number, but no data was sent. It should result in bad request error.
         :param headers: valid header to POST data
         :param user_phone_1: user_phone fixture to assign a test phone number to user
         """
@@ -208,7 +208,7 @@ class TestSmsCampaignHTTPPost(object):
     def test_campaign_creation_with_non_json_data(self, headers,
                                                   campaign_valid_data, user_phone_1):
         """
-        User has one phone value, valid header and invalid data type (not JSON) was sent.
+        User has one mobile number, valid header and invalid data type (not JSON) was sent.
         It should result in bad request error.
         :param headers: valid header to POST data
         :param campaign_valid_data: valid data to create SMS campaign
@@ -223,7 +223,7 @@ class TestSmsCampaignHTTPPost(object):
     def test_campaign_creation_with_missing_body_text_in_data(self, campaign_data_unknown_key_text,
                                                               headers, user_phone_1):
         """
-        User has one phone value, valid header and invalid data (unknown key "text") was sent.
+        User has one mobile number, valid header and invalid data (unknown key "text") was sent.
         It should result in Invalid usage error.
         :param campaign_data_unknown_key_text: Invalid data to create SMS campaign.
         :param headers: valid header to POST data
@@ -238,7 +238,7 @@ class TestSmsCampaignHTTPPost(object):
     def test_campaign_creation_with_missing_smartlist_ids_in_data(
             self, headers, user_phone_1):
         """
-        User has one phone value, valid header and invalid data (Missing key "smartlist_ids").
+        User has one mobile number, valid header and invalid data (Missing key "smartlist_ids").
         It should result in Invalid usage error.
         :param headers: valid header to POST data
         :param user_phone_1: user_phone fixture to assign a test phone number to user
@@ -251,25 +251,11 @@ class TestSmsCampaignHTTPPost(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should result in bad request error'
 
-    def test_campaign_creation_with_one_user_phone_and_unknown_smartlist_ids(
-            self, campaign_valid_data, headers, user_phone_1):
-        """
-        User has one phone value, valid header and invalid data (Unknown "smartlist_ids").
-        It should result in InvalidUsage error,
-        :param headers: valid header to POST data
-        :param user_phone_1: user_phone fixture to assign a test phone number to user
-        """
-        campaign_valid_data['smartlist_ids'] = [gen_salt(2)]
-        response = requests.post(self.URL,
-                                 headers=headers,
-                                 data=json.dumps(campaign_valid_data))
-        assert response.status_code == InvalidUsage.http_status_code()
-
     def test_campaign_creation_with_one_user_phone_and_one_unknown_smartlist(self, headers, campaign_valid_data,
                                                                              user_phone_1):
         """
-        User has one phone value, valid header and valid data. One of the Smartlist ids being sent
-        to the server is invalid (Non-integer). It should result InvalidUsage error.
+        User has one mobile number, valid header and valid data. One of the Smartlist ids being sent
+        to the server is invalid (Non-integer). It should result in InvalidUsage error.
         :param headers: valid header to POST data
         :param campaign_valid_data: valid data to create SMS campaign
         :param user_phone_1: user_phone fixture to assign a test phone number to user
@@ -279,27 +265,24 @@ class TestSmsCampaignHTTPPost(object):
         assert response.status_code == InvalidUsage.http_status_code()
 
     def test_campaign_create_with_valid_and_not_owned_smartlist_ids(self, headers, campaign_valid_data,
-                                                                    smartlist_with_two_candidates_in_other_domain,
-                                                                    smartlist_with_two_candidates):
+                                                                    smartlist_with_two_candidates_in_other_domain):
         """
         This is a test to create SMS campaign with valid smartlist id and smartlist id of some other domain.
         It should result in ForbiddenError.
         """
         data = campaign_valid_data.copy()
-        data['smartlist_ids'].extend([smartlist_with_two_candidates[0],
-                                      smartlist_with_two_candidates_in_other_domain[0]])
+        data['smartlist_ids'].extend([smartlist_with_two_candidates_in_other_domain[0]])
         response = requests.post(self.URL, headers=headers, data=json.dumps(data))
         assert response.status_code == ForbiddenError.http_status_code()
 
-    def test_campaign_create_with_valid_and_non_existing_smartlist_ids(self, headers, campaign_valid_data,
-                                                                       smartlist_with_two_candidates):
+    def test_campaign_create_with_valid_and_non_existing_smartlist_ids(self, headers, campaign_valid_data):
         """
         This is a test to create SMS campaign with valid and non-existing smartlist_ids.
         It should result in ResourceNotFound error.
         """
         data = campaign_valid_data.copy()
         non_existing_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
-        data['smartlist_ids'].extend([non_existing_id, smartlist_with_two_candidates[0]])
+        data['smartlist_ids'].extend([non_existing_id])
         response = requests.post(self.URL, headers=headers, data=json.dumps(data))
         assert response.status_code == ResourceNotFound.http_status_code()
 
@@ -310,14 +293,13 @@ class TestSmsCampaignHTTPPost(object):
         Status code should be 400 and campaign should not be created.
         """
         data = campaign_valid_data.copy()
-        data['smartlist_ids'] = [0, smartlist_with_two_candidates[0]]
+        data['smartlist_ids'].extend([0])
         response = requests.post(self.URL, headers=headers, data=json.dumps(data))
         assert response.status_code == InvalidUsage.http_status_code()
 
-    def test_campaign_creation_with_invalid_url_in_body_text(self, campaign_valid_data,
-                                                             headers, user_phone_1):
+    def test_campaign_creation_with_invalid_url_in_body_text(self, campaign_valid_data, headers, user_phone_1):
         """
-        User has one phone value, valid header and invalid URL in body text(random word).
+        User has one mobile number, valid header and invalid URL in body text(random word).
         It should result in Invalid url error, Custom error should be INVALID_URL_FORMAT.
         :param headers: valid header to POST data
         :param user_phone_1: user_phone fixture to assign a test phone number to user
@@ -335,7 +317,7 @@ class TestSmsCampaignHTTPPost(object):
                                                                   campaign_valid_data,
                                                                   user_phone_1):
         """
-        User has one phone value, valid header and valid data.
+        User has one mobile number, valid header and valid data.
         It should result in OK response (201 status code)
         :param headers: valid header to POST data
         :param campaign_valid_data: valid data to create SMS campaign

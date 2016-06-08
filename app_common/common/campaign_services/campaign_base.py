@@ -331,7 +331,7 @@ class CampaignBase(object):
         :param campaign_data:
         :type campaign_data: dict
         :exception: Invalid Usage
-        :return: Model class of campaign, validated_data
+        :return: Model class of campaign, dict of validated data
         :rtype: tuple
         """
         if not isinstance(campaign_data, dict):
@@ -344,12 +344,11 @@ class CampaignBase(object):
             campaign_data.update({'frequency_id': Frequency.ONCE})
         validate_form_data(campaign_data, self.user)
         logger.info('Campaign data has been validated.')
-        validated_data = campaign_data.copy()
         campaign_model = get_model(self.campaign_type, self.campaign_type)
         # 'smartlist_ids' is not a field of sms_campaign or push_campaign tables, so
         # need to remove it from data.
-        del validated_data['smartlist_ids']
-        return campaign_model, validated_data
+        del campaign_data['smartlist_ids']
+        return campaign_model, campaign_data
 
     def save(self, form_data):
         """
