@@ -19,7 +19,7 @@ from redo import retry
 from requests import codes
 
 from push_campaign_service.common.models.misc import Frequency
-from push_campaign_service.common.utils.test_utils import (delete_scheduler_task, create_talent_pipelines,
+from push_campaign_service.common.utils.test_utils import (delete_scheduler_task,
                                                            create_smartlist, get_smartlist_candidates, delete_smartlist)
 from push_campaign_service.common.test_config_manager import load_test_config
 from push_campaign_service.common.tests.api_conftest import (token_first, token_same_domain,
@@ -28,7 +28,8 @@ from push_campaign_service.common.tests.api_conftest import (token_first, token_
                                                              candidate_first, candidate_same_domain,
                                                              candidate_second, smartlist_first,
                                                              smartlist_same_domain, smartlist_second,
-                                                             talent_pool, talent_pool_second, talent_pipeline, talent_pipeline_second)
+                                                             talent_pool, talent_pool_second, talent_pipeline,
+                                                             talent_pipeline_second)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
                                                         generate_campaign_schedule_data,
@@ -109,12 +110,13 @@ def campaign_in_db_multiple_smartlists(request, token_first, smartlist_first, ca
     request.addfinalizer(tear_down)
     return data
 
-# TODO---respect the line limit
 
 @pytest.fixture()
-def campaign_with_two_candidates_with_and_without_push_device(request, token_first, smartlist_with_two_candidates_with_and_without_device_associated, campaign_data):
+def campaign_with_two_candidates_with_and_without_push_device(request, token_first, campaign_data,
+                                                smartlist_with_two_candidates_with_and_without_device_associated):
     """
-    This fixtures creates a campaign which is associated with one smartlist having two candidates. One candidate has a push device but other does not.
+    This fixtures creates a campaign which is associated with one smartlist having two candidates.
+    One candidate has a push device but other does not.
     :param request:
     :param token_first: at belongs to same users, and one created by other
     user from same domain
@@ -133,11 +135,14 @@ def campaign_with_two_candidates_with_and_without_push_device(request, token_fir
     request.addfinalizer(tear_down)
     return data
 
-# TODO--I think following comment needs to be updated as from what I gather from name 2 candidates with no push device
+
 @pytest.fixture()
-def campaign_with_two_candidates_with_no_push_device_associated(request, token_first, smartlist_with_two_candidates_with_no_device_associated, campaign_data):
+def campaign_with_two_candidates_with_no_push_device_associated(request, token_first,
+                                                                smartlist_with_two_candidates_with_no_device_associated,
+                                                                campaign_data):
     """
-    This fixtures creates a campaign which is associated with one smartlist having two candidates. One candidate has a push device but other does not.
+    This fixtures creates a campaign which is associated with one smartlist having two candidates. One candidate
+    has a push device but other does not.
     :param request:
     :param token_first: at belongs to same users, and one created by other
     user from same domain
@@ -400,11 +405,12 @@ def candidate_device_second(request, token_second, candidate_second):
 
 
 @pytest.fixture(scope='function')
-def smartlist_with_two_candidates_with_and_without_device_associated(request, token_first, user_first, candidate_first, candidate_same_domain,
-                                                                     talent_pipeline, candidate_device_first):
+def smartlist_with_two_candidates_with_and_without_device_associated(request, token_first, user_first, candidate_first,
+                                                                     candidate_same_domain, talent_pipeline,
+                                                                     candidate_device_first):
     """
-    This fixture creates a smartlist that contains two candidates from domain_first. One candidate has a push device associated with him,
-    but other candidate does not have any push device associated.
+    This fixture creates a smartlist that contains two candidates from domain_first. One candidate has a
+    push device associated with him, but other candidate does not have any push device associated.
     :param request: request object
     :param candidate_first: candidate object
     :param candidate_same_domain: candidate object
@@ -425,13 +431,13 @@ def smartlist_with_two_candidates_with_and_without_device_associated(request, to
     request.addfinalizer(tear_down)
     return smartlist
 
-# TODO--in almost all of the code with or without devices I could not figure out how we determine that. Gotta sit with you
-# and figure that out
+
 @pytest.fixture(scope='function')
-def smartlist_with_two_candidates_with_no_device_associated(request, token_first, user_first, candidate_first, candidate_same_domain,
-                                                                     talent_pipeline):
+def smartlist_with_two_candidates_with_no_device_associated(request, token_first, user_first, candidate_first,
+                                                            candidate_same_domain, talent_pipeline):
     """
-    This fixture creates a smartlist that contains two candidates from domain_first. Both candidates do not have any push device associated with them.
+    This fixture creates a smartlist that contains two candidates from domain_first.
+    Both candidates do not have any push device associated with them.
     :param request: request object
     :param candidate_first: candidate object
     :param candidate_same_domain: candidate object

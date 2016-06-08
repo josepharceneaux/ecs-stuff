@@ -52,11 +52,9 @@ def token_second():
 
 
 @pytest.fixture(scope='session')
-def user_first(token_first):
+def user_first():
     """
     This fixture will be used to get user from UserService using id from config.
-    :param request: request object
-    :param token_first: auth token for first user
     :return: user dictionary object
     """
     user_id = test_config['USER_FIRST']['user_id']
@@ -64,11 +62,9 @@ def user_first(token_first):
 
 
 @pytest.fixture(scope='session')
-def user_second(request, token_second):
+def user_second():
     """
     This fixture will be used to get user from UserService using id from config.
-    :param request: request object
-    :param token_second: auth token for first user
     :return: user dictionary object
     """
     user_id = test_config['USER_SECOND']['user_id']
@@ -76,17 +72,15 @@ def user_second(request, token_second):
 
 
 @pytest.fixture(scope='session')
-def user_same_domain(request, token_same_domain):
+def user_same_domain():
     """
     This fixture will be used to get user from UserService using id from config.
-    :param request: request object
-    :param token_same_domain: auth token for a user from same domain as of user first
     :return: user dictionary object
     """
     user_id = test_config['USER_SAME_DOMAIN']['user_id']
     return {'id': user_id}
 
-# TODO--we changed params and it's in common, kindly double check if it didn't break anything else
+
 @pytest.fixture(scope='function')
 def candidate_first(request, talent_pool, token_first):
     """
@@ -94,7 +88,7 @@ def candidate_first(request, talent_pool, token_first):
     after test has run.
     :param request: request object
     :param talent_pool: talent pool dict object associated to user_first
-    :param str token_first: auth token for  first user
+    :param token_first: auth token for  first user
     """
     response = create_candidate(talent_pool['id'], token_first)
     candidate_id = response['candidates'][0]['id']
@@ -204,13 +198,13 @@ def smartlist_second(request, token_second, candidate_second, talent_pipeline_se
     request.addfinalizer(tear_down)
     return smartlist
 
-# TODO--add update params in docstring
 
 @pytest.fixture(scope='function')
 def smartlist_same_domain(request, token_same_domain, candidate_same_domain, talent_pipeline):
     """
     This fixture creates a smartlist that belongs to "user_same_domain"
     :param request: request object
+    :param token_same_domain: auth token for user_same_domain from domain_first
     :param candidate_same_domain: candidate from domain as of user_same_domain
     :param talent_pipeline: talent pipeline associated with user_first
     :return: smartlist object
