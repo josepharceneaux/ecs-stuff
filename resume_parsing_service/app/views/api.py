@@ -9,8 +9,8 @@ from flask.ext.cors import CORS
 # Module Specific
 from resume_parsing_service.app import logger
 from resume_parsing_service.common.error_handling import InvalidUsage
-from resume_parsing_service.app.views.batch_lib import process_batch_item
-from resume_parsing_service.app.views.batch_lib import add_fp_keys_to_queue
+from resume_parsing_service.app.views.param_builders import build_params_from_form
+from resume_parsing_service.app.views.param_builders import build_params_from_json
 from resume_parsing_service.app.views.parse_lib import process_resume
 from resume_parsing_service.app.views.utils import get_users_talent_pools
 from resume_parsing_service.common.utils.auth_utils import require_oauth
@@ -36,54 +36,23 @@ def resume_post_reciever():
     """
     oauth = request.oauth_token
     content_type = request.headers.get('content-type')
-    # Handle posted JSON data from web app/future clients. This block should consume filepicker
-    # key and filename.
+
+    # Handle posted JSON data from web app/future clients.
+    # This block should consume filepicker key and filename.
     if 'application/json' in content_type:
-        request_json = request.get_json()
-        logger.info('Beginning parsing with JSON params: {}'.format(request_json))
-        create_candidate = request_json.get('create_candidate', False)
-        talent_pool_ids = request_json.get('talent_pool_ids')
-        if not isinstance(talent_pool_ids, (list, type(None))):
-            raise InvalidUsage('Invalid type for `talent_pool_ids`')
-        filepicker_key = request_json.get('filepicker_key')
-        resume_file = None
-        resume_file_name = str(filepicker_key)
-        if not filepicker_key:
-            raise InvalidUsage('Invalid JSON data for resume parsing')
-    # Handle posted form data. Required for mobile app as it posts a binary file
+        parse_params = build_params_from_json(request)
+    # Handle posted form data. Required for mobile app as it posts a file.
     elif 'multipart/form-data' in content_type:
-        # create_candidate is passed as a string from a form so this extra processing is needed.
-        create_mode = request.form.get('create_candidate', 'false')
-        create_candidate = True if create_mode.lower() == 'true' else False
-        filepicker_key = None
-        resume_file = request.files.get('resume_file')
-        resume_file_name = request.form.get('resume_file_name')
-        talent_pool_ids = None
-        if not (resume_file and resume_file_name):
-            raise InvalidUsage('Invalid form data for resume parsing.')
+        parse_params = build_params_from_form(request)
     else:
         logger.debug("Invalid Header set. Form: {}. Files: {}. JSON: {}".format(
             request.form, request.files, request.json
         ))
         raise InvalidUsage("Invalid Request. Bad Headers set.")
-    # If the array is passed set it, else retrieve the first ID given by candidate_pool_service
-    if talent_pool_ids:
-        talent_pools = talent_pool_ids
-    else:
-        talent_pools = get_users_talent_pools(oauth)
-    if not isinstance(create_candidate, bool):
-        raise InvalidUsage('Invalid parameter for create_candidate.')
-    if create_candidate and not talent_pools:
-        raise InvalidUsage("Could not obtain user talent_pools for candidate creation.")
-    parse_params = {
-        'oauth': oauth,
-        'talent_pools': talent_pools,
-        'create_candidate': create_candidate,
-        'filename': resume_file_name,
-        'filepicker_key': filepicker_key,
-        'resume_file': resume_file
-    }
+
+    parse_params['oauth'] = oauth
+    # If the value is not set retrieve the first ID given by candidate_pool_service.
+    if not parse_params['talent_pools']:
+        parse_params['talent_pools'] = get_users_talent_pools(oauth)
+
     return jsonify(**process_resume(parse_params))
-
-
-
