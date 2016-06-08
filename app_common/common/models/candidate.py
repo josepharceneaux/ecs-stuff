@@ -128,6 +128,13 @@ class CandidateStatus(db.Model):
         return "<CandidateStatus(id = '%r')>" % self.description
 
     DEFAULT_STATUS_ID = 1  # Newly added candidate
+    CONTACTED = 2
+    UNQUALIFIED = 3
+    QUALIFIED = 4
+    PROSPECT = 5
+    CANDIDATE = 6
+    HIRED = 7
+    CONNECTOR = 8
 
     @classmethod
     def get_all(cls):
