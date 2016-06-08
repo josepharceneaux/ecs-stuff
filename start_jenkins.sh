@@ -58,20 +58,17 @@ sleep 10
 
 TIMEFORMAT='%lR'
 
-pip install pytest==2.9.2
-pip install pytest-xdist==1.14
-
 # Services tests should be distributed in a such a way that each batch takes approximately equal amount of time
 
 printf "\n========================== Batch 1 execution starts =========================="
-printf "\nCandidate Service\nAuth Service\nScheduler Service"
-printf "\n"
-execution_time=$( { time batch_two=`py.test -n auto candidate_service/tests auth_service/tests scheduler_service/tests`; } 2>&1 )
-printf "\n========================== Batch 1 execution ends. Took ${execution_time} =========================="
-printf "\n========================== Batch 2 execution starts =========================="
 printf "\nUser Service\nActivity Service\nSpreadsheet Import Service\nCandidate Pool Service\nPush Campaign Service\nResume Parsing Service"
 printf "\n"
 execution_time=$( { time batch_one=`py.test -n auto user_service/tests activity_service/tests spreadsheet_import_service/tests resume_parsing_service/tests candidate_pool_service/tests push_campaign_service/tests`; } 2>&1 )
+printf "\n========================== Batch 1 execution ends. Took ${execution_time} =========================="
+printf "\n========================== Batch 2 execution starts =========================="
+printf "\nCandidate Service\nAuth Service\nScheduler Service"
+printf "\n"
+execution_time=$( { time batch_two=`py.test -n auto candidate_service/tests`; } 2>&1 )
 printf "\n========================== Batch 2 execution ends. Took ${execution_time} =========================="
 printf "\n========================== Batch 3 execution starts =========================="
 printf "\nSMS Campaign Service"
