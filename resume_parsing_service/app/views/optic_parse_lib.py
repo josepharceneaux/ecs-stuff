@@ -5,14 +5,18 @@ import datetime
 import HTMLParser
 import re
 import string
+import sys
+import unicodedata
 import urllib2
 # Third Party
 from bs4 import BeautifulSoup as bs4
-from resume_parsing_service.app.views.OauthClient import OAuthClient
 import requests
+import phonenumbers
 # Module Specific
 from flask import current_app
-from resume_parsing_service.common.error_handling import ForbiddenError
+from resume_parsing_service.app import logger
+from resume_parsing_service.app.views.OauthClient import OAuthClient
+from resume_parsing_service.common.error_handling import ForbiddenError, InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
@@ -46,14 +50,22 @@ def fetch_optic_response(resume):
         'locale': 'en_us'
     }
     r = requests.post(BG_URL, headers=HEADERS, json=DATA)
+
     if r.status_code != requests.codes.ok:
         # Since this error is displayed to the user we may want to obfuscate it a bit and log more
         # developer friendly messages. "Error processing this resume. The development team has been
-        # notified of this isse" type of message.
+        # notified of this issue" type of message.
         raise ForbiddenError('Error connecting to BG instance.')
-    html_parser = HTMLParser.HTMLParser()
-    unquoted = urllib2.unquote(r.content).decode('utf8')
-    unescaped = html_parser.unescape(unquoted)
+
+    try:
+        html_parser = HTMLParser.HTMLParser()
+        unquoted = urllib2.unquote(r.content).decode('utf8')
+        unescaped = html_parser.unescape(unquoted)
+
+    except Exception:
+        logger.exception('Error translating BG response.')
+        raise InternalServerError('Error decoding parsed resume text.')
+
     return unescaped
 
 
@@ -98,17 +110,27 @@ def parse_candidate_name(bs_contact_xml_list):
     :param bs4.element.Tag bs_contact_xml_list:
     :return dict: Formatted name strings using title() in a dictionary.
     """
+
     givenname = None
     surname = None
+
     for contact in bs_contact_xml_list:
-        # If a name is already parsed we do not want to reassign it. This is to protect against
-        # multiple parsed givennames/surnames
+        # If a name is already parsed we do not want to reassign it.
         if not givenname:
             givenname = _tag_text(contact, 'givenname')
+
         if not surname:
             surname = _tag_text(contact, 'surname')
-    first_name = givenname.title() if givenname else 'Unknown'
-    last_name = surname.title() if surname else 'Unknown'
+
+    if givenname:
+        givenname = scrub_candidate_name(givenname)
+
+    if surname:
+        surname = scrub_candidate_name(surname)
+
+    first_name = givenname or 'Unknown'
+    last_name = surname or 'Unknown'
+
     return {'first_name': first_name, 'last_name': last_name}
 
 
@@ -134,16 +156,28 @@ def parse_candidate_phones(bs_contact_xml_list):
     :return list output: List of dicts containing phone data.
     """
     output = []
+
     for contact in bs_contact_xml_list:
         phones = contact.findAll('phone')
-        # TODO: look into adding a type using p.attrs['type']
+
         for p in phones:
+            # TODO: look into adding a type using p.attrs['type']
             raw_phone = p.text.strip()
+
             # JSON_SCHEMA for candidates phone is max:20
+            # This fixes issues with numbers like '1-123-45            67'
             if raw_phone and len(raw_phone) > 20:
                 raw_phone = " ".join(raw_phone.split())
+
             if raw_phone and len(raw_phone) <= 20:
-                output.append({'value': raw_phone})
+
+                try:
+                    unused_validated_phone = phonenumbers.parse(raw_phone, region='US')
+                    output.append({'value': raw_phone})
+
+                except UnicodeEncodeError:
+                    logger.error('Issue parsing phonenumber: {}'.format(raw_phone))
+
     return output
 
 
@@ -407,3 +441,30 @@ def is_experience_already_exists(candidate_experiences, organization, position_t
                  experience['end_year'] == end_year):
             return i + 1
     return False
+
+
+def scrub_candidate_name(name_unicode):
+    """
+    Takes a string and formats it to gT candidate spec. Names should have no punctuation, be at most
+    35 characters, and be in the 'string.title()' format.
+
+    This uses StackOverflow Answer:
+    http://stackoverflow.com/questions/11066400/
+    which is reinforced here:
+    http://stackoverflow.com/questions/20529449/
+
+    String version located:
+    http://stackoverflow.com/questions/265960/
+
+    :param unicode name_unicode:
+    :return unicode:
+    """
+
+    translate_table = dict.fromkeys(i for i in xrange(sys.maxunicode)
+                if unicodedata.category(unichr(i)).startswith('P'))
+
+    name_unicode = name_unicode[:35]
+    name_unicode = name_unicode.translate(translate_table)
+    name_unicode = name_unicode.title()
+
+    return name_unicode
