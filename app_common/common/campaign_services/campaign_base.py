@@ -343,8 +343,9 @@ class CampaignBase(object):
         if not campaign_data.get('frequency_id'):
             campaign_data.update({'frequency_id': Frequency.ONCE})
         validate_form_data(campaign_data, self.user)
-        validated_data = campaign_data.copy()
         logger.info('Campaign data has been validated.')
+        validated_data = campaign_data.copy()
+        # get respective campaign model. e.g. sms_campaign or push_campaign etc
         campaign_model = get_model(self.campaign_type, self.campaign_type)
         # 'smartlist_ids' is not a field of sms_campaign or push_campaign tables, so
         # need to remove it from data.
