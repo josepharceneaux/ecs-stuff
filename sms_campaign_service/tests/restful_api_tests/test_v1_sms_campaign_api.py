@@ -269,7 +269,7 @@ class TestSmsCampaignHTTPPost(object):
                                                                              user_phone_1):
         """
         User has one phone value, valid header and valid data. One of the Smartlist ids being sent
-        to the server is invalid (Non-integer). It should result InvalidUsage error.
+        to the server is invalid (Non-integer). It should result in InvalidUsage error.
         :param headers: valid header to POST data
         :param campaign_valid_data: valid data to create SMS campaign
         :param user_phone_1: user_phone fixture to assign a test phone number to user

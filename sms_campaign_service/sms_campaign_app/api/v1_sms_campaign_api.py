@@ -219,6 +219,7 @@ class SMSCampaigns(Resource):
         campaign_id = campaign_obj.save(data_from_ui)
         headers = {'Location': SmsCampaignApiUrl.CAMPAIGN % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
+        # TODO--I think the followign comment is not needed, kindly check
         # If any of the smartlist_id found invalid
         return ApiResponse(dict(id=campaign_id), status=requests.codes.CREATED, headers=headers)
 

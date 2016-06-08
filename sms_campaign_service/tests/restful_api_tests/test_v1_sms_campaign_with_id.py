@@ -215,6 +215,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should get bad request error'
 
+    # TODO; some test have params, can you please update docstring of methods you touched, thanks
     def test_campaign_update_with_invalid_url_in_body_text(self, campaign_valid_data, headers,
                                                            sms_campaign_of_user_first):
         """
@@ -233,7 +234,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
                                                                   campaign_valid_data,
                                                                   sms_campaign_of_user_first):
         """
-        This is a test to update a campaign which does not exists in database. It should result in
+        This is a test to update a campaign which does not exist in database. It should result in
         InvalidUsage error.
         """
         data = campaign_valid_data.copy()
