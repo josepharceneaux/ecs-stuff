@@ -1,3 +1,8 @@
+"""
+This file is supplied by Burning Glass for python use of Oauth (first spec/not Oauth2)
+It has been linted by erik@gettalent.com
+Source: http://sandbox-lensapi.burning-glass.com/portal/downloads/pythonclient
+"""
 import binascii
 import hashlib  # 2.5+
 import hmac

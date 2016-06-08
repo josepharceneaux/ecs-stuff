@@ -1,6 +1,6 @@
 """
 This is the base set of lambda handlers. The end result feature set should be to have 4 endpoints.
-These endpoints will be the combonations of consuming:
+These endpoints will be the combinations of consuming:
     1) FilePicker Keys -or- binaries
     2) Creating a candidate or simply parsing a resume
 
