@@ -57,10 +57,28 @@ done
 sleep 10
 
 
+printf "\n========================== Batch 1 execution start =========================="
+printf "\n User Service"
+printf "\n Activity Service"
+printf "\n Spreadsheet Import Service"
+printf "\n Auth Service"
+printf "\n Scheduler Service"
+printf "\n Resume Parsing Service"
 batch_one=`py.test -n 48 user_service/tests activity_service/tests spreadsheet_import_service/tests auth_service/tests scheduler_service/tests resume_parsing_service/tests`
+printf "\n========================== Batch 1 execution end =========================="
+printf "\n========================== Batch 2 execution start =========================="
+printf "\n Candidate Service"
 batch_two=`py.test -n 48 candidate_service/tests`
+printf "\n========================== Batch 2 execution end =========================="
+printf "\n========================== Batch 3 execution start =========================="
+printf "\n Candidate Pool Service"
+printf "\n Push Campaign Service"
 batch_three=`py.test -n 48 candidate_pool_service/tests push_campaign_service/tests`
+printf "\n========================== Batch 3 execution end =========================="
+printf "\n========================== Batch 4 execution start =========================="
+printf "\n SMS Campaign Service"
 batch_four=`py.test -n 48 sms_campaign_service/tests`
+printf "\n========================== Batch 4 execution end =========================="
 
 if [[ "$batch_one" =~ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds ]]; then batch_one_status=1; else echo batch_one_status=0 && "$batch_one"; fi
 if [[ "$batch_two" =~ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds ]]; then batch_two_status=1; else echo batch_two_status=0 && "$batch_two"; fi
