@@ -299,7 +299,7 @@ def get_candidate(candidate_id, token, expected_status=(200,)):
 def search_candidates(candidate_ids, token, expected_status=(200,)):
     """
     This method sends a GET request to Candidate Search API to get candidates from CloudSearch.
-    :type candidate_ids: list(int | long)
+    :type candidate_ids: list|tuple
     :type token: string
     :type expected_status: tuple[int]
     :rtype dict
@@ -329,13 +329,12 @@ def delete_candidate(candidate_id, token, expected_status=(200,)):
 def create_smartlist(candidate_ids, talent_pipeline_id, token, expected_status=(201,)):
     """
     This method sends a POST request to CandidatePool API to create a smartlist.
-    :type candidate_ids: list(int|long)
+    :type candidate_ids: list|tuple
     :type talent_pipeline_id: int | long
     :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """
-    # TODO--preveiously we had an assert that check candidate_ids was either a list or a tuple, is the above checking too?
     data = {
         'candidate_ids': candidate_ids,
         'name': fake.word(),
@@ -492,4 +491,3 @@ def delete_talent_pool(talent_pool_id, token, expected_status=(200,)):
     print('common_tests : delete_talent_pool: ', response.content)
     assert response.status_code in expected_status
     return response.json()
-
