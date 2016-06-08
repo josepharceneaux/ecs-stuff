@@ -57,10 +57,10 @@ done
 sleep 10
 
 
-batch_one=py.test -n 48 user_service/tests activity_service/tests spreadsheet_import_service/tests auth_service/tests scheduler_service/tests resume_parsing_service/tests
-batch_two=py.test -n 48 candidate_service/tests
-batch_three=py.test -n 48 candidate_pool_service/tests push_campaign_service/tests
-batch_four=py.test -n 48 sms_campaign_service/tests
+batch_one=`py.test -n 48 user_service/tests activity_service/tests spreadsheet_import_service/tests auth_service/tests scheduler_service/tests resume_parsing_service/tests`
+batch_two=`py.test -n 48 candidate_service/tests`
+batch_three=`py.test -n 48 candidate_pool_service/tests push_campaign_service/tests`
+batch_four=`py.test -n 48 sms_campaign_service/tests`
 
 if [[ "$batch_one" =~ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds ]]; then batch_one_status=1; else echo batch_one_status=0 && "$batch_one"; fi
 if [[ "$batch_two" =~ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds ]]; then batch_two_status=1; else echo batch_two_status=0 && "$batch_two"; fi
