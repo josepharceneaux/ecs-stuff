@@ -28,10 +28,7 @@ from resume_parsing_service.app.views.utils import send_abbyy_email
 from resume_parsing_service.common.error_handling import ForbiddenError
 from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.routes import CandidateApiUrl
-from resume_parsing_service.common.utils.talent_s3 import download_file
-from resume_parsing_service.common.utils.talent_s3 import get_s3_filepicker_bucket_and_conn
 from resume_parsing_service.common.utils.talent_s3 import boto3_get_file, boto3_put
-from resume_parsing_service.common.utils.talent_s3 import upload_to_s3
 
 
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
