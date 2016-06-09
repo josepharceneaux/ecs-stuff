@@ -4,6 +4,7 @@ __author__ = 'erikfarmer'
 # Standard Library
 import hashlib
 import json
+from cStringIO import StringIO
 # Third Party
 import boto3
 import requests
@@ -11,6 +12,7 @@ import requests
 from resume_parsing_service.app import logger
 from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.routes import CandidateApiUrl, CandidatePoolApiUrl
+from resume_parsing_service.common.utils.talent_s3 import boto3_get_file
 
 
 def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename):
@@ -39,49 +41,33 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename
 
     # Handle other non 201 responses.
     if create_response.status_code is not requests.codes.created:
-        # If there was an issue with candidate creation we want to forward the error message and
-        # the error code supplied by Candidate Service.
+
+        #If a candidate has been created already it will provide an id.
         existing_candidate_id = response_dict.get('error', {}).get('id')
-
-        if not existing_candidate_id:
-            candidate_error_message = response_dict.get('error', {}).get('message')
-
-            if candidate_error_message:
-                error_text = candidate_error_message + ' Filename: {}'.format(filename)
-
-            else:
-                error_text = 'Error in candidate creating from resume service. Filename {}'.format(
-                    filename)
-
-            raise InvalidUsage(error_message=error_text)
 
         if existing_candidate_id:
             return False, existing_candidate_id
+
+        # If there was an issue with candidate creation we want to forward the error message and
+        # the error code supplied by Candidate Service.
+        else:
+            candidate_service_error = response_dict.get('error', {}).get('message')
+
+            if candidate_service_error:
+                error_text = candidate_service_error + ' Filename: {}'.format(filename)
+
+            else:
+                error_text = 'Error in candidate creating from resume service. Filename {}'.format(filename)
+
+            raise InvalidUsage(error_message=error_text)
+
+
 
     # Candidate was created. Return bool and id
     else:
         candidate_id = response_dict.get('candidates')[0]['id']
         logger.debug('Candidate created with id: {}'.format(candidate_id))
         return True, candidate_id
-
-        # We have a candidate already with this email so lets patch it up
-        # parsed_resume['candidate']['id'] = existing_candidate_id
-        # update_response = update_candidate_from_resume(parsed_resume['candidate'], oauth_string)
-        #
-        # if update_response.status_code is not requests.codes.ok:
-        #     logger.info(
-        #         "ResumetoCandidateError. {} received from CandidateService (update)".format(
-        #             update_response.status_code))
-        #
-        #     raise InternalServerError(
-        #         'Candidate from {} exists, error updating info'.format(filename_str))
-        #
-        # response_dict = json.loads(update_response.content)
-        # logger.info('Response Dict: {}'.format(response_dict))
-        #
-        # candidate_id = response_dict.get('candidates')[0]['id']
-        # logger.debug('Candidate created with id: {}'.format(candidate_id))
-    # return create_response
 
 
 def update_candidate_from_resume(candidate_dict, formatted_token_str, filename_str):
@@ -115,6 +101,36 @@ def update_candidate_from_resume(candidate_dict, formatted_token_str, filename_s
     logger.debug('Candidate updated with id: {}'.format(candidate_id))
 
     return True
+
+
+def send_candidate_references(candidate_references, candidate_id, oauth_string):
+    """
+    Makes an attempt to create references for a candidate using their id. Failure does not raise an
+    exception as this would prevent the candidate creation life cycle, but instead logs the issue.
+    :param string candidate_references:
+    :param string candidate_id:
+    :param string oauth_string:
+    :return None:
+    """
+    post_body = {
+        'candidate_references': [
+            {'comments': candidate_references}
+        ]
+    }
+
+    try:
+        references_response = requests.post(
+            CandidateApiUrl.REFERENCES % candidate_id, data=json.dumps(post_body),
+            headers={'Authorization': oauth_string,
+                     'Content-Type': 'application/json'})
+
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        logger.warn(
+            "process_resume. Connection error creating candidate {} references.".format(candidate_id))
+
+    if references_response.status_code is not requests.codes.created:
+        logger.warn("process_resume. Error creating candidate {} references. {}".format(
+            candidate_id, references_response.content))
 
 
 # TODO: write tests for this.
@@ -174,3 +190,24 @@ def send_abbyy_email():
         }
     )
     return response
+
+
+def resume_file_from_params(parse_params):
+    """
+    Obtains a resume from the POST JSON data.
+    :param parse_params:
+    :return:
+    """
+    filepicker_key = parse_params.get('filepicker_key')
+
+    if filepicker_key:
+        filename_str = filepicker_key
+        resume_file = boto3_get_file(filename_str)
+    elif parse_params.get('filename'):
+        resume_bin = parse_params.get('resume_file')
+        resume_file = StringIO(resume_bin.read())
+        filename_str = parse_params.get('filename')
+    else:
+        raise InvalidUsage('Invalid query params for /parse_resume')
+
+    return resume_file, filename_str
