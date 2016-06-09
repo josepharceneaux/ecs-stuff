@@ -206,7 +206,7 @@ def invalid_data_for_campaign_creation(request):
     return campaign_data, request.param
 
 
-@pytest.fixture(params=[0, gen_salt(2), None, dict(), list(), set()])
+@pytest.fixture(params=[0, gen_salt(2), None, dict(), list()])
 def invalid_smartlist_id(request):
     """
     This function returns invalid smartlist Ids to create an sms-campaign.
