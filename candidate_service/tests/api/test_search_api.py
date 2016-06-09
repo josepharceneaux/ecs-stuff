@@ -657,10 +657,9 @@ def test_skill_description_facet(user_first, access_token_first, talent_pool):
     excel_candidates = populate_candidates(access_token_first, talent_pool,
                                            skills=[{'name': 'Excel', 'months_used': 26}])
 
-    network_and_excel_candidates = populate_candidates(
-        access_token_first, talent_pool, count=3, skills=[{'name': 'Excel', 'months_used': 10},
-                                                          {'name': 'Network', 'months_used': 5}]
-    )
+    network_and_excel_candidates = populate_candidates(access_token_first, talent_pool, count=3,
+                                                       skills=[{'name': 'Excel', 'months_used': 10},
+                                                               {'name': 'Network', 'months_used': 5}])
 
     # Search for candidates with skills = Network
     resp = get_response(access_token_first, "?skills=Network", len(network_candidates))
@@ -722,7 +721,7 @@ def test_search_by_military_grade(user_first, access_token_first, talent_pool):
     candidates_grade = populate_candidates(access_token_first, talent_pool, count=3, military_grade=service_grade)
 
     # Search for candidates via military grade
-    resp = get_response(access_token_first, "?military_highest_grade={}".format(service_grade))
+    resp = get_response(access_token_first, "?military_highest_grade={}".format(service_grade), expected_count=3)
     print response_info(resp)
     resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
     assert set(candidates_grade).issubset(resultant_candidate_ids)
@@ -834,7 +833,7 @@ def test_facets_are_returned_with_search_results(user_first, access_token_first,
     populate_candidates(access_token_first, talent_pool, count=count)
 
     # Search for user's candidates
-    resp = get_response(access_token_first, '?user_ids={}'.format(user_first.id))
+    resp = get_response(access_token_first, '?user_ids={}'.format(user_first.id), expected_count=count)
     print response_info(resp)
     print "\nresp: {}".format(resp.json().keys())
     assert resp.json()['total_found'] == count
