@@ -923,6 +923,7 @@ def get_smartlist_candidates_via_celery(user_id, campaign_id, new_candidates_onl
     if not isinstance(campaign_id, (int, long)):
         raise InternalServerError(error_message='Valid campaign id must be provided.')
     campaign = EmailCampaign.get_by_id(campaign_id)
+
     # Get smartlists of this campaign
     list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
                                                                  smartlist_ids_only=True)
@@ -933,7 +934,7 @@ def get_smartlist_candidates_via_celery(user_id, campaign_id, new_candidates_onl
 
     # Get candidates present in each smartlist
     tasks = [get_candidates_from_smartlist.subtask(
-        (list_id, True, campaign.user.id),
+        (list_id, True, user_id),
         link_error=celery_error_handler(
             campaign_type), queue=campaign_type) for list_id in list_ids]
 

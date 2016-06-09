@@ -48,7 +48,7 @@ def get_candidates_from_smartlist(list_id, candidate_ids_only=False, user_id=Non
     if not list_id:
         raise InternalServerError(error_message='list_id must be provided')
     candidates = get_candidates_of_smartlist(list_id=list_id, candidate_ids_only=candidate_ids_only,
-                                             access_token=None,  user_id=user_id)
+                                             access_token=None, user_id=user_id)
     return candidates
 
 

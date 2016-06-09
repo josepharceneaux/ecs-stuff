@@ -348,7 +348,8 @@ class CampaignsTestsHelpers(object):
         """
         assert response.status_code == expected_status
         assert response.json()
-        blasts = cls.get_blasts(campaign)
+        db.session.commit()
+        blasts = campaign.blasts.all()
         assert not blasts, 'Email campaign blasts found for campaign (id:%d)' % campaign.id
         assert len(blasts) == 0
 
@@ -542,7 +543,7 @@ class CampaignsTestsHelpers(object):
         attempts = abort_time_for_sends / 3 + 1
         retry(CampaignsTestsHelpers.verify_sends, sleeptime=3, attempts=attempts, sleepscale=1,
               args=(campaign, expected_count, blast_index, blast_url, access_token),
-              retry_exceptions=(AssertionError,))
+              retry_exceptions=(AssertionError, IndexError, ))
 
     @staticmethod
     def verify_blasts(campaign, access_token, blasts_url, expected_count):

@@ -55,11 +55,12 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
     """
     raise_if_not_positive_int_or_long(list_id)
     raise_if_not_instance_of(candidate_ids_only, bool)
-    raise_if_not_instance_of(access_token, basestring)
+    if access_token:
+        raise_if_not_instance_of(access_token, (str, unicode))
     per_page = 1000  # Smartlists can have a large number of candidates, hence page size of 1000
     params = {'fields': 'id'} if candidate_ids_only else {}
     response = get_candidates_from_smartlist_with_page_params(list_id, per_page, DEFAULT_PAGE,
-                                                              params, access_token)
+                                                              params, access_token, user_id)
     response_body = response.json()
     candidates = response_body['candidates']
     no_of_pages = response_body['max_pages']
@@ -68,7 +69,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
             next_page = current_page + DEFAULT_PAGE
             response = get_candidates_from_smartlist_with_page_params(list_id, per_page,
                                                                       next_page, params,
-                                                                      access_token)
+                                                                      access_token, user_id)
             response_body = response.json()
             candidates.extend(response_body['candidates'])
     if candidate_ids_only:
@@ -76,7 +77,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
     return candidates
 
 
-def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params, access_token=None):
+def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params, access_token=None, user_id=None):
     """
     Method to get candidates from smartlist based on smartlist id and pagination params.
     :param (int | long) list_id: Id of smartlist.
@@ -93,7 +94,7 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, para
     params.update({'page': page}) if page else None
     params.update({'limit': per_page}) if per_page else None
     response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % str(list_id),
-                            params=params, headers=create_oauth_headers(access_token))
+                            params=params, headers=create_oauth_headers(access_token, user_id=user_id))
     return response
 
 

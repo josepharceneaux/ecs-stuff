@@ -98,14 +98,14 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
     return resp.json()
 
 
-def get_candidate_subscription_preference(candidate_id):
+def get_candidate_subscription_preference(candidate_id, user_id):
     """
     Method to get the subscription preference of a candidate with specified candidate id.
     :param (int, long) candidate_id: Id of candidate for which subscription prederence is to be retrieved.
     """
     raise_if_not_positive_int_or_long(candidate_id)
     resp = http_request('get', CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id,
-                        headers=create_oauth_headers())
+                        headers=create_oauth_headers(user_id=user_id))
     if resp.status_code == ForbiddenError.http_status_code():
         raise ForbiddenError('Not authorized to get Candidate(id:%s)' % candidate_id)
     assert resp.status_code == 200
