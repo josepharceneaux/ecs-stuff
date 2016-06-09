@@ -518,7 +518,7 @@ class CampaignsTestsHelpers(object):
                 assert response.json()['blast']['sends'] == expected_count
 
     @staticmethod
-    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=100,
+    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=120,
                            blast_url=None, access_token=None):
         """
         This function asserts that particular blast of given campaign has expected number of sends
@@ -634,6 +634,25 @@ class CampaignsTestsHelpers(object):
         current_datetime = datetime.utcnow().replace(tzinfo=pytz.utc)
         assert DatetimeUtils.utc_isoformat_to_datetime(datetime_str) > current_datetime - timedelta(minutes=minutes)
         assert DatetimeUtils.utc_isoformat_to_datetime(datetime_str) < current_datetime + timedelta(minutes=minutes)
+
+    @staticmethod
+    def campaign_create_or_update_with_unexpected_fields(method, url, access_token, campaign_data):
+        """
+        This creates or updates a campaign with unexpected fields present in the data and
+        asserts that we get invalid usage error from respective API. Data passed should be a dictionary
+        here.
+        :param str method: Name of HTTP method
+        :param str url: URL on which we are supposed to make HTTP request
+        :param str access_token: Access token of user
+        :param dict campaign_data: Data to be passed in HTTP request
+        """
+        campaign_data['unexpected_key'] = fake.word()
+        campaign_data['frequency'] = 0
+        response = send_request(method, url, access_token, data=campaign_data)
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should result in bad request error because unexpected data was given.'
+        assert 'unexpected_key' in response.json()['error']['message']
+        assert 'frequency' in response.json()['error']['message']
 
 
 class FixtureHelpers(object):
