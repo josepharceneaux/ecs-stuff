@@ -4,13 +4,9 @@ __author__ = 'erik@getTalent.com'
 # Standard library
 import json
 import os
-import random
 # Third party
 import requests
 # Module Specific.
-from resume_parsing_service.common.utils.handy_functions import random_word
-from resume_parsing_service.app import redis_store
-from resume_parsing_service.app.views.batch_lib import add_fp_keys_to_queue
 # Test fixtures, imports required even though not 'used'
 # TODO: Look into importing these once and use via namespacing.
 from resume_parsing_service.tests.test_fixtures import client_fixture
@@ -30,7 +26,6 @@ from resume_parsing_service.common.routes import ResumeApiUrl, ResumeApi, Schedu
 
 from resume_parsing_service.common.models.user import DomainRole
 from resume_parsing_service.common.utils.handy_functions import add_role_to_test_user
-from resume_parsing_service.common.utils.test_utils import response_info
 
 DOC_FP_KEY = '0169173d35beaf1053e79fdf1b5db864.docx'
 PDF15_FP_KEY = 'e68b51ee1fd62db589d2669c4f63f381.pdf'

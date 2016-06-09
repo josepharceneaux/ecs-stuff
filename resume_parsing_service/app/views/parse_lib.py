@@ -3,7 +3,6 @@
 from cStringIO import StringIO
 from os.path import basename
 from os.path import splitext
-from time import sleep
 from time import time
 import base64
 import json
@@ -40,25 +39,8 @@ def parse_resume(file_obj, filename_str):
     :return: A dictionary of processed candidate data or an appropriate error message.
     """
     logger.info("Beginning parse_resume(%s)", filename_str)
-    file_ext = basename(splitext(filename_str.lower())[-1]) if filename_str else ""
-    if not file_ext.startswith("."):
-        file_ext = ".{}".format(file_ext)
-    if file_ext not in IMAGE_FORMATS and file_ext not in DOC_FORMATS:
-        raise InvalidUsage('File ext \'{}\' not in accepted image or document formats'.format(file_ext))
-    # Find out if the file is an image
-    is_resume_image = False
-    if file_ext in IMAGE_FORMATS:
-        if file_ext == '.pdf':
-            start_time = time()
-            text = convert_pdf_to_text(file_obj)
-            logger.info(
-                "Benchmark: convert_pdf_to_text(%s) took %ss", filename_str, time() - start_time)
-            if not text.strip():
-                # pdf is possibly an image
-                is_resume_image = True
-        else:
-            is_resume_image = True
-        final_file_ext = '.pdf'
+
+    file_ext, is_resume_image = get_resume_file_info(filename_str, file_obj)
 
     file_obj.seek(0)
     if is_resume_image:
@@ -66,10 +48,9 @@ def parse_resume(file_obj, filename_str):
         start_time = time()
         doc_content = google_vision_ocr(file_obj)
         logger.info(
-            "Benchmark: google_vision_ocr{}: took {}s to process".format(filename_str,
+            "Benchmark: google_vision_ocr for {}: took {}s to process".format(filename_str,
                                                                          time() - start_time)
         )
-        logger.info("Benchmark: ocr_image(%s) took %ss", filename_str, time() - start_time)
     else:
         start_time = time()
         doc_content = file_obj.read()
@@ -80,20 +61,16 @@ def parse_resume(file_obj, filename_str):
         final_file_ext = file_ext
 
     if not doc_content:
-        logger.error('parse_resume: No doc_content')
-        return {}
+        raise InvalidUsage("Unable to determine the contents of the document: {}".format(filename_str))
 
     encoded_resume = base64.b64encode(doc_content)
-    start_time = time()
-    optic_response = fetch_optic_response(encoded_resume)
-    logger.info(
-        "Benchmark: parse_resume_with_bg({}) took {}s".format(filename_str + final_file_ext,
-                                                              time() - start_time)
-    )
+    optic_response = fetch_optic_response(encoded_resume, filename_str)
+
     if optic_response:
         candidate_data = parse_optic_xml(optic_response)
         # Consider returning tuple
         return {'raw_response': optic_response, 'candidate': candidate_data}
+
     else:
         raise InvalidUsage('No XML text received from Optic Response for {}'.format(filename_str))
 

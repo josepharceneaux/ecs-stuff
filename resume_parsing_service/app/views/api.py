@@ -11,7 +11,7 @@ from resume_parsing_service.app import logger
 from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.app.views.param_builders import build_params_from_form
 from resume_parsing_service.app.views.param_builders import build_params_from_json
-from resume_parsing_service.app.views.parse_lib import process_resume
+from resume_parsing_service.app.views.resume_processor import process_resume
 from resume_parsing_service.app.views.utils import get_users_talent_pools
 from resume_parsing_service.common.utils.auth_utils import require_oauth
 from resume_parsing_service.common.routes import ResumeApi

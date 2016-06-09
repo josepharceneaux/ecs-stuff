@@ -85,7 +85,7 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
     if response.status_code != 200:
         raise ForbiddenError('Error connecting to Abby OCR instance.')
 
-    xml = BeautifulSoup(response.text)
+    xml = BeautifulSoup(response.text, 'lxml')
     logger.info("ocr_image() - Abby response to processImage: %s", response.text)
 
     task = xml.response.task
@@ -110,7 +110,7 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
 
         response = requests.get('http://cloud.ocrsdk.com/getTaskStatus',
                                 params=dict(taskId=task_id), auth=ABBY_OCR_API_AUTH_TUPLE)
-        xml = BeautifulSoup(response.text)
+        xml = BeautifulSoup(response.text, 'lxml')
         ocr_url = xml.response.task.get('resulturl')
         logger.info("ocr_image() - Abby response to getTaskStatus: %s", response.text)
 
