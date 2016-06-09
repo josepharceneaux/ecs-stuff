@@ -94,36 +94,36 @@ def resume_post_reciever():
     return jsonify(**process_resume(parse_params))
 
 
-@PARSE_MOD.route(ResumeApi.BATCH, methods=['POST'])
-@require_oauth()
-def post_files_to_queue():
-    """
-    Endpoint for posting files in format {'filenames': ['file1', 'file2, ...]
-    :return: Error/Success Response.
-    """
-    user_id = request.user.id
-    # oauth_token is in format "bearer foo".
-    oauth = request.oauth_token
-    request_json = request.get_json()
-    if not request_json:
-        raise InvalidUsage("Request headers have invalid content-type")
-    filepicker_keys = request_json.get('filenames')
-    if filepicker_keys:
-        queue_details = add_fp_keys_to_queue(filepicker_keys, user_id, oauth)
-        return jsonify(**queue_details), 201
-    else:
-        raise InvalidUsage("No filenames provided to /batch")
+# @PARSE_MOD.route(ResumeApi.BATCH, methods=['POST'])
+# @require_oauth()
+# def post_files_to_queue():
+#     """
+#     Endpoint for posting files in format {'filenames': ['file1', 'file2, ...]
+#     :return: Error/Success Response.
+#     """
+#     user_id = request.user.id
+#     # oauth_token is in format "bearer foo".
+#     oauth = request.oauth_token
+#     request_json = request.get_json()
+#     if not request_json:
+#         raise InvalidUsage("Request headers have invalid content-type")
+#     filepicker_keys = request_json.get('filenames')
+#     if filepicker_keys:
+#         queue_details = add_fp_keys_to_queue(filepicker_keys, user_id, oauth)
+#         return jsonify(**queue_details), 201
+#     else:
+#         raise InvalidUsage("No filenames provided to /batch")
 
 
-@PARSE_MOD.route('batch/<int:user_id>', methods=['GET'])
-@require_oauth()
-def process_batch_request(user_id):
-    """
-    End Point for getting the processed candidate object representing the first item in a users
-    resume processing queue.
-    :param int user_id: The user who 'owns' the queue.
-    :return: HTTP/JSON response containing parsed resume information.
-    """
-    # TODO: add in TalentPool capturing.
-    parsing_response = process_batch_item(user_id)
-    return jsonify(**parsing_response), 200
+# @PARSE_MOD.route('batch/<int:user_id>', methods=['GET'])
+# @require_oauth()
+# def process_batch_request(user_id):
+#     """
+#     End Point for getting the processed candidate object representing the first item in a users
+#     resume processing queue.
+#     :param int user_id: The user who 'owns' the queue.
+#     :return: HTTP/JSON response containing parsed resume information.
+#     """
+#     # TODO: add in TalentPool capturing.
+#     parsing_response = process_batch_item(user_id)
+#     return jsonify(**parsing_response), 200

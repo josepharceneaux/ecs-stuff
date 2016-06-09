@@ -11,9 +11,10 @@ from flask_restful import Resource
 # Models
 from user_service.common.models.db import db
 from user_service.common.models.misc import CustomField
+from user_service.common.models.user import DomainRole
 
 # Decorators
-from user_service.common.utils.auth_utils import require_oauth
+from user_service.common.utils.auth_utils import require_oauth, require_all_roles
 
 # Validators
 from user_service.common.utils.validators import get_json_data_if_validated
@@ -26,6 +27,7 @@ from user_service.common.error_handling import InvalidUsage
 class DomainCustomFieldsResource(Resource):
     decorators = [require_oauth()]
 
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_DOMAINS)
     def post(self):
         """
         Function will create custom field(s) for user's domain

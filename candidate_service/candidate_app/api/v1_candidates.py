@@ -57,7 +57,8 @@ from candidate_service.common.models.candidate import (
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateDevice,
-    CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment, CandidateSource
+    CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment, CandidateSource,
+    CandidateStatus
 )
 from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
@@ -76,9 +77,7 @@ from candidate_service.modules.talent_candidates import (
 )
 from candidate_service.modules.candidate_engagement import calculate_candidate_engagement_score
 from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
-from candidate_service.modules.talent_cloud_search import (
-    upload_candidate_documents, delete_candidate_documents
-)
+from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 from candidate_service.modules.talent_openweb import (
     match_candidate_from_openweb, convert_dice_candidate_dict_to_gt_candidate_dict,
     find_in_openweb_by_email
@@ -228,7 +227,7 @@ class CandidatesResource(Resource):
                 middle_name=candidate_dict.get('middle_name'),
                 last_name=candidate_dict.get('last_name'),
                 formatted_name=candidate_dict.get('full_name'),
-                status_id=candidate_dict.get('status_id'),
+                status_id=candidate_dict.get('status_id') or CandidateStatus.DEFAULT_STATUS_ID,
                 emails=emails,
                 phones=candidate_dict.get('phones'),
                 addresses=candidate_dict.get('addresses'),
