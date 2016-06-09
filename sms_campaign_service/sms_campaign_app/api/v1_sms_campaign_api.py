@@ -216,17 +216,10 @@ class SMSCampaigns(Resource):
         """
         data_from_ui = get_valid_json_data(request)
         campaign_obj = SmsCampaignBase(request.user.id)
-        campaign_id, invalid_smartlist_ids = campaign_obj.save(data_from_ui)
+        campaign_id = campaign_obj.save(data_from_ui)
         headers = {'Location': SmsCampaignApiUrl.CAMPAIGN % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
-        # If any of the smartlist_id found invalid
-        if invalid_smartlist_ids['count']:
-            return ApiResponse(dict(id=campaign_id,
-                                    invalid_smartlist_ids=invalid_smartlist_ids),
-                               status=requests.codes.MULTI_STATUS, headers=headers)
-        else:
-            return ApiResponse(dict(id=campaign_id),
-                               status=requests.codes.CREATED, headers=headers)
+        return ApiResponse(dict(id=campaign_id), status=requests.codes.CREATED, headers=headers)
 
     def delete(self):
         """
@@ -546,15 +539,8 @@ class CampaignById(Resource):
         """
         campaign_data = get_valid_json_data(request)
         camp_obj = SmsCampaignBase(request.user.id, campaign_id)
-        invalid_smartlist_ids = camp_obj.update(campaign_data, campaign_id=campaign_id)
-        # If any of the smartlist_id found invalid
-        if invalid_smartlist_ids['count']:
-            return dict(
-                message='SMS Campaign(id:%s) has been updated successfully' % campaign_id,
-                invalid_smartlist_ids=invalid_smartlist_ids), 207
-        else:
-            return dict(message='SMS Campaign(id:%s) has been updated successfully'
-                                % campaign_id), requests.codes.OK
+        camp_obj.update(campaign_data, campaign_id=campaign_id)
+        return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id), requests.codes.OK
 
     def delete(self, campaign_id):
         """
