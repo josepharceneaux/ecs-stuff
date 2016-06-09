@@ -3,8 +3,6 @@ This module contains our custom pyvalidators, which will be used to valid params
 docstring with the help of PyContracts.
 
 """
-
-# TODO-break the doc string so it respects the line limit
 from contracts import new_contract
 
 

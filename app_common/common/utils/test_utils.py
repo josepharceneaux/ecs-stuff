@@ -40,6 +40,7 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
     :param bool verify: set this to false
     :return:
     """
+    method = method.lower()
     request_method = getattr(requests, method)
     headers = dict(Authorization='Bearer %s' % access_token)
     if is_json:
