@@ -61,7 +61,7 @@ TIMEFORMAT='%lR'
 printf "\n========================== Batch 1 execution starts =========================="
 printf "\nUser Service\nActivity Service\nSpreadsheet Import Service\nAuth Service\nScheduler Service\nResume Parsing Service\nCandidate Pool Service\nPush Campaign Service"
 printf "\n"
-batch_one=`py.test -n auto user_service/tests activity_service/tests spreadsheet_import_service/tests auth_service/tests scheduler_service/tests resume_parsing_service/tests candidate_pool_service/tests push_campaign_service/tests`
+batch_one=`py.test -n auto user_service/tests activity_service/tests spreadsheet_import_service/tests scheduler_service/tests resume_parsing_service/tests candidate_pool_service/tests push_campaign_service/tests`
 printf "\n========================== Batch 1 execution ends. =========================="
 IFS=$'\n' read -d '' -r -a arr  <<< "$batch_one"
 if [[ "$batch_one" =~ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds ]]; then batch_one_status=1 && printf "\n${arr[${#arr[@]}-1]}"; else batch_one_status=0 && printf "\n${batch_one}"; fi
@@ -69,7 +69,7 @@ if [[ "$batch_one" =~ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds ]]; then batch_
 printf "\n========================== Batch 2 execution starts =========================="
 printf "\n Candidate Service"
 printf "\n"
-batch_two=`py.test -n auto candidate_service/tests`
+batch_two=`py.test -n auto auth_service/tests candidate_service/tests`
 printf "\n========================== Batch 2 execution ends. =========================="
 IFS=$'\n' read -d '' -r -a arr  <<< "$batch_two"
 if [[ "$batch_two" =~ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds ]]; then batch_two_status=1 && printf "\n${arr[${#arr[@]}-1]}"; else batch_two_status=0 && printf "\n${batch_two}"; fi
