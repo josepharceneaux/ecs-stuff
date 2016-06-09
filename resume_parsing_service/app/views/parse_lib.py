@@ -1,20 +1,28 @@
-"""Main resume parsing logic & functions."""
 # pylint: disable=wrong-import-position, fixme
 # Standard library
+from cStringIO import StringIO
+from os.path import basename
+from os.path import splitext
+from time import sleep
+from time import time
+import base64
 import json
 # Third Party/Framework Specific.
+from bs4 import BeautifulSoup
+from pdfminer.converter import TextConverter
+from pdfminer.layout import LAParams
+from pdfminer.pdfinterp import PDFResourceManager
+from pdfminer.pdfinterp import process_pdf
+from pdfminer.pdfparser import PDFDocument
+from pdfminer.pdfparser import PDFParser
 import requests
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
-from resume_parsing_service.app.views.parse_lib2 import parse_resume
-from resume_parsing_service.app.views.utils import update_candidate_from_resume
-from resume_parsing_service.app.views.utils import create_parsed_resume_candidate
-from resume_parsing_service.app.views.utils import send_candidate_references
+from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
+from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.utils import gen_hash_from_file
-from resume_parsing_service.app.views.utils import resume_file_from_params
+from resume_parsing_service.app.views.ocr_lib import google_vision_ocr
 from resume_parsing_service.common.error_handling import InvalidUsage
-from resume_parsing_service.common.routes import CandidateApiUrl
-from resume_parsing_service.common.utils.talent_s3 import boto3_put
 
 
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
@@ -24,65 +32,97 @@ GOOGLE_API_KEY = "AIzaSyD4i4j-8C5jLvQJeJnLmoFW6boGkUhxSuw"
 GOOGLE_CLOUD_VISION_URL = "https://vision.googleapis.com/v1/images:annotate"
 RESUME_EXPIRE_TIME = 604800  # one week in seconds.
 
+def parse_resume(file_obj, filename_str):
+    """Primary resume parsing function.
 
-def process_resume(parse_params):
+    :param cStringIO.StringI file_obj: a StringIO representation of the raw binary.
+    :param str filename_str: The file_obj file name.
+    :return: A dictionary of processed candidate data or an appropriate error message.
     """
-    Parses a resume based on a provided: filepicker key or binary, filename
-    :param dict parse_params:
-    :return: dict: {'candidate': {...}, 'raw': {...}}
-    """
+    logger.info("Beginning parse_resume(%s)", filename_str)
+    file_ext = basename(splitext(filename_str.lower())[-1]) if filename_str else ""
+    if not file_ext.startswith("."):
+        file_ext = ".{}".format(file_ext)
+    if file_ext not in IMAGE_FORMATS and file_ext not in DOC_FORMATS:
+        raise InvalidUsage('File ext \'{}\' not in accepted image or document formats'.format(file_ext))
+    # Find out if the file is an image
+    is_resume_image = False
+    if file_ext in IMAGE_FORMATS:
+        if file_ext == '.pdf':
+            start_time = time()
+            text = convert_pdf_to_text(file_obj)
+            logger.info(
+                "Benchmark: convert_pdf_to_text(%s) took %ss", filename_str, time() - start_time)
+            if not text.strip():
+                # pdf is possibly an image
+                is_resume_image = True
+        else:
+            is_resume_image = True
+        final_file_ext = '.pdf'
 
-    # None may be explicitly passed so the normal .get('attr', default) doesn't apply here.
-    create_candidate = parse_params.get('create_candidate', False)
+    file_obj.seek(0)
+    if is_resume_image:
+        # If file is an image, OCR it
+        start_time = time()
+        doc_content = google_vision_ocr(file_obj)
+        logger.info(
+            "Benchmark: google_vision_ocr{}: took {}s to process".format(filename_str,
+                                                                         time() - start_time)
+        )
+        logger.info("Benchmark: ocr_image(%s) took %ss", filename_str, time() - start_time)
+    else:
+        start_time = time()
+        doc_content = file_obj.read()
+        logger.info(
+            "Benchmark: Reading file_obj and magic.from_buffer(%s) took %ss",
+            filename_str, time() - start_time
+        )
+        final_file_ext = file_ext
 
-    # We need to obtain/define the file from our params.
-    resume_file, filename_str = resume_file_from_params(parse_params)
+    if not doc_content:
+        logger.error('parse_resume: No doc_content')
+        return {}
 
-    # Checks to see if we already have BG contents in Redis.
-    parsed_resume = get_or_store_parsed_resume(resume_file, filename_str)
+    encoded_resume = base64.b64encode(doc_content)
+    start_time = time()
+    optic_response = fetch_optic_response(encoded_resume)
+    logger.info(
+        "Benchmark: parse_resume_with_bg({}) took {}s".format(filename_str + final_file_ext,
+                                                              time() - start_time)
+    )
+    if optic_response:
+        candidate_data = parse_optic_xml(optic_response)
+        # Consider returning tuple
+        return {'raw_response': optic_response, 'candidate': candidate_data}
+    else:
+        raise InvalidUsage('No XML text received from Optic Response for {}'.format(filename_str))
 
-    if not create_candidate:
-        return parsed_resume
 
-    talent_pools = parse_params.get('talent_pools')
-    # Talent pools are the ONLY thing required to create a candidate.
-    if create_candidate and not talent_pools:
-        raise InvalidUsage('Talent Pools required for candidate creation')
+def convert_pdf_to_text(pdf_file_obj):
+    """Converts a PDF file to a usable string."""
+    rsrcmgr = PDFResourceManager()
+    retstr = StringIO()
+    codec = 'utf-8'
+    laparams = LAParams()
+    device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
 
-    oauth_string = parse_params.get('oauth')
-    parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
+    # TODO access if this reassignment is needed.
+    fp = pdf_file_obj
 
-    # Upload resumes we want to create candidates from.
-    try:
-        resume_file.seek(0)
-        boto3_put(resume_file.read(), filename_str, 'OriginalFiles')
-        parsed_resume['candidate']['resume_url'] = filename_str
+    parser = PDFParser(fp)
+    doc = PDFDocument()
+    parser.set_document(doc)
+    doc.set_parser(parser)
+    doc.initialize('')
+    if not doc.is_extractable:
+        return ''
 
-    except Exception as e:
-        logger.exception('Failure during s3 upload; reason: {}'.format(e.message))
+    process_pdf(rsrcmgr, device, fp)
+    device.close()
 
-    candidate_references = parsed_resume['candidate'].pop('references', None)
-    candidate_created, candidate_id = create_parsed_resume_candidate(parsed_resume['candidate'],
-                                                             oauth_string, filename_str)
-
-    if not candidate_created:
-        # We must update!
-        parsed_resume['candidate']['id'] = candidate_id
-        candidate_updated = update_candidate_from_resume(parsed_resume['candidate'], oauth_string, filename_str)
-
-    # References have their own endpoint and are not part of /candidates POSTed data.
-    if candidate_references:
-        send_candidate_references(candidate_references, candidate_id, oauth_string)
-
-    candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id,
-                                          headers={'Authorization': oauth_string})
-
-    if candidate_get_response.status_code is not requests.codes.ok:
-        raise InvalidUsage(error_message='Error retrieving created candidate')
-
-    candidate = json.loads(candidate_get_response.content)
-
-    return candidate
+    text = retstr.getvalue()
+    retstr.close()
+    return text
 
 
 def get_or_store_parsed_resume(resume_file, filename_str):
@@ -109,3 +149,28 @@ def get_or_store_parsed_resume(resume_file, filename_str):
         redis_store.expire(hashed_file_name, RESUME_EXPIRE_TIME)
 
     return parsed_resume
+
+
+def get_resume_file_info(filename_str, file_obj):
+    file_ext = basename(splitext(filename_str.lower())[-1]) if filename_str else ""
+    is_resume_image = False
+
+    if not file_ext.startswith("."):
+        file_ext = ".{}".format(file_ext)
+
+    if file_ext not in IMAGE_FORMATS and file_ext not in DOC_FORMATS:
+        raise InvalidUsage('File ext \'{}\' not in accepted image or document formats'.format(file_ext))
+
+    # Find out if the file is an image
+    if file_ext in IMAGE_FORMATS:
+        if file_ext == '.pdf':
+            start_time = time()
+            text = convert_pdf_to_text(file_obj)
+            if not text.strip():
+                # pdf is possibly an image
+                is_resume_image = True
+        else:
+            is_resume_image = True
+        file_ext = '.pdf' # Question: If it's a jpeg we rename it to a pdf?
+
+    return file_ext, is_resume_image
