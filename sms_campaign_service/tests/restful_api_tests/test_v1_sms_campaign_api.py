@@ -350,15 +350,34 @@ class TestSmsCampaignHTTPDelete(object):
         response = requests.delete(self.URL, headers=headers, data=json.dumps({'ids': 1}))
         assert response.status_code == InvalidUsage.http_status_code(), 'It should be a bad request (400)'
 
-    def test_campaigns_delete_with_invalid_and_not_owned_and_non_existing_ids(self, headers,
-                                                                              sms_campaign_in_other_domain):
+    def test_campaigns_delete_with_valid_and_not_owned_campaigns(self, headers, sms_campaign_in_other_domain,
+                                                                 sms_campaign_of_user_first):
         """
-        User auth token is valid, but invalid data provided
-        (ids other than int, not owned campaign and Non-exisiting),
+        User auth token is valid, but one of the requested campaigns ids does not belong to user domain.
+        It should result in Forbidden error.
+        """
+        response = requests.delete(self.URL, headers=headers,
+                                   data=json.dumps({'ids': [sms_campaign_of_user_first['id'],
+                                                            sms_campaign_in_other_domain['id']]}))
+        assert response.status_code == ForbiddenError.http_status_code(), 'It should be a Forbidden error (403)'
+
+    def test_campaigns_delete_with_valid_and_not_existing_campaigns(self, headers, sms_campaign_of_user_first):
+        """
+        User auth token is valid, but one of the requested campaigns ids does not exists in database.
+        It should result in ResourceNotFound error.
+        """
+        non_existing_id = CampaignsTestsHelpers.get_non_existing_id(SmsCampaign)
+        response = requests.delete(self.URL, headers=headers,
+                                   data=json.dumps({'ids': [sms_campaign_of_user_first['id'], non_existing_id]}))
+        assert response.status_code == ResourceNotFound.http_status_code(), 'It should be a ResourceNotFound (404)'
+
+    def test_campaigns_delete_with_valid_and_invalid_campaign_ids(self, headers, sms_campaign_of_user_first):
+        """
+        User auth token is valid, but invalid data provided (ids other than int, not owned campaign and Non-exisiting),
         It should result in bad request error.
         """
         response = requests.delete(self.URL, headers=headers,
-                                   data=json.dumps({'ids': [0, 'a', 'b', sms_campaign_in_other_domain['id']]}))
+                                   data=json.dumps({'ids': [0, 'a', 'b', sms_campaign_of_user_first['id']]}))
         assert response.status_code == InvalidUsage.http_status_code(), 'It should be a bad request (400)'
 
     def test_campaigns_delete_with_authorized_ids(self, headers, user_first, sms_campaign_of_user_first):
@@ -373,8 +392,7 @@ class TestSmsCampaignHTTPDelete(object):
     def test_delete_campaign_of_some_other_user_in_same_domain(self, headers_same_domain,
                                                                user_same_domain, sms_campaign_of_user_first):
         """
-        Here one user tries to delete campaign of some other user in same domain.
-        Response should be OK.
+        Here one user tries to delete campaign of some other user in same domain. Response should be OK.
         """
         response = requests.delete(self.URL, headers=headers_same_domain,
                                    data=json.dumps({'ids': [sms_campaign_of_user_first['id']]}))
@@ -387,62 +405,17 @@ class TestSmsCampaignHTTPDelete(object):
         """
         response = requests.delete(self.URL, headers=headers,
                                    data=json.dumps({'ids': [sms_campaign_in_other_domain['id']]}))
-        assert response.status_code == ForbiddenError.http_status_code(), \
-            'It should result in forbidden error (403)'
+        assert response.status_code == ForbiddenError.http_status_code(), 'It should result in forbidden error (403)'
 
-    def test_delete_campaigns_of_multiple_users(self, headers, user_first,
-                                                sms_campaign_of_other_user_in_same_domain,
+    def test_delete_campaigns_of_multiple_users(self, headers, user_first, sms_campaign_of_other_user_in_same_domain,
                                                 sms_campaign_of_user_first):
         """
-        Test with one authorized and one unauthorized SMS campaign. It should result in 207
-        status code.
+        Test with one SMS campaigns in a domian. It should result in OK response.
         """
         response = requests.delete(self.URL, headers=headers,
                                    data=json.dumps({'ids': [sms_campaign_of_other_user_in_same_domain['id'],
                                                             sms_campaign_of_user_first['id']]}))
         assert_campaign_delete(response, user_first.id, sms_campaign_of_user_first['id'])
-
-    def test_campaigns_delete_authorized_and_unauthorized_ids(self, headers, user_first,
-                                                              sms_campaign_in_other_domain,
-                                                              sms_campaign_of_user_first):
-        """
-        Test with one authorized and one unauthorized SMS campaign. It should result in 207
-        status code.
-        """
-        response = requests.delete(self.URL, headers=headers,
-                                   data=json.dumps({'ids': [sms_campaign_in_other_domain['id'],
-                                                            sms_campaign_of_user_first['id']]}))
-        assert response.status_code == 207
-        assert sms_campaign_in_other_domain['id'] in response.json()['not_owned_ids']
-        assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_DELETE,
-                            sms_campaign_of_user_first['id'])
-
-    def test_campaigns_delete_with_existing_and_non_existing_ids(self, headers, user_first,
-                                                                 sms_campaign_of_user_first):
-        """
-        Test with one existing, and one non existing ids of SMS campaign.
-        It should result in 207 status code.
-        """
-        non_existing_id = CampaignsTestsHelpers.get_non_existing_id(SmsCampaign)
-        response = requests.delete(self.URL, headers=headers,
-                                   data=json.dumps({'ids': [non_existing_id, sms_campaign_of_user_first['id']]}))
-        assert response.status_code == 207
-        assert non_existing_id in response.json()['not_found_ids']
-        assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_DELETE,
-                            sms_campaign_of_user_first['id'])
-
-    def test_campaigns_delete_with_valid_and_invalid_ids(self, headers, user_first,
-                                                         sms_campaign_of_user_first):
-        """
-        Test with one valid, and one invalid id of SMS campaign.
-        It should result in 207 status code.
-        """
-        response = requests.delete(self.URL, headers=headers,
-                                   data=json.dumps({'ids': [0, sms_campaign_of_user_first['id']]}))
-        assert response.status_code == 207
-        assert 0 in response.json()['not_deleted_ids']
-        assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_DELETE,
-                            sms_campaign_of_user_first['id'])
 
     def test_campaigns_delete_with_deleted_record(self, headers, user_first, sms_campaign_of_user_first):
         """

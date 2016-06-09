@@ -570,13 +570,12 @@ class CampaignById(Resource):
                     5010 (ERROR_DELETING_SMS_CAMPAIGN)
         """
         campaign_obj = SmsCampaignBase(request.user.id, campaign_id)
-        campaign_deleted = campaign_obj.delete(campaign_id)
+        campaign_deleted = campaign_obj.delete()
         if campaign_deleted:
             return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), requests.codes.OK
         else:
-            raise InternalServerError(
-                'Campaign(id:%s) was not deleted.' % campaign_id,
-                error_code=CampaignException.ERROR_DELETING_CAMPAIGN)
+            raise InternalServerError('Campaign(id:%s) was not deleted.' % campaign_id,
+                                      error_code=CampaignException.ERROR_DELETING_CAMPAIGN)
 
 
 @api.route(SmsCampaignApi.SEND)
