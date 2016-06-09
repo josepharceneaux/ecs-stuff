@@ -959,13 +959,13 @@ def test_sort_by_proximity(user_first, access_token_first, talent_pool):
 
     # Without radius i.e. it will by default take 50 miles
     # Sort by -> Proximity: Closest
-    resp = get_response(access_token_first, '?location=Santa Clara&sort_by=proximity', expected_count=4)
+    resp = get_response(access_token_first, '?location=Santa Clara, CA&sort_by=proximity', expected_count=4)
     print response_info(resp)
     resultant_candidate_ids = [candidate['id'] for candidate in resp.json()['candidates']]
     assert resultant_candidate_ids == map(unicode, closest)
 
     # Sort by -> Proximity: Furthest
-    resp = get_response(access_token_first, '?location=Santa Clara&sort_by=~proximity', expected_count=4)
+    resp = get_response(access_token_first, '?location=Santa Clara, CA&sort_by=~proximity', expected_count=4)
     print response_info(resp)
     resultant_candidate_ids = [candidate['id'] for candidate in resp.json()['candidates']]
     assert resultant_candidate_ids == map(unicode, furthest)
