@@ -21,7 +21,6 @@ from ..models.email_campaign import EmailCampaignBlast
 
 # Common utils
 from ..utils.datetime_utils import DatetimeUtils
-from ..talent_config_manager import TalentConfigKeys
 from ..error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
 from ..utils.handy_functions import (find_missing_items,
                                      validate_required_fields, get_valid_json_data)
@@ -48,8 +47,7 @@ def validation_of_data_to_schedule_campaign(campaign_obj, request):
     """
     data_to_schedule_campaign = get_valid_json_data(request)
     if not data_to_schedule_campaign:
-        raise InvalidUsage('No data provided to schedule %s(id:%s)'
-                           % (campaign_obj.__tablename__, campaign_obj.id))
+        raise InvalidUsage('No data provided to schedule %s(id:%s)' % (campaign_obj.__tablename__, campaign_obj.id))
     # check if data has start_datetime
     if not data_to_schedule_campaign.get('start_datetime'):
         raise InvalidUsage('start_datetime is required field.')
@@ -88,9 +86,8 @@ def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
     """
     # check if candidate exists in database
     if not candidate or candidate.is_web_hidden:
-        raise ResourceNotFound(
-            'validate_blast_candidate_url_conversion_in_db: Candidate not found.',
-            error_code=ResourceNotFound.http_status_code())
+        raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: Candidate not found.',
+                               error_code=ResourceNotFound.http_status_code())
     # check if campaign_blasts exists in database
     if not campaign_blast_obj:
         raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: campaign blast'
@@ -102,10 +99,9 @@ def validate_blast_candidate_url_conversion_in_db(campaign_blast_obj, candidate,
                                error_code=ResourceNotFound.http_status_code())
     # check if url_conversion record exists in database
     if not url_conversion_obj:
-        raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: '
-                               'Url Conversion obj not found for %s(id:%s).'
-                               % (campaign_blast_obj.campaign.__tablename__,
-                                  campaign_blast_obj.campaign.id),
+        raise ResourceNotFound('validate_blast_candidate_url_conversion_in_db: Url Conversion obj not found for '
+                               '%s(id:%s).' % (campaign_blast_obj.campaign.__tablename__,
+                                               campaign_blast_obj.campaign.id),
                                error_code=ResourceNotFound.http_status_code())
     return campaign_blast_obj.campaign
 
@@ -120,7 +116,6 @@ def validate_smartlist_ids(smartlist_ids, current_user):
     :param current_user: logged-in user's object
     :type smartlist_ids: list
     :type current_user: User
-    :exception: ForbiddenError, ResourceNotFound, InvalidUsage
     """
     if not isinstance(smartlist_ids, list):
         raise InvalidUsage('Include smartlist id(s) in a list.')
@@ -158,9 +153,8 @@ def validate_form_data(form_data, current_user, required_fields=('name', 'body_t
     # find if any required key has no value
     missing_field_values = find_missing_items(form_data, required_fields)
     if missing_field_values:
-        raise InvalidUsage('Required fields not provided to save '
-                           'campaign. Empty fields are %s' % missing_field_values)
-    # validate smartlist ids are in a list
+        raise InvalidUsage('Required fields not provided to save campaign. Empty fields are %s' % missing_field_values)
+    # validate smartlist ids to create campaign
     validate_smartlist_ids(form_data['smartlist_ids'], current_user)
 
 
@@ -170,7 +164,6 @@ def raise_if_dict_values_are_not_int_or_long(data):
     error.
     :param data: data to validate
     :type data: dict
-    :exception: Invalid Usage
     """
     if not isinstance(data, dict):
         raise InvalidUsage('Include data as dictionary.')
