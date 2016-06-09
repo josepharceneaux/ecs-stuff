@@ -182,8 +182,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
                                                               access_token_first,
                                                               campaign_valid_data)
 
-    def test_with_no_data(self, headers,
-                          sms_campaign_of_user_first):
+    def test_with_no_data(self, headers, sms_campaign_of_user_first):
         """
         User auth token is valid but no data is provided. It should get bad request error.
         """
@@ -204,26 +203,31 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         assert response.status_code == InvalidUsage.http_status_code(), \
             'Should be a bad request (400)'
 
-    def test_with_missing_body_text_in_data(self, headers,
-                                            campaign_data_unknown_key_text,
-                                            sms_campaign_of_user_first):
+    def test_with_missing_required_fields(self, headers, sms_campaign_of_user_first,
+                                          invalid_data_for_campaign_creation):
         """
         It tries to update the already present sms_campaign record with invalid_data.
-        campaign_data_unknown_key_text (fixture) has no 'body_text' (which is mandatory) field
-        It should get bad request error.
-        :param campaign_data_unknown_key_text: fixture to get invalid data to update old record
-        :param sms_campaign_of_user_first: fixture to create sms_campaign record in database
-                                            fo current user.
+        We pass data with missing required keys. It should get bad request error.
         """
+        campaign_data, missing_key = invalid_data_for_campaign_creation
         response = requests.put(SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_user_first['id'],
-                                headers=headers,
-                                data=json.dumps(campaign_data_unknown_key_text))
+                                headers=headers, data=json.dumps(campaign_data))
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should get bad request error'
+        assert missing_key in response.json()['error']['message']
+
+    def test_with_unexpected_field_in_data(self, campaign_valid_data, access_token_first, user_phone_1,
+                                           sms_campaign_of_user_first):
+        """
+        User has one phone value, headers are valid and sms-campaign is being updated with
+        invalid data (having some unexpected fields). It should result in Invalid usage error.
+        """
+        CampaignsTestsHelpers.campaign_create_or_update_with_unexpected_fields(
+            'put', SmsCampaignApiUrl.CAMPAIGN % sms_campaign_of_user_first['id'],
+            access_token_first, campaign_valid_data)
 
     def test_campaign_update_with_invalid_url_in_body_text(self, campaign_valid_data,
-                                                           headers,
-                                                           sms_campaign_of_user_first):
+                                                           headers, sms_campaign_of_user_first):
         """
         User has one phone value, valid header and invalid URL in body text(random word).
         It should get invalid usage error, Custom error should be INVALID_URL_FORMAT.
