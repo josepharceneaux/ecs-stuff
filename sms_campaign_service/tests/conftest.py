@@ -206,6 +206,14 @@ def invalid_data_for_campaign_creation(request):
     return campaign_data, request.param
 
 
+@pytest.fixture(params=[0, 'abcdef', None, dict(), list()])
+def invalid_smartlist_id(request):
+    """
+    This function returns invalid smartlist Ids to create an sms-campaign.
+    """
+    return [request.param]
+
+
 @pytest.fixture()
 def smartlist_with_two_candidates(access_token_first, talent_pipeline):
     """
@@ -227,15 +235,14 @@ def smartlist_with_two_candidates_in_other_domain(access_token_other, talent_pip
 
 
 @pytest.fixture()
-def sms_campaign_of_user_first(request, campaign_valid_data, talent_pipeline,
-                               headers, smartlist_with_two_candidates, user_phone_1):
+def sms_campaign_of_user_first(request, campaign_valid_data, talent_pipeline, headers, smartlist_with_two_candidates,
+                               user_phone_1):
     """
     This creates the SMS campaign for user_first using valid data.
     """
     smartlist_id, _ = smartlist_with_two_candidates
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
-    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers,
-                                                    talent_pipeline.user.id)
+    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers, talent_pipeline.user.id)
 
     def fin():
         _delete_campaign(test_sms_campaign, headers)
@@ -245,20 +252,17 @@ def sms_campaign_of_user_first(request, campaign_valid_data, talent_pipeline,
 
 
 @pytest.fixture()
-def sms_campaign_with_two_smartlists(request, campaign_valid_data,
-                                     access_token_first, talent_pipeline,
-                                     headers):
+def sms_campaign_with_two_smartlists(request, campaign_valid_data, access_token_first, talent_pipeline, headers):
     """
     This creates the SMS campaign for "user_first"(fixture) using valid data and two smartlists.
     It then returns the campaign object.
     """
     smartlist_1_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, create_phone=True)
+access_token_first, talent_pipeline, create_phone=True)
     smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
         access_token_first, talent_pipeline, create_phone=True)
     campaign_valid_data['smartlist_ids'] = [smartlist_1_id, smartlist_2_id]
-    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers,
-                                                    talent_pipeline.user.id)
+    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers, talent_pipeline.user.id)
 
     def fin():
         _delete_campaign(test_sms_campaign, headers)
@@ -268,9 +272,7 @@ def sms_campaign_with_two_smartlists(request, campaign_valid_data,
 
 
 @pytest.fixture()
-def sms_campaign_with_one_valid_candidate(request, campaign_valid_data,
-                                          access_token_first, talent_pipeline,
-                                          headers):
+def sms_campaign_with_one_valid_candidate(request, campaign_valid_data, access_token_first, talent_pipeline, headers):
     """
     This fixture creates an SMS campaign with two candidates. Only one candidates has phone number
     associated with it.
@@ -295,10 +297,8 @@ def sms_campaign_with_one_valid_candidate(request, campaign_valid_data,
 
 
 @pytest.fixture()
-def sms_campaign_with_same_candidate_in_multiple_smartlists(request, campaign_valid_data,
-                                                            smartlist_with_two_candidates,
-                                                            access_token_first, talent_pipeline,
-                                                            headers):
+def sms_campaign_with_same_candidate_in_multiple_smartlists(request, campaign_valid_data, talent_pipeline, headers,
+                                                            smartlist_with_two_candidates, access_token_first):
     """
     This fixture creates an SMS campaign with two smartlists.
     Smartlist 1 will have two candidates and smartlist 2 will have one candidate (which will be
@@ -307,9 +307,8 @@ def sms_campaign_with_same_candidate_in_multiple_smartlists(request, campaign_va
     smartlist_1_id, candidate_ids = smartlist_with_two_candidates
     # Going to assign a candidate belonging to smartlist_1 to smartlist_2 so both will have same candidate
     candidate_ids_for_smartlist_2 = [candidate_ids[0]]
-    smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
-                                                                              talent_pipeline,
-                                                                              candidate_ids=candidate_ids_for_smartlist_2)
+    smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
+        access_token_first, talent_pipeline, candidate_ids=candidate_ids_for_smartlist_2)
     campaign_valid_data['smartlist_ids'] = [smartlist_1_id, smartlist_2_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers,
                                                     talent_pipeline.user.id)
@@ -322,18 +321,15 @@ def sms_campaign_with_same_candidate_in_multiple_smartlists(request, campaign_va
 
 
 @pytest.fixture()
-def sms_campaign_with_no_candidate(request, campaign_valid_data,
-                                   access_token_first, talent_pipeline,
-                                   headers, user_phone_1):
+def sms_campaign_with_no_candidate(request, campaign_valid_data, access_token_first, talent_pipeline, headers,
+                                   user_phone_1):
     """
     This creates the SMS campaign for user_first using valid data. It associates such a smartlist
     with sms-campaign which has no candidates associated with it.
     """
-    smartlist_id = FixtureHelpers.create_smartlist_with_search_params(access_token_first,
-                                                                      talent_pipeline.id)
+    smartlist_id = FixtureHelpers.create_smartlist_with_search_params(access_token_first, talent_pipeline.id)
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
-    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers,
-                                                    talent_pipeline.user.id)
+    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers, talent_pipeline.user.id)
 
     def fin():
         _delete_campaign(test_sms_campaign, headers)
@@ -343,19 +339,15 @@ def sms_campaign_with_no_candidate(request, campaign_valid_data,
 
 
 @pytest.fixture()
-def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data,
-                                              user_same_domain, headers_same_domain,
-                                              user_phone_3,
-                                              smartlist_with_two_candidates):
+def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data, user_same_domain, headers_same_domain,
+                                              user_phone_3, smartlist_with_two_candidates):
     """
     This creates the SMS campaign for user_same_domain using valid data, so that we have
     another campaign in the user_first's domain.
     """
     smartlist_id, _ = smartlist_with_two_candidates
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
-    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data,
-                                                    headers_same_domain,
-                                                    user_same_domain.id)
+    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers_same_domain, user_same_domain.id)
 
     def fin():
         _delete_campaign(test_sms_campaign, headers)
@@ -365,8 +357,8 @@ def sms_campaign_of_other_user_in_same_domain(request, campaign_valid_data,
 
 
 @pytest.fixture()
-def bulk_sms_campaigns(request, campaign_valid_data, talent_pipeline,
-                       headers, smartlist_with_two_candidates, user_phone_1):
+def bulk_sms_campaigns(request, campaign_valid_data, talent_pipeline, headers, smartlist_with_two_candidates,
+                       user_phone_1):
     """
     This creates the 10 SMS campaign for user_first using valid data.
     """
@@ -401,15 +393,13 @@ def invalid_sms_campaign(request, campaign_valid_data, user_phone_1, headers):
 
 
 @pytest.fixture()
-def sms_campaign_with_no_valid_candidate(request, campaign_valid_data,
-                                         access_token_first, talent_pipeline,
-                                         headers):
+def sms_campaign_with_no_valid_candidate(request, campaign_valid_data, access_token_first, talent_pipeline, headers):
     """
     This creates the SMS campaign for user_first using valid data. Candidates associated
     with this campaign have no phone number saved in database.
     """
-    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, count=2)
+    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
+                                                                            count=2)
     campaign_valid_data['smartlist_ids'] = [smartlist_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers,
                                                     talent_pipeline.user.id)
