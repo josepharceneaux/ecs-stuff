@@ -261,53 +261,21 @@ class SMSCampaigns(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
-        req_data = get_valid_json_data(request)
-        campaign_ids = req_data['ids'] if 'ids' in req_data else []
-        if not isinstance(req_data['ids'], list):
-            raise InvalidUsage('Bad request, include campaign_ids as list data',
-                               error_code=InvalidUsage.http_status_code())
-        # check if campaigns_ids list is not empty
+        requested_data = get_valid_json_data(request)
+        campaign_ids = requested_data['ids'] if 'ids' in requested_data else []
+        if not isinstance(requested_data['ids'], list):
+            raise InvalidUsage('Bad request, include campaign_ids as list data')
+        # check if list of campaigns_ids is not empty
         if not campaign_ids:
-            return dict(message='No campaign id provided to delete'), requests.codes.OK
-
+            raise InvalidUsage('No campaign id provided to delete')
         if not any([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
-            raise InvalidUsage('Bad request, campaign_ids must be integer',
-                               error_code=InvalidUsage.http_status_code())
-        not_deleted = []
-        not_found = []
-        not_owned = []
-        status_code = None
-
+            raise InvalidUsage('Campaign_ids must be integer or long > 0.')
         # Validate all requested campaigns exist in logged-in user's domain
         campaigns = [SmsCampaignBase(request.user.id, campaign_id) for campaign_id in campaign_ids]
+        # Delete all requested campaigns
         for campaign_obj in campaigns:
-            try:
-                deleted = campaign_obj.delete(campaign_id)
-                if not deleted:
-                    # error has been logged inside delete()
-                    not_deleted.append(campaign_id)
-            except ForbiddenError:
-                status_code = ForbiddenError.http_status_code()
-                not_owned.append(campaign_id)
-            except ResourceNotFound:
-                status_code = ResourceNotFound.http_status_code()
-                not_found.append(campaign_id)
-            except InvalidUsage:
-                status_code = InvalidUsage.http_status_code()
-                not_deleted.append(campaign_id)
-        if status_code and len(campaign_ids) == 1:  # It means only one campaign_id was provided
-            return dict(message='Unable to delete campaign.'), status_code
-        count_invalid_ids = len(not_deleted) + len(not_found) + len(not_owned)
-        if not count_invalid_ids:
-            return dict(message='%d campaign(s) deleted successfully.'
-                                % len(campaign_ids)), requests.codes.OK
-        if count_invalid_ids == len(campaign_ids):
-            status_code = InvalidUsage.http_status_code()
-        else:
-            status_code = requests.codes.MULTI_STATUS
-        return dict(message='Unable to delete %d campaign(s).' % count_invalid_ids,
-                    not_deleted_ids=not_deleted, not_found_ids=not_found,
-                    not_owned_ids=not_owned), status_code
+            campaign_obj.delete()
+        return dict(message='%d campaign(s) deleted successfully.' % len(campaign_ids)), requests.codes.OK
 
 
 @api.route(SmsCampaignApi.SCHEDULE)
