@@ -316,11 +316,9 @@ class CandidatesResource(Resource):
             hide_candidate = _candidate_dict.get('hide')
             if hide_candidate is True:
                 candidate.is_web_hidden = 1
-                delete_candidate_documents([candidate_id])  # Delete candidate from CS when set to hidden
                 hidden_candidate_ids.append(candidate_id)
                 skip = True
             else:  # json-schema will only allow True or False
-                upload_candidate_documents([candidate_id])
                 candidate.is_web_hidden = 0
 
             # No need to validate anything since candidate is set to hidden

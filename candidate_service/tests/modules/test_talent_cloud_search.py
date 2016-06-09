@@ -34,7 +34,7 @@ def populate_candidates(access_token, talent_pool, count=1, first_name=None, mid
                         military_status=None, military_grade=None, military_to_date=None,
                         military_from_date=None, skills=None, experiences=None, source_id=None,
                         position_start_year=None, position_start_month=None, position_end_year=None,
-                        position_end_month=None, is_current_job=False):
+                        position_end_month=None, is_current_job=False, wait=None):
     """
     Function will create candidate(s) by making a POST request to /v1/candidates
      All fields are populated unless if specified via function-params
@@ -89,11 +89,15 @@ def populate_candidates(access_token, talent_pool, count=1, first_name=None, mid
     :type   experiences:         list[dict]
     :param  source_id            optional | candidate's source ID
     :type   source_id:           int | long
+    :param  wait:                time to wait so that candidate's added time will be different in case of looping
     :return:                     {'candidates': [{'id': int}, {'id': int}, ...]}
     :rtype:                      list[dict]
     """
     candidate_ids = []
     for i in range(count):
+        # Pause loop so that candidate's added time will not be identical
+        if wait:
+            time.sleep(wait)
         full_name = fake.name()
         parsed_full_name = HumanName(full_name)
         discipline = random.choice(college_majors().keys())

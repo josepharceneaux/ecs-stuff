@@ -279,9 +279,14 @@ def test_search_get_only_requested_fields(user_first, access_token_first, talent
 
 
 def test_search_paging(user_first, access_token_first, talent_pool):
+    """
+    Test: Search by the most recently added candidates
+    """
     AddUserRoles.add_and_get(user_first)
-    candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=50)
-    response = get_response(access_token_first, '?sort_by=~recent', 15)
+
+    count = 30
+    candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=count, wait=1)
+    response = get_response(access_token_first, '?sort_by=~recent', expected_count=15)
     print response_info(response)
     resultant_candidate_ids = [long(candidate['id']) for candidate in response.json()['candidates']]
     assert set(candidate_ids[:15]).issubset(resultant_candidate_ids)
@@ -495,7 +500,6 @@ def test_search_by_added_date(user_first, talent_pool, access_token_first):
     Test to search candidates by added time
     """
     AddUserRoles.all_roles(user_first)
-    domain_id = user_first.domain_id
 
     # Candidate added on 01 Dec 2014 at 14:30:00
     candidate1 = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=3,
@@ -514,19 +518,19 @@ def test_search_by_added_date(user_first, talent_pool, access_token_first):
                                      added_datetime=DatetimeUtils.to_utc_str(datetime.utcnow()))
 
     # Get candidates from within range 1 jan'14 to 30 May'15 (format mm/dd/yyyy) -> Will include candidates 1 & 2
-    resp = get_response(access_token_first, "?date_from=01/01/2014&date_to=05/30/2015", 2)
+    resp = get_response(access_token_first, "?date_from=01/01/2014&date_to=05/30/2015", expected_count=6)
     print response_info(resp)
     resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
     assert set(candidate1 + candidate2).issubset(resultant_candidate_ids)
 
     # Get candidates from starting date as 15 Mar 2015 and without end date -> will include candidates- 2, 4
-    resp = get_response(access_token_first, "?date_from=03/15/2015", 2)
+    resp = get_response(access_token_first, "?date_from=03/15/2015", expected_count=4)
     print response_info(resp)
     resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
     assert set(candidate2 + candidate4).issubset(resultant_candidate_ids)
 
     # Get candidates from no starting date but ending date as 31 Dec 2014 -> will give candidates 1 & 3
-    resp = get_response(access_token_first, "?date_to=12/31/2014", 2)
+    resp = get_response(access_token_first, "?date_to=12/31/2014", expected_count=6)
     print response_info(resp)
     resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
     assert set(candidate1 + candidate3).issubset(resultant_candidate_ids)
@@ -628,14 +632,15 @@ def test_source_facet(user_first, access_token_first, talent_pool):
     AddUserRoles.all_roles(user_first)
 
     # Create a new source
+    count = 5
     data = {'source': {'description': 'test source_{}'.format(str(uuid.uuid4())[:5])}}
     resp = send_request('post', UserServiceApiUrl.DOMAIN_SOURCES, access_token_first, data)
     print response_info(resp)
     source_id = resp.json()['source']['id']
-    candidate_ids2 = populate_candidates(access_token_first, talent_pool, count=5, source_id=source_id)
+    candidate_ids2 = populate_candidates(access_token_first, talent_pool, count=count, source_id=source_id)
 
     # Search for candidates with created source, it will not include candidates with unassigned source
-    resp = get_response(access_token_first, "?source_ids={}".format(source_id))
+    resp = get_response(access_token_first, "?source_ids={}".format(source_id), expected_count=count)
     print response_info(resp)
     resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
     assert set(candidate_ids2).issubset(resultant_candidate_ids)
@@ -676,11 +681,14 @@ def test_service_status(user_first, access_token_first, talent_pool):
     Facet name: serviceStatus
     """
     AddUserRoles.all_roles(user_first)
+
     service_status1 = "Veteran"
-    candidates_status1 = populate_candidates(access_token_first, talent_pool, count=4, military_status=service_status1)
+    count = 4
+    candidates_status1 = populate_candidates(access_token_first, talent_pool, count=count,
+                                             military_status=service_status1)
 
     # Search for candidates via military service status
-    resp = get_response(access_token_first, "?military_service_status={}".format(service_status1))
+    resp = get_response(access_token_first, "?military_service_status={}".format(service_status1), expected_count=count)
     print response_info(resp)
     resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
     assert set(candidates_status1).issubset(resultant_candidate_ids)
@@ -692,11 +700,13 @@ def test_military_branch(user_first, access_token_first, talent_pool):
     """
     AddUserRoles.all_roles(user_first)
 
+    count = 4
     service_branch = "Army"
-    candidates_branch = populate_candidates(access_token_first, talent_pool, count=4, military_branch=service_branch)
+    candidates_branch = populate_candidates(access_token_first, talent_pool, count=count,
+                                            military_branch=service_branch)
 
     # Search for candidates via military branch
-    resp = get_response(access_token_first, "?military_branch={}".format(service_branch))
+    resp = get_response(access_token_first, "?military_branch={}".format(service_branch), expected_count=count)
     print response_info(resp)
     resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
     assert set(candidates_branch).issubset(resultant_candidate_ids)
@@ -925,7 +935,6 @@ def test_location_with_radius(user_first, access_token_first, talent_pool):
     assert resp.json()['total_found'] == 7  # only seven candidates are within 10 miles of Santa Clara
 
 
-# TODO: Check search api because the order of proximity may be reversed
 def test_sort_by_proximity(user_first, access_token_first, talent_pool):
     """
     Sort by distance
@@ -949,20 +958,18 @@ def test_sort_by_proximity(user_first, access_token_first, talent_pool):
     closest = [_10_mile_candidate[0], _10_mile_candidate_2[0], _25_mile_candidate[0], _50_mile_candidate[0]]
     furthest = closest[::-1]  # Reverse the order
 
-    print "\nclosest: {}\nfurthest: {}".format(closest, furthest)
-
     # Without radius i.e. it will by default take 50 miles
     # Sort by -> Proximity: Closest
-    resp = get_response(access_token_first, '?sort_by=proximity', expected_count=4)
-    print response_info(resp)
-    resultant_candidate_ids = [candidate['id'] for candidate in resp.json()['candidates']]
-    assert resultant_candidate_ids == map(unicode, furthest)
-
-    # Sort by -> Proximity: Furthest
-    resp = get_response(access_token_first, '?sort_by=~proximity', expected_count=4)
+    resp = get_response(access_token_first, '?location=Santa Clara&sort_by=proximity', expected_count=4)
     print response_info(resp)
     resultant_candidate_ids = [candidate['id'] for candidate in resp.json()['candidates']]
     assert resultant_candidate_ids == map(unicode, closest)
+
+    # Sort by -> Proximity: Furthest
+    resp = get_response(access_token_first, '?location=Santa Clara&sort_by=~proximity', expected_count=4)
+    print response_info(resp)
+    resultant_candidate_ids = [candidate['id'] for candidate in resp.json()['candidates']]
+    assert resultant_candidate_ids == map(unicode, furthest)
 
 
 def test_search_status(user_first, access_token_first, talent_pool):
