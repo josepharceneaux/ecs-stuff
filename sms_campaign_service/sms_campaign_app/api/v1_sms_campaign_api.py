@@ -270,15 +270,17 @@ class SMSCampaigns(Resource):
         if not campaign_ids:
             return dict(message='No campaign id provided to delete'), requests.codes.OK
 
-        if not all([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
+        if not any([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
             raise InvalidUsage('Bad request, campaign_ids must be integer',
                                error_code=InvalidUsage.http_status_code())
         not_deleted = []
         not_found = []
         not_owned = []
         status_code = None
-        for campaign_id in campaign_ids:
-            campaign_obj = SmsCampaignBase(request.user.id)
+
+        # Validate all requested campaigns exist in logged-in user's domain
+        campaigns = [SmsCampaignBase(request.user.id, campaign_id) for campaign_id in campaign_ids]
+        for campaign_obj in campaigns:
             try:
                 deleted = campaign_obj.delete(campaign_id)
                 if not deleted:
