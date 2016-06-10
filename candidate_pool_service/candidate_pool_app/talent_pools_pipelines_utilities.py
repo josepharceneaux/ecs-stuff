@@ -37,7 +37,14 @@ TALENT_PIPELINE_SEARCH_PARAMS = [
     "military_end_date_from",
     "military_end_date_to",
     "skillDescriptionFacet",
-    "tag_ids"
+    "tag_ids",
+    "custom_fields",
+    "dumb_list_ids",
+    "smartlist_ids",
+    "date_to",
+    "id",
+    "date_from",
+    "talent_pool_id"
 ]
 
 SCHEDULER_SERVICE_RESPONSE_CODE_TASK_ALREADY_SCHEDULED = 6057
