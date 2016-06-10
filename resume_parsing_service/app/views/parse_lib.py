@@ -27,7 +27,7 @@ IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp
 DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
 GOOGLE_API_KEY = "AIzaSyD4i4j-8C5jLvQJeJnLmoFW6boGkUhxSuw"
 GOOGLE_CLOUD_VISION_URL = "https://vision.googleapis.com/v1/images:annotate"
-RESUME_EXPIRE_TIME = 604800  # one week in seconds.
+RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 
 def parse_resume(file_obj, filename_str):
     """Primary resume parsing function.
