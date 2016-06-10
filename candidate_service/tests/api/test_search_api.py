@@ -3,6 +3,8 @@ Test cases for candidate-search-service-API
 """
 import math
 
+from flaky import flaky
+
 # Error handling
 from candidate_service.common.error_handling import NotFoundError
 
@@ -646,6 +648,7 @@ def test_source_facet(user_first, access_token_first, talent_pool):
     assert set(candidate_ids2).issubset(resultant_candidate_ids)
 
 
+@flaky(max_runs=3, min_passes=1)
 def test_skill_description_facet(user_first, access_token_first, talent_pool):
     """
     Test skills facet in search
@@ -934,42 +937,43 @@ def test_location_with_radius(user_first, access_token_first, talent_pool):
     print response_info(resp)
     assert resp.json()['total_found'] == 7  # only seven candidates are within 10 miles of Santa Clara
 
-# TODO: Check Search API for the accuracy of results. Once confirmed & fixed uncomment test
-# def test_sort_by_proximity(user_first, access_token_first, talent_pool):
-#     """
-#     Sort by distance
-#     """
-#     AddUserRoles.add_and_get(user_first)
-#
-#     # 10 mile candidates with city & state
-#     _10_mile_candidate = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
-#                                              city='Santa Clara', state='CA', zip_code='95050')
-#     _10_mile_candidate_2 = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
-#                                                city='Milpitas', state='CA', zip_code='95035')
-#
-#     # 25 mile candidates with city state
-#     _25_mile_candidate = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
-#                                              city='Fremont', state='CA', zip_code='94560')
-#
-#     # 50 mile candidates with city state
-#     _50_mile_candidate = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
-#                                              city='Oakland', state='CA', zip_code='94601')
-#
-#     closest = [_10_mile_candidate[0], _10_mile_candidate_2[0], _25_mile_candidate[0], _50_mile_candidate[0]]
-#     furthest = closest[::-1]  # Reverse the order
-#
-#     # Without radius i.e. it will by default take 50 miles
-#     # Sort by -> Proximity: Closest
-#     resp = get_response(access_token_first, '?location=Santa Clara, CA&sort_by=proximity', expected_count=4)
-#     print response_info(resp)
-#     resultant_candidate_ids = [candidate['id'] for candidate in resp.json()['candidates']]
-#     assert resultant_candidate_ids == map(unicode, closest)
-#
-#     # Sort by -> Proximity: Furthest
-#     resp = get_response(access_token_first, '?location=Santa Clara, CA&sort_by=~proximity', expected_count=4)
-#     print response_info(resp)
-#     resultant_candidate_ids = [candidate['id'] for candidate in resp.json()['candidates']]
-#     assert resultant_candidate_ids == map(unicode, furthest)
+
+@flaky(max_runs=3, min_passes=1)
+def test_sort_by_proximity(user_first, access_token_first, talent_pool):
+    """
+    Sort by distance
+    """
+    AddUserRoles.add_and_get(user_first)
+
+    # 10 mile candidates with city & state
+    _10_mile_candidate = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
+                                             city='Santa Clara', state='CA', zip_code='95050')
+    _10_mile_candidate_2 = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
+                                               city='Milpitas', state='CA', zip_code='95035')
+
+    # 25 mile candidates with city state
+    _25_mile_candidate = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
+                                             city='Fremont', state='CA', zip_code='94560')
+
+    # 50 mile candidates with city state
+    _50_mile_candidate = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
+                                             city='Oakland', state='CA', zip_code='94601')
+
+    closest = [_10_mile_candidate[0], _10_mile_candidate_2[0], _25_mile_candidate[0], _50_mile_candidate[0]]
+    furthest = closest[::-1]  # Reverse the order
+
+    # Without radius i.e. it will by default take 50 miles
+    # Sort by -> Proximity: Closest
+    resp = get_response(access_token_first, '?location=Santa Clara, CA&sort_by=proximity', expected_count=4)
+    print response_info(resp)
+    resultant_candidate_ids = [candidate['id'] for candidate in resp.json()['candidates']]
+    assert resultant_candidate_ids == map(unicode, closest)
+
+    # Sort by -> Proximity: Furthest
+    resp = get_response(access_token_first, '?location=Santa Clara, CA&sort_by=~proximity', expected_count=4)
+    print response_info(resp)
+    resultant_candidate_ids = [candidate['id'] for candidate in resp.json()['candidates']]
+    assert resultant_candidate_ids == map(unicode, furthest)
 
 
 def test_search_status(user_first, access_token_first, talent_pool):
