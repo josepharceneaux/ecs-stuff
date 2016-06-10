@@ -69,7 +69,7 @@ def fetch_optic_response(resume, filename_str):
         raise InternalServerError('Error decoding parsed resume text.')
 
     logger.info(
-        "Benchmark: parse_resume_with_bg({}) took {}s".format(filename_str,
+        "Benchmark: fetch_optic_response({}) took {}s".format(filename_str,
                                                               time() - start_time)
     )
     return unescaped

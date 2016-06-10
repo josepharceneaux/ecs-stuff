@@ -21,6 +21,15 @@ GOOGLE_CLOUD_VISION_URL = "https://vision.googleapis.com/v1/images:annotate"
 
 
 def google_vision_ocr(file_string_io):
+    """
+    Utilizes Google Vision API to OCR image with Abbyy as a fallback.
+    Root Docs: https://cloud.google.com/vision/docs/
+    Specific JSON responses:
+        https://cloud.google.com/vision/reference/rest/v1/images/annotate#annotateimageresponse
+        https://cloud.google.com/vision/reference/rest/v1/images/annotate#entityannotation
+    :param cStringIO.StringIO file_string_io:
+    :return unicode:
+    """
     b64_string = base64.b64encode(file_string_io.getvalue())
     req_data = {
         "requests": [
@@ -71,7 +80,8 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
     certain number of tries.
     :param cStringIO.StringIO img_file_obj: File initially posted to the resume parsing service.
     :param string export_format: Abby OCR param.
-    :return: Image file OCR'd in desired format.
+    :return Image file OCR'd in desired format.:
+    :rtype str:
     """
 
     # Post the image to Abby
