@@ -277,8 +277,8 @@ class PushCampaignsResource(Resource):
 
         .. Status:: 200 (Resource deleted)
                     400 (Bad request)
-                    404 (Resource Not Found)
                     403 (Forbidden error)
+                    404 (Resource Not Found error)
                     500 (Internal Server Error)
         """
         return CampaignUtils.process_campaigns_delete(request, PushCampaignBase)
@@ -430,15 +430,11 @@ class CampaignByIdResource(Resource):
                     500 (Internal Server Error)
 
         ..Error codes::
-                    5010 (ERROR_DELETING_CAMPAIGN)
+                    5015 (ERROR_DELETING_CAMPAIGN)
         """
         campaign_obj = PushCampaignBase(request.user.id, campaign_id)
-        campaign_deleted = campaign_obj.delete()
-        if campaign_deleted:
-            return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), 200
-        else:
-            raise InternalServerError('Campaign(id:%s) was not deleted.' % campaign_id,
-                                      error_code=CampaignException.ERROR_DELETING_CAMPAIGN)
+        campaign_obj.delete()
+        return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), 200
 
 
 @api.route(PushCampaignApi.SCHEDULE)
