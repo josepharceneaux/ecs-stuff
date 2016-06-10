@@ -125,7 +125,7 @@ def talent_pipeline_candidate_api(access_token, talent_pipeline_id, expected_cou
     for _ in retrier(attempts=33, sleeptime=3):
         response = requests.get(url=CandidatePoolApiUrl.TALENT_PIPELINE_CANDIDATE % talent_pipeline_id,
                                 headers=headers, params=params)
-        if not response.ok or response.json().get('talent_pool_candidates').get('total_found') >= expected_count:
+        if not response.ok or response.json().get('total_found') >= expected_count:
             break
     return response.json(), response.status_code
 
