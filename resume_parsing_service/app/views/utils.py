@@ -31,7 +31,7 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename
 
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.exception("create_parsed_resume_candidate. Could not reach CandidateService POST")
-        raise InternalServerError("Unable to reach Candidates API in during candidate creation")
+        raise InternalServerError("Unable to reach Candidates API during candidate creation")
 
     # Handle bad responses from Candidate Service.
     if create_response.status_code in xrange(500, 511):
