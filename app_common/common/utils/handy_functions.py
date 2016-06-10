@@ -22,6 +22,7 @@ from ..models.db import db
 from werkzeug.exceptions import BadRequest
 from ..talent_config_manager import TalentConfigKeys
 from ..models.user import (User, UserScopedRoles, DomainRole)
+from ..utils.validators import raise_if_not_positive_int_or_long
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
 
@@ -340,8 +341,11 @@ def generate_jwt_headers(content_type=None, user_id=None):
     """
     This function will return a dict of JWT based on the user ID and X-Talent-Secret-Key-ID and optional content-type
     :param str content_type: content-type header value
-    :return:
+    :param (int | long) user_id: Id of user.
+    :rtype: dict
     """
+    if user_id:
+        raise_if_not_positive_int_or_long(user_id)
     secret_key_id, jw_token = User.generate_jw_token(
         user_id=request.user.id if hasattr(request, 'user') else user_id)
     headers = {'Authorization': jw_token, 'X-Talent-Secret-Key-ID': secret_key_id}
@@ -356,8 +360,12 @@ def create_oauth_headers(oauth_token=None, user_id=None):
     contain an access token, a dict of JWT based on the user ID and X-Talent-Secret-Key-ID headers are generated.
     :param oauth_token: Token for authentication.
     :param user_id: Id of user in case we are calling this function out od request context such as through celery.
+    :type oauth_token: str | unicode
+    :type user_id: int | long
     """
     oauth_token = oauth_token if oauth_token else request.oauth_token if hasattr(request, 'oauth_token') else None
+    if user_id:
+        raise_if_not_positive_int_or_long(user_id)
     if not oauth_token:
         return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'], user_id)
     else:

@@ -15,11 +15,11 @@ from email_campaign_service.email_campaign_app import (logger, celery_app)
 # Common Utils
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import UrlConversion
-from email_campaign_service.common.error_handling import InternalServerError
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
-from email_campaign_service.common.utils.validators import raise_if_not_instance_of
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
+from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
+                                                            raise_if_not_positive_int_or_long)
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
 from email_campaign_service.common.routes import (CandidateApiUrl,
                                                   EmailCampaignApiUrl)
@@ -43,10 +43,14 @@ def get_candidates_from_smartlist(list_id, candidate_ids_only=False, user_id=Non
     :param list_id: smartlist id.
     :param candidate_ids_only: Whether or not to get only ids of candidates
     :param user_id: Id of user.
+    :type list_id: int | long
+    :type candidate_ids_only: bool
+    :type user_id: int | long
     :return:
     """
-    if not list_id:
-        raise InternalServerError(error_message='list_id must be provided')
+    raise_if_not_positive_int_or_long(list_id)
+    raise_if_not_instance_of(candidate_ids_only, bool)
+    raise_if_not_positive_int_or_long(user_id)
     candidates = get_candidates_of_smartlist(list_id=list_id, candidate_ids_only=candidate_ids_only,
                                              access_token=None, user_id=user_id)
     return candidates

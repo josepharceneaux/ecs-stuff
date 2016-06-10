@@ -10,6 +10,9 @@ import json
 import pytest
 from faker import Faker
 from werkzeug.security import gen_salt
+
+from email_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER
+from sms_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..models.candidate import Candidate
 from ..models.user import UserGroup, DomainRole
 from auth_utilities import get_access_token, get_or_create
@@ -580,3 +583,13 @@ def user_second_candidate(request, user_second):
 
 def randomword(length):
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
+
+
+def _get_auth_header(access_token):
+    """
+    This returns auth header dict.
+    :param access_token: access token of user
+    """
+    auth_header = {'Authorization': 'Bearer %s' % access_token}
+    auth_header.update(JSON_CONTENT_TYPE_HEADER)
+    return auth_header

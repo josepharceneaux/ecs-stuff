@@ -47,9 +47,11 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
     :param list_id: smartlist id.
     :param candidate_ids_only: Whether or not to get only ids of candidates
     :param access_token: Token for authorization
+    :param user_id: id of user
     :type list_id: int | long
     :type: candidate_ids_only: bool
     :type: access_token: string
+    :type: int | long
     :rtype: list
 
     """
@@ -57,6 +59,8 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
     raise_if_not_instance_of(candidate_ids_only, bool)
     if access_token:
         raise_if_not_instance_of(access_token, (str, unicode))
+    if user_id:
+        raise_if_not_positive_int_or_long(user_id)
     per_page = 1000  # Smartlists can have a large number of candidates, hence page size of 1000
     params = {'fields': 'id'} if candidate_ids_only else {}
     response = get_candidates_from_smartlist_with_page_params(list_id, per_page, DEFAULT_PAGE,
@@ -85,10 +89,15 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, para
     :param (int) page: Number of page to fetch in response
     :param (dict| None) params: Specific params to include in request. e.g. candidates_ids_only etc
     :param (str | None) access_token: access token of user
+    :param (int | long) user_id: Id of user
     """
     raise_if_not_instance_of(list_id, (int, long))
     raise_if_not_instance_of(page, int)
     raise_if_not_instance_of(per_page, int)
+    if access_token:
+        raise_if_not_instance_of(access_token, (str, unicode))
+    if user_id:
+        raise_if_not_positive_int_or_long(user_id)
     if not params:
         params = {}
     params.update({'page': page}) if page else None

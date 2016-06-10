@@ -3,6 +3,7 @@ from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
 from ..error_handling import InvalidUsage, InternalServerError
+from ..utils.validators import raise_if_not_positive_int_or_long
 from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
 from associations import ReferenceEmail
 from venue import Venue
@@ -394,8 +395,7 @@ class CandidateEmail(db.Model):
         :param (int, long) candidate_id: Id of candidate for which email address is to be retrieved.
         :return: Candidate Email
         """
-        if not candidate_id:
-            raise InternalServerError(error_message='candidate_id is mandatory.')
+        raise_if_not_positive_int_or_long(candidate_id)
         email = cls.query.filter_by(candidate_id=candidate_id).first()
         return email
 

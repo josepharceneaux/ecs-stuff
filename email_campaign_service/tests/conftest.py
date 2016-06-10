@@ -1,3 +1,5 @@
+from app_common.common.tests.conftest import _get_auth_header
+
 __author__ = 'basit'
 
 import re
@@ -7,7 +9,6 @@ from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
                                                                  EmailTemplateFolder)
-from email_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   create_email_campaign_smartlist,
                                                                   delete_campaign,
@@ -320,13 +321,3 @@ def invalid_data_for_campaign_creation(request):
                      }
     del campaign_data[request.param]
     return campaign_data, request.param
-
-
-def _get_auth_header(access_token):
-    """
-    This returns auth header dict.
-    :param access_token: access token of user
-    """
-    auth_header = {'Authorization': 'Bearer %s' % access_token}
-    auth_header.update(JSON_CONTENT_TYPE_HEADER)
-    return auth_header

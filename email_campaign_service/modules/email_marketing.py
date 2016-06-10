@@ -40,6 +40,8 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailCampaignBlast,
                                                                  EmailCampaignSend,
                                                                  EmailCampaignSendUrlConversion)
+from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
+                                                            raise_if_not_positive_int_or_long)
 from email_campaign_service.common.utils.handy_functions import (http_request,
                                                                  JSON_CONTENT_TYPE_HEADER)
 from email_campaign_service.common.utils.amazon_ses import send_email, get_default_email_info
@@ -171,11 +173,15 @@ def send_email_campaign(user_id, campaign, new_candidates_only=False):
     :param user_id: ID of user
     :param campaign: Valid email campaign object.
     :param new_candidates_only: True if email needs to be sent to those candidates whom emails were not sent previously
+    :type user_id: int | long
+    :type campaign: EmailCampaign
+    :type new_candidates_only: bool
     """
     # gt plugin code starts here.
-
+    raise_if_not_positive_int_or_long(user_id)
     if not isinstance(campaign, EmailCampaign):
         raise InternalServerError(error_message='Must provide valid email campaign object.')
+    raise_if_not_instance_of(new_candidates_only, bool)
     campaign_id = campaign.id
     if campaign.email_client_id:
         candidate_ids_and_emails = get_email_campaign_candidate_ids_and_emails(campaign=campaign,
@@ -277,17 +283,25 @@ def post_processing_campaign_sent(celery_result, campaign,
     :param campaign: Valid email campaign object
     :param new_candidates_only: True if emails sent to new candidates only
     :param email_campaign_blast_id: Id of blast object for specified campaign
+    :type celery_result: list
+    :type campaign: EmailCampaign
+    :type new_candidates_only: bool
+    :type email_campaign_blast_id: int | long
     """
-    if not celery_result:
-        logger.error('Celery task sending campaign(id;%s) emails failed' % campaign.id)
-        return
-    if not isinstance(campaign, EmailCampaign):
-        logger.error('Campaign object is not valid')
-        return
-    if not email_campaign_blast_id:
-        logger.error('email_campaign_blast_id not provided')
-        return
-    logger.info('celery_result: %s' % celery_result)
+    with app.app_context():
+        if not celery_result:
+            logger.error('Celery task sending campaign(id;%s) emails failed' % campaign.id)
+            return
+        if not isinstance(campaign, EmailCampaign):
+            logger.error('Campaign object is not valid')
+            return
+        if not isinstance(new_candidates_only, bool):
+            logger.error('new_candidates_only must be bool')
+            return
+        if not isinstance(email_campaign_blast_id, (int, long)) or email_campaign_blast_id <= 0:
+            logger.error('email_campaign_blast_id must be positive int or long')
+            return
+        logger.info('celery_result: %s' % celery_result)
     sends = celery_result.count(True)
     _update_blast_sends(email_campaign_blast_id, sends, campaign,  new_candidates_only)
 
@@ -298,18 +312,34 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
      Callback after getting candidate data of all smartlists. Results from all the smartlists
      are present in celery_result and we use that for further processing of the campaign. That includes
      filtering the results sending actual campaign emails.
+     :param celery_result: Combined result of all celery tasks.
+     :param user_id: Id of user.
+     :param campaign_id: Campaign Id.
+     :param list_ids: Ids of all smartlists associated with the campaigns.
+     :param new_candidates_only: True if only new candidates need to be fetched.
+     :type celery_result: list
+     :type user_id: int | long
+     :type campaign_id: int | long
+     :type list_ids: list
+     :type new_candidates_only: bool
     """
     all_candidate_ids = []
-    if not celery_result:
-        logger.error('No candidate(s) found for smartlist_ids %s.' % list_ids)
-        return
-    if not campaign_id:
-        logger.error('campaign_id must be provided')
-        return
-    if not list_ids:
-        logger.error('list_ids are mandatory')
-        return
-    logger.info('celery_result: %s' % celery_result)
+    with app.app_context():
+        if not celery_result:
+            logger.error('No candidate(s) found for smartlist_ids %s.' % list_ids)
+            return
+        if not isinstance(user_id, (int, long)) or user_id <= 0:
+            logger.error('user_id must be positive int of long')
+        if not isinstance(campaign_id, (int, long)) or campaign_id <= 0:
+            logger.error('campaign_id must be positive int of long')
+            return
+        if not isinstance(list_ids, list) or len(list_ids) < 0:
+            logger.error('list_ids are mandatory')
+            return
+        if not isinstance(new_candidates_only, bool):
+            logger.error('new_candidates_only must be bool')
+            return
+        logger.info('celery_result: %s' % celery_result)
 
     # gather all candidates from various smartlists
     for candidate_list in celery_result:
@@ -361,11 +391,14 @@ def get_email_campaign_candidate_ids_and_emails(campaign, new_candidates_only=Fa
     Get candidate ids and email addresses for an email campaign
     :param campaign: Email Campaign Object
     :param new_candidates_only: True if campaign is to be sent only to new candidates.
-    :return: Returns array of candidate IDs in the campaign's smartlists.
-             Is unique.
+    :type campaign: EmailCampaign
+    :type new_candidates_only: bool
+    :return: Returns dict of unique candidate IDs in the campaign's smartlists.
+    :rtype list
     """
     if not isinstance(campaign, EmailCampaign):
         raise InvalidUsage(error_message='Must provide valid email campaign object.')
+    raise_if_not_instance_of(new_candidates_only, bool)
     # Get smartlists of this campaign
     list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
                                                                  smartlist_ids_only=True)
@@ -389,7 +422,7 @@ def get_candidate_id_email_by_priority(email_info_tuple, email_labels):
     :param (int, str, int) email_info_tuple: (candidate_id, email_address, email_label_id)
     :param [(int, str)] email_labels: Tuple containing structure [( email_label_id, email_label_description )]
     :return: candidate_id, email_address
-    :rtype: (int, str)
+    :rtype int | str
     """
     if not(isinstance(email_info_tuple, list) and len(email_info_tuple) > 0):
         raise InternalServerError("get_candidate_id_email_by_priority: emails_obj is either not a list or is empty")
@@ -437,14 +470,23 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
     :type candidate_address: str
     :type blast_params: dict | None
     :type email_campaign_blast_id: int | long | None
-    :type blast_datetime: datetime.datetime | None
+    :type blast_datetime: datetime | None
     """
-    if not campaign_id:
-        raise InvalidUsage(error_message='campaign_id must be provided')
-    if not candidate_id:
-        raise InvalidUsage(error_message='candidate_id must be provided')
-    if not candidate_address:
-        raise InvalidUsage(error_message='Candidate_address must be provided')
+    raise_if_not_positive_int_or_long(user_id)
+    raise_if_not_positive_int_or_long(campaign_id)
+    raise_if_not_positive_int_or_long(candidate_id)
+
+    if email_campaign_blast_id:
+        raise_if_not_positive_int_or_long(email_campaign_blast_id)
+
+    raise_if_not_instance_of(candidate_address, str)
+
+    if blast_datetime:
+        raise_if_not_instance_of(blast_datetime, datetime)
+
+    if blast_params:
+        raise_if_not_instance_of(blast_params, dict)
+
     campaign = EmailCampaign.get_by_id(campaign_id)
     candidate = Candidate.get_by_id(candidate_id)
     new_text, new_html, subject, email_campaign_send, blast_params, _ = \
@@ -528,8 +570,17 @@ def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_
     :type candidate_address: str
     :type blast_params: dict
     :type email_campaign_blast_id: int|long
-    :type blast_datetime: datetime.datetime
+    :type blast_datetime: datetime
+    :rtype bool
     """
+    raise_if_not_positive_int_or_long(user_id)
+    raise_if_not_instance_of(campaign, EmailCampaign)
+    raise_if_not_positive_int_or_long(candidate_id)
+    raise_if_not_instance_of(candidate_address, str)
+    raise_if_not_instance_of(blast_params, dict)
+    raise_if_not_positive_int_or_long(email_campaign_blast_id)
+    raise_if_not_instance_of(blast_datetime, datetime)
+
     with app.app_context():
         logger.info('sending campaign to candidate(id:%s).' % candidate_id)
         try:
@@ -570,10 +621,16 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id,
     :type blast_datetime: datetime.datetime | None
     :return:
     """
-    if not campaign_id:
-        raise InvalidUsage(error_message='campaign_id must be provided')
-    if not candidate_id:
-        raise InvalidUsage(error_message='candidate_id must be provided')
+    raise_if_not_positive_int_or_long(campaign_id)
+    raise_if_not_positive_int_or_long(candidate_id)
+
+    if blast_params:
+        raise_if_not_instance_of(blast_params, dict)
+    if email_campaign_blast_id:
+        raise_if_not_positive_int_or_long(email_campaign_blast_id)
+    if blast_datetime:
+        raise_if_not_instance_of(blast_datetime, datetime)
+
     # TODO: We should solve that detached instance issue more gracefully.
     candidate = Candidate.get_by_id(candidate_id)
     campaign = EmailCampaign.get_by_id(campaign_id)
@@ -713,7 +770,11 @@ def get_subscription_preference(candidate_id):
     if any one is 1-6, keep it and delete the rest.
     Otherwise, if any one is NULL, keep it and delete the rest.
     Otherwise, if any one is 7, delete all of them.
+    :param candidate_id: id of candidate.
+    :type candidate_id: bool
+    :rtype int
     """
+    raise_if_not_positive_int_or_long(candidate_id)
     # Not used but keeping it because same function was somewhere else in other service but using hardcoded ids.
     # So this one can be used to replace the old function.
     email_prefs = db.session.query(CandidateSubscriptionPreference).filter_by(
@@ -767,9 +828,14 @@ def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only):
     :param new_sends: Number of new sends.
     :param campaign: EMail Campaign.
     :param new_candidates_only: True if campaign is to be sent to new candidates only.
+    :type blast_id: int | long
+    :type new_sends: int
+    :type campaign: EmailCampaign
+    :type new_candidates_only: bool
     """
-    if not blast_id:
-        raise InternalServerError(error_message='Blast Id must be provided')
+    raise_if_not_positive_int_or_long(blast_id)
+    raise_if_not_instance_of(new_sends, int)
+    raise_if_not_instance_of(new_candidates_only, bool)
     if not isinstance(campaign, EmailCampaign):
         raise InternalServerError(error_message='Valid campaign object must be provided')
 
@@ -842,11 +908,14 @@ def get_candidates_from_smartlist_for_email_client_id(campaign, list_ids):
     be sent on celery.
     :param campaign: Valid email campaign object.
     :param list_ids: List of smartlist ids associated with campaign.
+    :type campaign: EmailCampaign
+    :type list_ids: list
     :return: List of candidate ids.
+    :rtype list
     """
     if not isinstance(campaign, EmailCampaign):
         raise InvalidUsage("Valid email campaign must be provided.")
-    if not list_ids:
+    if not isinstance(list_ids, list) or len(list_ids) <= 0:
         raise InvalidUsage("Please provide list of smartlist ids.")
     all_candidate_ids = []
     for list_id in list_ids:
@@ -870,12 +939,18 @@ def get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_onl
     :param campaign: email campaign
     :param all_candidate_ids: ids of all candidates to whome we are going to send campaign
     :param new_candidates_only: if campaign is to be sent only to new candidates
-    :return: ids of subscribed candidates
+    :type campaign: EmailCampaign
+    :type all_candidate_ids: list
+    :type new_candidates_only: bool
+    :return ids of subscribed candidates
+    :rtype list
     """
     if not isinstance(campaign, EmailCampaign):
         raise InvalidUsage(error_message='Valid email campaign object must be provided.')
-    if not all_candidate_ids:
+    if not isinstance(all_candidate_ids, list) or len(all_candidate_ids) < 0:
         raise InvalidUsage(error_message='all_candidates_ids must be provided')
+    if not isinstance(new_candidates_only, bool):
+        raise InvalidUsage(error_message='new_candidates_only must be bool')
     if campaign.is_subscription:
         # A subscription campaign is a campaign which needs candidates
         # to be subscribed to it in order to receive notifications regarding the campaign.
@@ -918,10 +993,16 @@ def get_smartlist_candidates_via_celery(user_id, campaign_id, new_candidates_onl
     :param user_id: ID of user
     :param campaign_id: Email Campiagn ID
     :param new_candidates_only: True if only new candidates are to be returned.
-    :return:
+    :type user_id: int | long
+    :type campaign_id: int | long
+    :type new_candidates_only: bool
+    :returns list of amrtlist candidates
+    :rtype list
     """
-    if not isinstance(campaign_id, (int, long)):
-        raise InternalServerError(error_message='Valid campaign id must be provided.')
+    raise_if_not_positive_int_or_long(user_id)
+    raise_if_not_positive_int_or_long(campaign_id)
+    raise_if_not_instance_of(new_candidates_only, bool)
+
     campaign = EmailCampaign.get_by_id(campaign_id)
 
     # Get smartlists of this campaign
@@ -953,11 +1034,14 @@ def get_filtered_email_rows(campaign, subscribed_candidate_ids):
     any candidate.
     :param campaign: Email Campaign
     :param subscribed_candidate_ids: Ids of subscribed candidates.
-    :return:
+    :type campaign: EmailCampaign
+    :type subscribed_candidate_ids: list
+    :return List of email addresses of candidates.
+    :rtype list
     """
     if not isinstance(campaign, EmailCampaign):
         raise InternalServerError(error_message='Valid campaign object must be provided')
-    if not subscribed_candidate_ids:
+    if not isinstance(subscribed_candidate_ids, list) or len(subscribed_candidate_ids) < 0:
         raise InternalServerError(error_message='subscribed_candidate_ids must be provided')
 
     # Get candidate emails sorted by updated time and then by candidate_id
@@ -1030,6 +1114,9 @@ def notify_and_get_blast_params(campaign, new_candidates_only, candidate_ids_and
     :param campaign: Email Campaign
     :param new_candidates_only: True if campaign needs to be sent to new candidates only.
     :param candidate_ids_and_emails: Ids and email addresses of candidates.
+    :type campaign: EmailCampaign
+    :type new_candidates_only: bool
+    :type candidate_ids_and_emails: list
     :return:
     """
     if not isinstance(campaign, EmailCampaign):

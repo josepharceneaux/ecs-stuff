@@ -56,8 +56,6 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=100, sleepscale=1,
               args=(campaign, access_token_first, None, 1), retry_exceptions=(AssertionError,))
 
-        CampaignsTestsHelpers.assert_blast_sends(campaign, 1, abort_time_for_sends=200)
-
 
 def check_is_bounced(email):
     """
@@ -127,6 +125,8 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
               args=(campaign, access_token_first, None, 2), retry_exceptions=(AssertionError,))
 
         CampaignsTestsHelpers.assert_blast_sends(campaign, 1, blast_index=1, abort_time_for_sends=200)
+        db.session.commit()
+        campaign_blasts = campaign.blasts.all()
         # Get second blast
         campaign_blast = campaign_blasts[1]
 

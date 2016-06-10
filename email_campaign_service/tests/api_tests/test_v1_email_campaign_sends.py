@@ -45,8 +45,7 @@ class TestEmailCampaignSends(object):
         We then assert that sends has been created by making HTTP GET call on
         endpoint /v1/email-campaigns/:id/sends
         """
-        attempts = 100 / 3 + 1
-        retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
+        retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=33, sleepscale=1,
               args=(sent_campaign, access_token_first, None, 1), retry_exceptions=(AssertionError,))
         CampaignsTestsHelpers.assert_blast_sends(sent_campaign, 2, abort_time_for_sends=300)
         response = requests.get(self.URL % sent_campaign.id,
@@ -60,8 +59,7 @@ class TestEmailCampaignSends(object):
         """
         Here we test the paginated response of GET call on endpoint /v1/email-campaigns/:id/sends
         """
-        attempts = 100 / 3 + 1
-        retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
+        retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=33, sleepscale=1,
               args=(sent_campaign_to_ten_candidates, access_token_first, None, 1),
               retry_exceptions=(AssertionError,))
         CampaignsTestsHelpers.assert_blast_sends(sent_campaign_to_ten_candidates, 10, abort_time_for_sends=300)
