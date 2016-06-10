@@ -42,7 +42,7 @@ from campaign_utils import (get_model, CampaignUtils)
 from ..utils.validators import raise_if_not_instance_of
 from custom_errors import (CampaignException, EmptyDestinationUrl)
 from ..routes import (ActivityApiUrl, SchedulerApiUrl)
-from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
+from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound, InternalServerError)
 from ..inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 from validators import (validate_form_data,
                         validation_of_data_to_schedule_campaign,
@@ -603,7 +603,7 @@ class CampaignBase(object):
         # using relationship
         return campaign_obj.user.domain_id
 
-    def delete(self):
+    def delete(self, commit_session=True):
         """
         This function is used to delete the campaign in following given steps.
         1- Calls get_campaign_and_scheduled_task() method to validate that requested campaign
@@ -627,12 +627,11 @@ class CampaignBase(object):
             >>> from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
             >>> campaign_obj =  SmsCampaignBase(int('user_id'), int('campaign_id'))
             >>> campaign_obj.delete()
-
+        :param bool commit_session: True if we want to commit the session per deletion
         :exception: Forbidden error (status_code = 403)
         :exception: Resource not found error (status_code = 404)
         :exception: Invalid Usage (status_code = 400)
-        :return: True if record deleted successfully, False otherwise.
-        :rtype: bool
+        :return: Raises InternalServerError if record is not deleted successfully from database.
 
         **See Also**
         .. see also:: endpoints /v1/sms-campaigns/:id in v1_sms_campaign_api.py
@@ -649,16 +648,16 @@ class CampaignBase(object):
             if not unscheduled:
                 return False
         campaign_model = get_model(self.campaign_type, self.campaign_type)
-        if not campaign_model.delete(self.campaign):
+        if not campaign_model.delete(self.campaign, app=current_app, commit_session=commit_session):
             logger.error("%s(id:%s) couldn't be deleted." % (self.campaign_type, self.campaign.id))
-            return False
+            raise InternalServerError("%s(id:%s) couldn't be deleted." % (self.campaign_type, self.campaign.id),
+                                      error_code=CampaignException.ERROR_DELETING_CAMPAIGN)
         try:
             self.create_activity_for_campaign_delete(self.campaign)
         except Exception:
             # In case activity_service is not running, we proceed normally and log the error.
             logger.exception('delete: Error creating campaign delete activity.')
         logger.info('delete: %s(id:%s) has been deleted successfully.' % (self.campaign_type, self.campaign.id))
-        return True
 
     def create_activity_for_campaign_delete(self, source):
         """

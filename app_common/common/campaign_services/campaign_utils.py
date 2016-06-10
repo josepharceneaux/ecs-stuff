@@ -14,8 +14,10 @@ import importlib
 from datetime import datetime
 
 # Third Party
-from dateutil.tz import tzutc
+import requests
+from flask import request
 from flask import current_app
+from dateutil.tz import tzutc
 from ska import (sign_url, Signature)
 
 # Database Models
@@ -34,7 +36,7 @@ from ..utils.datetime_utils import DatetimeUtils
 from ..talent_config_manager import TalentConfigKeys, TalentEnvs
 from ..error_handling import (InvalidUsage, ResourceNotFound)
 from .validators import raise_if_dict_values_are_not_int_or_long
-from ..utils.handy_functions import (http_request, snake_case_to_pascal_case)
+from ..utils.handy_functions import (http_request, snake_case_to_pascal_case, get_valid_json_data)
 from ..utils.validators import raise_if_not_instance_of
 
 
@@ -388,6 +390,39 @@ class CampaignUtils(object):
         if not campaign_obj:
             raise ResourceNotFound('%s(id=%s) not found.' % (campaign_type, campaign_id))
         return campaign_obj
+
+    @staticmethod
+    def process_campaigns_delete(request_obj, campaign_class):
+        """
+        This is helper method which will be used across campaigns to delete multiple campaigns.
+        It raises
+        1- InvalidUsage error if
+            1.1- Requested campaigns ids are not in a list format
+            1.2- No campaign id is provided
+            1.3- Any of campaigns id is invalid (non-integer)
+        2- ResourceNotFound error if any of the requested campaign_ids is not found in database.
+        3- Forbidden error if any of the requested campaign_ids does not belong to user's domain.
+        4- InternalServerError if any of the campaigns is unable to delete.
+
+        :param request request_obj: API request object
+        :param campaign_class: Campaign base class. e.g. SmsCampaignBase or PushCampaignBase
+        """
+        requested_data = get_valid_json_data(request_obj)
+        campaign_ids = requested_data['ids'] if 'ids' in requested_data else []
+        if not isinstance(requested_data['ids'], list):
+            raise InvalidUsage('Bad request, include campaign_ids as list data')
+        # check if list of campaigns_ids is not empty
+        if not campaign_ids:
+            raise InvalidUsage('No campaign id provided to delete')
+        if not any([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
+            raise InvalidUsage('Campaign_ids must be integer or long > 0.')
+        # Validate all requested campaigns exist in logged-in user's domain
+        campaigns = [campaign_class(request_obj.user.id, campaign_id) for campaign_id in campaign_ids]
+        # Delete all requested campaigns
+        for campaign_obj in campaigns:
+            campaign_obj.delete(commit_session=False)
+        db.session.commit()
+        return dict(message='%d campaign(s) deleted successfully.' % len(campaign_ids)), requests.codes.OK
 
 
 def get_model(file_name, model_name, service_name=None):

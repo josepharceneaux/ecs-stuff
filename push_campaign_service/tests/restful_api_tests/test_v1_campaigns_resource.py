@@ -227,7 +227,7 @@ class TestDeleteMultipleCampaigns(object):
     def test_campaigns_delete_authorized_and_unauthorized_ids(self, token_first, campaign_in_db,
                                                               campaign_in_db_second):
         """
-        Test with one authorized and one unauthorized push campaign. It should get 207
+        Test with one authorized and one unauthorized push campaign. It should get 403
         status code.
         :param token_first: auth token
         :param campaign_in_db: campaign created by user_first
@@ -235,14 +235,14 @@ class TestDeleteMultipleCampaigns(object):
         """
         response = send_request('delete', URL, token_first, data={'ids': [campaign_in_db['id'],
                                                                           campaign_in_db_second['id']]})
-        assert response.status_code == codes.MULTI_STATUS
+        assert response.status_code == codes.FORBIDDEN
         data = {'ids': [campaign_in_db['id'], campaign_in_db_second['id']]}
         delete_campaigns(data, token_first, expected_status=(codes.FORBIDDEN,))
 
     def test_campaigns_delete_with_existing_and_non_existing_ids(self, token_first, campaign_in_db):
         """
         Test with one existing, one invalid id and one non existing ids of push campaign.
-        It should get 207 status code.
+        It should get 404 status code.
         :param token_first: auth token
         :param campaign_in_db: campaign created by user_first
         """

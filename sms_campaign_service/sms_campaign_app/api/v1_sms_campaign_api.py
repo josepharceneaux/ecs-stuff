@@ -247,28 +247,13 @@ class SMSCampaigns(Resource):
             }
 
         .. Status:: 200 (Resource deleted)
-                    207 (Not all deleted)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     403 (Forbidden error)
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
-        requested_data = get_valid_json_data(request)
-        campaign_ids = requested_data['ids'] if 'ids' in requested_data else []
-        if not isinstance(requested_data['ids'], list):
-            raise InvalidUsage('Bad request, include campaign_ids as list data')
-        # check if list of campaigns_ids is not empty
-        if not campaign_ids:
-            raise InvalidUsage('No campaign id provided to delete')
-        if not any([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
-            raise InvalidUsage('Campaign_ids must be integer or long > 0.')
-        # Validate all requested campaigns exist in logged-in user's domain
-        campaigns = [SmsCampaignBase(request.user.id, campaign_id) for campaign_id in campaign_ids]
-        # Delete all requested campaigns
-        for campaign_obj in campaigns:
-            campaign_obj.delete()
-        return dict(message='%d campaign(s) deleted successfully.' % len(campaign_ids)), requests.codes.OK
+        return CampaignUtils.process_campaigns_delete(request, SmsCampaignBase)
 
 
 @api.route(SmsCampaignApi.SCHEDULE)
@@ -334,8 +319,8 @@ class ScheduleSmsCampaign(Resource):
         sms_camp_obj.campaign = pre_processed_data['campaign']
         # call schedule() method to schedule the campaign and get the task_id
         task_id = sms_camp_obj.schedule(pre_processed_data['data_to_schedule'])
-        return dict(message='SMS Campaign(id:%s) has been scheduled.' % campaign_id,
-                    task_id=task_id), requests.codes.OK
+        return dict(message='SMS Campaign(id:%s) has been scheduled.' % campaign_id, task_id=task_id),\
+               requests.codes.OK
 
     def put(self, campaign_id):
         """
@@ -567,15 +552,11 @@ class CampaignById(Resource):
                     500 (Internal Server Error)
 
         ..Error codes::
-                    5010 (ERROR_DELETING_SMS_CAMPAIGN)
+                    5015 (ERROR_DELETING_CAMPAIGN)
         """
         campaign_obj = SmsCampaignBase(request.user.id, campaign_id)
-        campaign_deleted = campaign_obj.delete()
-        if campaign_deleted:
-            return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), requests.codes.OK
-        else:
-            raise InternalServerError('Campaign(id:%s) was not deleted.' % campaign_id,
-                                      error_code=CampaignException.ERROR_DELETING_CAMPAIGN)
+        campaign_obj.delete()
+        return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), requests.codes.OK
 
 
 @api.route(SmsCampaignApi.SEND)
