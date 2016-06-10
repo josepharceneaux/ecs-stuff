@@ -7,14 +7,12 @@ from time import time
 import base64
 import json
 # Third Party/Framework Specific.
-from bs4 import BeautifulSoup
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfinterp import process_pdf
 from pdfminer.pdfparser import PDFDocument
 from pdfminer.pdfparser import PDFParser
-import requests
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response

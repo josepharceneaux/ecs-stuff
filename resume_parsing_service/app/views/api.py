@@ -29,7 +29,7 @@ CORS(PARSE_MOD, resources={
 
 @PARSE_MOD.route(ResumeApi.PARSE, methods=['POST'])
 @require_oauth()
-def resume_post_reciever():
+def resume_post_receiver():
     """
     Builds a kwargs dict for used in abstracted process_resume.
     :return: dict: {'candidate': {}}

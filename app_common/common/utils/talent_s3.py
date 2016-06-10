@@ -236,13 +236,14 @@ def boto3_get_file(filename):
     )
     try:
         s3_file = client.get_object(Bucket=BUCKET, Key=filename)
-    except Exception:
-        raise InvalidUsage("S3 error. Error retrieving {} from {}".format(filename, BUCKET))
+    except Exception as e:
+        app.logger.exception("S3 error. Error retrieving {} from {}. Exception: {}".format(filename, BUCKET, e.message))
+        raise InternalServerError("Error retrieving uploaded file.")
     from cStringIO import StringIO
     return StringIO(s3_file['Body'].read())
 
 
-def boto3_put(file_contents, filename, path):
+def boto3_put(file_contents, key, key_path):
     BUCKET = app.config[TalentConfigKeys.S3_FILE_PICKER_BUCKET_KEY]
     client = boto3.client(
         's3',
@@ -253,7 +254,9 @@ def boto3_put(file_contents, filename, path):
         client.put_object(
             Body=file_contents,
             Bucket=BUCKET,
-            Key='{}/{}'.format(path, filename)
+            Key='{}/{}'.format(key_path, key)
         )
     except Exception:
-        app.logger.info('Error uploading resume to S3 with boto3')
+        app.logger.exception('Error uploading resume to S3 with boto3. Path: {}. Filename: {}'.format(
+            key_path, key
+        ))

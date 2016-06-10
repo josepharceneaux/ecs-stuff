@@ -142,12 +142,12 @@ def get_users_talent_pools(formatted_token_str):
     :rtype: list
     """
     try:
-        talent_pool_request = requests.get(CandidatePoolApiUrl.TALENT_POOLS,
+        talent_pool_response = requests.get(CandidatePoolApiUrl.TALENT_POOLS,
                                            headers={'Authorization': formatted_token_str})
     except requests.exceptions.ConnectionError:
         raise InvalidUsage("ResumeParsingService could not reach CandidatePool API in "
                            "get_users_talent_pools")
-    talent_pools_response = json.loads(talent_pool_request.content)
+    talent_pools_response = json.loads(talent_pool_response.content)
     if 'error' in talent_pools_response:
         raise InvalidUsage(error_message=talent_pools_response['error'].get(
             'message', 'Error in getting user talent pools.'))

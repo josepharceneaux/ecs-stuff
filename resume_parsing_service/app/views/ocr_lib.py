@@ -39,7 +39,7 @@ def google_vision_ocr(file_string_io):
     }
 
     try:
-        google_request = requests.post("{}?key={}".format(GOOGLE_CLOUD_VISION_URL, GOOGLE_API_KEY),
+        google_response = requests.post("{}?key={}".format(GOOGLE_CLOUD_VISION_URL, GOOGLE_API_KEY),
                                        json.dumps(req_data),
                                        timeout=20,
                                        headers={'content-type': 'application/json'})
@@ -47,12 +47,12 @@ def google_vision_ocr(file_string_io):
         logger.exception("google_vision_ocr: Could not reach Google API")
         raise InternalServerError("Unable to reach Google API in resume OCR")
 
-    if google_request.status_code is not requests.codes.ok:
+    if google_response.status_code is not requests.codes.ok:
         logger.info('google_vision_ocr: Google API response error with headers: {} content{}'.format(
-            google_request.headers, google_request.content))
+            google_response.headers, google_response.content))
         raise InternalServerError('Error in response from candidate service during creation')
 
-    ocr_results = json.loads(google_request.content)
+    ocr_results = json.loads(google_response.content)
     # Check for errors since even a 'bad' request gives a 200 response. And use Abby in that event.
     google_api_errors = ocr_results['responses'][0].get('error')
 
@@ -76,17 +76,17 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
 
     # Post the image to Abby
     files = {'file': img_file_obj}
-    response = requests.post(ABBY_URL,
+    abbyy_response = requests.post(ABBY_URL,
                              auth=ABBY_OCR_API_AUTH_TUPLE,
                              files=files,
                              data={'profile': 'documentConversion', 'exportFormat': export_format}
                              )
 
-    if response.status_code != 200:
+    if abbyy_response.status_code != 200:
         raise ForbiddenError('Error connecting to Abby OCR instance.')
 
-    xml = BeautifulSoup(response.text, 'lxml')
-    logger.info("ocr_image() - Abby response to processImage: %s", response.text)
+    xml = BeautifulSoup(abbyy_response.text, 'lxml')
+    logger.info("ocr_image() - Abby response to processImage: %s", abbyy_response.text)
 
     task = xml.response.task
     task_id = task['id']
@@ -108,11 +108,11 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
     while not ocr_url:
         sleep(estimated_processing_time)
 
-        response = requests.get('http://cloud.ocrsdk.com/getTaskStatus',
+        status_response = requests.get('http://cloud.ocrsdk.com/getTaskStatus',
                                 params=dict(taskId=task_id), auth=ABBY_OCR_API_AUTH_TUPLE)
-        xml = BeautifulSoup(response.text, 'lxml')
+        xml = BeautifulSoup(status_response.text, 'lxml')
         ocr_url = xml.response.task.get('resulturl')
-        logger.info("ocr_image() - Abby response to getTaskStatus: %s", response.text)
+        logger.info("ocr_image() - Abby response to getTaskStatus: %s", status_response.text)
 
         if not ocr_url:
             if num_tries > max_num_tries:
@@ -124,14 +124,14 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
             num_tries += 1
             continue
 
-    if response.status_code == requests.codes.ok:
+    if status_response.status_code == requests.codes.ok:
         start_time = time()
-        response = requests.get(ocr_url)
+        status_response = requests.get(ocr_url)
         logger.info(
             "Benchmark: ocr_image: requests.get(%s) took %ss to download resume",
             ocr_url, time() - start_time
         )
-        return response.content
+        return status_response.content
 
     else:
         return 0
