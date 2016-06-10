@@ -500,15 +500,14 @@ class CampaignsTestsHelpers(object):
     def verify_sends(campaign, expected_count, blast_index, blast_url=None, access_token=None):
         """
         This verifies that we get expected number of sends associated with given blast index of
-        given campaign. If count is verified, it returns True, otherwise it returns False.
-        :rtype: bool
+        given campaign.
         """
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         raise_if_not_instance_of(expected_count, int)
         raise_if_not_instance_of(blast_index, int)
+        db.session.commit()
         if not blast_url:
             raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
-            db.session.commit()
             assert campaign.blasts[blast_index].sends == expected_count
         else:
             raise_if_not_instance_of(access_token, basestring)
@@ -518,7 +517,7 @@ class CampaignsTestsHelpers(object):
                 assert response.json()['blast']['sends'] == expected_count
 
     @staticmethod
-    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=120,
+    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=100,
                            blast_url=None, access_token=None):
         """
         This function asserts that particular blast of given campaign has expected number of sends
@@ -530,7 +529,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blast_url, basestring) if blast_url else None
         attempts = abort_time_for_sends / 3 + 1
-        retry(CampaignsTestsHelpers.verify_sends, sleeptime=3, attempts=attempts, sleepscale=1,
+        retry(CampaignsTestsHelpers.verify_sends, sleeptime=5, attempts=attempts, sleepscale=1,
               args=(campaign, expected_count, blast_index, blast_url, access_token),
               retry_exceptions=(AssertionError,))
 

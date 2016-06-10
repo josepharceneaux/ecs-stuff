@@ -724,8 +724,7 @@ def sent_campaign_bulk_and_blast_ids(access_token_first, sent_campaign_bulk):
     It also gets it's blasts and return a tuple containing campaign object and blast_ids.
     """
     blasts = CampaignsTestsHelpers.get_blasts(sent_campaign_bulk[0], access_token_first,
-                                              SmsCampaignApiUrl.BLASTS % sent_campaign_bulk[0][
-                                                  'id'])
+                                              SmsCampaignApiUrl.BLASTS % sent_campaign_bulk[0]['id'])
     blasts_ids = [blast['id'] for blast in blasts]
     return sent_campaign_bulk, blasts_ids
 
