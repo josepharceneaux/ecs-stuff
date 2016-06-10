@@ -54,7 +54,7 @@ def test_invalid_fp_key(token_fixture, user_fixture):
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_fp_key_response(token_fixture, "MichaelKane/AlfredFromBatman.doc")
     assert 'error' in content
-    assert status == requests.codes.bad_request
+    assert status == requests.codes.internal_server_error
 
 
 def test_none_fp_key(token_fixture, user_fixture):
