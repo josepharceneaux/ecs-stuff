@@ -671,7 +671,8 @@ def test_skill_description_facet(user_first, access_token_first, talent_pool):
     resp = get_response(access_token_first, "?skills=Excel", len(network_candidates))
     print response_info(resp)
     resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
-    assert set(excel_candidates + network_and_excel_candidates).issubset(resultant_candidate_ids)
+    all_excel_candidates = excel_candidates + network_and_excel_candidates
+    assert set(all_excel_candidates).issubset(resultant_candidate_ids)
 
 
 def test_service_status(user_first, access_token_first, talent_pool):
