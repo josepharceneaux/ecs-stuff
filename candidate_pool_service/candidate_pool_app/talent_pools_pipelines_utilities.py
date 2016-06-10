@@ -35,7 +35,9 @@ TALENT_PIPELINE_SEARCH_PARAMS = [
     "military_branch",
     "military_highest_grade",
     "military_end_date_from",
-    "military_end_date_to"
+    "military_end_date_to",
+    "skillDescriptionFacet",
+    "tag_ids"
 ]
 
 SCHEDULER_SERVICE_RESPONSE_CODE_TASK_ALREADY_SCHEDULED = 6057
