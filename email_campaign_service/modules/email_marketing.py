@@ -479,7 +479,7 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
     if email_campaign_blast_id:
         raise_if_not_positive_int_or_long(email_campaign_blast_id)
 
-    raise_if_not_instance_of(candidate_address, str)
+    raise_if_not_instance_of(candidate_address, (str, unicode))
 
     if blast_datetime:
         raise_if_not_instance_of(blast_datetime, datetime)
@@ -576,7 +576,7 @@ def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_
     raise_if_not_positive_int_or_long(user_id)
     raise_if_not_instance_of(campaign, EmailCampaign)
     raise_if_not_positive_int_or_long(candidate_id)
-    raise_if_not_instance_of(candidate_address, str)
+    raise_if_not_instance_of(candidate_address, (str, unicode))
     raise_if_not_instance_of(blast_params, dict)
     raise_if_not_positive_int_or_long(email_campaign_blast_id)
     raise_if_not_instance_of(blast_datetime, datetime)

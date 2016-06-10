@@ -44,7 +44,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
 
         retry(check_is_bounced, sleeptime=3, attempts=33, sleepscale=1,
               args=(email,), retry_exceptions=(AssertionError,))
-        campaign_blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, timeout=20)
+        campaign_blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, timeout=60)
 
         campaign_blast = campaign_blasts[0]
         assert campaign_blast.bounces == 1
