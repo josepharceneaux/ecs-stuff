@@ -51,7 +51,7 @@ class TestSearchCandidatePipeline(object):
         ]}
         create_resp = send_request('post', PIPELINE_URL, access_token_first, data)
         print response_info(create_resp)
-        assert_expected_result(data, candidate_id, access_token_first)
+        get_result(data, candidate_id, access_token_first)
 
     def test_search_for_last_candidate_in_pipeline(self, user_first, access_token_first, talent_pool):
         """
@@ -87,15 +87,15 @@ class TestSearchCandidatePipeline(object):
 
         # Search & assert result with first candidate created
         candidate_id = candidate_ids[-1]
-        assert_expected_result(data, candidate_id, access_token_first)
+        assert_result(data, candidate_id, access_token_first)
 
-        # # Search & assert result with middle candidate created
-        # candidate_id = candidate_ids[len(candidate_ids) / 2]
-        # assert_expected_result(data, candidate_id, access_token_first)
-        #
+        # Search & assert result with middle candidate created
+        candidate_id = candidate_ids[len(candidate_ids) / 2]
+        assert_result(data, candidate_id, access_token_first)
+
         # # Search & assert result with last candidate created
-        # candidate_id = candidate_ids[0]
-        # assert_expected_result(data, candidate_id, access_token_first)
+        candidate_id = candidate_ids[0]
+        assert_result(data, candidate_id, access_token_first)
 
     def test_search_for_non_existing_candidate_in_pipeline(self, user_first, access_token_first, candidate_first):
         """
@@ -122,16 +122,20 @@ class TestSearchCandidatePipeline(object):
         assert get_resp.status_code == requests.codes.UNAUTHORIZED
 
 
-def assert_expected_result(data, candidate_id, access_token_first):
-    params = data['talent_pipelines'][0]['search_params']
-
+def assert_result(data, candidate_id, access_token_first):
     for _ in retrier(attempts=20, sleeptime=1, sleepscale=1):
+        params = data['talent_pipelines'][0]['search_params']
         if len(search(params, access_token_first)['candidates']) >= 1:
             get_resp = send_request('get', PIPELINE_INCLUSION_URL % candidate_id, access_token_first)
             print response_info(get_resp)
             if get_resp.ok and len(get_resp.json()['candidate_pipelines']) == len(data['talent_pipelines']):
-                break
+                found_candidate_ids = [pipeline['candidate_id'] for pipeline in
+                                       get_resp.json()['candidate_pipelines']]
+                assert candidate_id in found_candidate_ids
     else:
         get_resp = send_request('get', PIPELINE_INCLUSION_URL % candidate_id, access_token_first)
         print response_info(get_resp)
         assert get_resp.ok and len(get_resp.json()['candidate_pipelines']) == len(data['talent_pipelines'])
+        found_candidate_ids = [pipeline['candidate_id'] for pipeline in
+                               get_resp.json()['candidate_pipelines']]
+        assert candidate_id in found_candidate_ids
