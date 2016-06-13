@@ -23,20 +23,19 @@ from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO_TEST
 # Common Utils
 from sms_campaign_service.common.models.user import User
 from sms_campaign_service.common.tests.conftest import fake
-from sms_campaign_service.common.routes import (LOCAL_HOST, SmsCampaignApi, HEALTH_CHECK)
 from sms_campaign_service.common.utils.handy_functions import url_conversion
 from sms_campaign_service.common.error_handling import InvalidUsage, ResourceNotFound
-from sms_campaign_service.common.campaign_services.tests_helpers import (get_invalid_ids,
-                                                                         CampaignsTestsHelpers)
+from sms_campaign_service.common.routes import (LOCAL_HOST, SmsCampaignApiUrl, HEALTH_CHECK)
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 # Test for healthcheck
 def test_health_check():
-    response = requests.get(SmsCampaignApi.HOST_NAME % HEALTH_CHECK)
+    response = requests.get(SmsCampaignApiUrl.HOST_NAME % HEALTH_CHECK)
     assert response.status_code == 200
 
     # Testing Health Check URL with trailing slash
-    response = requests.get(SmsCampaignApi.HOST_NAME % HEALTH_CHECK + '/')
+    response = requests.get(SmsCampaignApiUrl.HOST_NAME % HEALTH_CHECK + '/')
     assert response.status_code == 200
 
 

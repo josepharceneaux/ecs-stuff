@@ -152,3 +152,4 @@ def access_token_of_user(user_id):
 
     save_token_v1(token, request)
     return jsonify(token), 200
+

@@ -248,7 +248,7 @@ class PushCampaignsResource(Resource):
                                additional_error_info=dict(missing_fields=missing_fields),
                                error_code=CampaignException.MISSING_REQUIRED_FIELD)
         campaign = PushCampaignBase(user_id=user.id)
-        campaign_id, _ = campaign.save(data)
+        campaign_id = campaign.save(data)
         response = dict(id=campaign_id, message='Push campaign was created successfully')
         response = json.dumps(response)
         headers = dict(Location=PushCampaignApiUrl.CAMPAIGN % campaign_id)

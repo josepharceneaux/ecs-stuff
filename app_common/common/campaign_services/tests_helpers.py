@@ -500,15 +500,14 @@ class CampaignsTestsHelpers(object):
     def verify_sends(campaign, expected_count, blast_index, blast_url=None, access_token=None):
         """
         This verifies that we get expected number of sends associated with given blast index of
-        given campaign. If count is verified, it returns True, otherwise it returns False.
-        :rtype: bool
+        given campaign.
         """
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         raise_if_not_instance_of(expected_count, int)
         raise_if_not_instance_of(blast_index, int)
+        db.session.commit()
         if not blast_url:
             raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
-            db.session.commit()
             assert campaign.blasts[blast_index].sends == expected_count
         else:
             raise_if_not_instance_of(access_token, basestring)
@@ -530,7 +529,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blast_url, basestring) if blast_url else None
         attempts = abort_time_for_sends / 3 + 1
-        retry(CampaignsTestsHelpers.verify_sends, sleeptime=3, attempts=attempts, sleepscale=1,
+        retry(CampaignsTestsHelpers.verify_sends, sleeptime=5, attempts=attempts, sleepscale=1,
               args=(campaign, expected_count, blast_index, blast_url, access_token),
               retry_exceptions=(AssertionError,))
 
@@ -571,7 +570,7 @@ class CampaignsTestsHelpers(object):
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1, data=None,
                                         emails_list=False, create_phone=False, assign_role=False,
                                         assert_candidates=True, smartlist_name=fake.word(),
-                                        candidate_ids=(), timeout=250):
+                                        candidate_ids=(), timeout=300):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
@@ -634,6 +633,25 @@ class CampaignsTestsHelpers(object):
         current_datetime = datetime.utcnow().replace(tzinfo=pytz.utc)
         assert DatetimeUtils.utc_isoformat_to_datetime(datetime_str) > current_datetime - timedelta(minutes=minutes)
         assert DatetimeUtils.utc_isoformat_to_datetime(datetime_str) < current_datetime + timedelta(minutes=minutes)
+
+    @staticmethod
+    def campaign_create_or_update_with_unexpected_fields(method, url, access_token, campaign_data):
+        """
+        This creates or updates a campaign with unexpected fields present in the data and
+        asserts that we get invalid usage error from respective API. Data passed should be a dictionary
+        here.
+        :param str method: Name of HTTP method
+        :param str url: URL on which we are supposed to make HTTP request
+        :param str access_token: Access token of user
+        :param dict campaign_data: Data to be passed in HTTP request
+        """
+        campaign_data['unexpected_key'] = fake.word()
+        campaign_data['frequency'] = 0
+        response = send_request(method, url, access_token, data=campaign_data)
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should result in bad request error because unexpected data was given.'
+        assert 'unexpected_key' in response.json()['error']['message']
+        assert 'frequency' in response.json()['error']['message']
 
 
 class FixtureHelpers(object):
