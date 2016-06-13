@@ -157,7 +157,7 @@ class TestSchedulerGet(object):
             jobs_id.append(response.json()['id'])
 
         # Get tasks
-        response_get = requests.get(SchedulerApiUrl.TASKS,
+        response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 1, 50),
                                     headers=auth_header_no_user)
 
         get_jobs_id = map(lambda job_: job_['id'], response_get.json()['tasks'])
