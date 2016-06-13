@@ -413,8 +413,6 @@ def test_talent_pool_candidate_api_get(access_token_first, user_first, talent_po
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, data=data, action='POST')
     assert status_code == 200
 
-    sleep(40)
-
     # Logged-in user trying to get candidates from non-existing talent_pool
     response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id + 1000)
     assert status_code == 404
@@ -424,7 +422,7 @@ def test_talent_pool_candidate_api_get(access_token_first, user_first, talent_po
     assert status_code == 403
 
     # Logged-in user trying to get candidates from talent_pool
-    response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id)
+    response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, expected_count=2)
     assert status_code == 200
     assert response['talent_pool_candidates']['total_found'] == 2
 
@@ -438,7 +436,7 @@ def test_talent_pool_candidate_api_get(access_token_first, user_first, talent_po
     add_role_to_test_user(user_first, ['CAN_GET_CANDIDATES_FROM_TALENT_POOL'])
 
     # Logged-in user trying to get candidates from talent_pool
-    response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id)
+    response, status_code = talent_pool_candidate_api(access_token_first, talent_pool.id, expected_count=2)
     assert status_code == 200
     assert response['talent_pool_candidates']['total_found'] == 2
 
