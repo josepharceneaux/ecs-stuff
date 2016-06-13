@@ -57,7 +57,8 @@ from candidate_service.common.models.candidate import (
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateDevice,
-    CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment, CandidateSource
+    CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment, CandidateSource,
+    CandidateStatus
 )
 from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
@@ -226,7 +227,7 @@ class CandidatesResource(Resource):
                 middle_name=candidate_dict.get('middle_name'),
                 last_name=candidate_dict.get('last_name'),
                 formatted_name=candidate_dict.get('full_name'),
-                status_id=candidate_dict.get('status_id'),
+                status_id=candidate_dict.get('status_id') or CandidateStatus.DEFAULT_STATUS_ID,
                 emails=emails,
                 phones=candidate_dict.get('phones'),
                 addresses=candidate_dict.get('addresses'),
@@ -363,8 +364,8 @@ class CandidatesResource(Resource):
 
         if skip:
             db.session.commit()
-            # Update candidates in cloud search
-            upload_candidate_documents.delay(hidden_candidate_ids)
+            # Delete candidate from CS when set to hidden
+            delete_candidate_documents(hidden_candidate_ids)
             return {'hidden_candidate_ids': hidden_candidate_ids}, 200
 
         # Custom fields must belong to user's domain
