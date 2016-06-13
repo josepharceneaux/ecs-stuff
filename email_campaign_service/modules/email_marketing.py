@@ -326,7 +326,8 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
     all_candidate_ids = []
     with app.app_context():
         if not celery_result:
-            logger.error('No candidate(s) found for smartlist_ids %s.' % list_ids)
+            logger.error('No candidate(s) found for smartlist_ids %s, campaign_id: %s'
+                         'user_id: %s.' % list_ids, campaign_id, user_id)
             return
         if not isinstance(user_id, (int, long)) or user_id <= 0:
             logger.error('user_id must be positive int of long')
@@ -397,20 +398,20 @@ def get_email_campaign_candidate_ids_and_emails(campaign, new_candidates_only=Fa
     :rtype list
     """
     if not isinstance(campaign, EmailCampaign):
-        raise InvalidUsage(error_message='Must provide valid email campaign object.')
+        raise InternalServerError(error_message='Must provide valid email campaign object.')
     raise_if_not_instance_of(new_candidates_only, bool)
     # Get smartlists of this campaign
     list_ids = EmailCampaignSmartlist.get_smartlists_of_campaign(campaign.id,
                                                                  smartlist_ids_only=True)
     if not list_ids:
-        raise InvalidUsage('No smartlist is associated with email_campaign(id:%s)' % campaign.id,
-                           error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
+        raise InternalServerError('No smartlist is associated with email_campaign(id:%s)' % campaign.id,
+                                  error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
 
     all_candidate_ids = get_candidates_from_smartlist_for_email_client_id(campaign, list_ids)
 
     if not all_candidate_ids:
-        raise InvalidUsage('No candidate(s) found for smartlist_ids %s.' % list_ids,
-                           error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
+        raise InternalServerError('No candidate(s) found for smartlist_ids %s.' % list_ids,
+                                  error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
     subscribed_candidate_ids = get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only)
     return get_filtered_email_rows(campaign, subscribed_candidate_ids)
 
@@ -422,7 +423,7 @@ def get_candidate_id_email_by_priority(email_info_tuple, email_labels):
     :param (int, str, int) email_info_tuple: (candidate_id, email_address, email_label_id)
     :param [(int, str)] email_labels: Tuple containing structure [( email_label_id, email_label_description )]
     :return: candidate_id, email_address
-    :rtype int | str
+    :rtype: int | str
     """
     if not(isinstance(email_info_tuple, list) and len(email_info_tuple) > 0):
         raise InternalServerError("get_candidate_id_email_by_priority: emails_obj is either not a list or is empty")
@@ -914,9 +915,9 @@ def get_candidates_from_smartlist_for_email_client_id(campaign, list_ids):
     :rtype list
     """
     if not isinstance(campaign, EmailCampaign):
-        raise InvalidUsage("Valid email campaign must be provided.")
+        raise InternalServerError("Valid email campaign must be provided.")
     if not isinstance(list_ids, list) or len(list_ids) <= 0:
-        raise InvalidUsage("Please provide list of smartlist ids.")
+        raise InternalServerError("Please provide list of smartlist ids.")
     all_candidate_ids = []
     for list_id in list_ids:
         # Get candidates present in smartlist
@@ -946,11 +947,11 @@ def get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_onl
     :rtype list
     """
     if not isinstance(campaign, EmailCampaign):
-        raise InvalidUsage(error_message='Valid email campaign object must be provided.')
+        raise InternalServerError(error_message='Valid email campaign object must be provided.')
     if not isinstance(all_candidate_ids, list) or len(all_candidate_ids) < 0:
-        raise InvalidUsage(error_message='all_candidates_ids must be provided')
+        raise InternalServerError(error_message='all_candidates_ids must be provided')
     if not isinstance(new_candidates_only, bool):
-        raise InvalidUsage(error_message='new_candidates_only must be bool')
+        raise InternalServerError(error_message='new_candidates_only must be bool')
     if campaign.is_subscription:
         # A subscription campaign is a campaign which needs candidates
         # to be subscribed to it in order to receive notifications regarding the campaign.

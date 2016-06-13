@@ -369,6 +369,7 @@ class CandidateEmail(db.Model):
         :param email_address: email address
         :type email_address: str
         :return: True | False
+        :rtype: bool
         """
         assert isinstance(email_address, basestring) and email_address, 'email_address should have a valid value.'
         bounced_email = cls.query.filter_by(address=email_address, is_bounced=True).first()

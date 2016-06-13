@@ -103,7 +103,7 @@ class EmailCampaigns(Resource):
             """:type : email_campaign_service.common.models.email_campaign.EmailCampaign"""
 
             if not isinstance(email_campaign, EmailCampaign):
-                raise NotFoundError("Email campaign with id: %s does not exist"
+                raise InvalidUsage("Email campaign with id: %s does not exist"
                                     % email_campaign_id)
             if not email_campaign.user.domain_id == user.domain_id:
                 raise ForbiddenError("Email campaign doesn't belongs to user's domain")

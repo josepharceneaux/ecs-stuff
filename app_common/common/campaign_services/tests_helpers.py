@@ -343,7 +343,7 @@ class CampaignsTestsHelpers(object):
                                 expected_status=200):
         """
         If we try to send a campaign with invalid data, e.g. a campaign with no smartlist associated
-        or with 0 candidates, the campaign sending witll fail. This method asserts that the specified
+        or with 0 candidates, the campaign sending will fail. This method asserts that the specified
         campaign sending failed and no blasts have been created.
         """
         assert response.status_code == expected_status

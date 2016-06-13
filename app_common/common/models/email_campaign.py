@@ -230,7 +230,7 @@ class EmailCampaignSend(db.Model):
     @classmethod
     def get_already_emailed_candidates(cls, campaign):
         """
-        Get candidates to whom email for specified campaign has already being sent.
+        Get candidates to whom email for specified campaign has already been sent.
         :param campaign: Valid campaign object.
         :return: Ids of candidates to whom email for specified campaign has already being sent.
         """

@@ -42,7 +42,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         else:
             send_campaign_email_to_candidate(campaign, email, candidate_ids[0], blast_id=None)
 
-        retry(check_is_bounced, sleeptime=3, attempts=33, sleepscale=1,
+        retry(assert_is_bounced, sleeptime=3, attempts=33, sleepscale=1,
               args=(email,), retry_exceptions=(AssertionError,))
         campaign_blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, timeout=100)
 
@@ -53,13 +53,13 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         response = requests.post(
             EmailCampaignApiUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == 200
-        retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=100, sleepscale=1,
-              args=(campaign, access_token_first, None, 1), retry_exceptions=(AssertionError,))
+        CampaignsTestsHelpers.assert_campaign_blasts(campaign, 1,
+                                                     access_token=access_token_first, timeout=300)
 
 
-def check_is_bounced(email):
+def assert_is_bounced(email):
     """
-    Checks if a candidate
+    Asserts if there is a candidate email that has already been marked as bounced.
     :param email: candidate email
     :return: value of is_bounced (0 or 1)
     """
@@ -102,7 +102,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
         for index in range(count):
             email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_ids[index])
             send_campaign_email_to_candidate(campaign, email, candidate_ids[index], email_campaign_blast.id)
-        retry(check_is_bounced, sleeptime=3, attempts=33, sleepscale=1,
+        retry(assert_is_bounced, sleeptime=3, attempts=33, sleepscale=1,
               args=(email,), retry_exceptions=(AssertionError,))
 
         campaign_blasts = campaign.blasts.all()
@@ -121,8 +121,8 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
         response = requests.post(
             EmailCampaignApiUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == 200
-        retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=100, sleepscale=1,
-              args=(campaign, access_token_first, None, 2), retry_exceptions=(AssertionError,))
+        CampaignsTestsHelpers.assert_campaign_blasts(campaign, 2,
+                                                     access_token=access_token_first, timeout=300)
 
         CampaignsTestsHelpers.assert_blast_sends(campaign, 1, blast_index=1, abort_time_for_sends=200)
         db.session.commit()
