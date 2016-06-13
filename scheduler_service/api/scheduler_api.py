@@ -46,39 +46,25 @@ class Tasks(Resource):
         This action returns a list of user tasks and their count
         :return tasks_data: a dictionary containing list of tasks and their count
         :rtype json
-
-
         :Example (in case of pagination):
             By default, it will return 10 jobs (max)
-
             Case 1:
-
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/v1/tasks?page=3', headers=headers)
-
             # Returns 10 jobs ranging from 30-39
-
             Case 2:
-
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/v1/tasks?page=5&per_page=12', headers=headers)
-
             # Returns 12 jobs ranging from 48-59
-
         :Example:
         In case of authenticated user
-
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/v1/tasks/', headers=headers)
-
         In case of SECRET_KEY
-
             headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>'}
             response = requests.get(API_URL + '/v1/tasks/', headers=headers)
-
         .. Response::
-
             {
                 "count": 1,
                 "tasks": [
@@ -100,11 +86,9 @@ class Tasks(Resource):
                     }
                ]
             }
-
         .. Status:: 200 (OK)
                     400 (Invalid Usage)
                     500 (Internal Server Error)
-
         """
         # In case of higher number of scheduled task running for a particular user and user want to get only
         # a limited number of jobs by specifying page and per_page parameter, then return only specified jobs
@@ -134,8 +118,12 @@ class Tasks(Resource):
         user_id = request.user.id if request.user else None
 
         raise_if_scheduler_not_running()
-        tasks = scheduler.get_jobs()
-        tasks = filter(lambda _task: _task.args[0] == user_id, tasks)
+        if user_id:
+            task_ids = get_user_job_ids(user_id=user_id)
+        else:
+            task_ids = get_all_general_job_ids()
+
+        tasks = [scheduler.get_job(task_id) for task_id in task_ids]
         tasks_count = len(tasks)
         # If page is 1, and per_page is 10 then task_indices will look like list of integers e.g [0-9]
         task_indices = range((page-1) * per_page, page * per_page)
@@ -155,7 +143,6 @@ class Tasks(Resource):
     def post(self):
         """
         This method takes data to create or schedule a task for scheduler.
-
         :Example:
             for interval or periodic schedule
             task = {
@@ -185,30 +172,23 @@ class Tasks(Resource):
                     "content": "content to be sent as email"
                 }
             }
-
             In case of authenticated user
-
             headers = {
                         'Authorization': 'Bearer <access_token>',
                         'Content-Type': 'application/json'
                        }
-
             In case of SECRET_KEY
-
             headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>',
                         'Content-Type': 'application/json'
                         }
-
             data = json.dumps(task)
             response = requests.post(
                                         API_URL + '/v1/tasks/',
                                         data=data,
                                         headers=headers,
                                     )
-
         .. Response::
-
             {
                 "id" : "5das76nbv950nghg8j8-33ddd3kfdw2"
             }
@@ -216,7 +196,6 @@ class Tasks(Resource):
                     400 (Bad Request)
                     401 (Unauthorized to access getTalent)
                     500 (Internal Server Error)
-
         :return: id of created task
         """
         # get JSON post request data
@@ -238,7 +217,6 @@ class Tasks(Resource):
         Deletes multiple tasks whose ids are given in list in request data.
         :param kwargs:
         :return:
-
         :Example:
             task_ids = {
                 'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
@@ -253,9 +231,7 @@ class Tasks(Resource):
                                         data=data,
                                         headers=headers,
                                     )
-
         .. Response::
-
             {
                 'message': '3 task have been removed successfully'
             }
@@ -263,7 +239,6 @@ class Tasks(Resource):
                     207 (Not all removed)
                     400 (Bad request)
                     500 (Internal Server Error)
-
         """
 
         user_id = request.user.id

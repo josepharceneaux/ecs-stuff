@@ -581,7 +581,6 @@ class SchedulerApiUrl(object):
     HOST_NAME = _get_host_name(GTApis.SCHEDULER_SERVICE_NAME, GTApis.SCHEDULER_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     # URLs, in case of test cases
-
     TASKS = HOST_NAME % ('/' + VERSION + '/tasks')
     TASK = HOST_NAME % ('/' + VERSION + '/tasks/id/%s')
     TASK_NAME = HOST_NAME % ('/' + VERSION + '/tasks/name/%s')
