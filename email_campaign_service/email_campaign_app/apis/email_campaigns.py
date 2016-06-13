@@ -98,7 +98,7 @@ class EmailCampaigns(Resource):
         user = request.user
         email_campaign_id = kwargs.get('id')
         include_fields = request.values['fields'].split(',') if request.values.get('fields') else None
-        if not isinstance(email_campaign_id, (int, long)) or email_campaign_id <= 0:
+        if email_campaign_id:
             email_campaign = EmailCampaign.get_by_id(email_campaign_id)
             """:type : email_campaign_service.common.models.email_campaign.EmailCampaign"""
 
