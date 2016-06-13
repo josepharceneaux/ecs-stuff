@@ -448,7 +448,7 @@ def get_general_job_id(task_name):
     start_index = 0
     end_index = -1
     job_id = redis_store.lrange(SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % task_name, start_index, end_index)
-    return job_id if job_id else None
+    return job_id[0] if job_id else None
 
 
 def get_all_general_job_ids():
