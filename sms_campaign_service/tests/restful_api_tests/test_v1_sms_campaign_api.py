@@ -250,13 +250,13 @@ class TestSmsCampaignHTTPPost(object):
         assert response.status_code == ResourceNotFound.http_status_code()
 
     def test_campaign_create_with_valid_and_invalid_smartlist_ids(self, headers, campaign_valid_data,
-                                                                  invalid_smartlist_id):
+                                                                  invalid_id):
         """
         This is a test to create SMS campaign with valid and invalid smartlist_ids. Status code should be 400 and
         campaign should not be created.
         """
         data = campaign_valid_data.copy()
-        data['smartlist_ids'].extend(invalid_smartlist_id)
+        data['smartlist_ids'].extend(invalid_id)
         response = requests.post(self.URL, headers=headers, data=json.dumps(data))
         assert response.status_code == InvalidUsage.http_status_code()
 
@@ -371,13 +371,14 @@ class TestSmsCampaignHTTPDelete(object):
                                    data=json.dumps({'ids': [sms_campaign_of_user_first['id'], non_existing_id]}))
         assert response.status_code == ResourceNotFound.http_status_code(), 'It should be a ResourceNotFound (404)'
 
-    def test_campaigns_delete_with_valid_and_invalid_campaign_ids(self, headers, sms_campaign_of_user_first):
+    def test_campaigns_delete_with_valid_and_invalid_campaign_ids(self, headers, sms_campaign_of_user_first,
+                                                                  invalid_id):
         """
         User auth token is valid, but invalid data provided (ids other than int, not owned campaign and Non-exisiting),
         It should result in bad request error.
         """
         response = requests.delete(self.URL, headers=headers,
-                                   data=json.dumps({'ids': [0, 'a', 'b', sms_campaign_of_user_first['id']]}))
+                                   data=json.dumps({'ids': [sms_campaign_of_user_first['id']].extend(invalid_id)}))
         assert response.status_code == InvalidUsage.http_status_code(), 'It should be a bad request (400)'
 
     def test_campaigns_delete_with_authorized_ids(self, headers, user_first, sms_campaign_of_user_first):

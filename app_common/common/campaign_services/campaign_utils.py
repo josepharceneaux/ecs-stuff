@@ -409,7 +409,7 @@ class CampaignUtils(object):
         """
         requested_data = get_valid_json_data(request_obj)
         campaign_ids = requested_data['ids'] if 'ids' in requested_data else []
-        if not isinstance(requested_data['ids'], list):
+        if not isinstance(campaign_ids, list):
             raise InvalidUsage('Bad request, include campaign_ids as list data')
         # check if list of campaigns_ids is not empty
         if not campaign_ids:

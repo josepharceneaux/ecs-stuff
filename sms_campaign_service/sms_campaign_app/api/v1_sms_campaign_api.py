@@ -319,8 +319,8 @@ class ScheduleSmsCampaign(Resource):
         sms_camp_obj.campaign = pre_processed_data['campaign']
         # call schedule() method to schedule the campaign and get the task_id
         task_id = sms_camp_obj.schedule(pre_processed_data['data_to_schedule'])
-        return dict(message='SMS Campaign(id:%s) has been scheduled.' % campaign_id, task_id=task_id),\
-               requests.codes.OK
+        return dict(message='SMS Campaign(id:%s) has been scheduled.'
+                            % campaign_id, task_id=task_id), requests.codes.OK
 
     def put(self, campaign_id):
         """
