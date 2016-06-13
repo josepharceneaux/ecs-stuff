@@ -106,7 +106,7 @@ class EmailCampaignSmartlist(db.Model):
         Get smartlists associated with the given campaign.
         :param campaign_id: Id of campaign for with smartlists are to be retrieved
         :param smartlist_ids_only: True if only ids are to be returned
-        :type: campaign_id: int | long
+        :type campaign_id: int | long
         :type smartlist_ids_only: bool
         :rtype list | dict
         """

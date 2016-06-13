@@ -49,9 +49,9 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
     :param access_token: Token for authorization
     :param user_id: id of user
     :type list_id: int | long
-    :type: candidate_ids_only: bool
-    :type: access_token: string
-    :type: int | long
+    :type candidate_ids_only: bool
+    :type access_token: string
+    :type user_id: int | long | None
     :rtype: list
 
     """

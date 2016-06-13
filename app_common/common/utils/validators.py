@@ -266,7 +266,7 @@ def raise_if_not_positive_int_or_long(value):
     """
     Validates if the given value is poitive integer or long. If not, it raises invalid usage exception.
     :param value: Value to validate
-    :type: value: int | long
+    :type value: int | long
     :exception: Invalid Usage
     """
 

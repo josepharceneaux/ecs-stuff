@@ -315,8 +315,8 @@ class CampaignsTestsHelpers(object):
                                                   talent_pipeline_id):
         """
         User auth access_token is valid, campaign has one smart list associated. But smartlist has
-        no candidate associated with it. It should get invalid usage error.
-        Custom error should be NoCandidateAssociatedWithSmartlist.
+        no candidate associated with it. The function tries to send the email campaign and resturns the
+        response to calling function.
         :param (SmsCampaign | EmailCampaign | PushCampaign) campaign: Campaign object
         :param (str) url: URL to to make HTTP request
         :param (str) access_token: access access_token of user

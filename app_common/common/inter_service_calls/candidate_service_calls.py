@@ -101,11 +101,11 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
 def get_candidate_subscription_preference(candidate_id, user_id):
     """
     Method to get the subscription preference of a candidate with specified candidate id.
-    :param candidate_id: Id of candidate for which subscription prederence is to be retrieved.
+    :param candidate_id: Id of candidate for which subscription preference is to be retrieved.
     :param user_id: Id of user.
     :type candidate_id: int | long
     :type user_id: int | long
-    :rtype int
+    :rtype: int
     """
     raise_if_not_positive_int_or_long(candidate_id)
     raise_if_not_positive_int_or_long(user_id)

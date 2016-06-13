@@ -391,9 +391,11 @@ class CandidateEmail(db.Model):
     @classmethod
     def get_email_by_candidate_id(cls, candidate_id):
         """
-        Returns email of specified candidate.
-        :param (int, long) candidate_id: Id of candidate for which email address is to be retrieved.
+        Returns CandidateEmail object based on specified candidate id.
+        :param candidate_id: Id of candidate for which email address is to be retrieved.
+        :type candidate_id: int | long
         :return: Candidate Email
+        :rtype: CandidateEmail
         """
         raise_if_not_positive_int_or_long(candidate_id)
         email = cls.query.filter_by(candidate_id=candidate_id).first()
@@ -1151,12 +1153,15 @@ class CandidateSubscriptionPreference(db.Model):
         Get ids of candidates subscribed to the campaign.
         :param campaign: Valid campaign object.
         :param all_candidate_ids: Ids of candidates.
+        :type campaign: EmailCampaign
+        :type all_candidate_ids: list
         :return: List of subscribed candidate ids.
+        :rtype: list
         """
         if not isinstance(campaign, EmailCampaign):
             raise InternalServerError(error_message='Must provide valid email campaign object.')
-        if not all_candidate_ids:
-            raise InternalServerError(error_message='aal_candidates_ids must be provided')
+        if not isinstance(all_candidate_ids, list) or len(all_candidate_ids) <= 0:
+            raise InternalServerError(error_message='all_candidates_ids must be provided')
         subscribed_candidates_rows = CandidateSubscriptionPreference.with_entities(
             CandidateSubscriptionPreference.candidate_id).filter(
             and_(CandidateSubscriptionPreference.candidate_id.in_(all_candidate_ids),
