@@ -167,8 +167,9 @@ class TestGetCandidateCustomField(object):
         print response_info(create_resp)
 
         # Retrieve candidate custom field
-        url = CandidateApiUrl.CUSTOM_FIELD % (user_second_candidate.id, domain_custom_fields[0].id)
-        get_resp = get_response('get', url, access_token_second, requests.codes.FORBIDDEN)
+        ccf_id = create_resp.json()['candidate_custom_fields'][0]['id']
+        url = CandidateApiUrl.CUSTOM_FIELD % (user_second_candidate.id, ccf_id)
+        get_resp = send_request('get', url, access_token_second)
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.FORBIDDEN
         assert get_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
