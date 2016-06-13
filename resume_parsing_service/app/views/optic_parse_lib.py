@@ -167,24 +167,40 @@ def parse_candidate_phones(bs_contact_xml_list):
         phones = contact.findAll('phone')
 
         for p in phones:
-            # TODO: look into adding a type using p.attrs['type']
             raw_phone = p.text.strip()
+            phone_type = p.type
 
             # JSON_SCHEMA for candidates phone is max:20
             # This fixes issues with numbers like '1-123-45            67'
             if raw_phone and len(raw_phone) > 20:
                 raw_phone = " ".join(raw_phone.split())
 
+            gt_phone_type = get_phone_type(phone_type)
+
             if raw_phone and len(raw_phone) <= 20:
 
                 try:
                     unused_validated_phone = phonenumbers.parse(raw_phone, region='US')
-                    output.append({'value': raw_phone})
+                    output.append({'value': raw_phone, 'type': gt_phone_type})
 
                 except UnicodeEncodeError:
                     logger.error('Issue parsing phonenumber: {}'.format(raw_phone))
 
     return output
+
+
+def get_phone_type(bg_phone_type):
+    """
+    Provides a mapping between BurningGlass phone types to the the static values in the GT database.
+    :param string bg_phone_type:
+    :return string:
+    """
+    return {
+        'cell': 'Mobile',
+        'home': 'Home',
+        'fax': 'Home Fax',
+        'work': 'Work'
+    }.get(bg_phone_type, 'Other')
 
 
 def parse_candidate_experiences(bg_experience_xml_list):
