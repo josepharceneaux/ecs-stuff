@@ -1,7 +1,7 @@
 (function() {
   'use strict';
 
-  angular.module('app.scheduler_admin', [
+  angular.module('app.schedulerAdmin', [
     'app.core',
     'app.widgets',
     'app.components',

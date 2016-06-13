@@ -1,38 +1,39 @@
 /* jshint -W117, -W030 */
-describe('layout', function() {
-  describe('sidebar', function() {
+describe('layout', function () {
+  describe('sidebar', function () {
     var controller;
     var views = {
-      dashboard: 'app/scheduler_admin/scheduler_admin.html'
+      dashboard: 'app/schedulerAdmin/schedulerAdmin.html'
     };
 
-    beforeEach(function() {
+    beforeEach(function () {
       module('app.layout', bard.fakeToastr);
-      bard.inject('$controller', '$httpBackend', '$location',
+      bard.inject('$httpBackend', '$controller', '$httpBackend', '$location',
         '$rootScope', '$state', 'routerHelper');
     });
 
-    beforeEach(function() {
-      routerHelper.configureStates(mockData.getMockStates(), '/');
+    beforeEach(function () {
+      //routerHelper.configureStates(mockData.getMockStates(), '/');
+      mockService($httpBackend);
       controller = $controller('SidebarController');
       $rootScope.$apply();
     });
 
     bard.verifyNoOutstandingHttpRequests();
 
-    it('should have isCurrent() for / to return `current`', function() {
+    it('should have isCurrent() for / to return `current`', function () {
       $location.path('/');
       expect(controller.isCurrent($state.current)).to.equal('current');
     });
 
-    it('should have isCurrent() for /customers to return `current`', function() {
+    it('should have isCurrent() for /customers to return `current`', function () {
       $location.path('/customers');
       expect(controller.isCurrent($state.current)).to.equal('current');
     });
 
-    it('should have isCurrent() for non route not return `current`', function() {
+    it('should have isCurrent() for non route not return `current`', function () {
       $location.path('/invalid');
-      expect(controller.isCurrent({ title: 'invalid' })).not.to.equal('current');
+      expect(controller.isCurrent({title: 'invalid'})).not.to.equal('current');
     });
   });
 });

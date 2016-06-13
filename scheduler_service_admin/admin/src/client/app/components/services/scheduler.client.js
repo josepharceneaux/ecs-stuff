@@ -1,39 +1,46 @@
-(function() {
+(function () {
   'use strict';
 
   angular
     .module('app.core')
-    .factory('SchedulerClientService', scheduler_dataservice);
+    .factory('SchedulerClientService', schedulerDataService);
 
-  scheduler_dataservice.$inject = ['$http', 'exception', 'UserToken', 'api_info'];
+  schedulerDataService.$inject = ['$http', 'exception', 'UserToken', 'apiInfo', '$q'];
   /* @ngInject */
-  function scheduler_dataservice($http, exception,UserToken, api_info) {
+  function schedulerDataService($http, exception, UserToken, apiInfo, $q) {
     var service = {
       getTasks: getTasks
     };
 
     return service;
 
+    /**
+     * Get tasks based on param filters
+     * @param filters (type:object) paused, task_type, task_category, userId
+     * @returns {*|promise}
+       */
     function getTasks(filters) {
-      return $http(
+      var deferred = $q.defer();
+      $http(
         {
-          url: api_info.apiInfo.schedulerServiceAdmin.taskUrl,
+          url: apiInfo.apiInfo.schedulerServiceAdmin.taskUrl,
           method: 'GET',
           params: filters,
           headers: {
-            'Authorization': 'Bearer ' + UserToken.access_token,
+            'Authorization': 'Bearer ' + UserToken.accessToken,
             'Content-Type': 'application/json'
           }
         })
-        .then(success)
-        .catch(fail);
+        .then(success, fail);
+
+      return deferred.promise;
 
       function success(response) {
-        return {data: response.data, headers: response.headers};
+        return deferred.resolve({data: response.data, headers: response.headers});
       }
 
       function fail(e) {
-        return exception.catcher('XHR Failed for getTasks')(e);
+        return deferred.resolve(exception.catcher('XHR Failed for getTasks')(e));
       }
     }
   }

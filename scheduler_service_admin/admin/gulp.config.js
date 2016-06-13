@@ -35,6 +35,7 @@ module.exports = function() {
     // app js, with no specs
     js: [
       clientApp + '**/*.module.js',
+      client + 'init/init.app.js',
       clientApp + '**/*.js',
       '!' + clientApp + '**/*.spec.js'
     ],
@@ -152,6 +153,7 @@ module.exports = function() {
         bowerFiles,
         config.specHelpers,
         clientApp + '**/*.module.js',
+        './src/client/tests/lib/*.js',
         clientApp + '**/*.js',
         temp + config.templateCache.file,
         config.serverIntegrationSpecs

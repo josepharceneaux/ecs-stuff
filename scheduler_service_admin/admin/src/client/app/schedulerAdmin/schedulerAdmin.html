@@ -21,10 +21,10 @@
                   <tr ng-repeat="task in vm.tasks">
                     <td>{{task.id}}</td>
                     <td>{{task.user_email}}</td>
-                    <td>{{task.task_type}}</td>
-                    <td>{{task.task_category}}</td>
+                    <td>{{task.taskType}}</td>
+                    <td>{{task.taskCategory}}</td>
                     <td>
-                      <div ng-switch on="task.task_type">
+                      <div ng-switch on="task.taskType">
                         <div ng-switch-when="one_time">
                           <!-- one_time task block-->
                           <summary class="overflow-text">{{task.data | json}}</summary>
@@ -62,17 +62,17 @@
                 <md-list>
                   <md-list-item>
                     <p> {{ vm.paused.name }} </p>
-                    <md-switch ng-change="vm.apply_filter()" class="md-secondary" ng-model="vm.paused.enabled"></md-switch>
+                    <md-switch ng-change="vm.applyFilter()" class="md-secondary" ng-model="vm.paused.enabled"></md-switch>
                   </md-list-item>
                   <md-input-container class="md-block">
                     <label>User ID</label>
-                    <input ng-model="vm.user_id" ng-change="vm.apply_filter()" ng-disabled="(vm.selected_task_category === 'general')" min="1" type="number" step="1">
+                    <input ng-model="vm.userId" ng-change="vm.applyFilter()" ng-disabled="(vm.selectedTaskCategory === 'general')" min="1" type="number" step="1">
                   </md-input-container>
   <md-divider></md-divider>
                   <md-subheader class="md-no-sticky">Task type</md-subheader>
                   <md-list-item>
-                    <md-radio-group ng-change="vm.apply_filter()" ng-model="vm.selected_task_type">
-                      <md-radio-button ng-class="{'md-primary' : $first}"  ng-repeat="option in vm.task_type" ng-value="option.value">
+                    <md-radio-group ng-change="vm.applyFilter()" ng-model="vm.selectedTaskType">
+                      <md-radio-button ng-class="{'md-primary' : $first}"  ng-repeat="option in vm.taskType" ng-value="option.value">
                         {{option.title}}
                       </md-radio-button>
                     </md-radio-group>
@@ -80,8 +80,8 @@
   <md-divider></md-divider>
                   <md-subheader class="md-no-sticky">Task Category</md-subheader>
                   <md-list-item>
-                    <md-radio-group ng-change="vm.apply_filter()" ng-model="vm.selected_task_category">
-                      <md-radio-button ng-class="{'md-primary' : $first}"  ng-repeat="option in vm.task_category" ng-value="option.value">
+                    <md-radio-group ng-change="vm.applyFilter()" ng-model="vm.selectedTaskCategory">
+                      <md-radio-button ng-class="{'md-primary' : $first}"  ng-repeat="option in vm.taskCategory" ng-value="option.value">
                         {{option.title}}
                       </md-radio-button>
                     </md-radio-group>

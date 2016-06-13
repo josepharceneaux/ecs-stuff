@@ -10,14 +10,14 @@ module.exports = router;
 
 //////////////
 
-function getconfig(req, res, next){
-  console.log('hey ' + environment);
-  if(environment === "dev")
+function getconfig(req, res, next) {
+  if (environment === 'dev') {
     res.status(200).send(apiconfig.local);
-  else if(environment === "stag"){
+  }
+  else if (environment === 'stag') {
     res.status(200).send(apiconfig.development);
   }
-  else if(environment === "prod"){
-      res.status(200).send(apiconfig.production);
+  else if (environment === 'prod') {
+    res.status(200).send(apiconfig.production);
   }
 }

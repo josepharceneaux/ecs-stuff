@@ -2,7 +2,7 @@
   'use strict';
 
   angular
-    .module('app.scheduler_admin')
+    .module('app.schedulerAdmin')
     .run(appRun);
 
   appRun.$inject = ['routerHelper'];
@@ -14,10 +14,10 @@
   function getStates() {
     return [
       {
-        state: 'scheduler_admin',
+        state: 'schedulerAdmin',
         config: {
           url: '/',
-          templateUrl: 'app/scheduler_admin/scheduler_admin.html',
+          templateUrl: 'app/schedulerAdmin/schedulerAdmin.html',
           controller: 'SchedulerAdminController',
           controllerAs: 'vm',
           title: 'Scheduler Service',

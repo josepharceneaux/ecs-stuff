@@ -53,6 +53,9 @@
 
     "browser": true,
     "node": true,
+    "-W117": false,
+    "-W106": false,
+    "-W104": false,
 
     "globals": {
         "angular": false

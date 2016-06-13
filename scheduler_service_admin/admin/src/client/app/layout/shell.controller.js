@@ -1,4 +1,4 @@
-(function() {
+(function () {
   'use strict';
 
   angular
@@ -18,7 +18,7 @@
       link: '#'
     };
 
-    vm.loggedIn = UserToken.access_token !== "";
+    vm.loggedIn = UserToken.accessToken !== '';
 
     $rootScope.$on('loggedIn',
       function (events, args) {
@@ -34,7 +34,7 @@
 
     function hideSplash() {
       //Force a 1 second delay so we can see the splash.
-      $timeout(function() {
+      $timeout(function () {
         $rootScope.showSplash = false;
       }, 1000);
     }

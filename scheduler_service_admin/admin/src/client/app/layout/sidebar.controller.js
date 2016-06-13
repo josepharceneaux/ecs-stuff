@@ -1,14 +1,14 @@
-(function() {
+(function () {
   'use strict';
 
   angular
     .module('app.layout')
     .controller('SidebarController', SidebarController);
 
-  SidebarController.$inject = ['$state', 'routerHelper', 'api_info'];
+  SidebarController.$inject = ['$state', 'routerHelper'];
   /* @ngInject */
   //Get all states except login and build NavRoutes.
-  function SidebarController($state, routerHelper, api_info) {
+  function SidebarController($state, routerHelper) {
     var vm = this;
     var states = routerHelper.getStates();
 
@@ -19,12 +19,14 @@
     activate();
 
 
-    function activate() { getNavRoutes(); }
+    function activate() {
+      getNavRoutes();
+    }
 
     function getNavRoutes() {
-      vm.navRoutes = states.filter(function(r) {
+      vm.navRoutes = states.filter(function (r) {
         return r.settings && r.settings.nav;
-      }).sort(function(r1, r2) {
+      }).sort(function (r1, r2) {
         return r1.settings.nav - r2.settings.nav;
       });
     }
@@ -37,13 +39,13 @@
       return $state.current.title.substr(0, menuName.length) === menuName ? 'current' : '';
     }
 
-    function removeLoginState(states){
+    function removeLoginState(states) {
 
-        for(var i = states.length -1; i >= 0 ; i--){
-            if(states[i].name == 'login'){
-              states.splice(i, 1);
-            break;
-          }
+      for (var i = states.length - 1; i >= 0; i--) {
+        if (states[i].name === 'login') {
+          states.splice(i, 1);
+          break;
+        }
       }
     }
   }

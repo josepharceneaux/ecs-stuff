@@ -8,6 +8,9 @@ var sass = require('gulp-sass');
 var path = require('path');
 var _ = require('lodash');
 var $ = require('gulp-load-plugins')({ lazy: true });
+var jshint = require('gulp-jshint');
+const jscs = require('gulp-jscs');
+var ignore = require('gulp-ignore');
 
 var colors = $.util.colors;
 var envenv = $.util.env;
@@ -40,10 +43,17 @@ gulp.task('vet', function() {
   return gulp
     .src(config.alljs)
     .pipe($.if(args.verbose, $.print()))
+    .pipe(ignore.exclude('*.js'))
     .pipe($.jshint())
     .pipe($.jshint.reporter('jshint-stylish', { verbose: true }))
     .pipe($.jshint.reporter('fail'))
     .pipe($.jscs());
+});
+
+gulp.task('default', function() {
+    return gulp.src('src/server/app.js')
+        .pipe(jscs({fix: true}))
+        .pipe(gulp.dest('src'));
 });
 
 /**
@@ -78,6 +88,18 @@ gulp.task('styles', function() {
         .src('styles/*.scss')
         .pipe(sass().on('error', sass.logError))
         .pipe(gulp.dest(config.temp));
+});
+
+gulp.task('lint', function (cb) {
+  var stream = gulp.src(['t*.js'])
+    .pipe(jshint())
+    .pipe(jshint.reporter('default'));
+
+  if (process.env.CI) {
+    stream = stream.pipe(jshint.reporter('fail'));
+  }
+
+  stream.on('end', cb);
 });
 
 /**

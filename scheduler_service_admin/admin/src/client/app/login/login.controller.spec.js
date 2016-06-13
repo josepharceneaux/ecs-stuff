@@ -4,15 +4,16 @@ describe('LoginController', function() {
 
   beforeEach(function() {
     bard.appModule('app.login');
-    bard.inject('$controller', '$log', '$rootScope');
+    bard.inject('$httpBackend','$controller', '$log', '$rootScope');
   });
 
   beforeEach(function() {
+    mockService($httpBackend);
     controller = $controller('LoginController');
     $rootScope.$apply();
   });
 
-  bard.verifyNoOutstandingHttpRequests();
+  specHelper.verifyNoOutstandingHttpRequests();
 
   describe('Login controller', function() {
     it('should be created successfully', function() {
@@ -21,7 +22,7 @@ describe('LoginController', function() {
 
     describe('after activate', function() {
       it('should have title of Admin', function() {
-        expect(controller.title).to.equal('Login Admin');
+        expect(controller.title).to.equal('Login');
       });
 
       it('should have logged "Activated"', function() {

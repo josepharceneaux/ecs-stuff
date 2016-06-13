@@ -5,14 +5,12 @@
     .module('app.core')
     .run(appRun);
 
-  appRun.$inject = ['routerHelper', 'api_info'];
+  appRun.$inject = ['routerHelper', 'apiInfo'];
 
   /* @ngInject */
-  function appRun(routerHelper, api_info) {
+  function appRun(routerHelper, apiInfo) {
     var otherwise = '/404';
     routerHelper.configureStates(getStates(), otherwise);
-
-    api_info.read_apiInfo();
   }
 
   function getStates() {

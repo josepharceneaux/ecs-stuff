@@ -1,4 +1,4 @@
-(function() {
+(function () {
   'use strict';
 
   angular
@@ -21,20 +21,20 @@
     TopNavController.$inject = ['$scope', 'UserToken', '$state'];
 
     /* @ngInject */
-    function TopNavController($scope, UserToken, $state) {
+    function TopNavController($scope, UserToken) {
       var vm = this;
       $scope.isCollapsed = true;
 
-      vm.loggedIn = UserToken.access_token !== "";
+      vm.loggedIn = UserToken.accessToken !== '';
 
-      vm.logout_user = function () {
+      vm.logoutUser = function () {
 
-          UserToken.logout_user();
-          UserToken.goToLogin($state);
+        UserToken.logoutUser();
+        UserToken.goToLogin();
       };
 
       $rootScope.$on('loggedIn', function (events, args) {
-          vm.loggedIn = args;
+        vm.loggedIn = args;
       });
 
     }

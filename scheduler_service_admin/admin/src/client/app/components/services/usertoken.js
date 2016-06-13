@@ -2,86 +2,101 @@
  * Created by Saad Abdullah on 5/16/16.
  */
 
-(function() {
+(function () {
   'use strict';
 
   angular
     .module('app.components')
     .factory('UserToken', UserToken);
   /* @ngInject */
-  function UserToken($cookies, $rootScope, $http, api_info, $state) {
+  function UserToken($cookies, $rootScope, $http, apiInfo, $state, $q) {
 
-    function error(){
-       $rootScope.$broadcast('loggedIn', false);
-       $state.go('login');
+    function error() {
+      $rootScope.$broadcast('loggedIn', false);
+      $state.go('login');
     }
 
     var service = {
-      user_id: '',
-      access_token: '',
+      userId: '',
+      accessToken: '',
       goToLogin: goToLogin,
-      is_logged_in: function () {
-        return $http({
-            method: 'GET',
-            url: api_info.apiInfo.authService.authorizePath,
-            headers: {
+      isLoggedIn: function () {
+        var deferred = $q.defer();
+
+        $http({
+          method: 'GET',
+          url: apiInfo.apiInfo.authService.authorizePath,
+          headers: {
             'Authorization': 'Bearer ' + $cookies.get('token'),
-                'Content-Type': 'application/json'
-              }
-          })
+            'Content-Type': 'application/json'
+          }
+        })
           .then(function (response) {
-              if("user_id" in response.data){
-                 service.access_token = $cookies.get('token');
-                $rootScope.$broadcast('loggedIn', true);
-                return;
-              }
-            error();
-            }, function (err) {
-                error();
+            if ('user_id' in response.data) {
+              service.accessToken = $cookies.get('token');
+              $rootScope.$broadcast('loggedIn', true);
+              deferred.resolve(true);
+            }
+            else{
+              deferred.resolve(false);
+            }
+          }, function (err) {
+            deferred.resolve(false);
           });
+        return deferred.promise;
       },
-      logout_user: function () {
+      logoutUser: function () {
         $cookies.remove('token');
         $rootScope.$broadcast('loggedIn', false);
       },
-      authenticate_user: function (token_obj) {
+      /**
+       * Add cookie of oauth token
+       * @param tokenObj:
+       */
+      authenticateUser: function (tokenObj) {
 
-        this.access_token = token_obj['access_token'];
-        var expiry = moment(token_obj['expires_in'], "Wdy, DD Mon YYYY HH:MM:SS GMT").format();
-        $cookies.put('token',this.access_token,{expires: expiry});
+        this.accessToken = tokenObj['access_token'];
+        var expiry = moment(tokenObj['expires_in'], 'Wdy, DD Mon YYYY HH:MM:SS GMT').format();
+        $cookies.put('token', this.accessToken, {expires: expiry});
         $rootScope.$broadcast('loggedIn', true);
       },
 
       /**
        * Test if user has rights to access admin panel
-       * @param user_id
+       * @param userId
        * @param token
        * @returns {*}
-         */
-      test_authenticate_user_role: function (user_id, token) {
-        var url = api_info.apiInfo.userService.baseUrl.concat(user_id, api_info.apiInfo.userService.userRolesPath);
-          return $http({
-            method: 'GET',
-            url: url,
-            params: {
-              role_id_only: false
-            },
-            headers: {
+       */
+      testAuthenticateUserRole: function (userId, token) {
+        var url = apiInfo.apiInfo.userService.baseUrl.concat(userId, apiInfo.apiInfo.userService.userRolesPath);
+        return $http({
+          method: 'GET',
+          url: url,
+          params: {
+            role_id_only: false
+          },
+          headers: {
             'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json'
           }
-          });
+        });
       },
-      login_user: login_user
+      loginUser: loginUser
     };
     return service;
 
     /**
-   * Go to login state if user is not authenticated
-   * @param $state: state object
+     * Go to login state if user is not authenticated
+     * @param $state: state object
      */
-    function goToLogin(){
-      return service.is_logged_in();
+    function goToLogin() {
+       var deferred = $q.defer();
+      service.isLoggedIn().then(function (response) {
+        if(!response)
+              error();
+          return deferred.resolve(response);
+      });
+      return deferred.promise;
     }
 
     /**
@@ -89,22 +104,22 @@
      * @param email: email string
      * @param password: password string
      * @returns {*|{get}}
-       */
-    function login_user(email, password){
+     */
+    function loginUser(email, password) {
       return $http({
-         method: 'POST',
-         url: api_info.apiInfo.authService.grantPath,
-         headers: {
+        method: 'POST',
+        url: apiInfo.apiInfo.authService.grantPath,
+        headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
-         },
-         data: $.param({
-           username: email,
-           password: password,
-           grant_type: "password",
-           client_id: api_info.apiInfo.authService.clientId,
-           client_secret: api_info.apiInfo.authService.clientSecret
-         })
-       });
+        },
+        data: $.param({
+          username: email,
+          password: password,
+          grant_type: 'password',
+          client_id: apiInfo.apiInfo.authService.clientId,
+          client_secret: apiInfo.apiInfo.authService.clientSecret
+        })
+      });
     }
   }
 })();

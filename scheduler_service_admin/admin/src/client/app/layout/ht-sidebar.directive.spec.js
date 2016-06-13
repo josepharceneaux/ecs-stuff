@@ -37,7 +37,7 @@ describe('htSidebar directive: ', function() {
     $compile(el)(scope);
 
     // tell angular to look at the scope values right now
-    scope.$digest();
+    //cdscope.$digest();
   }));
 
   /// tests ///
