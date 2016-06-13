@@ -7,27 +7,29 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from redo import retrier
 from helpers import AddUserRoles
+from candidate_service.tests.modules.test_talent_cloud_search import populate_candidates
 from candidate_service.common.routes import CandidateApiUrl, CandidatePoolApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.inter_service_calls.candidate_service_calls import search_candidates_from_params as search
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
+# Define urls used in this file
+CANDIDATE_URL = CandidateApiUrl.CANDIDATES
+PIPELINE_URL = CandidatePoolApiUrl.TALENT_PIPELINES
+PIPELINE_INCLUSION_URL = CandidateApiUrl.PIPELINES
+
 
 class TestSearchCandidatePipeline(object):
-    CANDIDATE_URL = CandidateApiUrl.CANDIDATES
-    PIPELINE_INCLUSION_URL = CandidateApiUrl.PIPELINES
-    PIPELINE_URL = CandidatePoolApiUrl.TALENT_PIPELINES
-
     def test_search_for_candidate_in_pipeline(self, user_first, access_token_first, talent_pool):
         """
-        Test: User Pipeline search params to search for a candidate
+        Test: Use Pipeline search params to search for a candidate
         """
         AddUserRoles.add_and_get(user_first)
         add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_TALENT_PIPELINES])
 
         # Create candidate
         data = {"candidates": [{"talent_pool_ids": {"add": [talent_pool.id]}}]}
-        create_resp = send_request('post', self.CANDIDATE_URL, access_token_first, data)
+        create_resp = send_request('post', CANDIDATE_URL, access_token_first, data)
         print response_info(create_resp)
 
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -47,19 +49,53 @@ class TestSearchCandidatePipeline(object):
                 "search_params": {"user_ids": str(user_first.id)}
             }
         ]}
-        create_resp = send_request('post', self.PIPELINE_URL, access_token_first, data)
+        create_resp = send_request('post', PIPELINE_URL, access_token_first, data)
+        print response_info(create_resp)
+        assert_expected_result(data, candidate_id, access_token_first)
+
+    def test_search_for_last_candidate_in_pipeline(self, user_first, access_token_first, talent_pool):
+        """
+        This function will:
+            1. create 30 candidates to ensure multiple pages will return from the search result
+            2. search using pipeline search params for the first candidate created
+        """
+        AddUserRoles.add_and_get(user_first)
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_TALENT_PIPELINES])
+
+        # Create 30 candidates
+        count = 30
+        candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=count)
+        assert len(candidate_ids) == count
+
+        # Add pipelines
+        data = {"talent_pipelines": [
+            {
+                "talent_pool_id": talent_pool.id,
+                "name": str(uuid.uuid4())[:5],
+                "date_needed": "2017-11-30",
+                "search_params": {"user_ids": str(user_first.id)}
+            },
+            {
+                "talent_pool_id": talent_pool.id,
+                "name": str(uuid.uuid4())[:5],
+                "date_needed": "2017-11-30",
+                "search_params": {"user_ids": str(user_first.id)}
+            }
+        ]}
+        create_resp = send_request('post', PIPELINE_URL, access_token_first, data)
         print response_info(create_resp)
 
-        params = data['talent_pipelines'][0]['search_params']
-        for _ in retrier(attempts=100, sleeptime=1, sleepscale=1):
-            if len(search(params, access_token_first)['candidates']) >= 1:
-                get_resp = send_request('get', self.PIPELINE_INCLUSION_URL % candidate_id, access_token_first)
-                print response_info(get_resp)
-                if get_resp.ok and len(get_resp.json()['candidate_pipelines']) == len(data['talent_pipelines']):
-                    break
-        else:
-            get_resp = send_request('get', self.PIPELINE_INCLUSION_URL % candidate_id, access_token_first)
-            assert get_resp.ok and len(get_resp.json()['candidate_pipelines']) == len(data['talent_pipelines'])
+        # Search & assert result with first candidate created
+        candidate_id = candidate_ids[-1]
+        assert_expected_result(data, candidate_id, access_token_first)
+
+        # # Search & assert result with middle candidate created
+        # candidate_id = candidate_ids[len(candidate_ids) / 2]
+        # assert_expected_result(data, candidate_id, access_token_first)
+        #
+        # # Search & assert result with last candidate created
+        # candidate_id = candidate_ids[0]
+        # assert_expected_result(data, candidate_id, access_token_first)
 
     def test_search_for_non_existing_candidate_in_pipeline(self, user_first, access_token_first, candidate_first):
         """
@@ -69,7 +105,7 @@ class TestSearchCandidatePipeline(object):
         AddUserRoles.add_and_get(user_first)
 
         # Search
-        get_resp = send_request('get', self.PIPELINE_INCLUSION_URL % candidate_first.id, access_token_first)
+        get_resp = send_request('get', PIPELINE_INCLUSION_URL % candidate_first.id, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.OK
         assert get_resp.json()['candidate_pipelines'] == []
@@ -81,6 +117,21 @@ class TestSearchCandidatePipeline(object):
         AddUserRoles.add_and_get(user_first)
 
         # Search
-        get_resp = send_request('get', self.PIPELINE_INCLUSION_URL % candidate_first.id, None)
+        get_resp = send_request('get', PIPELINE_INCLUSION_URL % candidate_first.id, None)
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.UNAUTHORIZED
+
+
+def assert_expected_result(data, candidate_id, access_token_first):
+    params = data['talent_pipelines'][0]['search_params']
+
+    for _ in retrier(attempts=20, sleeptime=1, sleepscale=1):
+        if len(search(params, access_token_first)['candidates']) >= 1:
+            get_resp = send_request('get', PIPELINE_INCLUSION_URL % candidate_id, access_token_first)
+            print response_info(get_resp)
+            if get_resp.ok and len(get_resp.json()['candidate_pipelines']) == len(data['talent_pipelines']):
+                break
+    else:
+        get_resp = send_request('get', PIPELINE_INCLUSION_URL % candidate_id, access_token_first)
+        print response_info(get_resp)
+        assert get_resp.ok and len(get_resp.json()['candidate_pipelines']) == len(data['talent_pipelines'])
