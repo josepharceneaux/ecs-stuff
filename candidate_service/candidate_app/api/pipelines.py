@@ -52,20 +52,27 @@ class CandidatePipelineResource(Resource):
 
         # Use Search API to retrieve candidate's domain-pipeline inclusion
         found_candidate_ids = []
-        for count, talent_pipeline in enumerate(talent_pipelines, start=1):
+        talent_pipeline_ids = []
+        for number_of_requests, talent_pipeline in enumerate(talent_pipelines, start=1):
             search_response = search_candidates_from_params(search_params=talent_pipeline.search_params,
-                                                            access_token=request.oauth_token)
+                                                            access_token=request.oauth_token,
+                                                            url_args='?id={}'.format(candidate_id))
+
             found_candidate_ids.extend(candidate['id'] for candidate in search_response['candidates'])
 
             # Return if candidate_id is found in one of the Pipelines AND 5 or more requests have been made
-            if (unicode(candidate_id) in found_candidate_ids) and count >= 5:
-                break
+            found = unicode(candidate_id) in found_candidate_ids
+            if found:
+                talent_pipeline_ids.append(talent_pipeline.id)
+                if number_of_requests >= 5:
+                    break
 
         result = []
 
         # Only return pipeline data if candidate is found from pipeline's search params
-        if unicode(candidate_id) in found_candidate_ids:
-            for talent_pipeline in talent_pipelines:
+        if talent_pipeline_ids:
+            candidates_talent_pipelines = TalentPipeline.query.filter(TalentPipeline.id.in_(talent_pipeline_ids)).all()
+            for talent_pipeline in candidates_talent_pipelines:
                 user_id = talent_pipeline.user_id
                 user_candidate = Candidate.query.filter_by(user_id=user_id).first()
                 result.append({
