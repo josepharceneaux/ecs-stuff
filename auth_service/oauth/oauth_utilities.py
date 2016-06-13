@@ -58,7 +58,7 @@ def save_token_v2(user):
 
     payload = dict(
         user_id=user.id,
-        created_at=current_date_time.isoformat()
+        created_at=datetime.utcnow().isoformat()
     )
 
     return jsonify(dict(
