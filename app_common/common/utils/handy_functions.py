@@ -177,10 +177,10 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :param app: flask app object if wanted to use this method using app_context()
     :type method_type: str
     :type url: str
-    :type params: dict
-    :type headers: dict
-    :type data: dict
-    :type user_id: int | long
+    :type params: dict | None
+    :type headers: dict | None
+    :type data: dict | None
+    :type user_id: int | long | None
     :return: response from HTTP request or None
     :Example:
         If we are requesting scheduler_service to GET a task, we will use this method as
@@ -341,7 +341,7 @@ def generate_jwt_headers(content_type=None, user_id=None):
     """
     This function will return a dict of JWT based on the user ID and X-Talent-Secret-Key-ID and optional content-type
     :param str content_type: content-type header value
-    :param (int | long) user_id: Id of user.
+    :param (int | long | None) user_id: Id of user.
     :rtype: dict
     """
     if user_id:
@@ -360,8 +360,8 @@ def create_oauth_headers(oauth_token=None, user_id=None):
     contain an access token, a dict of JWT based on the user ID and X-Talent-Secret-Key-ID headers are generated.
     :param oauth_token: Token for authentication.
     :param user_id: Id of user in case we are calling this function out od request context such as through celery.
-    :type oauth_token: str | unicode
-    :type user_id: int | long
+    :type oauth_token: str | unicode | None
+    :type user_id: int | long | None
     """
     oauth_token = oauth_token if oauth_token else request.oauth_token if hasattr(request, 'oauth_token') else None
     if user_id:

@@ -50,7 +50,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
     :param user_id: id of user
     :type list_id: int | long
     :type candidate_ids_only: bool
-    :type access_token: string
+    :type access_token: string | None
     :type user_id: int | long | None
     :rtype: list
 
@@ -89,7 +89,7 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, para
     :param (int) page: Number of page to fetch in response
     :param (dict| None) params: Specific params to include in request. e.g. candidates_ids_only etc
     :param (str | None) access_token: access token of user
-    :param (int | long) user_id: Id of user
+    :param (int | long | None) user_id: Id of user
     """
     raise_if_not_instance_of(list_id, (int, long))
     raise_if_not_instance_of(page, int)

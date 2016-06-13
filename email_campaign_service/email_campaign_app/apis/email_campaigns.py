@@ -98,12 +98,12 @@ class EmailCampaigns(Resource):
         user = request.user
         email_campaign_id = kwargs.get('id')
         include_fields = request.values['fields'].split(',') if request.values.get('fields') else None
-        if email_campaign_id:
+        if not isinstance(email_campaign_id, (int, long)) or email_campaign_id <= 0:
             email_campaign = EmailCampaign.get_by_id(email_campaign_id)
             """:type : email_campaign_service.common.models.email_campaign.EmailCampaign"""
 
-            if not isinstance(email_campaign, EmailCampaign):
-                raise InvalidUsage("Email campaign with id: %s does not exist"
+            if not email_campaign:
+                raise NotFoundError("Email campaign with id: %s does not exist"
                                     % email_campaign_id)
             if not email_campaign.user.domain_id == user.domain_id:
                 raise ForbiddenError("Email campaign doesn't belongs to user's domain")
@@ -165,7 +165,7 @@ class EmailCampaignSendApi(Resource):
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
         campaign = EmailCampaign.query.get(campaign_id)
-        if not isinstance(campaign, EmailCampaign):
+        if not campaign:
             raise NotFoundError("Given campaign_id: %s does not exists." % campaign_id)
         email_client_id = campaign.email_client_id
 

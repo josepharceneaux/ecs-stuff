@@ -45,8 +45,8 @@ def get_candidates_from_smartlist(list_id, candidate_ids_only=False, user_id=Non
     :param user_id: Id of user.
     :type list_id: int | long
     :type candidate_ids_only: bool
-    :type user_id: int | long
-    :return:
+    :type user_id: int | long | None
+    :rtype: list
     """
     raise_if_not_positive_int_or_long(list_id)
     raise_if_not_instance_of(candidate_ids_only, bool)
