@@ -24,7 +24,7 @@ from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFou
 from scheduler_service.common.utils.auth_utils import require_oauth, require_all_roles
 from scheduler_service.custom_exceptions import SchedulerServiceApiException
 from scheduler_service.modules.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, \
-    scheduler_remove_job, serialize_task_admin
+    scheduler_remove_job, serialize_task_admin, get_user_job_ids, get_all_general_job_ids
 from scheduler_service.modules.scheduler_admin import filter_jobs_using_task_type, \
     filter_jobs_using_task_category, filter_paused_jobs
 
