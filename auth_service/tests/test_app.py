@@ -238,23 +238,23 @@ def test_get_token_of_any_user_endpoint_v1(sample_client, access_token_first, us
     headers = {'Authorization': 'Bearer %s' % access_token_first}
 
     # Logged-in user trying to get access_token of a different user
-    response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER % user_second.id, headers=headers)
+    response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER_URL % user_second.id, headers=headers)
     assert response.status_code == 401
 
     # Adding appropriate roles to logged-in user
     add_role_to_test_user(user_first, [DomainRole.Roles.CAN_IMPERSONATE_USERS])
 
     # Logged-in user trying to get access_token of a non-existing user
-    response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER % 119946, headers=headers)
+    response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER_URL % 119946, headers=headers)
     assert response.status_code == 404
 
     # Logged-in user trying to get access_token of a different user but with invalid client_id
-    response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER % user_second.id, headers=headers,
+    response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER_URL % user_second.id, headers=headers,
                             params={'client_id': sample_client.client_id + 'temp'})
     assert response.status_code == 404
 
     # Logged-in user trying to get access_token of a different user
-    response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER % user_second.id, headers=headers,
+    response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER_URL % user_second.id, headers=headers,
                             params={'client_id': sample_client.client_id})
     assert response.status_code == 200
     response = response.json()
@@ -289,18 +289,18 @@ def test_get_token_of_any_user_endpoint_v2(user_first, user_second):
     headers = {'Authorization': 'Bearer %s' % access_token, 'X-Talent-Secret-Key-ID': secret_key_id}
 
     # Logged-in user trying to get access_token of a different user
-    response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER % user_second.id, headers=headers)
+    response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER_URL % user_second.id, headers=headers)
     assert response.status_code == 401
 
     # Adding appropriate roles to logged-in user
     add_role_to_test_user(user_first, [DomainRole.Roles.CAN_IMPERSONATE_USERS])
 
     # Logged-in user trying to get access_token of a non-existing user
-    response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER % 119946, headers=headers)
+    response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER_URL % 119946, headers=headers)
     assert response.status_code == 404
 
     # Logged-in user trying to get access_token of a different user
-    response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER % user_second.id, headers=headers)
+    response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER_URL % user_second.id, headers=headers)
     assert response.status_code == 200
     response = response.json()
     assert response['access_token']
