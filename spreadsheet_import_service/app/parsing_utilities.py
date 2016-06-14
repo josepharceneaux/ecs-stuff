@@ -274,11 +274,11 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
             if status_code == 201:
                 candidate_ids.append(response.get('candidates')[0].get('id'))
+                logger.info("Successfully imported candidate with id: (%s)" % response.get('candidates')[0].get('id'))
             else:  # continue with the rest of the spreadsheet imports despite errors returned from candidate-service
                 error_messages.append(response.get('error'))
+                logger.error(response.get('error'))
                 continue
-
-        # TODO: Upload candidate documents to cloud
 
         delete_from_s3(spreadsheet_filename, 'CSVResumes')
 

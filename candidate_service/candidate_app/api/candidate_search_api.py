@@ -53,9 +53,10 @@ class CandidateSearch(Resource):
             retrieved_candidates = []
             for candidate_id in candidate_ids:
                 # Check for candidate's existence and web-hidden status
-                candidate = get_candidate_if_exists(candidate_id=candidate_id)
+                candidate = get_candidate_if_exists(candidate_id)
                 retrieved_candidates.append(fetch_candidate_info(candidate=candidate))
 
+            logger.info('BENCHMARK - candidate Search by candidate_ids: {}'.format(time() - start_time))
             return {'candidates': retrieved_candidates}
 
         else:

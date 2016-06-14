@@ -202,7 +202,7 @@ def test_docx_accuracy():
     assert DOCX_ADDRESS in addresses
     assert contact_xml['first_name'] == 'Veena'
     assert contact_xml['last_name'] == 'Nithoo'
-    assert {'value': u'(215) 412-0817'} in phones
+    assert {'value': u'(215) 412-0817', 'type': 'Other'} in phones
     # Experience parsing.
     experience_xml_list = bs4(DOCX, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
@@ -252,8 +252,8 @@ def test_g642_accuracy():
     addresses = parse_candidate_addresses(contact_xml_list)
     assert contact_xml['first_name'] == u'Bobby'
     assert contact_xml['last_name'] == u'Breland'
-    assert {'value': u'513-759-5877'} in phones
-    assert {'value': u'513-477-3784'} in phones
+    assert {'value': u'513-759-5877', 'type': 'Other'} in phones
+    assert {'value': u'513-477-3784', 'type': 'Other'} in phones
     assert GET_642_ADDRESS in addresses
     # Experience parsing.
     experience_xml_list = bs4(GET_642, 'lxml').findAll('experience')
@@ -348,12 +348,12 @@ def test_g646_accuracy():
     assert contact_xml['first_name'] == 'Patrick'
     assert contact_xml['last_name'] == 'Kaldawy'
     assert GET_646_ADDRESS in addresses
-    assert {'value': u'(858) 353-1111'} in phones
-    assert {'value': u'(858) 353-2222'} in phones
-    assert {'value': u'(858) 353-5555'} in phones
-    assert {'value': u'(858) 353-3333'} in phones
-    assert {'value': u'(858) 353-4444'} in phones
-    assert {'value': u'+961 (70) 345-340'} in phones
+    assert {'value': u'(858) 353-1111', 'type': 'Other'} in phones
+    assert {'value': u'(858) 353-2222', 'type': 'Other'} in phones
+    assert {'value': u'(858) 353-5555', 'type': 'Other'} in phones
+    assert {'value': u'(858) 353-3333', 'type': 'Other'} in phones
+    assert {'value': u'(858) 353-4444', 'type': 'Other'} in phones
+    assert {'value': u'+961 (70) 345-340', 'type': 'Other'} in phones
     # Experience parsing.
     experience_xml_list = bs4(GET_646, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
@@ -390,7 +390,7 @@ def test_g626a_accuracy():
     # assert contact_xml['first_name'] == 'Yetunde'
     # assert contact_xml['last_name'] == 'Laniran'
     assert GET_626a_ADDRESS in addresses
-    assert {'value': u'503.333.0350'} in phones
+    assert {'value': u'503.333.0350', 'type': 'Other'} in phones
     # Experience parsing.
     experience_xml_list = bs4(GET_626a, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
@@ -541,7 +541,7 @@ def test_pdf_accuracy():
     assert contact_xml['first_name'] == 'Mark'
     assert contact_xml['last_name'] == 'Greene'
     assert PDF_ADDRESS in addresses
-    assert {'value': u'727.565.1234'} in phones
+    assert {'value': u'727.565.1234', 'type': 'Other'} in phones
     experience_xml_list = bs4(PDF, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
     # exp1 = next((org for org in experiences if (
@@ -628,7 +628,7 @@ def test_pdf13_accuracy():
     phones = parse_candidate_phones(contact_xml_list)
     assert contact_xml['first_name'] == 'Bruce'
     assert contact_xml['last_name'] == 'Parkey'
-    assert {'value': u'630-930-2756'} in phones
+    assert {'value': u'630-930-2756', 'type': 'Other'} in phones
     experience_xml_list = bs4(PDF_13, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
     exp1 = next((org for org in experiences if org["organization"] == u'Sagamore Apps, Inc'), None)

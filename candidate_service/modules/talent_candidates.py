@@ -873,7 +873,6 @@ def create_or_update_candidate_from_params(
     """
     # Format inputs
     added_datetime = added_datetime or datetime.datetime.utcnow()
-    status_id = status_id or 1
     edit_datetime = datetime.datetime.utcnow()  # Timestamp for tracking edits
 
     # Get user's domain ID
@@ -910,7 +909,7 @@ def create_or_update_candidate_from_params(
 
     if is_updating:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
-                                         candidate_id, user_id, resume_url, source_id)
+                                         candidate_id, user_id, resume_url, source_id, status_id)
     else:  # Add Candidate
         candidate_id = _add_candidate(first_name, middle_name, last_name,
                                       formatted_name, added_datetime, status_id,
@@ -1100,7 +1099,7 @@ def social_network_name_from_url(url):
 
 
 def _update_candidate(first_name, middle_name, last_name, formatted_name, objective,
-                      summary, candidate_id, user_id, resume_url, source_id):
+                      summary, candidate_id, user_id, resume_url, source_id, candidate_status_id):
     """
     Function will update Candidate
     :return:    Candidate ID
@@ -1112,7 +1111,8 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         middle_name = parsed_names_object.middle
         last_name = parsed_names_object.last
 
-    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url, 'source_id': source_id}
+    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url,
+                   'source_id': source_id, 'candidate_status_id': candidate_status_id}
 
     # Strip each key-value and remove keys with empty-string-values
     update_dict = purge_dict(update_dict, remove_empty_strings_only=True)
