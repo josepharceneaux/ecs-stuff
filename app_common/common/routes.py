@@ -82,6 +82,7 @@ class GTApis(object):
     """
     This class contains the getTalent flask micro services' name and respective port numbers.
     """
+
     # Port Numbers of Flask micro services
     AUTH_SERVICE_PORT = 8001
     ACTIVITY_SERVICE_PORT = 8002
@@ -97,6 +98,7 @@ class GTApis(object):
     SMS_CAMPAIGN_SERVICE_PORT = 8012
     PUSH_CAMPAIGN_SERVICE_PORT = 8013
     EMAIL_CAMPAIGN_SERVICE_PORT = 8014
+    ATS_SERVICE_PORT = 8015
 
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
@@ -113,6 +115,7 @@ class GTApis(object):
     SMS_CAMPAIGN_SERVICE_NAME = 'sms-campaign-service'
     PUSH_CAMPAIGN_SERVICE_NAME = 'push-campaign-service'
     EMAIL_CAMPAIGN_SERVICE_NAME = 'email-campaign-service'
+    ATS_SERVICE_NAME = 'ats-service'
 
     # CORS headers
     CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com",
@@ -806,3 +809,25 @@ class EmailCampaignApiUrl(object):
     TEMPLATES_FOLDER = HOST_NAME % ('/' + VERSION + '/email-template-folders')
     SENDS = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/sends')
     SEND_BY_ID = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/sends/%s')
+
+
+class ATSSERVICEApi(object):
+    """
+    REST URLs for ATS Service endpoints
+    """
+    VERSION = 'v1'
+    SERVICES = '/' + VERSION + '/ats-service'
+    SERVICE = '/' + VERSION + '/ats-service/<int:id>'
+    URL_REDIRECT = '/' + VERSION + '/redirect/<int:url_conversion_id>'
+
+
+class ATSSERVICEApiUrl(object):
+    """
+    URLs to be used in Py-tests
+    """
+    VERSION = 'v1'
+    HOST_NAME = _get_host_name(GTApis.ATS_SERVICE_NAME, GTApis.ATS_SERVICE_PORT)
+    HEALTH_CHECK = _get_health_check_url(HOST_NAME)
+    SERVICES = HOST_NAME % ('/' + VERSION + '/ats-service')
+    SERVICE = HOST_NAME % ('/' + VERSION + '/ats-service/%s')
+    URL_REDIRECT = HOST_NAME % ('/' + VERSION + '/redirect/%s')
