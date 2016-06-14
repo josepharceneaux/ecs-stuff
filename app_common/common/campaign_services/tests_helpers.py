@@ -35,7 +35,7 @@ from ..utils.handy_functions import (add_role_to_test_user,
 from ..utils.test_utils import get_fake_dict
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
-                              ResourceNotFound, UnprocessableEntity, InternalServerError)
+                              ResourceNotFound, UnprocessableEntity)
 from ..inter_service_calls.candidate_pool_service_calls import create_smartlist_from_api, \
     assert_smartlist_candidates
 from ..inter_service_calls.candidate_service_calls import create_candidates_from_candidate_api
@@ -315,8 +315,8 @@ class CampaignsTestsHelpers(object):
                                                   talent_pipeline_id):
         """
         User auth access_token is valid, campaign has one smart list associated. But smartlist has
-        no candidate associated with it. It should get invalid usage error.
-        Custom error should be NoCandidateAssociatedWithSmartlist.
+        no candidate associated with it. The function tries to send the email campaign and resturns the
+        response to calling function.
         :param (SmsCampaign | EmailCampaign | PushCampaign) campaign: Campaign object
         :param (str) url: URL to to make HTTP request
         :param (str) access_token: access access_token of user
@@ -336,10 +336,22 @@ class CampaignsTestsHelpers(object):
                                                           smartlist_id=smartlist_id)
         campaign_smartlist_model.save(campaign_smartlist_obj)
         response_post = send_request('post', url, access_token)
-        error_resp = cls.assert_api_response(response_post,
-                                             expected_status_code=InvalidUsage.http_status_code())
-        assert error_resp['code'] == CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
-        assert error_resp['message']
+        return response_post
+
+    @classmethod
+    def assert_campaign_failure(cls, response, campaign,
+                                expected_status=200):
+        """
+        If we try to send a campaign with invalid data, e.g. a campaign with no smartlist associated
+        or with 0 candidates, the campaign sending will fail. This method asserts that the specified
+        campaign sending failed and no blasts have been created.
+        """
+        assert response.status_code == expected_status
+        assert response.json()
+        db.session.commit()
+        blasts = campaign.blasts.all()
+        assert not blasts, 'Email campaign blasts found for campaign (id:%d)' % campaign.id
+        assert len(blasts) == 0
 
     @classmethod
     def campaign_test_with_no_valid_candidate(cls, url, access_token, campaign_id):
@@ -390,7 +402,6 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(entity, basestring)
         raise_if_not_instance_of(check_count, bool)
         assert response.status_code == 200, 'Response should be "OK" (200)'
-        assert response.json()
         json_response = response.json()
         assert entity in json_response
         if check_count:
@@ -531,7 +542,7 @@ class CampaignsTestsHelpers(object):
         attempts = abort_time_for_sends / 3 + 1
         retry(CampaignsTestsHelpers.verify_sends, sleeptime=5, attempts=attempts, sleepscale=1,
               args=(campaign, expected_count, blast_index, blast_url, access_token),
-              retry_exceptions=(AssertionError,))
+              retry_exceptions=(AssertionError, IndexError, ))
 
     @staticmethod
     def verify_blasts(campaign, access_token, blasts_url, expected_count):
@@ -610,6 +621,39 @@ class CampaignsTestsHelpers(object):
                   args=(smartlist_id, len(candidate_ids), access_token), retry_exceptions=(AssertionError,))
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
         return smartlist_id, candidate_ids
+
+    @staticmethod
+    def create_two_smartlists_with_same_candidate(access_token, talent_pipeline, emails_list=True,
+                                                  assert_candidates=True, timeout=120, data=None):
+        """
+        Create two smartlists with same candidate in both of them.
+        """
+        if not data:
+            # create candidate
+            data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
+                                             emails_list=emails_list, count=1)
+
+        candidate_id = create_candidates_from_candidate_api(oauth_token=access_token, data=data,
+                                                            return_candidate_ids_only=True)
+        if assert_candidates:
+            time.sleep(10)
+        smartlist_data1 = {'name': fake.word(),
+                           'candidate_ids': candidate_id,
+                           'talent_pipeline_id': talent_pipeline.id}
+        smartlist_data2 = {'name': fake.word(),
+                           'candidate_ids': candidate_id,
+                           'talent_pipeline_id': talent_pipeline.id}
+
+        smartlist_ids = [create_smartlist_from_api(data=smartlist_data1, access_token=access_token)['smartlist']['id'],
+                         create_smartlist_from_api(data=smartlist_data2, access_token=access_token)['smartlist']['id']]
+        if assert_candidates:
+            for smartlist_id in smartlist_ids:
+                attempts = timeout / 3 + 1
+                retry(assert_smartlist_candidates, sleeptime=3, attempts=attempts, sleepscale=1,
+                             args=(smartlist_id, len(candidate_id), access_token), retry_exceptions=(AssertionError,)),\
+                    'Candidates not found for smartlist(id:%s)' % smartlist_id
+
+        return smartlist_ids
 
     @staticmethod
     def assign_roles(user, roles=(DomainRole.Roles.CAN_ADD_CANDIDATES,
