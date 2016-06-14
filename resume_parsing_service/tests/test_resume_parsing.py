@@ -4,13 +4,9 @@ __author__ = 'erik@getTalent.com'
 # Standard library
 import json
 import os
-import random
 # Third party
 import requests
 # Module Specific.
-from resume_parsing_service.common.utils.handy_functions import random_word
-from resume_parsing_service.app import redis_store
-from resume_parsing_service.app.views.batch_lib import add_fp_keys_to_queue
 # Test fixtures, imports required even though not 'used'
 # TODO: Look into importing these once and use via namespacing.
 from resume_parsing_service.tests.test_fixtures import client_fixture
@@ -30,7 +26,6 @@ from resume_parsing_service.common.routes import ResumeApiUrl, ResumeApi, Schedu
 
 from resume_parsing_service.common.models.user import DomainRole
 from resume_parsing_service.common.utils.handy_functions import add_role_to_test_user
-from resume_parsing_service.common.utils.test_utils import response_info
 
 DOC_FP_KEY = '0169173d35beaf1053e79fdf1b5db864.docx'
 PDF15_FP_KEY = 'e68b51ee1fd62db589d2669c4f63f381.pdf'
@@ -41,12 +36,6 @@ REDIS_EXPIRE_TIME = 10
 ####################################################################################################
 # Static URL tests
 ####################################################################################################
-def test_base_url():
-    """Test that the application root lists the endpoint."""
-    base_response = requests.get(ResumeApiUrl.API_URL % '')
-    assert ResumeApi.PARSE in base_response.content
-
-
 def test_health_check():
     """HealthCheck/PingDom test endpoint."""
     response = requests.get(ResumeApiUrl.HEALTH_CHECK)
@@ -65,7 +54,7 @@ def test_invalid_fp_key(token_fixture, user_fixture):
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_fp_key_response(token_fixture, "MichaelKane/AlfredFromBatman.doc")
     assert 'error' in content
-    assert status == requests.codes.bad_request
+    assert status == requests.codes.internal_server_error
 
 
 def test_none_fp_key(token_fixture, user_fixture):
@@ -350,6 +339,18 @@ def test_create_with_long_punc_name(token_fixture, user_fixture):
     assert content['candidate']['last_name'] == u'Weston'
 
 
+def test_create_from_image(token_fixture, user_fixture):
+    """
+    Test for GET-1351. POST'd JSON.
+    """
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'test_bin.jpg', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+
+
 ####################################################################################################
 # Test Candidate Updating
 ####################################################################################################
@@ -363,87 +364,6 @@ def test_already_exists_candidate(token_fixture, user_fixture):
     print "\nunused_create_response: {}".format(unused_create_response)
     update_content, status = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
     assert_create_or_update_content_and_status(update_content, status)
-
-
-# Removing tests for bulk endpoint currently as it is not used in production and may be
-# deprecated in favor of lambda scaling on a single endpoint.
-####################################################################################################
-# Batch Processing tests
-####################################################################################################
-# def test_batch_processing(user_fixture, token_fixture):
-#     # create a single file queue
-#     user_id = user_fixture.id
-#     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-#                                          DomainRole.Roles.CAN_GET_TALENT_POOLS,
-#                                          DomainRole.Roles.CAN_GET_CANDIDATES])
-#     queue_string = 'batch:{}:fp_keys'.format(user_id)
-#     unused_queue_status = add_fp_keys_to_queue([PDF15_FP_KEY], user_id, token_fixture.access_token)
-#     # mock hit from scheduler service.
-#     batch_response = requests.get('{}/{}'.format(ResumeApiUrl.BATCH_URL, user_id),
-#                                   headers={'Authorization': 'bearer {}'.format(
-#                                       token_fixture.access_token)})
-#     formatted_response = json.loads(batch_response.content)
-#     redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
-#     assert 'candidate' in formatted_response, "Candidate should be in response content"
-
-
-# Unittest Style - located here due to conversion to flask redis which requires app context.
-# def test_add_single_queue_item(token_fixture):
-#     """Test adding a single item to a users queue stored in Redis"""
-#     user_id = random_word(6)
-#     queue_string = 'batch:{}:fp_keys'.format(user_id)
-#     response = add_fp_keys_to_queue(['file1a'], user_id, 'bearer {}'.format(
-#         token_fixture.access_token))
-#     redis_store.expire(queue_string, 1)
-#     assert response['redis_key'] == queue_string, "Queue key format is not what was anticipated"
-#     assert response['quantity'] == 1, "Single queue-add count is not 1"
-#
-#
-# Integration test of the above.
-# def test_integration_add_single_item(user_fixture, token_fixture):
-#     print "Single batch item integration test"
-#     """Test adding a single item via end point."""
-#     auth_headers = {'Authorization': 'bearer {}'.format(token_fixture.access_token),
-#                     'Content-Type': 'application/json'}
-#     queue_string = 'batch:{}:fp_keys'.format(user_fixture.id)
-#     #TODO assert no queue
-#     response = requests.post(ResumeApiUrl.BATCH_URL,
-#                              headers=auth_headers,
-#                              data=json.dumps({'filenames': ['file1b']})
-#                             )
-#     print response_info(response)
-#     assert response.status_code == requests.codes.created
-#     response_dict = json.loads(response.content)
-#     job_id = response_dict['ids'][0]
-#     assert response_dict['redis_key'] == queue_string, (
-#         'Improperly Formatted redis post response for single item')
-#     assert response_dict['quantity'] == 1, (
-#         'Improperly count in redis post response for single item')
-#     redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
-#     unused_delete_request = requests.delete(SchedulerApiUrl.TASK % (job_id),
-#                                             headers={'Authorization': 'bearer {}'.format(token_fixture.access_token)})
-#
-#
-# def test_add_multiple_queue_items(token_fixture):
-#     """Tests adding n-100 items to a users queue stored in Redis"""
-#     user_id = random_word(6)
-#     file_count = random.randrange(1, 15)
-#     filenames = ['file{}c'.format(i) for i in xrange(file_count)]
-#     queue_string = 'batch:{}:fp_keys'.format(user_id)
-#     queue_status = add_fp_keys_to_queue(filenames, user_id,
-#                                         'bearer {}'.format(token_fixture.access_token))
-#     assert queue_status['redis_key'] == queue_string, (
-#         'Improperly Formatted redis post response for multiple items')
-#     assert queue_status['quantity'] == file_count, (
-#         'Improperly count in redis post response for multiple item')
-#     assert len(queue_status['ids']) == file_count, (
-#         'Improperly id count in redis response for multiple items')
-#     redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
-#     # Clean up the queue...
-#     auth_headers = {'Authorization': 'bearer {}'.format(token_fixture.access_token)}
-#     for id in queue_status['ids']:
-#         unused_delete_request = requests.delete(SchedulerApiUrl.TASK % (id),
-#                                          headers=auth_headers)
 
 
 ####################################################################################################

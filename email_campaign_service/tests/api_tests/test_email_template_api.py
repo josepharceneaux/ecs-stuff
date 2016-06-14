@@ -5,7 +5,7 @@ import datetime
 import requests
 
 from email_campaign_service.common.models.user import DomainRole
-from email_campaign_service.common.routes import EmailCampaignUrl
+from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.utils.handy_functions import add_role_to_test_user
 from email_campaign_service.common.models.email_campaign import (EmailTemplateFolder, UserEmailTemplate)
 from email_campaign_service.tests.modules.handy_functions import (request_to_email_template_resource, template_body,
@@ -71,7 +71,7 @@ def test_delete_email_template_folder(user_first, user_same_domain, access_token
 
     data = {'name': template_folder_name}
     response = requests.delete(
-            url=EmailCampaignUrl.TEMPLATES_FOLDER + '/' + str(template_folder_id), data=json.dumps(data),
+            url=EmailCampaignApiUrl.TEMPLATES_FOLDER + '/' + str(template_folder_id), data=json.dumps(data),
             headers={'Authorization': 'Bearer %s' % access_token_same,
                      'Content-type': 'application/json'}
     )
@@ -250,7 +250,7 @@ def test_get_email_template_via_id(user_first, user_same_domain, access_token_fi
 
     # Add 'CAN_GET_EMAIL_TEMPLATE' to user_same_domain
     add_role_to_test_user(user_same_domain, [role])
-    url = EmailCampaignUrl.TEMPLATES + '/' + str(template_id)
+    url = EmailCampaignApiUrl.TEMPLATES + '/' + str(template_id)
     # Get email_template via template ID using token for 2nd user
     response = requests.get(
             url=url, headers={
@@ -284,7 +284,7 @@ def test_get_email_template_with_non_existing_id(user_first, user_same_domain, a
     # Add 'CAN_GET_EMAIL_TEMPLATE' to user_same_domain
     add_role_to_test_user(user_same_domain, [role])
 
-    url = EmailCampaignUrl.TEMPLATES + '/' + str(template_id) + str(datetime.datetime.now().microsecond)
+    url = EmailCampaignApiUrl.TEMPLATES + '/' + str(template_id) + str(datetime.datetime.now().microsecond)
     # Get email_template via template ID
     response = requests.get(
             url=url, headers={

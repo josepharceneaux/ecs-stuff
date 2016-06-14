@@ -55,15 +55,15 @@ from flask import request, Blueprint, jsonify
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.email_marketing import (create_email_campaign,
-                                                            send_emails_to_campaign,
+                                                            send_email_campaign,
                                                             update_hit_count)
 from email_campaign_service.modules.validations import validate_and_format_request_data
 
 # Common utils
 from email_campaign_service.common.talent_api import TalentApi
-from email_campaign_service.common.routes import EmailCampaignUrl
+from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.misc import UrlConversion
-from email_campaign_service.common.routes import EmailCampaignEndpoints
+from email_campaign_service.common.routes import EmailCampaignApi
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.error_handling import (InvalidUsage, NotFoundError,
@@ -83,16 +83,16 @@ api.init_app(email_campaign_blueprint)
 api.route = types.MethodType(api_route, api)
 
 
-@api.route(EmailCampaignEndpoints.CAMPAIGNS, EmailCampaignEndpoints.CAMPAIGN)
-class EmailCampaignApi(Resource):
+@api.route(EmailCampaignApi.CAMPAIGNS, EmailCampaignApi.CAMPAIGN)
+class EmailCampaigns(Resource):
 
     # Access token decorator
     decorators = [require_oauth()]
 
     def get(self, **kwargs):
         """
-        GET /v1/email-campaigns/<id>    Fetch email campaign object
-        GET /v1/email-campaigns         Fetches all email campaign objects from auth user's domain
+        GET /v1/email-campaigns/<id>    Fetch EmailCampaign object
+        GET /v1/email-campaigns         Fetches all EmailCampaign objects from auth user's domain
 
         """
         user = request.user
@@ -149,7 +149,7 @@ class EmailCampaignApi(Resource):
         return {'campaign': campaign}, requests.codes.CREATED
 
 
-@api.route(EmailCampaignEndpoints.SEND)
+@api.route(EmailCampaignApi.SEND)
 class EmailCampaignSendApi(Resource):
     """
     This endpoint looks like /v1/email-campaigns/:id/send
@@ -161,17 +161,18 @@ class EmailCampaignSendApi(Resource):
         """
         Sends campaign emails to the candidates present in smartlists of campaign.
         Scheduler service will call this to send emails to candidates.
-        :param campaign_id: Campaign id
+        :param (int, long) campaign_id: Campaign id
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
         campaign = EmailCampaign.query.get(campaign_id)
         if not campaign:
             raise NotFoundError("Given campaign_id: %s does not exists." % campaign_id)
+        email_client_id = campaign.email_client_id
 
         if not campaign.user.domain_id == request.user.domain_id:
             raise ForbiddenError("Email campaign doesn't belongs to user's domain")
-        results_send = send_emails_to_campaign(campaign, new_candidates_only=False)
-        if campaign.email_client_id:
+        results_send = send_email_campaign(request.user.id, campaign, new_candidates_only=False)
+        if email_client_id:
             if not isinstance(results_send, list):
                 raise InvalidUsage(error_message="Something went wrong, response is not list")
             data = {
@@ -190,8 +191,8 @@ class EmailCampaignSendApi(Resource):
                             % campaign_id), requests.codes.OK
 
 
-@api.route(EmailCampaignEndpoints.URL_REDIRECT)
-class EmailCampaignUrlRedirect(Resource):
+@api.route(EmailCampaignApi.URL_REDIRECT)
+class EmailCampaignApiUrlRedirect(Resource):
     """
     This endpoint looks like /v1/redirect/:id
     This is hit when candidate open's an email or clicks on html content of email campaign
@@ -222,7 +223,7 @@ class EmailCampaignUrlRedirect(Resource):
         return redirect(destination_url)
 
 
-@api.route(EmailCampaignEndpoints.BLASTS)
+@api.route(EmailCampaignApi.BLASTS)
 class EmailCampaignBlasts(Resource):
     """
     Endpoint looks like /v1/email-campaigns/:id/blasts.
@@ -244,7 +245,7 @@ class EmailCampaignBlasts(Resource):
         >>> import requests
         >>> headers = {'Authorization': 'Bearer <access_token>'}
         >>> campaign_id = 1
-        >>> response = requests.get(EmailCampaignUrl.BLASTS % campaign_id, headers=headers)
+        >>> response = requests.get(EmailCampaignApiUrl.BLASTS % campaign_id, headers=headers)
 
         .. Response::
 
@@ -292,7 +293,7 @@ class EmailCampaignBlasts(Resource):
         return get_paginated_response('blasts', campaign.blasts, page, per_page)
 
 
-@api.route(EmailCampaignEndpoints.BLAST)
+@api.route(EmailCampaignApi.BLAST)
 class EmailCampaignBlastById(Resource):
     """
     Endpoint looks like /v1/email-campaigns/:id/blasts/:id.
@@ -316,7 +317,7 @@ class EmailCampaignBlastById(Resource):
         >>> headers = {'Authorization': 'Bearer <access_token>'}
         >>> campaign_id = 1
         >>> blast_id = 1
-        >>> response = requests.get(EmailCampaignUrl.BLAST % (campaign_id, blast_id),
+        >>> response = requests.get(EmailCampaignApiUrl.BLAST % (campaign_id, blast_id),
         >>>                         headers=headers)
 
         .. Response::
@@ -353,7 +354,7 @@ class EmailCampaignBlastById(Resource):
         return dict(blast=blast_obj.to_json()), requests.codes.OK
 
 
-@api.route(EmailCampaignEndpoints.SENDS)
+@api.route(EmailCampaignApi.SENDS)
 class EmailCampaignSends(Resource):
     """
     Endpoint looks like /v1/email-campaigns/:id/sends
@@ -375,7 +376,7 @@ class EmailCampaignSends(Resource):
         >>> import requests
         >>> headers = {'Authorization': 'Bearer <access_token>'}
         >>> campaign_id = 1
-        >>> response = requests.get(EmailCampaignUrl.SENDS % campaign_id, headers=headers)
+        >>> response = requests.get(EmailCampaignApiUrl.SENDS % campaign_id, headers=headers)
 
         .. Response::
 
@@ -421,7 +422,7 @@ class EmailCampaignSends(Resource):
         return get_paginated_response('sends', campaign.sends, page, per_page)
 
 
-@api.route(EmailCampaignEndpoints.SEND_BY_ID)
+@api.route(EmailCampaignApi.SEND_BY_ID)
 class EmailCampaignSendById(Resource):
     """
     Endpoint looks like /v1/email-campaigns/:id/sends/:id.
@@ -444,7 +445,7 @@ class EmailCampaignSendById(Resource):
         >>> headers = {'Authorization': 'Bearer <access_token>'}
         >>> campaign_id = 1
         >>> send_id = 1
-        >>> response = requests.get(EmailCampaignUrl.SEND_BY_ID % (campaign_id, send_id),
+        >>> response = requests.get(EmailCampaignApiUrl.SEND_BY_ID % (campaign_id, send_id),
         >>>                         headers=headers)
 
         .. Response::

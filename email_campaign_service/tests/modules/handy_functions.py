@@ -16,7 +16,7 @@ from email_campaign_service.common.models.user import DomainRole
 from email_campaign_service.common.models.misc import (Activity,
                                                        UrlConversion,
                                                        Frequency)
-from email_campaign_service.common.routes import (EmailCampaignUrl,
+from email_campaign_service.common.routes import (EmailCampaignApiUrl,
                                                   CandidatePoolApiUrl)
 from email_campaign_service.common.utils.amazon_ses import (send_email,
                                                             get_default_email_info)
@@ -92,7 +92,7 @@ def create_smartlist_with_given_email_candidate(access_token, campaign,
 def delete_campaign(campaign):
     """
     This deletes the campaign created during tests from database
-    :param campaign: Email campaign object
+    :param campaign: EmailCampaign object
     """
     try:
         with app.app_context():
@@ -135,10 +135,10 @@ def get_campaign_or_campaigns(access_token, campaign_id=None, fields=None, pagin
     :param list[str] fields: List of EmailCampaign fields to retrieve
     """
     if campaign_id:
-        url = EmailCampaignUrl.CAMPAIGN % campaign_id
+        url = EmailCampaignApiUrl.CAMPAIGN % campaign_id
         entity = 'email_campaign'
     else:
-        url = EmailCampaignUrl.CAMPAIGNS
+        url = EmailCampaignApiUrl.CAMPAIGNS
         entity = 'email_campaigns'
     if pagination_query:
         url = url + pagination_query
@@ -220,10 +220,8 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         json_resp = response.json()
         assert str(campaign.id) in json_resp['message']
     # Need to add this as processing of POST request runs on Celery
-    blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign)
+    CampaignsTestsHelpers.assert_campaign_blasts(campaign, 1, timeout=abort_time_for_sends)
 
-    assert blasts, 'Email campaign blasts not found'
-    assert len(blasts) == 1
     # assert on sends
     CampaignsTestsHelpers.assert_blast_sends(campaign, expected_count,
                                              abort_time_for_sends=abort_time_for_sends)
@@ -261,7 +259,7 @@ def post_to_email_template_resource(access_token, data):
     Function sends a post request to email-templates,
     i.e. EmailTemplate/post()
     """
-    response = requests.post(url=EmailCampaignUrl.TEMPLATES,
+    response = requests.post(url=EmailCampaignApiUrl.TEMPLATES,
                              data=json.dumps(data),
                              headers={'Authorization': 'Bearer %s' % access_token,
                                       'Content-type': 'application/json'}
@@ -277,7 +275,7 @@ def request_to_email_template_resource(access_token, request, email_template_id,
     :param email_template_id: Id of email template
     :param data: data in form of dictionary
     """
-    url = EmailCampaignUrl.TEMPLATES + '/' + str(email_template_id)
+    url = EmailCampaignApiUrl.TEMPLATES + '/' + str(email_template_id)
     return define_and_send_request(access_token, request, url, data)
 
 
@@ -290,7 +288,7 @@ def get_template_folder(token):
     template_folder_name = 'test_template_folder_%i' % datetime.datetime.now().microsecond
 
     data = {'name': template_folder_name}
-    response = requests.post(url=EmailCampaignUrl.TEMPLATES_FOLDER, data=json.dumps(data),
+    response = requests.post(url=EmailCampaignApiUrl.TEMPLATES_FOLDER, data=json.dumps(data),
                              headers={'Authorization': 'Bearer %s' % token,
                                       'Content-type': 'application/json'})
     assert response.status_code == requests.codes.CREATED
@@ -405,7 +403,7 @@ def create_email_campaign_via_api(access_token, data, is_json=True):
     if is_json:
         data = json.dumps(data)
     response = requests.post(
-        url=EmailCampaignUrl.CAMPAIGNS,
+        url=EmailCampaignApiUrl.CAMPAIGNS,
         data=data,
         headers={'Authorization': 'Bearer %s' % access_token,
                  'content-type': 'application/json'}
@@ -482,6 +480,6 @@ def send_campaign_helper(request, email_campaign, access_token):
     if request.param == 'with_client':
         email_campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
     # send campaign
-    CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND,
+    CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND,
                                         email_campaign, access_token)
     return email_campaign

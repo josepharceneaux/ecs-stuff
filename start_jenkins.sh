@@ -76,8 +76,9 @@ if [[ "$batch_two" =~ =\ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds\ = ]]; then 
 
 printf "\n========================== Batch 3 execution starts =========================="
 printf "\nSMS Campaign Service"
+printf "\nEmail Campaign Service"
 printf "\n"
-batch_three=`py.test -n auto sms_campaign_service/tests`
+batch_three=`py.test -n auto sms_campaign_service/tests email_campaign_service/tests`
 printf "\n========================== Batch 3 execution ends. =========================="
 IFS=$'\n' read -d '' -r -a arr  <<< "$batch_three"
 if [[ "$batch_three" =~ =\ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds\ = ]]; then batch_three_status=1 && printf "\n${arr[${#arr[@]}-1]}"; else batch_three_status=0 && printf "\n${batch_three}"; fi
@@ -90,5 +91,3 @@ else
     printf "\n========================== Build is failed ==========================\n"
     exit 1
 fi
-
-

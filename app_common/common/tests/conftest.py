@@ -29,6 +29,7 @@ USER_PASSWORD = 'Talent15'
 # TODO: Above fixed passwords should be removed and random passwords should be used
 PASSWORD = gen_salt(20)
 CHANGED_PASSWORD = gen_salt(20)
+JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
 
 class UserAuthentication:
@@ -580,3 +581,13 @@ def user_second_candidate(request, user_second):
 
 def randomword(length):
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
+
+
+def _get_auth_header(access_token):
+    """
+    This returns auth header dict.
+    :param access_token: access token of user
+    """
+    auth_header = {'Authorization': 'Bearer %s' % access_token}
+    auth_header.update(JSON_CONTENT_TYPE_HEADER)
+    return auth_header

@@ -6,7 +6,7 @@ import requests
 from flask import request
 from flask import Blueprint
 
-from email_campaign_service.common.routes import EmailCampaignEndpoints
+from email_campaign_service.common.routes import EmailCampaignApi
 from email_campaign_service.common.models.user import (User, DomainRole)
 from email_campaign_service.common.utils.handy_functions import get_valid_json_data
 from email_campaign_service.common.utils.validators import validate_and_return_immutable_value
@@ -17,7 +17,7 @@ from email_campaign_service.common.error_handling import (jsonify, InvalidUsage,
 template_blueprint = Blueprint('email_template_service', __name__)
 
 
-@template_blueprint.route('/' + EmailCampaignEndpoints.VERSION + '/email-templates', methods=['POST'])
+@template_blueprint.route('/' + EmailCampaignApi.VERSION + '/email-templates', methods=['POST'])
 @require_oauth()
 @require_all_roles(DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE)
 def post_email_template():
@@ -72,8 +72,8 @@ def post_email_template():
     return jsonify({'template_id': [{'id': template_id}]}), requests.codes.CREATED
 
 
-@template_blueprint.route('/' + EmailCampaignEndpoints.VERSION + '/email-templates', methods=['GET'])
-@template_blueprint.route('/' + EmailCampaignEndpoints.VERSION + '/email-templates/<int:template_id>', methods=['GET'])
+@template_blueprint.route('/' + EmailCampaignApi.VERSION + '/email-templates', methods=['GET'])
+@template_blueprint.route('/' + EmailCampaignApi.VERSION + '/email-templates/<int:template_id>', methods=['GET'])
 @require_oauth()
 @require_all_roles(DomainRole.Roles.CAN_GET_EMAIL_TEMPLATE)
 def get_email_template(template_id):
@@ -102,7 +102,7 @@ def get_email_template(template_id):
     return jsonify({'template': {'body_html': template.body_html, 'id': template_id}})
 
 
-@template_blueprint.route('/' + EmailCampaignEndpoints.VERSION + '/email-templates/<int:template_id>',
+@template_blueprint.route('/' + EmailCampaignApi.VERSION + '/email-templates/<int:template_id>',
                           methods=['PATCH'])
 @require_oauth()
 @require_all_roles(DomainRole.Roles.CAN_UPDATE_EMAIL_TEMPLATE)
@@ -143,7 +143,7 @@ def update_email_template(template_id):
     return jsonify({'template': {'body_html': body_html, 'id': template_id}})
 
 
-@template_blueprint.route('/' + EmailCampaignEndpoints.VERSION + '/email-templates/<int:template_id>',
+@template_blueprint.route('/' + EmailCampaignApi.VERSION + '/email-templates/<int:template_id>',
                           methods=['DELETE'])
 @require_oauth()
 @require_all_roles(DomainRole.Roles.CAN_DELETE_EMAIL_TEMPLATE)
@@ -172,7 +172,7 @@ def delete_email_template(template_id):
     return '', requests.codes.NO_CONTENT
 
 
-@template_blueprint.route('/' + EmailCampaignEndpoints.VERSION + '/email-template-folders', methods=['POST'])
+@template_blueprint.route('/' + EmailCampaignApi.VERSION + '/email-template-folders', methods=['POST'])
 @require_oauth()
 @require_all_roles(DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER)
 def create_email_template_folder():
@@ -223,7 +223,7 @@ def create_email_template_folder():
     return jsonify({'template_folder_id': [{'id': template_folder_id}]}), requests.codes.CREATED
 
 
-@template_blueprint.route('/' + EmailCampaignEndpoints.VERSION + '/email-template-folders/<int:folder_id>',
+@template_blueprint.route('/' + EmailCampaignApi.VERSION + '/email-template-folders/<int:folder_id>',
                           methods=['DELETE'])
 @require_oauth()
 @require_all_roles(DomainRole.Roles.CAN_DELETE_EMAIL_TEMPLATE_FOLDER)

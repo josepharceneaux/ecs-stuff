@@ -248,7 +248,7 @@ class PushCampaignsResource(Resource):
                                additional_error_info=dict(missing_fields=missing_fields),
                                error_code=CampaignException.MISSING_REQUIRED_FIELD)
         campaign = PushCampaignBase(user_id=user.id)
-        campaign_id, _ = campaign.save(data)
+        campaign_id = campaign.save(data)
         response = dict(id=campaign_id, message='Push campaign was created successfully')
         response = json.dumps(response)
         headers = dict(Location=PushCampaignApiUrl.CAMPAIGN % campaign_id)
@@ -283,7 +283,7 @@ class PushCampaignsResource(Resource):
         """
         req_data = get_valid_json_data(request)
         campaign_ids = req_data['ids'] if 'ids' in req_data else []
-        if not isinstance(req_data['ids'], list):
+        if not isinstance(campaign_ids, list):
             raise InvalidUsage('Bad request, include campaign_ids as list data',
                                error_code=InvalidUsage.http_status_code())
         # check if campaigns_ids list is not empty
