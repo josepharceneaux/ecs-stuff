@@ -92,7 +92,7 @@ def create_smartlist_with_given_email_candidate(access_token, campaign,
 def delete_campaign(campaign):
     """
     This deletes the campaign created during tests from database
-    :param campaign: Email campaign object
+    :param campaign: EmailCampaign object
     """
     try:
         with app.app_context():

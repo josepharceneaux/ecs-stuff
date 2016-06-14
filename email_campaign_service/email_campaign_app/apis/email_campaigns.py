@@ -91,8 +91,8 @@ class EmailCampaigns(Resource):
 
     def get(self, **kwargs):
         """
-        GET /v1/email-campaigns/<id>    Fetch email campaign object
-        GET /v1/email-campaigns         Fetches all email campaign objects from auth user's domain
+        GET /v1/email-campaigns/<id>    Fetch EmailCampaign object
+        GET /v1/email-campaigns         Fetches all EmailCampaign objects from auth user's domain
 
         """
         user = request.user

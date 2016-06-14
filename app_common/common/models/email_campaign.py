@@ -108,7 +108,7 @@ class EmailCampaignSmartlist(db.Model):
         :param smartlist_ids_only: True if only ids are to be returned
         :type campaign_id: int | long
         :type smartlist_ids_only: bool
-        :rtype list | dict
+        :rtype list
         """
         raise_if_not_positive_int_or_long(campaign_id)
         raise_if_not_instance_of(smartlist_ids_only, bool)
@@ -235,7 +235,7 @@ class EmailCampaignSend(db.Model):
         :return: Ids of candidates to whom email for specified campaign has already being sent.
         """
         if not isinstance(campaign, EmailCampaign):
-            raise InternalServerError(error_message='Must provide valid email campaign object.')
+            raise InternalServerError(error_message='Must provide valid EmailCampaign object.')
 
         already_emailed_candidates = cls.query.with_entities(
             cls.candidate_id).filter_by(campaign_id=campaign.id).all()

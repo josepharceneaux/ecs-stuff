@@ -260,7 +260,7 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     for a particular campaign. It also ensures that response is in proper format. Used in
     multiple tests.
     :param access_token_first: Bearer token for authorization.
-    :param campaign_with_valid_candidate: Email campaign object with a valid candidate associated.
+    :param campaign_with_valid_candidate: EmailCampaign object with a valid candidate associated.
     """
     campaign = campaign_with_valid_candidate
     campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))

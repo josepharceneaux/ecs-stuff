@@ -1160,9 +1160,10 @@ class CandidateSubscriptionPreference(db.Model):
         :rtype: list
         """
         if not isinstance(campaign, EmailCampaign):
-            raise InternalServerError(error_message='Must provide valid email campaign object.')
+            raise InternalServerError(error_message='Must provide valid EmailCampaign object.')
         if not isinstance(all_candidate_ids, list) or len(all_candidate_ids) <= 0:
-            raise InternalServerError(error_message='all_candidates_ids must be provided')
+            raise InternalServerError(error_message='all_candidates_ids must be a non empty list. Given: %s' %
+                                                    all_candidate_ids)
         subscribed_candidates_rows = CandidateSubscriptionPreference.with_entities(
             CandidateSubscriptionPreference.candidate_id).filter(
             and_(CandidateSubscriptionPreference.candidate_id.in_(all_candidate_ids),
