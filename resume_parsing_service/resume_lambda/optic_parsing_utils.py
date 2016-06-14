@@ -1,78 +1,12 @@
-"""Parsing functions for extracting specific information from Burning Glass API responses."""
-__author__ = 'erik@getTalent.com'
-# Standard Library
-from time import time
+from bs4 import BeautifulSoup as bs4
 import datetime
-import HTMLParser
 import re
 import string
 import sys
+import time
 import unicodedata
-import urllib2
-# Third Party
-from bs4 import BeautifulSoup as bs4
-import requests
-import phonenumbers
-# Module Specific
-from flask import current_app
-from resume_parsing_service.app import logger
-from resume_parsing_service.app.views.OauthClient import OAuthClient
-from resume_parsing_service.common.error_handling import ForbiddenError, InternalServerError
-from resume_parsing_service.common.utils.validators import sanitize_zip_code
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
-
-
-def fetch_optic_response(resume, filename_str):
-    """
-    Takes in an encoded resume file and returns a bs4 'soup-able' format
-    (utf-decode and html escape).
-    :param str resume: a base64 encoded resume file.
-    :return: str unescaped: an html unquoted, utf-decoded string that represents the Burning Glass
-                            XML.
-    """
-    start_time = time()
-    BG_URL = current_app.config['BG_URL']
-    oauth = OAuthClient(url=BG_URL,
-                        method='POST', consumerKey='osman',
-                        consumerSecret='aRFKEc3AJdR9zogE@M9Sis%QjZPxA5Oy',
-                        token='Utility',
-                        tokenSecret='Q5JuWpaMLUi=yveieiNKNWxqqOvHLNJ$',
-                        signatureMethod='HMAC-SHA1',
-                        oauthVersion='1.0')
-    AUTH = oauth.get_authorizationString()
-    HEADERS = {
-        'accept': 'application/xml',
-        'content-type': 'application/json',
-        'Authorization': AUTH,
-    }
-    DATA = {
-        'binaryData': resume,
-        'instanceType': 'TM',
-        'locale': 'en_us'
-    }
-    r = requests.post(BG_URL, headers=HEADERS, json=DATA)
-
-    if r.status_code != requests.codes.ok:
-        # Since this error is displayed to the user we may want to obfuscate it a bit and log more
-        # developer friendly messages. "Error processing this resume. The development team has been
-        # notified of this issue" type of message.
-        raise ForbiddenError('Error connecting to BG instance.')
-
-    try:
-        html_parser = HTMLParser.HTMLParser()
-        unquoted = urllib2.unquote(r.content).decode('utf8')
-        unescaped = html_parser.unescape(unquoted)
-
-    except Exception:
-        logger.exception('Error translating BG response.')
-        raise InternalServerError('Error decoding parsed resume text.')
-
-    logger.info(
-        "Benchmark: fetch_optic_response({}) took {}s".format(filename_str,
-                                                              time() - start_time)
-    )
-    return unescaped
 
 
 def parse_optic_xml(resume_xml_unicode):
@@ -82,19 +16,33 @@ def parse_optic_xml(resume_xml_unicode):
                                   processed response from the Burning Glass API.
     :return dict candidate: Results of various parsing functions on the input xml string.
     """
-    contact_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('contact')
-    experience_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('experience')
-    educations_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('education')
-    skill_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('canonskill')
-    references_xml = bs4(resume_xml_unicode, 'lxml').findAll('references')
+    start = time.time()
+    contact_xml_list = bs4(resume_xml_unicode).findAll('contact')
+    print 'RETR CONTACTS in {}s'.format(time.time() - start)
+    experience_xml_list = bs4(resume_xml_unicode).findAll('experience')
+    print 'RETR EXPERIENCE in {}s'.format(time.time() - start)
+    educations_xml_list = bs4(resume_xml_unicode).findAll('education')
+    print 'RETR EDUCATIONS in {}s'.format(time.time() - start)
+    skill_xml_list = bs4(resume_xml_unicode).findAll('canonskill')
+    print 'RETR SKILLS in {}s'.format(time.time() - start)
+    references_xml = bs4(resume_xml_unicode).findAll('references')
+    print 'RETR REFS in {}s'.format(time.time() - start)
     name = parse_candidate_name(contact_xml_list)
+    print 'NAMES in {}s'.format(time.time() - start)
     emails = parse_candidate_emails(contact_xml_list)
+    print 'EMAILS in {}s'.format(time.time() - start)
     phones = parse_candidate_phones(contact_xml_list)
+    print 'PHONES in {}s'.format(time.time() - start)
     work_experiences = parse_candidate_experiences(experience_xml_list)
+    print 'EXPERIENCES in {}s'.format(time.time() - start)
     educations = parse_candidate_educations(educations_xml_list)
+    print 'EDUCATIONS in {}s'.format(time.time() - start)
     skills = parse_candidate_skills(skill_xml_list)
+    print 'SKILLS in {}s'.format(time.time() - start)
     addresses = parse_candidate_addresses(contact_xml_list)
+    print 'ADDR in {}s'.format(time.time() - start)
     references = parse_candidate_reference(references_xml)
+    print 'REFS in {}s'.format(time.time() - start)
     candidate = dict(
         first_name=name['first_name'],
         last_name=name['last_name'],
@@ -162,45 +110,17 @@ def parse_candidate_phones(bs_contact_xml_list):
     :return list output: List of dicts containing phone data.
     """
     output = []
-
     for contact in bs_contact_xml_list:
         phones = contact.findAll('phone')
-
+        # TODO: look into adding a type using p.attrs['type']
         for p in phones:
             raw_phone = p.text.strip()
-            phone_type = p.type
-
             # JSON_SCHEMA for candidates phone is max:20
-            # This fixes issues with numbers like '1-123-45            67'
             if raw_phone and len(raw_phone) > 20:
                 raw_phone = " ".join(raw_phone.split())
-
-            gt_phone_type = get_phone_type(phone_type)
-
             if raw_phone and len(raw_phone) <= 20:
-
-                try:
-                    unused_validated_phone = phonenumbers.parse(raw_phone, region='US')
-                    output.append({'value': raw_phone, 'type': gt_phone_type})
-
-                except UnicodeEncodeError:
-                    logger.error('Issue parsing phonenumber: {}'.format(raw_phone))
-
+                output.append({'value': raw_phone})
     return output
-
-
-def get_phone_type(bg_phone_type):
-    """
-    Provides a mapping between BurningGlass phone types to the the static values in the GT database.
-    :param string bg_phone_type:
-    :return string:
-    """
-    return {
-        'cell': 'Mobile',
-        'home': 'Home',
-        'fax': 'Home Fax',
-        'work': 'Work'
-    }.get(bg_phone_type, 'Other')
 
 
 def parse_candidate_experiences(bg_experience_xml_list):
@@ -431,7 +351,7 @@ def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines
             if capwords:
                 text = string.capwords(text)
             text = text.encode('utf-8')
-            return bs4(text, 'lxml').text
+            return bs4(text).text
     return None
 
 
@@ -467,7 +387,7 @@ def is_experience_already_exists(candidate_experiences, organization, position_t
 
 def scrub_candidate_name(name_unicode):
     """
-    Takes a string and formats it to gT candidate spec. Names should have no punctuation, be at most
+    Takes a string an formats it to gT candidate spec. Names should have no punctuation, be at most
     35 characters, and be in the 'string.title()' format.
 
     This uses StackOverflow Answer:
@@ -482,11 +402,24 @@ def scrub_candidate_name(name_unicode):
     :return unicode:
     """
 
-    translate_table = dict.fromkeys(i for i in xrange(sys.maxunicode)
-                if unicodedata.category(unichr(i)).startswith('P'))
+    start = time.time()
 
-    name_unicode = name_unicode[:35]
-    name_unicode = name_unicode.translate(translate_table)
-    name_unicode = name_unicode.title()
+    name_unicode_trimmed = name_unicode[:35]
+    name_unicode_titled = name_unicode_trimmed.title()
+    name_unicode_formatted = re.sub(ur"\p{P}+", "", name_unicode_titled)
+    print 'SCRUBBING NAME TOOK {}s'.format(time.time() - start)
+    return name_unicode_formatted
 
-    return name_unicode
+
+def sanitize_zip_code(zip_code):
+    """
+    :param zip_code:
+    :return:
+    """
+    zip_code = str(zip_code)
+    zip_code = ''.join([char for char in zip_code if char not in ' -'])
+    if zip_code and not ''.join([char for char in zip_code if not char.isdigit()]):
+        zip_code = zip_code.zfill(5) if len(zip_code) <= 5 else zip_code.zfill(9) if len(zip_code) <= 9 else ''
+        if zip_code:
+            return (zip_code[:5] + ' ' + zip_code[5:]).strip()
+    return None

@@ -192,3 +192,4 @@ if __name__ == "__main__":
             update_table_column_data_type(table_name=table_tuple[0], data_type_to_change_to='INT')
 
     # run_script()
+

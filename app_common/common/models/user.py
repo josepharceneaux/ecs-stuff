@@ -461,6 +461,8 @@ class DomainRole(db.Model):
         CAN_CREATE_EMAIL_TEMPLATE_FOLDER = "CAN_CREATE_EMAIL_TEMPLATE_FOLDER"
         CAN_DELETE_EMAIL_TEMPLATE_FOLDER = "CAN_DELETE_EMAIL_TEMPLATE_FOLDER"
 
+        CAN_IMPERSONATE_USERS = "CAN_IMPERSONATE_USERS"
+
         # Scheduler Admin Role
         # TODO--w: It should say 'CAN_GET_ALL_SCHEDULER_JOBS' to clearly indicate it belongs to Scheduler
         CAN_GET_ALL_JOBS = "CAN_GET_ALL_JOBS"

@@ -12,11 +12,12 @@ from ..utils.validators import raise_if_not_positive_int_or_long
 __author__ = 'jitesh'
 
 
-def search_candidates_from_params(search_params, access_token, user_id=None):
+def search_candidates_from_params(search_params, access_token, url_args=None, user_id=None):
     """
     Calls the candidate_service's Search API with given search criteria and returns the search result.
     :param search_params: Search params or search criteria upon which candidates would be filtered.
     :param access_token: Oauth-based or JWT-based token
+    :param  url_args:  accepted arguments sent via the url; e.g. "?user_ids=2,3,4"
     :param user_id: Id of logged-in user
     :return: search result based on search criteria.
     """
@@ -29,8 +30,9 @@ def search_candidates_from_params(search_params, access_token, user_id=None):
         access_token = access_token if 'Bearer' in access_token else 'Bearer %s' % access_token
         headers = {'Authorization': access_token, 'Content-Type': 'application/json'}
 
+    url = CandidateApiUrl.CANDIDATE_SEARCH_URI
     response = requests.get(
-            url=CandidateApiUrl.CANDIDATE_SEARCH_URI,
+            url=(url + url_args) if url_args else url,
             params=search_params,
             headers=headers
     )

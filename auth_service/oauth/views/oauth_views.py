@@ -1,11 +1,16 @@
 
 __author__ = 'ufarooqi'
 
+from werkzeug.security import gen_salt
 from auth_service.oauth import app, logger
 from auth_service.oauth import gt_oauth
 from auth_service.common.error_handling import *
 from auth_service.common.routes import AuthApi, AuthApiV2
-from auth_service.oauth.oauth_utilities import authenticate_user, save_token_v2, redis_store, authenticate_request
+from auth_service.common.models.user import DomainRole, UserScopedRoles
+from auth_service.common.utils.auth_utils import require_all_roles, require_oauth
+from auth_service.common.models.user import User
+from auth_service.oauth.oauth_utilities import (authenticate_user, save_token_v2,
+                                                redis_store, authenticate_request, load_client, save_token_v1)
 
 
 @app.route(AuthApiV2.TOKEN_CREATE, methods=['POST'])
@@ -48,6 +53,31 @@ def authorize_v2():
     return jsonify(user_id=authenticated_user.id)
 
 
+@app.route(AuthApiV2.TOKEN_OF_ANY_USER)
+def access_token_of_user_v2(user_id):
+    """
+    GET /users/<user_id>/access_token Create Access token for a user
+    :param user_id: Id of user
+    :return: A dictionary containing bearer token information for that user
+    :rtype: dict
+    """
+
+    secret_key_id, authenticated_user = authenticate_request()
+
+    user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
+                  UserScopedRoles.get_all_roles_of_user(authenticated_user.id)]
+
+    if DomainRole.Roles.CAN_IMPERSONATE_USERS not in user_roles:
+        raise UnauthorizedError("User doesn't have appropriate permissions to perform this operation")
+
+    user_object = User.query.get(user_id)
+
+    if not user_object:
+        raise NotFoundError("User with user_id %s doesn't exist" % user_id)
+
+    return save_token_v2(user_object)
+
+
 gt_oauth.grantgetter(lambda *args, **kwargs: None)
 gt_oauth.grantsetter(lambda *args, **kwargs: None)
 
@@ -78,3 +108,48 @@ def authorize():
     user = request.oauth.user
     logger.info('User %s has been authorized to access getTalent api', user.id)
     return jsonify(user_id=user.id)
+
+
+@app.route(AuthApi.TOKEN_OF_ANY_USER)
+@gt_oauth.require_oauth()
+def access_token_of_user(user_id):
+    """
+    GET /users/<user_id>/access_token?client_id=HpllhpiCXjokvk2djOinLvioudW6yh29qanD7Fu3 Create Access token for a user
+    :param user_id: Id of user
+    :return: A dictionary containing bearer token information for that user
+    :rtype: dict
+    """
+    if hasattr(request.oauth, 'error_message'):
+        error_message = request.oauth.error_message or ''
+        if error_message:
+            error_code = request.oauth.error_code or None
+            raise UnauthorizedError(error_message=error_message, error_code=error_code)
+
+    user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
+                  UserScopedRoles.get_all_roles_of_user(request.oauth.user.id)]
+
+    if DomainRole.Roles.CAN_IMPERSONATE_USERS not in user_roles:
+        raise UnauthorizedError("User doesn't have appropriate permissions to perform this operation")
+
+    client_id = request.args.get('client_id', '')
+    user_object = User.query.get(user_id)
+
+    if not user_object:
+        raise NotFoundError("User with user_id %s doesn't exist" % user_id)
+
+    request.client = load_client(client_id)
+    if not request.client:
+        raise NotFoundError("Either client_id is missing or invalid")
+
+    request.user = user_object
+    token = dict(
+        access_token=gen_salt(30),
+        refresh_token=gen_salt(30),
+        token_type='Bearer',
+        expires_in=app.config['JWT_OAUTH_EXPIRATION'],
+        scope=''
+    )
+
+    save_token_v1(token, request)
+    return jsonify(token), 200
+
