@@ -51,19 +51,19 @@ class TestSearchCandidatePipeline(object):
         ]}
         create_resp = send_request('post', PIPELINE_URL, access_token_first, data)
         print response_info(create_resp)
-        get_result(data, candidate_id, access_token_first)
+        assert_result(data, candidate_id, access_token_first)
 
     def test_search_for_last_candidate_in_pipeline(self, user_first, access_token_first, talent_pool):
         """
         This function will:
-            1. create 30 candidates to ensure multiple pages will return from the search result
+            1. create 16 candidates to ensure multiple pages will return from the search result
             2. search using pipeline search params for the first candidate created
         """
         AddUserRoles.add_and_get(user_first)
         add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_TALENT_PIPELINES])
 
-        # Create 30 candidates
-        count = 30
+        # Create 16 candidates
+        count = 16
         candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=count)
         assert len(candidate_ids) == count
 
