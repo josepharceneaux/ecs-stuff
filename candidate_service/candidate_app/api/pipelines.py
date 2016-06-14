@@ -74,7 +74,7 @@ class CandidatePipelineResource(Resource):
             candidates_talent_pipelines = TalentPipeline.query.filter(TalentPipeline.id.in_(talent_pipeline_ids)).all()
             for talent_pipeline in candidates_talent_pipelines:
                 user_id = talent_pipeline.user_id
-                user_candidate = Candidate.query.filter_by(user_id=user_id).first()
+                user_candidate = Candidate.query.filter_by(user_id=user_id, id=candidate_id).first()
                 result.append({
                     "id": talent_pipeline.id,
                     "candidate_id": user_candidate.id if user_candidate else None,
