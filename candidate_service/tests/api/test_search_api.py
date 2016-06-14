@@ -1121,7 +1121,7 @@ def get_response(access_token, arguments_to_url, expected_count=1, timeout=100):
     url = CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
     attempts = timeout / 3 + 1
-    for _ in retrier(attempts=attempts, sleeptime=3):
+    for i in range(0, 10):
         resp = requests.get(url, headers=headers)
         print response_info(resp)
         if len(resp.json()['candidates']) >= expected_count:
