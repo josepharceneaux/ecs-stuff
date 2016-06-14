@@ -2,6 +2,7 @@
 Test cases for candidate-search-service-API
 """
 import math
+from time import sleep
 
 # Error handling
 from candidate_service.common.error_handling import NotFoundError
@@ -1122,6 +1123,7 @@ def get_response(access_token, arguments_to_url, expected_count=1, timeout=100):
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
     attempts = timeout / 3 + 1
     for i in range(0, 10):
+        sleep(3)
         resp = requests.get(url, headers=headers)
         print response_info(resp)
         if len(resp.json()['candidates']) >= expected_count:
