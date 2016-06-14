@@ -69,7 +69,7 @@ if [[ "$batch_one" =~ =\ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds\ = ]]; then 
 printf "\n========================== Batch 2 execution starts =========================="
 printf "\nResume Parsing Service\nCandidate Service"
 printf "\n"
-batch_two=`py.test -n auto resume_parsing_service/tests candidate_service/tests`
+batch_two=`py.test -n auto resume_parsing_service/tests candidate_service/tests/api/test_search_api.py`
 printf "\n========================== Batch 2 execution ends. =========================="
 IFS=$'\n' read -d '' -r -a arr  <<< "$batch_two"
 if [[ "$batch_two" =~ =\ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds\ = ]]; then batch_two_status=1 && printf "\n${arr[${#arr[@]}-1]}"; else batch_two_status=0 && printf "\n${batch_two}"; fi
