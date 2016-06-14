@@ -5,6 +5,7 @@ pip install -r requirements.txt
 
 # Build Docker Images
 sudo service docker restart
+sudo service mysql restart
 sudo usermod -aG docker jenkins
 
 # Sopping all containers and removing all dangling images from Jenkins container
