@@ -51,8 +51,8 @@ def authorize():
     :return:
     """
     code = request.args.get('code')
-    url = SocialNetworkApiUrl.UI_APP_URL + '/campaigns/events/subscribe?code=%s' % code
-    if 'state' in request.args:
+    url = SocialNetworkApiUrl.UI_APP_URL + '/events/subscribe?code=%s' % code
+    if len(code) == 32:  # 'state' in request.args:
         social_network = SocialNetwork.get_by_name('Meetup')
     else:
         social_network = SocialNetwork.get_by_name('Eventbrite')

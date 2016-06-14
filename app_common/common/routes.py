@@ -629,8 +629,11 @@ class SocialNetworkApiUrl(object):
     VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME, GTApis.SOCIAL_NETWORK_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    # TODO: Make this URL dynamic i.e different for staging, dev or prod
-    UI_APP_URL = 'http://localhost:3000'
+    env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
+    if env == TalentEnvs.DEV:
+        UI_APP_URL = LOCAL_HOST + ':3000'
+    else:
+        UI_APP_URL = 'https://dev.gettalent.com'
     EVENTS = HOST_NAME % ('/' + VERSION + '/events')
     EVENT = HOST_NAME % ('/' + VERSION + '/events/%s')
     SOCIAL_NETWORKS = HOST_NAME % ('/' + VERSION + '/social-networks')
