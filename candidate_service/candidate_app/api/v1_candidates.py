@@ -518,7 +518,7 @@ class CandidateResource(Resource):
 class CandidateAddressResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)  # todo: change to CAN_EDIT_CANDIDATE
     def delete(self, **kwargs):
         """
         Endpoints:

@@ -98,6 +98,10 @@ def register_error_handlers(app, logger):
     def handle_invalid_usage(error):
         return handle_error(error, 'Invalid API usage.')
 
+    @app.errorhandler(InternalServerError)
+    def handle_server_serror(error):
+        return handle_error(error, 'Internal Server Error.')
+
     @app.errorhandler(NotFoundError)
     def handle_not_found(error):
         return handle_error(error, 'Requested resource not found.')

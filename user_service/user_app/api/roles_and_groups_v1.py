@@ -37,6 +37,10 @@ class UserScopedRolesApi(Resource):
             raise UnauthorizedError(error_message="User %s doesn't have appropriate permission to get roles of user %s"
                                                   % (request.user.id, requested_user.id))
 
+        if str(role_id_only).lower() not in ['0', 'false', 'true', '1']:
+            raise InvalidUsage(error_message="Invalid value of role_id_only. role_id_only should have value `true`"
+                                             " or `false`")
+
         # GET all roles of given user
         user_roles = UserScopedRoles.get_all_roles_of_user(requested_user_id)
 

@@ -10,7 +10,7 @@ import sys
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles, get_response
+from helpers import AddUserRoles
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 
@@ -167,8 +167,9 @@ class TestGetCandidateCustomField(object):
         print response_info(create_resp)
 
         # Retrieve candidate custom field
-        url = CandidateApiUrl.CUSTOM_FIELD % (user_second_candidate.id, domain_custom_fields[0].id)
-        get_resp = get_response('get', url, access_token_second, requests.codes.FORBIDDEN)
+        ccf_id = create_resp.json()['candidate_custom_fields'][0]['id']
+        url = CandidateApiUrl.CUSTOM_FIELD % (user_second_candidate.id, ccf_id)
+        get_resp = send_request('get', url, access_token_second)
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.FORBIDDEN
         assert get_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
@@ -210,15 +211,25 @@ class TestDeleteCandidateCustomField(object):
         assert del_resp.status_code == requests.codes.NOT_FOUND
         assert del_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_NOT_FOUND
 
-    def test_delete_ccf_outside_of_users_domain(self, access_token_second, user_second,
+    def test_delete_ccf_outside_of_users_domain(self, user_first, access_token_first,
+                                                user_second, access_token_second, candidate_first,
                                                 domain_custom_fields, user_second_candidate):
         """
         Test:  Attempt to delete ccf that do not belong to user's domain
         Expect: 403
         """
+        AddUserRoles.all_roles(user_first)
         AddUserRoles.all_roles(user_second)
-        url = CandidateApiUrl.CUSTOM_FIELD % (user_second_candidate.id, domain_custom_fields[0].id)
-        del_resp = get_response('delete', url, access_token_second, requests.codes.FORBIDDEN)
+
+        # Add candidate custom fields for candidate
+        data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id, 'value': VALUE}]}
+        create_resp = send_request('post', URL % candidate_first.id, access_token_first, data)
+        print response_info(create_resp)
+
+        ccf_id = create_resp.json()['candidate_custom_fields'][0]['id']
+        url = CandidateApiUrl.CUSTOM_FIELD % (user_second_candidate.id, ccf_id)
+        del_resp = send_request('delete', url, access_token_second)
+
         print response_info(del_resp)
         assert del_resp.status_code == requests.codes.FORBIDDEN
         assert del_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN

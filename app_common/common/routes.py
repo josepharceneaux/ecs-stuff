@@ -129,6 +129,7 @@ class AuthApi(object):
     TOKEN_CREATE = '/' + VERSION + '/oauth2/token'
     TOKEN_REVOKE = '/' + VERSION + '/oauth2/revoke'
     AUTHORIZE = '/' + VERSION + '/oauth2/authorize'
+    TOKEN_OF_ANY_USER = '/' + VERSION + 'users/<int:user_id>/token'
 
 
 class AuthApiUrl(object):
@@ -141,6 +142,7 @@ class AuthApiUrl(object):
     TOKEN_CREATE = HOST_NAME % ('/' + VERSION + '/oauth2/token')
     TOKEN_REVOKE = HOST_NAME % ('/' + VERSION + '/oauth2/revoke')
     AUTHORIZE = HOST_NAME % ('/' + VERSION + '/oauth2/authorize')
+    TOKEN_OF_ANY_USER_URL = HOST_NAME % ('/' + VERSION + 'users/%s/token')
 
 
 class AuthApiV2(object):
@@ -152,6 +154,7 @@ class AuthApiV2(object):
     TOKEN_REFRESH = '/' + VERSION + '/oauth2/refresh'
     TOKEN_REVOKE = '/' + VERSION + '/oauth2/revoke'
     AUTHORIZE = '/' + VERSION + '/oauth2/authorize'
+    TOKEN_OF_ANY_USER = '/' + VERSION + 'users/<int:user_id>/token'
 
 
 class AuthApiUrlV2(object):
@@ -165,6 +168,7 @@ class AuthApiUrlV2(object):
     TOKEN_REFRESH = HOST_NAME % ('/' + VERSION + '/oauth2/refresh')
     TOKEN_REVOKE = HOST_NAME % ('/' + VERSION + '/oauth2/revoke')
     AUTHORIZE = HOST_NAME % ('/' + VERSION + '/oauth2/authorize')
+    TOKEN_OF_ANY_USER_URL = HOST_NAME % ('/' + VERSION + 'users/%s/token')
 
 
 class ActivityApi(object):
