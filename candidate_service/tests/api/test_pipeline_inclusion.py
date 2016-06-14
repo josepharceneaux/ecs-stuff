@@ -53,49 +53,49 @@ class TestSearchCandidatePipeline(object):
         print response_info(create_resp)
         assert_result(data, candidate_id, access_token_first)
 
-    def test_search_for_last_candidate_in_pipeline(self, user_first, access_token_first, talent_pool):
-        """
-        This function will:
-            1. create 16 candidates to ensure multiple pages will return from the search result
-            2. search using pipeline search params for the first candidate created
-        """
-        AddUserRoles.add_and_get(user_first)
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_TALENT_PIPELINES])
-
-        # Create 16 candidates
-        count = 16
-        candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=count)
-        assert len(candidate_ids) == count
-
-        # Add pipelines
-        data = {"talent_pipelines": [
-            {
-                "talent_pool_id": talent_pool.id,
-                "name": str(uuid.uuid4())[:5],
-                "date_needed": "2017-11-30",
-                "search_params": {"user_ids": str(user_first.id)}
-            },
-            {
-                "talent_pool_id": talent_pool.id,
-                "name": str(uuid.uuid4())[:5],
-                "date_needed": "2017-11-30",
-                "search_params": {"user_ids": str(user_first.id)}
-            }
-        ]}
-        create_resp = send_request('post', PIPELINE_URL, access_token_first, data)
-        print response_info(create_resp)
-
-        # Search & assert result with first candidate created
-        candidate_id = candidate_ids[-1]
-        assert_result(data, candidate_id, access_token_first)
-
-        # Search & assert result with middle candidate created
-        candidate_id = candidate_ids[len(candidate_ids) / 2]
-        assert_result(data, candidate_id, access_token_first)
-
-        # # Search & assert result with last candidate created
-        candidate_id = candidate_ids[0]
-        assert_result(data, candidate_id, access_token_first)
+    # def test_search_for_last_candidate_in_pipeline(self, user_first, access_token_first, talent_pool):
+    #     """
+    #     This function will:
+    #         1. create 16 candidates to ensure multiple pages will return from the search result
+    #         2. search using pipeline search params for the first candidate created
+    #     """
+    #     AddUserRoles.add_and_get(user_first)
+    #     add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_TALENT_PIPELINES])
+    #
+    #     # Create 16 candidates
+    #     count = 16
+    #     candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=count)
+    #     assert len(candidate_ids) == count
+    #
+    #     # Add pipelines
+    #     data = {"talent_pipelines": [
+    #         {
+    #             "talent_pool_id": talent_pool.id,
+    #             "name": str(uuid.uuid4())[:5],
+    #             "date_needed": "2017-11-30",
+    #             "search_params": {"user_ids": str(user_first.id)}
+    #         },
+    #         {
+    #             "talent_pool_id": talent_pool.id,
+    #             "name": str(uuid.uuid4())[:5],
+    #             "date_needed": "2017-11-30",
+    #             "search_params": {"user_ids": str(user_first.id)}
+    #         }
+    #     ]}
+    #     create_resp = send_request('post', PIPELINE_URL, access_token_first, data)
+    #     print response_info(create_resp)
+    #
+    #     # Search & assert result with first candidate created
+    #     candidate_id = candidate_ids[-1]
+    #     assert_result(data, candidate_id, access_token_first)
+    #
+    #     # Search & assert result with middle candidate created
+    #     candidate_id = candidate_ids[len(candidate_ids) / 2]
+    #     assert_result(data, candidate_id, access_token_first)
+    #
+    #     # # Search & assert result with last candidate created
+    #     candidate_id = candidate_ids[0]
+    #     assert_result(data, candidate_id, access_token_first)
 
     def test_search_for_non_existing_candidate_in_pipeline(self, user_first, access_token_first, candidate_first):
         """
