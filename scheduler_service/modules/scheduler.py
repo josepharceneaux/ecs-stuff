@@ -53,10 +53,6 @@ def scheduler_remove_job(job_id):
     Removes the job from redis as well as apscheduler
     :param job_id: job_id returned by scheduler when job was scheduled e.g. w4523kd1sdf23kljfdjflsdf
     :type job_id: str
-    :param user_id:
-    :type user_id: int | str
-    :param task_name: name of task to be deleted
-    :type task_name: str
     """
     scheduler.remove_job(job_id=job_id)
 
@@ -392,9 +388,10 @@ def serialize_task(task):
 def serialize_task_admin(task):
     """
     Serialize task data to JSON object (for admin)
-    :param task: APScheduler task to convert to JSON dict
-                 task.args: user_id, access_token, url, content_type, post_data, is_jwt_request
+    :param task: APScheduler task
+    :type: object
     :return: JSON converted dict object
+    :rtype: dict
     """
     task_dict = serialize_task(task)
 
