@@ -75,15 +75,16 @@ class CandidatePipelineResource(Resource):
             for talent_pipeline in candidates_talent_pipelines:
                 user_id = talent_pipeline.user_id
                 user_candidate = Candidate.query.filter_by(user_id=user_id, id=candidate_id).first()
-                result.append({
-                    "id": talent_pipeline.id,
-                    "candidate_id": user_candidate.id if user_candidate else None,
-                    "name": talent_pipeline.name,
-                    "description": talent_pipeline.description,
-                    "open_positions": talent_pipeline.positions,
-                    "datetime_needed": str(talent_pipeline.date_needed),
-                    "user_id": user_id,
-                    "added_datetime": str(talent_pipeline.added_time)
-                })
+                if user_candidate:
+                    result.append({
+                        "id": talent_pipeline.id,
+                        "candidate_id": user_candidate.id if user_candidate else None,
+                        "name": talent_pipeline.name,
+                        "description": talent_pipeline.description,
+                        "open_positions": talent_pipeline.positions,
+                        "datetime_needed": str(talent_pipeline.date_needed),
+                        "user_id": user_id,
+                        "added_datetime": str(talent_pipeline.added_time)
+                    })
 
         return {'candidate_pipelines': result}
