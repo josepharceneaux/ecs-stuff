@@ -20,6 +20,7 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.utils import gen_hash_from_file
 from resume_parsing_service.app.views.ocr_lib import google_vision_ocr
 from resume_parsing_service.common.error_handling import InvalidUsage
+from resume_parsing_service.common.utils.talent_s3 import boto3_put
 
 
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
@@ -59,6 +60,8 @@ def parse_resume(file_obj, filename_str):
         final_file_ext = file_ext
 
     if not doc_content:
+        file_obj.seek(0)
+        boto3_put(file_obj.read(), filename_str, 'FailedResumes')
         raise InvalidUsage("Unable to determine the contents of the document: {}".format(filename_str))
 
     encoded_resume = base64.b64encode(doc_content)
