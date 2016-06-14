@@ -135,42 +135,42 @@ class TestSchedulerGet(object):
         job_cleanup['header'] = auth_header_no_user
         job_cleanup['job_ids'] = [data['id']]
 
-    def test_multiple_jobs_without_user(self, auth_header_no_user, job_config):
-        """
-        Create multiple jobs and save the ids in a list. Then get all tasks of the current user which is None in this case.
-        Then check if the jobs created are in the tasks of user. If yes, then show status code 200.
-        Finally, delete the jobs.
-        Args:
-            auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
-            POST data while hitting the endpoint.
-        :return:
-        """
-        jobs_id = []
-        word = random_word(5)
-        # Create tasks
-        for i in range(10):
-            job_config['task_name'] = word + str(i)
-            response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
-                                     headers=auth_header_no_user)
-            assert response.status_code == 201
-            jobs_id.append(response.json()['id'])
-
-        # Get tasks
-        response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 1, 50),
-                                    headers=auth_header_no_user)
-
-        get_jobs_id = map(lambda job_: job_['id'], response_get.json()['tasks'])
-        # Assert the job ids in the retrieved jobs
-        for job in jobs_id:
-            assert job in get_jobs_id
-
-        # Delete all jobs
-        for job_id in jobs_id:
-            response_remove_job = requests.delete(SchedulerApiUrl.TASK % job_id,
-                                                  headers=auth_header_no_user)
-
-            assert response_remove_job.status_code == 200
+    # def test_multiple_jobs_without_user(self, auth_header_no_user, job_config):
+    #     """
+    #     Create multiple jobs and save the ids in a list. Then get all tasks of the current user which is None in this case.
+    #     Then check if the jobs created are in the tasks of user. If yes, then show status code 200.
+    #     Finally, delete the jobs.
+    #     Args:
+    #         auth_data: Fixture that contains token.
+    #         job_config (dict): Fixture that contains job config to be used as
+    #         POST data while hitting the endpoint.
+    #     :return:
+    #     """
+    #     jobs_id = []
+    #     word = random_word(5)
+    #     # Create tasks
+    #     for i in range(10):
+    #         job_config['task_name'] = word + str(i)
+    #         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+    #                                  headers=auth_header_no_user)
+    #         assert response.status_code == 201
+    #         jobs_id.append(response.json()['id'])
+    #
+    #     # Get tasks
+    #     response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 1, 50),
+    #                                 headers=auth_header_no_user)
+    #
+    #     get_jobs_id = map(lambda job_: job_['id'], response_get.json()['tasks'])
+    #     # Assert the job ids in the retrieved jobs
+    #     for job in jobs_id:
+    #         assert job in get_jobs_id
+    #
+    #     # Delete all jobs
+    #     for job_id in jobs_id:
+    #         response_remove_job = requests.delete(SchedulerApiUrl.TASK % job_id,
+    #                                               headers=auth_header_no_user)
+    #
+    #         assert response_remove_job.status_code == 200
 
     def test_multiple_jobs(self, auth_header, job_config, job_cleanup):
         """
