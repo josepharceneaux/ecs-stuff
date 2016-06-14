@@ -61,7 +61,7 @@ TIMEFORMAT='%lR'
 printf "\n========================== Batch 1 execution starts =========================="
 printf "\nUser Service\nActivity Service\nSpreadsheet Import Service\nScheduler Service\nAuth Service\nCandidate Pool Service\nPush Campaign Service"
 printf "\n"
-batch_one=`py.test -n auto user_service/tests activity_service/tests spreadsheet_import_service/tests scheduler_service/tests auth_service/tests candidate_pool_service/tests push_campaign_service/tests`
+batch_one=`py.test -n 48 user_service/tests activity_service/tests spreadsheet_import_service/tests scheduler_service/tests auth_service/tests candidate_pool_service/tests push_campaign_service/tests`
 printf "\n========================== Batch 1 execution ends. =========================="
 IFS=$'\n' read -d '' -r -a arr  <<< "$batch_one"
 if [[ "$batch_one" =~ =\ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds\ = ]]; then batch_one_status=1 && printf "\n${arr[${#arr[@]}-1]}"; else batch_one_status=0 && printf "\n${batch_one}"; fi
@@ -69,7 +69,7 @@ if [[ "$batch_one" =~ =\ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds\ = ]]; then 
 printf "\n========================== Batch 2 execution starts =========================="
 printf "\nResume Parsing Service\nCandidate Service\nEmail Campaign Service"
 printf "\n"
-batch_two=`py.test -n auto resume_parsing_service/tests email_campaign_service/tests candidate_service/tests/api/test_search_api.py`
+batch_two=`py.test -n 48 resume_parsing_service/tests email_campaign_service/tests candidate_service/tests/api/test_search_api.py`
 printf "\n========================== Batch 2 execution ends. =========================="
 IFS=$'\n' read -d '' -r -a arr  <<< "$batch_two"
 if [[ "$batch_two" =~ =\ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds\ = ]]; then batch_two_status=1 && printf "\n${arr[${#arr[@]}-1]}"; else batch_two_status=0 && printf "\n${batch_two}"; fi
@@ -77,7 +77,7 @@ if [[ "$batch_two" =~ =\ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds\ = ]]; then 
 printf "\n========================== Batch 3 execution starts =========================="
 printf "\nSMS Campaign Service"
 printf "\n"
-batch_three=`py.test -n auto sms_campaign_service/tests`
+batch_three=`py.test -n 48 sms_campaign_service/tests`
 printf "\n========================== Batch 3 execution ends. =========================="
 IFS=$'\n' read -d '' -r -a arr  <<< "$batch_three"
 if [[ "$batch_three" =~ =\ [0-9]+\ passed\ in\ [0-9]*.[0-9]+\ seconds\ = ]]; then batch_three_status=1 && printf "\n${arr[${#arr[@]}-1]}"; else batch_three_status=0 && printf "\n${batch_three}"; fi
