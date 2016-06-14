@@ -147,6 +147,11 @@ def test_bad_header(token_fixture, user_fixture):
     assert invalid_post.status_code == requests.codes.bad_request
 
 
+def test_blank_file(token_fixture, user_fixture):
+    content, status = fetch_resume_fp_key_response(token_fixture, 'blank.txt')
+    assert 'error' in content, "There should be an error if no text can be extracted."
+
+
 ####################################################################################################
 # Test FilePicker Key Parsing without create option
 ####################################################################################################
