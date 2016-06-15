@@ -4,12 +4,12 @@ Test cases for Talent Cloud Search functionality
 import time
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.models.candidate import CandidateStatus
-from candidate_service.candidate_app import db, logger
-from candidate_service.modules.talent_cloud_search import search_candidates, upload_candidate_documents
+from candidate_service.modules.talent_cloud_search import search_candidates
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.talent_pools_pipelines import TalentPool
 from candidate_service.common.utils.talent_areas_of_interest import KAISER_PARENT_TO_CHILD_AOIS
 from candidate_service.common.tests.fake_testing_data_generator import college_majors
+from candidate_service.tests.api.candidate_sample_data import generate_international_phone_number
 from faker import Faker
 from nameparser import HumanName
 # Common utilities
@@ -120,9 +120,7 @@ def populate_candidates(access_token, talent_pool, count=1, first_name=None, mid
                 country_code=fake.country_code(),
                 zip_code=zip_code or fake.zipcode()
             )],
-            phones=[dict(  # TODO: use international phone number
-                value='+14058769932'
-            )],
+            phones=[dict(value=generate_international_phone_number())],
             educations=[dict(
                 school_name=school_name or fake.first_name() + ' University',
                 city=fake.city(),
