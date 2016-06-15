@@ -1,6 +1,6 @@
 __author__ = 'Joseph Arceneaux'
 
-from ats_app import app
+from ats_service.app import app
 from ats_service.common.routes import GTApis
 
 if __name__ == '__main__':

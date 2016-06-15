@@ -5,11 +5,13 @@ from ats_service.common.talent_config_manager import TalentConfigKeys
 from ats_service.common.models.db import db
 from ats_service.common.talent_api import TalentApi
 from ats_service.common.routes import ATSServiceApi
+from ats_service.app.api.services import ServicesList
 
 app, logger = init_talent_app(__name__)
 
 try:
     api = TalentApi(app=app)
+    api.add_resource(ServicesList, ATSServiceApi.SERVICES, endpoint='ats-services')
 
     db.create_all()
     db.session.commit()

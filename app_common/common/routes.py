@@ -811,23 +811,21 @@ class EmailCampaignApiUrl(object):
     SEND_BY_ID = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/sends/%s')
 
 
-class ATSSERVICEApi(object):
+class ATSServiceApi(object):
     """
     REST URLs for ATS Service endpoints
     """
     VERSION = 'v1'
-    SERVICES = '/' + VERSION + '/ats-service'
-    SERVICE = '/' + VERSION + '/ats-service/<int:id>'
+    SERVICES = '/' + VERSION + '/ats-services'
     URL_REDIRECT = '/' + VERSION + '/redirect/<int:url_conversion_id>'
 
 
-class ATSSERVICEApiUrl(object):
+class ATSServiceApiUrl(object):
     """
     URLs to be used in Py-tests
     """
     VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.ATS_SERVICE_NAME, GTApis.ATS_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    SERVICES = HOST_NAME % ('/' + VERSION + '/ats-service')
-    SERVICE = HOST_NAME % ('/' + VERSION + '/ats-service/%s')
+    SERVICES = HOST_NAME % ('/' + VERSION + '/ats-services')
     URL_REDIRECT = HOST_NAME % ('/' + VERSION + '/redirect/%s')
