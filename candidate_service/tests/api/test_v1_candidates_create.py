@@ -409,10 +409,11 @@ class TestCreateHiddenCandidate(object):
         print response_info(response=get_resp_2)
         assert get_resp_2.status_code == 200
 
-    def test_recreate_hidden_candidate_using_candidate_with_multiple_emails(
-            self, access_token_first, user_first, talent_pool):
+    def test_recreate_hidden_candidate_using_candidate_with_multiple_emails(self, access_token_first,
+                                                                            user_first, talent_pool):
         # Create candidate
-        AddUserRoles.all_roles(user=user_first)
+        AddUserRoles.all_roles(user_first)
+
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
                 {'address': fake.safe_email()}, {'address': fake.safe_email()}
@@ -420,9 +421,9 @@ class TestCreateHiddenCandidate(object):
         ]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        candidate_id = create_resp.json()['candidates'][0]['id']
 
         # Hide candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
         hide_data = {'candidates': [{'id': candidate_id, 'hide': True}]}
         hide_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, hide_data)
         db.session.commit()

@@ -9,7 +9,7 @@ from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.talent_pools_pipelines import TalentPool
 from candidate_service.common.utils.talent_areas_of_interest import KAISER_PARENT_TO_CHILD_AOIS
 from candidate_service.common.tests.fake_testing_data_generator import college_majors
-from candidate_service.tests.api.candidate_sample_data import generate_international_phone_number
+from candidate_service.common.tests.fake_testing_data_generator import generate_international_phone_number
 from faker import Faker
 from nameparser import HumanName
 # Common utilities

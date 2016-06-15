@@ -1910,11 +1910,6 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         else:  # Add
             phone_dict.update(dict(candidate_id=candidate_id))
 
-            # If phone number exists in same domain, prevent updating/creating candidate
-            if does_phone_exists_in_domain(phone_value=value, domain_id=request.user.domain_id):
-                raise InvalidUsage("Candidate with phone number ({}) already exists.".format(value),
-                                   custom_error.PHONE_EXISTS)
-
             if is_updating:
                 # Prevent duplicate entries
                 if not do_phones_exist(candidate_phones, phone_dict):
@@ -1924,6 +1919,10 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
                 track_edits(update_dict=phone_dict, table_name='candidate_phone',
                             candidate_id=candidate_id, user_id=user_id)
             else:
+                # If phone number exists in same domain, prevent updating/creating candidate
+                if does_phone_exists_in_domain(phone_value=value, domain_id=request.user.domain_id):
+                    raise InvalidUsage(error_message="Candidate with phone number ({}) already exists.".format(value),
+                                       error_code=custom_error.PHONE_EXISTS)
                 db.session.add(CandidatePhone(**phone_dict))
 
 
@@ -2278,6 +2277,7 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
 class CachedData(object):
     """
     This class will contain data that may be required by other functions.
-    Should be cleared when its data is no longer needed
+    Note: Should be cleared when its data is no longer needed
     """
     country_codes = []
+    candidate_emails = []

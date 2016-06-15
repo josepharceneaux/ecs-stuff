@@ -73,7 +73,7 @@ from candidate_service.modules.talent_candidates import (
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
-    add_languages, update_candidate_languages
+    add_languages, update_candidate_languages, CachedData
 )
 from candidate_service.modules.candidate_engagement import calculate_candidate_engagement_score
 from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
@@ -131,18 +131,26 @@ class CandidatesResource(Resource):
                 # If candidate's email is found, check if it's web-hidden
                 candidate_email_obj = get_email_if_validated(email_address, domain_id)
                 if candidate_email_obj:
+
+                    # Cache candidate's email
+                    CachedData.candidate_emails.append(candidate_email_obj)
+
                     candidate_id = candidate_email_obj.candidate_id
 
                     # We need to prevent duplicate creation in case candidate has multiple email addresses in db
                     candidate_ids_from_candidate_email_obj.append(candidate_id)
                     candidate = Candidate.get_by_id(candidate_id)
 
-                    # Un-hide candidate from web, if found
-                    if not candidate.is_web_hidden:
+                    # Raise error if candidate is not hidden and its email matches another candidate's email
+                    if not candidate.is_web_hidden and (candidate_email_obj not in CachedData.candidate_emails):
+                        # Clear cached data
+                        CachedData.candidate_emails = []
+
                         raise InvalidUsage('Candidate with email: {}, already exists'.format(email_address),
                                            error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
                                            additional_error_info={'id': candidate_id})
 
+                    # Un-hide candidate from web, if found
                     if candidate.is_web_hidden:
                         candidate.is_web_hidden = 0
 
