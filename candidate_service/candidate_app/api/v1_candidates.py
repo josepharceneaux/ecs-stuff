@@ -364,8 +364,8 @@ class CandidatesResource(Resource):
 
         if skip:
             db.session.commit()
-            # Update candidates in cloud search
-            upload_candidate_documents.delay(hidden_candidate_ids)
+            # Delete candidate from CS when set to hidden
+            delete_candidate_documents(hidden_candidate_ids)
             return {'hidden_candidate_ids': hidden_candidate_ids}, 200
 
         # Custom fields must belong to user's domain
@@ -518,7 +518,7 @@ class CandidateResource(Resource):
 class CandidateAddressResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)  # todo: change to CAN_EDIT_CANDIDATE
     def delete(self, **kwargs):
         """
         Endpoints:

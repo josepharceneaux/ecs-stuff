@@ -3,12 +3,13 @@ from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
 from ..error_handling import InvalidUsage, InternalServerError
+from ..utils.validators import raise_if_not_positive_int_or_long
 from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
-from email_campaign import EmailCampaignSend
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
 from sms_campaign import SmsCampaignReply
+from email_campaign import (EmailCampaign, EmailCampaignSend)
 
 
 class Candidate(db.Model):
@@ -128,6 +129,13 @@ class CandidateStatus(db.Model):
         return "<CandidateStatus(id = '%r')>" % self.description
 
     DEFAULT_STATUS_ID = 1  # Newly added candidate
+    CONTACTED = 2
+    UNQUALIFIED = 3
+    QUALIFIED = 4
+    PROSPECT = 5
+    CANDIDATE = 6
+    HIRED = 7
+    CONNECTOR = 8
 
     @classmethod
     def get_all(cls):
@@ -368,6 +376,7 @@ class CandidateEmail(db.Model):
         :param email_address: email address
         :type email_address: str
         :return: True | False
+        :rtype: bool
         """
         assert isinstance(email_address, basestring) and email_address, 'email_address should have a valid value.'
         bounced_email = cls.query.filter_by(address=email_address, is_bounced=True).first()
@@ -386,6 +395,19 @@ class CandidateEmail(db.Model):
         query = CandidateEmail.query.filter(CandidateEmail.address.in_(emails))
         query.update(dict(is_bounced=True), synchronize_session=False)
         db.session.commit()
+
+    @classmethod
+    def get_email_by_candidate_id(cls, candidate_id):
+        """
+        Returns CandidateEmail object based on specified candidate id.
+        :param candidate_id: Id of candidate for which email address is to be retrieved.
+        :type candidate_id: int | long
+        :return: Candidate Email
+        :rtype: CandidateEmail
+        """
+        raise_if_not_positive_int_or_long(candidate_id)
+        email = cls.query.filter_by(candidate_id=candidate_id).first()
+        return email
 
 
 class CandidatePhoto(db.Model):
@@ -1132,6 +1154,30 @@ class CandidateSubscriptionPreference(db.Model):
     @classmethod
     def get_by_candidate_id(cls, candidate_id):
         return cls.query.filter_by(candidate_id=candidate_id).first()
+
+    @classmethod
+    def get_subscribed_candidate_ids(cls, campaign, all_candidate_ids):
+        """
+        Get ids of candidates subscribed to the campaign.
+        :param campaign: Valid campaign object.
+        :param all_candidate_ids: Ids of candidates.
+        :type campaign: EmailCampaign
+        :type all_candidate_ids: list
+        :return: List of subscribed candidate ids.
+        :rtype: list
+        """
+        if not isinstance(campaign, EmailCampaign):
+            raise InternalServerError(error_message='Must provide valid EmailCampaign object.')
+        if not isinstance(all_candidate_ids, list) or len(all_candidate_ids) <= 0:
+            raise InternalServerError(error_message='all_candidates_ids must be a non empty list. Given: %s' %
+                                                    all_candidate_ids)
+        subscribed_candidates_rows = CandidateSubscriptionPreference.with_entities(
+            CandidateSubscriptionPreference.candidate_id).filter(
+            and_(CandidateSubscriptionPreference.candidate_id.in_(all_candidate_ids),
+                 CandidateSubscriptionPreference.frequency_id == campaign.frequency_id)).all()
+        subscribed_candidate_ids = [row.candidate_id for row in
+                                    subscribed_candidates_rows]  # Subscribed candidate ids
+        return subscribed_candidate_ids
 
 
 class CandidateDevice(db.Model):

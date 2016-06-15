@@ -19,7 +19,7 @@ from sms_campaign_service.common.tests.conftest import \
      sample_client, test_domain, first_group, domain_first, user_first, candidate_first,
      test_domain_2, second_group, domain_second, candidate_second,
      user_same_domain, user_from_diff_domain, access_token_second, talent_pipeline, talent_pool,
-     access_token_other, access_token_same, talent_pool_other, talent_pipeline_other)
+     access_token_other, access_token_same, talent_pool_other, talent_pipeline_other, _get_auth_header)
 
 # Service specific
 from sms_campaign_service.sms_campaign_app import app
@@ -45,7 +45,6 @@ from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidateP
 # Common Utils
 from sms_campaign_service.common.routes import CandidateApiUrl
 from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
-from sms_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers, \
     FixtureHelpers
 
@@ -206,10 +205,10 @@ def invalid_data_for_campaign_creation(request):
     return campaign_data, request.param
 
 
-@pytest.fixture(params=[0, 'abcdef', None, dict(), list()])
-def invalid_smartlist_id(request):
+@pytest.fixture(params=[0, 'a', '1', None, dict(), list()])
+def invalid_id(request):
     """
-    This function returns invalid smartlist Ids to create an sms-campaign.
+    This function returns invalid Ids to create/update/delete an sms-campaign.
     """
     return [request.param]
 
@@ -257,10 +256,10 @@ def sms_campaign_with_two_smartlists(request, campaign_valid_data, access_token_
     This creates the SMS campaign for "user_first"(fixture) using valid data and two smartlists.
     It then returns the campaign object.
     """
-    smartlist_1_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-access_token_first, talent_pipeline, create_phone=True)
-    smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, create_phone=True)
+    smartlist_1_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
+                                                                              talent_pipeline, create_phone=True)
+    smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
+                                                                              talent_pipeline, create_phone=True)
     campaign_valid_data['smartlist_ids'] = [smartlist_1_id, smartlist_2_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers, talent_pipeline.user.id)
 
@@ -887,16 +886,6 @@ def _delete_blast(blast_obj):
         SmsCampaignBlast.delete(blast_obj)
     except Exception:  # resource may have been deleted in case of DELETE request
         pass
-
-
-def _get_auth_header(access_token):
-    """
-    This returns auth header dict.
-    :param access_token: access token of user
-    """
-    auth_header = {'Authorization': 'Bearer %s' % access_token}
-    auth_header.update(JSON_CONTENT_TYPE_HEADER)
-    return auth_header
 
 
 def _get_candidate_and_phone_tuple(request, sent_campaign_and_blast_ids, access_token_first,
