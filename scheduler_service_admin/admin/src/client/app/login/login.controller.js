@@ -1,3 +1,6 @@
+/**
+ * Login controller manages the user login, logout and authentication functionality
+ */
 (function () {
   'use strict';
 

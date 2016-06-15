@@ -1,3 +1,7 @@
+/**
+ * Scheduler Admin controller which get data from external talent-flask services (i.e. scheduler service) and then
+ * using filters and show them in UI
+ */
 (function() {
   'use strict';
 
@@ -10,26 +14,27 @@
   function SchedulerAdminController(logger, $rootScope, UserToken, SchedulerClientService) {
     var vm = this;
     vm.title = 'Scheduler Service Admin';
-
+    var both_tasks = 'both';
+    var general_tasks = 'general';
 
     UserToken.goToLogin();
 
     /**
-     * Get filtered jobs from scheduler service and shows them in data table (UI)
+     * Get filtered jobs from scheduler service and show them in data table (UI)
      */
     vm.applyFilter = function(){
 
       var filterDict = {};
 
-      if(vm.selectedTaskType !== 'both'){
+      if(vm.selectedTaskType !== both_tasks){
         filterDict['task_type'] = vm.selectedTaskType;
       }
 
-      if(vm.selectTaskCategory !== 'both') {
+      if(vm.selectTaskCategory !== both_tasks) {
         filterDict['task_category'] = vm.selectTaskCategory;
       }
 
-      if(typeof vm.userId === 'number' && vm.userId >= 1 && vm.selectTaskCategory !== 'general') {
+      if(typeof vm.userId === 'number' && vm.userId >= 1 && vm.selectTaskCategory !== general_tasks) {
         filterDict['userId'] = vm.userId;
       }
 
@@ -78,19 +83,19 @@
 
     vm.paused = { name: 'Paused only', enabled: false };
 
-    vm.selectedTaskType = 'both';
+    vm.selectedTaskType = both_tasks;
 
     vm.taskType = [
-      {id: 1, title: ' Both', value: 'both'},
+      {id: 1, title: ' Both', value: both_tasks},
       {id: 2, title: ' Periodic', value: 'periodic'},
       {id: 3, title: 'One Time', value: 'one_time'}
     ];
 
     vm.selectTaskCategory = 'both';
     vm.taskCategory = [
-      {id: 1, title: ' Both', value: 'both'},
+      {id: 1, title: ' Both', value: both_tasks},
       {id: 2, title: ' User', value: 'user'},
-      {id: 3, title: 'General', value: 'general'}
+      {id: 3, title: 'General', value: general_tasks}
     ];
 
     function activate() {

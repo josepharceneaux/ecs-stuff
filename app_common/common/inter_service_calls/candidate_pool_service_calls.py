@@ -1,9 +1,9 @@
 import json
 import requests
 from ..utils.api_utils import DEFAULT_PAGE
-from ..utils.validators import raise_if_not_instance_of
 from ..routes import CandidatePoolApiUrl, EmailCampaignApiUrl
 from ..utils.handy_functions import http_request, create_oauth_headers
+from ..utils.validators import (raise_if_not_instance_of, raise_if_not_positive_int_or_long)
 
 
 def create_smartlist_from_api(data, access_token):
@@ -41,16 +41,30 @@ def create_campaign_send_from_api(campaign_id, access_token):
     return response.json()
 
 
-def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=None):
+def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=None, user_id=None):
     """
     Calls smartlist API and retrieves the candidates of a smart or dumb list.
-    :param (int | long) list_id: smartlist id.
-    :param (bool) candidate_ids_only: Whether or not to get only ids of candidates
+    :param list_id: smartlist id.
+    :param candidate_ids_only: Whether or not to get only ids of candidates
+    :param access_token: Token for authorization
+    :param user_id: id of user
+    :type list_id: int | long
+    :type candidate_ids_only: bool
+    :type access_token: string | None
+    :type user_id: int | long | None
+    :rtype: list
+
     """
+    raise_if_not_positive_int_or_long(list_id)
+    raise_if_not_instance_of(candidate_ids_only, bool)
+    if access_token:
+        raise_if_not_instance_of(access_token, (str, unicode))
+    if user_id:
+        raise_if_not_positive_int_or_long(user_id)
     per_page = 1000  # Smartlists can have a large number of candidates, hence page size of 1000
     params = {'fields': 'id'} if candidate_ids_only else {}
     response = get_candidates_from_smartlist_with_page_params(list_id, per_page, DEFAULT_PAGE,
-                                                              params, access_token)
+                                                              params, access_token, user_id)
     response_body = response.json()
     candidates = response_body['candidates']
     no_of_pages = response_body['max_pages']
@@ -59,7 +73,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
             next_page = current_page + DEFAULT_PAGE
             response = get_candidates_from_smartlist_with_page_params(list_id, per_page,
                                                                       next_page, params,
-                                                                      access_token)
+                                                                      access_token, user_id)
             response_body = response.json()
             candidates.extend(response_body['candidates'])
     if candidate_ids_only:
@@ -67,7 +81,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
     return candidates
 
 
-def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params, access_token=None):
+def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, params, access_token=None, user_id=None):
     """
     Method to get candidates from smartlist based on smartlist id and pagination params.
     :param (int | long) list_id: Id of smartlist.
@@ -75,16 +89,21 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, page, para
     :param (int) page: Number of page to fetch in response
     :param (dict| None) params: Specific params to include in request. e.g. candidates_ids_only etc
     :param (str | None) access_token: access token of user
+    :param (int | long | None) user_id: Id of user
     """
     raise_if_not_instance_of(list_id, (int, long))
     raise_if_not_instance_of(page, int)
     raise_if_not_instance_of(per_page, int)
+    if access_token:
+        raise_if_not_instance_of(access_token, (str, unicode))
+    if user_id:
+        raise_if_not_positive_int_or_long(user_id)
     if not params:
         params = {}
     params.update({'page': page}) if page else None
     params.update({'limit': per_page}) if per_page else None
     response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % str(list_id),
-                            params=params, headers=create_oauth_headers(access_token))
+                            params=params, headers=create_oauth_headers(access_token, user_id=user_id))
     return response
 
 

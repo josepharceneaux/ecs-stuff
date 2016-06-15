@@ -2,6 +2,7 @@
 Test cases for candidate-search-service-API
 """
 import math
+from time import sleep
 
 # Error handling
 from candidate_service.common.error_handling import NotFoundError
@@ -79,7 +80,7 @@ def test_search_location(user_first, access_token_first, talent_pool):
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
                                         city=city, state=state, zip_code=zip_code)
     response = get_response(access_token_first, '?location=%s,%s' % (city, state), expected_count=len(candidate_ids),
-                            timeout=300)
+                            attempts=20)
     _assert_results(candidate_ids, response.json())
 
 
@@ -1116,12 +1117,12 @@ def _assert_results(candidate_ids, response):
     assert set(candidate_ids).issubset(set(resultant_candidate_ids))
 
 
-def get_response(access_token, arguments_to_url, expected_count=1, timeout=100):
+def get_response(access_token, arguments_to_url, expected_count=1, attempts=10):
     # Wait for cloudsearch to update the candidates
     url = CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
-    attempts = timeout / 3 + 1
-    for _ in retrier(attempts=attempts, sleeptime=3):
+    for i in range(0, attempts):
+        sleep(3)
         resp = requests.get(url, headers=headers)
         print response_info(resp)
         if len(resp.json()['candidates']) >= expected_count:

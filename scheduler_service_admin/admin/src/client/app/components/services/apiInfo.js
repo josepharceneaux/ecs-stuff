@@ -1,3 +1,7 @@
+/**
+ * API info service reads the URLs from node server and saves them in a dictionary. So, that other services and controllers
+ * can use these URLs to call auth service, scheduler service and user service
+ */
 (function () {
   'use strict';
 

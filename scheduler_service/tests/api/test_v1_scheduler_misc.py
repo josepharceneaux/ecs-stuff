@@ -126,7 +126,7 @@ class TestSchedulerMisc(object):
     def test_scheduled_job_post_request(self, sample_user, user_auth, job_config, job_cleanup):
         """
         Schedule a job 40 seconds from now and then set token expiry after 20 seconds.
-        So that after 20 seconds token will expire and job will be in running state after 8 seconds.
+        So that after 20 seconds token will expire and job will be in running state.
         When job time comes, endpoint will call run_job method and which will refresh the expired token.
         Then check the new expiry time of expired token in test which should be in future
         Args:

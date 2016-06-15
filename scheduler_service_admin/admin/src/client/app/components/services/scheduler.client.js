@@ -1,3 +1,6 @@
+/**
+ * Scheduler Client service gets the tasks using filters from scheduler service
+ */
 (function () {
   'use strict';
 

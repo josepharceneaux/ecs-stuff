@@ -404,13 +404,14 @@ def serialize_task_admin(task):
     for entry in ['post_data', 'url', 'request_method']:
         del task_dict[entry]
 
+    # task.args[0] -> user_id
     if task.args[0]:
         task_dict['user_id'] = task.args[0]
         task_dict['task_category'] = SchedulerUtils.CATEGORY_USER
         user = User.get_by_id(task.args[0])
         if not user:
             logger.error("serialize_task: user with id %s doesn't exist." % task.args[0])
-            task_dict['user_email'] = 'user_id: %s, User Deleted' % task.args[0]
+            task_dict['user_email'] = 'user_id: %s, User deleted' % task.args[0]
         else:
             task_dict['user_email'] = user.email
     else:

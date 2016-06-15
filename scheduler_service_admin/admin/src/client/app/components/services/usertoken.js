@@ -2,6 +2,10 @@
  * Created by Saad Abdullah on 5/16/16.
  */
 
+/**
+ * UserToken manages cookies and saves bearer token sent by auth service. So, that token can be used to send request
+ * to other services
+ */
 (function () {
   'use strict';
 
