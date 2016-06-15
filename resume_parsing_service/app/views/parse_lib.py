@@ -78,7 +78,11 @@ def parse_resume(file_obj, filename_str):
 
 
 def convert_pdf_to_text(pdf_file_obj):
-    """Converts a PDF file to a usable string."""
+    """
+    Converts a PDF file to a usable string.
+    :param cStringIO.StringIO pdf_file_obj:
+    :return str:
+    """
     # rsrcmgr = PDFResourceManager()
     # retstr = StringIO()
     # codec = 'utf-8'
@@ -103,18 +107,18 @@ def convert_pdf_to_text(pdf_file_obj):
     # retstr.close()
     # return text
     text = ''
-    pdfReader = PyPDF2.PdfFileReader(pdf_file_obj)
+    pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
 
-    if pdfReader.isEncrypted:
-        decrypted = pdfReader.decrypt('')
+    if pdf_reader.isEncrypted:
+        decrypted = pdf_reader.decrypt('')
 
         if not decrypted:
             raise InternalServerError('The PDF appears to be encrypted and could not be read. Please try using an un-encrypted PDF')
 
-    page_count = pdfReader.numPages
+    page_count = pdf_reader.numPages
 
     for i in xrange(page_count):
-        new_text = pdfReader.getPage(i).extractText()
+        new_text = pdf_reader.getPage(i).extractText()
 
         if new_text:
             text += new_text
