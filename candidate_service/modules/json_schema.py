@@ -1,7 +1,10 @@
 """
 JSON Schemas for validating data sent to CandidatesResource
 """
+import sys
 from datetime import datetime
+
+MAX_INT = sys.maxint
 CURRENT_YEAR = datetime.now().year
 
 candidates_resource_schema_post = {
@@ -43,7 +46,9 @@ candidates_resource_schema_post = {
                         "type": ["string", "null"]
                     },
                     "source_id": {
-                        "type": ["integer", "null"]
+                        "type": ["integer", "null"],
+                        "minimum": 1,
+                        "maximum": MAX_INT
                     },
                     "objective": {
                         "type": ["string", "null"]
@@ -597,7 +602,9 @@ candidates_resource_schema_patch = {
                         "type": ["string", "null"]
                     },
                     "source_id": {
-                        "type": ["integer", "null"]
+                        "type": ["integer", "null"],
+                        "minimum": 1,
+                        "maximum": MAX_INT
                     },
                     "objective": {
                         "type": ["string", "null"]
@@ -1120,7 +1127,6 @@ candidates_resource_schema_patch = {
     }
 }
 
-
 candidates_resource_schema_get = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": ["object", "null"],
@@ -1135,7 +1141,6 @@ candidates_resource_schema_get = {
         }
     }
 }
-
 
 resource_schema_preferences = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -1207,7 +1212,6 @@ resource_schema_photos_patch = {
     }
 }
 
-
 notes_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
@@ -1227,7 +1231,6 @@ notes_schema = {
         }
     }
 }
-
 
 language_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -1252,68 +1255,26 @@ language_schema = {
     }
 }
 
-ccf_schema = {
+tag_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "additionalProperties": False,
-    "required": ["candidate_custom_fields"],
+    "required": ["tags"],
     "properties": {
-        "candidate_custom_fields": {
+        "tags": {
             "type": ["array"],
             "items": {
                 "type": "object",
                 "additionalProperties": False,
+                "required": ["name"],
                 "properties": {
-                    "custom_field_id": {
-                        "type": ["integer"],
-                        "minimum": 1
+                    "id": {
+                        "type": ["integer", "null"]
                     },
-                    "value": {
-                        "type": ["string", "null"],
-                        "maxLength": 255
-                    }
-                }
-            }
-        }
-    }
-}
-
-reference_schema = {
-    "$schema": "http://json-schema.org/draft-04/schema#",
-    "type": "object",
-    "required": ["candidate_references"],
-    "properties": {
-        "candidate_references": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "required": ["name", "comments"],
-                "properties": {
-                    "name": {"type": "string"},
-                    "position_title": {"type": ["string", "null"]},
-                    "comments": {"type": "string"},
-                    "reference_email": {
-                        "type": "object",
-                        "properties": {
-                            "is_default": {"type": ["boolean", "null"]},
-                            "address": {"type": ["string", "null"]},
-                            "label": {"type": ["string", "null"]}
-                        }
-                    },
-                    "reference_phone": {
-                        "type": "object",
-                        "properties": {
-                            "is_default": {"type": ["boolean", "null"]},
-                            "value": {"type": ["string", "null"]},
-                            "label": {"type": ["string", "null"]}
-                        }
-                    },
-                    "reference_web_address": {
-                        "type": "object",
-                        "properties": {
-                            "url": {"type": ["string", "null"]},
-                            "description": {"type": ["string", "null"]}
-                        }
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 12
                     }
                 }
             }

@@ -1,13 +1,10 @@
 __author__ = 'ufarooqi'
 
-from flask.ext.cors import CORS
 from flask.ext.cache import Cache
 
 from candidate_pool_service.common.utils.models_utils import init_talent_app
-from candidate_pool_service.common.routes import CandidatePoolApi, GTApis
-from candidate_pool_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
-from candidate_pool_service.common.utils.talent_ec2 import get_ec2_instance_id
-from candidate_pool_service.common.talent_flask import TalentFlask
+from candidate_pool_service.common.routes import CandidatePoolApi
+from candidate_pool_service.common.talent_config_manager import TalentConfigKeys
 from candidate_pool_service.common.talent_celery import init_celery_app
 from candidate_pool_service.common.models.db import db
 

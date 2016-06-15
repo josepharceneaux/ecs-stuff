@@ -1,6 +1,7 @@
 from flask import request, Blueprint, jsonify
 from flask_restful import Resource
 
+from candidate_pool_service.modules.smartlists import *
 from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.models.user import User
 from candidate_pool_service.common.talent_api import TalentApi
@@ -12,11 +13,9 @@ from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_
 from candidate_pool_service.modules.validators import validate_and_format_smartlist_post_data
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_smartlist_candidates
-from candidate_pool_service.modules.smartlists import create_smartlist_dict, save_smartlist, get_all_smartlists
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_stats_generic_function
 from candidate_pool_service.common.inter_service_calls.candidate_service_calls import update_candidates_on_cloudsearch
 
-__author__ = 'jitesh'
 
 smartlist_blueprint = Blueprint('smartlist_api', __name__)
 

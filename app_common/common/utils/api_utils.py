@@ -65,17 +65,21 @@ def api_route(self, *args, **kwargs):
     return wrapper
 
 
-def get_pagination_params(request):
+def get_pagination_params(request, default_page=DEFAULT_PAGE, default_per_page=DEFAULT_PAGE_SIZE,
+                          max_per_page=MAX_PAGE_SIZE):
     """
     This function helps to extract pagination query parameters "page" and "per_page" values.
     It validates the values for these params and raises InvalidUsage if given values or not
      valid number or returns default values (page=1, per_page=10) if no values are given.
     :param request: request object to get query params
+    :param default_page: If given, then function will use this parameter instead of DEFAULT_PAGE
+    :param default_per_page: If given, then function will use this parameter instead of DEFAULT_PER_PAGE
+    :param max_per_page: If given, then function will use this parameter instead of MAX_PER_PAGE
     :return: page, per_page
     :rtype: tuple
     """
-    page = request.args.get('page', DEFAULT_PAGE)
-    per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
+    page = request.args.get('page', default_page)
+    per_page = request.args.get('per_page', default_per_page)
     try:
         page = int(page)
         assert page > 0
@@ -83,10 +87,10 @@ def get_pagination_params(request):
         raise InvalidUsage('page value should a positive number. Given %s' % page)
     try:
         per_page = int(per_page)
-        assert 0 < per_page <= MAX_PAGE_SIZE, 'Give per_page value %s' % per_page
+        assert 0 < per_page <= max_per_page, 'Give per_page value %s' % per_page
     except:
         raise InvalidUsage('per_page should be a number with maximum value %s. Given %s'
-                           % (MAX_PAGE_SIZE, per_page))
+                           % (default_per_page, per_page))
 
     return page, per_page
 

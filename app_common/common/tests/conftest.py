@@ -29,6 +29,7 @@ USER_PASSWORD = 'Talent15'
 # TODO: Above fixed passwords should be removed and random passwords should be used
 PASSWORD = gen_salt(20)
 CHANGED_PASSWORD = gen_salt(20)
+JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
 
 class UserAuthentication:
@@ -184,7 +185,7 @@ def domain_aoi(domain_first):
     """Will add two areas-of-interest to domain
     :rtype:  list[AreaOfInterest]
     """
-    areas_of_interest = [{'name': fake.job()}, {'name': fake.job()}]
+    areas_of_interest = [{'name': fake.job().lower()}, {'name': fake.job().lower()}]
     for area_of_interest in areas_of_interest:
         db.session.add(AreaOfInterest(domain_id=domain_first.id, name=area_of_interest['name']))
 
@@ -412,7 +413,6 @@ def sample_user_2(domain_first, first_group, request):
     return user
 
 
-
 @pytest.fixture()
 def talent_pool(request, domain_first, first_group, user_first):
     talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, user_id=user_first.id)
@@ -581,3 +581,13 @@ def user_second_candidate(request, user_second):
 
 def randomword(length):
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
+
+
+def _get_auth_header(access_token):
+    """
+    This returns auth header dict.
+    :param access_token: access token of user
+    """
+    auth_header = {'Authorization': 'Bearer %s' % access_token}
+    auth_header.update(JSON_CONTENT_TYPE_HEADER)
+    return auth_header

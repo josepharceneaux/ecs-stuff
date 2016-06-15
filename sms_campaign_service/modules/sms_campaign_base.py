@@ -304,11 +304,11 @@ class SmsCampaignBase(CampaignBase):
 
     def get_all_campaigns(self):
         """
-        This gets all the campaigns created by current user
-        :return: all campaigns associated to with user
+        This gets all the campaigns created by all users in logged in user's domain
+        :return: all campaigns associated to domain of logged-in user
         :rtype: list
         """
-        return self.user_phone.sms_campaigns
+        return SmsCampaign.get_by_domain_id(self.user_phone.user.domain_id)
 
     def pre_process_save_or_update(self, form_data):
         """
@@ -334,13 +334,13 @@ class SmsCampaignBase(CampaignBase):
         form_data and calls super constructor to save the campaign in database.
         :param form_data: data from UI
         :type form_data: dict
-        :return: id of sms_campaign in db, invalid_smartlist_ids and not_found_smartlist_ids
-        :rtype: tuple
+        :return: id of created sms-campaign in db
+        :rtype: int | long
         """
         if not form_data:
             raise InvalidUsage('save: No data received from UI. (User(id:%s))' % self.user.id)
         form_data['user_phone_id'] = self.user_phone.id
-        logger.debug("user_phone_id has been added in form data for user %s() %s"
+        logger.debug("user_phone_id has been added in form data for user %s(id:%s)"
                      % (self.user.name, self.user.id))
         return super(SmsCampaignBase, self).save(form_data)
 
@@ -438,21 +438,19 @@ class SmsCampaignBase(CampaignBase):
             return candidate, get_formatted_phone_number(phone_number)
         elif len(candidate_mobile_phone) > 1:
             logger.error('filter_candidates_for_valid_phone: SMS cannot be sent as '
-                         'candidate(id:%s) has multiple mobile phone numbers. '
-                         'Campaign(id:%s). (User(id:%s))'
-                         % (candidate.id, self.campaign.id, self.user.id))
+                         'Candidate(id:%s) has multiple mobile numbers. '
+                         'Campaign(id:%s). (User(id:%s))' % (candidate.id, self.campaign.id, self.user.id))
         else:
             logger.error('filter_candidates_for_valid_phone: SMS cannot be sent as '
-                         'candidate(id:%s) has no phone number associated. Campaign(id:%s). '
+                         'Candidate(id:%s) has no mobile number associated. Campaign(id:%s). '
                          '(User(id:%s))' % (candidate.id, self.campaign.id, self.user.id))
 
     def pre_process_celery_task(self, candidates):
         """
         This overrides the CampaignBase class method and filter only those candidates who
         have one unique mobile number associated.
-        :param candidates:
-        :type candidates: list
-        :return:
+        :param candidates: list of candidates to whom we want to send campaign
+        :type candidates: list[Candidate]
         """
         not_owned_ids = []
         multiple_records_ids = []
@@ -460,7 +458,7 @@ class SmsCampaignBase(CampaignBase):
         for candidate in candidates:
             try:
                 # check if candidate belongs to user's domain
-                if candidate.user_id != self.user.id:
+                if candidate.user.domain_id != self.user.domain_id:
                     raise CandidateNotFoundInUserDomain
                 candidates_and_phones.append(self.does_candidate_have_unique_mobile_phone(candidate))
             except CandidateNotFoundInUserDomain:
@@ -944,16 +942,16 @@ def _get_valid_user_phone(user_phone_value):
     user_phones_obj = UserPhone.get_by_phone_value(user_phone_value)
     if len(user_phones_obj) == 1:
         user_phone = user_phones_obj[0]
+        return user_phone
     elif len(user_phones_obj) > 1:
-        raise MultipleUsersFound(
-            '%s phone number is associated with %s users. User ids are %s'
-            % (user_phone_value,
-               len(user_phones_obj),
-               [user_phone.user_id for user_phone in user_phones_obj]))
+        if not user_phone_value == TWILIO_TEST_NUMBER:
+            raise MultipleUsersFound('%s phone number is associated with %s users. '
+                                     'User ids are %s'
+                                     % (user_phone_value, len(user_phones_obj),
+                                        [user_phone.user_id for user_phone in user_phones_obj]))
     else:
         raise NoUserFoundForPhoneNumber('No User is associated with '
                                         '%s phone number' % user_phone_value)
-    return user_phone
 
 
 def _get_valid_candidate_phone(candidate_phone_value, current_user):
@@ -963,16 +961,17 @@ def _get_valid_candidate_phone(candidate_phone_value, current_user):
     - This function is called from class method process_candidate_reply() of
     SmsCampaignBase class to get candidate_phone db record.
 
-    :param candidate_phone_value: Phone number by which we want to get user.
-    :type candidate_phone_value: str
+    :param (basestring) candidate_phone_value: Phone number by which we want to get user.
+    :param (User) current_user: Logged-in user's object
     :exception: If Multiple Candidates found, it raises "MultipleCandidatesFound".
     :exception: If no Candidate is found, it raises "CandidateNotFoundInUserDomain".
     :return: candidate_phone obj
     :rtype: CandidatePhone
     """
     raise_if_not_instance_of(candidate_phone_value, basestring)
-    candidate_phone_records = CandidatePhone.search_phone_number_in_user_domain(
-        candidate_phone_value, [candidate.id for candidate in current_user.candidates])
+    raise_if_not_instance_of(current_user, User)
+    candidate_phone_records = \
+        CandidatePhone.search_phone_number_in_user_domain(candidate_phone_value, current_user)
     if len(candidate_phone_records) == 1:
         candidate_phone = candidate_phone_records[0]
     elif len(candidate_phone_records) > 1:

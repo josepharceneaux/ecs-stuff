@@ -7,15 +7,17 @@ from ..models.user import User
 from ..routes import CandidateApiUrl
 from ..utils.handy_functions import create_oauth_headers, http_request
 from ..error_handling import InternalServerError, InvalidUsage, ForbiddenError
+from ..utils.validators import raise_if_not_positive_int_or_long
 
 __author__ = 'jitesh'
 
 
-def search_candidates_from_params(search_params, access_token, user_id=None):
+def search_candidates_from_params(search_params, access_token, url_args=None, user_id=None):
     """
     Calls the candidate_service's Search API with given search criteria and returns the search result.
     :param search_params: Search params or search criteria upon which candidates would be filtered.
     :param access_token: Oauth-based or JWT-based token
+    :param  url_args:  accepted arguments sent via the url; e.g. "?user_ids=2,3,4"
     :param user_id: Id of logged-in user
     :return: search result based on search criteria.
     """
@@ -28,8 +30,9 @@ def search_candidates_from_params(search_params, access_token, user_id=None):
         access_token = access_token if 'Bearer' in access_token else 'Bearer %s' % access_token
         headers = {'Authorization': access_token, 'Content-Type': 'application/json'}
 
+    url = CandidateApiUrl.CANDIDATE_SEARCH_URI
     response = requests.get(
-            url=CandidateApiUrl.CANDIDATE_SEARCH_URI,
+            url=(url + url_args) if url_args else url,
             params=search_params,
             headers=headers
     )
@@ -70,7 +73,6 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
     else it will return the created candidate response json object
     Returns: list of created candidate ids
     # """
-
     if not oauth_token and not user_id:
         raise InvalidUsage(error_message="Call to candidate service should be made either with user oauth or JWT oauth."
                                          "oauth_token and user_id cannot be None at same time.")
@@ -98,9 +100,19 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
     return resp.json()
 
 
-def get_candidate_subscription_preference(candidate_id):
-    resp = http_request('get', CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_id,
-                        headers=create_oauth_headers())
+def get_candidate_subscription_preference(candidate_id, user_id):
+    """
+    Method to get the subscription preference of a candidate with specified candidate id.
+    :param candidate_id: Id of candidate for which subscription preference is to be retrieved.
+    :param user_id: Id of user.
+    :type candidate_id: int | long
+    :type user_id: int | long
+    :rtype: int
+    """
+    raise_if_not_positive_int_or_long(candidate_id)
+    raise_if_not_positive_int_or_long(user_id)
+    resp = http_request('get', CandidateApiUrl.CANDIDATE_PREFERENCE % str(candidate_id),
+                        headers=create_oauth_headers(user_id=user_id))
     if resp.status_code == ForbiddenError.http_status_code():
         raise ForbiddenError('Not authorized to get Candidate(id:%s)' % candidate_id)
     assert resp.status_code == 200

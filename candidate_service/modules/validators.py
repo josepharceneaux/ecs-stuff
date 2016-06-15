@@ -21,15 +21,12 @@ from candidate_service.common.models.misc import AreaOfInterest, CustomField
 from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
                                                      SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
-from candidate_service.common.error_handling import InvalidUsage, NotFoundError
+from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from ..custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.validators import is_number
 from candidate_service.common.utils.validators import format_phone_number
 # Json schema validation
 from jsonschema import validate, ValidationError, FormatChecker
-
-
-SPECIAL_CHARS = r'+-!(){}[]^"~*?\:'
 
 
 def get_json_if_exist(_request):
@@ -62,6 +59,30 @@ def get_candidate_if_exists(candidate_id):
     return candidate
 
 
+def get_candidate_if_validated(user, candidate_id):
+    """
+    Function will return candidate if:
+        1. it exists
+        2. not hidden, and
+        3. belongs to user's domain
+    :type user: User
+    :type candidate_id: int | long
+    :rtype: Candidate
+    """
+    candidate = Candidate.get(candidate_id)
+    if not candidate:
+        raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
+                            error_code=custom_error.CANDIDATE_NOT_FOUND)
+    if candidate.is_web_hidden:
+        raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
+                            error_code=custom_error.CANDIDATE_IS_HIDDEN)
+
+    if candidate.user.domain_id != user.domain_id:
+        raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+
+    return candidate
+
+
 def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
     """
     Function checks if:
@@ -73,8 +94,8 @@ def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
     """
     assert isinstance(candidate_id, (int, long))
     candidate_row = db.session.query(Candidate).join(User).filter(
-            Candidate.id == candidate_id, Candidate.user_id == user_row.id,
-            User.domain_id == user_row.domain_id
+        Candidate.id == candidate_id, Candidate.user_id == user_row.id,
+        User.domain_id == user_row.domain_id
     ).first()
 
     return True if candidate_row else False
@@ -219,15 +240,6 @@ def validate_fields(key, value):
     return fields
 
 
-def format_query(query):
-    """
-    This method will escape special characters in query and enclose it with double quotes
-    :param query: Query Strinf
-    :return:
-    """
-    return ''.join(map(lambda char: '\%s' % char if char in SPECIAL_CHARS else char, query))
-
-
 def convert_date(key, value):
     """
     Convert the given date into cloudsearch's desired format and return.
@@ -236,9 +248,13 @@ def convert_date(key, value):
     if value:
         try:
             formatted_date = parse(value)
+            if key == "date_from":
+                formatted_date = formatted_date.replace(hour=0, minute=0, second=0)
+            else:
+                formatted_date = formatted_date.replace(hour=23, minute=59, second=59)
         except ValueError:
             raise InvalidUsage("Field `%s` contains incorrect date format. "
-                               "Date format should be YY-MM-DDTHH:MM:SS (eg. 2009-08-13T10:33:25)" % key)
+                               "Date format should be MM/DD/YYYY (eg. 06/10/2016)" % key)
         return formatted_date.isoformat() + 'Z'  # format it as required by cloudsearch.
 
 
@@ -246,7 +262,7 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "sort_by": 'sorting',
     "limit": 'digit',
     "page": 'string_list',
-    "query": 'query',
+    "query": '',
     # Facets
     "date_from": 'date_range',
     "date_to": 'date_range',
@@ -270,6 +286,8 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "military_highest_grade": 'string_list',
     "military_end_date_from": 'digit',
     "military_end_date_to": 'digit',
+    "tag_ids": "id_list",
+    "custom_fields": 'string_list',
     # return fields
     "fields": 'return_fields',
     # Id of a talent_pool from where to search candidates
@@ -353,8 +371,6 @@ def validate_and_format_data(request_data):
             request_vars[key] = validate_fields(key, value)
         if SEARCH_INPUT_AND_VALIDATIONS[key] == "date_range":
             request_vars[key] = convert_date(key, value)
-        if SEARCH_INPUT_AND_VALIDATIONS[key] == "query":
-            request_vars[key] = format_query(value)
         # Custom fields. Add custom fields to request_vars.
         if key.startswith('cf-'):
             request_vars[key] = value
@@ -425,7 +441,7 @@ def get_candidate_email_from_domain_if_exists(user_id, email_address):
     """
     user_domain_id = User.get_domain_id(_id=user_id)
     candidate_email = CandidateEmail.query.join(Candidate).join(User).filter(
-            CandidateEmail.address == email_address, User.domain_id == user_domain_id).first()
+        CandidateEmail.address == email_address, User.domain_id == user_domain_id).first()
     return candidate_email if candidate_email else None
 
 
@@ -448,7 +464,7 @@ def get_education_if_exists(educations, education_dict, education_degrees):
                     'end_year': existing_degree.end_year,
                     'title': existing_degree.degree_title
                 } for existing_degree in education.degrees
-            ]
+                ]
 
             new_degree_dicts = [
                 {
@@ -456,7 +472,7 @@ def get_education_if_exists(educations, education_dict, education_degrees):
                     'end_year': new_degree.get('end_year'),
                     'title': new_degree.get('title')
                 } for new_degree in education_degrees
-            ]
+                ]
 
             common_dicts = [common for common in existing_degree_dicts if common in new_degree_dicts]
             if common_dicts:
@@ -609,7 +625,7 @@ def does_military_service_exist(military_services, military_service_dict):
     return False
 
 
-def get_json_data_if_it_passed_validation(request_body, json_schema, format_checker=True):
+def get_json_data_if_validated(request_body, json_schema, format_checker=True):
     """
     Function will compare requested json data with provided json schema
     :type request_body:  request

@@ -42,6 +42,7 @@ class User(db.Model):
     last_name = db.Column('lastName', db.String(255))
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.utcnow)
     updated_time = db.Column('updatedTime', db.DateTime, default=datetime.datetime.utcnow)
+    password_reset_time = db.Column('passwordResetTime', db.DateTime, default=datetime.datetime.utcnow)
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.Id', ondelete='CASCADE'))
     last_read_datetime = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
@@ -58,7 +59,7 @@ class User(db.Model):
                                backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
     email_templates = relationship('UserEmailTemplate', backref='user', cascade='all, delete-orphan')
-    push_campaigns = relationship('PushCampaign', backref='user', cascade='all,delete-orphan', passive_deletes=True,)
+    push_campaigns = relationship('PushCampaign', backref='user', cascade='all,delete-orphan', passive_deletes=True, )
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship(Event, backref='user', lazy='dynamic',
                              cascade='all, delete-orphan', passive_deletes=True)
@@ -94,7 +95,7 @@ class User(db.Model):
             request.user = None
             return
 
-        raise UnauthorizedError(error_message="User with id=%s doesn't exist in database" % data['user_id'])
+        raise UnauthorizedError(error_message="User %s doesn't exist in database" % data['user_id'])
 
     def is_authenticated(self):
         return True
@@ -147,6 +148,15 @@ class User(db.Model):
         session.add(user)
         session.commit()
         return user
+
+    @staticmethod
+    def get_by_email(email):
+        """
+        This method returns a user with specified email or None if not found.
+        :param (str) email: user email address
+        :rtype User | None
+        """
+        return User.query.filter_by(email=email).first()
 
 
 class UserPhone(db.Model):
@@ -451,6 +461,12 @@ class DomainRole(db.Model):
         CAN_CREATE_EMAIL_TEMPLATE_FOLDER = "CAN_CREATE_EMAIL_TEMPLATE_FOLDER"
         CAN_DELETE_EMAIL_TEMPLATE_FOLDER = "CAN_DELETE_EMAIL_TEMPLATE_FOLDER"
 
+        CAN_IMPERSONATE_USERS = "CAN_IMPERSONATE_USERS"
+
+        # Scheduler Admin Role
+        # TODO--w: It should say 'CAN_GET_ALL_SCHEDULER_JOBS' to clearly indicate it belongs to Scheduler
+        CAN_GET_ALL_JOBS = "CAN_GET_ALL_JOBS"
+
     def delete(self):
         db.session.delete(self)
         db.session.commit()
@@ -548,7 +564,8 @@ class UserScopedRoles(db.Model):
                         raise InvalidUsage(error_message="Role: %s already exists for user: %s" % (role, user.id),
                                            error_code=ErrorCodes.ROLE_ALREADY_EXISTS)
                 else:
-                    raise InvalidUsage(error_message="Role: %s doesn't exist or it belongs to a different domain" % role)
+                    raise InvalidUsage(
+                        error_message="Role: %s doesn't exist or it belongs to a different domain" % role)
             db.session.commit()
         else:
             raise InvalidUsage(error_message="User %s doesn't exist" % user.id)
@@ -686,7 +703,7 @@ class UserGroup(db.Model):
                     else:
                         group_id = None
 
-                group = UserGroup.query.filter_by(id=group_id, domain_id=domain_id).first() or None if group_id else None
+                group = UserGroup.query.filter_by(id=group_id, domain_id=domain_id).first() or group_id
                 if group:
                     db.session.delete(group)
                 else:
@@ -729,7 +746,7 @@ class UserSocialNetworkCredential(db.Model):
     member_id = db.Column('MemberId', db.String(100))
     access_token = db.Column('AccessToken', db.String(1000))
     social_network = db.relationship("SocialNetwork", backref=db.backref(
-            'user_social_network_credential', cascade="all, delete-orphan"))
+        'user_social_network_credential', cascade="all, delete-orphan"))
 
     @classmethod
     def get_all_credentials(cls, social_network_id=None):

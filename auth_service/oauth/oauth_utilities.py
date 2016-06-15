@@ -1,18 +1,11 @@
 __author__ = 'ufarooqi'
+
+from dateutil.parser import parse
 from flask_oauthlib.provider import OAuth2RequestValidator
 from werkzeug.security import check_password_hash
 from auth_service.common.models.user import *
-from auth_service.oauth import logger
+from auth_service.oauth import logger, app
 from datetime import datetime, timedelta
-
-
-def load_client(client_id):
-    """
-    It's a client getter method i.e it'll simply retrieve Client object from database given valid client_id
-    :param int client_id: id of a client
-    :rtype: Client
-    """
-    return Client.query.filter_by(client_id=client_id).first()
 
 
 # TODO Once our flask services would be up we'll migrate all existing passwords to flask PBKDF format
@@ -29,7 +22,7 @@ def change_hashing_format(password):
         return 'pbkdf2:sha512:1000$%s$%s' % (salt, hash)
 
 
-def get_user(username, password, *args, **kwargs):
+def authenticate_user(username, password, *args, **kwargs):
     """
     It's user getter method i.e it'll retrieve a User object from database given valid username/password
     :param str username: username of a user
@@ -47,6 +40,88 @@ def get_user(username, password, *args, **kwargs):
     return None
 
 
+def save_token_v2(user):
+    """
+    This method will create a new bearer token from authenticated user
+    :param User user: Authenticated user object
+    :rtype: dict
+    """
+    assert isinstance(user, User)
+    current_date_time = datetime.utcnow()
+    expires = current_date_time + timedelta(seconds=app.config['JWT_OAUTH_EXPIRATION'])
+    expires_at = expires.strftime("%d/%m/%Y %H:%M:%S")
+
+    secret_key_id = str(uuid.uuid4())[0:10]
+    secret_key = os.urandom(24).encode('hex')
+    redis_store.setex(secret_key_id, secret_key, app.config['JWT_OAUTH_EXPIRATION'])
+    s = Serializer(secret_key, expires_in=app.config['JWT_OAUTH_EXPIRATION'])
+
+    payload = dict(
+        user_id=user.id,
+        created_at=datetime.utcnow().isoformat()
+    )
+
+    return jsonify(dict(
+        user_id=user.id,
+        access_token=s.dumps(payload),
+        expires_at=expires_at,
+        token_type="Bearer",
+        secret_key_id=secret_key_id
+    ))
+
+
+def verify_jwt(secret_key_id, token):
+    """
+    This method will authenticate/verify a json web token
+    :param secret_key_id: Redis key of SECRET_KEY
+    :param token: JSON Web Token (JWT)
+    :return:
+    """
+    s = Serializer(redis_store.get(secret_key_id) or '')
+    try:
+        data = s.loads(token)
+    except BadSignature:
+        raise UnauthorizedError("Your Token is not found", error_code=11)
+    except SignatureExpired:
+            raise UnauthorizedError("Your Token has expired", error_code=12)
+    except Exception:
+        raise UnauthorizedError("Your Token is not found", error_code=11)
+
+    if data['user_id']:
+        user = User.query.get(data['user_id'])
+        if user:
+            if user.password_reset_time <= parse(data['created_at']):
+                return user
+            else:
+                redis_store.delete(secret_key_id)
+                raise UnauthorizedError("Your token has expired due to password reset", error_code=12)
+
+    raise UnauthorizedError(error_message="Your Token is invalid", error_code=13)
+
+
+def authenticate_request():
+    """
+    This method will authenticate jwt in request headers
+    :return: None
+    """
+    try:
+        secret_key_id = request.headers['X-Talent-Secret-Key-ID']
+        json_web_token = request.headers['Authorization'].replace('Bearer', '').strip()
+    except KeyError:
+        raise UnauthorizedError("`X-Talent-Secret-Key-ID` or `Authorization` Header is missing")
+
+    return secret_key_id, verify_jwt(secret_key_id, json_web_token)
+
+
+def load_client(client_id):
+    """
+    It's a client getter method i.e it'll simply retrieve Client object from database given valid client_id
+    :param int client_id: id of a client
+    :rtype: Client
+    """
+    return Client.query.filter_by(client_id=client_id).first()
+
+
 def load_token(access_token=None, refresh_token=None):
     """
     It's token getter method i.e it'll retrieve a Token object from database given valid access or refresh token
@@ -61,7 +136,7 @@ def load_token(access_token=None, refresh_token=None):
     return None
 
 
-def save_token(token, request, *args, **kwargs):
+def save_token_v1(token, request, *args, **kwargs):
     """
     This method will delete all old tokens of a user and will store new token in Token table
     :param dict[str | int] token: dictionary of different attributes of a bearer token
@@ -116,9 +191,9 @@ class GetTalentOauthValidator(OAuth2RequestValidator):
 
     def __init__(self):
         self._clientgetter = load_client
-        self._usergetter = get_user
+        self._usergetter = authenticate_user
         self._tokengetter = load_token
-        self._tokensetter = save_token
+        self._tokensetter = save_token_v1
 
     def validate_bearer_token(self, token, scopes, request):
         """
@@ -171,4 +246,3 @@ class GetTalentOauthValidator(OAuth2RequestValidator):
             return True
         request.error_message = "Invalid token supplied."
         return False
-

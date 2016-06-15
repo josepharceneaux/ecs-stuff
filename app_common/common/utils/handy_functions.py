@@ -21,8 +21,8 @@ from flask import current_app, request
 from ..models.db import db
 from werkzeug.exceptions import BadRequest
 from ..talent_config_manager import TalentConfigKeys
-from ..utils.validators import raise_if_not_instance_of
 from ..models.user import (User, UserScopedRoles, DomainRole)
+from ..utils.validators import raise_if_not_positive_int_or_long
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
 
@@ -177,10 +177,10 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :param app: flask app object if wanted to use this method using app_context()
     :type method_type: str
     :type url: str
-    :type params: dict
-    :type headers: dict
-    :type data: dict
-    :type user_id: int | long
+    :type params: dict | None
+    :type headers: dict | None
+    :type data: dict | None
+    :type user_id: int | long | None
     :return: response from HTTP request or None
     :Example:
         If we are requesting scheduler_service to GET a task, we will use this method as
@@ -233,9 +233,11 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     error_message = e.message
             else:
                 # raise any Server error
-                log_exception("http_request: Server error from %s on %s call. "
-                              "Make sure requested server is running. Data: %s, Headers: %s" % (url, method_type,
-                                                                                                data, headers))
+                log_exception('''http_request: Server error, make sure requested server is running.
+                                 URL:     %s
+                                 Method:  %s
+                                 Data:    %s
+                                 Headers: %s''' % (url, method_type, data, headers))
                 raise
         except ConnectionError:
             # This check is for if any talent service is not running. It logs the URL on
@@ -250,9 +252,8 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                           (e.message, url, headers, data))
             raise
         except requests.RequestException as e:
-            log_exception('http_request: HTTP request failed, %s. URL: %s, Headers: %s, Data: %s' % (e.message,
-                                                                                                     url, headers,
-                                                                                                     data))
+            log_exception('http_request: HTTP request failed, %s. URL: %s, Headers: %s, Data: %s,'
+                          'Response: %s' % (e.message, url, headers, data, e.response))
             raise
         if error_message:
             log_exception('http_request: HTTP request failed, %s, '
@@ -340,8 +341,11 @@ def generate_jwt_headers(content_type=None, user_id=None):
     """
     This function will return a dict of JWT based on the user ID and X-Talent-Secret-Key-ID and optional content-type
     :param str content_type: content-type header value
-    :return:
+    :param (int | long | None) user_id: Id of user.
+    :rtype: dict
     """
+    if user_id:
+        raise_if_not_positive_int_or_long(user_id)
     secret_key_id, jw_token = User.generate_jw_token(
         user_id=request.user.id if hasattr(request, 'user') else user_id)
     headers = {'Authorization': jw_token, 'X-Talent-Secret-Key-ID': secret_key_id}
@@ -350,14 +354,20 @@ def generate_jwt_headers(content_type=None, user_id=None):
     return headers
 
 
-def create_oauth_headers(oauth_token=None):
+def create_oauth_headers(oauth_token=None, user_id=None):
     """
     This function will return dict of Authorization and Content-Type headers. If the request context does not
     contain an access token, a dict of JWT based on the user ID and X-Talent-Secret-Key-ID headers are generated.
+    :param oauth_token: Token for authentication.
+    :param user_id: Id of user in case we are calling this function out od request context such as through celery.
+    :type oauth_token: str | unicode | None
+    :type user_id: int | long | None
     """
     oauth_token = oauth_token if oauth_token else request.oauth_token if hasattr(request, 'oauth_token') else None
+    if user_id:
+        raise_if_not_positive_int_or_long(user_id)
     if not oauth_token:
-        return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'])
+        return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'], user_id)
     else:
         authorization_header_value = oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token
         return {'Authorization': authorization_header_value, 'Content-Type': 'application/json'}
@@ -418,16 +428,26 @@ def define_and_send_request(access_token, request, url, data=None):
                       data=json.dumps(data))
 
 
-def purge_dict(dictionary, strip=True):
+def purge_dict(dictionary, strip=True, remove_empty_strings_only=False):
     """
     Function will "remove" dict's keys with empty values
-    :param strip:  if True, it will strip each value
-    :type strip:  bool
+    :param strip: if True, it will strip each value
+    :type strip: bool
+    :type remove_empty_strings_only: bool
+    :param remove_empty_strings_only: if True, keys with None values will not be removed
     :type dictionary:  dict
     :rtype:  dict
     """
-    def clean(value): return value.strip() if isinstance(value, basestring) else value
-    if strip:
+
+    def clean(value):
+        return value.strip() if isinstance(value, basestring) else value
+
+    # strip all values & return all keys except keys with empty-string values
+    if remove_empty_strings_only:
+        return {k: clean(v) for k, v in dictionary.items() if (clean(v) or v is None)}
+    # strip all values & return keys with values that aren't None
+    elif strip and not remove_empty_strings_only:
         return {k: clean(v) for k, v in dictionary.items() if (v or clean(v))}
+    # return keys with values that aren't None
     else:
         return {k: v for k, v in dictionary.items() if (v or clean(v))}

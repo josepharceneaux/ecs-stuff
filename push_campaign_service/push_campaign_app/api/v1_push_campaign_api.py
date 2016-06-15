@@ -248,7 +248,7 @@ class PushCampaignsResource(Resource):
                                additional_error_info=dict(missing_fields=missing_fields),
                                error_code=CampaignException.MISSING_REQUIRED_FIELD)
         campaign = PushCampaignBase(user_id=user.id)
-        campaign_id, _ = campaign.save(data)
+        campaign_id = campaign.save(data)
         response = dict(id=campaign_id, message='Push campaign was created successfully')
         response = json.dumps(response)
         headers = dict(Location=PushCampaignApiUrl.CAMPAIGN % campaign_id)
@@ -283,7 +283,7 @@ class PushCampaignsResource(Resource):
         """
         req_data = get_valid_json_data(request)
         campaign_ids = req_data['ids'] if 'ids' in req_data else []
-        if not isinstance(req_data['ids'], list):
+        if not isinstance(campaign_ids, list):
             raise InvalidUsage('Bad request, include campaign_ids as list data',
                                error_code=InvalidUsage.http_status_code())
         # check if campaigns_ids list is not empty
@@ -538,9 +538,10 @@ class SchedulePushCampaignResource(Resource):
         pre_processed_data = PushCampaignBase.data_validation_for_campaign_schedule(
             request, campaign_id, CampaignUtils.PUSH)
         campaign_obj = PushCampaignBase(user.id)
+        PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user, CampaignUtils.PUSH)
         campaign_obj.campaign = pre_processed_data['campaign']
         task_id = campaign_obj.schedule(pre_processed_data['data_to_schedule'])
-        message = 'Campaign(id:%s) has been re-scheduled.' % campaign_id
+        message = 'Campaign(id:%s) has been scheduled.' % campaign_id
         return dict(message=message, task_id=task_id), 200
 
     def put(self, campaign_id):
@@ -669,9 +670,8 @@ class SendPushCampaign(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         """
         user = request.user
-        campaign_obj = PushCampaignBase(user_id=user.id)
-        campaign_obj.campaign_id = campaign_id
-        campaign_obj.send(campaign_id)
+        campaign_obj = PushCampaignBase(user_id=user.id, campaign_id=campaign_id)
+        campaign_obj.send()
         return dict(message='Campaign(id:%s) is being sent to candidates' % campaign_id), 200
 
 
@@ -970,10 +970,10 @@ class PushCampaignUrlRedirection(Resource):
                                                         requested_url=request.full_path)
             return redirect(redirection_url)
         # In case any type of exception occurs, candidate should only get internal server error
-        except Exception:
+        except Exception as e:
             # As this endpoint is hit by client, so we log the error, and return internal server
             # error.
-            logger.exception("Error occurred while URL redirection for Push campaign.")
+            logger.exception("Error occurred while URL redirection for Push campaign.\nError: %s" % str(e))
         return dict(message='Internal Server Error'), 500
 
 

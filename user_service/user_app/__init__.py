@@ -1,19 +1,33 @@
 __author__ = 'ufarooqi'
 
 from user_service.common.utils.models_utils import init_talent_app
-from user_service.common.routes import UserServiceApi, GTApis
-from user_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
-from user_service.common.utils.talent_ec2 import get_ec2_instance_id
-from user_service.common.talent_flask import TalentFlask
+from user_service.common.talent_config_manager import TalentConfigKeys
 from user_service.common.models.db import db
+from user_service.common.talent_api import TalentApi
+from user_service.common.routes import UserServiceApi
+from user_service.user_app.api.source import DomainSourceResource
 
 app, logger = init_talent_app(__name__)
 
 try:
     from user_service.common.redis_cache import redis_store
+    from user_service.user_app.api.domain_custom_fields import DomainCustomFieldsResource
+    from user_service.user_app.api.domain_areas_of_interest import DomainAreaOfInterestResource
+
     # noinspection PyProtectedMember
     logger.debug("Redis connection pool: %s", repr(redis_store._redis_client.connection_pool))
     logger.debug("Info on app startup: %s", redis_store._redis_client.info())
+
+    # Register & add resource for Domain Source API
+    api = TalentApi(app)
+    api.add_resource(DomainSourceResource, UserServiceApi.DOMAIN_SOURCES, endpoint='domain_sources')
+    api.add_resource(DomainSourceResource, UserServiceApi.DOMAIN_SOURCE, endpoint='domain_source')
+    api.add_resource(DomainAreaOfInterestResource, UserServiceApi.DOMAIN_AOIS, endpoint='domain_aois')
+    api.add_resource(DomainAreaOfInterestResource, UserServiceApi.DOMAIN_AOI, endpoint='domain_aoi')
+
+    # Register & add resource for Domain Custom Field API
+    api = TalentApi(app)
+    api.add_resource(DomainCustomFieldsResource, UserServiceApi.DOMAIN_CUSTOM_FIELDS, endpoint='domain_custom_fields')
 
     from views import users_utilities_blueprint
     from api.users_v1 import users_blueprint
@@ -33,5 +47,3 @@ try:
 except Exception as e:
     logger.exception("Couldn't start user_service in %s environment because: %s"
                      % (app.config[TalentConfigKeys.ENV_KEY], e.message))
-
-

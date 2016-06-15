@@ -11,6 +11,7 @@ import pycountry
 import phonenumbers
 from flask import request
 from datetime import date
+from nameparser import HumanName
 
 # Database connection and logger
 from candidate_service.common.models.db import db
@@ -41,7 +42,7 @@ from candidate_service.common.error_handling import InvalidUsage, NotFoundError,
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 # Validations
-from candidate_service.common.utils.validators import sanitize_zip_code, is_number, format_phone_number, parse_phone_number
+from candidate_service.common.utils.validators import sanitize_zip_code, is_number, parse_phone_number
 from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
@@ -57,6 +58,7 @@ from candidate_service.common.geo_services.geo_coordinates import get_coordinate
 
 # Handy functions
 from candidate_service.common.utils.handy_functions import purge_dict
+
 
 ##################################################
 # Helper Functions For Retrieving Candidate Info #
@@ -152,8 +154,12 @@ def fetch_candidate_info(candidate, fields=None):
     if (get_all_fields or 'resume_url' in fields) and candidate.filename:
         resume_url = get_s3_url(folder_path="OriginalFiles", name=candidate.filename)
 
-    return_dict = {
+    return {
         'id': candidate_id,
+        'owner_id': candidate.user_id,
+        'first_name': candidate.first_name,
+        'middle_name': candidate.middle_name,
+        'last_name': candidate.last_name,
         'full_name': full_name,
         'created_at_datetime': created_at_datetime,
         'updated_at_datetime': created_at_datetime,
@@ -173,12 +179,9 @@ def fetch_candidate_info(candidate, fields=None):
         'openweb_id': openweb_id,
         'dice_profile_id': dice_profile_id,
         'talent_pool_ids': talent_pool_ids,
-        'resume_url': resume_url
+        'resume_url': resume_url,
+        'source_id': candidate.source_id
     }
-
-    # Remove keys with None values
-    return_dict = dict((k, v) for k, v in return_dict.iteritems() if v is not None)
-    return return_dict
 
 
 def format_candidate_full_name(candidate):
@@ -426,11 +429,11 @@ def candidate_custom_fields(candidate):
     :type candidate:    Candidate
     :rtype              [dict]
     """
-    assert isinstance(candidate, Candidate)
     return [{'id': custom_field.id,
+             'custom_field_id': custom_field.custom_field_id,
              'value': custom_field.value,
              'created_at_datetime': custom_field.added_time.isoformat()
-             } for custom_field in db.session.query(CandidateCustomField).filter_by(candidate_id=candidate.id).all()]
+             } for custom_field in CandidateCustomField.query.filter_by(candidate_id=candidate.id).all()]
 
 
 def candidate_social_networks(candidate):
@@ -835,41 +838,41 @@ def create_or_update_candidate_from_params(
         CandidateMilitaryService, CandidatePreferredLocation,
         CandidateSkill, CandidateSocialNetwork
 
-    :type user_id:                  int|long
-    :type is_creating:              bool
-    :type is_updating:              bool
-    :type candidate_id:             int
-    :type first_name:               basestring
-    :type last_name:                basestring
-    :type middle_name:              basestring
-    :type formatted_name:           str
-    :type status_id:                int
-    :type emails:                   list
-    :type phones:                   list
-    :type addresses:                list
-    :type educations:               list
-    :type military_services:        list
-    :type areas_of_interest:        list
-    :type custom_fields:            list
-    :type social_networks:          list
-    :type work_experiences:         list
-    :type work_preference:          dict
-    :type preferred_locations:      list
-    :type skills:                   list
-    :type dice_social_profile_id:   int
-    :type dice_profile_id:          int
-    :type added_datetime:           str
-    :type source_id:                int
-    :type objective:                basestring
-    :type summary:                  basestring
-    :type talent_pool_ids:          dict
-    :type delete_talent_pools:      bool
-    :type resume_url                basestring
+    :type   user_id:                int|long
+    :type   is_creating:            bool
+    :type   is_updating:            bool
+    :type   candidate_id:           int
+    :type   first_name:             basestring
+    :type   last_name:              basestring
+    :type   middle_name:            basestring
+    :type   formatted_name:         str
+    :type   status_id:              int
+    :type   emails:                 list
+    :type   phones:                 list
+    :type   addresses:              list
+    :type   educations:             list
+    :type   military_services:      list
+    :type   areas_of_interest:      list
+    :type   custom_fields:          list
+    :type   social_networks:        list
+    :type   work_experiences:       list
+    :type   work_preference:        dict
+    :type   preferred_locations:    list
+    :type   skills:                 list
+    :type   dice_social_profile_id: int
+    :type   dice_profile_id:        int
+    :type   added_datetime:         str
+    :param  source_id:              Source of candidate's intro, e.g. job-fair
+    :type   source_id:              int
+    :type   objective:              basestring
+    :type   summary:                basestring
+    :type   talent_pool_ids:        dict
+    :type   delete_talent_pools:    bool
+    :type   resume_url              basestring
     :rtype                          dict
     """
     # Format inputs
     added_datetime = added_datetime or datetime.datetime.utcnow()
-    status_id = status_id or 1
     edit_datetime = datetime.datetime.utcnow()  # Timestamp for tracking edits
 
     # Get user's domain ID
@@ -905,9 +908,8 @@ def create_or_update_candidate_from_params(
         raise InvalidUsage('Candidate ID is required for updating', custom_error.MISSING_INPUT)
 
     if is_updating:  # Update Candidate
-        candidate_id = _update_candidate(first_name, middle_name, last_name,
-                                         formatted_name, objective, summary,
-                                         candidate_id, user_id, resume_url)
+        candidate_id = _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
+                                         candidate_id, user_id, resume_url, source_id, status_id)
     else:  # Add Candidate
         candidate_id = _add_candidate(first_name, middle_name, last_name,
                                       formatted_name, added_datetime, status_id,
@@ -982,7 +984,16 @@ def get_fullname_from_name_fields(first_name, middle_name, last_name):
     Function will concatenate names if any, otherwise will return empty string
     :rtype: str
     """
-    return re.sub(' +', ' ', '%s %s %s' % (first_name, middle_name, last_name)).strip()
+    full_name = re.sub(' +', ' ', '%s %s %s' % (first_name, middle_name, last_name))
+    return full_name.replace('None', '').strip()
+
+
+def format_full_name(first_name=None, middle_name=None, last_name=None):
+    # Figure out first_name, last_name, middle_name, and formatted_name from inputs
+    if first_name or last_name or middle_name:
+        if first_name or last_name:
+            # If first_name and last_name given but not formatted_name, guess it
+            return get_fullname_from_name_fields(first_name or '', middle_name or '', last_name or '')
 
 
 def get_name_fields_from_name(formatted_name):
@@ -1088,17 +1099,35 @@ def social_network_name_from_url(url):
 
 
 def _update_candidate(first_name, middle_name, last_name, formatted_name, objective,
-                      summary, candidate_id, user_id, resume_url):
+                      summary, candidate_id, user_id, resume_url, source_id, candidate_status_id):
     """
     Function will update Candidate
     :return:    Candidate ID
     """
-    update_dict = {'first_name': first_name, 'middle_name': middle_name,
-                   'last_name': last_name, 'formatted_name': formatted_name,
-                   'objective': objective, 'summary': summary, 'filename': resume_url}
+    # If formatted name is provided, must also update first name, middle name, and last name
+    if formatted_name:
+        parsed_names_object = HumanName(formatted_name)
+        first_name = parsed_names_object.first
+        middle_name = parsed_names_object.middle
+        last_name = parsed_names_object.last
 
-    # Remove keys with empty values and strip each value
-    update_dict = purge_dict(update_dict)
+    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url,
+                   'source_id': source_id, 'candidate_status_id': candidate_status_id}
+
+    # Strip each key-value and remove keys with empty-string-values
+    update_dict = purge_dict(update_dict, remove_empty_strings_only=True)
+
+    # Update request dict with candidate names
+    # Candidate name(s) will be removed if empty string is provided; None values will be ignored
+    names_dict = dict(
+        first_name=first_name, middle_name=middle_name, last_name=last_name,
+        formatted_name=formatted_name or format_full_name(first_name, middle_name, last_name)
+    )
+    names_dict = {k: v for k, v in names_dict.items() if v is not None}
+
+    # Add names' data to update_dict if at least one of name is provided
+    if not all(v is None for v in names_dict.values()):
+        update_dict.update(**names_dict)
 
     # Candidate will not be updated if update_dict is empty
     if not update_dict:
@@ -1829,10 +1858,11 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         """
 
         # phonenumbers.format() will append "+None" if phone_number_obj.country_code is None
-        if not phone_number_obj.country_code:
-            value = phone_number_obj.national_number
-        else:
-            value = phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164)
+        if phone_number_obj:
+            if not phone_number_obj.country_code:
+                value = phone_number_obj.national_number
+            else:
+                value = phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164)
 
         # Clear CachedData's country_codes to prevent aggregating unnecessary data
         CachedData.country_codes = []
@@ -2230,7 +2260,7 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
 
 class CachedData(object):
     """
-    This class will contain data that may be required by other functions but should be cleared
-      when its data is no longer needed
+    This class will contain data that may be required by other functions.
+    Should be cleared when its data is no longer needed
     """
     country_codes = []

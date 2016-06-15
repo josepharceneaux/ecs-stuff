@@ -57,6 +57,7 @@ def send_request(access_token, secret_key_id, url, content_type, post_data, is_j
         response = http_request(method_type=request_method, url=url, data=post_data, headers=headers)
 
         try:
+            logger.info(response.text)
             return response.text
         except Exception as e:
             # This exception will be caught by flower

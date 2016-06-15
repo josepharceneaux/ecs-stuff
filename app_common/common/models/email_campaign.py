@@ -5,7 +5,10 @@ from sqlalchemy.orm import relationship
 
 from db import db
 from ..utils.datetime_utils import DatetimeUtils
-from ..error_handling import (ResourceNotFound, ForbiddenError)
+from ..utils.validators import (raise_if_not_instance_of,
+                                raise_if_not_positive_int_or_long)
+from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError)
+
 
 __author__ = 'jitesh'
 
@@ -99,6 +102,16 @@ class EmailCampaignSmartlist(db.Model):
 
     @classmethod
     def get_smartlists_of_campaign(cls, campaign_id, smartlist_ids_only=False):
+        """
+        Get smartlists associated with the given campaign.
+        :param campaign_id: Id of campaign for with smartlists are to be retrieved
+        :param smartlist_ids_only: True if only ids are to be returned
+        :type campaign_id: int | long
+        :type smartlist_ids_only: bool
+        :rtype list
+        """
+        raise_if_not_positive_int_or_long(campaign_id)
+        raise_if_not_instance_of(smartlist_ids_only, bool)
         records = cls.query.filter_by(campaign_id=campaign_id).all()
         if smartlist_ids_only:
             return [row.smartlist_id for row in records]
@@ -137,6 +150,22 @@ class EmailCampaignBlast(db.Model):
         assert campaign_id, "campaign_id not provided"
         return cls.query.filter(
             cls.campaign_id == campaign_id).order_by(desc(cls.sent_datetime)).first()
+
+    @classmethod
+    def get_by_send(cls, send_obj):
+        """
+        This method takes EmailCampaignSend object as input and returns associated EmailCampaignBlast object.
+        It first tries to retrieve blast from backref. If that is None, then get blast by matching sent_datetime
+        :param EmailCampaignSend send_obj: campaign send object
+        :rtype EmailCampaignBlast | None
+        """
+        assert isinstance(send_obj, EmailCampaignSend), 'send_obj must be EmailCampaignSend instance, found: %s, type: %s' % (send_obj, type(send_obj))
+        blast = send_obj.blast
+        if isinstance(blast, EmailCampaignBlast):
+            return blast
+        # if blast_id is not there, match by sent_datetime as we are doing in web2py app:
+        # https://github.com/Veechi/Talent-Web/blob/master/web2py/applications/web/controllers/campaign.py#L63
+        return cls.query.filter_by(sent_datetime=send_obj.sent_datetime).first()
 
     def __repr__(self):
         return "<EmailCampaignBlast (Sends: %s, Opens: %s)>" % (self.sends, self.opens)
@@ -197,6 +226,21 @@ class EmailCampaignSend(db.Model):
         """
         assert isinstance(message_id, basestring) and message_id, 'message_id should have a valid value.'
         return cls.query.filter_by(ses_message_id=message_id).first()
+
+    @classmethod
+    def get_already_emailed_candidates(cls, campaign):
+        """
+        Get candidates to whom email for specified campaign has already been sent.
+        :param campaign: Valid campaign object.
+        :return: Ids of candidates to whom email for specified campaign has already being sent.
+        """
+        if not isinstance(campaign, EmailCampaign):
+            raise InternalServerError(error_message='Must provide valid EmailCampaign object.')
+
+        already_emailed_candidates = cls.query.with_entities(
+            cls.candidate_id).filter_by(campaign_id=campaign.id).all()
+        emailed_candidate_ids = [row.candidate_id for row in already_emailed_candidates]
+        return emailed_candidate_ids
 
 
 class EmailClient(db.Model):

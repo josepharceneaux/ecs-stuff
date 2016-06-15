@@ -3,6 +3,7 @@ import math
 import json
 import decimal
 import requests
+from sqlalchemy.sql import text
 from dateutil.parser import parse
 from datetime import datetime, timedelta, date
 from candidate_pool_service.common.utils.validators import is_number
@@ -34,7 +35,16 @@ TALENT_PIPELINE_SEARCH_PARAMS = [
     "military_branch",
     "military_highest_grade",
     "military_end_date_from",
-    "military_end_date_to"
+    "military_end_date_to",
+    "skillDescriptionFacet",
+    "tag_ids",
+    "custom_fields",
+    "dumb_list_ids",
+    "smartlist_ids",
+    "date_to",
+    "id",
+    "date_from",
+    "talent_pool_id"
 ]
 
 SCHEDULER_SERVICE_RESPONSE_CODE_TASK_ALREADY_SCHEDULED = 6057
@@ -67,7 +77,7 @@ def get_smartlist_candidates(smartlist, oauth_token=None, request_params=None):
     """
     if request_params is None:
         request_params = dict()
-    if smartlist.talent_pipeline_id:
+    if smartlist.talent_pipeline:
         if smartlist.talent_pipeline.search_params:
             try:
                 request_params.update(json.loads(smartlist.talent_pipeline.search_params))
@@ -501,3 +511,49 @@ def offset_date_time(date_object, offset):
     :return:
     """
     return date_object + ((1 if offset < 0 else -1) * timedelta(hours=abs(offset)))
+
+
+def top_most_engaged_candidates_of_pipeline(talent_pipeline_id, limit):
+    """
+    This endpoint will candidate_ids of top 5 most engaged candidates of a talent_pipeline
+    :param talent_pipeline_id: Id of talent_pipeline
+    :param limit: Number of results returned by this method
+    :return: List of candidate Ids of top (limit) most engaged candidates
+    :rtype: list
+    """
+
+    sql_query = """
+    SELECT candidates_engagement_score.CandidateId,
+       avg(candidates_engagement_score.campaign_engagement_score) AS engagement_score
+    FROM
+      (SELECT engagement_score_for_each_sent.CandidateId,
+              engagement_score_for_each_sent.EmailCampaignId,
+              avg(engagement_score_for_each_sent.engagement_score) AS campaign_engagement_score
+       FROM
+         (SELECT email_campaign_send.Id,
+                 email_campaign_send.EmailCampaignId,
+                 email_campaign_send.CandidateId,
+                 CASE WHEN sum(url_conversion.HitCount) = 0 THEN 0.0 WHEN sum(email_campaign_send_url_conversion.type * url_conversion.HitCount) > 0 THEN 100 ELSE 33.3 END AS engagement_score
+          FROM smart_list
+          INNER JOIN email_campaign_smart_list ON smart_list.Id = email_campaign_smart_list.SmartListId
+          INNER JOIN email_campaign_send ON email_campaign_send.EmailCampaignId = email_campaign_smart_list.EmailCampaignId
+          INNER JOIN email_campaign_send_url_conversion ON email_campaign_send_url_conversion.EmailCampaignSendId = email_campaign_send.Id
+          INNER JOIN url_conversion ON email_campaign_send_url_conversion.UrlConversionId = url_conversion.Id
+          WHERE smart_list.talentPipelineId = :talent_pipeline_id
+          GROUP BY email_campaign_send.Id,
+                   email_campaign_send.EmailCampaignId,
+                   email_campaign_send.CandidateId) AS engagement_score_for_each_sent
+       GROUP BY engagement_score_for_each_sent.EmailCampaignId) AS candidates_engagement_score
+    GROUP BY candidates_engagement_score.CandidateId
+    ORDER BY engagement_score DESC LIMIT :limit;
+    """
+
+    try:
+        engagement_scores = db.session.connection().execute(text(sql_query),
+                                                            talent_pipeline_id=talent_pipeline_id, limit=limit)
+        return [{'candidate_id': engagement_score['CandidateId'], 'engagement_score': float(str(
+                engagement_score['engagement_score']))} for engagement_score in engagement_scores]
+    except Exception as e:
+        logger.exception("Couldn't get top most engaged candidates of talent-pipeline(%s) "
+                     "because (%s)" % (talent_pipeline_id, e.message))
+        return []

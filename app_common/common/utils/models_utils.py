@@ -61,7 +61,7 @@ from ..routes import GTApis, HEALTH_CHECK
 from ..redis_cache import redis_store
 from ..talent_flask import TalentFlask
 from ..utils.talent_ec2 import get_ec2_instance_id
-from ..error_handling import register_error_handlers, InvalidUsage
+from ..error_handling import register_error_handlers, InvalidUsage, InternalServerError
 from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
 
@@ -282,6 +282,18 @@ def delete(cls, ref, app=None):
     return True
 
 
+@classmethod
+def get_invalid_fields(cls, data_to_be_verified):
+    """
+    This takes some data in dict from and checks if there is any key which is not a ATTRIBUTE of given model.`
+    It then returns all such fields in a list format.
+    :param db.Model cls: Database model class
+    :param dict data_to_be_verified: Dictionary of data.
+    :rtype: list
+    """
+    return [key for key in data_to_be_verified if key not in cls.__table__.columns]
+
+
 def add_model_helpers(cls):
     """
     This function adds helper methods to Model class which is passed as argument.
@@ -309,7 +321,8 @@ def add_model_helpers(cls):
     cls.get = get_by_id
     # This method deletes an instance
     cls.delete = delete
-
+    # Register get_unexpected_fields() on model instance
+    cls.get_invalid_fields = get_invalid_fields
     # Sometimes we have lazy relationship, that is actually just a query (AppenderQuery instance)
     # it contains all methods like filter, filter_by, first, all etc but not paginate, so we are patching `paginate`
     # method from BaseQuery class to AppenderQuery class to get pagination functionality
@@ -400,6 +413,7 @@ def init_talent_app(app_name):
             migrations.run_migrations(logger, db)
         except Exception as e:
             logger.exception("Exception running migrations: {}".format(e.message))
+            db.session.rollback()
 
         return flask_app, logger
 
