@@ -241,7 +241,7 @@ def get_by_id(cls, _id):
 
 
 @classmethod
-def delete(cls, ref, app=None):
+def delete(cls, ref, app=None, commit_session=True):
     """
     This method deletes a record from database given by id and the calling Model class.
     :param cls: model class, some child class of db.Model
@@ -249,6 +249,8 @@ def delete(cls, ref, app=None):
     :type ref: int | model object
     :param app: flask app, if someone wants to run this method using app_context
     :type app: Flask obj
+    :param commit_session: True if we want to commit the session per deletion
+    :type commit_session: bool
     :return: Boolean
     :rtype: bool
 
@@ -271,7 +273,8 @@ def delete(cls, ref, app=None):
         else:
             obj = ref
         db.session.delete(obj)
-        db.session.commit()
+        if commit_session:
+            db.session.commit()
     except Exception as error:
         db.session.rollback()
         if isinstance(app, Flask):
