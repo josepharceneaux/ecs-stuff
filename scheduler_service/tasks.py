@@ -37,6 +37,7 @@ def send_request(access_token, secret_key_id, url, content_type, post_data, is_j
     :param kwargs: post data i.e campaign name, smartlist ids
     :return:
     """
+    # TODO: kwargs is not a param, remove from docs. Add types for others
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
         headers = {
