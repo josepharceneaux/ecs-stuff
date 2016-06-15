@@ -273,7 +273,8 @@ def delete(cls, ref, app=None, commit_session=True):
         else:
             obj = ref
         db.session.delete(obj)
-        db.session.commit() if commit_session else None
+        if commit_session:
+            db.session.commit()
     except Exception as error:
         db.session.rollback()
         if isinstance(app, Flask):

@@ -397,7 +397,7 @@ class CampaignUtils(object):
         :param campaign_class: Campaign base class. e.g. SmsCampaignBase or PushCampaignBase
         """
         requested_data = get_valid_json_data(request_obj)
-        campaign_ids = requested_data['ids'] if 'ids' in requested_data else []
+        campaign_ids =  requested_data.get('ids', [])
         if not isinstance(campaign_ids, list):
             raise InvalidUsage('Bad request, include campaign_ids as list data')
         # check if list of campaigns_ids is not empty
