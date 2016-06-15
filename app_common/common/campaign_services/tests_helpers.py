@@ -636,7 +636,7 @@ class CampaignsTestsHelpers(object):
         candidate_id = create_candidates_from_candidate_api(oauth_token=access_token, data=data,
                                                             return_candidate_ids_only=True)
         if assert_candidates:
-            time.sleep(10)
+            time.sleep(30)
         smartlist_data1 = {'name': fake.word(),
                            'candidate_ids': candidate_id,
                            'talent_pipeline_id': talent_pipeline.id}
