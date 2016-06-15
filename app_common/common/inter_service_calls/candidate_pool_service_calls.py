@@ -1,6 +1,5 @@
 import json
 import requests
-from ..utils.api_utils import DEFAULT_PAGE
 from ..routes import CandidatePoolApiUrl, EmailCampaignApiUrl
 from ..utils.handy_functions import http_request, create_oauth_headers
 from ..utils.validators import (raise_if_not_instance_of, raise_if_not_positive_int_or_long)
@@ -61,24 +60,27 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
         raise_if_not_instance_of(access_token, (str, unicode))
     if user_id:
         raise_if_not_positive_int_or_long(user_id)
+
     per_page = 1000  # Smartlists can have a large number of candidates, hence page size of 1000
     params = {'fields': 'id'} if candidate_ids_only else {}
     cursor = 'initial'
+    candidates = []
+    counter = 0
+    has_more_candidates = True
 
-    response = get_candidates_from_smartlist_with_page_params(list_id, per_page, cursor,
-                                                              params, access_token, user_id)
-    response_body = response.json()
-    candidates = response_body['candidates']
-    cursor = response_body['cursor']
-    no_of_pages = response_body['max_pages']
-    if cursor and no_of_pages > DEFAULT_PAGE:
-        for current_page in range(DEFAULT_PAGE, int(no_of_pages)):
-            response = get_candidates_from_smartlist_with_page_params(list_id, per_page,
-                                                                      cursor, params,
-                                                                      access_token, user_id)
-            response_body = response.json()
-            candidates.extend(response_body['candidates'])
+    while has_more_candidates:
+        response = get_candidates_from_smartlist_with_page_params(list_id, per_page,
+                                                                  cursor, params,
+                                                                  access_token, user_id)
+        counter += 1
+        response_body = response.json()
+        no_of_pages = response_body['max_pages']
+        candidates.extend(response_body['candidates'])
+        if no_of_pages == counter:
             cursor = response_body['cursor']
+        else:
+            has_more_candidates = False
+
     if candidate_ids_only:
         return [long(candidate['id']) for candidate in candidates]
     return candidates
