@@ -871,7 +871,7 @@ class SendPOSTRequestTest(Resource):
     """
     POST Method:
         This resource is dummy endpoint which is used to call send_request method for testing
-        This dummy endpoint serves purposes mentioned below.
+        This dummy endpoint serves purpose mentioned below.
         2. To check if authentication token is refreshed after expiry.
         3. Test that scheduler sends POST request
     """
@@ -888,7 +888,7 @@ class SendRequestTest(Resource):
     """
     Request Method:
         This resource is dummy endpoint which is used to call send_request method for testing
-        This dummy endpoint serves purposes mentioned below.
+        This dummy endpoint serves purpose mentioned below.
         1. To check if endpoint is working then send response 201 (run callback function directly)
         2. To check if authentication token is refreshed after expiry.
         3. Test that scheduler sends GET, POST, DELETE, PUT, PATCH request
