@@ -406,7 +406,7 @@ def serialize_task_admin(task):
 
     if task.args[0]:
         task_dict['user_id'] = task.args[0]
-        task_dict['task_category'] = 'user'
+        task_dict['task_category'] = SchedulerUtils.CATEGORY_USER
         user = User.get_by_id(task.args[0])
         if not user:
             logger.error("serialize_task: user with id %s doesn't exist." % task.args[0])
@@ -414,7 +414,7 @@ def serialize_task_admin(task):
         else:
             task_dict['user_email'] = user.email
     else:
-        task_dict['task_category'] = 'general'
+        task_dict['task_category'] = SchedulerUtils.CATEGORY_GENERAL
 
     return task_dict
 
@@ -427,6 +427,7 @@ def get_user_job_ids(user_id):
     :param count: number of job ids needed. By default, returns all job ids of a user.
     :type count: int
     :return:
+    :rtype: list
     """
     start_index = 0
     end_index = -1
@@ -440,7 +441,7 @@ def get_general_job_id(task_name):
     Return id of scheduled general task
     :param task_name: general task name which is scheduled
     :type task_name: str
-    :return:
+    :return:s
     """
     start_index = 0
     end_index = -1

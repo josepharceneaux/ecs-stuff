@@ -187,10 +187,10 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     """
 
     if app and not isinstance(app, Flask):
-        raise InvalidUsage(error_message="app instance should be flask")
+        raise InternalServerError(error_message="app instance should be flask")
 
     if not isinstance(method_type, basestring):
-        raise InternalServerError('Method type should be str. e.g. %s etc' % method_type)
+        raise InternalServerError('Method type should be str. arg given: %s' % method_type)
     if not isinstance(url, basestring):
         error_message = 'URL must be string. Unable to make "%s" Call' % method_type
         log_error('http_request: Error: %s, user_id: %s, URL: %s, Headers: %s, Data: %s'
@@ -262,8 +262,9 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     else:
         log_error('http_request: Unknown Method type %s. URL: %s, Headers: %s, Data: %s' % (method_type, url, headers,
                                                                                            data), app=app)
-        raise InternalServerError('Unknown method type(%s) provided. URL: %s, Headers: %s, Data: %s' % (method_type, url,
-                                                                                                headers, data))
+        raise InternalServerError('Unknown method type(%s) provided. URL: %s, Headers: %s, Data: %s' %
+                                  (method_type, url,
+                                   headers, data))
 
 
 def validate_required_fields(data_dict, required_fields):

@@ -66,7 +66,6 @@ class Tasks(Resource):
             response = requests.get(API_URL + '/v1/tasks/', headers=headers)
         .. Response::
             {
-                "count": 1,
                 "tasks": [
                     {
                         "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
@@ -862,13 +861,17 @@ class AdminTasks(Resource):
         return ApiResponse(response=dict(tasks=tasks), headers=header)
 
 
+"""
+Section: Dummy Endpoints for testing APScheduler and celery
+"""
+
+
 @api.route(SchedulerApi.SCHEDULER_TASKS_TEST_POST)
 class SendPOSTRequestTest(Resource):
     """
     POST Method:
         This resource is dummy endpoint which is used to call send_request method for testing
-        This dummy endpoint serve two purposes.
-        1. To check if endpoint is working then send response 201 (run callback function directly)
+        This dummy endpoint serves purposes mentioned below.
         2. To check if authentication token is refreshed after expiry.
         3. Test that scheduler sends POST request
     """
@@ -885,7 +888,7 @@ class SendRequestTest(Resource):
     """
     Request Method:
         This resource is dummy endpoint which is used to call send_request method for testing
-        This dummy endpoint serve two purposes.
+        This dummy endpoint serves purposes mentioned below.
         1. To check if endpoint is working then send response 201 (run callback function directly)
         2. To check if authentication token is refreshed after expiry.
         3. Test that scheduler sends GET, POST, DELETE, PUT, PATCH request
