@@ -1,6 +1,7 @@
-# pylint: disable=wrong-import-position, fixme
+"""Functions associated with resume parsing flow (generally based on file type."""
+__author__ = 'erik@gettalent.com'
+# pylint: disable=wrong-import-position, fixme, import-error
 # Standard library
-from cStringIO import StringIO
 from os.path import basename
 from os.path import splitext
 from time import time
@@ -40,7 +41,7 @@ def parse_resume(file_obj, filename_str):
     """
     logger.info("Beginning parse_resume(%s)", filename_str)
 
-    file_ext, is_resume_image = get_resume_file_info(filename_str, file_obj)
+    is_resume_image = get_resume_file_info(filename_str, file_obj)
 
     file_obj.seek(0)
     if is_resume_image:
@@ -48,8 +49,8 @@ def parse_resume(file_obj, filename_str):
         start_time = time()
         doc_content = google_vision_ocr(file_obj)
         logger.info(
-            "Benchmark: google_vision_ocr for {}: took {}s to process".format(filename_str,
-                                                                         time() - start_time)
+            "Benchmark: google_vision_ocr for {}: took {}s to process".format(
+                filename_str, time() - start_time)
         )
     else:
         start_time = time()
@@ -58,7 +59,6 @@ def parse_resume(file_obj, filename_str):
             "Benchmark: Reading file_obj and magic.from_buffer(%s) took %ss",
             filename_str, time() - start_time
         )
-        final_file_ext = file_ext
 
     if not doc_content:
         file_obj.seek(0)
@@ -170,13 +170,11 @@ def get_resume_file_info(filename_str, file_obj):
     # Find out if the file is an image
     if file_ext in IMAGE_FORMATS:
         if file_ext == '.pdf':
-            start_time = time()
             text = convert_pdf_to_text(file_obj)
             if not text.strip():
                 # pdf is possibly an image
                 is_resume_image = True
         else:
             is_resume_image = True
-        file_ext = '.pdf' # Question: If it's a jpeg we rename it to a pdf?
 
-    return file_ext, is_resume_image
+    return is_resume_image

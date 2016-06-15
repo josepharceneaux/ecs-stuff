@@ -1,4 +1,6 @@
-# pylint: disable=wrong-import-position, fixme
+"""Code for use with Google Vision API and Abbyy OCR."""
+__author__ = 'erik@gettalent.com'
+# pylint: disable=wrong-import-position, fixme, import-error
 # Standard library
 from time import sleep
 from time import time
@@ -49,9 +51,9 @@ def google_vision_ocr(file_string_io):
 
     try:
         google_response = requests.post("{}?key={}".format(GOOGLE_CLOUD_VISION_URL, GOOGLE_API_KEY),
-                                       json.dumps(req_data),
-                                       timeout=20,
-                                       headers={'content-type': 'application/json'})
+                                        json.dumps(req_data),
+                                        timeout=20,
+                                        headers={'content-type': 'application/json'})
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.exception("google_vision_ocr: Could not reach Google API")
         raise InternalServerError("Unable to reach Google API in resume OCR")
@@ -86,11 +88,8 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
 
     # Post the image to Abby
     files = {'file': img_file_obj}
-    abbyy_response = requests.post(ABBY_URL,
-                             auth=ABBY_OCR_API_AUTH_TUPLE,
-                             files=files,
-                             data={'profile': 'documentConversion', 'exportFormat': export_format}
-                             )
+    abbyy_response = requests.post(ABBY_URL, auth=ABBY_OCR_API_AUTH_TUPLE, files=files,
+                                   data={'profile': 'documentConversion', 'exportFormat': export_format})
 
     if abbyy_response.status_code != 200:
         raise ForbiddenError('Error connecting to Abby OCR instance.')
@@ -119,7 +118,7 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
         sleep(estimated_processing_time)
 
         status_response = requests.get('http://cloud.ocrsdk.com/getTaskStatus',
-                                params=dict(taskId=task_id), auth=ABBY_OCR_API_AUTH_TUPLE)
+                                       params=dict(taskId=task_id), auth=ABBY_OCR_API_AUTH_TUPLE)
         xml = BeautifulSoup(status_response.text, 'lxml')
         ocr_url = xml.response.task.get('resulturl')
         logger.info("ocr_image() - Abby response to getTaskStatus: %s", status_response.text)
