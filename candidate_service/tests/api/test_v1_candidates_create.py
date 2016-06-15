@@ -230,7 +230,8 @@ class TestCreateCandidate(object):
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'label': None, 'address': email_1}]},
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'label': None, 'address': email_2}]},
-            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'label': None, 'address': 'bad_email_at_example.com'}]}
+            {'talent_pool_ids': {'add': [talent_pool.id]},
+             'emails': [{'label': None, 'address': 'bad_email_at_example.com'}]}
         ]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -352,7 +353,7 @@ class TestCreateHiddenCandidate(object):
         assert hide_resp.status_code == 200 and candidate.is_web_hidden == 1
 
         # Create previously deleted candidate
-        data = {'candidates': [{'emails': [{'address': candidate_email['address']}],'first_name': 'McLovin',
+        data = {'candidates': [{'emails': [{'address': candidate_email['address']}], 'first_name': 'McLovin',
                                 'talent_pool_ids': {'add': [talent_pool.id]}}]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         db.session.commit()
@@ -499,7 +500,8 @@ class TestCreateCandidateAddress(object):
         candidate_addresses = get_resp.json()['candidate']['addresses']
         assert len(candidate_addresses) == 1, "Only 1 of the addresses should be inserted into db, because" \
                                               "the rest had empty/None values"
-        assert candidate_addresses[0]['address_line_1'] == data['candidates'][0]['addresses'][0]['address_line_1'].strip()
+        assert candidate_addresses[0]['address_line_1'] == data['candidates'][0]['addresses'][0][
+            'address_line_1'].strip()
         assert candidate_addresses[0]['city'] == data['candidates'][0]['addresses'][0]['city'].strip()
 
 
@@ -732,7 +734,7 @@ class TestCreateCandidateEducationDegree(object):
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'educations': [
                 {'school_name': 'uc berkeley', 'city': 'berkeley', 'degrees': [
-                {'title': ' ', 'gpa': 3.50, 'start_year': 2012, 'end_year': 2016}]}
+                    {'title': ' ', 'gpa': 3.50, 'start_year': 2012, 'end_year': 2016}]}
             ]}
         ]}
         # Create candidate education with empty values
@@ -792,14 +794,14 @@ class TestCreateCandidateEmail(object):
                                 'talent_pool_ids': {'add': [talent_pool.id]}}]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 201
+        assert create_resp.status_code == requests.codes.CREATED
 
         # Create Candidate
         data = {'candidates': [{'first_name': 'john', 'last_name': 'stark', 'emails': [{}],
                                 'talent_pool_ids': {'add': [talent_pool.id]}}]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 400
+        assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
     def test_create_candidate_with_bad_email(self, access_token_first, user_first, talent_pool):
@@ -813,7 +815,7 @@ class TestCreateCandidateEmail(object):
                                 'talent_pool_ids': {'add': [talent_pool.id]}}]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 400
+        assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
 
     def test_create_candidate_without_email_label(self, access_token_first, user_first, talent_pool):
@@ -838,7 +840,7 @@ class TestCreateCandidateEmail(object):
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         print response_info(get_resp)
         candidate_dict = get_resp.json()['candidate']
-        assert create_resp.status_code == 201
+        assert create_resp.status_code == requests.codes.CREATED
         assert candidate_dict['emails'][0]['label'] == 'Primary'
         assert candidate_dict['emails'][-1]['label'] == 'Other'
 
@@ -857,7 +859,7 @@ class TestCreateCandidateEmail(object):
         # Create candidate email
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 400
+        assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
 
     def test_add_emails_with_whitespaced_values(self, access_token_first, user_first, talent_pool):
@@ -876,7 +878,7 @@ class TestCreateCandidateEmail(object):
         # Create candidate email
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 201
+        assert create_resp.status_code == requests.codes.CREATED
 
         # Retrieve candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -888,6 +890,49 @@ class TestCreateCandidateEmail(object):
         assert emails[0]['label'] == data['candidates'][0]['emails'][0]['label'].strip().title()
         assert emails[1]['address'] == data['candidates'][0]['emails'][1]['address'].strip()
         assert emails[1]['label'] == data['candidates'][0]['emails'][1]['label'].strip()
+
+    def test_add_candidate_with_duplicate_emails(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Add candidate with two identical emails
+        Expect: 201, but only one email should be added to db
+        """
+        AddUserRoles.add_and_get(user_first)
+
+        # Create candidate with two identical emails
+        email_address = fake.safe_email()
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
+                {'label': ' work', 'address': email_address},
+                {'label': ' work', 'address': email_address}]
+             }]
+        }
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+
+        # Retrieve all of candidate's emails
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_resp)
+        assert len(get_resp.json()['candidate']['emails']) == 1
+        assert get_resp.json()['candidate']['emails'][0]['address'] == email_address
+
+    def test_add_duplicate_candidate_with_same_email(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Add candidate with an email that is associated with another candidate in the same domain
+        """
+        AddUserRoles.add_and_get(user_first)
+
+        email_address = fake.safe_email()
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
+                {'label': ' work', 'address': email_address}]
+             }]
+        }
+        send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.BAD
+        assert create_resp.json()['error']['code'] == custom_error.CANDIDATE_ALREADY_EXISTS
 
 
 class TestCreatePhones(object):
@@ -901,7 +946,7 @@ class TestCreatePhones(object):
         data = candidate_phones(talent_pool)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 201
+        assert create_resp.status_code == requests.codes.CREATED
 
         # Retrieve Candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -945,7 +990,7 @@ class TestCreatePhones(object):
         data = {'candidates': [{'phones':
             [
                 {'label': None, 'is_default': None, 'value': '6504084069'},
-                {'label': None, 'is_default': None, 'value': '6504084069'}
+                {'label': None, 'is_default': None, 'value': '6505084069'}
             ], 'talent_pool_ids': {'add': [talent_pool.id]}}
         ]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
@@ -955,7 +1000,7 @@ class TestCreatePhones(object):
         candidate_id = create_resp.json()['candidates'][0]['id']
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         candidate_dict = get_resp.json()['candidate']
-        assert create_resp.status_code == 201
+        assert create_resp.status_code == requests.codes.CREATED
         assert candidate_dict['phones'][0]['label'] == 'Home'
         assert candidate_dict['phones'][-1]['label'] == 'Other'
 
@@ -969,7 +1014,7 @@ class TestCreatePhones(object):
         data = {'candidates': [{'phones':
             [
                 {'label': 'vork', 'is_default': None, 'value': '6504084069'},
-                {'label': '2564', 'is_default': None, 'value': '6504084069'}
+                {'label': '2564', 'is_default': None, 'value': '6505084069'}
             ], 'talent_pool_ids': {'add': [talent_pool.id]}}
         ]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
@@ -979,7 +1024,7 @@ class TestCreatePhones(object):
         candidate_id = create_resp.json()['candidates'][0]['id']
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         candidate_dict = get_resp.json()['candidate']
-        assert create_resp.status_code == 201
+        assert create_resp.status_code == requests.codes.CREATED
         assert candidate_dict['phones'][0]['label'] == 'Other'
         assert candidate_dict['phones'][-1]['label'] == 'Other'
 
@@ -989,14 +1034,47 @@ class TestCreatePhones(object):
         Expect:  400; phone value is a required property
         """
         AddUserRoles.add(user_first)
-        data = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]}, 'phones':[
+        data = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]}, 'phones': [
             {'label': 'Work', 'is_default': False, 'value': None}]}]}
 
         # Create candidate phone without value
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 400
+        assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
+
+    def test_add_candidate_with_duplicate_phone_number(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Add candidate using identical phone numbers
+        """
+        AddUserRoles.add(user_first)
+
+        # Create candidate with identical phone numbers
+        phone_number = fake.phone_number()
+        data = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]}, 'phones': [
+            {'value': phone_number}, {'value': phone_number}
+        ]}]}
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.BAD
+        assert create_resp.json()['error']['code'] == custom_error.INVALID_USAGE
+
+    def test_add_candidate_using_an_existing_number(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Add a candidate using a phone number that already exists in candidate's domain
+        """
+        AddUserRoles.add(user_first)
+
+        # Create candidate with phone number
+        phone_number = fake.phone_number()
+        data = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]}, 'phones': [{'value': phone_number}]}]}
+        send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+
+        # Create another candidate using the same phone number as above
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.BAD
+        assert create_resp.json()['error']['code'] == custom_error.PHONE_EXISTS
 
 
 class TestCreateMilitaryService(object):
@@ -1018,7 +1096,8 @@ class TestCreateMilitaryService(object):
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first, data)
         print response_info(get_resp)
         assert get_resp.status_code == 200
-        assert get_country_code_from_name(get_resp.json()['candidate']['military_services'][0]['country']) == country_code
+        assert get_country_code_from_name(
+            get_resp.json()['candidate']['military_services'][0]['country']) == country_code
 
     def test_create_candidate_military_service(self, access_token_first, user_first, talent_pool):
         """
@@ -1106,7 +1185,8 @@ class TestCreatePreferredLocation(object):
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == 200
-        assert get_country_code_from_name(get_resp.json()['candidate']['preferred_locations'][0]['country']) == country_code
+        assert get_country_code_from_name(
+            get_resp.json()['candidate']['preferred_locations'][0]['country']) == country_code
 
     def test_create_candidate_preferred_location(self, access_token_first, user_first, talent_pool):
         """
@@ -1306,4 +1386,3 @@ class TestCreateSocialNetworks(object):
         print response_info(create_resp)
         assert create_resp.status_code == 400
         assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
-

@@ -964,6 +964,27 @@ class TestUpdateCandidatePhones(object):
         assert phones_before_update[0]['value'] != phones_after_update[0]['value']
         assert phones_count_before_update == len(phones_after_update)
 
+    def test_add_candidate_phone_using_existing_number(self, user_first, access_token_first, talent_pool,
+                                                       candidate_first):
+        """
+        Test: Add a phone number to an existing candidate using an existing phone number in domain
+        """
+        AddUserRoles.add_get_edit(user_first)
+
+        # Create candidate
+        phone_number = fake.phone_number()
+        data = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]}, 'phones': [{'value': phone_number}]}]}
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.CREATED
+
+        # Update the candidate_first's data with an additional phone number
+        data = {'candidates': [{'id': candidate_first.id, 'phones': [{'value': phone_number}]}]}
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+        assert update_resp.status_code == requests.codes.BAD
+        assert update_resp.json()['error']['code'] == custom_error.PHONE_EXISTS
+
 
 class TestUpdateCandidateMilitaryService(object):
     def test_add_military_service_with_incorrect_date_format(self, access_token_first, user_first, talent_pool):

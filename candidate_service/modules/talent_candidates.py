@@ -46,8 +46,8 @@ from candidate_service.common.utils.validators import sanitize_zip_code, is_numb
 from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
-    does_phone_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
-    get_education_degree_if_exists, does_military_service_exist
+    do_phones_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
+    get_education_degree_if_exists, does_military_service_exist, does_phone_exists_in_domain
 )
 
 # Common utilities
@@ -1841,8 +1841,14 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
     if any([phone.get('is_default') for phone in phones]):
         CandidatePhone.set_is_default_to_false(candidate_id)
 
+    # Check if phone label and default have been provided
     phones_has_label = any([phone.get('label') for phone in phones])
     phones_has_default = any([phone.get('is_default') for phone in phones])
+
+    # Check for duplicate values
+    if len(set([phone.get('value') for phone in phones])) < len(phones):
+        raise InvalidUsage('Identical phone numbers provided', custom_error.INVALID_USAGE)
+
     for i, phone in enumerate(phones):
 
         # If there's no is_default, the first phone should be default
@@ -1866,6 +1872,7 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
 
         # Clear CachedData's country_codes to prevent aggregating unnecessary data
         CachedData.country_codes = []
+
         # if value:
         phone_dict = dict(
             value=value,
@@ -1901,15 +1908,25 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
             can_phone_obj.update(**phone_dict)
 
         else:  # Add
-            if value:  # Value is required for creating phone
-                phone_dict.update(dict(candidate_id=candidate_id))
+            phone_dict.update(dict(candidate_id=candidate_id))
+
+            # If phone number exists in same domain, prevent updating/creating candidate
+            if does_phone_exists_in_domain(phone_value=value, domain_id=request.user.domain_id):
+                raise InvalidUsage("Candidate with phone number ({}) already exists.".format(value),
+                                   custom_error.PHONE_EXISTS)
+
+            if is_updating:
                 # Prevent duplicate entries
-                if not does_phone_exist(candidate_phones, phone_dict):
+                if not do_phones_exist(candidate_phones, phone_dict):
                     db.session.add(CandidatePhone(**phone_dict))
 
-                    if is_updating:  # Track all updates
-                        track_edits(update_dict=phone_dict, table_name='candidate_phone',
-                                    candidate_id=candidate_id, user_id=user_id)
+                # Track all changes
+                track_edits(update_dict=phone_dict, table_name='candidate_phone',
+                            candidate_id=candidate_id, user_id=user_id)
+            else:
+                db.session.add(CandidatePhone(**phone_dict))
+
+
 
 
 def _add_or_update_military_services(candidate, military_services, user_id, is_updating):
