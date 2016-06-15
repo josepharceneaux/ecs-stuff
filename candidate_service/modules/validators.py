@@ -248,9 +248,13 @@ def convert_date(key, value):
     if value:
         try:
             formatted_date = parse(value)
+            if key == "date_from":
+                formatted_date = formatted_date.replace(hour=0, minute=0, second=0)
+            else:
+                formatted_date = formatted_date.replace(hour=23, minute=59, second=59)
         except ValueError:
             raise InvalidUsage("Field `%s` contains incorrect date format. "
-                               "Date format should be YY-MM-DDTHH:MM:SS (eg. 2009-08-13T10:33:25)" % key)
+                               "Date format should be MM/DD/YYYY (eg. 06/10/2016)" % key)
         return formatted_date.isoformat() + 'Z'  # format it as required by cloudsearch.
 
 
