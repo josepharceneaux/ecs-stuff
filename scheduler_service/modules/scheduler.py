@@ -442,7 +442,7 @@ def get_general_job_id(task_name):
     Return id of scheduled general task
     :param task_name: general task name which is scheduled
     :type task_name: str
-    :return:s
+    :return:str|None
     """
     start_index = 0
     end_index = -1
