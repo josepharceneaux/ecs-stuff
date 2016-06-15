@@ -152,6 +152,11 @@ def test_blank_file(token_fixture, user_fixture):
     assert 'error' in content, "There should be an error if no text can be extracted."
 
 
+def test_picture_not_resume(token_fixture, user_fixture):
+    content, status = fetch_resume_post_response(token_fixture, 'notResume.jpg')
+    assert 'error' in content, "There should be an error Because it's a picture of a backyard."
+
+
 ####################################################################################################
 # Test FilePicker Key Parsing without create option
 ####################################################################################################

@@ -65,7 +65,13 @@ def parse_resume(file_obj, filename_str):
         boto3_put(file_obj.read(), filename_str, 'FailedResumes')
         raise InvalidUsage("Unable to determine the contents of the document: {}".format(filename_str))
 
-    encoded_resume = base64.b64encode(doc_content)
+    try:
+        encoded_resume = base64.b64encode(doc_content)
+
+    except Exception:
+        logger.exception('Error encoding resume before sending to BG Optic.')
+        raise InvalidUsage('Issue encoding resume text. Please ensure the file is of a resume and not blurry.')
+
     optic_response = fetch_optic_response(encoded_resume, filename_str)
 
     if optic_response:
