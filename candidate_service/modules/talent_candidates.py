@@ -1778,12 +1778,23 @@ def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
     """
     Function will update CandidateEmail or create new one(s).
     """
+    # Strip all values from emails
+    emails = [purge_dict(email) for email in emails]
+
     # If any of emails' is_default is True, set all of candidate's emails' is_default to False
     if any([email.get('is_default') for email in emails]):
         CandidateEmail.set_is_default_to_false(candidate_id=candidate_id)
 
     emails_has_label = any([email.get('label') for email in emails])
     emails_has_default = any([email.get('is_default') for email in emails])
+
+    # Prevent duplicate email addresses
+    email_addresses = [email.get('address') for email in emails]
+    if len(set(email_addresses)) < len(emails):
+        raise InvalidUsage(error_message='Identical email addresses provided',
+                           error_code=custom_error.INVALID_USAGE,
+                           additional_error_info={'Duplicates': email_addresses})
+
     for i, email in enumerate(emails):
 
         # If there's no is_default, the first email should be default
@@ -1824,6 +1835,13 @@ def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
                                                 CandidateEmail.candidate_id == candidate_id).first()
             # Prevent duplicate entries
             if not email:
+
+                # Email must not belong to another candidate in the same domain
+                unauthorized_email = CandidateEmail.get_email_in_users_domain(request.user.domain_id, email_address)
+                if unauthorized_email:
+                    raise ForbiddenError("Email (address = {}) belongs to someone else!".
+                                         format(unauthorized_email.address), custom_error.EMAIL_FORBIDDEN)
+
                 email_dict.update(dict(candidate_id=candidate_id))
                 db.session.add(CandidateEmail(**email_dict))
 

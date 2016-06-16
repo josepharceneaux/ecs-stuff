@@ -909,13 +909,8 @@ class TestCreateCandidateEmail(object):
         }
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-
-        # Retrieve all of candidate's emails
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        print response_info(get_resp)
-        assert len(get_resp.json()['candidate']['emails']) == 1
-        assert get_resp.json()['candidate']['emails'][0]['address'] == email_address
+        assert create_resp.status_code == requests.codes.BAD
+        assert create_resp.json()['error']['code'] == custom_error.INVALID_USAGE
 
     def test_add_duplicate_candidate_with_same_email(self, access_token_first, user_first, talent_pool):
         """
