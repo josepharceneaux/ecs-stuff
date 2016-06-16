@@ -936,7 +936,7 @@ class TestCreateCandidateEmail(object):
         assert create_resp.json()['error']['code'] == custom_error.CANDIDATE_ALREADY_EXISTS
 
 
-class TestCreatePhones(object):
+class TestAddCandidatePhones(object):
     def test_create_candidate_phones(self, access_token_first, user_first, talent_pool):
         """
         Test:   Create CandidatePhones for Candidate

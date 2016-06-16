@@ -2,7 +2,7 @@ from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
-from ..error_handling import InvalidUsage, InternalServerError
+from ..error_handling import InternalServerError
 from ..utils.validators import raise_if_not_positive_int_or_long
 from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
 from associations import ReferenceEmail
@@ -408,6 +408,19 @@ class CandidateEmail(db.Model):
         raise_if_not_positive_int_or_long(candidate_id)
         email = cls.query.filter_by(candidate_id=candidate_id).first()
         return email
+
+    @classmethod
+    def get_email_in_users_domain(cls, domain_id, email_address):
+        """
+        Returns CandidateEmail object if found in user's domain
+        :type domain_id:  int | long
+        :type email_address: str
+        :rtype: CandidateEmail | None
+        """
+        from user import User  # This is to avoid circular import error
+        return cls.query.join(Candidate).join(User). \
+            filter(User.domain_id == domain_id). \
+            filter(cls.address == email_address).first()
 
 
 class CandidatePhoto(db.Model):

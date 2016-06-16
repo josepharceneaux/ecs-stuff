@@ -573,19 +573,6 @@ def do_phones_exist(phones, phone_dict):
     return False
 
 
-def does_phone_exists_in_domain(phone_value, domain_id):
-    """
-    Function will return True if phone number exists in domain, otherwise false
-    :type phone_value:  str
-    :type domain_id:    int | long
-    :rtype: bool
-    """
-    exists = CandidatePhone.query.join(Candidate).join(User). \
-        filter(User.domain_id == domain_id). \
-        filter(CandidatePhone.value == phone_value).first()
-    return True if exists else False
-
-
 def does_preferred_location_exist(preferred_locations, preferred_location_dict):
     """
     :type preferred_locations:  list[CandidatePreferredLocation]
@@ -673,9 +660,5 @@ def get_email_if_validated(email_address, domain_id):
         raise InvalidUsage('Invalid email address/format: {}'.format(email_address),
                            error_code=custom_error.INVALID_EMAIL)
 
-    # Check for candidate's email in user's domain
-    candidate_email_obj = CandidateEmail.query.join(Candidate).join(User) \
-        .filter(User.domain_id == domain_id) \
-        .filter(CandidateEmail.address == email_address).first()
-
-    return candidate_email_obj
+    # Get candidate's email in user's domain if exists
+    return CandidateEmail.get_email_in_users_domain(domain_id, email_address)

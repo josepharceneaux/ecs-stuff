@@ -47,7 +47,7 @@ from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
     do_phones_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
-    get_education_degree_if_exists, does_military_service_exist, does_phone_exists_in_domain
+    get_education_degree_if_exists, does_military_service_exist
 )
 
 # Common utilities
@@ -1846,8 +1846,11 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
     phones_has_default = any([phone.get('is_default') for phone in phones])
 
     # Check for duplicate values
-    if len(set([phone.get('value') for phone in phones])) < len(phones):
-        raise InvalidUsage('Identical phone numbers provided', custom_error.INVALID_USAGE)
+    phone_numbers = [phone.get('value') for phone in phones]
+    if len(set(phone_numbers)) < len(phones):
+        raise InvalidUsage(error_message='Identical phone numbers provided',
+                           error_code=custom_error.INVALID_USAGE,
+                           additional_error_info={'Duplicates': phone_numbers})
 
     for i, phone in enumerate(phones):
 
@@ -1921,9 +1924,11 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
                                 candidate_id=candidate_id, user_id=user_id)
                 else:
                     # If phone number exists in same domain, prevent updating/creating candidate
-                    if does_phone_exists_in_domain(phone_value=value, domain_id=request.user.domain_id):
+                    if CandidatePhone.search_phone_number_in_user_domain(str(value), request.user):
                         raise InvalidUsage(error_message="Candidate with phone number ({}) already exists.".format(value),
-                                           error_code=custom_error.PHONE_EXISTS)
+                                           error_code=custom_error.PHONE_EXISTS,
+                                           additional_error_info={'id': candidate_id,
+                                                                  'domain_id': request.user.domain_id})
                     db.session.add(CandidatePhone(**phone_dict))
 
 
