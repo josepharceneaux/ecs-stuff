@@ -8,14 +8,15 @@ import json
 
 # 3rd party imports
 import flask
-from flask import request, redirect
+import tweepy
+from flask import request, redirect, session, render_template
 
 # Application specific imports
-
 from restful.v1_data import data_blueprint
 from restful.v1_events import events_blueprint
 from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
+from social_network_service.modules.social_network.twitter import Twitter
 from social_network_service.social_network_app import app, logger
 from social_network_service.modules.utilities import get_class
 from restful.v1_social_networks import social_network_blueprint
@@ -39,7 +40,8 @@ WEBHOOK_REDIRECT_URL = 'https://729c03b1.ngrok.io'
 
 @app.route('/')
 def index():
-    return 'Welcome to social network service'
+    return render_template('index.html')
+    # return 'Welcome to social network service'
 
 
 @app.route(SocialNetworkApi.CODE)
@@ -114,4 +116,17 @@ def handle_rsvp():
         data = {'message': error_message,
                 'status_code': 200}
         return flask.jsonify(**data)
+
+
+@app.route(SocialNetworkApi.TWITTER_AUTH)
+def twitter_auth(user_id):
+    twitter_obj = Twitter(user_id=user_id, assert_credentials=False)
+    return twitter_obj.authentication()
+
+
+@app.route(SocialNetworkApi.TWITTER_CALLBACK)
+def callback():
+    twitter_obj = Twitter(user_id=session['user_id'], assert_credentials=False)
+    return twitter_obj.callback(request.args['oauth_verifier'])
+
 
