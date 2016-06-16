@@ -60,7 +60,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
         raise_if_not_instance_of(access_token, (str, unicode))
     if user_id:
         raise_if_not_positive_int_or_long(user_id)
-
+    # TODO we can make following configurable via kwargs param
     per_page = 1000  # Smartlists can have a large number of candidates, hence page size of 1000
     params = {'fields': 'id'} if candidate_ids_only else {}
     cursor = 'initial'
@@ -68,14 +68,21 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
     counter = 0
     has_more_candidates = True
 
+    # TODO--I strongly believe that this whole method can be written in a more generic way such that we may put it in a common place for others to reuse
+
+    # TODO please add in comments where can the engineer find detailed docs of cursors
     while has_more_candidates:
+        # TODO--just double check, if the following breaks things will go smooth?
         response = get_candidates_from_smartlist_with_page_params(list_id, per_page,
                                                                   cursor, params,
-                                                                  access_token, user_id)
+                                                                   access_token, user_id)
+        # TODO--rename counter to 'page_no'
         counter += 1
         response_body = response.json()
+        # TODO--I think we should rename no_of_pages to total_pages
         no_of_pages = response_body['max_pages']
         candidates.extend(response_body['candidates'])
+
         if no_of_pages == counter:
             cursor = response_body['cursor']
         else:
