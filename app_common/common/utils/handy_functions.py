@@ -7,12 +7,9 @@ import re
 import json
 import random
 import string
-from datetime import datetime
 
 # Third Party
-import pytz
 import requests
-from pytz import timezone
 from itertools import izip_longest
 
 from flask import Flask
@@ -22,17 +19,19 @@ from flask import current_app, request
 
 # Application Specific
 from ..models.db import db
-from ..talent_config_manager import TalentConfigKeys
 from werkzeug.exceptions import BadRequest
+from ..talent_config_manager import TalentConfigKeys
 from ..models.user import (User, UserScopedRoles, DomainRole)
+from ..utils.validators import raise_if_not_positive_int_or_long
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
+
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
 
 def random_word(length):
-    """Creates a random lowercase string, usefull for testing data."""
+    """Creates a random lowercase string, useful for testing data."""
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
 
 
@@ -61,12 +60,9 @@ def add_role_to_test_user(test_user, role_names):
 def camel_case_to_snake_case(name):
     """ Convert camel case to underscore case
         socialNetworkId --> social_network_id
-
             :Example:
-
                 result = camel_case_to_snake_case('socialNetworkId')
                 assert result == 'social_network_id'
-
     """
     # name_ = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     # return re.sub('([a-z0-9])([A-Z0-9])', r'\1_\2', name_).lower()
@@ -78,9 +74,7 @@ def camel_case_to_snake_case(name):
 def snake_case_to_pascal_case(name):
     """ Convert string or unicode from lower-case underscore to camel-case
         e.g. appt_type_id --> ApptTypeId
-
             :Example:
-
                 result = snake_case_to_camel_case('social_network_id')
                 assert result == 'SocialNetworkId'
     """
@@ -117,44 +111,6 @@ def url_conversion(long_url):
         error_message = "Error while shortening URL. Long URL is %s. " \
                         "Error dict is %s" % (long_url, json_data['error']['errors'][0])
         return None, error_message
-
-
-def to_utc_str(dt):
-    """
-    This converts given datetime in '2015-10-08T06:16:55Z' format.
-    :param dt: given datetime
-    :type dt: datetime
-    :return: UTC date in str
-    :rtype: str
-    """
-    if not isinstance(dt, datetime):
-        raise InvalidUsage('Given param should be datetime obj')
-    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def get_utc_datetime(dt, tz):
-    """
-    This method takes datetime object and timezone name and returns UTC specific datetime
-    :Example:
-        >> now = datetime.now()  # datetime(2015, 10, 8, 11, 16, 55, 520914)
-        >> timezone = 'Asia/Karachi'
-        >> utc_datetime = get_utc_datetime(now, timezone) # '2015-10-08T06:16:55Z
-    :param dt: datetime object
-    :type dt: datetime
-    :return: timezone specific datetime object
-    :rtype string
-    """
-    assert tz, 'Timezone should not be none'
-    assert isinstance(dt, datetime), 'dt should be datetime object'
-    # get timezone info from given datetime object
-    local_timezone = timezone(tz)
-    try:
-        local_dt = local_timezone.localize(dt, is_dst=None)
-    except ValueError:
-        # datetime object already contains timezone info
-        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-    utc_dt = local_dt.astimezone(pytz.utc)
-    return utc_dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def grouper(iterable, group_size, fillvalue=None):
@@ -221,10 +177,10 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :param app: flask app object if wanted to use this method using app_context()
     :type method_type: str
     :type url: str
-    :type params: dict
-    :type headers: dict
-    :type data: dict
-    :type user_id: int | long
+    :type params: dict | None
+    :type headers: dict | None
+    :type data: dict | None
+    :type user_id: int | long | None
     :return: response from HTTP request or None
     :Example:
         If we are requesting scheduler_service to GET a task, we will use this method as
@@ -238,8 +194,8 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
         raise InvalidUsage('Method type should be str. e.g. POST etc')
     if not isinstance(url, basestring):
         error_message = 'URL must be string. Unable to make "%s" Call' % method_type
-        log_error('http_request: Error: %s, user_id: %s'
-                  % (error_message, user_id), app=app)
+        log_error('http_request: Error: %s, user_id: %s, URL: %s, Headers: %s, Data: %s'
+                  % (error_message, user_id, url, headers, data), app=app)
         raise InvalidUsage(error_message)
     if method_type.upper() in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']:
         method = getattr(requests, method_type.lower())
@@ -277,27 +233,38 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
                     error_message = e.message
             else:
                 # raise any Server error
-                log_exception("http_request: Server error from %s on %s call. "
-                                 "Make sure requested server is running." % (url, method_type))
+                log_exception('''http_request: Server error, make sure requested server is running.
+                                 URL:     %s
+                                 Method:  %s
+                                 Data:    %s
+                                 Headers: %s''' % (url, method_type, data, headers))
                 raise
         except ConnectionError:
             # This check is for if any talent service is not running. It logs the URL on
             # which request was made.
             log_exception(
                             "http_request: Couldn't make %s call on %s. "
-                            "Make sure requested server is running." % (method_type, url), app=app)
+                            "Make sure requested server is running. Headers: %s, Data: %s" % (method_type, url, headers,
+                                                                                              data), app=app)
+            raise
+        except requests.Timeout as e:
+            log_exception('http_request: HTTP request timeout, %s. URL: %s, Headers: %s, Data: %s' %
+                          (e.message, url, headers, data))
             raise
         except requests.RequestException as e:
-            log_exception('http_request: HTTP request failed, %s' % e.message)
+            log_exception('http_request: HTTP request failed, %s. URL: %s, Headers: %s, Data: %s,'
+                          'Response: %s' % (e.message, url, headers, data, e.response))
             raise
-
         if error_message:
             log_exception('http_request: HTTP request failed, %s, '
-                                                   'user_id: %s' % (error_message, user_id), app=app)
+                          'user_id: %s, URL: %s, Headers: %s, Data: %s' % (error_message, user_id, url,
+                                                                           headers, data), app=app)
         return response
     else:
-        log_error('http_request: Unknown Method type %s ' % method_type, app=app)
-        raise InvalidUsage('Unknown method type(%s) provided' % method_type)
+        log_error('http_request: Unknown Method type %s. URL: %s, Headers: %s, Data: %s' % (method_type, url, headers,
+                                                                                           data), app=app)
+        raise InvalidUsage('Unknown method type(%s) provided. URL: %s, Headers: %s, Data: %s' % (method_type, url,
+                                                                                                headers, data))
 
 
 def validate_required_fields(data_dict, required_fields):
@@ -325,13 +292,10 @@ def find_missing_items(data_dict, required_fields=None, verify_all=False):
     This function is used to find the missing items (either key or its value)in given
     data_dict. If verify_all is true, this function checks all the keys present in data_dict
     if they are empty or not. Otherwise it verify only those fields as given in required_fields.
-
     :Example:
-
         >>> data_dict = {'name' : 'Name', 'title': 'myTitle'}
         >>> missing_items = find_missing_items(data_dict, required_fields =['name', 'title', 'type']
         >>> print missing_items
-
          Output will be ['type']
     :param data_dict: given dictionary to be examined
     :param required_fields: keys which need to be checked
@@ -360,28 +324,6 @@ def find_missing_items(data_dict, required_fields=None, verify_all=False):
     return [missing_item for missing_item in missing_items]
 
 
-def raise_if_not_instance_of(obj, instances, exception=InvalidUsage):
-    """
-    This validates that given object is an instance of given instance. If it is not, it raises
-    the given exception.
-    :param obj: obj e,g. User object
-    :param instances: Class for which given object is expected to be an instance.
-    :param exception: Exception to be raised
-    :type obj: object
-    :type instances: class
-    :type exception: Exception
-    :exception: Invalid Usage
-    """
-    if not isinstance(obj, instances):
-        given_obj_name = dict(obj=obj).keys()[0]
-        error_message = '%s must be an instance of %s.' % (given_obj_name, '%s')
-        if isinstance(instances, (list, tuple)):
-            raise exception(error_message % ", ".join([instance.__name__
-                                                       for instance in instances]))
-        else:
-            raise exception(error_message % instances.__name__)
-
-
 def sample_phone_number():
     """Create random phone number.
     Phone number only creates area code + 7 random digits
@@ -399,8 +341,11 @@ def generate_jwt_headers(content_type=None, user_id=None):
     """
     This function will return a dict of JWT based on the user ID and X-Talent-Secret-Key-ID and optional content-type
     :param str content_type: content-type header value
-    :return:
+    :param (int | long | None) user_id: Id of user.
+    :rtype: dict
     """
+    if user_id:
+        raise_if_not_positive_int_or_long(user_id)
     secret_key_id, jw_token = User.generate_jw_token(
         user_id=request.user.id if hasattr(request, 'user') else user_id)
     headers = {'Authorization': jw_token, 'X-Talent-Secret-Key-ID': secret_key_id}
@@ -409,15 +354,20 @@ def generate_jwt_headers(content_type=None, user_id=None):
     return headers
 
 
-def create_oauth_headers():
+def create_oauth_headers(oauth_token=None, user_id=None):
     """
     This function will return dict of Authorization and Content-Type headers. If the request context does not
     contain an access token, a dict of JWT based on the user ID and X-Talent-Secret-Key-ID headers are generated.
-    :return:
+    :param oauth_token: Token for authentication.
+    :param user_id: Id of user in case we are calling this function out od request context such as through celery.
+    :type oauth_token: str | unicode | None
+    :type user_id: int | long | None
     """
-    oauth_token = request.oauth_token
+    oauth_token = oauth_token if oauth_token else request.oauth_token if hasattr(request, 'oauth_token') else None
+    if user_id:
+        raise_if_not_positive_int_or_long(user_id)
     if not oauth_token:
-        return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'])
+        return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'], user_id)
     else:
         authorization_header_value = oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token
         return {'Authorization': authorization_header_value, 'Content-Type': 'application/json'}
@@ -456,3 +406,48 @@ def get_valid_json_data(req):
     if not data:
         raise InvalidUsage('No data provided.')
     return data
+
+
+def define_and_send_request(access_token, request, url, data=None):
+    """
+    Function will define request based on params and make the appropriate call.
+    :param request_method:  can only be GET, POST, PUT, PATCH, or DELETE
+    :param url: url for request
+    :param access_token: token for authentication
+    :param data: data in form of dictionary
+    """
+    request = request.lower()
+    assert request in ['get', 'post', 'put', 'patch', 'delete']
+    method = getattr(requests, request)
+    if data is None:
+        return method(url=url, headers={'Authorization': 'Bearer %s' % access_token})
+    else:
+        return method(url=url,
+                      headers={'Authorization': 'Bearer %s' % access_token,
+                               'content-type': 'application/json'},
+                      data=json.dumps(data))
+
+
+def purge_dict(dictionary, strip=True, remove_empty_strings_only=False):
+    """
+    Function will "remove" dict's keys with empty values
+    :param strip: if True, it will strip each value
+    :type strip: bool
+    :type remove_empty_strings_only: bool
+    :param remove_empty_strings_only: if True, keys with None values will not be removed
+    :type dictionary:  dict
+    :rtype:  dict
+    """
+
+    def clean(value):
+        return value.strip() if isinstance(value, basestring) else value
+
+    # strip all values & return all keys except keys with empty-string values
+    if remove_empty_strings_only:
+        return {k: clean(v) for k, v in dictionary.items() if (clean(v) or v is None)}
+    # strip all values & return keys with values that aren't None
+    elif strip and not remove_empty_strings_only:
+        return {k: clean(v) for k, v in dictionary.items() if (v or clean(v))}
+    # return keys with values that aren't None
+    else:
+        return {k: v for k, v in dictionary.items() if (v or clean(v))}

@@ -7,7 +7,7 @@ from flask_restful import Resource
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
 # Validations
 from candidate_service.modules.validators import validate_and_format_data
-from jsonschema import validate
+from jsonschema import validate, ValidationError
 from candidate_service.modules.json_schema import candidates_resource_schema_get
 from candidate_service.modules.validators import (
     do_candidates_belong_to_users_domain, get_candidate_if_exists
@@ -41,7 +41,7 @@ class CandidateSearch(Resource):
         if body_dict:  # In case req-body is empty
             try:
                 validate(instance=body_dict, schema=candidates_resource_schema_get)
-            except Exception as e:
+            except ValidationError as e:
                 raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
 
             candidate_ids = body_dict.get('candidate_ids')
@@ -53,9 +53,10 @@ class CandidateSearch(Resource):
             retrieved_candidates = []
             for candidate_id in candidate_ids:
                 # Check for candidate's existence and web-hidden status
-                candidate = get_candidate_if_exists(candidate_id=candidate_id)
+                candidate = get_candidate_if_exists(candidate_id)
                 retrieved_candidates.append(fetch_candidate_info(candidate=candidate))
 
+            logger.info('BENCHMARK - candidate Search by candidate_ids: {}'.format(time() - start_time))
             return {'candidates': retrieved_candidates}
 
         else:
@@ -71,9 +72,10 @@ class CandidateSearch(Resource):
             domain_id = request.user.domain_id
             limit = request_vars.get('limit')
             search_limit = int(limit) if limit else 15
+            count_only = True if 'count_only' in request.args.get('fields', '') else False
 
             # If limit is not requested then the Search limit would be taken as 15, the default value
-            candidate_search_results = search_candidates(domain_id, request_vars, search_limit)
+            candidate_search_results = search_candidates(domain_id, request_vars, search_limit, count_only)
 
             logger.info('BENCHMARK - candidate Search: {}'.format(time() - start_time))
 

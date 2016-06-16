@@ -1,9 +1,11 @@
 __author__ = 'ufarooqi'
 from flask import render_template
+from user_service.user_app import app
 from werkzeug.security import gen_salt
 
 from user_service.common.error_handling import InvalidUsage
-from user_service.common.models.misc import EmailTemplateFolder, UserEmailTemplate
+from user_service.common.talent_config_manager import TalentConfigKeys
+from user_service.common.models.email_campaign import EmailTemplateFolder, UserEmailTemplate
 from user_service.common.models.user import db, Domain, User, UserGroup
 from user_service.common.utils.amazon_ses import send_email
 from user_service.common.utils.auth_utils import gettalent_generate_password_hash
@@ -56,7 +58,7 @@ def check_if_user_exists(email):
 
 
 def create_user_for_company(first_name, last_name, email, domain_id, expiration_date=None, phone="",
-                            dice_user_id=None, thumbnail_url='', user_group_id=None):
+                            dice_user_id=None, thumbnail_url='', user_group_id=None, locale=None):
 
     from dateutil import parser
     expiration = None
@@ -69,7 +71,7 @@ def create_user_for_company(first_name, last_name, email, domain_id, expiration_
     # create user for existing domain
     user = create_user(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, phone=phone,
                        expiration=expiration, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url,
-                       user_group_id=user_group_id)
+                       user_group_id=user_group_id, locale=locale)
 
     return user.id
 
@@ -86,7 +88,7 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
         db.session.add(sample_templates_folder)
         db.session.commit()
 
-    sample_templates = UserEmailTemplate.query.filter(UserEmailTemplate.email_template_folder_id == sample_templates_folder.id)
+    sample_templates = UserEmailTemplate.query.filter(UserEmailTemplate.template_folder_id == sample_templates_folder.id)
     sample_template_names = [t.name for t in sample_templates]
 
     if ('Announcement' not in sample_template_names) and ('Intro' not in sample_template_names):
@@ -95,12 +97,12 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
         get_talent_intro = render_template('getTalentIntro.html')
 
         announcement_template = UserEmailTemplate(user_id=admin_user_id, type='0', name='Announcement',
-                                                  email_body_html=get_talent_special_announcement, email_body_text='',
-                                                  email_template_folder_id=sample_templates_folder.id, is_immutable='0')
+                                                  body_html=get_talent_special_announcement, body_text='',
+                                                  template_folder_id=sample_templates_folder.id, is_immutable='0')
 
         intro_template = UserEmailTemplate(user_id=admin_user_id, type='0', name='Intro',
-                                           email_body_html=get_talent_intro, email_body_text='',
-                                           email_template_folder_id=sample_templates_folder.id, is_immutable='0')
+                                           body_html=get_talent_intro, body_text='',
+                                           template_folder_id=sample_templates_folder.id, is_immutable='0')
 
         db.session.add(announcement_template)
         db.session.add(intro_template)
@@ -110,38 +112,48 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
 
 
 def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None,
-                thumbnail_url='', user_group_id=None):
+                thumbnail_url='', user_group_id=None, locale=None):
 
-    temp_password = gen_salt(20)
+    temp_password = gen_salt(8)
     hashed_password = gettalent_generate_password_hash(temp_password)
+
+    user_group = None
 
     # Get user's group ID
     if not user_group_id:
         user_groups = UserGroup.all_groups_of_domain(domain_id=domain_id)
         if user_groups:  # TODO: this shouldn't be necessary since each domain must belong to a user_group
-            user_group_id = user_groups[0].id
+            user_group = user_groups[0]
+    else:
+        user_group = UserGroup.query.get(user_group_id)
+
+    if not user_group:
+        raise InvalidUsage("Either user_group_id is not provided or no group exists in user's domain")
+
+    if user_group.domain_id != domain_id:
+        raise InvalidUsage("User Group %s belongs to different domain" % user_group.id)
 
     # Make new entry in user table
     user = User(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, expiration=expiration,
                 dice_user_id=dice_user_id, password=hashed_password, phone=phone, thumbnail_url=thumbnail_url,
-                user_group_id=user_group_id)
-
+                user_group_id=user_group.id, locale=locale)
     db.session.add(user)
     db.session.commit()
 
     # TODO: Make new widget_page if first user in domain
     # TODO: Add activity
 
-    send_new_account_email(email, temp_password)
+    send_new_account_email(email, temp_password, 'support@gettalent.com')
 
     return user
 
 
-def send_new_account_email(email, temp_password):
-    new_user_email = render_template('new_user.html', email=email, password=temp_password)
-    send_email(source='"getTalent Registration" <registration@gettalent.com>',
-               subject='Setup Your New Account',
-               body=new_user_email, to_addresses=[email], email_format='html')
+def send_new_account_email(account_email, temp_password, to_email):
+    if app.config[TalentConfigKeys.ENV_KEY] in ('prod', 'qa'):
+        new_user_email = render_template('new_user.html', email=account_email, password=temp_password)
+        send_email(source='"getTalent Registration" <registration@gettalent.com>',
+                   subject='Setup Your New Account',
+                   body=new_user_email, to_addresses=[to_email], email_format='html')
 
 
 def send_reset_password_email(email, name, reset_password_url, six_digit_token):

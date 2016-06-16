@@ -7,6 +7,7 @@ class CandidateCustomErrors(object):
     # General error codes
     INVALID_INPUT = 3000
     MISSING_INPUT = 3001
+    INVALID_USAGE = 3002
 
     # Error codes for Candidate(s)
     CANDIDATE_NOT_FOUND = 3010
@@ -80,3 +81,19 @@ class CandidateCustomErrors(object):
     # Error codes for CandidatePhoto
     PHOTO_NOT_FOUND = 3150
     PHOTO_FORBIDDEN = 3151
+
+    # Error codes for CandidateLanguage
+    LANGUAGE_NOT_FOUND = 3160
+    LANGUAGE_FORBIDDEN = 3161
+
+    # Error codes for Candidate Reference
+    REFERENCE_NOT_FOUND = 3160
+    REFERENCE_FORBIDDEN = 3161
+
+    # Error codes for Candidate Tags
+    TAG_NOT_FOUND = 3170
+    TAG_FORBIDDEN = 3172
+    TAG_EXISTS = 3173
+
+    # Error codes for Candidate Source
+    INVALID_SOURCE_ID = 3180

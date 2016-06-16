@@ -53,8 +53,6 @@ with app.app_context():
     with app.app_context():
         # Create New user
         from user_service.user_app.user_service_utilties import create_user
-        create_user(email=app.config[TalentConfigKeys.EMAIL_KEY], domain_id=domain.id, first_name='John',
-                    last_name='Doe', expiration=None)
 
         # Insert necessary records into static tables
         from user_service.populate_static_tables import (
@@ -66,6 +64,10 @@ with app.app_context():
             add_domain_roles, add_user_group_to_domains, update_users_group_id, add_talent_pool,
             add_talent_pool_group, add_default_talent_pipelines
         )
+
+        add_user_group_to_domains()
+        create_user(email=app.config[TalentConfigKeys.EMAIL_KEY], domain_id=domain.id, first_name='John',
+                    last_name='Doe', expiration=None)
         create_candidate_status()
         create_email_labels()
         create_email_clients()
@@ -77,7 +79,6 @@ with app.app_context():
         create_rating_tags()
         create_social_networks()
         add_domain_roles()
-        add_user_group_to_domains()
         update_users_group_id()
         add_talent_pool()
         add_talent_pool_group()

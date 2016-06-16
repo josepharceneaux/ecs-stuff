@@ -24,22 +24,24 @@ def query_openweb(url, type):
     """
     try:
         if type == 0:
-            openweb_response = requests.get("http://api.thesocialcv.com/v3/profile/data.json", params=dict(apiKey=SOCIALCV_API_KEY, webProfile=url))
+            openweb_response = requests.get("http://api.thesocialcv.com/v3/profile/data.json",
+                                            params=dict(apiKey=SOCIALCV_API_KEY, webProfile=url))
         elif type == 1:
-            openweb_response = requests.get("http://api.thesocialcv.com/v3/profile/data.json", params=dict(apiKey=SOCIALCV_API_KEY, email=url))
+            openweb_response = requests.get("http://api.thesocialcv.com/v3/profile/data.json",
+                                            params=dict(apiKey=SOCIALCV_API_KEY, email=url))
 
     except Exception as e:
-        return 0
+        raise InternalServerError(error_message="%s" % e.message)
 
     if openweb_response.status_code == 404:
         if type == 0:
             openweb_crawl(url)
-        raise NotFoundError(error_message="Candidate not found")
+        return False
 
     if openweb_response.status_code != 200:
         raise InternalServerError(error_message="Response error")
 
-    return openweb_response
+    return openweb_response.json()
 
 
 def find_in_openweb_by_email(candidate_email):
@@ -48,8 +50,11 @@ def find_in_openweb_by_email(candidate_email):
     :param candidate_email string
     :return: json object
     """
-    openweb_response = query_openweb(candidate_email, 1).json()
-    return False, openweb_response
+    openweb_response = query_openweb(candidate_email, 1)
+    if openweb_response:
+        return False, openweb_response
+    else:
+        raise NotFoundError(error_message="%s not found" % candidate_email)
 
 
 def match_candidate_from_openweb(url, auth_user):
@@ -59,16 +64,16 @@ def match_candidate_from_openweb(url, auth_user):
     :param auth_user:
     :return: candidate sql query
     """
-    openweb_response = query_openweb(url, 0).json()
+    openweb_response = query_openweb(url, 0)
     urls = []
+    users_in_domain = [int(domain_user.id) for domain_user in
+                       db.session.query(User).filter(User.domain_id == auth_user.domain_id).all()]
+
     if openweb_response:
         for candidate_url in openweb_response['webProfiles']:
             urls.append(openweb_response['webProfiles'][candidate_url]['url'])
 
         # find if candidate exists in gT database
-        users_in_domain = [int(domain_user.id) for domain_user in
-                           db.session.query(User).filter(User.domain_id == auth_user.domain_id).all()]
-
         candidate_query = db.session.query(Candidate).join(CandidateSocialNetwork) \
             .filter(CandidateSocialNetwork.social_profile_url.in_(urls), Candidate.user_id.in_(users_in_domain)).first()
 
@@ -76,6 +81,14 @@ def match_candidate_from_openweb(url, auth_user):
             return True, candidate_query
         else:
             return False, openweb_response
+    else:
+        # in case candidate is not found in thesocialcv, try to find the url in directly from the database
+        candidate_query = db.session.query(Candidate).join(CandidateSocialNetwork) \
+            .filter(CandidateSocialNetwork.social_profile_url == url, Candidate.user_id.in_(users_in_domain)).first()
+        if candidate_query:
+            return True, candidate_query
+        else:
+            raise NotFoundError(error_message="candidate not found")
 
 
 def openweb_crawl(url):

@@ -1,0 +1,10 @@
+"""
+This script adds the simple hash column which is used by the emailed resume to candidate code.
+"""
+
+from resume_parsing_service.app import db
+from sqlalchemy import text
+
+db.session.execute(
+    text("ALTER TABLE `talent_pool` ADD `simple_hash` varchar(8)")
+)

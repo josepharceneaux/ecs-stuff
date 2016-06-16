@@ -1,6 +1,6 @@
 from datetime import datetime
 from candidate_pool_service.candidate_pool_app import logger
-from candidate_pool_service.candidate_pool_app import redis_store
+from candidate_pool_service.common.redis_cache import redis_store
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (update_smartlist_stats,
                                                                                         update_talent_pool_stats,
                                                                                         update_talent_pipeline_stats)

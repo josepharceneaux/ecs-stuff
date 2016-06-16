@@ -2,9 +2,11 @@ __author__ = 'ufarooqi'
 import random
 import json
 import requests
+from redo import retrier
 from werkzeug.security import gen_salt
 from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.routes import CandidatePoolApiUrl
+from candidate_service.common.error_handling import NotFoundError
 from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate
 
 
@@ -47,10 +49,14 @@ def talent_pool_group_api(access_token, user_group_id, data='', action='GET'):
         raise Exception('No valid action is provided')
 
 
-def talent_pool_candidate_api(access_token, talent_pool_id, data='', action='GET'):
+def talent_pool_candidate_api(access_token, talent_pool_id, data='', action='GET', expected_count=0):
     headers = {'Authorization': 'Bearer %s' % access_token}
     if action == 'GET':
-        response = requests.get(url=CandidatePoolApiUrl.TALENT_POOL_CANDIDATE % talent_pool_id, headers=headers)
+        response = None
+        for _ in retrier(attempts=33, sleeptime=3):
+            response = requests.get(url=CandidatePoolApiUrl.TALENT_POOL_CANDIDATE % talent_pool_id, headers=headers)
+            if not response.ok or response.json().get('talent_pool_candidates').get('total_found') >= expected_count:
+                break
         return response.json(), response.status_code
     elif action == 'DELETE':
         headers['content-type'] = 'application/json'
@@ -112,10 +118,15 @@ def talent_pipeline_smart_list_api(access_token, talent_pipeline_id, data='', ac
         raise Exception('No valid action is provided')
 
 
-def talent_pipeline_candidate_api(access_token, talent_pipeline_id, params=''):
+def talent_pipeline_candidate_api(access_token, talent_pipeline_id, expected_count, params=''):
 
     headers = {'Authorization': 'Bearer %s' % access_token}
-    response = requests.get(url=CandidatePoolApiUrl.TALENT_PIPELINE_CANDIDATE % talent_pipeline_id, headers=headers, params=params)
+    response = None
+    for _ in retrier(attempts=33, sleeptime=3):
+        response = requests.get(url=CandidatePoolApiUrl.TALENT_PIPELINE_CANDIDATE % talent_pipeline_id,
+                                headers=headers, params=params)
+        if not response.ok or response.json().get('total_found') >= expected_count:
+            break
     return response.json(), response.status_code
 
 
@@ -219,4 +230,3 @@ def create_candidates_from_candidate_api(access_token, data):
     )
     assert resp.status_code == 201
     return [candidate['id'] for candidate in resp.json()['candidates']]
-

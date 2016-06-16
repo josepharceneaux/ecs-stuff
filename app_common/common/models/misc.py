@@ -15,7 +15,7 @@ from ..utils.scheduler_utils import SchedulerUtils
 class Activity(db.Model):
     __tablename__ = 'activity'
     id = db.Column('Id', db.Integer, primary_key=True)
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now(), index=True)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow, index=True)
     type = db.Column('Type', db.Integer)
     source_table = db.Column('SourceTable', db.String(127))
     source_id = db.Column('SourceId', db.Integer)
@@ -144,14 +144,13 @@ class Activity(db.Model):
         return cls.query.filter_by(user_id=user_id, type=type_, source_id=source_id).first()
 
 
-
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
     id = db.Column('Id', db.Integer, primary_key=True)
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
     name = db.Column('Description', db.String(255))
     parent_id = db.Column('ParentId', db.Integer, db.ForeignKey('area_of_interest.Id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<AreaOfInterest (name='%r')>" % self.name
@@ -200,7 +199,7 @@ class Organization(db.Model):
     id = db.Column('Id', db.Integer, primary_key=True)
     name = db.Column('Name', db.String(255), unique=True)
     notes = db.Column('Notes', db.String(255))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # Relationships
     # domains = db.relationship('Domain', backref='organization')
@@ -218,7 +217,7 @@ class Product(db.Model):
     id = db.Column('Id', db.Integer, primary_key=True)
     name = db.Column('Name', db.String(100))
     notes = db.Column('Notes', db.String(500))
-    updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<Product (name=' %r')>" % self.name
@@ -270,7 +269,7 @@ class Major(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Name', db.String(100), nullable=False)
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id'))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def serialize(self):
         return {'id': self.id}
@@ -324,7 +323,7 @@ class Frequency(db.Model):
     __table_name__ = 'frequency'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column('Description', db.String(10), nullable=False)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # Relationships
     sms_campaigns = relationship('SmsCampaign', backref='frequency')
@@ -368,7 +367,7 @@ class Frequency(db.Model):
             cls.BIWEEKLY: 14 * 24 * 3600,
             cls.MONTHLY: 30 * 24 * 3600,
             cls.YEARLY: 365 * 24 * 3600,
-            cls.CUSTOM: 5 * SchedulerUtils.MIN_ALLOWED_FREQUENCY
+            cls.CUSTOM: 3 * SchedulerUtils.MIN_ALLOWED_FREQUENCY
         }
         seconds = seconds_from_frequency_id.get(frequency_id)
         if not seconds and seconds != 0:
@@ -394,7 +393,7 @@ class CustomField(db.Model):
     type = db.Column('Type', db.String(127))
     category_id = db.Column('CategoryId', db.Integer)
     added_time = db.Column('AddedTime', db.DateTime)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # Relationship
     candidate_custom_fields = relationship('CandidateCustomField', backref='custom_field',
@@ -416,46 +415,12 @@ class CustomField(db.Model):
         return cls.query.filter(CustomField.domain_id==domain_id).all()
 
 
-class UserEmailTemplate(db.Model):
-    __tablename__ = 'user_email_template'
-    id = db.Column('Id', db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.ForeignKey('user.Id'), index=True)
-    type = db.Column('Type', db.Integer, server_default=db.text("'0'"))
-    name = db.Column('Name', db.String(255), nullable=False)
-    email_body_html = db.Column('EmailBodyHtml', db.Text)
-    email_body_text = db.Column('EmailBodyText', db.Text)
-    email_template_folder_id = db.Column('EmailTemplateFolderId', db.ForeignKey('email_template_folder.id', ondelete=u'SET NULL'), index=True)
-    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
-    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
-
-    # Relationships
-    email_template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
-                                                                                    cascade="all, delete-orphan"))
-    user = relationship(u'User', backref=db.backref('user_email_template', cascade="all, delete-orphan"))
-
-
-class EmailTemplateFolder(db.Model):
-    __tablename__ = 'email_template_folder'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column('Name', db.String(512))
-    parent_id = db.Column('ParentId', db.ForeignKey('email_template_folder.id', ondelete='CASCADE'),
-                          index=True)
-    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
-    domain_id = db.Column('DomainId', db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
-    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False,
-                             server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
-
-    domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
-    parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
-                                                                                       cascade="all, delete-orphan"))
-
-
 class CustomFieldCategory(db.Model):
     __tablename__ = 'custom_field_category'
     id = db.Column(db.Integer, primary_key=True)
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'))
     name = db.Column('Name', db.String(255))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
 
 # class PatentDetail(db.Model):
@@ -464,7 +429,7 @@ class CustomFieldCategory(db.Model):
 #     patent_id = db.Column('PatentId', db.BIGINT)
 #     issuing_authority = db.Column('IssuingAuthority', db.String(255))
 #     country_id = db.Column('CountryId', db.INT, db.ForeignKey('country.Id'))
-#     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+#     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetim.utcnow)
 #
 #     def __repr__(self):
 #         return "<PatentDetail (id = {})>".format(self.id)
@@ -476,7 +441,7 @@ class UrlConversion(db.Model):
     source_url = db.Column('SourceUrl', db.String(512))  # Ours
     destination_url = db.Column('DestinationUrl', db.String(512))  # Theirs
     hit_count = db.Column('HitCount', db.Integer, default=0)
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now())
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
     last_hit_time = db.Column('LastHitTime', db.DateTime)
 
     def __repr__(self):

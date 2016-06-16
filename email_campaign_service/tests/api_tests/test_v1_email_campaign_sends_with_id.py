@@ -7,21 +7,18 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 # Third Party
 import requests
 
-# Service Specific
-from email_campaign_service.tests.modules.handy_functions import send_campaign
-
 # Common Utils
 from email_campaign_service.common.tests.sample_data import fake
-from email_campaign_service.common.routes import EmailCampaignUrl
+from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignSend)
 
 
 class TestEmailCampaignSendsWithId(object):
     """
-    This class contains tests for endpoint /v1/campaigns/:id/sends/:id
+    This class contains tests for endpoint /v1/email-campaigns/:id/sends/:id
     """
-    URL = EmailCampaignUrl.SEND_BY_ID
+    URL = EmailCampaignApiUrl.SEND_BY_ID
     HTTP_METHOD = 'get'
     ENTITY = 'send'
 
@@ -70,7 +67,8 @@ class TestEmailCampaignSendsWithId(object):
         Here we assume that requested send is associated with such a campaign which does not
         belong to domain of logged-in user. It should result in Forbidden error.
         """
-        send_campaign(email_campaign_in_other_domain, access_token_other)
+        CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND, email_campaign_in_other_domain,
+                                            access_token_other)
         for send in email_campaign_in_other_domain.sends:
             CampaignsTestsHelpers.request_for_forbidden_error(
                 self.HTTP_METHOD,

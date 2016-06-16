@@ -16,8 +16,9 @@ Any service can inherit from this class to implement/override functionality acco
 
 # Standard Library
 import json
+import itertools
 from abc import ABCMeta
-from datetime import datetime
+from datetime import datetime, timedelta
 from abc import abstractmethod
 
 # Third Party
@@ -25,6 +26,7 @@ from celery import chord
 from flask import current_app
 
 # Database Models
+from ..utils.auth_utils import refresh_token
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
 from ..models.push_campaign import PushCampaignBlast
@@ -33,19 +35,21 @@ from ..models.misc import (UrlConversion, Frequency, Activity)
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
 # Common Utils
+from ..utils.datetime_utils import DatetimeUtils
 from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
 from campaign_utils import (get_model, CampaignUtils)
-
+from ..utils.validators import raise_if_not_instance_of
 from custom_errors import (CampaignException, EmptyDestinationUrl)
-from ..routes import (ActivityApiUrl, SchedulerApiUrl, CandidatePoolApiUrl)
+from ..routes import (ActivityApiUrl, SchedulerApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
-from validators import (validate_datetime_format, validate_form_data,
+from ..inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
+from validators import (validate_form_data,
                         validation_of_data_to_schedule_campaign,
                         validate_blast_candidate_url_conversion_in_db,
                         raise_if_dict_values_are_not_int_or_long)
 from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER,
-                                     raise_if_not_instance_of, generate_jwt_headers)
+                                     generate_jwt_headers)
 
 
 class CampaignBase(object):
@@ -60,6 +64,8 @@ class CampaignBase(object):
         - It takes "user_id" as keyword argument, gets the user object from database and sets
             user object in self.user.
         - It also sets type of campaign in self.campaign_type.
+        - If campaign_id is provided, it gets the campaign object from database for given
+            campaign type by validating that campaign belongs to logged-in user's domain
 
     * get_campaign_type(self) [abstract]
         Child classes will implement this to set type of campaign in self.campaign_type
@@ -149,7 +155,7 @@ class CampaignBase(object):
     * reschedule(self, _request, campaign_id)
         This method is used to re-schedules a campaign.
 
-    * send(self, campaign):
+    * send(self):
         This method is used send the campaign to candidates. This has the common functionality
         for all campaigns.
 
@@ -234,7 +240,16 @@ class CampaignBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, user_id):
+    def __init__(self, user_id, campaign_id=None):
+        """
+        This gets the user object from given user_id and sets it in self.user.
+        If campaign id is provided, it gets the campaign object if it belongs to logged-in
+        user's domain and sets it in self.campaign.
+        :param user_id: Id of logged-in user
+        :param campaign_id: Id of campaign object in database
+        :type user_id: int | long
+        :type campaign_id: int | long | None
+        """
         raise_if_dict_values_are_not_int_or_long(dict(user_id=user_id))
         user_obj = User.get_by_id(user_id)
         if not user_obj:
@@ -247,6 +262,9 @@ class CampaignBase(object):
         self.campaign_blast_id = None  # Campaign's blast id in database
         self.campaign_type = self.get_campaign_type()
         CampaignUtils.raise_if_not_valid_campaign_type(self.campaign_type)
+        if campaign_id:
+            self.campaign = self.get_campaign_if_domain_is_valid(campaign_id, self.user,
+                                                                 self.campaign_type)
 
     @abstractmethod
     def get_campaign_type(self):
@@ -257,15 +275,20 @@ class CampaignBase(object):
         """
         pass
 
+    @property
+    def auth_token(self):
+        auth_header = self.get_authorization_header(self.user.id)
+        return auth_header['Authorization'].replace('Bearer ', '')
+
     @staticmethod
     def get_authorization_header(user_id, bearer_access_token=None):
         """
-        This returns the authorization header containing access token token associated
+        This returns the authorization header containing access token associated
         with current user. We use this access token to communicate with other services,
-        like activity_service to create activity.
+        like e.g. activity_service to create activity.
         If access_token is provided, we return the auth header, otherwise we get the access token
         from database table "Token" and then return the auth header.
-        If access token is not found by these two methods ,we raise Forbidden error.
+        If access token is not found by these two methods, we raise Forbidden error.
 
         :param user_id: id of user
         :param bearer_access_token: e.g. 'Bearer IxzJAm3RWFnZENln37E3ivs2gxUfzB'
@@ -284,10 +307,14 @@ class CampaignBase(object):
             if not user_token_obj:
                 raise ResourceNotFound('No auth token record found for user(id:%s)'
                                        % user_id, error_code=ResourceNotFound.http_status_code())
+
             user_access_token = user_token_obj.access_token
         if not user_access_token:
             raise ForbiddenError('User(id:%s) has no auth token associated.'
                                  % user_id)
+        one_minute_later = datetime.utcnow() + timedelta(seconds=60)
+        if user_token_obj.expires < one_minute_later:
+            user_access_token = refresh_token(user_token_obj)
         return {'Authorization': 'Bearer %s' % user_access_token}
 
     def pre_process_save_or_update(self, campaign_data):
@@ -304,8 +331,7 @@ class CampaignBase(object):
         :param campaign_data:
         :type campaign_data: dict
         :exception: Invalid Usage
-        :return: Model class of campaign, validated_data,
-                invalid_smartlist_ids, not_found_smartlist_ids
+        :return: Model class of campaign, dict of validated data
         :rtype: tuple
         """
         if not isinstance(campaign_data, dict):
@@ -313,17 +339,22 @@ class CampaignBase(object):
         if not campaign_data:
             raise InvalidUsage('No data received from UI to save/update campaign.')
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        validated_data = campaign_data.copy()
         # if frequency_id not provided or is 0, set to id of ONCE
         if not campaign_data.get('frequency_id'):
             campaign_data.update({'frequency_id': Frequency.ONCE})
-        invalid_smartlist_ids = validate_form_data(campaign_data, self.user)
+        validate_form_data(campaign_data, self.user)
         logger.info('Campaign data has been validated.')
+        validated_data = campaign_data.copy()
+        # get respective campaign model. e.g. sms_campaign or push_campaign etc
         campaign_model = get_model(self.campaign_type, self.campaign_type)
         # 'smartlist_ids' is not a field of sms_campaign or push_campaign tables, so
         # need to remove it from data.
         del validated_data['smartlist_ids']
-        return campaign_model, validated_data, invalid_smartlist_ids
+        # If there exists any unexpected field in data from UI, raise invalid usage error.
+        unexpected_fields = campaign_model.get_invalid_fields(validated_data)
+        if unexpected_fields:
+            raise InvalidUsage('Unexpected field(s) `%s` found in data.' % unexpected_fields)
+        return campaign_model, validated_data
 
     def save(self, form_data):
         """
@@ -337,23 +368,22 @@ class CampaignBase(object):
                 (e.g "'Harvey Specter' created an SMS campaign: 'Hiring at getTalent'")
         :param form_data: data from UI
         :type form_data: dict
-        :return: id of sms_campaign in db, invalid_smartlist_ids
-        :rtype: tuple
+        :return: id of created campaign in db
+        :rtype: int | long
         """
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        campaign_model, validated_data, invalid_smartlist_ids = \
-            self.pre_process_save_or_update(form_data)
+        campaign_model, validated_data = self.pre_process_save_or_update(form_data)
         # Save campaign in database table e.g. "sms_campaign"
         campaign_obj = campaign_model(**validated_data)
         campaign_model.save(campaign_obj)
         # Create record in database table e.g. "sms_campaign_smartlist"
         self.create_campaign_smartlist(campaign_obj, form_data['smartlist_ids'])
-        # Create Activity, and If we get any error, we log it.
+        # Create activity, and If we get any error, we log it.
         try:
             self.create_activity_for_campaign_creation(campaign_obj, self.user)
         except Exception:
             logger.exception('Error creating campaign creation activity.')
-        return campaign_obj.id, invalid_smartlist_ids
+        return campaign_obj.id
 
     def update(self, form_data, campaign_id):
         """
@@ -374,7 +404,7 @@ class CampaignBase(object):
         """
         campaign_obj = self.get_campaign_if_domain_is_valid(campaign_id, self.user,
                                                             self.campaign_type)
-        _, validated_data, invalid_smartlist_ids = self.pre_process_save_or_update(form_data)
+        _, validated_data = self.pre_process_save_or_update(form_data)
         if not campaign_obj:
             raise ResourceNotFound('%s campaign(id=%s) not found.' % (self.campaign_type,
                                                                       campaign_id))
@@ -382,7 +412,6 @@ class CampaignBase(object):
             # update old values with new ones if provided, else preserve old ones.
             validated_data[key] = value if value else getattr(campaign_obj, key)
         campaign_obj.update(**validated_data)
-        return invalid_smartlist_ids
 
     @staticmethod
     def create_campaign_smartlist(campaign, smartlist_ids):
@@ -468,18 +497,17 @@ class CampaignBase(object):
     @classmethod
     def get_campaign_if_domain_is_valid(cls, campaign_id, current_user, campaign_type):
         """
-        This function returns True if campaign lies in the domain of logged-in user. Otherwise
-        it raises the Forbidden error.
+        This function returns campaign object if campaign lies in the domain of logged-in user.
+        Otherwise it raises the Forbidden error.
         :param campaign_id: id of campaign form getTalent database
         :param current_user: logged in user's object
         :type campaign_id: int | long
         :type current_user: User
-        :exception: InvalidUsage
-        :exception: ResourceNotFound
         :exception: ForbiddenError
         :return: Campaign obj if campaign belongs to user's domain
         :rtype: SmsCampaign or some other campaign obj
         """
+        raise_if_not_instance_of(campaign_id, (int, long))
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         raise_if_not_instance_of(current_user, User)
         campaign_obj = CampaignUtils.get_campaign(campaign_id, current_user.domain_id,
@@ -593,7 +621,7 @@ class CampaignBase(object):
         :rtype: bool
 
         **See Also**
-        .. see also:: endpoints /v1/campaigns/:id in v1_sms_campaign_api.py
+        .. see also:: endpoints /v1/sms-campaigns/:id in v1_sms_campaign_api.py
         """
         if not campaign_id:
             raise InvalidUsage('delete: campaign_id cannot be emtpy.')
@@ -678,7 +706,7 @@ class CampaignBase(object):
         :rtype: dict
 
         **See Also**
-        .. see also:: endpoints /v1/campaigns/:id/schedule in v1_sms_campaign_api.py
+        .. see also:: endpoints /v1/sms-campaigns/:id/schedule in v1_sms_campaign_api.py
         """
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         # get campaign obj, scheduled task data and oauth_header
@@ -742,7 +770,7 @@ class CampaignBase(object):
                             'frequency_id': 0,
                             'start_datetime': '2016-10-30T17:55:00Z',
                             'end_datetime': '2016-12-30T17:55:00Z',
-                            'url_to_run_task': 'http://127.0.0.1:8012/v1/campaigns/1/send',
+                            'url_to_run_task': 'http://127.0.0.1:8012/v1/sms-campaigns/1/send',
                             'task_type': 'one_time',
                             'data_to_post': None
                             }
@@ -816,7 +844,7 @@ class CampaignBase(object):
             raise InvalidUsage('data_to_schedule must be a dict.')
         frequency = data_to_schedule.get('frequency')
         if not frequency:  # This means it is a one time job
-            validate_datetime_format(data_to_schedule['start_datetime'])
+            DatetimeUtils.validate_datetime_format(data_to_schedule['start_datetime'])
             task = {
                 "task_type": SchedulerUtils.ONE_TIME,
                 "run_datetime": data_to_schedule['start_datetime'],
@@ -958,7 +986,7 @@ class CampaignBase(object):
         :exception: Invalid usage
 
         **See Also**
-        .. see also:: endpoints /v1/campaigns/:id/schedule in v1_sms_campaign_api.py
+        .. see also:: endpoints /v1/sms-campaigns/:id/schedule in v1_sms_campaign_api.py
         """
         if not isinstance(pre_processed_data, dict):
             raise InvalidUsage('pre_processed_data should be a dict.')
@@ -1026,11 +1054,12 @@ class CampaignBase(object):
             task_id = self.schedule(pre_processed_data['data_to_schedule'])
         return task_id
 
-    def send(self, campaign_id):
+    def send(self):
         """
         This does the following steps to send campaign to candidates.
 
-        1- Gets the campaign object from database table 'sms_campaign or push_campaign'
+        1- Validates that campaign object belongs to valid campaign database tables e.g
+            'sms_campaign or push_campaign' etc
         2- Get body_text from campaign obj e.g. sms_campaign obj. If body_text is found empty,
             we raise Invalid usage error with custom error code to be EMPTY_BODY_TEXT
         3- Get selected smartlists for the campaign to be sent from campaign_smartlist obj e.g.
@@ -1049,54 +1078,50 @@ class CampaignBase(object):
 
             1- Create class object
                 >>> from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
-                >>> camp_obj = SmsCampaignBase(int('user_id'))
+                >>> camp_obj = SmsCampaignBase(int('user_id'), int('campaign_id'))
 
             2- Call method send
-                >>> camp_obj.send(int('campaign_id'))
+                >>> camp_obj.send()
 
         **See Also**
         .. see also:: send_campaign_to_candidates() method in CampaignBase class.
         .. see also:: callback_campaign_sent() method in CampaignBase class.
 
-        :param campaign_id: id of SMS campaign obj or push campaign etc
-        :type campaign_id: int | long
         :exception: InvalidUsage
 
         ..Error Codes:: 5101 (EMPTY_BODY_TEXT)
                         5102 (NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
                         5103 (NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
         """
-        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
+        if not isinstance(self.campaign, CampaignUtils.MODELS):
+            raise InvalidUsage('campaign object was not set properly')
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        campaign = self.get_campaign_if_domain_is_valid(campaign_id, self.user,
-                                                        self.campaign_type)
-        CampaignUtils.raise_if_not_instance_of_campaign_models(campaign)
-        self.campaign = campaign
-        campaign_type = self.campaign_type
-        logger.debug('send: %s(id:%s) is being sent. User(id:%s)' % (campaign_type,
-                                                                     campaign.id,
+        logger.debug('send: %s(id:%s) is being sent. User(id:%s)' % (self.campaign_type, self.campaign.id,
                                                                      self.user.id))
         if not self.campaign.body_text:
             # body_text is empty
-            raise InvalidUsage('Body text is empty for %s(id:%s)' % (campaign_type, campaign.id),
+            raise InvalidUsage('Body text is empty for %s(id:%s)' % (self.campaign_type,
+                                                                     self.campaign.id),
                                error_code=CampaignException.EMPTY_BODY_TEXT)
         # Get smartlists associated to this campaign
-        campaign_smartlist_model = get_model(campaign_type, campaign_type + '_smartlist')
-        campaign_smartlists = CampaignUtils.get_campaign_smartlist_obj_by_campaign_id(
-            campaign_smartlist_model, campaign.id)
+        campaign_smartlists = self.campaign.smartlists
         if not campaign_smartlists:
-            raise InvalidUsage(
-                'No smartlist is associated with %s(id:%s). (User(id:%s))'
-                % (campaign_type, campaign.id, self.user.id),
-                error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
-        candidates = sum(map(self.get_smartlist_candidates, campaign_smartlists), [])
+            raise InvalidUsage('No smartlist is associated with %s(id:%s). (User(id:%s))' % (self.campaign_type,
+                                                                                             self.campaign.id,
+                                                                                             self.user.id),
+                               error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
+        # GET smartlist candidates
+        lists_of_smartlist_candidates = map(self.get_smartlist_candidates, campaign_smartlists)
+        # Making a flat list out of "lists_of_smartlist_candidates" and removing duplicate candidate ids
+        # which ensures that if one candidate is associated with multiple smartlists, then that candidate receives
+        # only one campaign.
+        candidates = list(set(itertools.chain(*lists_of_smartlist_candidates)))
         if not candidates:
-            raise InvalidUsage(
-                'No candidate is associated with smartlist(s). %s(id:%s). '
-                'campaign smartlist ids are %s'
-                % (campaign_type, campaign.id, [smartlist.id for smartlist in campaign_smartlists]),
-                error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
-        # create SMS campaign blast
+            raise InvalidUsage('No candidate is associated with smartlist(s). %s(id:%s). campaign smartlist ids are %s'
+                               % (self.campaign_type, self.campaign.id,
+                                  [smartlist.id for smartlist in campaign_smartlists]),
+                               error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
+        # create campaign blast object
         self.campaign_blast_id = self.create_campaign_blast(self.campaign)
         self.send_campaign_to_candidates(candidates)
 
@@ -1152,17 +1177,10 @@ class CampaignBase(object):
         # we just log the error and move on to next iteration. In case of any error, we return
         # empty list.
         try:
-            # other campaigns need to update this
             raise_if_not_instance_of(campaign_smartlist, CampaignUtils.SMARTLIST_MODELS)
-            params = {'fields': 'candidate_ids_only'}
-            # HTTP GET call to candidate_service to get candidates associated with given
-            # smartlist_id.
-            response = http_request('GET', CandidatePoolApiUrl.SMARTLIST_CANDIDATES
-                                    % campaign_smartlist.smartlist_id,
-                                    headers=self.oauth_header, params=params, user_id=self.user.id)
-            # get candidate objects
-            candidates = [Candidate.get_by_id(candidate['id'])
-                          for candidate in response.json()['candidates']]
+            candidates_ids = get_candidates_of_smartlist(campaign_smartlist.smartlist_id, candidate_ids_only=True,
+                                                         access_token=self.auth_token)
+            candidates = [Candidate.get_by_id(candidate_id) for candidate_id in candidates_ids]
         except Exception:
             logger.exception('get_smartlist_candidates: Error while fetching candidates for '
                              'smartlist(id:%s)' % campaign_smartlist.smartlist_id)
@@ -1484,7 +1502,7 @@ class CampaignBase(object):
         if not send_url_conversion_obj:
             raise ResourceNotFound(
                 'url_redirect: campaign_send_url_conversion_obj not found for '
-                'url_conversion(id:%s)' % url_conversion_id)
+                'url_conversion(id:%s)' % url_conversion_id, ResourceNotFound.http_status_code())
         # get candidate obj, url_conversion obj, campaign_send obj and get campaign_blast obj
         # get url_conversion obj
         url_conversion_obj = send_url_conversion_obj.url_conversion

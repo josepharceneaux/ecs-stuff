@@ -168,32 +168,32 @@ We finally redirect the candidate to that URL.
 A blast object contains statistics of a campaign. 
 i.e. number of sends, replies and clicks.
 
-We have _https://sms-campaign-service/v1/campaigns/:id/blasts_ to get all the
+We have _https://sms-campaign-service/v1/sms-campaigns/:id/blasts_ to get all the
 blasts associated with a given campaign id.
 
 ### Get sms_campaign_blast of a campaign by blast_id
 
-We have _https://sms-campaign-service/v1/campaigns/:id/blasts/:id_ to get one particular
+We have _https://sms-campaign-service/v1/sms-campaigns/:id/blasts/:id_ to get one particular
 blast object associated with a given campaign id.
 
 ### Get sms_campaign_send objects of a campaign by blast_id
 
-We have _https://sms-campaign-service/v1/campaigns/:id/blasts/:id/sends_ to get sends objects 
+We have _https://sms-campaign-service/v1/sms-campaigns/:id/blasts/:id/sends_ to get sends objects 
 for one particular blast object associated with a given campaign id.
 
 ### Get sms_campaign_reply objects of a campaign by blast_id
 
-We have _https://sms-campaign-service/v1/campaigns/:id/blasts/:id/replies_ to get replies objects 
+We have _https://sms-campaign-service/v1/sms-campaigns/:id/blasts/:id/replies_ to get replies objects 
 for one particular blast object associated with a given campaign id.
 
 ### Get all sends objects of a campaign
 
-We have _https://sms-campaign-service/v1/campaigns/:id/sends_ to get all sends objects 
+We have _https://sms-campaign-service/v1/sms-campaigns/:id/sends_ to get all sends objects 
 for one particular campaign.
 
 ### Get all replies objects of a campaign
 
-We have _https://sms-campaign-service/v1/campaigns/:id/replies_ to get all replies objects 
+We have _https://sms-campaign-service/v1/sms-campaigns/:id/replies_ to get all replies objects 
 for one particular campaign.
 
 

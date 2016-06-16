@@ -3,8 +3,12 @@ Functions related to candidate_service/candidate_app/api validations
 """
 # Flask Specific
 from flask import request
+from dateutil.parser import parse
+# Standard library
 import json
 import re
+from datetime import datetime
+# Models
 from candidate_service.common.models.db import db
 from candidate_service.common.models.candidate import (
     Candidate, CandidateEmail, CandidateEducation, CandidateExperience, CandidatePhone,
@@ -12,16 +16,17 @@ from candidate_service.common.models.candidate import (
 )
 from candidate_service.common.models.email_campaign import EmailClient
 from candidate_service.common.models.user import User
-from candidate_service.common.models.misc import (AreaOfInterest, CustomField)
+from candidate_service.common.models.misc import AreaOfInterest, CustomField
 
 from candidate_service.common.models.email_campaign import EmailCampaign
 from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH,
                                                      SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
-from candidate_service.common.error_handling import InvalidUsage, NotFoundError
+from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from ..custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.validators import is_number
 from candidate_service.common.utils.validators import format_phone_number
-from datetime import datetime
+# Json schema validation
+from jsonschema import validate, ValidationError, FormatChecker
 
 
 def get_json_if_exist(_request):
@@ -41,6 +46,7 @@ def get_candidate_if_exists(candidate_id):
     If candidate is web-hidden or is not found, the appropriate exception will be raised;
     otherwise the Candidate-query-object will be returned.
     :type candidate_id: int|long
+    :return  Candidate-object or raises NotFoundError
     """
     assert isinstance(candidate_id, (int, long))
     candidate = Candidate.get_by_id(candidate_id=candidate_id)
@@ -50,6 +56,30 @@ def get_candidate_if_exists(candidate_id):
     if candidate.is_web_hidden:
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
                             error_code=custom_error.CANDIDATE_IS_HIDDEN)
+    return candidate
+
+
+def get_candidate_if_validated(user, candidate_id):
+    """
+    Function will return candidate if:
+        1. it exists
+        2. not hidden, and
+        3. belongs to user's domain
+    :type user: User
+    :type candidate_id: int | long
+    :rtype: Candidate
+    """
+    candidate = Candidate.get(candidate_id)
+    if not candidate:
+        raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
+                            error_code=custom_error.CANDIDATE_NOT_FOUND)
+    if candidate.is_web_hidden:
+        raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
+                            error_code=custom_error.CANDIDATE_IS_HIDDEN)
+
+    if candidate.user.domain_id != user.domain_id:
+        raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+
     return candidate
 
 
@@ -64,8 +94,8 @@ def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
     """
     assert isinstance(candidate_id, (int, long))
     candidate_row = db.session.query(Candidate).join(User).filter(
-            Candidate.id == candidate_id, Candidate.user_id == user_row.id,
-            User.domain_id == user_row.domain_id
+        Candidate.id == candidate_id, Candidate.user_id == user_row.id,
+        User.domain_id == user_row.domain_id
     ).first()
 
     return True if candidate_row else False
@@ -146,11 +176,12 @@ def validate_is_digit(key, value):
 def validate_is_number(key, value):
     if not is_number(value):
         raise InvalidUsage("`%s` should be a numeric value" % key, 400)
+    return value
 
 
 def validate_id_list(key, values):
     if ',' in values or isinstance(values, list):
-        values = values.split(',') if ',' in values else values
+        values = values.split(',') if ',' in values else map(str, values)
         for value in values:
             if not value.strip().isdigit():
                 raise InvalidUsage("`%s` must be comma separated ids" % key)
@@ -163,11 +194,23 @@ def validate_id_list(key, values):
 
 
 def validate_string_list(key, values):
+    # TODO: A hack to support Candidate Search for TOM Recruiting
+    if key == 'skills':
+        return validate_skill_list(values)
+    else:
+        if ',' in values or isinstance(values, list):
+            values = [value.strip() for value in values.split(',') if value.strip()] if ',' in values else values
+            return values[0] if values.__len__() == 1 else values
+        else:
+            return values.strip()
+
+
+def validate_skill_list(values):
     if ',' in values or isinstance(values, list):
-        values = [value.strip() for value in values.split(',') if value.strip()] if ',' in values else values
+        values = [value for value in values.split(',') if value.strip()] if ',' in values else values
         return values[0] if values.__len__() == 1 else values
     else:
-        return values.strip()
+        return values
 
 
 def validate_sort_by(key, value):
@@ -204,17 +247,21 @@ def convert_date(key, value):
     """
     if value:
         try:
-            formatted_date = datetime.strptime(value, '%m/%d/%Y')
+            formatted_date = parse(value)
+            if key == "date_from":
+                formatted_date = formatted_date.replace(hour=0, minute=0, second=0)
+            else:
+                formatted_date = formatted_date.replace(hour=23, minute=59, second=59)
         except ValueError:
             raise InvalidUsage("Field `%s` contains incorrect date format. "
-                               "Date format should be MM/DD/YYYY (eg. 12/31/2015)" % key)
+                               "Date format should be MM/DD/YYYY (eg. 06/10/2016)" % key)
         return formatted_date.isoformat() + 'Z'  # format it as required by cloudsearch.
 
 
 SEARCH_INPUT_AND_VALIDATIONS = {
     "sort_by": 'sorting',
     "limit": 'digit',
-    "page": 'digit',
+    "page": 'string_list',
     "query": '',
     # Facets
     "date_from": 'date_range',
@@ -239,6 +286,8 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "military_highest_grade": 'string_list',
     "military_end_date_from": 'digit',
     "military_end_date_to": 'digit',
+    "tag_ids": "id_list",
+    "custom_fields": 'string_list',
     # return fields
     "fields": 'return_fields',
     # Id of a talent_pool from where to search candidates
@@ -276,7 +325,7 @@ def is_backward_compatible(key):
 
         if key == 'username':
             key = 'user_ids'
-        elif key == 'area_of_interest_id' or key == 'area_of_interest_name':
+        elif key == 'area_of_interest_id':
             key = 'area_of_interest_ids'
         elif key == 'status' or key == 'source':
             key += '_ids'
@@ -392,7 +441,7 @@ def get_candidate_email_from_domain_if_exists(user_id, email_address):
     """
     user_domain_id = User.get_domain_id(_id=user_id)
     candidate_email = CandidateEmail.query.join(Candidate).join(User).filter(
-            CandidateEmail.address == email_address, User.domain_id == user_domain_id).first()
+        CandidateEmail.address == email_address, User.domain_id == user_domain_id).first()
     return candidate_email if candidate_email else None
 
 
@@ -415,7 +464,7 @@ def get_education_if_exists(educations, education_dict, education_degrees):
                     'end_year': existing_degree.end_year,
                     'title': existing_degree.degree_title
                 } for existing_degree in education.degrees
-            ]
+                ]
 
             new_degree_dicts = [
                 {
@@ -423,7 +472,7 @@ def get_education_if_exists(educations, education_dict, education_degrees):
                     'end_year': new_degree.get('end_year'),
                     'title': new_degree.get('title')
                 } for new_degree in education_degrees
-            ]
+                ]
 
             common_dicts = [common for common in existing_degree_dicts if common in new_degree_dicts]
             if common_dicts:
@@ -575,3 +624,21 @@ def does_military_service_exist(military_services, military_service_dict):
             return True
     return False
 
+
+def get_json_data_if_validated(request_body, json_schema, format_checker=True):
+    """
+    Function will compare requested json data with provided json schema
+    :type request_body:  request
+    :type json_schema:  dict
+    :param format_checker:  If True, specified formats will need to be validated, e.g. datetime
+    :return:  JSON data if validation passes
+    """
+    try:
+        body_dict = get_json_if_exist(request_body)
+        if format_checker:
+            validate(instance=body_dict, schema=json_schema, format_checker=FormatChecker())
+        else:
+            validate(instance=body_dict, schema=json_schema)
+    except ValidationError as e:
+        raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
+    return body_dict

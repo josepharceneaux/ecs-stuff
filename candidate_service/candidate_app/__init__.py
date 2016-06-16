@@ -1,50 +1,38 @@
 from flask.ext.cors import CORS
+
+from candidate_service.common.utils.models_utils import init_talent_app
 from candidate_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
-from candidate_service.common.routes import CandidateApi, HEALTH_CHECK, GTApis
+from candidate_service.common.routes import CandidateApi, GTApis
 from candidate_service.common.utils.talent_ec2 import get_ec2_instance_id
 from candidate_service.common.talent_flask import TalentFlask
 from candidate_service.common.talent_celery import init_celery_app
+from candidate_service.common.models.db import db
 
-app = TalentFlask(__name__)
-load_gettalent_config(app.config)
-logger = app.config[TalentConfigKeys.LOGGER]
-logger.info("Starting app %s in EC2 instance %s", app.import_name, get_ec2_instance_id())
+app, logger = init_talent_app(__name__)
 
 try:
-    from candidate_service.common.error_handling import register_error_handlers
-    register_error_handlers(app=app, logger=logger)
-
-    from candidate_service.common.models.db import db
-    db.init_app(app=app)
-    db.app = app
-
     # Instantiate Celery
     celery_app = init_celery_app(app, 'celery_candidate_documents_scheduler')
-
-    from candidate_service.common.redis_cache import redis_store
-    redis_store.init_app(app)
-
-    # Wrap the flask app and give a healthcheck url
-    from healthcheck import HealthCheck
-    health = HealthCheck(app, HEALTH_CHECK)
 
     from candidate_service.candidate_app.api.v1_candidates import (
         CandidateResource, CandidateAddressResource, CandidateAreaOfInterestResource,
         CandidateEducationResource, CandidateEducationDegreeResource, CandidateEducationDegreeBulletResource,
-        CandidateExperienceResource, CandidateExperienceBulletResource, CandidateWorkPreferenceResource,
+        CandidateWorkExperienceResource, CandidateWorkExperienceBulletResource, CandidateWorkPreferenceResource,
         CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
-        CandidateCustomFieldResource, CandidateEditResource, CandidatesResource, CandidateOpenWebResource,
-        CandidateViewResource, CandidatePreferenceResource, CandidateClientEmailCampaignResource,
-        CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource,
-        CandidateSourceResource)
+        CandidateEditResource, CandidatesResource, CandidateOpenWebResource, CandidateViewResource,
+        CandidatePreferenceResource, CandidateClientEmailCampaignResource,
+        CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource, CandidateLanguageResource
+    )
+    from candidate_service.candidate_app.api.references import CandidateReferencesResource
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
+    from candidate_service.candidate_app.api.v1_candidate_tags import CandidateTagResource
+    from candidate_service.candidate_app.api.pipelines import CandidatePipelineResource
+    from candidate_service.candidate_app.api.candidate_custom_fields import CandidateCustomFieldResource
+    from candidate_service.candidate_app.api.statuses import CandidateStatusesResources
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)
-
-    # Enable CORS for *.gettalent.com and localhost
-    CORS(app, resources=GTApis.CORS_HEADERS)
 
     # API RESOURCES
     # ****** CandidateResource ******
@@ -59,6 +47,7 @@ try:
     api.add_resource(
         CandidatesResource,
         CandidateApi.CANDIDATES,
+        CandidateApi.CANDIDATE_ID,
         endpoint='candidates_resource'
     )
 
@@ -135,107 +124,50 @@ try:
     )
 
     # ****** CandidateExperienceResource ******
-    api.add_resource(
-        CandidateExperienceResource,
-        CandidateApi.EXPERIENCES,
-        endpoint='candidate_experience_1'
-    )
-    api.add_resource(
-        CandidateExperienceResource,
-        CandidateApi.EXPERIENCE,
-        endpoint='candidate_experience_2'
-    )
+    api.add_resource(CandidateWorkExperienceResource, CandidateApi.EXPERIENCES, endpoint='candidate_experience_1')
+    api.add_resource(CandidateWorkExperienceResource, CandidateApi.EXPERIENCE, endpoint='candidate_experience_2')
 
     # ****** CandidateExperienceBulletResource ******
-    api.add_resource(
-        CandidateExperienceBulletResource,
-        CandidateApi.EXPERIENCE_BULLETS,
-        endpoint='candidate_experience_bullet_1'
-    )
-    api.add_resource(
-        CandidateExperienceBulletResource,
-        CandidateApi.EXPERIENCE_BULLET,
-        endpoint='candidate_experience_bullet_2'
-    )
+    api.add_resource(CandidateWorkExperienceBulletResource, CandidateApi.EXPERIENCE_BULLETS,
+                     endpoint='candidate_experience_bullet_1')
+    api.add_resource(CandidateWorkExperienceBulletResource, CandidateApi.EXPERIENCE_BULLET,
+                     endpoint='candidate_experience_bullet_2')
 
     # ****** CandidateEmailResource ******
-    api.add_resource(
-        CandidateEmailResource,
-        CandidateApi.EMAILS,
-        endpoint='candidate_email_1'
-    )
-    api.add_resource(
-        CandidateEmailResource,
-        CandidateApi.EMAIL,
-        endpoint='candidate_email_2'
-    )
+    api.add_resource(CandidateEmailResource, CandidateApi.EMAILS,endpoint='candidate_email_1')
+    api.add_resource(CandidateEmailResource, CandidateApi.EMAIL, endpoint='candidate_email_2')
 
     # ****** CandidateMilitaryServiceResource ******
-    api.add_resource(
-        CandidateMilitaryServiceResource,
-        CandidateApi.MILITARY_SERVICES,
-        endpoint='candidate_military_service_1'
-    )
-    api.add_resource(
-        CandidateMilitaryServiceResource,
-        CandidateApi.MILITARY_SERVICE,
-        endpoint='candidate_military_service_2'
-    )
+    api.add_resource(CandidateMilitaryServiceResource, CandidateApi.MILITARY_SERVICES,
+                     endpoint='candidate_military_service_1')
+    api.add_resource(CandidateMilitaryServiceResource, CandidateApi.MILITARY_SERVICE,
+                     endpoint='candidate_military_service_2')
 
     # ****** CandidatePhoneResource ******
-    api.add_resource(
-        CandidatePhoneResource,
-        CandidateApi.PHONES,
-        endpoint='candidate_phone_1'
-    )
-    api.add_resource(
-        CandidatePhoneResource,
-        CandidateApi.PHONE,
-        endpoint='candidate_phone_2'
-    )
+    api.add_resource(CandidatePhoneResource, CandidateApi.PHONES, endpoint='candidate_phone_1')
+    api.add_resource(CandidatePhoneResource, CandidateApi.PHONE, endpoint='candidate_phone_2')
 
     # ****** CandidatePreferredLocationResource ******
-    api.add_resource(
-        CandidatePreferredLocationResource,
-        CandidateApi.PREFERRED_LOCATIONS,
-        endpoint='candidate_preferred_location_1'
-    )
-    api.add_resource(
-        CandidatePreferredLocationResource,
-        CandidateApi.PREFERRED_LOCATION,
-        endpoint='candidate_preferred_location_2'
-    )
+    api.add_resource(CandidatePreferredLocationResource, CandidateApi.PREFERRED_LOCATIONS,
+                     endpoint='candidate_preferred_location_1')
+    api.add_resource(CandidatePreferredLocationResource, CandidateApi.PREFERRED_LOCATION,
+                     endpoint='candidate_preferred_location_2')
 
     # ****** CandidateSkillResource ******
-    api.add_resource(
-        CandidateSkillResource,
-        CandidateApi.SKILLS,
-        endpoint='candidate_skill_1'
-    )
-    api.add_resource(
-        CandidateSkillResource,
-        CandidateApi.SKILL,
-        endpoint='candidate_skill_2'
-    )
+    api.add_resource(CandidateSkillResource, CandidateApi.SKILLS, endpoint='candidate_skill_1')
+    api.add_resource(CandidateSkillResource, CandidateApi.SKILL, endpoint='candidate_skill_2')
 
     # ****** CandidateSocialNetworkResource ******
-    api.add_resource(
-        CandidateSocialNetworkResource,
-        CandidateApi.SOCIAL_NETWORKS,
-        endpoint='candidate_social_networks_1'
-    )
-    api.add_resource(
-        CandidateSocialNetworkResource,
-        CandidateApi.SOCIAL_NETWORK,
-        endpoint='candidate_social_networks_2'
-    )
+    api.add_resource(CandidateSocialNetworkResource, CandidateApi.SOCIAL_NETWORKS,
+                     endpoint='candidate_social_networks_1')
+    api.add_resource(CandidateSocialNetworkResource, CandidateApi.SOCIAL_NETWORK,
+                     endpoint='candidate_social_networks_2')
 
     # ****** CandidateWorkPreferenceResource ******
-    api.add_resource(
-        CandidateWorkPreferenceResource,
-        '/v1/candidates/<int:candidate_id>/work_preference',
-        endpoint='candidate_work_preference'
-    )
+    api.add_resource(CandidateWorkPreferenceResource, CandidateApi.WORK_PREFERENCES,
+                     endpoint='candidate_work_preferences')
+    api.add_resource(CandidateWorkPreferenceResource, CandidateApi.WORK_PREFERENCE,
+                     endpoint='candidate_work_preference')
 
     # ****** CandidateEditResource ******
     api.add_resource(CandidateEditResource, '/v1/candidates/<int:id>/edits', endpoint='candidate_edit')
@@ -244,10 +176,7 @@ try:
     api.add_resource(CandidateViewResource, CandidateApi.CANDIDATE_VIEWS, endpoint='candidate_views')
 
     # ****** CandidateDeviceResource ******
-    api.add_resource(
-        CandidateDeviceResource, CandidateApi.DEVICES,
-        endpoint='candidate_devices'
-    )
+    api.add_resource(CandidateDeviceResource, CandidateApi.DEVICES, endpoint='candidate_devices')
 
     # ****** CandidatePhotosResource ******
     api.add_resource(CandidatePhotosResource, CandidateApi.PHOTOS, endpoint='candidate_photos')
@@ -262,9 +191,7 @@ try:
     # ****** OPENWEB Request *******
     api.add_resource(CandidateOpenWebResource, CandidateApi.OPENWEB, endpoint='openweb')
 
-    # ************************************************************************************** #
-    #                           Client email campaign                                        #
-    # ************************************************************************************** #
+    # ****** Client email campaign *******
     api.add_resource(CandidateClientEmailCampaignResource, CandidateApi.CANDIDATE_CLIENT_CAMPAIGN)
 
     # ****** CandidatePreferenceResource *******
@@ -273,14 +200,29 @@ try:
     # ****** CandidatePreferenceResource *******
     api.add_resource(CandidateNotesResource, CandidateApi.CANDIDATE_NOTES, endpoint='candidate_notes')
 
-    # ******* CandidateSourceResource ***********
-    api.add_resource(CandidateSourceResource, CandidateApi.SOURCES, endpoint='candidate_sources')
-    api.add_resource(CandidateSourceResource, CandidateApi.SOURCE, endpoint='candidate_source')
+    # ****** CandidateLanguageResource *******
+    api.add_resource(CandidateLanguageResource, CandidateApi.LANGUAGES, endpoint='candidate_languages')
+    api.add_resource(CandidateLanguageResource, CandidateApi.LANGUAGE, endpoint='candidate_language')
+
+    # ****** CandidateReferencesResource *******
+    api.add_resource(CandidateReferencesResource, CandidateApi.REFERENCES, endpoint='candidate_references')
+    api.add_resource(CandidateReferencesResource, CandidateApi.REFERENCE, endpoint='candidate_reference')
+
+    # ****** CandidateTagResource *******
+    api.add_resource(CandidateTagResource, CandidateApi.TAGS, endpoint='candidate_tags')
+    api.add_resource(CandidateTagResource, CandidateApi.TAG, endpoint='candidate_tag')
+
+    # ****** CandidatePipelineResource *******
+    api.add_resource(CandidatePipelineResource, CandidateApi.PIPELINES, endpoint='candidate_pipelines')
+
+    # ****** CandidateStatusesResource *******
+    api.add_resource(CandidateStatusesResources, CandidateApi.STATUSES, endpoint='candidate_statuses')
 
     db.create_all()
     db.session.commit()
 
     logger.info('Starting candidate_service in %s environment', app.config[TalentConfigKeys.ENV_KEY])
+
 
 except Exception as e:
     logger.exception("Couldn't start candidate_service in %s environment because: %s"

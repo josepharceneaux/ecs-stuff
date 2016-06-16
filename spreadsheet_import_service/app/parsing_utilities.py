@@ -13,9 +13,9 @@ import chardet
 import json
 import requests
 from flask import request, jsonify
-from . import db, logger, app
+from spreadsheet_import_service.app import logger, app, celery_app
 from spreadsheet_import_service.common.utils.talent_s3 import *
-from spreadsheet_import_service.common.models.user import User
+from spreadsheet_import_service.common.models.user import User, db
 from spreadsheet_import_service.common.models.misc import AreaOfInterest
 from spreadsheet_import_service.common.models.candidate import CandidateSource
 from spreadsheet_import_service.common.utils.talent_reporting import email_error_to_admins
@@ -35,7 +35,6 @@ def convert_spreadsheet_to_table(spreadsheet_file, filename):
     :param filename: spreadsheet file name
     :return: An array containing rows of spreadsheets
     """
-
     is_csv = ".csv" in filename
     if is_csv:
         return convert_csv_to_table(spreadsheet_file)
@@ -46,7 +45,16 @@ def convert_spreadsheet_to_table(spreadsheet_file, filename):
     table = []
     for row_index in range(first_sheet.nrows):
         cells = first_sheet.row(row_index)  # array of cell objects
-        table.append([cell.value for cell in cells if cell.value])
+
+        cell_values = []
+        for cell in cells:
+            cell_value = cell.value
+            if isinstance(cell_value, float):  # there should be no float-type data
+                cell_value = str(int(cell_value))
+            if cell_value:
+                cell_values.append(cell_value)
+
+        table.append(cell_values)
     table = [row for row in table if row]
     return table
 
@@ -93,7 +101,9 @@ def convert_csv_to_table(csv_file):
         raise InvalidUsage(error_message="Error importing csv because %s" % e.message)
 
 
-def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool_ids, source_id=None):
+@celery_app.task()
+def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool_ids,
+                            oauth_token, user_id, is_scheduled=False, source_id=None):
     """
     This function will create new candidates from information of candidates given in a csv file
     :param source_id: Id of candidates source
@@ -101,6 +111,9 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
     :param spreadsheet_filename: Name of spreadsheet file from which candidates are being imported
     :param header_row: An array of headers of candidate's spreadsheet
     :param talent_pool_ids: An array on talent_pool_ids
+    :param oauth_token: OAuth token of logged-in user
+    :param is_scheduled: Is this method called asynchronously ?
+    :param user_id: User id of logged-in user
     :return: A dictionary containing number of candidates successfully imported
     :rtype: dict
     """
@@ -109,7 +122,6 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
     assert spreadsheet_filename
     assert header_row
 
-    user_id = request.user.id
     user = User.query.get(user_id)
     domain_id = user.domain_id
 
@@ -117,9 +129,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
         domain_areas_of_interest = get_or_create_areas_of_interest(user.domain_id, include_child_aois=True)
 
-        logger.info("import CSV table: %s", table)
-
-        candidate_ids = []
+        candidate_ids, error_messages = [], []
         for row in table:
             first_name, middle_name, last_name, formatted_name, status_id,  = None, None, None, None, None
             emails, phones, areas_of_interest, addresses, degrees = [], [], [], [], []
@@ -127,6 +137,8 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
             talent_pool_dict = {'add': talent_pool_ids}
 
             this_source_id = source_id
+
+            number_of_educations = 0
 
             for column_index, column in enumerate(row):
                 if column_index >= len(header_row):
@@ -207,12 +219,20 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                     prepare_candidate_data(degrees, 'start_month', 6)
                     prepare_candidate_data(degrees, 'end_month', 6)
 
+                elif column_name == 'candidate_address.address_line_1':
+                    prepare_candidate_data(addresses, 'address_line_1', column)
+                elif column_name == 'candidate_address.address_line_2':
+                    prepare_candidate_data(addresses, 'address_line_2', column)
                 elif column_name == 'candidate_address.city':
                     prepare_candidate_data(addresses, 'city', column)
                 elif column_name == 'candidate_address.state':
                     prepare_candidate_data(addresses, 'state', column)
+                elif column_name == 'candidate_address.subdivision_code':
+                    prepare_candidate_data(addresses, 'subdivision_code', column)
                 elif column_name == 'candidate_address.zipCode':
                     prepare_candidate_data(addresses, 'zip_code', column)
+                elif column_name == 'candidate_address.country_code':
+                    prepare_candidate_data(addresses, 'country_code', column)
                 elif 'custom_field.' in column_name:
                     custom_fields_dict = {}
                     if isinstance(column, basestring):
@@ -250,19 +270,22 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                                                                                    source_id=this_source_id,
                                                                                    talent_pool_ids=talent_pool_dict,
                                                                                    areas_of_interest=areas_of_interest,
-                                                                                   custom_fields=custom_fields))
+                                                                                   custom_fields=custom_fields), oauth_token)
 
             if status_code == 201:
                 candidate_ids.append(response.get('candidates')[0].get('id'))
-            else:
-                return jsonify(response), status_code
-
-        # TODO: Upload candidate documents to cloud
+                logger.info("Successfully imported candidate with id: (%s)" % response.get('candidates')[0].get('id'))
+            else:  # continue with the rest of the spreadsheet imports despite errors returned from candidate-service
+                error_messages.append(response.get('error'))
+                logger.error(response.get('error'))
+                continue
 
         delete_from_s3(spreadsheet_filename, 'CSVResumes')
 
-        logger.info("Successfully imported %s candidates from CSV: User %s", len(candidate_ids), user.id)
-        return jsonify(dict(count=len(candidate_ids), status='complete')), 201
+        logger.info("Successfully imported %s candidates from CSV: User %s, Error Messages %s" % (len(
+                candidate_ids), user.id, error_messages))
+        if not is_scheduled:
+            return jsonify(dict(count=len(candidate_ids), status='complete', error_messages=error_messages)), 201
 
     except Exception as e:
         email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s, S3_URL: %s" %
@@ -300,20 +323,21 @@ def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
     return areas
 
 
-def create_candidates_from_parsed_spreadsheet(candidate_dict):
+def create_candidates_from_parsed_spreadsheet(candidate_dict, oauth_token):
     """
     Create a new candidate using candidate_service
     :param candidate_dict: Dict containing information of new candidate
+    :param oauth_token: OAuth token of logged-in user
     :return: A dictionary containing IDs of newly created candidates
     :rtype: dict
     """
-    try:
-        r = requests.post(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': [candidate_dict]}),
-                          headers={'Authorization': request.oauth_token, 'content-type': 'application/json'})
+    r = requests.post(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': [candidate_dict]}),
+                      headers={'Authorization': oauth_token, 'content-type': 'application/json'})
 
+    try:
         return r.status_code, r.json()
-    except Exception as e:
-        raise InvalidUsage(error_message="Couldn't create candidate from parsed_spreadsheet because %s" % e.message)
+    except:
+        return r.status_code, {"error": "Couldn't create candidate from candidate dict %s" % candidate_dict}
 
 
 def prepare_candidate_data(data_array, key, value):

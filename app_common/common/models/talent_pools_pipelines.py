@@ -13,10 +13,10 @@ class TalentPool(db.Model):
     domain_id = db.Column(db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), nullable=False)
     user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     name = db.Column(db.String(50), nullable=False)
+    simple_hash = db.Column(db.String(8))
     description = db.Column(db.TEXT)
-    added_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
-    updated_time = db.Column(db.DateTime, server_default=db.text(
-            "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"), nullable=False)
+    added_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_time = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
     domain = db.relationship('Domain', backref=db.backref('talent_pool', cascade="all, delete-orphan"))
@@ -47,13 +47,13 @@ class TalentPoolCandidate(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id', ondelete='CASCADE'), nullable=False)
     candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'), nullable=False)
-    added_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
-    updated_time = db.Column(db.DateTime, server_default=db.text(
-            "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"), nullable=False)
+    added_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_time = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     # Relationships
     candidate = db.relationship('Candidate', backref=db.backref('talent_pool_candidate', cascade="all, delete-orphan"))
-    talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pool_candidate', cascade="all, delete-orphan"))
+    talent_pool = db.relationship('TalentPool',
+                                  backref=db.backref('talent_pool_candidate', cascade="all, delete-orphan"))
 
     def __repr__(self):
         return "<TalentPoolCandidate: (talent_pool_id = {})>".format(self.talent_pool_id)
@@ -92,31 +92,50 @@ class TalentPipeline(db.Model):
     description = db.Column(db.TEXT)
     positions = db.Column(db.Integer, default=1, nullable=False)
     date_needed = db.Column(db.DateTime, nullable=False)
-    user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'),  nullable=False)
+    user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id'), nullable=False)
     search_params = db.Column(db.String(1023))
-    added_time = db.Column(db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"), nullable=False)
-    updated_time = db.Column(db.TIMESTAMP, server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"),
+    added_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow,
                              nullable=False)
 
     # Relationships
     user = db.relationship('User', backref=db.backref('talent_pipeline', cascade="all, delete-orphan"))
     talent_pool = db.relationship('TalentPool', backref=db.backref('talent_pipeline', cascade="all, delete-orphan"))
 
+    def __repr__(self):
+        return "TalentPipeline (id = {})".format(self.id)
+
     def get_id(self):
         return unicode(self.id)
+
+    @classmethod
+    def get_by_user_id_in_desc_order(cls, user_id):
+        """
+        Returns a list of TalentPipelines ordered by their creation time
+        :type user_id:  int | long
+        :rtype:  list[TalentPipeline]
+        """
+        return cls.query.filter_by(user_id=user_id).order_by(cls.added_time.desc()).all()
 
     def get_email_campaigns(self, page=1, per_page=20):
         from candidate_pool_service.common.models.email_campaign import EmailCampaign, EmailCampaignSmartlist
         from candidate_pool_service.common.models.smartlist import Smartlist
-        return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline).\
+        return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline). \
             filter(TalentPipeline.id == self.id).paginate(page=page, per_page=per_page, error_out=False).items
+
+    def get_email_campaigns_count(self):
+        from candidate_pool_service.common.models.email_campaign import EmailCampaign, EmailCampaignSmartlist
+        from candidate_pool_service.common.models.smartlist import Smartlist
+        return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline). \
+            filter(TalentPipeline.id == self.id).count()
 
     def delete(self):
         db.session.delete(self)
         db.session.commit()
 
-    def to_dict(self, include_stats=False, get_stats_function=None, include_growth=False, interval=None, get_growth_function=None):
+    def to_dict(self, include_stats=False, get_stats_function=None, include_growth=False, interval=None,
+                get_growth_function=None):
 
         talent_pipeline = {
             'id': self.id,
@@ -127,7 +146,7 @@ class TalentPipeline(db.Model):
             'search_params': json.loads(
                 self.search_params) if self.search_params else None,
             'talent_pool_id': self.talent_pool_id,
-            'date_needed': self.date_needed.isoformat(),
+            'date_needed': self.date_needed.isoformat() if self.date_needed else None,
             'added_time': self.added_time.isoformat(),
             'updated_time': self.updated_time.isoformat()
         }
@@ -135,10 +154,21 @@ class TalentPipeline(db.Model):
             talent_pipeline['growth'] = get_growth_function(self, int(interval))
         if include_stats and get_stats_function:
             # Include Last 30 days stats in response body
-            to_date = datetime.utcnow()
+            to_date = datetime.utcnow() - timedelta(days=1)
             from_date = to_date - timedelta(days=29)
-            talent_pipeline['stats'] = get_stats_function(self, 'TalentPipeline', None, from_date.isoformat(),
-                                                          to_date.isoformat())
+            talent_pipeline['stats'] = [] if self.added_time.date() == datetime.utcnow().date() else \
+                get_stats_function(self, 'TalentPipeline', None, from_date.isoformat(), to_date.isoformat(), offset=0)
 
         return talent_pipeline
 
+    @classmethod
+    def get_by_user_and_talent_pool_id(cls, user_id, talent_pool_id):
+        """
+        This returns talent-pipeline object for particular user and talent_pool_id
+        :param user_id: id of user object
+        :param talent_pool_id: id of talent_pool object
+        :rtype: TalentPipeline | None
+        """
+        assert user_id, 'user_id not provided'
+        assert talent_pool_id, 'talent_pool_id not provided'
+        return cls.query.filter_by(user_id=user_id, talent_pool_id=talent_pool_id).first()

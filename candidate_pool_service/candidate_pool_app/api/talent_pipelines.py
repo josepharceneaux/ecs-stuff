@@ -2,13 +2,10 @@ from candidate_pool_service.common.routes import CandidatePoolApi
 
 __author__ = 'ufarooqi'
 
-import json
 from flask import Blueprint
 from dateutil import parser
 from sqlalchemy import and_
-from datetime import datetime, timedelta
 from flask_restful import Resource
-from dateutil.parser import parse
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.utils.validators import is_number
@@ -16,9 +13,10 @@ from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.models.user import DomainRole
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
-from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (get_pipeline_growth,
-    TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, get_stats_generic_function,
-                                                                                         get_smartlist_stat_for_a_given_day)
+from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
+    get_pipeline_growth, TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline,
+    get_stats_generic_function, top_most_engaged_candidates_of_pipeline)
+from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 
 talent_pipeline_blueprint = Blueprint('talent_pipeline_api', __name__)
 
@@ -63,8 +61,8 @@ class TalentPipelineApi(Resource):
             talent_pipelines = TalentPipeline.query.join(TalentPipeline.user).filter(User.domain_id ==
                                                                               request.user.domain_id).all()
             sort_by = request.args.get('sort_by', 'added_time')
-            page = request.args.get('page', 1)
-            per_page = request.args.get('per_page', 10)
+            page = request.args.get('page', DEFAULT_PAGE)
+            per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
 
             if talent_pipelines and sort_by not in ('growth', 'added_time'):
                 raise InvalidUsage('Value of sort parameter is not valid')
@@ -81,7 +79,9 @@ class TalentPipelineApi(Resource):
             ]
             talent_pipelines_data = sorted(talent_pipelines_data,
                                            key=lambda talent_pipeline_data: talent_pipeline_data[sort_by], reverse=True)
-            return dict(talent_pipelines=talent_pipelines_data[(page - 1) * 10:page * 10], page_number=page,
+            return dict(talent_pipelines=talent_pipelines_data[(page - DEFAULT_PAGE) *
+                                                               DEFAULT_PAGE_SIZE:page * DEFAULT_PAGE_SIZE],
+                        page_number=page,
                         talent_pipelines_per_page=per_page, total_number_of_talent_pipelines=len(talent_pipelines_data))
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_PIPELINES)
@@ -325,8 +325,8 @@ class TalentPipelineSmartListApi(Resource):
         if talent_pipeline.user.domain_id != request.user.domain_id:
             raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
 
-        page = request.args.get('page', 1)
-        per_page = request.args.get('per_page', 10)
+        page = request.args.get('page', DEFAULT_PAGE)
+        per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
 
         if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
             raise InvalidUsage("page and per_page should be positive integers")
@@ -334,10 +334,13 @@ class TalentPipelineSmartListApi(Resource):
         page = int(page)
         per_page = int(per_page)
 
+        total_number_of_smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).count()
         smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).paginate(page, per_page, False)
         smartlists = smartlists.items
 
         return {
+            'page_number': page, 'smartlists_per_page': per_page,
+            'total_number_of_smartlists': total_number_of_smartlists,
             'smartlists': [smartlist.to_dict(True, get_stats_generic_function) for smartlist in smartlists]
         }
 
@@ -491,8 +494,38 @@ class TalentPipelineCandidates(Resource):
         request_params['limit'] = request.args.get('limit', '')
         request_params['page'] = request.args.get('page', '')
 
-        return get_candidates_of_talent_pipeline(talent_pipeline, request.oauth_token, request_params=request_params)
+        return get_candidates_of_talent_pipeline(talent_pipeline, request.oauth_token, request_params)
 
+
+class TalentPipelineMostEngagedCandidates(Resource):
+    # Access token decorator
+    decorators = [require_oauth()]
+
+    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        GET /talent-pipelines/<id>/candidates/engagement?limit=5  Fetch candidates of a talent-pipeline
+        :return A dictionary containing list of most engaged candidates belonging to a talent-pipeline
+
+        :rtype: dict
+        """
+
+        talent_pipeline_id = kwargs.get('id')
+        limit = request.args.get('limit', 5)
+
+        if not is_number(limit) or int(limit) < 1:
+            raise InvalidUsage("Limit should be a positive integer")
+
+        talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
+
+        if not talent_pipeline:
+            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
+                                              talent_pipeline_id)
+
+        if talent_pipeline.user.domain_id != request.user.domain_id:
+            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
+
+        return {'candidates': top_most_engaged_candidates_of_pipeline(talent_pipeline_id, int(limit))}
 
 class TalentPipelineCampaigns(Resource):
     # Access token decorator
@@ -518,11 +551,24 @@ class TalentPipelineCampaigns(Resource):
         if talent_pipeline.user.domain_id != request.user.domain_id:
             raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
+        page = request.args.get('page', DEFAULT_PAGE)
+        per_page = request.args.get('per_page', 20)
+
+        if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
+            raise InvalidUsage("page and per_page should be positive integers")
+
+        page = int(page)
+        per_page = int(per_page)
+
         # Get the email campaigns
         include_fields = request.values['fields'].split(',') if request.values.get('fields') else None
-        email_campaigns = talent_pipeline.get_email_campaigns(page=request.values.get('page', 1),
-                                                              per_page=request.values.get('per_page', 20))
-        return {'email_campaigns': [email_campaign.to_dict(include_fields) for email_campaign in email_campaigns]}
+        email_campaigns = talent_pipeline.get_email_campaigns(page=page, per_page=per_page)
+
+        return {
+            'page_number': page, 'email_campaigns_per_page': per_page,
+            'total_number_of_email_campaigns': talent_pipeline.get_email_campaigns_count(),
+            'email_campaigns': [email_campaign.to_dict(include_fields) for email_campaign in email_campaigns]
+        }
 
 
 @talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_GET_STATS, methods=['GET'])
@@ -537,80 +583,86 @@ def get_talent_pipeline_stats(talent_pipeline_id):
     to_date_string = request.args.get('to_date', '')
     interval = request.args.get('interval', '1')
     talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
+    offset = request.args.get('offset', 0)
+
     response = get_stats_generic_function(talent_pipeline, 'TalentPipeline', request.user, from_date_string,
-                                          to_date_string, interval)
+                                          to_date_string, interval, False, offset)
     if 'is_update' in request.args:
         return '', 204
     else:
         return jsonify({'talent_pipeline_data': response})
 
 
-@talent_pipeline_blueprint.route(CandidatePoolApi.SMARTLIST_IN_TALENT_PIPELINE_GET_STATS, methods=['GET'])
-@require_oauth()
-def get_smartlists_in_talent_pipeline_stats(talent_pipeline_id):
-    """
-    This method will return the statistics of all smartlists in a talent_pipeline over a given period of time
-    with time-period = 1 day
-    :param talent_pipeline_id: Id of a talent-pipeline
-    :return: A list of time-series data
-    """
-    talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
-    if not talent_pipeline:
-        raise NotFoundError(error_message="TalentPipeline with id=%s doesn't exist in database" % talent_pipeline_id)
-
-    if talent_pipeline.user.domain_id != request.user.domain_id:
-        raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pipeline %s"
-                                           % (request.user.id, talent_pipeline_id))
-
-    from_date_string = request.args.get('from_date', '')
-    to_date_string = request.args.get('to_date', '')
-    interval = request.args.get('interval', '1')
-
-    try:
-        from_date = parse(from_date_string).date() if from_date_string else talent_pipeline.added_time.date()
-        to_date = parse(to_date_string).date() if to_date_string else datetime.utcnow().date()
-    except Exception as e:
-        raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
-
-    if from_date < talent_pipeline.added_time.date():
-        from_date = talent_pipeline.added_time.date()
-
-    if from_date > to_date:
-        raise InvalidUsage("`to_date` cannot come before `from_date`")
-
-    if not is_number(interval):
-        raise InvalidUsage("Interval '%s' should be integer" % interval)
-
-    interval = int(interval)
-    if interval < 1:
-        raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
-
-    smartlists_of_talent_pipeline = Smartlist.query.filter(Smartlist.talent_pipeline_id == talent_pipeline_id).all()
-    talent_pipeline_stats = []
-
-    from_date -= timedelta(days=interval)
-    while to_date >= from_date:
-        total_number_of_candidates = 0
-        for smartlist in smartlists_of_talent_pipeline:
-            total_number_of_candidates += get_smartlist_stat_for_a_given_day(smartlist, to_date)
-
-        talent_pipeline_stats.append({
-            'total_number_of_candidates': total_number_of_candidates,
-            'added_datetime': to_date.isoformat(),
-        })
-        to_date -= timedelta(days=interval)
-
-    reference_talent_pipeline_stat = talent_pipeline_stats.pop()
-    for index, talent_pipeline_stat in enumerate(talent_pipeline_stats):
-        talent_pipeline_stat['number_of_candidates_added'] = talent_pipeline_stat['total_number_of_candidates'] - (
-                talent_pipeline_stats[index + 1]['total_number_of_candidates'] if index + 1 < len(
-                        talent_pipeline_stats) else reference_talent_pipeline_stat['total_number_of_candidates'])
-
-    return jsonify({'talent_pipeline_data': talent_pipeline_stats})
+# @talent_pipeline_blueprint.route(CandidatePoolApi.SMARTLIST_IN_TALENT_PIPELINE_GET_STATS, methods=['GET'])
+# @require_oauth()
+# def get_smartlists_in_talent_pipeline_stats(talent_pipeline_id):
+#     """
+#     This method will return the statistics of all smartlists in a talent_pipeline over a given period of time
+#     with time-period = 1 day
+#     :param talent_pipeline_id: Id of a talent-pipeline
+#     :return: A list of time-series data
+#     """
+#     talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
+#     if not talent_pipeline:
+#         raise NotFoundError(error_message="TalentPipeline with id=%s doesn't exist in database" % talent_pipeline_id)
+#
+#     if talent_pipeline.user.domain_id != request.user.domain_id:
+#         raise ForbiddenError(error_message="Logged-in user %s is unauthorized to get stats of talent-pipeline %s"
+#                                            % (request.user.id, talent_pipeline_id))
+#
+#     from_date_string = request.args.get('from_date', '')
+#     to_date_string = request.args.get('to_date', '')
+#     interval = request.args.get('interval', '1')
+#
+#     try:
+#         from_date = parse(from_date_string).date() if from_date_string else talent_pipeline.added_time.date()
+#         to_date = parse(to_date_string).date() if to_date_string else datetime.utcnow().date()
+#     except Exception as e:
+#         raise InvalidUsage(error_message="Either 'from_date' or 'to_date' is invalid because: %s" % e.message)
+#
+#     if from_date < talent_pipeline.added_time.date():
+#         from_date = talent_pipeline.added_time.date()
+#
+#     if from_date > to_date:
+#         raise InvalidUsage("`to_date` cannot come before `from_date`")
+#
+#     if to_date > datetime.utcnow().date():
+#         raise InvalidUsage("`to_date` cannot be in future")
+#
+#     if not is_number(interval):
+#         raise InvalidUsage("Interval '%s' should be integer" % interval)
+#
+#     interval = int(interval)
+#     if interval < 1:
+#         raise InvalidUsage("Interval's value should be greater than or equal to 1 day")
+#
+#     smartlists_of_talent_pipeline = Smartlist.query.filter(Smartlist.talent_pipeline_id == talent_pipeline_id).all()
+#     talent_pipeline_stats = []
+#
+#     from_date -= timedelta(days=interval)
+#     while to_date >= from_date:
+#         total_number_of_candidates = 0
+#         for smartlist in smartlists_of_talent_pipeline:
+#             total_number_of_candidates += get_smartlist_stat_for_a_given_day(smartlist, to_date)
+#
+#         talent_pipeline_stats.append({
+#             'total_number_of_candidates': total_number_of_candidates,
+#             'added_datetime': to_date.isoformat(),
+#         })
+#         to_date -= timedelta(days=interval)
+#
+#     reference_talent_pipeline_stat = talent_pipeline_stats.pop()
+#     for index, talent_pipeline_stat in enumerate(talent_pipeline_stats):
+#         talent_pipeline_stat['number_of_candidates_added'] = talent_pipeline_stat['total_number_of_candidates'] - (
+#                 talent_pipeline_stats[index + 1]['total_number_of_candidates'] if index + 1 < len(
+#                         talent_pipeline_stats) else reference_talent_pipeline_stat['total_number_of_candidates'])
+#
+#     return jsonify({'talent_pipeline_data': talent_pipeline_stats})
 
 
 api = TalentApi(talent_pipeline_blueprint)
 api.add_resource(TalentPipelineApi, CandidatePoolApi.TALENT_PIPELINE, CandidatePoolApi.TALENT_PIPELINES)
 api.add_resource(TalentPipelineSmartListApi, CandidatePoolApi.TALENT_PIPELINE_SMARTLISTS)
 api.add_resource(TalentPipelineCandidates, CandidatePoolApi.TALENT_PIPELINE_CANDIDATES)
+api.add_resource(TalentPipelineMostEngagedCandidates, CandidatePoolApi.TALENT_PIPELINE_ENGAGED_CANDIDATES)
 api.add_resource(TalentPipelineCampaigns, CandidatePoolApi.TALENT_PIPELINE_CAMPAIGNS)

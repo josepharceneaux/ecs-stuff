@@ -4,25 +4,25 @@
 This file contains API endpoints related to sms_campaign_service.
     Following is a list of API endpoints:
 
-        - SmsCampaigns: /v1/campaigns
+        - SmsCampaigns: /v1/sms-campaigns
 
             GET     : Gets list of all the SMS campaigns that belong to user
             POST    : Creates new campaign and save it in database
             DELETE  : Deletes SMS campaigns of user using given campaign ids as a list
 
-        - ScheduleSmsCampaign: /v1/campaigns/:id/schedule
+        - ScheduleSmsCampaign: /v1/sms-campaigns/:campaign_id/schedule
 
             POST    : Schedules the campaign from given campaign_id and data provided
             PUT     : Re-schedules the campaign from given campaign_id and data provided
             DELETE  : Un-schedules the campaign from given campaign_id
 
-        - SmsCampaigns: /v1/campaigns/:id
+        - SmsCampaigns: /v1/sms-campaigns/:campaign_id
 
             GET     : Gets campaign data using given id
             PUT    : Updates existing campaign using given id
             DELETE  : Deletes SMS campaign from db using given id
 
-        - SendSmsCampaign: /v1/campaigns/:id/send
+        - SendSmsCampaign: /v1/sms-campaigns/:campaign_id/send
 
             POST    : Sends the SMS Campaign by campaign id
 
@@ -36,32 +36,32 @@ This file contains API endpoints related to sms_campaign_service.
             POST    : When candidate replies to an SMS campaign, this endpoint is hit from Twilio
                         to notify our app.
 
-        - SmsCampaignBlasts:  /v1/campaigns/:id/blasts
+        - SmsCampaignBlasts:  /v1/sms-campaigns/:campaign_id/blasts
 
             GET    : Gets the all the "blast" records for given SMS campaign id from db table
                     "sms_campaign_blast"
 
-        - SmsCampaignBlastById:  /v1/campaigns/:id/blasts/:id
+        - SmsCampaignBlastById:  /v1/sms-campaigns/:campaign_id/blasts/:blast_id
 
             GET    : Gets the "blast" record for given SMS campaign id and blast_id from db table
                     "sms_campaign_blast"
 
-        - SmsCampaignBlastSends:  /v1/campaigns/:id/blasts/:id/sends
+        - SmsCampaignBlastSends:  /v1/sms-campaigns/:campaign_id/blasts/:blast_id/sends
 
             GET    : Gets the "sends" records for given SMS campaign id and blast_id
                         from db table 'sms_campaign_sends'.
 
-        - SmsCampaignBlastReplies:  /v1/campaigns/:id/blasts/:id/replies
+        - SmsCampaignBlastReplies:  /v1/sms-campaigns/:campaign_id/blasts/:blast_id/replies
 
             GET    : Gets the "replies" records for given SMS campaign id and blast_id
                         from db table 'sms_campaign_replies'
 
-        - SmsCampaignSends:  /v1/campaigns/:id/sends
+        - SmsCampaignSends:  /v1/sms-campaigns/:campaign_id/sends
 
             GET    : Gets all the "sends" records for given SMS campaign id
                         from db table sms_campaign_sends
 
-        - SmsCampaignReplies:  /v1/campaigns/:id/replies
+        - SmsCampaignReplies:  /v1/sms-campaigns/:campaign_id/replies
 
             GET    : Gets all the "replies" records for given SMS campaign id
                         from db table "sms_campaign_replies"
@@ -73,12 +73,15 @@ import types
 from werkzeug.utils import redirect
 
 # Third Party
+import requests
 from flask import request
 from flask import Blueprint
 from flask.ext.restful import Resource
 
 # Service Specific
 from sms_campaign_service.sms_campaign_app import logger
+from sms_campaign_service.common.models.sms_campaign import (SmsCampaignSend,
+                                                             SmsCampaignReply, SmsCampaign)
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.handy_functions import (request_from_google_shorten_url_api,
                                                           get_valid_blast_obj)
@@ -88,7 +91,9 @@ from sms_campaign_service.common.talent_api import TalentApi
 from sms_campaign_service.common.routes import SmsCampaignApi
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.utils.auth_utils import require_oauth
-from sms_campaign_service.common.utils.api_utils import (api_route, ApiResponse)
+from sms_campaign_service.common.utils.api_utils import (api_route, ApiResponse,
+                                                         get_pagination_params,
+                                                         get_paginated_response)
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from sms_campaign_service.common.campaign_services.validators import get_valid_json_data
 from sms_campaign_service.common.campaign_services.campaign_utils import \
@@ -108,7 +113,7 @@ api.route = types.MethodType(api_route, api)
 @api.route(SmsCampaignApi.CAMPAIGNS)
 class SMSCampaigns(Resource):
     """
-    Endpoint looks like /v1/campaigns
+    Endpoint looks like /v1/sms-campaigns
     This resource is used to
         1- Get all campaigns created by current user [GET]
         2- Create an SMS campaign [POST]
@@ -121,7 +126,7 @@ class SMSCampaigns(Resource):
         This action returns a list of all Campaigns for logged-in user.
 
         :return campaigns_data: a dictionary containing list of campaigns and their count
-        :rtype JSON
+        :rtype: json
 
         :Example:
 
@@ -133,46 +138,47 @@ class SMSCampaigns(Resource):
         .. Response::
 
             {
-                "count": 2,
-                "campaigns": [
+                  "campaigns": [
                             {
-                              "added_datetime": "2015-11-19 18:54:04",
-                              "frequency_id": 1,
-                              "id": 3,
-                              "name": "New Campaign",
-                              "start_datetime": "",
-                              "body_text": "Welcome all boys",
-                              "end_datetime": "",
-                              "updated_time": "2015-11-19 18:53:55",
-                              "user_phone_id": 1
+                              "added_datetime": "2016-02-09T16:13:21+00:00",
+                              "start_datetime": null,
+                              "frequency": "Once",
+                              "user_id": 1,
+                              "name": "Smartlist",
+                              "body_text": null,
+                              "list_ids": [1, 2, 3],
+                              "id": 1,
+                              "end_datetime": null
                             },
                             {
-                              "added_datetime": "2015-11-19 18:55:08",
-                              "frequency_id": 1,
+                              "added_datetime": "2016-02-09T17:44:05+00:00",
+                              "start_datetime": null,
+                              "frequency": "Once",
+                              "user_id": 1,
+                              "name": "Smartlist",
+                              "body_text": null,
+                              "list_ids": [2],
                               "id": 4,
-                              "name": "New Campaign",
-                              "start_datetime": "",
-                              "body_text": "Job opening at...",
-                              "end_datetime": "",
-                              "updated_time": "2015-11-19 18:54:51",
-                              "user_phone_id": 1
+                              "end_datetime": null
                             }
-              ]
+                            ]
             }
 
         .. Status:: 200 (OK)
                     401 (Unauthorized to access getTalent)
                     500 (Internal Server Error)
         """
+        page, per_page = get_pagination_params(request)
         camp_obj = SmsCampaignBase(request.user.id)
-        all_campaigns = [campaign.to_json() for campaign in camp_obj.get_all_campaigns()]
-        return dict(count=len(all_campaigns), campaigns=all_campaigns), 200
+        query = camp_obj.get_all_campaigns()
+        return get_paginated_response('campaigns', query, page, per_page,
+                                      parser=SmsCampaign.to_dict)
 
     def post(self):
         """
         This method takes data to create SMS campaign in database table 'sms_campaign'.
         :return: id of created campaign
-        :type: JSON
+        :rtype: json
 
         :Example:
 
@@ -210,17 +216,10 @@ class SMSCampaigns(Resource):
         """
         data_from_ui = get_valid_json_data(request)
         campaign_obj = SmsCampaignBase(request.user.id)
-        campaign_id, invalid_smartlist_ids = campaign_obj.save(data_from_ui)
+        campaign_id = campaign_obj.save(data_from_ui)
         headers = {'Location': SmsCampaignApiUrl.CAMPAIGN % campaign_id}
         logger.debug('Campaign(id:%s) has been saved.' % campaign_id)
-        # If any of the smartlist_id found invalid
-        if invalid_smartlist_ids['count']:
-            return ApiResponse(dict(id=campaign_id,
-                                    invalid_smartlist_ids=invalid_smartlist_ids),
-                               status=207, headers=headers)
-        else:
-            return ApiResponse(dict(id=campaign_id),
-                               status=201, headers=headers)
+        return ApiResponse(dict(id=campaign_id), status=requests.codes.CREATED, headers=headers)
 
     def delete(self):
         """
@@ -262,7 +261,7 @@ class SMSCampaigns(Resource):
                                error_code=InvalidUsage.http_status_code())
         # check if campaigns_ids list is not empty
         if not campaign_ids:
-            return dict(message='No campaign id provided to delete'), 200
+            return dict(message='No campaign id provided to delete'), requests.codes.OK
 
         if not all([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
             raise InvalidUsage('Bad request, campaign_ids must be integer',
@@ -291,11 +290,12 @@ class SMSCampaigns(Resource):
             return dict(message='Unable to delete campaign.'), status_code
         count_invalid_ids = len(not_deleted) + len(not_found) + len(not_owned)
         if not count_invalid_ids:
-            return dict(message='%d campaign(s) deleted successfully.' % len(campaign_ids)), 200
+            return dict(message='%d campaign(s) deleted successfully.'
+                                % len(campaign_ids)), requests.codes.OK
         if count_invalid_ids == len(campaign_ids):
             status_code = InvalidUsage.http_status_code()
         else:
-            status_code = 207
+            status_code = requests.codes.MULTI_STATUS
         return dict(message='Unable to delete %d campaign(s).' % count_invalid_ids,
                     not_deleted_ids=not_deleted, not_found_ids=not_found,
                     not_owned_ids=not_owned), status_code
@@ -304,7 +304,7 @@ class SMSCampaigns(Resource):
 @api.route(SmsCampaignApi.SCHEDULE)
 class ScheduleSmsCampaign(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/schedule
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/schedule
     This resource is used to
         1- Schedule SMS Campaign using scheduler_service [POST]
         2- Re-schedule SMS Campaign using scheduler_service [PUT]
@@ -320,6 +320,7 @@ class ScheduleSmsCampaign(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :type campaign_id: int | long
         :return: JSON containing message and task_id.
+        :rtype: json
 
         :Example:
 
@@ -331,14 +332,13 @@ class ScheduleSmsCampaign(Resource):
         >>>           }
         >>> schedule_data = {
         >>>                    "frequency_id": 2,
-        >>>                    "start_datetime": "2015-11-26T08:00:00Z",
-        >>>                    "end_datetime": "2015-11-30T08:00:00Z"
+        >>>                    "start_datetime": "2015-11-26T08:00:00.000Z",
+        >>>                    "end_datetime": "2015-11-30T08:00:00.000Z"
         >>>                 }
         >>> data = json.dumps(schedule_data)
         >>> campaign_id = 1
         >>> response = requests.post(SmsCampaignApiUrl.SCHEDULE % campaign_id, headers=headers,
         >>>                         data=data)
-
 
         .. Response::
 
@@ -365,7 +365,7 @@ class ScheduleSmsCampaign(Resource):
         # call schedule() method to schedule the campaign and get the task_id
         task_id = sms_camp_obj.schedule(pre_processed_data['data_to_schedule'])
         return dict(message='SMS Campaign(id:%s) has been scheduled.' % campaign_id,
-                    task_id=task_id), 200
+                    task_id=task_id), requests.codes.OK
 
     def put(self, campaign_id):
         """
@@ -385,6 +385,7 @@ class ScheduleSmsCampaign(Resource):
         :param campaign_id: integer, unique id representing campaign in getTalent's database
         :type campaign_id: int | long
         :return: JSON containing message and task_id.
+        :rtype: json
 
         :Example:
 
@@ -396,8 +397,8 @@ class ScheduleSmsCampaign(Resource):
         >>>           }
         >>> schedule_data = {
         >>>                    "frequency_id": 2,
-        >>>                    "start_datetime": "2015-11-26T08:00:00Z",
-        >>>                    "end_datetime": "2015-11-30T08:00:00Z"
+        >>>                    "start_datetime": "2015-11-26T08:00:00.000Z",
+        >>>                    "end_datetime": "2015-11-30T08:00:00.000Z"
         >>>                 }
         >>> data = json.dumps(schedule_data)
         >>> campaign_id = 1
@@ -425,15 +426,15 @@ class ScheduleSmsCampaign(Resource):
                     500 (Internal Server Error)
         """
         # create object of class SmsCampaignBase
-        sms_camp_obj = SmsCampaignBase(request.user.id)
-        # call method schedule() to schedule the campaign and get the task_id
+        sms_camp_obj = SmsCampaignBase(request.user.id, campaign_id)
+        # call method reschedule() to re-schedule the campaign and get the task_id
         task_id = sms_camp_obj.reschedule(request, campaign_id)
         if task_id:
             message = 'Campaign(id:%s) has been re-scheduled.' % campaign_id
         else:
             message = 'Campaign(id:%s) is already scheduled with given data.' % campaign_id
             task_id = sms_camp_obj.campaign.scheduler_task_id
-        return dict(message=message, task_id=task_id), 200
+        return dict(message=message, task_id=task_id), requests.codes.OK
 
     def delete(self, campaign_id):
         """
@@ -466,15 +467,15 @@ class ScheduleSmsCampaign(Resource):
         """
         task_unscheduled = SmsCampaignBase.unschedule(campaign_id, request, CampaignUtils.SMS)
         if task_unscheduled:
-            return dict(message='Campaign(id:%s) has been unscheduled.' % campaign_id), 200
+            return dict(message='Campaign(id:%s) has been unscheduled.' % campaign_id), requests.codes.OK
         else:
-            return dict(message='Campaign(id:%s) is already unscheduled.' % campaign_id), 200
+            return dict(message='Campaign(id:%s) is already unscheduled.' % campaign_id), requests.codes.OK
 
 
 @api.route(SmsCampaignApi.CAMPAIGN)
 class CampaignById(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id
+    Endpoint looks like /v1/sms-campaigns/:campaign_id
     This resource is used to
         1- Get campaign from given campaign_id [GET]
         2- Update an existing SMS campaign [PUT]
@@ -488,6 +489,7 @@ class CampaignById(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :type campaign_id: int | long
         :return: JSON for required campaign
+        :rtype: json
 
         :Example:
 
@@ -499,17 +501,17 @@ class CampaignById(Resource):
         .. Response::
 
             {
-                "campaign": {
-                          "body_text": "Dear all, please visit http://www.qc-technologies.com",
-                          "frequency_id": 1,
-                          "updated_time": "2015-11-24 16:31:09",
-                          "user_phone_id": 1,
-                          "start_datetime": "",
-                          "added_datetime": "2015-11-24 16:30:57",
-                          "end_datetime": "",
-                          "id": 1,
-                          "name": "UpdatedName"
-                        }
+                  "campaign": {
+                        "added_datetime": "2016-02-09T16:13:21+00:00",
+                        "start_datetime": "2016-02-09T16:13:21+00:00",
+                        "frequency": "Once",
+                        "user_id": 1,
+                        "name": "Job opening at getTalent",
+                        "body_text": "HI all, we have few openings at https://www.gettalent.com",
+                        "list_ids": [1, 2, 3],
+                        "id": 1,
+                        "end_datetime": null
+                      }
             }
 
         .. Status:: 200 (OK)
@@ -521,7 +523,7 @@ class CampaignById(Resource):
         """
         campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                    CampaignUtils.SMS)
-        return dict(campaign=campaign.to_json()), 200
+        return dict(campaign=campaign.to_dict()), requests.codes.OK
 
     def put(self, campaign_id):
         """
@@ -566,16 +568,9 @@ class CampaignById(Resource):
                     5017 (INVALID_URL_FORMAT)
         """
         campaign_data = get_valid_json_data(request)
-        camp_obj = SmsCampaignBase(request.user.id)
-        invalid_smartlist_ids = camp_obj.update(campaign_data, campaign_id=campaign_id)
-        # If any of the smartlist_id found invalid
-        if invalid_smartlist_ids['count']:
-            return dict(
-                message='SMS Campaign(id:%s) has been updated successfully' % campaign_id,
-                invalid_smartlist_ids=invalid_smartlist_ids), 207
-        else:
-            return dict(message='SMS Campaign(id:%s) has been updated successfully'
-                                % campaign_id), 200
+        camp_obj = SmsCampaignBase(request.user.id, campaign_id)
+        camp_obj.update(campaign_data, campaign_id=campaign_id)
+        return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id), requests.codes.OK
 
     def delete(self, campaign_id):
         """
@@ -604,10 +599,10 @@ class CampaignById(Resource):
         ..Error codes::
                     5010 (ERROR_DELETING_SMS_CAMPAIGN)
         """
-        campaign_obj = SmsCampaignBase(request.user.id)
+        campaign_obj = SmsCampaignBase(request.user.id, campaign_id)
         campaign_deleted = campaign_obj.delete(campaign_id)
         if campaign_deleted:
-            return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), 200
+            return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), requests.codes.OK
         else:
             raise InternalServerError(
                 'Campaign(id:%s) was not deleted.' % campaign_id,
@@ -617,7 +612,7 @@ class CampaignById(Resource):
 @api.route(SmsCampaignApi.SEND)
 class SendSmsCampaign(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/send
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/send
     This resource is used to send SMS Campaign to candidates [POST]
     """
     decorators = [require_oauth()]
@@ -627,7 +622,7 @@ class SendSmsCampaign(Resource):
         It sends given Campaign (from given campaign id) to the smartlist candidates
             associated with given campaign.
         Once the campaign is scheduled, _scheduler_service_ will pick it up and it will ping the
-        this endpoint (https://sms-campaign-service/v1/campaign/:id/send)
+        this endpoint (https://sms-campaign-service.gettalent.com/v1/sms-campaign/:campaign_id/send)
 
         :param campaign_id: integer, unique id representing campaign in GT database
         :type campaign_id: int | long
@@ -661,9 +656,9 @@ class SendSmsCampaign(Resource):
                          5102 (NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
                          5103 (NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
         """
-        camp_obj = SmsCampaignBase(request.user.id)
-        camp_obj.send(campaign_id)
-        return dict(message='Campaign(id:%s) is being sent to candidates.' % campaign_id), 200
+        camp_obj = SmsCampaignBase(request.user.id, campaign_id)
+        camp_obj.send()
+        return dict(message='Campaign(id:%s) is being sent to candidates.' % campaign_id), requests.codes.OK
 
 
 @api.route(SmsCampaignApi.REDIRECT)
@@ -712,7 +707,7 @@ class SmsCampaignUrlRedirection(Resource):
         """
         # Google's shorten URL API hits this end point while converting long_url to shorter version.
         if request_from_google_shorten_url_api(request.headers.environ):
-            return 200
+            return requests.codes.OK
         try:
             redirection_url = CampaignBase.url_redirect(url_conversion_id, CampaignUtils.SMS,
                                                         verify_signature=True,
@@ -783,7 +778,7 @@ class SmsReceive(Resource):
 @api.route(SmsCampaignApi.BLASTS)
 class SmsCampaignBlasts(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/blasts.
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/blasts.
     This class returns all the blast objects associated with given campaign.
     """
     decorators = [require_oauth()]
@@ -795,7 +790,8 @@ class SmsCampaignBlasts(Resource):
 
         :param campaign_id: int, unique id of a SMS campaign
         :type campaign_id: int | long
-        :return: JSON data containing list of blasts and their counts
+        :return: JSON data containing list of blasts
+        :rtype: json
 
         :Example:
 
@@ -808,7 +804,6 @@ class SmsCampaignBlasts(Resource):
         .. Response::
 
             {
-                  "count": 2,
                   "blasts": [
                                 {
                                   "sends": 763,
@@ -838,19 +833,20 @@ class SmsCampaignBlasts(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
+        # get pagination params
+        page, per_page = get_pagination_params(request)
+
         # Get campaign object if it belongs to user's domain
         campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                    CampaignUtils.SMS)
-        # Serialize blasts of a campaign
-        blasts = [blast.to_json() for blast in campaign.blasts]
-        response = dict(blasts=blasts, count=len(blasts))
-        return response, 200
+        # Serialize blasts of a campaign and get paginated response
+        return get_paginated_response('blasts', campaign.blasts, page, per_page)
 
 
 @api.route(SmsCampaignApi.BLAST)
 class SmsCampaignBlastById(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/blasts/:id
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/blasts/:blast_id
     This gives the blast object for the request campaign_id and blast_id
     """
     decorators = [require_oauth()]
@@ -863,7 +859,8 @@ class SmsCampaignBlastById(Resource):
         :param blast_id: id of blast object
         :type campaign_id: int | long
         :type blast_id: int | long
-        :return: JSON data containing list of blasts and their counts
+        :return: JSON data containing list of blasts
+        :rtype: json
 
         :Example:
 
@@ -898,15 +895,15 @@ class SmsCampaignBlastById(Resource):
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
         # Validate that campaign belongs to user's domain
         SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
-                                                       CampaignUtils.SMS)
+                                                        CampaignUtils.SMS)
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
-        return dict(blast=blast_obj.to_json()), 200
+        return dict(blast=blast_obj.to_json()), requests.codes.OK
 
 
 @api.route(SmsCampaignApi.BLAST_SENDS)
 class SmsCampaignBlastSends(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/blasts/:id/sends
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/blasts/:blast_id/sends
     This resource is used to GET Campaign "sends" for one particular blast of a given campaign.
     """
     decorators = [require_oauth()]
@@ -919,8 +916,7 @@ class SmsCampaignBlastSends(Resource):
         :param blast_id: id of blast object
         :type campaign_id: int | long
         :type blast_id: int | long
-        :return: dictionary containing  1- count of campaign sends and
-                                        2- SMS campaign sends records as dict
+        :return: dictionary containing SMS campaign sends records as dict
         :rtype: dict
 
         :Example:
@@ -951,8 +947,7 @@ class SmsCampaignBlastSends(Resource):
                               "blast_id": 1,
                               "updated_time": "2015-11-23 18:25:13"
                            }
-                        ],
-                "count": 2
+                        ]
             }
 
         .. Status:: 200 (OK)
@@ -962,20 +957,21 @@ class SmsCampaignBlastSends(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
+        # get pagination params
+        page, per_page = get_pagination_params(request)
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
         # Validate that campaign belongs to user's domain
         SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
-                                                       CampaignUtils.SMS)
+                                                        CampaignUtils.SMS)
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
-        sends = [send_obj.to_json() for send_obj in blast_obj.blast_sends]
-        response = dict(sends=sends, count=len(sends))
-        return response, 200
+        # Serialize sends of a campaign and get paginated response
+        return get_paginated_response('sends', blast_obj.blast_sends, page, per_page)
 
 
 @api.route(SmsCampaignApi.BLAST_REPLIES)
 class SmsCampaignBlastReplies(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/blasts/:id/replies
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/blasts/:blast_id/replies
     This gives the replies object for the request campaign_id and blast_id
     """
     decorators = [require_oauth()]
@@ -989,7 +985,8 @@ class SmsCampaignBlastReplies(Resource):
         :param blast_id: id of blast object
         :type campaign_id: int | long
         :type blast_id: int | long
-        :return: JSON data containing list of blasts and their counts
+        :return: JSON data containing list of blasts
+        :rtype: json
 
         :Example:
 
@@ -1003,7 +1000,6 @@ class SmsCampaignBlastReplies(Resource):
         .. Response::
 
                {
-                    "count": 2,
                     "replies": [
                         {
                           "candidate_phone_id": 1,
@@ -1029,19 +1025,23 @@ class SmsCampaignBlastReplies(Resource):
                     404 (Campaign not found)
                     500 (Internal server error)
         """
-        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, blast_id=blast_id))
+        # get pagination params
+        page, per_page = get_pagination_params(request)
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id,
+                                                      blast_id=blast_id))
         # Validate that campaign object belongs to user's domain
-        SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user, CampaignUtils.SMS)
+        SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
+                                                        CampaignUtils.SMS)
         blast_obj = get_valid_blast_obj(blast_id, campaign_id)
-        replies = [replies_obj.to_json() for replies_obj in blast_obj.blast_replies]
-        response = dict(replies=replies, count=len(replies))
-        return response, 200
+
+        # Serialize replies of an sms-campaign and get paginated response
+        return get_paginated_response('replies', blast_obj.blast_replies, page, per_page)
 
 
 @api.route(SmsCampaignApi.SENDS)
 class SmsCampaignSends(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/sends
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/sends
     This resource is used to GET Campaign sends
     """
     decorators = [require_oauth()]
@@ -1052,7 +1052,7 @@ class SmsCampaignSends(Resource):
 
         :param campaign_id: integer, unique id representing campaign in GT database
         :type campaign_id: int | long
-        :return: 1- count of campaign sends and 2- SMS campaign sends records as dict
+        :return: SMS campaign sends records as dict
 
 
         :Example:
@@ -1065,7 +1065,6 @@ class SmsCampaignSends(Resource):
         .. Response::
 
             {
-                  "count": 2,
                   "sends": [
                         {
                           "updated_time": "2016-01-05 14:59:55",
@@ -1091,24 +1090,24 @@ class SmsCampaignSends(Resource):
                     500 (Internal Server Error)
 
         :param campaign_id: integer, unique id representing campaign in GT database
-        :return: 1- count of campaign sends and 2- SMS campaign sends records as dict
+        :return: SMS campaign sends records as dict
         """
+        # get pagination params
+        page, per_page = get_pagination_params(request)
         # Get campaign object if it belongs to user's domain
         campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
-                                                                  CampaignUtils.SMS)
-
-        # Get replies objects from database table 'sms_campaign_reply'
-        sends = sum([blast.blast_sends for blast in campaign.blasts], [])
-        # Get JSON serializable data
-        sends = [send.to_json() for send in sends]
-        response = dict(sends=sends, count=len(sends))
-        return response, 200
+                                                                   CampaignUtils.SMS)
+        # Get blast_ids related to requested campaign_id
+        blast_ids = map(lambda blast: blast.id, campaign.blasts.all())
+        query = SmsCampaignSend.get_by_blast_ids(blast_ids)
+        # Serialize sends of a campaign and get paginated response
+        return get_paginated_response('sends', query, page, per_page)
 
 
 @api.route(SmsCampaignApi.REPLIES)
 class SmsCampaignReplies(Resource):
     """
-    Endpoint looks like /v1/campaigns/:id/replies
+    Endpoint looks like /v1/sms-campaigns/:campaign_id/replies
     This resource is used to GET Campaign replies
     """
     decorators = [require_oauth()]
@@ -1119,7 +1118,7 @@ class SmsCampaignReplies(Resource):
 
         :param campaign_id: integer, unique id representing campaign in GT database
         :type campaign_id: int | long
-        :return: 1- count of campaign replies and 2- SMS campaign replies records as dict
+        :return: SMS campaign replies records as dict
 
         :Example:
 
@@ -1131,7 +1130,6 @@ class SmsCampaignReplies(Resource):
         .. Response::
 
                 {
-                      "count": 2,
                       "replies": [
                             {
                               "candidate_phone_id": 1,
@@ -1157,12 +1155,13 @@ class SmsCampaignReplies(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
+        # get pagination params
+        page, per_page = get_pagination_params(request)
         # Get campaign object if it belongs to user's domain
         campaign = SmsCampaignBase.get_campaign_if_domain_is_valid(campaign_id, request.user,
                                                                    CampaignUtils.SMS)
-        # Get replies objects from database table 'sms_campaign_reply'
-        replies = sum([blast.blast_replies for blast in campaign.blasts], [])
-        # Get JSON serializable data
-        replies = [reply.to_json() for reply in replies]
-        response = dict(replies=replies, count=len(replies))
-        return response, 200
+        # Get blast_ids related to requested campaign_id
+        blast_ids = map(lambda blast: blast.id, campaign.blasts.all())
+        query = SmsCampaignReply.get_by_blast_ids(blast_ids)
+        # Serialize replies of a campaign and get paginated response
+        return get_paginated_response('replies', query, page, per_page)
