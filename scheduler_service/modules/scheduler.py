@@ -389,7 +389,7 @@ def serialize_task_admin(task):
     """
     Serialize task data to JSON object (for admin)
     :param task: APScheduler task
-    :type: object
+    :type task: object
     :return: JSON converted dict object
     :rtype: dict
     """
@@ -430,6 +430,7 @@ def get_user_job_ids(user_id):
     :return:
     :rtype: list
     """
+    # TODO: remove count from docs and empty :return:
     start_index = 0
     end_index = -1
     job_ids = redis_store.lrange(SchedulerUtils.REDIS_SCHEDULER_USER_TASK % user_id, start_index,
@@ -439,7 +440,7 @@ def get_user_job_ids(user_id):
 
 def get_general_job_id(task_name):
     """
-    Return id of scheduled general task
+    Returns id of scheduled general task
     :param task_name: general task name which is scheduled
     :type task_name: str
     :return:str|None
@@ -452,8 +453,7 @@ def get_general_job_id(task_name):
 
 def get_all_general_job_ids():
     """
-    Return id of scheduled general task
-    :return:
+    Return id of scheduled general task:
     """
     general_task_keys = redis_store.keys(SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % '*')
     general_task_ids = [next(iter(redis_store.lrange(key, 0, -1)), None) for key in general_task_keys]

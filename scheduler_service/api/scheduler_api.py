@@ -801,6 +801,8 @@ class AdminTasks(Resource):
                     500 (Internal Server Error)
 
         """
+        # TODO: Nice coding documentation. Kindly do that for all endpoitns.
+
         # In case of higher number of scheduled task running for a particular user and user wants to get only
         # a limited number of jobs by specifying page and per_page parameter, then return only specified jobs
 
@@ -893,6 +895,9 @@ class SendRequestTest(Resource):
         2. To check if authentication token is refreshed after expiry.
         3. Test that scheduler sends GET, POST, DELETE, PUT, PATCH request
     """
+
+    # TODO: Add top level decorator that will serve for all below.
+
     @require_oauth()
     def post(self):
         dummy_request_method(_request=request)
