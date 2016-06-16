@@ -430,20 +430,6 @@ def does_candidate_cf_exist(candidate, custom_field_dict):
     return False
 
 
-def get_candidate_email_from_domain_if_exists(user_id, email_address):
-    """
-    Function will retrieve CandidateEmail belonging to the requested candidate
-    in the same domain if found.
-    :type user_id:       int|long
-    :type email_address: basestring
-    :rtype: CandidateEmail|None
-    """
-    user_domain_id = User.get_domain_id(_id=user_id)
-    candidate_email = CandidateEmail.query.join(Candidate).join(User).filter(
-        CandidateEmail.address == email_address, User.domain_id == user_domain_id).first()
-    return candidate_email if candidate_email else None
-
-
 def get_education_if_exists(educations, education_dict, education_degrees):
     """
     Function will check to see if the requested education information already exists in the database
