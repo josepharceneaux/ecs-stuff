@@ -40,7 +40,8 @@ def create_campaign_send_from_api(campaign_id, access_token):
     return response.json()
 
 
-def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=None, user_id=None, per_page=1000):
+def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=None, user_id=None, per_page=1000,
+                                cursor='initial'):
     """
     Calls smartlist API and retrieves the candidates of a smart or dumb list.
     :param list_id: smartlist id.
@@ -48,24 +49,26 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
     :param access_token: Token for authorization
     :param user_id: id of user
     :param per_page: Number of results in one page
+    :param cursor: Cursor for the page to be fetched
     :type list_id: int | long
     :type candidate_ids_only: bool
     :type access_token: string | None
     :type user_id: int | long | None
     :type per_page: int | long
+    :type cursor: str | unicode
     :rtype: list
 
     """
     raise_if_not_positive_int_or_long(list_id)
     raise_if_not_instance_of(candidate_ids_only, bool)
     raise_if_not_instance_of(per_page, (int, long))
+    raise_if_not_instance_of(cursor, (str, unicode))
     if access_token:
         raise_if_not_instance_of(access_token, (str, unicode))
     if user_id:
         raise_if_not_positive_int_or_long(user_id)
 
     params = {'fields': 'id'} if candidate_ids_only else {}
-    cursor = 'initial'
     candidates = []
     page_no = 0
     has_more_candidates = True
