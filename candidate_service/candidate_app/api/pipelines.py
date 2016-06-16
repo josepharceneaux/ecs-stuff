@@ -56,7 +56,8 @@ class CandidatePipelineResource(Resource):
         for number_of_requests, talent_pipeline in enumerate(talent_pipelines, start=1):
             search_response = search_candidates_from_params(search_params=talent_pipeline.search_params,
                                                             access_token=request.oauth_token,
-                                                            url_args='?id={}'.format(candidate_id))
+                                                            url_args='?id={}&talent_pool_id={}'.
+                                                            format(candidate_id, talent_pipeline.talent_pool_id))
 
             found_candidate_ids.extend(candidate['id'] for candidate in search_response['candidates'])
 

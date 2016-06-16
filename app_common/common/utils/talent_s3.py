@@ -254,7 +254,8 @@ def boto3_put(file_contents, key, key_path):
         client.put_object(
             Body=file_contents,
             Bucket=BUCKET,
-            Key='{}/{}'.format(key_path, key)
+            Key='{}/{}'.format(key_path, key),
+            Metadata={'Content-Disposition': 'attachment; filename={}'.format(key)}
         )
     except Exception:
         app.logger.exception('Error uploading resume to S3 with boto3. Path: {}. Filename: {}'.format(
