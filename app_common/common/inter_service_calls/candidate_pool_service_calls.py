@@ -40,50 +40,49 @@ def create_campaign_send_from_api(campaign_id, access_token):
     return response.json()
 
 
-def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=None, user_id=None):
+def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=None, user_id=None, per_page=1000):
     """
     Calls smartlist API and retrieves the candidates of a smart or dumb list.
     :param list_id: smartlist id.
     :param candidate_ids_only: Whether or not to get only ids of candidates
     :param access_token: Token for authorization
     :param user_id: id of user
+    :param per_page: Number of results in one page
     :type list_id: int | long
     :type candidate_ids_only: bool
     :type access_token: string | None
     :type user_id: int | long | None
+    :type per_page: int | long
     :rtype: list
 
     """
     raise_if_not_positive_int_or_long(list_id)
     raise_if_not_instance_of(candidate_ids_only, bool)
+    raise_if_not_instance_of(per_page, (int, long))
     if access_token:
         raise_if_not_instance_of(access_token, (str, unicode))
     if user_id:
         raise_if_not_positive_int_or_long(user_id)
-    # TODO we can make following configurable via kwargs param
-    per_page = 1000  # Smartlists can have a large number of candidates, hence page size of 1000
+
     params = {'fields': 'id'} if candidate_ids_only else {}
     cursor = 'initial'
     candidates = []
-    counter = 0
+    page_no = 0
     has_more_candidates = True
 
-    # TODO--I strongly believe that this whole method can be written in a more generic way such that we may put it in a common place for others to reuse
+    # Details regarding aws pagination can be found at:
+    # http://docs.aws.amazon.com/cloudsearch/latest/developerguide/paginating-results.html
 
-    # TODO please add in comments where can the engineer find detailed docs of cursors
     while has_more_candidates:
-        # TODO--just double check, if the following breaks things will go smooth?
         response = get_candidates_from_smartlist_with_page_params(list_id, per_page,
                                                                   cursor, params,
-                                                                   access_token, user_id)
-        # TODO--rename counter to 'page_no'
-        counter += 1
+                                                                  access_token, user_id)
+        page_no += 1
         response_body = response.json()
-        # TODO--I think we should rename no_of_pages to total_pages
-        no_of_pages = response_body['max_pages']
+        total_pages = response_body['max_pages']
         candidates.extend(response_body['candidates'])
 
-        if no_of_pages == counter:
+        if total_pages == page_no:
             cursor = response_body['cursor']
         else:
             has_more_candidates = False
