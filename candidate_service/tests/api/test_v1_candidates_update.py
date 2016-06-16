@@ -964,7 +964,6 @@ class TestUpdateCandidatePhones(object):
         assert phones_before_update[0]['value'] != phones_after_update[0]['value']
         assert phones_count_before_update == len(phones_after_update)
 
-
 class TestUpdateCandidateMilitaryService(object):
     def test_add_military_service_with_incorrect_date_format(self, access_token_first, user_first, talent_pool):
         """

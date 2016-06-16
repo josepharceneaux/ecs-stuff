@@ -46,7 +46,7 @@ from candidate_service.common.utils.validators import sanitize_zip_code, is_numb
 from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
-    does_phone_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
+    do_phones_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
     get_education_degree_if_exists, does_military_service_exist
 )
 
@@ -1841,8 +1841,17 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
     if any([phone.get('is_default') for phone in phones]):
         CandidatePhone.set_is_default_to_false(candidate_id)
 
+    # Check if phone label and default have been provided
     phones_has_label = any([phone.get('label') for phone in phones])
     phones_has_default = any([phone.get('is_default') for phone in phones])
+
+    # Check for duplicate values
+    phone_numbers = [phone.get('value') for phone in phones]
+    if len(set(phone_numbers)) < len(phones):
+        raise InvalidUsage(error_message='Identical phone numbers provided',
+                           error_code=custom_error.INVALID_USAGE,
+                           additional_error_info={'Duplicates': phone_numbers})
+
     for i, phone in enumerate(phones):
 
         # If there's no is_default, the first phone should be default
@@ -1866,6 +1875,7 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
 
         # Clear CachedData's country_codes to prevent aggregating unnecessary data
         CachedData.country_codes = []
+
         # if value:
         phone_dict = dict(
             value=value,
@@ -1903,13 +1913,25 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         else:  # Add
             if value:  # Value is required for creating phone
                 phone_dict.update(dict(candidate_id=candidate_id))
-                # Prevent duplicate entries
-                if not does_phone_exist(candidate_phones, phone_dict):
+
+                if is_updating:
+                    # Prevent duplicate entries
+                    if not do_phones_exist(candidate_phones, phone_dict):
+                        db.session.add(CandidatePhone(**phone_dict))
+
+                    # Track all changes
+                    track_edits(update_dict=phone_dict, table_name='candidate_phone',
+                                candidate_id=candidate_id, user_id=user_id)
+                else:
+                    # If phone number exists in same domain, prevent updating/creating candidate
+                    if CandidatePhone.search_phone_number_in_user_domain(str(value), request.user):
+                        raise InvalidUsage(error_message="Candidate with phone number ({}) already exists.".format(value),
+                                           error_code=custom_error.PHONE_EXISTS,
+                                           additional_error_info={'id': candidate_id,
+                                                                  'domain_id': request.user.domain_id})
                     db.session.add(CandidatePhone(**phone_dict))
 
-                    if is_updating:  # Track all updates
-                        track_edits(update_dict=phone_dict, table_name='candidate_phone',
-                                    candidate_id=candidate_id, user_id=user_id)
+
 
 
 def _add_or_update_military_services(candidate, military_services, user_id, is_updating):
@@ -2261,6 +2283,7 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
 class CachedData(object):
     """
     This class will contain data that may be required by other functions.
-    Should be cleared when its data is no longer needed
+    Note: Should be cleared when its data is no longer needed
     """
     country_codes = []
+    candidate_emails = []
