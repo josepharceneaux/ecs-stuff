@@ -17,6 +17,7 @@
     var both_tasks = 'both';
     var general_tasks = 'general';
 
+    // Navigate to login state if user is not logged in
     UserToken.goToLogin();
 
     /**

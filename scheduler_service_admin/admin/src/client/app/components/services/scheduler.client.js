@@ -6,11 +6,11 @@
 
   angular
     .module('app.core')
-    .factory('SchedulerClientService', schedulerDataService);
+    .factory('SchedulerClientService', SchedulerClientService);
 
-  schedulerDataService.$inject = ['$http', 'exception', 'UserToken', 'apiInfo', '$q'];
+  SchedulerClientService.$inject = ['$http', 'exception', 'UserToken', 'apiInfo', '$q'];
   /* @ngInject */
-  function schedulerDataService($http, exception, UserToken, apiInfo, $q) {
+  function SchedulerClientService($http, exception, UserToken, apiInfo, $q) {
     var service = {
       getTasks: getTasks
     };

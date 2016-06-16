@@ -47,7 +47,7 @@
               .then(function (_response) {
 
                 if (isUserAdmin(_response)) {
-                  UserToken.authenticateUser(response.data);
+                  UserToken.authenticate(response.data);
                   logger.info('User authenticated successfully.');
                   $state.go('schedulerAdmin');
                 }

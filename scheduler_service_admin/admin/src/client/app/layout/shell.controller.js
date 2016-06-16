@@ -21,8 +21,8 @@
     vm.loggedIn = UserToken.accessToken !== '';
 
     $rootScope.$on('loggedIn',
-      function (events, args) {
-        vm.loggedIn = args;
+      function (events, status) {
+        vm.loggedIn = status;
       });
 
     activate();

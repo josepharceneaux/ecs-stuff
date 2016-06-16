@@ -29,7 +29,7 @@ describe('UserToken', function () {
     });
 
     it('should return response with token pair (bearer token and refresh token)', function () {
-          userTokenService.loginUser('saadfast.qc@gmail.com', 'xyz').then(function (response) {
+          userTokenService.login('saadfast.qc@gmail.com', 'xyz').then(function (response) {
             expect(response.status).to.equal(200);
             expect(response.data.access_token).to.equal("Bearer xyz");
             expect(response.data.refresh_token).to.equal("xyz");
@@ -49,7 +49,7 @@ describe('UserToken', function () {
         });
       }).respond(401);
 
-          userTokenService.loginUser('saadfast.qc@gmail.com', 'invalid pass').then(function (response) {
+          userTokenService.login('saadfast.qc@gmail.com', 'invalid pass').then(function (response) {
             expect(response.status).to.equal(401);
           });
 
@@ -83,7 +83,7 @@ describe('UserToken', function () {
   describe('UserToken Factory - Test Login Cycle', function () {
     beforeEach(function () {
 
-      userTokenService.loginUser('saadfast.qc@gmail.com', 'xyz').then(function (response) {
+      userTokenService.login('saadfast.qc@gmail.com', 'xyz').then(function (response) {
             token = {
               access_token: response.data.access_token,
               expires_in: response.data.expires_in
@@ -94,7 +94,7 @@ describe('UserToken', function () {
         });
 
       it('should authenticate user', function () {
-          userTokenService.authenticateUser(token);
+          userTokenService.authenticate(token);
           expect($cookies.get('token')).to.equal('Bearer xyz');
       });
 
@@ -111,7 +111,7 @@ describe('UserToken', function () {
 
     afterEach(function () {
 
-      userTokenService.logoutUser();
+      userTokenService.logout();
       expect($cookies.get('token')).toBeUndefined;
     });
   });

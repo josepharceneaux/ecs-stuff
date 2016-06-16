@@ -29,7 +29,7 @@
 
       vm.logoutUser = function () {
 
-        UserToken.logoutUser();
+        UserToken.logout();
         UserToken.goToLogin();
       };
 

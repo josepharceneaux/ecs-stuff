@@ -49,7 +49,7 @@
           });
         return deferred.promise;
       },
-      logoutUser: function () {
+      logout: function () {
         $cookies.remove('token');
         $rootScope.$broadcast('loggedIn', false);
       },
@@ -57,7 +57,7 @@
        * Add cookie of oauth token
        * @param tokenObj:
        */
-      authenticateUser: function (tokenObj) {
+      authenticate: function (tokenObj) {
 
         this.accessToken = tokenObj['access_token'];
         var expiry = moment(tokenObj['expires_in'], 'Wdy, DD Mon YYYY HH:MM:SS GMT').format();
@@ -85,7 +85,7 @@
           }
         });
       },
-      loginUser: loginUser
+      login: login
     };
     return service;
 
@@ -109,7 +109,7 @@
      * @param password: password string
      * @returns {*|{get}}
      */
-    function loginUser(email, password) {
+    function login(email, password) {
       return $http({
         method: 'POST',
         url: apiInfo.apiInfo.authService.grantPath,
