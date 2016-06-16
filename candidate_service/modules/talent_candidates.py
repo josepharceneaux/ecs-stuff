@@ -1908,22 +1908,23 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
             can_phone_obj.update(**phone_dict)
 
         else:  # Add
-            phone_dict.update(dict(candidate_id=candidate_id))
+            if value:  # Value is required for creating phone
+                phone_dict.update(dict(candidate_id=candidate_id))
 
-            if is_updating:
-                # Prevent duplicate entries
-                if not do_phones_exist(candidate_phones, phone_dict):
+                if is_updating:
+                    # Prevent duplicate entries
+                    if not do_phones_exist(candidate_phones, phone_dict):
+                        db.session.add(CandidatePhone(**phone_dict))
+
+                    # Track all changes
+                    track_edits(update_dict=phone_dict, table_name='candidate_phone',
+                                candidate_id=candidate_id, user_id=user_id)
+                else:
+                    # If phone number exists in same domain, prevent updating/creating candidate
+                    if does_phone_exists_in_domain(phone_value=value, domain_id=request.user.domain_id):
+                        raise InvalidUsage(error_message="Candidate with phone number ({}) already exists.".format(value),
+                                           error_code=custom_error.PHONE_EXISTS)
                     db.session.add(CandidatePhone(**phone_dict))
-
-                # Track all changes
-                track_edits(update_dict=phone_dict, table_name='candidate_phone',
-                            candidate_id=candidate_id, user_id=user_id)
-            else:
-                # If phone number exists in same domain, prevent updating/creating candidate
-                if does_phone_exists_in_domain(phone_value=value, domain_id=request.user.domain_id):
-                    raise InvalidUsage(error_message="Candidate with phone number ({}) already exists.".format(value),
-                                       error_code=custom_error.PHONE_EXISTS)
-                db.session.add(CandidatePhone(**phone_dict))
 
 
 
