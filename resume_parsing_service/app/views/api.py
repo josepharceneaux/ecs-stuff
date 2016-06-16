@@ -52,7 +52,7 @@ def resume_post_receiver():
 
     parse_params['oauth'] = oauth
     # If the value is not set retrieve the first ID given by candidate_pool_service.
-    if not parse_params['talent_pools']:
+    if parse_params['create_candidate'] and not parse_params['talent_pools']:
         parse_params['talent_pools'] = get_users_talent_pools(oauth)
 
     return jsonify(**process_resume(parse_params))

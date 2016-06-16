@@ -1,4 +1,4 @@
-from app_common.common.tests.conftest import get_auth_header
+from email_campaign_service.common.tests.conftest import get_auth_header
 
 __author__ = 'basit'
 
