@@ -18,10 +18,14 @@ from user_service.common.utils.auth_utils import require_oauth, require_all_role
 
 # Validators
 from user_service.common.utils.validators import get_json_data_if_validated
-from user_service.modules.json_schema import custom_fields_schema
+from user_service.modules.json_schema import custom_fields_schema, custom_field_schema
 
 # Error handling
 from user_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
+
+# Helpers
+from user_service.common.utils.handy_functions import normalize_value
+from user_service.modules.domain_custom_fields import get_custom_field_if_validated
 
 
 class DomainCustomFieldsResource(Resource):
@@ -51,7 +55,7 @@ class DomainCustomFieldsResource(Resource):
         for custom_field in body_dict['custom_fields']:
 
             # Normalize custom field name
-            cf_name = custom_field['name'].strip().lower()
+            cf_name = normalize_value(custom_field['name'])
             if not cf_name:  # In case name is just a whitespace
                 raise InvalidUsage("Name is required for creating custom field.")
 
@@ -88,15 +92,8 @@ class DomainCustomFieldsResource(Resource):
 
         # Return specified custom field data
         if custom_field_id:
-
-            # Custom field ID must be recognized
-            custom_field = CustomField.get(custom_field_id)
-            if not custom_field:
-                raise NotFoundError("Custom field id ({}) not recognized.".format(custom_field_id))
-
-            # Custom field must belong to user's domain
-            if custom_field.domain_id != request.user.domain_id:
-                raise ForbiddenError("Not authorized")
+            # Custom field ID must be recognized & belong to user's domain
+            custom_field = get_custom_field_if_validated(custom_field_id, request.user)
 
             return {'custom_field': {
                 'id': custom_field.id,
@@ -113,6 +110,72 @@ class DomainCustomFieldsResource(Resource):
                 "name": custom_field.name,
                 "added_datetime": str(custom_field.added_time)
             } for custom_field in CustomField.get_domain_custom_fields(request.user.domain_id)]}
+
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_DOMAINS)
+    def put(self, **kwargs):
+        """
+        Function will update domain's custom field(s)
+        resource url:
+             i. PUT /v1/custom_fields
+            ii. PUT /v1/custom_fields/:id
+        :return: {"custom_fields": [{"id": int}, {"id": int}, ...]}
+        :rtype: dict[list[dict]]
+        Usage:
+            >>> headers = {"Authorization": "Bearer {access_token}"}
+            >>> data = {"custom_fields": [{"id": 4, "name": "job status"}]}
+            >>> requests.put(url="host/v1/custom_fields", headers=headers, data=json.dumps(data))
+            <Response [200]>
+        """
+        custom_field_id = kwargs.get('id')
+
+        # Validate and obtain json data from request body
+        schema = custom_field_schema if custom_field_id else custom_fields_schema
+        body_dict = get_json_data_if_validated(request, schema, False)
+
+        # Update specified custom field
+        if custom_field_id:
+
+            # Custom field ID must be recognized & belong to user's domain
+            get_custom_field_if_validated(custom_field_id, request.user)
+
+            # Normalize custom field name
+            custom_field_name = normalize_value(body_dict['custom_field']['name'])
+            if not custom_field_name:  # In case name is just a whitespace
+                raise InvalidUsage("Name is required for creating custom field.")
+
+            custom_field_query = CustomField.query.filter_by(id=custom_field_id)
+            custom_field_query.update(dict(name=custom_field_name))
+            db.session.commit()
+
+            return {'custom_field': {'id': custom_field_id}}
+
+        updated_custom_field_ids = []
+        for custom_field in body_dict['custom_fields']:
+
+            # Custom field ID must be provided
+            custom_field_id = custom_field.get('id')
+            if not custom_field_id:
+                raise InvalidUsage("Custom field ID is required for updating.")
+
+            # Normalize custom field name
+            custom_field_name = normalize_value(custom_field['name'])
+
+            custom_field_query = CustomField.query.filter_by(id=custom_field_id)
+
+            # Custom field ID must be recognized
+            cf_object = custom_field_query.first()
+            if not cf_object:
+                raise NotFoundError('Custom field ID ({}) not recognized.'.format(custom_field_id))
+
+            # Custom field must belong to user's domain
+            if cf_object.domain_id != request.user.domain_id:
+                raise ForbiddenError('Not authorized')
+
+            custom_field_query.update(dict(name=custom_field_name))
+            updated_custom_field_ids.append(custom_field_id)
+
+        db.session.commit()
+        return {'custom_fields': [{'id': custom_field_id} for custom_field_id in updated_custom_field_ids]}
 
     @require_all_roles(DomainRole.Roles.CAN_EDIT_DOMAINS)
     def delete(self, **kwargs):
@@ -135,7 +198,7 @@ class DomainCustomFieldsResource(Resource):
             # Custom field ID must be recognized
             custom_field = CustomField.get(custom_field_id)
             if not custom_field:
-                raise NotFoundError("Custom field id ({}) not recognized.".format(custom_field_id))
+                raise NotFoundError("Custom field ID ({}) not recognized.".format(custom_field_id))
 
             # Custom field must belong to user's domain
             if custom_field.domain_id != request.user.domain_id:

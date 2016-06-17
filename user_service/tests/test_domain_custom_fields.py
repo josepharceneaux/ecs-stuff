@@ -144,6 +144,95 @@ class TestGetDomainCustomFields(object):
         assert get_resp.status_code == requests.codes.NOT_FOUND
 
 
+class TestUpdateDomainCustomFields(object):
+    CFS_URL = UserServiceApiUrl.DOMAIN_CUSTOM_FIELDS
+    CF_URL = UserServiceApiUrl.DOMAIN_CUSTOM_FIELD
+
+    def test_update_custom_fields_without_access_token(self):
+        """
+        Test:  Access endpoint without an access token
+        """
+        update_resp = send_request('put', self.CFS_URL, None)
+        print response_info(update_resp)
+        assert update_resp.status_code == requests.codes.UNAUTHORIZED
+
+    def test_update_custom_field_without_user_permission(self, access_token_first):
+        """
+        Test: Access endpoint without user's appropriate permission
+        """
+        update = send_request('put', self.CFS_URL, access_token_first)
+        print response_info(update)
+        assert update.status_code == requests.codes.UNAUTHORIZED
+
+    def test_update_domains_custom_fields(self, access_token_first, user_first, domain_custom_fields):
+        """
+        Test:  Update domain custom fields
+        """
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS])
+
+        # Update all of domain's custom fields
+        data = {'custom_fields': [
+            {'id': domain_custom_fields[0].id, 'name': str(uuid.uuid4())[:5]},
+            {'id': domain_custom_fields[1].id, 'name': str(uuid.uuid4())[:5]}
+        ]}
+        update_resp = send_request('put', self.CFS_URL, access_token_first, data)
+        print response_info(update_resp)
+        assert update_resp.status_code == requests.codes.OK
+        assert len(update_resp.json()['custom_fields']) == len(domain_custom_fields)
+        assert set([cf['id'] for cf in update_resp.json()['custom_fields']]).issubset(
+            [cf.id for cf in domain_custom_fields])
+
+    def test_update_custom_field_by_id(self, user_first, access_token_first, domain_custom_fields):
+        """
+        Test: Update domain custom field by ID
+        """
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS, DomainRole.Roles.CAN_GET_DOMAINS])
+
+        custom_field_id = domain_custom_fields[0].id
+
+        # Update custom field by id
+        data = {'custom_field': {'id': domain_custom_fields[0].id, 'name': str(uuid.uuid4())[:5]}}
+        update_resp = send_request('put', self.CF_URL % custom_field_id, access_token_first, data)
+        print response_info(update_resp)
+        assert update_resp.status_code == requests.codes.OK
+        assert update_resp.json()['custom_field']['id'] == custom_field_id
+
+        # Retrieve custom field and assert on its updated name
+        get_resp = send_request('get', self.CF_URL % custom_field_id, access_token_first)
+        print response_info(get_resp)
+        assert get_resp.status_code == requests.codes.OK
+        assert get_resp.json()['custom_field']['name'] != domain_custom_fields[0].name
+        assert get_resp.json()['custom_field']['name'] == data['custom_field']['name']
+
+
+    def test_update_custom_field_of_another_domain(self, user_second, access_token_second, domain_custom_fields):
+            """
+            Test: Update custom fields of another domain
+            """
+            add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_DOMAINS])
+
+            custom_field_id = domain_custom_fields[0].id
+
+            # Update another domain's custom field
+            data = {'custom_field': {'id': domain_custom_fields[0].id, 'name': str(uuid.uuid4())[:5]}}
+            update_resp = send_request('put', self.CF_URL % custom_field_id, access_token_second, data)
+            print response_info(update_resp)
+            assert update_resp.status_code == requests.codes.FORBIDDEN
+
+    def test_update_non_existing_custom_field(self, user_first, access_token_first):
+        """
+        Test: Update custom field using an id that is not recognized
+        """
+        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS])
+
+        non_existing_cf_id = sys.maxint
+
+        data = {'custom_field': {'name': str(uuid.uuid4())[:5]}}
+        update_resp = send_request('put', self.CF_URL % non_existing_cf_id, access_token_first, data)
+        print response_info(update_resp)
+        assert update_resp.status_code == requests.codes.NOT_FOUND
+
+
 class TestDeleteDomainCustomFields(object):
     CFS_URL = UserServiceApiUrl.DOMAIN_CUSTOM_FIELDS
     CF_URL = UserServiceApiUrl.DOMAIN_CUSTOM_FIELD
