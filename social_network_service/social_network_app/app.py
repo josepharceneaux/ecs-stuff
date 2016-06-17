@@ -8,7 +8,6 @@ import json
 
 # 3rd party imports
 import flask
-import tweepy
 from flask import request, redirect, session, render_template
 
 # Application specific imports
@@ -41,7 +40,6 @@ WEBHOOK_REDIRECT_URL = 'https://729c03b1.ngrok.io'
 @app.route('/')
 def index():
     return render_template('index.html')
-    # return 'Welcome to social network service'
 
 
 @app.route(SocialNetworkApi.CODE)
@@ -120,13 +118,29 @@ def handle_rsvp():
 
 @app.route(SocialNetworkApi.TWITTER_AUTH)
 def twitter_auth(user_id):
+    """
+    This endpoint is hit when user clicks on profile page to connect with Twitter account.
+    Here we create object of Twitter class defined in social_network/twitter.py and call its method authentication().
+    This redirects the user to Twitter website to enter credentials and grant access to getTalent app.
+    :param int | long user_id: Id of logged-in user
+
+    **See Also**
+        .. seealso:: authentication() method defined in Twitter class inside social_network/twitter.py.
+
+    """
     twitter_obj = Twitter(user_id=user_id, assert_credentials=False)
     return twitter_obj.authentication()
 
 
 @app.route(SocialNetworkApi.TWITTER_CALLBACK)
 def callback():
+    """
+    Once user is successfully logged-in to Twitter account, it is redirected to this endpoint to get access token,
+    Here we create object of Twitter class defined in social_network/twitter.py and call its method callback().
+    In request object, we get a parameter "oauth_verifier" which we use to get access token for the user.
+
+    **See Also**
+        .. seealso:: callback() method defined in Twitter class inside social_network/twitter.py.
+    """
     twitter_obj = Twitter(user_id=session['user_id'], assert_credentials=False)
     return twitter_obj.callback(request.args['oauth_verifier'])
-
-
