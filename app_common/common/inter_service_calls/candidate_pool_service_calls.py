@@ -1,8 +1,11 @@
 import json
 import requests
+from contracts import contract
+from ..custom_contracts import define_custom_contracts
 from ..routes import CandidatePoolApiUrl, EmailCampaignApiUrl
 from ..utils.handy_functions import http_request, create_oauth_headers
-from ..utils.validators import (raise_if_not_instance_of, raise_if_not_positive_int_or_long)
+
+define_custom_contracts()
 
 
 def create_smartlist_from_api(data, access_token):
@@ -40,6 +43,7 @@ def create_campaign_send_from_api(campaign_id, access_token):
     return response.json()
 
 
+@contract
 def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=None, user_id=None, per_page=1000,
                                 cursor='initial'):
     """
@@ -53,15 +57,6 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
     :rtype: list
 
     """
-    raise_if_not_positive_int_or_long(list_id)
-    raise_if_not_instance_of(candidate_ids_only, bool)
-    raise_if_not_instance_of(per_page, (int, long))
-    raise_if_not_instance_of(cursor, (str, unicode))
-    if access_token:
-        raise_if_not_instance_of(access_token, (str, unicode))
-    if user_id:
-        raise_if_not_positive_int_or_long(user_id)
-
     params = {'fields': 'id'} if candidate_ids_only else {}
     candidates = []
     page_no = 0
@@ -89,6 +84,7 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
     return candidates
 
 
+@contract(returns=requests.Response)
 def get_candidates_from_smartlist_with_page_params(list_id, per_page, cursor, params, access_token=None, user_id=None):
     """
     Method to get candidates from smartlist based on smartlist id and pagination params.
@@ -98,15 +94,7 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, cursor, pa
     :param (dict| None) params: Specific params to include in request. e.g. candidates_ids_only etc
     :param (str | None) access_token: access token of user
     :param (int | long | None) user_id: Id of user
-    :rtype: requests.Response
     """
-    raise_if_not_instance_of(list_id, (int, long))
-    raise_if_not_instance_of(cursor, (str, unicode))
-    raise_if_not_instance_of(per_page, int)
-    if access_token:
-        raise_if_not_instance_of(access_token, (str, unicode))
-    if user_id:
-        raise_if_not_positive_int_or_long(user_id)
     if not params:
         params = {}
     params.update({'page': cursor}) if cursor else None
@@ -116,6 +104,7 @@ def get_candidates_from_smartlist_with_page_params(list_id, per_page, cursor, pa
     return response
 
 
+@contract
 def assert_smartlist_candidates(smartlist_id, expected_count, access_token):
     """
     This gets the candidates for given smartlist_id.
