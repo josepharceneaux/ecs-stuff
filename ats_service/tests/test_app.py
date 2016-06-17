@@ -1,6 +1,6 @@
 import requests
 
-from auth_service.common.routes import ATSServiceApiUrl
+from ats_service.common.routes import ATSServiceApiUrl
 
 def test_healthcheck():
     """
