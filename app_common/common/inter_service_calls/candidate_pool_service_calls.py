@@ -44,18 +44,12 @@ def get_candidates_of_smartlist(list_id, candidate_ids_only=False, access_token=
                                 cursor='initial'):
     """
     Calls smartlist API and retrieves the candidates of a smart or dumb list.
-    :param list_id: smartlist id.
-    :param candidate_ids_only: Whether or not to get only ids of candidates
-    :param access_token: Token for authorization
-    :param user_id: id of user
-    :param per_page: Number of results in one page
-    :param cursor: Cursor for the page to be fetched
-    :type list_id: int | long
-    :type candidate_ids_only: bool
-    :type access_token: string | None
-    :type user_id: int | long | None
-    :type per_page: int | long
-    :type cursor: str | unicode
+    :param int | long list_id: smartlist id.
+    :param bool candidate_ids_only: Whether or not to get only ids of candidates
+    :param str | unicode | None access_token: Token for authorization
+    :param int | long | None user_id: id of user
+    :param int | long per_page: Number of results in one page
+    :param str| unicode cursor: Cursor for the page to be fetched
     :rtype: list
 
     """
