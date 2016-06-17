@@ -133,7 +133,7 @@ def twitter_auth(user_id):
 
 
 @app.route(SocialNetworkApi.TWITTER_CALLBACK)
-def callback():
+def callback(user_id):
     """
     Once user is successfully logged-in to Twitter account, it is redirected to this endpoint to get access token,
     Here we create object of Twitter class defined in social_network/twitter.py and call its method callback().
@@ -142,5 +142,5 @@ def callback():
     **See Also**
         .. seealso:: callback() method defined in Twitter class inside social_network/twitter.py.
     """
-    twitter_obj = Twitter(user_id=session['user_id'], assert_credentials=False)
+    twitter_obj = Twitter(user_id=user_id, assert_credentials=False)
     return twitter_obj.callback(request.args['oauth_verifier'])

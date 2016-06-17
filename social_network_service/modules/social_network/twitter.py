@@ -33,7 +33,8 @@ class Twitter(SocialNetworkBase):
         super(Twitter, self).__init__(**kwargs)
         self.CONSUMER_KEY = self.social_network.client_key
         self.CONSUMER_SECRET = self.social_network.secret_key
-        self.auth = tweepy.OAuthHandler(self.CONSUMER_KEY, self.CONSUMER_SECRET, SocialNetworkApiUrl.TWITTER_CALLBACK)
+        self.auth = tweepy.OAuthHandler(self.CONSUMER_KEY, self.CONSUMER_SECRET,
+                                        SocialNetworkApiUrl.TWITTER_CALLBACK % self.user.id)
 
     def authentication(self):
         """
@@ -52,9 +53,6 @@ class Twitter(SocialNetworkBase):
             # we need to exchange request token with access token. This access token is used to access Twitter API.
             # So, we save request_token in the session and retrieve this in callback() method.
             session['request_token'] = self.auth.request_token
-            # This is used in callback endpoint here /v1/twitter_callback. We need user_id there to create object
-            # of Twitter class.
-            session['user_id'] = self.user.id
             # redirect the user to Twitter website for authorization.
             return redirect(redirect_url)
         except tweepy.TweepError:
@@ -72,7 +70,7 @@ class Twitter(SocialNetworkBase):
 
         :param str oauth_verifier: Token received from Twitter when user successfully connected to its account.
         """
-        if not isinstance(oauth_verifier, str):
+        if not isinstance(oauth_verifier, basestring):
             raise InternalServerError('oauth_verifier must be non-empty string')
         self.auth.request_token = session['request_token']
         try:
