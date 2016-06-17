@@ -94,7 +94,7 @@ def import_from_table():
 
     file_obj.close()
 
-    if len(candidates_table) > 500:
+    if len(candidates_table) > 100:
         import_from_spreadsheet.delay(candidates_table, file_picker_key, header_row, talent_pool_ids,
                                       request.oauth_token, request.user.id, True, source_id)
         return jsonify(dict(count=len(candidates_table), status='pending')), 201

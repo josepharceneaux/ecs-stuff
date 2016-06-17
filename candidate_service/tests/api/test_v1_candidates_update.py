@@ -877,6 +877,32 @@ class TestUpdateCandidateEmails(object):
         assert emails_count_before_update == len(emails_after_update)
         assert emails_before_update[0]['address'] == emails_after_update[0]['address']
 
+    def test_add_forbidden_email_to_candidate(self, access_token_first, user_first, talent_pool):
+        """
+        Test: Add two candidates. Then add another email to candidate 2 using candidate's 1 email
+        """
+        AddUserRoles.add_get_edit(user_first)
+
+        # Define email address
+        first_candidates_email = fake.safe_email()
+
+        # Create both candidates
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'address': first_candidates_email}]},
+            {'talent_pool_ids': {'add': [talent_pool.id]}}
+        ]}
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.CREATED
+
+        # Add a second email to the second candidate using first-candidate's email address
+        candidate_2_id = create_resp.json()['candidates'][1]['id']
+        update_data = {'candidates': [{'id': candidate_2_id, 'emails': [{'address': first_candidates_email}]}]}
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, update_data)
+        print response_info(update_resp)
+        assert update_resp.status_code == requests.codes.FORBIDDEN
+        assert update_resp.json()['error']['code'] == custom_error.EMAIL_FORBIDDEN
+
 
 class TestUpdateCandidatePhones(object):
     def test_add_candidate_phones(self, access_token_first, user_first, talent_pool):

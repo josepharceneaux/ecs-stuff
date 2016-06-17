@@ -1,6 +1,7 @@
 """Parsing functions for extracting specific information from Burning Glass API responses."""
 __author__ = 'erik@getTalent.com'
 # Standard Library
+from time import time
 import datetime
 import HTMLParser
 import re
@@ -22,7 +23,7 @@ from resume_parsing_service.common.utils.validators import sanitize_zip_code
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
 
 
-def fetch_optic_response(resume):
+def fetch_optic_response(resume, filename_str):
     """
     Takes in an encoded resume file and returns a bs4 'soup-able' format
     (utf-decode and html escape).
@@ -30,6 +31,7 @@ def fetch_optic_response(resume):
     :return: str unescaped: an html unquoted, utf-decoded string that represents the Burning Glass
                             XML.
     """
+    start_time = time()
     BG_URL = current_app.config['BG_URL']
     oauth = OAuthClient(url=BG_URL,
                         method='POST', consumerKey='osman',
@@ -66,6 +68,10 @@ def fetch_optic_response(resume):
         logger.exception('Error translating BG response.')
         raise InternalServerError('Error decoding parsed resume text.')
 
+    logger.info(
+        "Benchmark: fetch_optic_response({}) took {}s".format(filename_str,
+                                                              time() - start_time)
+    )
     return unescaped
 
 
@@ -161,24 +167,40 @@ def parse_candidate_phones(bs_contact_xml_list):
         phones = contact.findAll('phone')
 
         for p in phones:
-            # TODO: look into adding a type using p.attrs['type']
             raw_phone = p.text.strip()
+            phone_type = p.type
 
             # JSON_SCHEMA for candidates phone is max:20
             # This fixes issues with numbers like '1-123-45            67'
             if raw_phone and len(raw_phone) > 20:
                 raw_phone = " ".join(raw_phone.split())
 
+            gt_phone_type = get_phone_type(phone_type)
+
             if raw_phone and len(raw_phone) <= 20:
 
                 try:
                     unused_validated_phone = phonenumbers.parse(raw_phone, region='US')
-                    output.append({'value': raw_phone})
+                    output.append({'value': raw_phone, 'label': gt_phone_type})
 
                 except UnicodeEncodeError:
                     logger.error('Issue parsing phonenumber: {}'.format(raw_phone))
 
     return output
+
+
+def get_phone_type(bg_phone_type):
+    """
+    Provides a mapping between BurningGlass phone types to the the static values in the GT database.
+    :param string bg_phone_type:
+    :return string:
+    """
+    return {
+        'cell': 'Mobile',
+        'home': 'Home',
+        'fax': 'Home Fax',
+        'work': 'Work'
+    }.get(bg_phone_type, 'Other')
 
 
 def parse_candidate_experiences(bg_experience_xml_list):

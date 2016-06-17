@@ -21,7 +21,7 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
     """
 
     # Logged-in user trying to get all candidates of given talent-pipeline
-    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id)
+    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id, 0)
     assert status_code == 401
 
     add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES,
@@ -30,11 +30,11 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
                                         DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
 
     # Logged-in user trying to get all candidates of non-existing talent-pipeline
-    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id + 1000)
+    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id + 1000, 0)
     assert status_code == 404
 
     # Logged-in user trying to get all candidates of talent-pipeline of different domain
-    response, status_code = talent_pipeline_candidate_api(access_token_second, talent_pipeline.id)
+    response, status_code = talent_pipeline_candidate_api(access_token_second, talent_pipeline.id, 0)
     assert status_code == 403
 
     # Creating and Adding test smart_list and dumb_list to talent-pipeline
@@ -57,12 +57,10 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
     # Adding candidates dumb_list
     add_candidates_to_dumb_list(db.session, access_token_first, test_dumb_list, candidate_ids)
 
-    # Wait for addition of candidates in Amazon Cloud Search
-    sleep(60)
-
     # Logged-in user trying to get all candidates of talent-pipeline without search_params
     # so all candidates of corresponding talent_pool will be returned
-    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id)
+    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id, len(
+            candidate_ids + sw_engineers_candidate_ids + cs_sw_engineers_candidate_ids))
     assert_results(candidate_ids + sw_engineers_candidate_ids + cs_sw_engineers_candidate_ids,  response)
 
     talent_pipeline.search_params = json.dumps({'job_title': 'Software Engineer'})
@@ -70,7 +68,8 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
     db.session.commit()
 
     # Logged-in user trying to get all candidates of talent-pipeline with search_params
-    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id)
+    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id, len(
+            sw_engineers_candidate_ids + cs_sw_engineers_candidate_ids))
     assert_results(sw_engineers_candidate_ids + cs_sw_engineers_candidate_ids,  response)
 
     # Logged-in user trying to get all candidates of smartlist with search_params

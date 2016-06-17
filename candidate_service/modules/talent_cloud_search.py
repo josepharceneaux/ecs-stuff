@@ -297,7 +297,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
                 # Experience
                 GROUP_CONCAT(DISTINCT candidate_experience.organization SEPARATOR :sep) AS `organization`,
-                GROUP_CONCAT(DISTINCT candidate_experience.position SEPARATOR :sep) AS `position`,
+                GROUP_CONCAT(DISTINCT candidate_experience.position ORDER BY candidate_experience.IsCurrent DESC, candidate_experience.StartYear DESC, candidate_experience.StartMonth DESC SEPARATOR :sep) AS `position`,
                 GROUP_CONCAT(DISTINCT candidate_experience_bullet.description SEPARATOR :sep) AS `experience_description`,
 
                 # Start Date At Current Job
@@ -441,8 +441,8 @@ def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_cand
         candidate_ids = [candidate_ids]
 
     for i in xrange(0, len(candidate_ids), max_number_of_candidate):
-        logger.info("Uploading %s candidate documents. Generating action dicts...",
-                    len(candidate_ids[i:i + max_number_of_candidate]))
+        logger.info("Uploading %s candidate documents (%s). Generating action dicts...",
+                    len(candidate_ids[i:i + max_number_of_candidate]), candidate_ids[i:i + max_number_of_candidate])
         start_time = time.time()
         action_dicts = _build_candidate_documents(candidate_ids[i:i + max_number_of_candidate], domain_id)
         logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
@@ -452,7 +452,8 @@ def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_cand
             logger.error("Shouldn't have gotten any deletes in a batch add operation.Got %s "
                          "deletes.candidate_ids: %s", deletes, candidate_ids[i:i + max_number_of_candidate])
         if adds:
-            logger.info("%s Candidate documents have been uploaded", len(candidate_ids[i:i + max_number_of_candidate]))
+            logger.info("%s Candidate documents (%s) have been uploaded",
+                        len(candidate_ids[i:i + max_number_of_candidate]), candidate_ids[i:i + max_number_of_candidate])
 
 
 def upload_candidate_documents_in_domain(domain_id):

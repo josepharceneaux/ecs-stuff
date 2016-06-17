@@ -4,12 +4,12 @@ Test cases for Talent Cloud Search functionality
 import time
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.models.candidate import CandidateStatus
-from candidate_service.candidate_app import db, logger
-from candidate_service.modules.talent_cloud_search import search_candidates, upload_candidate_documents
+from candidate_service.modules.talent_cloud_search import search_candidates
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.models.talent_pools_pipelines import TalentPool
 from candidate_service.common.utils.talent_areas_of_interest import KAISER_PARENT_TO_CHILD_AOIS
 from candidate_service.common.tests.fake_testing_data_generator import college_majors
+from candidate_service.common.tests.fake_testing_data_generator import generate_international_phone_number
 from faker import Faker
 from nameparser import HumanName
 # Common utilities
@@ -32,7 +32,9 @@ def populate_candidates(access_token, talent_pool, count=1, first_name=None, mid
                         city=None, state=None, zip_code=None, areas_of_interest=None, school_name=None,
                         major=None, degree_type=None, degree_title=None, military_branch=None,
                         military_status=None, military_grade=None, military_to_date=None,
-                        military_from_date=None, skills=None, experiences=None):
+                        military_from_date=None, skills=None, experiences=None, source_id=None,
+                        position_start_year=None, position_start_month=None, position_end_year=None,
+                        position_end_month=None, is_current_job=False, wait=None):
     """
     Function will create candidate(s) by making a POST request to /v1/candidates
      All fields are populated unless if specified via function-params
@@ -85,11 +87,17 @@ def populate_candidates(access_token, talent_pool, count=1, first_name=None, mid
     :type   skills:              list[dict]
     :param  experiences:         optional | candidate's work experiences
     :type   experiences:         list[dict]
+    :param  source_id            optional | candidate's source ID
+    :type   source_id:           int | long
+    :param  wait:                time to wait so that candidate's added time will be different in case of looping
     :return:                     {'candidates': [{'id': int}, {'id': int}, ...]}
     :rtype:                      list[dict]
     """
     candidate_ids = []
     for i in range(count):
+        # Pause loop so that candidate's added time will not be identical
+        if wait:
+            time.sleep(wait)
         full_name = fake.name()
         parsed_full_name = HumanName(full_name)
         discipline = random.choice(college_majors().keys())
@@ -112,9 +120,7 @@ def populate_candidates(access_token, talent_pool, count=1, first_name=None, mid
                 country_code=fake.country_code(),
                 zip_code=zip_code or fake.zipcode()
             )],
-            phones=[dict(  # TODO: use international phone number
-                value='+14058769932'
-            )],
+            phones=[dict(value=generate_international_phone_number())],
             educations=[dict(
                 school_name=school_name or fake.first_name() + ' University',
                 city=fake.city(),
@@ -131,7 +137,12 @@ def populate_candidates(access_token, talent_pool, count=1, first_name=None, mid
             )],
             work_experiences=experiences or [dict(
                 position=job_title or fake.job(),
-                organization=company_name or fake.company()
+                organization=company_name or fake.company(),
+                start_year=position_start_year,
+                start_month=position_start_month,
+                end_year=position_end_year,
+                end_month=position_end_month,
+                is_current=is_current_job
             )],
             military_services=[dict(
                 branch=military_branch or fake.word(),
@@ -145,7 +156,8 @@ def populate_candidates(access_token, talent_pool, count=1, first_name=None, mid
                 name=random.choice(['SQL', 'Excel', 'UNIX', 'Testing', 'Payroll', 'Finance', 'Sales', 'Accounting']),
                 months_used=random.randint(10, 120)
             )],
-            areas_of_interest=areas_of_interest
+            areas_of_interest=areas_of_interest,
+            source_id=source_id
         )])
 
         # Send POST request to /v1/candidates
@@ -223,11 +235,8 @@ def create_area_of_interest_facets(db, domain_id):
 def get_or_create_status(db, status_name):
     """
     Creates status with given status_name if not exists, else return id of status
-    :param db:
-    :param status_name:
     :return: id of given status_name
     """
-
     status_obj = db.session.query(CandidateStatus).filter_by(description=status_name).first()
     if status_obj:
         return status_obj.id
@@ -242,11 +251,8 @@ def get_or_create_status(db, status_name):
 def compare_dictionaries(dict1, dict2):
     """
     Match two dictionaries.
-    :param dict1:
-    :param dict2:
     :return: True if matched. False if not matched and print unmatched key/value
     """
-
     cmp_value = cmp(dict1, dict2)
     if cmp_value != 0:
         if cmp_value < 0:
