@@ -46,7 +46,7 @@ class TestCreateDomainSource(object):
         Test:  Unauthenticated user accessing source endpoint
         :return:
         """
-        create_resp = send_request('post', self.URL, access_token_first, {})
+        create_resp = send_request('post', self.URL, None, {})
         print response_info(create_resp)
         assert create_resp.status_code == self.UNAUTHORIZED
 
