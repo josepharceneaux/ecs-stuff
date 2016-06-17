@@ -7,19 +7,21 @@ from time import time
 import base64
 import json
 # Third Party/Framework Specific.
-from pdfminer.converter import TextConverter
-from pdfminer.layout import LAParams
-from pdfminer.pdfinterp import PDFResourceManager
-from pdfminer.pdfinterp import process_pdf
-from pdfminer.pdfparser import PDFDocument
-from pdfminer.pdfparser import PDFParser
+# from pdfminer.converter import TextConverter
+# from pdfminer.layout import LAParams
+# from pdfminer.pdfinterp import PDFResourceManager
+# from pdfminer.pdfinterp import process_pdf
+# from pdfminer.pdfparser import PDFDocument
+# from pdfminer.pdfparser import PDFParser
+import PyPDF2
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.utils import gen_hash_from_file
 from resume_parsing_service.app.views.ocr_lib import google_vision_ocr
-from resume_parsing_service.common.error_handling import InvalidUsage
+from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
+from resume_parsing_service.common.utils.talent_s3 import boto3_put
 
 
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
@@ -59,6 +61,8 @@ def parse_resume(file_obj, filename_str):
         final_file_ext = file_ext
 
     if not doc_content:
+        file_obj.seek(0)
+        boto3_put(file_obj.read(), filename_str, 'FailedResumes')
         raise InvalidUsage("Unable to determine the contents of the document: {}".format(filename_str))
 
     encoded_resume = base64.b64encode(doc_content)
@@ -74,29 +78,50 @@ def parse_resume(file_obj, filename_str):
 
 
 def convert_pdf_to_text(pdf_file_obj):
-    """Converts a PDF file to a usable string."""
-    rsrcmgr = PDFResourceManager()
-    retstr = StringIO()
-    codec = 'utf-8'
-    laparams = LAParams()
-    device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
+    """
+    Converts a PDF file to a usable string.
+    :param cStringIO.StringIO pdf_file_obj:
+    :return str:
+    """
+    # rsrcmgr = PDFResourceManager()
+    # retstr = StringIO()
+    # codec = 'utf-8'
+    # laparams = LAParams()
+    # device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
+    #
+    # # TODO access if this reassignment is needed.
+    # fp = pdf_file_obj
+    #
+    # parser = PDFParser(fp)
+    # doc = PDFDocument()
+    # parser.set_document(doc)
+    # doc.set_parser(parser)
+    # doc.initialize('')
+    # if not doc.is_extractable:
+    #     return ''
+    #
+    # process_pdf(rsrcmgr, device, fp)
+    # device.close()
+    #
+    # text = retstr.getvalue()
+    # retstr.close()
+    # return text
+    text = ''
+    pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
 
-    # TODO access if this reassignment is needed.
-    fp = pdf_file_obj
+    if pdf_reader.isEncrypted:
+        decrypted = pdf_reader.decrypt('')
 
-    parser = PDFParser(fp)
-    doc = PDFDocument()
-    parser.set_document(doc)
-    doc.set_parser(parser)
-    doc.initialize('')
-    if not doc.is_extractable:
-        return ''
+        if not decrypted:
+            raise InternalServerError('The PDF appears to be encrypted and could not be read. Please try using an un-encrypted PDF')
 
-    process_pdf(rsrcmgr, device, fp)
-    device.close()
+    page_count = pdf_reader.numPages
 
-    text = retstr.getvalue()
-    retstr.close()
+    for i in xrange(page_count):
+        new_text = pdf_reader.getPage(i).extractText()
+
+        if new_text:
+            text += new_text
     return text
 
 

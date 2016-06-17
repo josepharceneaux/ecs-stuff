@@ -31,7 +31,7 @@ from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
     get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid,
-    get_json_data_if_validated
+    get_json_data_if_validated, get_email_if_validated
 )
 
 # JSON Schemas
@@ -73,7 +73,7 @@ from candidate_service.modules.talent_candidates import (
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
-    add_languages, update_candidate_languages
+    add_languages, update_candidate_languages, CachedData
 )
 from candidate_service.modules.candidate_engagement import calculate_candidate_engagement_score
 from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
@@ -118,42 +118,47 @@ class CandidatesResource(Resource):
         candidates = body_dict.get('candidates')
 
         # Input validations
-        candidate_ids_from_candidate_email_obj = []
         is_creating, is_updating, candidate_id = True, False, None
         all_cf_ids, all_aoi_ids = [], []
         for _candidate_dict in candidates:
 
-            # Email addresses must be properly formatted
+            candidate_ids_from_candidate_email_obj = []
             for email in _candidate_dict.get('emails') or []:
-                email_address = email['address'].strip()  # email address is required within the email dict
-                if not email_address:  # in case just a whitespace is provided, e.g. "  "
-                    raise InvalidUsage('No email address provided', custom_error.INVALID_EMAIL)
 
-                if not is_valid_email(email_address):
-                    raise InvalidUsage('Invalid email address/format: {}'.format(email_address),
-                                       error_code=custom_error.INVALID_EMAIL)
-
-                # Check for candidate's email in authed_user's domain
-                candidate_email_obj = CandidateEmail.query.join(Candidate).join(User) \
-                    .filter(User.domain_id == domain_id) \
-                    .filter(CandidateEmail.address == email_address).first()
+                # email address is required within the email dict
+                email_address = email['address'].strip()
 
                 # If candidate's email is found, check if it's web-hidden
+                candidate_email_obj = get_email_if_validated(email_address, domain_id)
                 if candidate_email_obj:
+
+                    # Cache candidate's email
+                    CachedData.candidate_emails.append(candidate_email_obj)
+
                     candidate_id = candidate_email_obj.candidate_id
+
                     # We need to prevent duplicate creation in case candidate has multiple email addresses in db
                     candidate_ids_from_candidate_email_obj.append(candidate_id)
                     candidate = Candidate.get_by_id(candidate_id)
-                    if candidate.is_web_hidden:  # Un-hide candidate from web, if found
-                        candidate.is_web_hidden = 0
-                        # If candidate's web-hidden is set to false, it will be treated as an update
-                        is_creating, is_updating = False, True
-                    elif candidate_id in candidate_ids_from_candidate_email_obj:
-                        continue
-                    else:
+
+                    # Raise error if candidate is not hidden and its email matches another candidate's email
+                    if not candidate.is_web_hidden and (candidate_email_obj not in CachedData.candidate_emails):
+                        # Clear cached data
+                        CachedData.candidate_emails = []
+
                         raise InvalidUsage('Candidate with email: {}, already exists'.format(email_address),
                                            error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
                                            additional_error_info={'id': candidate_id})
+
+                    # Un-hide candidate from web, if found
+                    if candidate.is_web_hidden:
+                        candidate.is_web_hidden = 0
+
+                        # If candidate's web-hidden is set to false, it will be treated as an update
+                        is_creating, is_updating = False, True
+
+                    elif candidate_id in candidate_ids_from_candidate_email_obj:
+                        continue
 
             # Provided source ID must belong to candidate's domain
             source_id = _candidate_dict.get('source_id')
@@ -896,7 +901,7 @@ class CandidateWorkExperienceBulletResource(Resource):
 class CandidateEmailResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:

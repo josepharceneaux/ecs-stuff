@@ -158,12 +158,12 @@ class TalentPipelineApi(Resource):
                                                  (name, request.user.domain_id))
 
             try:
-                parser.parse(date_needed)
+                date_needed = parser.parse(date_needed)
             except Exception as e:
                 raise InvalidUsage(error_message="Date_needed is not valid as: %s" % e.message)
 
-            if parser.parse(date_needed) < datetime.utcnow():
-                raise InvalidUsage(error_message="Date_needed %s cannot be before current date" % date_needed)
+            # if parser.parse(date_needed) < datetime.utcnow():
+            #     raise InvalidUsage(error_message="Date_needed %s cannot be before current date" % date_needed)
 
             if not is_number(positions) or not int(positions) > 0:
                 raise InvalidUsage(error_message="Number of positions should be integer and greater than zero")

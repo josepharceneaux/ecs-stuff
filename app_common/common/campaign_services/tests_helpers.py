@@ -528,7 +528,7 @@ class CampaignsTestsHelpers(object):
                 assert response.json()['blast']['sends'] == expected_count
 
     @staticmethod
-    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=100,
+    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=150,
                            blast_url=None, access_token=None):
         """
         This function asserts that particular blast of given campaign has expected number of sends
@@ -636,7 +636,7 @@ class CampaignsTestsHelpers(object):
         candidate_id = create_candidates_from_candidate_api(oauth_token=access_token, data=data,
                                                             return_candidate_ids_only=True)
         if assert_candidates:
-            time.sleep(10)
+            time.sleep(30)
         smartlist_data1 = {'name': fake.word(),
                            'candidate_ids': candidate_id,
                            'talent_pipeline_id': talent_pipeline.id}

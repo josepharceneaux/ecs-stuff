@@ -6,10 +6,10 @@ import random
 from random import randrange
 
 # Third party libraries
-import phonenumbers
 from boltons.iterutils import remap
 
 from candidate_service.common.utils.handy_functions import sample_phone_number
+from candidate_service.common.tests.fake_testing_data_generator import generate_international_phone_number
 
 # Faker
 from faker import Faker
@@ -473,23 +473,3 @@ def candidate_social_network(talent_pool):
          'talent_pool_ids': {'add': [talent_pool.id]}}
     ]}
     return data
-
-
-def generate_international_phone_number(extension=False):
-    """
-    Function will generate a valid international phone number
-    :param extension:  If True, phone number will have an extension
-    :rtype:  str
-    """
-    phone_number = '{}'.format(random.randint(1, 9))  # phone number must start with a non-zero value
-    while len(phone_number) < 10:  # phone number must have 10 digits
-        phone_number += str(random.randint(0, 9))
-
-    # Add country code to the beginning of the phone number
-    phone_number = '+' + str(phonenumbers.country_code_for_valid_region(region_code=fake.country_code())) + phone_number
-
-    # Generate and append random extension to phone number
-    if extension:
-        ext = ''.join(map(str, (random.randrange(9) for _ in range(random.randint(2, 3)))))
-        phone_number += ('x' + ext)
-    return phone_number

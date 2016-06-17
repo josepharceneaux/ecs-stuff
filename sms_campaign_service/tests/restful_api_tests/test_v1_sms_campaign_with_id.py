@@ -210,12 +210,12 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         assert response.json()['error']['code'] == SmsCampaignApiException.INVALID_URL_FORMAT
 
     def test_campaign_update_with_valid_and_invalid_smartlist_ids(self, headers, campaign_valid_data,
-                                                                  sms_campaign_of_user_first, invalid_smartlist_id):
+                                                                  sms_campaign_of_user_first, invalid_id):
         """
         This is a test to update a campaign with invalid smartlist Ids. It should result in InvalidUsage error.
         """
         data = campaign_valid_data.copy()
-        data['smartlist_ids'].extend(invalid_smartlist_id)
+        data['smartlist_ids'].extend(invalid_id)
         response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers, data=json.dumps(data))
         assert response.status_code == InvalidUsage.http_status_code()
 

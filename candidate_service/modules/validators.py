@@ -23,8 +23,7 @@ from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPON
                                                      SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH)
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from ..custom_error_codes import CandidateCustomErrors as custom_error
-from candidate_service.common.utils.validators import is_number
-from candidate_service.common.utils.validators import format_phone_number
+from candidate_service.common.utils.validators import is_number, is_valid_email, format_phone_number
 # Json schema validation
 from jsonschema import validate, ValidationError, FormatChecker
 
@@ -248,9 +247,13 @@ def convert_date(key, value):
     if value:
         try:
             formatted_date = parse(value)
+            if key == "date_from":
+                formatted_date = formatted_date.replace(hour=0, minute=0, second=0)
+            else:
+                formatted_date = formatted_date.replace(hour=23, minute=59, second=59)
         except ValueError:
             raise InvalidUsage("Field `%s` contains incorrect date format. "
-                               "Date format should be YY-MM-DDTHH:MM:SS (eg. 2009-08-13T10:33:25)" % key)
+                               "Date format should be MM/DD/YYYY (eg. 06/10/2016)" % key)
         return formatted_date.isoformat() + 'Z'  # format it as required by cloudsearch.
 
 
@@ -427,20 +430,6 @@ def does_candidate_cf_exist(candidate, custom_field_dict):
     return False
 
 
-def get_candidate_email_from_domain_if_exists(user_id, email_address):
-    """
-    Function will retrieve CandidateEmail belonging to the requested candidate
-    in the same domain if found.
-    :type user_id:       int|long
-    :type email_address: basestring
-    :rtype: CandidateEmail|None
-    """
-    user_domain_id = User.get_domain_id(_id=user_id)
-    candidate_email = CandidateEmail.query.join(Candidate).join(User).filter(
-        CandidateEmail.address == email_address, User.domain_id == user_domain_id).first()
-    return candidate_email if candidate_email else None
-
-
 def get_education_if_exists(educations, education_dict, education_degrees):
     """
     Function will check to see if the requested education information already exists in the database
@@ -555,8 +544,9 @@ def does_experience_bullet_exist(experiences, bullet_dict):
     return False
 
 
-def does_phone_exist(phones, phone_dict):
+def do_phones_exist(phones, phone_dict):
     """
+    Function will return true if candidate's phone already exists, otherwise false
     :type phones:  list[CandidatePhone]
     :type phone_dict:  dict[str]
     :rtype:  bool
@@ -638,3 +628,23 @@ def get_json_data_if_validated(request_body, json_schema, format_checker=True):
     except ValidationError as e:
         raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
     return body_dict
+
+
+def get_email_if_validated(email_address, domain_id):
+    """
+    Function will retrieve CandidateEmail from db after validating email_address
+    :type email_address:  str
+    :type domain_id:      int | long
+    :rtype:               CandidateEmail | None
+    """
+    # In case just a whitespace is provided, e.g. "  "
+    if not email_address:
+        raise InvalidUsage('No email address provided', custom_error.INVALID_EMAIL)
+
+    # Email addresses must be properly formatted
+    if not is_valid_email(email_address):
+        raise InvalidUsage('Invalid email address/format: {}'.format(email_address),
+                           error_code=custom_error.INVALID_EMAIL)
+
+    # Get candidate's email in user's domain if exists
+    return CandidateEmail.get_email_in_users_domain(domain_id, email_address)
