@@ -30,7 +30,7 @@ class TestDeleteCandidateEmail(object):
         print response_info(resp)
         assert resp.status_code == 401
 
-    def test_delete_candidate_email_with_bad_input(self):
+    def test_delete_candidate_email_with_bad_input(self, access_token_first):
         """
         Test:   Attempt to delete candidate email with non integer values for candidate_id & email_id
         Expect: 404
@@ -54,7 +54,7 @@ class TestDeleteCandidateEmail(object):
         """
         # Create candidate_1 & candidate_2 with sample_user & sample_user_2
         AddUserRoles.add(user_first)
-        AddUserRoles.delete(user_second)
+        AddUserRoles.edit(user_second)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         candidate_1_id = create_resp_1.json()['candidates'][0]['id']
