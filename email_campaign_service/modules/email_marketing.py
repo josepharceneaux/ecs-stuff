@@ -344,8 +344,8 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
 
     # gather all candidates from various smartlists
     for candidate_list in celery_result:
-        all_candidate_ids.extend(candidate_list)  # Unique candidates
-    all_candidate_ids = list(set(all_candidate_ids))
+        all_candidate_ids.extend(candidate_list)
+    all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
     campaign = EmailCampaign.get_by_id(campaign_id)
     subscribed_candidate_ids = get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only)
     candidate_ids_and_emails = get_filtered_email_rows(campaign, subscribed_candidate_ids)
