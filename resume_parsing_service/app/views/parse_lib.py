@@ -8,7 +8,6 @@ from os.path import splitext
 from time import time
 import base64
 import json
-import unicodedata
 # Third Party/Framework Specific.
 import PyPDF2
 # Module Specific
@@ -42,11 +41,9 @@ def parse_resume(file_obj, filename_str):
     if file_ext == '.pdf':
         file_obj = unencrypt_pdf(file_obj)
 
-    file_ext, is_resume_image = get_resume_file_info(filename_str, file_obj)
-
-
     file_obj.seek(0)
-    if is_resume_image:
+
+    if is_resume_image(file_ext, file_obj):
         # If file is an image, OCR it
         start_time = time()
         doc_content = google_vision_ocr(file_obj)
@@ -64,7 +61,6 @@ def parse_resume(file_obj, filename_str):
         raise InvalidUsage("Unable to determine the contents of the document: {}".format(filename_str))
 
     try:
-        # doc_content = unicodedata.normalize('NFKD', doc_content).encode('utf-8', 'ignore')
         encoded_resume = base64.b64encode(doc_content)
 
     except Exception:
@@ -75,7 +71,6 @@ def parse_resume(file_obj, filename_str):
 
     if optic_response:
         candidate_data = parse_optic_xml(optic_response)
-        # Consider returning tuple
         return {'raw_response': optic_response, 'candidate': candidate_data}
 
     else:
@@ -84,13 +79,13 @@ def parse_resume(file_obj, filename_str):
 
 def convert_pdf_to_text(pdf_file_obj):
     """
-    Converts a PDF file to a usable string.
+    Attempts to extract text from an unencrypted PDF file. This is to see if the PDF has text
+    contents or if it is an embedded picture.
     :param cStringIO.StringIO pdf_file_obj:
     :return str:
     """
     text = ''
     pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
-
     page_count = pdf_reader.numPages
 
     for i in xrange(page_count):
@@ -98,10 +93,16 @@ def convert_pdf_to_text(pdf_file_obj):
 
         if new_text:
             text += new_text
+
     return text
 
 
 def unencrypt_pdf(pdf_file_obj):
+    """
+    Returns an unencrypted pdf_file, if encrypted , or the original file.
+    :param cStringIO.StringIO pdf_file_obj:
+    :return cStringIO.StringIO:
+    """
     pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
 
     if pdf_reader.isEncrypted:
@@ -150,9 +151,8 @@ def get_or_store_parsed_resume(resume_file, filename_str):
     return parsed_resume
 
 
-def get_resume_file_info(filename_str, file_obj):
-    file_ext = basename(splitext(filename_str.lower())[-1]) if filename_str else ""
-    is_resume_image = False
+def is_resume_image(file_ext, file_obj):
+    resume_is_image = False
 
     if not file_ext.startswith("."):
         file_ext = ".{}".format(file_ext)
@@ -166,8 +166,8 @@ def get_resume_file_info(filename_str, file_obj):
             text = convert_pdf_to_text(file_obj)
             if not text.strip():
                 # pdf is possibly an image
-                is_resume_image = True
+                resume_is_image = True
         else:
-            is_resume_image = True
+            resume_is_image = True
 
-    return file_ext, is_resume_image
+    return resume_is_image
