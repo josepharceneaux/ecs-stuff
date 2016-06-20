@@ -2,18 +2,14 @@
 __author__ = 'erik@gettalent.com'
 # pylint: disable=wrong-import-position, fixme, import-error
 # Standard library
+from cStringIO import StringIO
 from os.path import basename
 from os.path import splitext
 from time import time
 import base64
 import json
+import unicodedata
 # Third Party/Framework Specific.
-# from pdfminer.converter import TextConverter
-# from pdfminer.layout import LAParams
-# from pdfminer.pdfinterp import PDFResourceManager
-# from pdfminer.pdfinterp import process_pdf
-# from pdfminer.pdfparser import PDFDocument
-# from pdfminer.pdfparser import PDFParser
 import PyPDF2
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
@@ -41,7 +37,13 @@ def parse_resume(file_obj, filename_str):
     """
     logger.info("Beginning parse_resume(%s)", filename_str)
 
-    is_resume_image = get_resume_file_info(filename_str, file_obj)
+    file_ext = basename(splitext(filename_str.lower())[-1]) if filename_str else ""
+
+    if file_ext == '.pdf':
+        file_obj = unencrypt_pdf(file_obj)
+
+    file_ext, is_resume_image = get_resume_file_info(filename_str, file_obj)
+
 
     file_obj.seek(0)
     if is_resume_image:
@@ -52,13 +54,9 @@ def parse_resume(file_obj, filename_str):
             "Benchmark: google_vision_ocr for {}: took {}s to process".format(
                 filename_str, time() - start_time)
         )
+
     else:
-        start_time = time()
         doc_content = file_obj.read()
-        logger.info(
-            "Benchmark: Reading file_obj and magic.from_buffer(%s) took %ss",
-            filename_str, time() - start_time
-        )
 
     if not doc_content:
         file_obj.seek(0)
@@ -66,6 +64,7 @@ def parse_resume(file_obj, filename_str):
         raise InvalidUsage("Unable to determine the contents of the document: {}".format(filename_str))
 
     try:
+        # doc_content = unicodedata.normalize('NFKD', doc_content).encode('utf-8', 'ignore')
         encoded_resume = base64.b64encode(doc_content)
 
     except Exception:
@@ -89,37 +88,8 @@ def convert_pdf_to_text(pdf_file_obj):
     :param cStringIO.StringIO pdf_file_obj:
     :return str:
     """
-    # rsrcmgr = PDFResourceManager()
-    # retstr = StringIO()
-    # codec = 'utf-8'
-    # laparams = LAParams()
-    # device = TextConverter(rsrcmgr, retstr, codec=codec, laparams=laparams)
-    #
-    # # TODO access if this reassignment is needed.
-    # fp = pdf_file_obj
-    #
-    # parser = PDFParser(fp)
-    # doc = PDFDocument()
-    # parser.set_document(doc)
-    # doc.set_parser(parser)
-    # doc.initialize('')
-    # if not doc.is_extractable:
-    #     return ''
-    #
-    # process_pdf(rsrcmgr, device, fp)
-    # device.close()
-    #
-    # text = retstr.getvalue()
-    # retstr.close()
-    # return text
     text = ''
     pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
-
-    if pdf_reader.isEncrypted:
-        decrypted = pdf_reader.decrypt('')
-
-        if not decrypted:
-            raise InternalServerError('The PDF appears to be encrypted and could not be read. Please try using an un-encrypted PDF')
 
     page_count = pdf_reader.numPages
 
@@ -130,6 +100,29 @@ def convert_pdf_to_text(pdf_file_obj):
             text += new_text
     return text
 
+
+def unencrypt_pdf(pdf_file_obj):
+    pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
+
+    if pdf_reader.isEncrypted:
+        decrypted = pdf_reader.decrypt('')
+        if not decrypted:
+            raise InternalServerError(
+                'The PDF appears to be encrypted and could not be read. Please try using an un-encrypted PDF')
+
+        tmp = StringIO()
+        pdf_writer = PyPDF2.PdfFileWriter()
+        page_count = pdf_reader.numPages
+
+        for page_no in xrange(page_count):
+            pdf_writer.addPage(pdf_reader.getPage(page_no))
+
+            pdf_writer.write(tmp)
+
+        return tmp
+
+    else:
+        return pdf_file_obj
 
 def get_or_store_parsed_resume(resume_file, filename_str):
     """
@@ -177,4 +170,4 @@ def get_resume_file_info(filename_str, file_obj):
         else:
             is_resume_image = True
 
-    return is_resume_image
+    return file_ext, is_resume_image

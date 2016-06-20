@@ -133,7 +133,6 @@ def send_candidate_references(candidate_references, candidate_id, oauth_string):
             candidate_id, references_response.content))
 
 
-# TODO: write tests for this.
 def get_users_talent_pools(formatted_token_str):
     """
     Uses the candidate pool service to get talent pools of a user's domain via their token.
