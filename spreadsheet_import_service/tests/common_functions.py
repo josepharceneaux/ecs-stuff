@@ -17,6 +17,7 @@ from spreadsheet_import_service.common.tests.fake_testing_data_generator import 
 from spreadsheet_import_service.app import app
 from spreadsheet_import_service.common.utils.talent_s3 import upload_to_filepicker_s3
 from spreadsheet_import_service.common.routes import SpreadsheetImportApiUrl
+from spreadsheet_import_service.common.tests.fake_testing_data_generator import generate_international_phone_number
 
 fake = Faker()
 
@@ -85,12 +86,14 @@ def candidate_test_data(num_candidates=15):
 
         # Randomly select a discipline, e.g. Engineering, Mathematics, Agriculture
         discipline = random.choice(college_majors().keys())
+        international_phone_number = generate_international_phone_number()
         candidate_data.append(
             [
                 full_name, parsed_full_name.first, parsed_full_name.middle, parsed_full_name.last, fake.safe_email(),
-                '+14084059988', fake.street_address(), fake.street_address(), fake.city(), fake.state(), fake.zipcode(),
-                fake.country_code(), fake.bs(), fake.company(), fake.job(), fake.first_name() + ' University',
-                random.choice(college_majors()[discipline]), fake.year(), '', fake.job(), fake.bs(), '24'
+                international_phone_number, fake.street_address(), fake.street_address(), fake.city(), fake.state(),
+                fake.zipcode(), fake.country_code(), fake.bs(), fake.company(), fake.job(),
+                fake.first_name() + ' University', random.choice(college_majors()[discipline]), fake.year(),
+                '', fake.job(), fake.bs(), '24'
             ]
         )
     return candidate_data
