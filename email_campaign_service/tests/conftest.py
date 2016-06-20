@@ -1,4 +1,4 @@
-from email_campaign_service.common.tests.conftest import _get_auth_header
+from email_campaign_service.common.tests.conftest import get_auth_header
 
 __author__ = 'basit'
 
@@ -22,7 +22,7 @@ def headers(access_token_first):
     Returns the header containing access token and content-type to make POST/DELETE requests.
     :param access_token_first: fixture to get access token of user
     """
-    return _get_auth_header(access_token_first)
+    return get_auth_header(access_token_first)
 
 @pytest.fixture()
 def email_campaign_of_user_first(request, user_first):
