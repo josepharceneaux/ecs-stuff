@@ -454,7 +454,7 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign_with_valid_candidate.id,
             headers=dict(Authorization='Bearer %s' % access_token_first))
-        CampaignsTestsHelpers.assert_campaign_failure(response, campaign_with_valid_candidate, requests.codes.OK)
+        assert_campaign_send(response, campaign_with_valid_candidate, user_first, 1, abort_time_for_sends=150)
         if not campaign_with_valid_candidate.email_client_id:
             json_resp = response.json()
             assert str(campaign_with_valid_candidate.id) in json_resp['message']

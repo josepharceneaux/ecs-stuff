@@ -1091,7 +1091,7 @@ def get_filtered_email_rows(campaign, subscribed_candidate_ids):
         _id, email = get_candidate_id_email_by_priority(id_and_email_and_label, email_label_id_desc_tuples)
         search_result = CandidateEmail.search_email_in_user_domain(User, campaign.user, email)
         # If there is only one candidate for an email-address in user's domain, we are good to go,
-        # otherwise log and raise the invalid error.
+        # otherwise log error and send campaign email to that email id only once.
         if len(search_result) == 1:
             if CandidateEmail.is_bounced_email(email):
                 logger.info('Skipping this email because this email address is marked as bounced.'
@@ -1099,12 +1099,14 @@ def get_filtered_email_rows(campaign, subscribed_candidate_ids):
                 continue
             filtered_email_rows.append((_id, email))
         else:
-            logger.warn('%s candidates found for email address %s in user(id:%s)`s domain(id:%s). '
-                        'Candidate ids are: %s'
-                        % (len(search_result), email, campaign.user.id, campaign.user.domain_id,
-                           [candidate_email.candidate_id for candidate_email in search_result]))
-            raise InvalidUsage('There exist multiple candidates with same email address '
-                               'in user`s domain')
+            logger.error('%s candidates found for email address %s in user(id:%s)`s domain(id:%s). '
+                         'Candidate ids are: %s'
+                         % (len(search_result), email, campaign.user.id, campaign.user.domain_id,
+                            [candidate_email.candidate_id for candidate_email in search_result]))
+            if any(email in emails for emails in filtered_email_rows):
+                continue
+            else:
+                filtered_email_rows.append((_id, email))
     return filtered_email_rows
 
 
