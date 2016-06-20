@@ -40,7 +40,7 @@
      */
     vm.login = function () {
 
-      UserToken.loginUser(vm.email, vm.password)
+      UserToken.login(vm.email, vm.password)
         .then(function (response) {
           if (response.status === 200 && 'access_token' in response.data) {
             UserToken.testAuthenticateUserRole(response.data['user_id'], response.data.access_token)
