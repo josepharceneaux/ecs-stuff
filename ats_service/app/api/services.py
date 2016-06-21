@@ -1,3 +1,7 @@
+"""
+Classes implementing the ATS services endpoints.
+"""
+
 from flask import request
 from flask_restful import Resource
 
@@ -10,13 +14,19 @@ from ats_service.app import *
 # Why doesn't this work?
 # from ats_service.app import logger
 
+
 class ServicesList(Resource):
+    """
+    Controller for /v1/ats-list
+    """
+
     decorators = [require_oauth()]
 
     def get(self, **kwargs):
         """
+        GET /v1/ats-list
         """
-        
+
         # Authenticated user
         authenticated_user = request.user
 
