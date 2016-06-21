@@ -19,6 +19,8 @@
     + `/v1/ats-refresh/:account_id [GET]`
 - Link getTalent candidate to ATS candidate
     + `/v1/ats-link/:candidate_id/:ats_candidate_id [PUT]`
+- Unlink getTalent candidate from ATS candidate
+    + `/v1/ats-unlink/:candidate_id [PUT]`
 
 #### Error Codes
 
