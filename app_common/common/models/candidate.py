@@ -222,6 +222,16 @@ class CandidateSource(db.Model):
         """
         return cls.query.filter_by(domain_id=domain_id).all()
 
+    @classmethod
+    def get_domain_source(cls, source_id, domain_id):
+        """
+        Function will return domain source
+        :type source_id:  int | long
+        :type domain_id:  int | long
+        :rtype:  bool
+        """
+        return cls.query.filter_by(id=source_id, domain_id=domain_id).first()
+
 
 class PublicCandidateSharing(db.Model):
     __tablename__ = 'public_candidate_sharing'

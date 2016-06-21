@@ -1101,8 +1101,18 @@ def social_network_name_from_url(url):
 def _update_candidate(first_name, middle_name, last_name, formatted_name, objective,
                       summary, candidate_id, user_id, resume_url, source_id, candidate_status_id):
     """
-    Function will update Candidate
-    :return:    Candidate ID
+    Function will update Candidate's primary information.
+    Candidate's Primary information include:
+      - first name, middle name, last name, status ID, source ID, objective, summary, and resume url
+
+    Caveats:
+        - status_id, source_id, objective, summary, and resume_url will be deleted if their
+            respective values are NULL.
+        - candidate's full name, first name, middle name, and/or last name will be removed
+            if their respective values are an empty string. NULL values will be ignored.
+
+    :return:  Candidate ID
+    :rtype: int | long
     """
     # If formatted name is provided, must also update first name, middle name, and last name
     if formatted_name:
@@ -1133,10 +1143,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
     if not update_dict:
         return candidate_id
 
-    # Candidate ID must be recognized
     candidate_object = Candidate.get_by_id(candidate_id)
-    if not candidate_object:
-        raise NotFoundError('Candidate not found', custom_error.CANDIDATE_NOT_FOUND)
 
     # Track all edits
     track_edits(update_dict=update_dict, table_name='candidate', candidate_id=candidate_id,
@@ -1153,18 +1160,25 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
                    dice_profile_id, dice_social_profile_id, source_id,
                    objective, summary, resume_url):
     """
-    Function will create Candidate
-    :rtype:  Candidate.id
+    Function will add Candidate and its primary information to db
+    All empty values (None or empty strings) will be ignored
+    :rtype:  int | long
     """
-    candidate = Candidate(
+    add_dict = dict(
         first_name=first_name, middle_name=middle_name, last_name=last_name, formatted_name=formatted_name,
         added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
         dice_profile_id=dice_profile_id, dice_social_profile_id=dice_social_profile_id,
         source_id=source_id, objective=objective, summary=summary, filename=resume_url,
-        is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the field is successfully removed.
+        is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     )
+
+    # All empty values must be removed
+    add_dict = purge_dict(add_dict)
+
+    candidate = Candidate(**add_dict)
     db.session.add(candidate)
     db.session.flush()
+
     return candidate.id
 
 
