@@ -12,6 +12,7 @@ import base64
 # Third Party
 import tweepy
 import requests
+from contracts import contract
 from flask import session, redirect
 
 # Application Specific
@@ -59,6 +60,7 @@ class Twitter(SocialNetworkBase):
             logger.exception('Error! Failed to get request token from Twitter for User(id:%s).' % self.user.id)
             raise InternalServerError("Couldn't connect to Twitter account.")
 
+    @contract
     def callback(self, oauth_verifier):
         """
         This method is called from endpoint http://127.0.0.1:8007/v1/twitter_callback defined in app.py
@@ -68,10 +70,8 @@ class Twitter(SocialNetworkBase):
         Once we have the access_token, we get the member_id (id of getTalent user on Twitter's website) of user
         from Twitter API and save its credentials in database table "UserSocialNetworkCredential".
 
-        :param str oauth_verifier: Token received from Twitter when user successfully connected to its account.
+        :param string oauth_verifier: Token received from Twitter when user successfully connected to its account.
         """
-        if not isinstance(oauth_verifier, basestring):
-            raise InternalServerError('oauth_verifier must be non-empty string')
         self.auth.request_token = session['request_token']
         try:
             self.auth.get_access_token(oauth_verifier)
