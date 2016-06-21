@@ -22,5 +22,3 @@ def define_custom_contracts():
     except ValueError:
         # ignore in case of ValueError which means it is already defined
         pass
-
-

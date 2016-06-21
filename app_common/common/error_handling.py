@@ -85,15 +85,10 @@ class ResourceNotFound(TalentError):
 
 def register_error_handlers(app, logger):
     """
-
     :type app: flask.app.Flask
     :type logger: logging.Logger
     """
     logger.info("Registering error handlers for app %s", app.import_name)
-
-    @app.errorhandler(405)
-    def handle_method_not_allowed(ignored):
-        return jsonify({'error': {'message': 'Given HTTP method is not allowed on this endpoint'}}), 405
 
     @app.errorhandler(InvalidUsage)
     def handle_invalid_usage(error):
@@ -132,8 +127,6 @@ def register_error_handlers(app, logger):
             error = exc.message
             response = {'error': {'message': "Internal server error"}}
         app_name, url, user_id, user_email = get_request_info(app)
-        logger.error("Internal server error. App: %s,\nUrl: %s,\nError Details: %s", app.import_name,
-                     request.url if has_request_context() else None, error)
         logger.error('''Internal server error.
                         App: %s,
                         Url: %s

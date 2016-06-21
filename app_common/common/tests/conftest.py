@@ -10,9 +10,11 @@ import json
 import pytest
 from faker import Faker
 from werkzeug.security import gen_salt
+
 from ..models.candidate import Candidate
 from ..models.user import UserGroup, DomainRole
 from auth_utilities import get_access_token, get_or_create
+from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 
 # Application Specific
 from ..models.db import db
@@ -29,7 +31,6 @@ USER_PASSWORD = 'Talent15'
 # TODO: Above fixed passwords should be removed and random passwords should be used
 PASSWORD = gen_salt(20)
 CHANGED_PASSWORD = gen_salt(20)
-JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
 
 class UserAuthentication:
@@ -583,7 +584,7 @@ def randomword(length):
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
 
 
-def _get_auth_header(access_token):
+def get_auth_header(access_token):
     """
     This returns auth header dict.
     :param access_token: access token of user
