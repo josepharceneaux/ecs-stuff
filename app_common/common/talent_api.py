@@ -30,8 +30,13 @@ class TalentApi(Api):
             # if it is not a custom exception then let the Api class handle it.
             logger = current_app.config[TalentConfigKeys.LOGGER]
             app_name, url, user_id, user_email = get_request_info(current_app)
-            error_message = "Internal server error.\nApp: %s,\nUrl: %s,\nUser Id: %s, \nUserEmail: %s,\n" \
-                            "Error Details: %s," % (app_name, url, user_id, user_email, str(e))
+            error_message = '''Internal server error.
+                            App: %s
+                            Url: %s
+                            User Id: %s
+                            UserEmail: %s
+                            Error Details: %s
+                            ''' % (app_name, url, user_id, user_email, str(e))
             if e.code in [405]:
                 logger.warn(error_message)
             else:
