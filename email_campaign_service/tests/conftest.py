@@ -28,18 +28,6 @@ def headers(access_token_first):
 
 
 @pytest.fixture()
-def smartlist_with_one_candidate(access_token_first, talent_pipeline):
-    """
-    This creates a smartlist with one candidate.
-    """
-    smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
-                                                                                        talent_pipeline,
-                                                                                        emails_list=True,
-                                                                                        assign_role=True)
-    return smartlist_id, candidate_ids
-
-
-@pytest.fixture()
 def email_campaign_of_user_first(request, user_first):
     """
     This fixture creates an email campaign in database table 'email_campaign'
@@ -193,18 +181,14 @@ def campaign_with_candidates_having_same_email_in_diff_domain(request,
 
 @pytest.fixture()
 def campaign_with_same_candidate_in_multiple_smartlists(email_campaign_of_user_first, talent_pipeline,
-                                                        smartlist_with_one_candidate, access_token_first):
+                                                        access_token_first):
     """
     This fixture creates an email campaign with two smartlists.
     Smartlist 1 will have two candidates and smartlist 2 will have one candidate (which will be
     same as one of the two candidates of smartlist 1).
     """
-    smartlist_1_id, candidate_ids = smartlist_with_one_candidate
-    # Going to assign candidate belonging to smartlist_1 to smartlist_2 so both will have same candidate
-    candidate_ids_for_smartlist_2 = [candidate_ids[0]]
-    smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, candidate_ids=candidate_ids_for_smartlist_2)
-    smartlist_ids = [smartlist_1_id, smartlist_2_id]
+    smartlist_ids = CampaignsTestsHelpers.get_two_smartlists_with_same_candidate(talent_pipeline, access_token_first,
+                                                                                 email_list=True)
     create_email_campaign_smartlists(smartlist_ids=smartlist_ids, email_campaign_id=email_campaign_of_user_first.id)
 
     return email_campaign_of_user_first

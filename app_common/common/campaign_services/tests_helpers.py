@@ -623,36 +623,25 @@ class CampaignsTestsHelpers(object):
         return smartlist_id, candidate_ids
 
     @staticmethod
-    def create_two_smartlists_with_same_candidate(access_token, talent_pipeline, emails_list=True,
-                                                  assert_candidates=True, timeout=120, data=None):
+    def get_two_smartlists_with_same_candidate(talent_pipeline, access_token_first, count=1, create_phone=False,
+                                               email_list=False):
         """
-        Create two smartlists with same candidate in both of them.
+        Create two smartlists with same candidate in both of them and returns smartlist ids in list format.
+        :param TalentPipeline talent_pipeline: Talent pipeline object of user
+        :param str access_token_first: Access token of user
+        :param int count: Number of candidates in first smartlist
+        :param bool create_phone: True if need to create candidate's phone
+        :param bool email_list: True if need to create candidate's email
+        :rtype: list[int|long]
         """
-        if not data:
-            # create candidate
-            data = FakeCandidatesData.create(talent_pool=talent_pipeline.talent_pool,
-                                             emails_list=emails_list, count=1)
-
-        candidate_id = create_candidates_from_candidate_api(oauth_token=access_token, data=data,
-                                                            return_candidate_ids_only=True)
-        if assert_candidates:
-            time.sleep(30)
-        smartlist_data1 = {'name': fake.word(),
-                           'candidate_ids': candidate_id,
-                           'talent_pipeline_id': talent_pipeline.id}
-        smartlist_data2 = {'name': fake.word(),
-                           'candidate_ids': candidate_id,
-                           'talent_pipeline_id': talent_pipeline.id}
-
-        smartlist_ids = [create_smartlist_from_api(data=smartlist_data1, access_token=access_token)['smartlist']['id'],
-                         create_smartlist_from_api(data=smartlist_data2, access_token=access_token)['smartlist']['id']]
-        if assert_candidates:
-            for smartlist_id in smartlist_ids:
-                attempts = timeout / 3 + 1
-                retry(assert_smartlist_candidates, sleeptime=3, attempts=attempts, sleepscale=1,
-                             args=(smartlist_id, len(candidate_id), access_token), retry_exceptions=(AssertionError,)),\
-                    'Candidates not found for smartlist(id:%s)' % smartlist_id
-
+        smartlist_1_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
+            access_token_first, talent_pipeline, count=count, create_phone=create_phone, emails_list=email_list,
+            assign_role=True)
+        # Going to assign candidate belonging to smartlist_1 to smartlist_2 so both will have same candidate
+        candidate_ids_for_smartlist_2 = [candidate_ids[0]]
+        smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
+            access_token_first, talent_pipeline, candidate_ids=candidate_ids_for_smartlist_2)
+        smartlist_ids = [smartlist_1_id, smartlist_2_id]
         return smartlist_ids
 
     @staticmethod
