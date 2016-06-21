@@ -8,6 +8,7 @@
   appRun.$inject = ['apiInfo'];
   /* @ngInject */
   function appRun(apiInfo) {
+
      apiInfo.readApiInfo();
   }
 

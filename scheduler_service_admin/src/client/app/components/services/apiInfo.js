@@ -23,6 +23,7 @@
      * @returns {*|promise}
        */
     function readApiInfo() {
+
       var deferred = $q.defer();
       $http.get('/api/api-config')
         .then(function (response) {

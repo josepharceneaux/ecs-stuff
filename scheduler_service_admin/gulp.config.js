@@ -59,8 +59,8 @@ module.exports = function() {
      * optimized files
      */
     optimized: {
-      app: 'app.js',
-      lib: 'lib.js'
+      app: clientApp + '**/*.module.js',
+      lib: clientApp + '**/*.js'
     },
 
     /**
@@ -117,7 +117,7 @@ module.exports = function() {
     ],
     specHelpers: [client + 'test-helpers/*.js'],
     specs: [clientApp + '**/*.spec.js'],
-    serverIntegrationSpecs: [client + '/tests/server-integration/**/*.spec.js'],
+    //serverIntegrationSpecs: [client + '/tests/server-integration/**/*.spec.js'],
 
     /**
      * Node settings
@@ -153,10 +153,10 @@ module.exports = function() {
         bowerFiles,
         config.specHelpers,
         clientApp + '**/*.module.js',
-        './src/client/tests/lib/*.js',
+        './src/client/test-helpers/*.js',
         clientApp + '**/*.js',
-        temp + config.templateCache.file,
-        config.serverIntegrationSpecs
+        temp + config.templateCache.file
+        //config.serverIntegrationSpecs
       ),
       exclude: [],
       coverage: {

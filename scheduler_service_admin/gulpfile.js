@@ -16,6 +16,13 @@ var colors = $.util.colors;
 var envenv = $.util.env;
 var port = process.env.PORT || config.defaultPort;
 
+if(typeof(process.env.NODE_ENV) == 'undefined'){
+    process.env.ENV = 'dev';
+}
+else{
+  process.env.ENV = process.env.NODE_ENV;
+}
+
 /**
  * yargs variables can be passed in to alter the behavior, when present.
  * Example: gulp serve-dev
@@ -82,13 +89,13 @@ gulp.task('styles', ['clean-styles'], function() {
     .pipe(gulp.dest(config.temp));
 });
 
-gulp.task('styles', function() {
-  log('Compiling SCSS --> CSS');
-    return gulp
-        .src('styles/*.scss')
-        .pipe(sass().on('error', sass.logError))
-        .pipe(gulp.dest(config.temp));
-});
+//gulp.task('styles', function() {
+//  log('Compiling SCSS --> CSS');
+//    return gulp
+//        .src('styles/*.scss')
+//        .pipe(sass().on('error', sass.logError))
+//        .pipe(gulp.dest(config.temp));
+//});
 
 gulp.task('lint', function (cb) {
   var stream = gulp.src(['t*.js'])
@@ -131,9 +138,9 @@ gulp.task('less-watcher', function() {
   gulp.watch([config.less], ['styles']);
 });
 
-gulp.task('scss-watcher',function() {
-    gulp.watch('styles/*.scss',['styles']);
-});
+//gulp.task('scss-watcher',function() {
+//    gulp.watch('styles/*.scss',['styles']);
+//});
 
 /**
  * Create $templateCache from the html templates
@@ -541,8 +548,8 @@ function startBrowserSync(isDev, specRunner) {
     port: 3000,
     files: isDev ? [
       config.client + '**/*.*',
-      '!' + config.less,
-      config.temp + '**/*.css'
+      config.temp + '*.css',
+      '!' + config.less
     ] : [],
     ghostMode: { // these are the defaults t,f,t,t
       clicks: true,
@@ -602,18 +609,13 @@ function startTests(singleRun, done) {
   var excludeFiles = [];
   var fork = require('child_process').fork;
   var Karma = require('karma').Server;
-  var serverSpecs = config.serverIntegrationSpecs;
 
-  if (args.startServers) {
+  var env = process.env.NODE_ENV;
+  if (env === 'dev') {
     log('Starting servers');
     var savedEnv = process.env;
-    savedEnv.NODE_ENV = 'dev';
     savedEnv.PORT = 8888;
     child = fork(config.nodeServer);
-  } else {
-    if (serverSpecs && serverSpecs.length) {
-      excludeFiles = serverSpecs;
-    }
   }
 
   new Karma({

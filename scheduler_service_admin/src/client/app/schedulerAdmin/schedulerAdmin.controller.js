@@ -92,7 +92,7 @@
       {id: 3, title: 'One Time', value: 'one_time'}
     ];
 
-    vm.selectTaskCategory = 'both';
+    vm.selectedTaskCategory = both_tasks;
     vm.taskCategory = [
       {id: 1, title: ' Both', value: both_tasks},
       {id: 2, title: ' User', value: 'user'},

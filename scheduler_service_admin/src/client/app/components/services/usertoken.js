@@ -23,10 +23,21 @@
     var service = {
       userId: '',
       accessToken: '',
-      goToLogin: goToLogin,
+      goToLogin: function () {
+        debugger;
+        if(apiInfo.apiInfo === undefined){
+          apiInfo.readApiInfo()
+            .then(function (response) {
+              goToLogin();
+            });
+        }
+        else{
+         goToLogin();
+        }
+      },
       isLoggedIn: function () {
         var deferred = $q.defer();
-
+        debugger;
         $http({
           method: 'GET',
           url: apiInfo.apiInfo.authService.authorizePath,
@@ -36,6 +47,7 @@
           }
         })
           .then(function (response) {
+            debugger;
             if ('user_id' in response.data) {
               service.accessToken = $cookies.get('token');
               $rootScope.$broadcast('loggedIn', true);

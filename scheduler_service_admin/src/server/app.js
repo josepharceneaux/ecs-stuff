@@ -6,7 +6,6 @@ var cors = require('cors');
 var app = express();
 var bodyParser = require('body-parser');
 var favicon = require('serve-favicon');
-var logger = require('morgan');
 var port = process.env.PORT || 4000;
 var four0four = require('./utils/404')();
 
@@ -17,13 +16,16 @@ var environment = process.env.NODE_ENV;
 app.use(favicon(__dirname + '/icon.png'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use(logger('dev'));
+
+if(typeof(process.env.ENV) == "undefined"){
+  process.env.ENV = 'dev';
+}
 
 app.use('/api', require('./routes'));
 
 console.log('About to crank up node');
 console.log('PORT=' + port);
-console.log('NODE_ENV=' + environment);
+console.log('NODE_ENV=' + process.env.ENV);
 
 switch (environment) {
   case 'build':
@@ -40,7 +42,6 @@ switch (environment) {
     console.log('** DEV **');
     app.use(express.static('./src/client/'));
     app.use(express.static('./'));
-    app.use(express.static('./tmp'));
     app.use(express.static('./.tmp'));
     // Any invalid calls for templateUrls are under app/* and should return 404
     app.use('/app/*', function(req, res, next) {
