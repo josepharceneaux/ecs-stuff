@@ -188,7 +188,7 @@ def campaign_with_same_candidate_in_multiple_smartlists(email_campaign_of_user_f
     same as one of the two candidates of smartlist 1).
     """
     smartlist_ids = CampaignsTestsHelpers.get_two_smartlists_with_same_candidate(talent_pipeline, access_token_first,
-                                                                                 email_list=True)
+                                                                                 email_list=True, assign_role=True)
     create_email_campaign_smartlists(smartlist_ids=smartlist_ids, email_campaign_id=email_campaign_of_user_first.id)
 
     return email_campaign_of_user_first
