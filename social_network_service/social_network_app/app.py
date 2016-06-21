@@ -129,7 +129,7 @@ def twitter_auth(user_id):
 
     """
     twitter_obj = Twitter(user_id=user_id, assert_credentials=False)
-    return twitter_obj.authentication()
+    return twitter_obj.authenticate()
 
 
 @app.route(SocialNetworkApi.TWITTER_CALLBACK)

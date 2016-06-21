@@ -199,28 +199,20 @@ class SocialNetworkBase(object):
                 "api_url": self.social_network.api_url,
             }
             # checks if any field is missing for given user credentials
-            items = [value for key, value in data.iteritems()
-                     if key is not "api_url"]
+            items = [value for key, value in data.iteritems() if key is not "api_url"]
             if all(items):
                 self.api_url = data['api_url']
                 self.gt_user_id = data['gt_user_id']
                 self.social_network_id = data['social_network_id']
                 self.access_token = data['access_token']
-                self.headers = {
-                    'Authorization': 'Bearer ' + self.access_token
-                }
             else:
                 # gets fields which are missing
-                items = [key for key, value in data.iteritems()
-                         if key is not "api_url" and not value]
-                data_to_log = {'user_id': self.user.id,
-                               'missing_items': items}
+                items = [key for key, value in data.iteritems() if key is not "api_url" and not value]
+                data_to_log = {'user_id': self.user.id, 'missing_items': items}
                 # Log those fields in error which are not present in Database
-                error_message = \
-                    "User id: %(user_id)s\n Missing Item(s) in user's " \
-                    "credential: %(missing_items)s\n" % data_to_log
-                raise MissingFieldsInUserCredentials('API Error: %s'
-                                                     % error_message)
+                error_message = "User id: %(user_id)s\n Missing Item(s) in user's " \
+                                "credential: %(missing_items)s\n" % data_to_log
+                raise MissingFieldsInUserCredentials('API Error: %s' % error_message)
             # Eventbrite and meetup social networks take access token in header
             # so here we generate authorization header to be used by both of them
             self.headers = {'Authorization': 'Bearer ' + self.access_token}
@@ -232,7 +224,7 @@ class SocialNetworkBase(object):
                 # social network.
                 logger.debug('__init__: Access token has expired. '
                              'Please connect with %s again from "Profile" page. user_id: %s'
-                             % (self.user.id, self.social_network.name))
+                             % (self.social_network.name, self.user.id))
                 raise AccessTokenHasExpired('Access token has expired for %s' % self.social_network.name)
             self.start_date_dt = None
             self.webhook_id = None

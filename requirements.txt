@@ -95,4 +95,4 @@ nameparser==0.3.16
 pycontracts==1.7.9
 
 # Twitter Auth
-tweepy
+tweepy==3.5.0

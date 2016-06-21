@@ -31,12 +31,12 @@ class Twitter(SocialNetworkBase):
 
     def __init__(self, *args, **kwargs):
         super(Twitter, self).__init__(**kwargs)
-        self.CONSUMER_KEY = self.social_network.client_key
-        self.CONSUMER_SECRET = self.social_network.secret_key
-        self.auth = tweepy.OAuthHandler(self.CONSUMER_KEY, self.CONSUMER_SECRET,
+        self.consumer_key = self.social_network.client_key
+        self.consumer_secret = self.social_network.secret_key
+        self.auth = tweepy.OAuthHandler(self.consumer_key, self.consumer_secret,
                                         SocialNetworkApiUrl.TWITTER_CALLBACK % self.user.id)
 
-    def authentication(self):
+    def authenticate(self):
         """
         Here we use OAuthHandler of tweepy to give us request token. We use that request token and
         redirect the user to Twitter website where user can add its credentials.
@@ -103,7 +103,7 @@ class Twitter(SocialNetworkBase):
         :return: Access token for getTalent app to access Twitter's API.
         :rtype: str
         """
-        combined_key = self.CONSUMER_KEY + ':' + self.CONSUMER_SECRET
+        combined_key = self.consumer_key + ':' + self.consumer_secret
         combined_key = base64.b64encode(combined_key)
         url = 'https://api.twitter.com/oauth2/token'
         headers = {'Authorization': 'Basic %s' % combined_key,
