@@ -147,6 +147,11 @@ def test_bad_header(token_fixture, user_fixture):
     assert invalid_post.status_code == requests.codes.bad_request
 
 
+def test_blank_file(token_fixture, user_fixture):
+    content, status = fetch_resume_fp_key_response(token_fixture, 'blank.txt')
+    assert 'error' in content, "There should be an error if no text can be extracted."
+
+
 ####################################################################################################
 # Test FilePicker Key Parsing without create option
 ####################################################################################################
@@ -301,6 +306,14 @@ def test_create_candidate_from_resume_without_name(token_fixture, user_fixture):
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_post_response(token_fixture, 'Adams.John.doc', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+
+
+def test_create_candidate_from_resume_ben_fred(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'ben.fred.doc', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 

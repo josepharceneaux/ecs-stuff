@@ -297,7 +297,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
                 # Experience
                 GROUP_CONCAT(DISTINCT candidate_experience.organization SEPARATOR :sep) AS `organization`,
-                GROUP_CONCAT(DISTINCT candidate_experience.position SEPARATOR :sep) AS `position`,
+                GROUP_CONCAT(DISTINCT candidate_experience.position ORDER BY candidate_experience.IsCurrent DESC, candidate_experience.StartYear DESC, candidate_experience.StartMonth DESC SEPARATOR :sep) AS `position`,
                 GROUP_CONCAT(DISTINCT candidate_experience_bullet.description SEPARATOR :sep) AS `experience_description`,
 
                 # Start Date At Current Job

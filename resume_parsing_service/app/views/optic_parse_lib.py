@@ -181,7 +181,7 @@ def parse_candidate_phones(bs_contact_xml_list):
 
                 try:
                     unused_validated_phone = phonenumbers.parse(raw_phone, region='US')
-                    output.append({'value': raw_phone, 'type': gt_phone_type})
+                    output.append({'value': raw_phone, 'label': gt_phone_type})
 
                 except UnicodeEncodeError:
                     logger.error('Issue parsing phonenumber: {}'.format(raw_phone))
