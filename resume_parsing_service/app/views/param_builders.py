@@ -1,3 +1,6 @@
+"""Code for building params dict from multiple types of requests objects."""
+__author__ = 'erik@gettalent.com'
+# pylint: disable=wrong-import-position, fixme, import-error
 from resume_parsing_service.app import logger
 from resume_parsing_service.common.error_handling import InvalidUsage
 
