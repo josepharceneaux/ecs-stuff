@@ -1,15 +1,11 @@
 # ATS Service
 *Flask micro service for interfacing with Applicant Tracking Systems.*
-## Authentication
-Like other getTalent services, ATS service uses oAuth2 for user authentication. See [AuthService](https://github.com/gettalent/talent-flask-services/blob/master/auth_service/README.md) for more information.
 
-Authentication to an ATS varies by ATS but is done using a user's account with that ATS.
-## APIs
-##### Version
-1
-#### API
+### API Version 1
 
-- List integrated ATS
+#### API List
+
+- List each ATS we have integrated with
     + `/v1/ats-list [GET]`
 - Register ATS account for a user with an ATS
     + `/v1/ats-register/:credentials [POST]`
@@ -24,8 +20,14 @@ Authentication to an ATS varies by ATS but is done using a user's account with t
 - Link getTalent candidate to ATS candidate
     + `/v1/ats-link/:candidate_id/:ats_candidate_id [PUT]`
 
-#### Database Schema
+#### Error Codes
+
+#### Authentication
+
+Like other getTalent services, ATS service uses oAuth2 for user authentication. See [AuthService](https://github.com/gettalent/talent-flask-services/blob/master/auth_service/README.md) for more information.
+
+Authentication to an ATS varies by ATS but is done using a user's account with that ATS.
+
+### Database Schema
 
 ![Image Missing](ATS_erd.png?raw=true "Database Schema")
-
-##### Custom Error Codes
