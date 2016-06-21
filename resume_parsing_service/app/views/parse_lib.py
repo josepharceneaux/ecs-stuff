@@ -23,8 +23,6 @@ from resume_parsing_service.common.utils.talent_s3 import boto3_put
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
                  '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
 DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
-GOOGLE_API_KEY = "AIzaSyD4i4j-8C5jLvQJeJnLmoFW6boGkUhxSuw"
-GOOGLE_CLOUD_VISION_URL = "https://vision.googleapis.com/v1/images:annotate"
 RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 
 def parse_resume(file_obj, filename_str):

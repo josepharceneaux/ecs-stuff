@@ -36,9 +36,9 @@ def fetch_optic_response(resume, filename_str):
     bg_url = current_app.config['BG_URL']
     oauth = OAuthClient(url=bg_url,
                         method='POST', consumerKey='osman',
-                        consumerSecret='aRFKEc3AJdR9zogE@M9Sis%QjZPxA5Oy',
+                        consumerSecret=current_app.config['CONSUMER_SECRET'],
                         token='Utility',
-                        tokenSecret='Q5JuWpaMLUi=yveieiNKNWxqqOvHLNJ$',
+                        tokenSecret=current_app.config['TOKEN_SECRET'],
                         signatureMethod='HMAC-SHA1',
                         oauthVersion='1.0')
     auth = oauth.get_authorizationString()
