@@ -1,4 +1,5 @@
 from email_campaign_service.common.tests.conftest import get_auth_header
+from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 
 __author__ = 'basit'
 
@@ -16,6 +17,7 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   create_smartlist_with_given_email_candidate)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
+
 @pytest.fixture()
 def headers(access_token_first):
     """
@@ -23,6 +25,19 @@ def headers(access_token_first):
     :param access_token_first: fixture to get access token of user
     """
     return get_auth_header(access_token_first)
+
+
+@pytest.fixture()
+def smartlist_with_one_candidate(access_token_first, talent_pipeline):
+    """
+    This creates a smartlist with one candidate.
+    """
+    smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
+                                                                                        talent_pipeline,
+                                                                                        emails_list=True,
+                                                                                        assign_role=True)
+    return smartlist_id, candidate_ids
+
 
 @pytest.fixture()
 def email_campaign_of_user_first(request, user_first):
@@ -174,6 +189,25 @@ def campaign_with_candidates_having_same_email_in_diff_domain(request,
 
     request.addfinalizer(fin)
     return campaign_with_valid_candidate
+
+
+@pytest.fixture()
+def campaign_with_same_candidate_in_multiple_smartlists(email_campaign_of_user_first, talent_pipeline,
+                                                        smartlist_with_one_candidate, access_token_first):
+    """
+    This fixture creates an email campaign with two smartlists.
+    Smartlist 1 will have two candidates and smartlist 2 will have one candidate (which will be
+    same as one of the two candidates of smartlist 1).
+    """
+    smartlist_1_id, candidate_ids = smartlist_with_one_candidate
+    # Going to assign candidate belonging to smartlist_1 to smartlist_2 so both will have same candidate
+    candidate_ids_for_smartlist_2 = [candidate_ids[0]]
+    smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
+        access_token_first, talent_pipeline, candidate_ids=candidate_ids_for_smartlist_2)
+    smartlist_ids = [smartlist_1_id, smartlist_2_id]
+    create_email_campaign_smartlists(smartlist_ids=smartlist_ids, email_campaign_id=email_campaign_of_user_first.id)
+
+    return email_campaign_of_user_first
 
 
 @pytest.fixture()

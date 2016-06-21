@@ -127,8 +127,6 @@ def register_error_handlers(app, logger):
             error = exc.message
             response = {'error': {'message': "Internal server error"}}
         app_name, url, user_id, user_email = get_request_info(app)
-        logger.error("Internal server error. App: %s,\nUrl: %s,\nError Details: %s", app.import_name,
-                     request.url if has_request_context() else None, error)
         logger.error('''Internal server error.
                         App: %s,
                         Url: %s
