@@ -9,15 +9,17 @@ from flask_restful import Resource
 from ats_service.common.utils.auth_utils import require_oauth
 
 # Modules
-from ats_service.app import *
-
+import ats_service.app
 # Why doesn't this work?
 # from ats_service.app import logger
+
+# Database
+from ats_service.common.models.ats import ATS
 
 
 class ServicesList(Resource):
     """
-    Controller for /v1/ats-list
+    Controller for /v1/ats-list. Return a list of ATS we have integrated with.
     """
 
     decorators = [require_oauth()]
@@ -30,6 +32,5 @@ class ServicesList(Resource):
         # Authenticated user
         authenticated_user = request.user
 
-        logger.info("ATS {} {} ({})".format(request.method, request.path, request.user.email))
-
-        return {'supported-ats-list': ['ats1', 'ats2', 'ats3']}
+        ats_service.app.logger.info("ATS {} {} ({})".format(request.method, request.path, request.user.email))
+        return ATS.get_all_as_json()
