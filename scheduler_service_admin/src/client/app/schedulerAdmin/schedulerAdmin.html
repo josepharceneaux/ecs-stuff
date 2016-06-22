@@ -21,10 +21,10 @@
                   <tr ng-repeat="task in vm.tasks">
                     <td>{{task.id}}</td>
                     <td>{{task.user_email}}</td>
-                    <td>{{task.taskType}}</td>
-                    <td>{{task.taskCategory}}</td>
+                    <td>{{task.task_type}}</td>
+                    <td>{{task.task_category}}</td>
                     <td>
-                      <div ng-switch on="task.taskType">
+                      <div ng-switch on="task.task_type">
                         <div ng-switch-when="one_time">
                           <!-- one_time task block-->
                           <summary class="overflow-text">{{task.data | json}}</summary>
@@ -47,9 +47,8 @@
               </div>
               <div class="widget-foot">
                 <div class="clearfix">
-                  <uib-pagination total-items="vm.totalItems" items-per-page="vm.itemsPerPage"
+                  <uib-pagination max-size="10" total-items="vm.totalItems" force-ellipses="true" boundary-links="true"  boundary-link-numbers="true" items-per-page="vm.itemsPerPage"
                                   ng-model="vm.currentPage" ng-change="vm.pageChanged()"></uib-pagination>
-
                 </div>
               </div>
             </div>
