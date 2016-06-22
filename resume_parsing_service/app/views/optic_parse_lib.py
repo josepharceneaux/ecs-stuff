@@ -1,4 +1,5 @@
 """Parsing functions for extracting specific information from Burning Glass API responses."""
+# pylint: disable=wrong-import-position, fixme, import-error
 __author__ = 'erik@getTalent.com'
 # Standard Library
 from time import time
@@ -32,28 +33,28 @@ def fetch_optic_response(resume, filename_str):
                             XML.
     """
     start_time = time()
-    BG_URL = current_app.config['BG_URL']
-    oauth = OAuthClient(url=BG_URL,
+    bg_url = current_app.config['BG_URL']
+    oauth = OAuthClient(url=bg_url,
                         method='POST', consumerKey='osman',
                         consumerSecret='aRFKEc3AJdR9zogE@M9Sis%QjZPxA5Oy',
                         token='Utility',
                         tokenSecret='Q5JuWpaMLUi=yveieiNKNWxqqOvHLNJ$',
                         signatureMethod='HMAC-SHA1',
                         oauthVersion='1.0')
-    AUTH = oauth.get_authorizationString()
-    HEADERS = {
+    auth = oauth.get_authorizationString()
+    headers = {
         'accept': 'application/xml',
         'content-type': 'application/json',
-        'Authorization': AUTH,
+        'Authorization': auth,
     }
-    DATA = {
+    data = {
         'binaryData': resume,
         'instanceType': 'TM',
         'locale': 'en_us'
     }
-    r = requests.post(BG_URL, headers=HEADERS, json=DATA)
+    bg_response = requests.post(bg_url, headers=headers, json=data)
 
-    if r.status_code != requests.codes.ok:
+    if bg_response.status_code != requests.codes.ok:
         # Since this error is displayed to the user we may want to obfuscate it a bit and log more
         # developer friendly messages. "Error processing this resume. The development team has been
         # notified of this issue" type of message.
@@ -61,7 +62,7 @@ def fetch_optic_response(resume, filename_str):
 
     try:
         html_parser = HTMLParser.HTMLParser()
-        unquoted = urllib2.unquote(r.content).decode('utf8')
+        unquoted = urllib2.unquote(bg_response.content).decode('utf8')
         unescaped = html_parser.unescape(unquoted)
 
     except Exception:
@@ -403,7 +404,7 @@ def parse_candidate_reference(xml_references_list):
 # Utility functions.*
 ###################################################################################################
 
-_newlines_regexp = re.compile(r"[\r\n]+")
+NEWLINES_REGEXP = re.compile(r"[\r\n]+")
 
 
 def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines=True,
@@ -427,7 +428,7 @@ def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines
             if remove_questions:
                 text = text.replace("?", "")
             if remove_extra_newlines:
-                text = _newlines_regexp.sub(" ", text)
+                text = NEWLINES_REGEXP.sub(" ", text)
             if capwords:
                 text = string.capwords(text)
             text = text.encode('utf-8')
@@ -456,11 +457,12 @@ def is_experience_already_exists(candidate_experiences, organization, position_t
     """Logic for checking an experience has been parsed twice due to BG error"""
     for i, experience in enumerate(candidate_experiences):
         if (experience['organization'] or '') == organization and \
-                        (experience['position'] or '') == position_title and \
-                (experience['start_month'] == start_month and
-                 experience['start_year'] == start_year and
-                 experience['end_month'] == end_month and
-                 experience['end_year'] == end_year):
+           (experience['position'] or '') == position_title and \
+           (experience['start_month'] == start_month and
+            experience['start_year'] == start_year and
+            experience['end_month'] == end_month and
+            experience['end_year'] == end_year):
+
             return i + 1
     return False
 
@@ -483,7 +485,7 @@ def scrub_candidate_name(name_unicode):
     """
 
     translate_table = dict.fromkeys(i for i in xrange(sys.maxunicode)
-                if unicodedata.category(unichr(i)).startswith('P'))
+                                    if unicodedata.category(unichr(i)).startswith('P'))
 
     name_unicode = name_unicode[:35]
     name_unicode = name_unicode.translate(translate_table)
