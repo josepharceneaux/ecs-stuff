@@ -1,5 +1,5 @@
 """Utilities related to the parsing of resumes."""
-# pylint: disable=wrong-import-position, fixme
+# pylint: disable=wrong-import-position, fixme, import-error
 __author__ = 'erikfarmer'
 # Standard Library
 import hashlib
@@ -133,7 +133,6 @@ def send_candidate_references(candidate_references, candidate_id, oauth_string):
             candidate_id, references_response.content))
 
 
-# TODO: write tests for this.
 def get_users_talent_pools(formatted_token_str):
     """
     Uses the candidate pool service to get talent pools of a user's domain via their token.
@@ -143,21 +142,25 @@ def get_users_talent_pools(formatted_token_str):
     """
     try:
         talent_pool_response = requests.get(CandidatePoolApiUrl.TALENT_POOLS,
-                                           headers={'Authorization': formatted_token_str})
+                                            headers={'Authorization': formatted_token_str})
     except requests.exceptions.ConnectionError:
-        raise InvalidUsage("ResumeParsingService could not reach CandidatePool API in "
-                           "get_users_talent_pools")
+        raise InvalidUsage("ResumeParsingService could not reach CandidatePool API in get_users_talent_pools")
+
     talent_pools_response = json.loads(talent_pool_response.content)
+
     if 'error' in talent_pools_response:
         raise InvalidUsage(error_message=talent_pools_response['error'].get(
             'message', 'Error in getting user talent pools.'))
+
     try:
         return [talent_pools_response['talent_pools'][0]['id']]
+
     except IndexError:
         return []
 
 
 def gen_hash_from_file(_file):
+    """Handy function for creating file hashes. Used as redis keys to store parsed resumes."""
     return hashlib.md5(_file.read()).hexdigest()
 
 

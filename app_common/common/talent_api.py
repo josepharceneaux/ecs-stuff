@@ -1,5 +1,6 @@
 import json
 
+from requests import codes
 from flask.ext.restful import Api
 from flask import current_app, jsonify
 from talent_config_manager import TalentConfigKeys
@@ -37,7 +38,7 @@ class TalentApi(Api):
                             UserEmail: %s
                             Error Details: %s
                             ''' % (app_name, url, user_id, user_email, str(e))
-            if e.code in [405]:
+            if e.code in [codes.METHOD_NOT_ALLOWED]:
                 logger.warn(error_message)
             else:
                 logger.error(error_message)
