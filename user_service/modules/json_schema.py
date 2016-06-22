@@ -36,6 +36,9 @@ custom_fields_schema = {
             "items": {
                 "type": "object",
                 "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
                     "name": {
                         "type": "string"
                     }
@@ -48,6 +51,27 @@ custom_fields_schema = {
     },
     "required": [
         "custom_fields"
+    ]
+}
+
+custom_field_schema = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "custom_field": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ]
+        }
+    },
+    "required": [
+        "custom_field"
     ]
 }
 

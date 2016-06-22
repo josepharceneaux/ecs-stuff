@@ -242,6 +242,7 @@ class UserServiceApi(object):
     DOMAIN_SOURCES = '/' + VERSION + '/sources'
     DOMAIN_SOURCE = '/' + VERSION + '/sources/<int:id>'
     DOMAIN_CUSTOM_FIELDS = '/' + VERSION + '/custom_fields'
+    DOMAIN_CUSTOM_FIELD = DOMAIN_CUSTOM_FIELDS + '/<int:id>'
     DOMAIN_AOIS = '/' + VERSION + '/areas_of_interest'
     DOMAIN_AOI = '/' + VERSION + '/areas_of_interest/<int:id>'
 
@@ -271,6 +272,7 @@ class UserServiceApiUrl(object):
     FORGOT_PASSWORD_API = HOST_NAME % ('/' + VERSION + '/users/forgot-password')
     RESET_PASSWORD_API = HOST_NAME % ('/' + VERSION + '/users/reset-password/%s')
     DOMAIN_CUSTOM_FIELDS = HOST_NAME % ('/' + VERSION + '/custom_fields')
+    DOMAIN_CUSTOM_FIELD = DOMAIN_CUSTOM_FIELDS + '/%s'
     DOMAIN_AOIS = HOST_NAME % ('/' + VERSION + '/areas_of_interest')
     DOMAIN_AOI = HOST_NAME % ('/' + VERSION + '/areas_of_interest/%s')
 
