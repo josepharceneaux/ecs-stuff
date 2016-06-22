@@ -31,12 +31,12 @@
         filterDict['task_type'] = vm.selectedTaskType;
       }
 
-      if(vm.selectTaskCategory !== both_tasks) {
-        filterDict['task_category'] = vm.selectTaskCategory;
+      if(vm.selectedTaskCategory !== both_tasks) {
+        filterDict['task_category'] = vm.selectedTaskCategory;
       }
 
-      if(typeof vm.userId === 'number' && vm.userId >= 1 && vm.selectTaskCategory !== general_tasks) {
-        filterDict['userId'] = vm.userId;
+      if(typeof vm.userId === 'number' && vm.userId >= 1 && vm.selectedTaskCategory !== general_tasks) {
+        filterDict['user_id'] = vm.userId;
       }
 
       if(vm.paused.enabled) {
@@ -92,7 +92,7 @@
       {id: 3, title: 'One Time', value: 'one_time'}
     ];
 
-    vm.selectTaskCategory = 'both';
+    vm.selectedTaskCategory = both_tasks;
     vm.taskCategory = [
       {id: 1, title: ' Both', value: both_tasks},
       {id: 2, title: ' User', value: 'user'},
@@ -104,6 +104,7 @@
 
       $rootScope.$on('loggedIn', function (events, args) {
           vm.currentPage = 1;
+        vm.applyFilter()
       });
     }
 

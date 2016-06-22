@@ -23,18 +23,27 @@
     var service = {
       userId: '',
       accessToken: '',
-      goToLogin: goToLogin,
+      goToLogin: function () {
+        if(apiInfo.apiInfo === undefined){
+          apiInfo.readApiInfo()
+            .then(function (response) {
+              goToLogin();
+            });
+        }
+        else{
+         goToLogin();
+        }
+      },
       isLoggedIn: function () {
         var deferred = $q.defer();
-
         $http({
           method: 'GET',
           url: apiInfo.apiInfo.authService.authorizePath,
           headers: {
             'Authorization': 'Bearer ' + $cookies.get('token'),
             'Content-Type': 'application/json'
-          }
-        })
+            }
+          })
           .then(function (response) {
             if ('user_id' in response.data) {
               service.accessToken = $cookies.get('token');
