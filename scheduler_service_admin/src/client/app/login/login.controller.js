@@ -60,7 +60,7 @@
        * @param err
        */
       function error(err) {
-        vm.error_message = 'Unauthorized: You don\'t have access to get-Talent';
+        vm.error_message = 'Unauthorized: You don\'t have access to getTalent';
         logger.error(err);
       }
     };
