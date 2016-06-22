@@ -6,6 +6,7 @@ import datetime
 
 # Third Party
 import requests
+from redo import retry
 
 # Application Specific
 from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
@@ -40,8 +41,8 @@ def create_email_campaign(user):
                                    user_id=user.id,
                                    is_hidden=0,
                                    subject=uuid.uuid4().__str__()[0:8] + ' It is a test campaign',
-                                   _from=fake.safe_email(),
-                                   reply_to=fake.safe_email(),
+                                   _from='haniqadri.qc@gmail.com',
+                                   reply_to='haniqadri.qc@gmail.com',
                                    body_html="<html><body>Email campaign test</body></html>",
                                    body_text="Email campaign test"
                                    )
@@ -241,9 +242,10 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_SEND,
                                                   campaign.id)
         # TODO: commented after discussing with osman -- basit
-        # if not email_client:
-        #     assert poll(assert_and_delete_email, step=3, args=(campaign.subject,), timeout=60), \
-        #         "Email with subject %s was not found." % campaign.subject
+        if not email_client:
+            assert retry(assert_and_delete_email, sleeptime=3, attempts=33, sleepscale=1,
+                         args=(campaign.subject,), retry_exceptions=(AssertionError,)),\
+                   "Email with subject %s was not found." % campaign.subject
 
     # For each url_conversion record we assert that source_url is saved correctly
     for send_url_conversion in sends_url_conversions:
