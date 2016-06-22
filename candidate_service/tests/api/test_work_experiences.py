@@ -76,7 +76,7 @@ class TestDeleteWorkExperience(object):
         print response_info(resp)
         assert resp.status_code == self.UNAUTHORIZED
 
-    def test_delete_candidate_experience_with_bad_input(self):
+    def test_delete_candidate_experience_with_bad_input(self, access_token_first):
         """
         Test:   Attempt to delete candidate experience with non integer values for candidate_id & experience_id
         Expect: 404
@@ -200,7 +200,7 @@ class TestDeleteWorkExperienceBullet(object):
     BULLET_URL = CandidateApiUrl.EXPERIENCE_BULLET
     BULLETS_URL = CandidateApiUrl.EXPERIENCE_BULLETS
 
-    def test_non_logged_in_user_delete_can_experience_bullets(self):
+    def test_non_logged_in_user_delete_can_experience_bullets(self, access_token_first):
         """
         Test:   Delete candidate's experience-bullets without logging in
         Expect: 401
@@ -210,7 +210,7 @@ class TestDeleteWorkExperienceBullet(object):
         print response_info(resp)
         assert resp.status_code == self.UNAUTHORIZED
 
-    def test_delete_candidate_experience_bullet_with_bad_input(self):
+    def test_delete_candidate_experience_bullet_with_bad_input(self, access_token_first):
         """
         Test:   Attempt to delete candidate experience-bullet with non integer values
                 for candidate_id & experience_id

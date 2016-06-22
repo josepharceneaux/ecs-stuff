@@ -63,7 +63,8 @@ def process_resume(parse_params):
 
     candidate_references = parsed_resume['candidate'].pop('references', None)
     candidate_created, candidate_id = create_parsed_resume_candidate(parsed_resume['candidate'],
-                                                             oauth_string, filename_str)
+                                                                     oauth_string, filename_str)
+    print "\ncandidate_created: {}\ncandidate_id: {}".format(candidate_created, candidate_id)
 
     if not candidate_created:
         # We must update!
