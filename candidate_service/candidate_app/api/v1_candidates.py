@@ -128,6 +128,8 @@ class CandidatesResource(Resource):
 
                 # If candidate's email is found, check if it's web-hidden
                 candidate_email_obj = get_email_if_validated(email_address, domain_id)
+                logger.info("AFTER EMAIL QUERY BENCHMARK - {}".format(time() - start_time))
+
                 if candidate_email_obj:
 
                     # Cache candidate's email
@@ -157,6 +159,8 @@ class CandidatesResource(Resource):
 
                     elif candidate_id in candidate_ids_from_candidate_email_obj:
                         continue
+
+            logger.info("AFTER EMAIL VALIDATION BENCHMARK - {}".format(time() - start_time))
 
             # Provided source ID must belong to candidate's domain
             source_id = _candidate_dict.get('source_id')
