@@ -60,10 +60,10 @@ def run_migrations(logger, db):
         pathname = "{}/{}".format(migrations_directory, f)
         if not os.path.isfile(pathname):
             logger.exception("Unexpected non-file found in migrations directory: {}".format(pathname))
-        if invalid_migration_filename(f):
+        elif invalid_migration_filename(f):
             logger.exception("Incorrect migration filename: {}".format(f))
-
-        files.append(pathname)
+        else:
+            files.append(pathname)
 
     if len(files) == 0:
         logger.info("No migrations to process.")
