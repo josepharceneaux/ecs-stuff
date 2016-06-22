@@ -50,11 +50,9 @@ def parse_resume(file_obj, filename_str):
         )
 
     else:
-        # file_obj.seek(0)
         doc_content = file_obj.getvalue()
 
     if not doc_content:
-        # file_obj.seek(0)
         boto3_put(file_obj.getvalue(), filename_str, 'FailedResumes')
         raise InvalidUsage("Unable to determine the contents of the document: {}".format(filename_str))
 
@@ -119,12 +117,10 @@ def unencrypt_pdf(pdf_file_obj):
             pdf_writer.addPage(pdf_reader.getPage(page_no))
             pdf_writer.write(unencrypted_pdf_io)
 
-        # unencrypted_pdf_io.seek(0)
-
         return unencrypted_pdf_io
 
     else:
-        # pdf_file_obj.seek(0)
+        pdf_file_obj.seek(0)
         return pdf_file_obj
 
 def get_or_store_parsed_resume(resume_file, filename_str):
