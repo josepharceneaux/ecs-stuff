@@ -31,6 +31,7 @@ def google_vision_ocr(file_string_io):
     :param cStringIO.StringIO file_string_io:
     :return unicode:
     """
+    file_string_io.seek(0)
     b64_string = base64.b64encode(file_string_io.getvalue())
     req_data = {
         "requests": [
@@ -87,7 +88,8 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
     """
 
     # Post the image to Abby
-    files = {'file': img_file_obj.seek(0)}
+    img_file_obj.seek(0)
+    files = {'file': img_file_obj}
     abbyy_response = requests.post(ABBY_URL, auth=ABBY_OCR_API_AUTH_TUPLE, files=files,
                                    data={'profile': 'documentConversion', 'exportFormat': export_format})
 
