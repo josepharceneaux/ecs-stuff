@@ -103,6 +103,7 @@ class DomainSourceResource(Resource):
                 'domain_id': source.domain_id,
                 'added_datetime': str(source.added_datetime)
             }}
+
         # Get all of user's domain sources
         return {'sources': [
             {

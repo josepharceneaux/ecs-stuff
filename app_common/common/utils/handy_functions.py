@@ -451,3 +451,15 @@ def purge_dict(dictionary, strip=True, remove_empty_strings_only=False):
     # return keys with values that aren't None
     else:
         return {k: v for k, v in dictionary.items() if (v or clean(v))}
+
+
+def normalize_value(value):
+    """
+    Function will strip & lower value
+    Value must be string, not None
+    :param value: any string value
+    :type value: str
+    :rtype:  str
+    """
+    assert isinstance(value, basestring), "value must be of type string"
+    return value.strip().lower()
