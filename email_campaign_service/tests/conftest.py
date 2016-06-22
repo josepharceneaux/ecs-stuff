@@ -1,6 +1,3 @@
-from email_campaign_service.common.tests.conftest import get_auth_header
-from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
-
 __author__ = 'basit'
 
 import re
@@ -15,6 +12,7 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   delete_campaign,
                                                                   send_campaign_helper,
                                                                   create_smartlist_with_given_email_candidate)
+from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
