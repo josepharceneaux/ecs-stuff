@@ -139,7 +139,7 @@ class TestDeleteCandidateAddress(object):
         assert resp.status_code == 401
         assert resp.json()['error']['code'] == 11
 
-    def test_delete_candidate_address_with_bad_input(self):
+    def test_delete_candidate_address_with_bad_input(self, access_token_second):
         """
         Test:   Attempt to delete candidate address with non integer values for candidate_id & address_id
         Expect: 404
@@ -255,7 +255,7 @@ class TestDeleteCandidateAddress(object):
 
 
 class TestDeleteCandidateAOI(object):
-    def test_non_logged_in_user_delete_can_aoi(self):
+    def test_non_logged_in_user_delete_can_aoi(self, access_token_first):
         """
         Test:   Delete candidate's aoi without logging in
         Expect: 401
@@ -362,7 +362,7 @@ class TestDeleteCandidateAOI(object):
 
 
 class TestDeleteCandidateCustomField(object):
-    def test_non_logged_in_user_delete_can_custom_field(self):
+    def test_non_logged_in_user_delete_can_custom_field(self, access_token_first):
         """
         Test:   Delete candidate's custom fields without logging in
         Expect: 401
@@ -477,7 +477,7 @@ class TestDeleteCandidateEducation(object):
         Expect: 401
         """
         # Delete Candidate's educations
-        resp = send_request('delete', CandidateApiUrl.EDUCATIONS % 5, access_token_first)
+        resp = send_request('delete', CandidateApiUrl.EDUCATIONS % 5, None)
         print response_info(resp)
         assert resp.status_code == 401
 

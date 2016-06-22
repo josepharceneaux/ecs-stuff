@@ -1,5 +1,5 @@
 """Main resume parsing logic & functions."""
-# pylint: disable=wrong-import-position, fixme
+# pylint: disable=wrong-import-position, fixme, import-error
 # Standard library
 import json
 # Third Party/Framework Specific.
@@ -62,13 +62,14 @@ def process_resume(parse_params):
         logger.exception('Failure during s3 upload; reason: {}'.format(e.message))
 
     candidate_references = parsed_resume['candidate'].pop('references', None)
-    candidate_created, candidate_id = create_parsed_resume_candidate(parsed_resume['candidate'],
-                                                             oauth_string, filename_str)
+    candidate_created, candidate_id = create_parsed_resume_candidate(
+        parsed_resume['candidate'], oauth_string, filename_str)
 
     if not candidate_created:
         # We must update!
         parsed_resume['candidate']['id'] = candidate_id
-        candidate_updated = update_candidate_from_resume(parsed_resume['candidate'], oauth_string, filename_str)
+        candidate_updated = update_candidate_from_resume(
+            parsed_resume['candidate'], oauth_string, filename_str)
 
     # References have their own endpoint and are not part of /candidates POSTed data.
     if candidate_references:

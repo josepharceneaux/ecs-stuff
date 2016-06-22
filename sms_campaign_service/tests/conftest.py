@@ -19,7 +19,7 @@ from sms_campaign_service.common.tests.conftest import \
      sample_client, test_domain, first_group, domain_first, user_first, candidate_first,
      test_domain_2, second_group, domain_second, candidate_second,
      user_same_domain, user_from_diff_domain, access_token_second, talent_pipeline, talent_pool,
-     access_token_other, access_token_same, talent_pool_other, talent_pipeline_other, _get_auth_header)
+     access_token_other, access_token_same, talent_pool_other, talent_pipeline_other, get_auth_header)
 
 # Service specific
 from sms_campaign_service.sms_campaign_app import app
@@ -87,7 +87,7 @@ def headers(access_token_first):
     for "user_first".
     :param access_token_first: fixture to get access token of user
     """
-    return _get_auth_header(access_token_first)
+    return get_auth_header(access_token_first)
 
 
 @pytest.fixture()
@@ -97,7 +97,7 @@ def headers_same_domain(access_token_same):
     to make POST/DELETE requests.
     :param access_token_same: fixture to get access token of other user from same domain
     """
-    return _get_auth_header(access_token_same)
+    return get_auth_header(access_token_same)
 
 
 @pytest.fixture(params=['user_first', 'user_same_domain'])
@@ -135,7 +135,7 @@ def headers_other(access_token_other):
     to make POST/DELETE requests.
     :param access_token_other: fixture to get access token of user from some other domain
     """
-    return _get_auth_header(access_token_other)
+    return get_auth_header(access_token_other)
 
 
 @pytest.fixture()
@@ -205,10 +205,10 @@ def invalid_data_for_campaign_creation(request):
     return campaign_data, request.param
 
 
-@pytest.fixture(params=[0, 'abcdef', None, dict(), list()])
-def invalid_smartlist_id(request):
+@pytest.fixture(params=[0, 'a', '1', None, dict(), list()])
+def invalid_id(request):
     """
-    This function returns invalid smartlist Ids to create an sms-campaign.
+    This function returns invalid Ids to create/update/delete an sms-campaign.
     """
     return [request.param]
 
@@ -256,10 +256,10 @@ def sms_campaign_with_two_smartlists(request, campaign_valid_data, access_token_
     This creates the SMS campaign for "user_first"(fixture) using valid data and two smartlists.
     It then returns the campaign object.
     """
-    smartlist_1_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-access_token_first, talent_pipeline, create_phone=True)
-    smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, create_phone=True)
+    smartlist_1_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
+                                                                              talent_pipeline, create_phone=True)
+    smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
+                                                                              talent_pipeline, create_phone=True)
     campaign_valid_data['smartlist_ids'] = [smartlist_1_id, smartlist_2_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers, talent_pipeline.user.id)
 
