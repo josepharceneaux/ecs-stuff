@@ -170,24 +170,23 @@ class SocialNetworkBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self,  assert_credentials=True, *args, **kwargs):
+    def __init__(self,  validate_credentials=True, *args, **kwargs):
         """
         - This sets the user's credentials as base class property so that it
             can be used in other classes.
-
-        - We also check the validity of access token and try to refresh it in
-            case it has expired.
-        :param args:
-        :param kwargs:
-        :return:
+        - We also check the validity of access token and try to refresh it in case it has expired.
+        :param bool validate_credentials: If True, this will validate the credentials of user for given social network.
+        :param list args: List of arguments to be passed
+        :param dict kwargs: Keyword arguments
         """
+        # TODO: update signature of __init__
         self.events = []
         self.api_relative_url = None
         self.user, self.social_network = self.get_user_and_social_network(kwargs.get('user_id'),
                                                                           kwargs.get('social_network'))
         self.user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(self.user.id,
                                                                                               self.social_network.id)
-        if assert_credentials:
+        if validate_credentials:
             if not self.user_credentials:
                 raise UserCredentialsNotFound('UserSocialNetworkCredential for social network '
                                               '%s and User Id %s not found in db.'
@@ -233,6 +232,12 @@ class SocialNetworkBase(object):
                 self.get_member_id()
 
     def get_user_and_social_network(self, user_id, social_network=None):
+        """
+        This gets the User object and social network object from database.
+        :param int | long user_id: Id of user
+        :param SocialNetwork | None social_network:
+        :rtype: tuple
+        """
         raise_if_not_positive_int_or_long(user_id)
         user = User.query.get(user_id)
         if not user:

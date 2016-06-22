@@ -28,8 +28,15 @@ class Twitter(SocialNetworkBase):
     This class is inherited from SocialNetworkBase class.
     Developers can see the docs here http://tweepy.readthedocs.io/en/v3.5.0/auth_tutorial.html to connect
     users with their Twitter accounts.
-    """
 
+    Here is the flow how getTalent user is connected with its Twitter account.
+    1)    When user clicks on Twitter button on profile page to connect with Twitter account, endpoint
+    https://127.0.0.1:8007/v1/twitter_auth is hit where we create object of this class and call its method
+    authenticate(). This redirects the user to Twitter website to enter credentials and grant access to getTalent app.
+    2)    Once user is successfully logged-in to Twitter account, it is redirected to the endpoint
+    https://127.0.0.1:8007/v1/twitter_callback to get access token where we create object of this class and call its
+    method callback().
+    """
     def __init__(self, *args, **kwargs):
         super(Twitter, self).__init__(**kwargs)
         self.consumer_key = self.social_network.client_key

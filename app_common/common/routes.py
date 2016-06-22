@@ -621,8 +621,8 @@ class SocialNetworkApi(object):
     RSVP = '/' + VERSION + '/rsvp'
     CODE = '/' + VERSION + '/code'
     # URL for Twitter authentication
-    TWITTER_AUTH = '/' + VERSION + '/twitter_auth/<int:user_id>'
-    TWITTER_CALLBACK = '/' + VERSION + '/twitter_callback/<int:user_id>'
+    TWITTER_AUTH = '/' + VERSION + '/twitter-auth/<int:user_id>'
+    TWITTER_CALLBACK = '/' + VERSION + '/twitter-callback/<int:user_id>'
 
 
 class SocialNetworkApiUrl(object):
@@ -648,7 +648,7 @@ class SocialNetworkApiUrl(object):
     USER_SOCIAL_NETWORK_CREDENTIALS = HOST_NAME % ('/' + VERSION + '/social-networks/%s/user/credentials')
     RSVP = HOST_NAME % ('/' + VERSION + '/rsvp')
     CODE = HOST_NAME % ('/' + VERSION + '/code')
-    TWITTER_CALLBACK= HOST_NAME % ('/' + VERSION + '/twitter_callback/%s')
+    TWITTER_CALLBACK= HOST_NAME % ('/' + VERSION + '/twitter-callback/%s')
 
 
 class SmsCampaignApi(object):

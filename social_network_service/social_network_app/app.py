@@ -8,7 +8,7 @@ import json
 
 # 3rd party imports
 import flask
-from flask import request, redirect, session, render_template
+from flask import request, redirect
 
 # Application specific imports
 from restful.v1_data import data_blueprint
@@ -39,7 +39,7 @@ WEBHOOK_REDIRECT_URL = 'https://729c03b1.ngrok.io'
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return 'Welcome to social-network-service'
 
 
 @app.route(SocialNetworkApi.CODE)
@@ -48,7 +48,6 @@ def authorize():
     This is a redirect URL which will be hit when a user accept the invitation on meetup or eventbrite
     In case of meetup the querystring args contain 'state'
     and in case of eventbrite the querystring args does not contain 'state' parameter
-    :return:
     """
     code = request.args.get('code')
     url = SocialNetworkApiUrl.UI_APP_URL + '/campaigns/events/subscribe?code=%s' % code
@@ -120,7 +119,7 @@ def handle_rsvp():
 def twitter_auth(user_id):
     """
     This endpoint is hit when user clicks on profile page to connect with Twitter account.
-    Here we create object of Twitter class defined in social_network/twitter.py and call its method authentication().
+    Here we create object of Twitter class defined in social_network/twitter.py and call its method authenticate().
     This redirects the user to Twitter website to enter credentials and grant access to getTalent app.
     :param int | long user_id: Id of logged-in user
 
@@ -128,7 +127,7 @@ def twitter_auth(user_id):
         .. seealso:: authentication() method defined in Twitter class inside social_network/twitter.py.
 
     """
-    twitter_obj = Twitter(user_id=user_id, assert_credentials=False)
+    twitter_obj = Twitter(user_id=user_id, validate_credentials=False)
     return twitter_obj.authenticate()
 
 
@@ -142,5 +141,5 @@ def callback(user_id):
     **See Also**
         .. seealso:: callback() method defined in Twitter class inside social_network/twitter.py.
     """
-    twitter_obj = Twitter(user_id=user_id, assert_credentials=False)
+    twitter_obj = Twitter(user_id=user_id, validate_credentials=False)
     return twitter_obj.callback(request.args['oauth_verifier'])
