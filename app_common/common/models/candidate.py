@@ -228,7 +228,7 @@ class CandidateSource(db.Model):
         Function will return domain source
         :type source_id:  int | long
         :type domain_id:  int | long
-        :rtype:  bool
+        :rtype:  CandidateSource | None
         """
         return cls.query.filter_by(id=source_id, domain_id=domain_id).first()
 
