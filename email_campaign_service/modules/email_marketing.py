@@ -1103,6 +1103,9 @@ def get_filtered_email_rows(campaign, subscribed_candidate_ids):
                          'Candidate ids are: %s'
                          % (len(search_result), email, campaign.user.id, campaign.user.domain_id,
                             [candidate_email.candidate_id for candidate_email in search_result]))
+
+            # Check if this email is already present in list of addresses to which campaign would be sent.
+            # If so, omit the entry and continue.
             if any(email in emails for emails in filtered_email_rows):
                 continue
             else:
