@@ -151,9 +151,16 @@ def parse_candidate_emails(bs_contact_xml_list):
     for contact in bs_contact_xml_list:
         emails = contact.findAll('email')
         for e in emails:
-            email = e.text.strip()
-            output.append({'address': email})
-    return output
+            email_addr = e.text.strip()
+            output.append(email_addr)
+
+    unique_emails = set(output)
+    unique_output = []
+
+    for email in unique_emails:
+        unique_output.append({'address': email})
+
+    return unique_output
 
 
 def parse_candidate_phones(bs_contact_xml_list):

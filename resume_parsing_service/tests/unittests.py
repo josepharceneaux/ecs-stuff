@@ -764,3 +764,17 @@ def test_reference_parsing():
     references_list = soup.findAll('references')
     references = parse_candidate_reference(references_list)
     assert references == u'References\n\nDerek Framer - (408) 835-6219\nJamtry Jonas - (408) 923-7259\nJoaquín Rodrigo'
+
+
+def test_parses_duplicate_emails():
+    double_email = """
+        <contact>
+            <email>k_begonia@yahoo.com</email>
+            <email>k_begonia@yahoo.com</email>
+            <email>k_begonia2@yahoo.com</email>
+        </contact>
+    """
+    soup = bs4(double_email)
+    contact = soup.findAll('contact')
+    parsed_emails = parse_candidate_emails(contact)
+    assert len(parsed_emails) == 2
