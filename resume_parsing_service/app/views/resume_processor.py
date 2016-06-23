@@ -93,7 +93,7 @@ def get_or_store_parsed_resume(resume_file, filename_str):
     :param filename_str:
     :return:
     """
-    hashed_file_name = gen_hash_from_file(resume_file)
+    hashed_file_name = 'parsedResume_{}'.format(gen_hash_from_file(resume_file))
     cached_resume = redis_store.get(hashed_file_name)
 
     if cached_resume:
