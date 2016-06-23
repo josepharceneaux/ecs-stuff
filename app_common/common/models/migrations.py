@@ -1,25 +1,27 @@
 '''
 Package for performing database migrations.
 
-Files located in the 'migrations' directory under each micro service may contain database migration code. The files must be named in
-the format: YYYY-MM-DD-HH-MM-SS  So, for example, 2016-04-19-14-13-00
+Files located in the 'migrations' directory under each micro service may contain database migration code.
+The files must be named in the format: YYYY-MM-DD-HH-MM-SS  So, for example, 2016-04-19-14-13-00
 
-Files are run in order, according to the timestamp represented by the file name, and then recorded in the database so that the same
-file is not run again. The name format recorded is: <service-name>/<filename> so migrations are scoped by service name.
+Files are run in order, according to the timestamp represented by the file name, and then recorded in the
+database so that the same file is not run again. The name format recorded is: <service-name>/<filename> so
+migrations are scoped by service name.
 '''
 
-import importlib
 import os
 from datetime import datetime
 
 from migration import Migration
 from ..error_handling import *
 
+
 # Format of a migration filename
 DATETIME_FORMAT = '%Y-%m-%d-%H-%M-%S'
 
 # Name of the migrations directory
 MIGRATIONS_DIRECTORY = 'migrations'
+
 
 def invalid_migration_filename(filename):
     '''
@@ -32,10 +34,11 @@ def invalid_migration_filename(filename):
 
     try:
         date_object = datetime.strptime(filename, DATETIME_FORMAT)
-    except Exception as e:
+    except Exception:
         return True
 
     return False
+
 
 def run_migrations(logger, db):
     '''
@@ -91,7 +94,7 @@ def run_migrations(logger, db):
             try:
                 execfile(f)
             except Exception as e:
-                logger.exception("Can't execute migration file {} due to {}".format(f, e.message))
+                logger.exception("Can't execute migration file {} due to {}".format(f, e))
 
             # Record migration processed
             logger.info("Recording {}".format(name))
@@ -102,8 +105,8 @@ def run_migrations(logger, db):
         else:
             # Since we expect our timestamp-inspired naming convention to be unique, we should never find more than one
             if len(migrations_found) > 1:
-                logger.error("Multiple records for migration: ".format(migrations_found[0].name))
-            logger.info("Skipping recorded migration".format(migrations_found[0].name))
+                logger.error("Multiple records for migration: {}".format(migrations_found[0].name))
+            logger.info("Skipping recorded migration {}".format(migrations_found[0].name))
 
     logger.info("{} migrations performed".format(migrated_count))
 
