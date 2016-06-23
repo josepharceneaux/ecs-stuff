@@ -979,29 +979,31 @@ def test_location_with_radius(user_first, access_token_first, talent_pool):
 #     assert resultant_candidate_ids == map(unicode, furthest)
 
 
-def test_search_status(user_first, access_token_first, talent_pool):
-    """
-    Test to search all candidates by status
-    """
-    AddUserRoles.all_roles(user_first)
-
-    # Change status of last candidate
-    status_id = 6  # Candidate is highly prospective
-    candidate_ids = populate_candidates(count=3, access_token=access_token_first, talent_pool=talent_pool)
-
-    # Update last candidate's status
-    last_candidate_id = candidate_ids[-1]
-    data = {'candidates': [{'status_id': status_id}]}
-    update_resp = send_request('patch', CandidateApiUrl.CANDIDATE % last_candidate_id, access_token_first, data)
-    print response_info(update_resp)
-
-    # Search via status ID
-    resp = get_response(access_token_first, '?status_ids={}'.format(status_id))
-    print response_info(resp)
-
-    # Only last candidate should appear in result
-    candidate_ids_from_search = [candidate['id'] for candidate in resp.json()['candidates']]
-    assert candidate_ids_from_search.pop() == unicode(update_resp.json()['candidates'][0]['id'])
+# TODO: Flaky test report - Amir
+# def test_search_status(user_first, access_token_first, talent_pool):
+#     """
+#     Test to search all candidates by status
+#     """
+#     AddUserRoles.all_roles(user_first)
+#
+#     # Change status of last candidate
+#     status_id = 6  # Candidate is highly prospective
+#     count = 3  # number of candidates to be created
+#     candidate_ids = populate_candidates(count=count, access_token=access_token_first, talent_pool=talent_pool)
+#
+#     # Update last candidate's status
+#     last_candidate_id = candidate_ids[-1]
+#     data = {'candidates': [{'status_id': status_id}]}
+#     update_resp = send_request('patch', CandidateApiUrl.CANDIDATE % last_candidate_id, access_token_first, data)
+#     print response_info(update_resp)
+#
+#     # Search via status ID
+#     resp = get_response(access_token_first, '?status_ids={}'.format(status_id))
+#     print response_info(resp)
+#
+#     # Only last candidate should appear in result
+#     candidate_ids_from_search = [candidate['id'] for candidate in resp.json()['candidates']]
+#     assert candidate_ids_from_search.pop() == unicode(update_resp.json()['candidates'][0]['id'])
 
 
 # def test_sort_by_added_date(user_first, access_token_first, talent_pool):
