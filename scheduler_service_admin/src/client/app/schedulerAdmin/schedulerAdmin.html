@@ -11,19 +11,19 @@
                 <thead>
                   <tr>
                     <th>Task ID</th>
-                    <th>Owner</th>
-                    <th>Task type</th>
-                    <th>Task Category</th>
-                    <th>Data</th>
+                    <th class="hideOnSMobile">Owner</th>
+                    <th class="hideOnMMobile">Task type</th>
+                    <th class="hideOnLMobile">Task Category</th>
+                    <th class="hideOnLaptop hideOnTablet">Data</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr ng-repeat="task in vm.tasks">
                     <td>{{task.id}}</td>
-                    <td>{{task.user_email}}</td>
-                    <td>{{task.task_type}}</td>
-                    <td>{{task.task_category}}</td>
-                    <td>
+                    <td class="hideOnSMobile overflow-text-S">{{task.user_email}}</td>
+                    <td class="hideOnMMobile">{{task.task_type}}</td>
+                    <td class="hideOnLMobile">{{task.task_category}}</td>
+                    <td class="hideOnLaptop hideOnTablet">
                       <div ng-switch on="task.task_type">
                         <div ng-switch-when="one_time">
                           <!-- one_time task block-->
@@ -60,8 +60,7 @@
                 <h3></h3>
                 <md-list>
                   <md-list-item>
-                    <p> {{ vm.paused.name }} </p>
-                    <md-switch ng-change="vm.applyFilter()" class="md-secondary" ng-model="vm.paused.enabled"></md-switch>
+                    <md-switch ng-change="vm.applyFilter()" class="md-secondary" ng-model="vm.paused.enabled"><p> {{ vm.paused.name }} </p></md-switch>
                   </md-list-item>
                   <md-input-container class="md-block">
                     <label>User ID</label>

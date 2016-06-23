@@ -1079,7 +1079,7 @@ a.btn {
     }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1199px) {
     body {
         margin: 0 auto;
     }
@@ -1171,7 +1171,7 @@ a.btn {
     }
 }
 
-@media (min-width: 768px) and (max-width: 979px) {
+@media (min-width: 1200px) and (max-width: 1366px) {
     .form {
         margin: 0 !important;
     }
@@ -1290,24 +1290,6 @@ a.btn {
 
 
 /*#endregion */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /*#region Override background color theme */
 
@@ -1676,7 +1658,7 @@ small {
 
 /*#region Responsive */
 
-@media (max-width: 979px) {
+@media (max-width: 1366px) {
     .sidebar-filler {
         width: 200px;
     }
@@ -1709,13 +1691,13 @@ small {
     }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1200px) {
     .sidebar .sidebar-inner {
         display: block !important;
     }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1199px) {
     .sidebar-filler {
         display: none;
     }
@@ -1819,14 +1801,62 @@ summary:focus {
 	outline-style: none;
 }
 
-
 .overflow-text {
-    white-space: nowrap;
-    width: 30em;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
+     white-space: nowrap;
+     width: 30em;
+     overflow: hidden;
+     text-overflow: ellipsis;
+   }
 
+.overflow-text-S {
+     white-space: nowrap;
+     max-width: 6em;
+     overflow: hidden;
+     text-overflow: ellipsis;
+   }
+
+ @media (max-width: 1600px){
+   summary.overflow-text {
+     width: 25em;
+   }
+ }
+
+
+@media (max-width: 1400px){
+   summary.overflow-text {
+     width: 21em;
+   }
+ }
+
+@media (max-width: 1360px){
+   .hideOnLaptop {
+     display:none;
+   }
+ }
+
+@media (max-width: 900px){
+   .hideOnTablet {
+     display:none;
+   }
+ }
+
+@media (max-width: 768px){
+   .hideOnLMobile {
+     display:none;
+   }
+ }
+
+@media (max-width: 425px){
+   .hideOnMMobile {
+     display:none;
+   }
+ }
+
+@media (max-width: 424px){
+   .hideOnSMobile {
+     display:none;
+   }
+ }
 
 .state-login{
     /* background-color: #009bcc; */
