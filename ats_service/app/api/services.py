@@ -17,16 +17,18 @@ import ats_service.app
 from ats_service.common.models.ats import ATS
 
 
-class ServicesList(Resource):
+class ATSService(Resource):
     """
-    Controller for /v1/ats-list. Return a list of ATS we have integrated with.
+    Controller for /v1/ats
+
+    Return a list of ATS we have integrated with.
     """
 
     decorators = [require_oauth()]
 
     def get(self, **kwargs):
         """
-        GET /v1/ats-list
+        GET /v1/ats
         """
 
         # Authenticated user
@@ -34,3 +36,45 @@ class ServicesList(Resource):
 
         ats_service.app.logger.info("ATS {} {} ({})".format(request.method, request.path, request.user.email))
         return ATS.get_all_as_json()
+
+    def put(self, **kwargs):
+        """
+        GET /v1/ats/:account_id
+
+        Refresh the ATS data for an account.
+        """
+
+
+class UsersService(Resource):
+    """
+    Controller for /v1/users
+    """
+    
+    decorators = [require_oauth()]
+
+    def get(self, **kwargs):
+        """
+        GET /v1/users/:id
+
+        Retrieve a list of ATS accounts associated with a user.
+        """
+
+    def post(self, **kwargs):
+        """
+        GET /v1/users/:id
+
+        Register an ATS account with a user.
+        """
+
+    def delete(self, **kwargs):
+        """
+        GET /v1/users/:id
+
+        Remove an ATS account associated with a user.
+        """
+
+
+class CandidateService(Resource):
+    """
+    Controller for /v1/candidate
+    """

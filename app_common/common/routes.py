@@ -815,19 +815,21 @@ class EmailCampaignApiUrl(object):
 
 class ATSServiceApi(object):
     """
-    REST URLs for ATS Service endpoints
+    REST URLs for ATS service endpoints
     """
     VERSION = 'v1'
-    SERVICES = '/' + VERSION + '/ats-list'
+    SERVICES = '/' + VERSION + '/ats'
+    USERS = '/' + VERSION + '/users'
     URL_REDIRECT = '/' + VERSION + '/redirect/<int:url_conversion_id>'
 
 
 class ATSServiceApiUrl(object):
     """
-    URLs to be used in Py-tests
+    URLs for ATS services.
     """
     VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.ATS_SERVICE_NAME, GTApis.ATS_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    SERVICES = HOST_NAME % ('/' + VERSION + '/ats-list')
+    SERVICES = HOST_NAME % ('/' + VERSION + '/ats')
+    USERS = HOST_NAME % ('/' + VERSION + '/users')
     URL_REDIRECT = HOST_NAME % ('/' + VERSION + '/redirect/%s')
