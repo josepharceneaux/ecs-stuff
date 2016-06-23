@@ -4,13 +4,14 @@ import types
 
 # 3rd party imports
 import flask
+import requests
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 
 from social_network_service.common.error_handling import InvalidUsage
 from social_network_service.common.models.candidate import SocialNetwork
-from social_network_service.common.models.user import UserSocialNetworkCredential
-from social_network_service.common.routes import SocialNetworkApi
+from social_network_service.common.models.user import UserSocialNetworkCredential, User
+from social_network_service.common.routes import SocialNetworkApi, SchedulerApiUrl, SocialNetworkApiUrl
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.utils.api_utils import api_route
 from social_network_service.common.utils.auth_utils import require_oauth
@@ -159,3 +160,23 @@ class RsvpEventImporterEventbrite(Resource):
             data = {'message': error_message,
                     'status_code': 200}
             return flask.jsonify(**data)
+
+
+def schedule_importer_job():
+    """
+    Schedule a general job which hit RSVP importer endpoint every hour.
+    :return:
+    """
+    secret_key_id, access_token = User.generate_jw_token()
+    headers = {
+            'Content-Type': 'application/json',
+            'X-Talent-Secret-Key-ID': secret_key_id,
+            'Authorization': access_token
+        }
+    data = {
+        'url': SocialNetworkApiUrl.IMPORTER % ('rsvp', 'meetup'),
+        'start_datetime':,
+        'end_datetime': ,
+        'task_name': '',
+    }
+    requests.post(SchedulerApiUrl.TASKS, headers=headers)

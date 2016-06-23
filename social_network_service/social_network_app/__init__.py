@@ -1,4 +1,4 @@
-from social_network_service.common.utils.celery_utils import init_celery_app
+from social_network_service.common.talent_celery import init_celery_app
 from social_network_service.common.utils.models_utils import init_talent_app
 
 __author__ = 'zohaib'
