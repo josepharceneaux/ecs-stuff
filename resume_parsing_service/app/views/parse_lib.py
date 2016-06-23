@@ -23,8 +23,6 @@ from resume_parsing_service.common.utils.talent_s3 import boto3_put
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
                  '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
 DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
-GOOGLE_API_KEY = "AIzaSyD4i4j-8C5jLvQJeJnLmoFW6boGkUhxSuw"
-GOOGLE_CLOUD_VISION_URL = "https://vision.googleapis.com/v1/images:annotate"
 RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 
 def parse_resume(file_obj, filename_str):
@@ -41,7 +39,6 @@ def parse_resume(file_obj, filename_str):
     if file_ext == '.pdf':
         file_obj = unencrypt_pdf(file_obj)
 
-    file_obj.seek(0)
 
     if is_resume_image(file_ext, file_obj):
         # If file is an image, OCR it
@@ -53,11 +50,10 @@ def parse_resume(file_obj, filename_str):
         )
 
     else:
-        doc_content = file_obj.read()
+        doc_content = file_obj.getvalue()
 
     if not doc_content:
-        file_obj.seek(0)
-        boto3_put(file_obj.read(), filename_str, 'FailedResumes')
+        boto3_put(file_obj.getvalue(), filename_str, 'FailedResumes')
         raise InvalidUsage("Unable to determine the contents of the document: {}".format(filename_str))
 
     try:
@@ -85,6 +81,7 @@ def convert_pdf_to_text(pdf_file_obj):
     :return str:
     """
     text = ''
+    pdf_file_obj.seek(0)
     pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
     page_count = pdf_reader.numPages
 
@@ -103,6 +100,7 @@ def unencrypt_pdf(pdf_file_obj):
     :param cStringIO.StringIO pdf_file_obj:
     :return cStringIO.StringIO:
     """
+    pdf_file_obj.seek(0)
     pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
 
     if pdf_reader.isEncrypted:
@@ -111,18 +109,18 @@ def unencrypt_pdf(pdf_file_obj):
             raise InternalServerError(
                 'The PDF appears to be encrypted and could not be read. Please try using an un-encrypted PDF')
 
-        tmp = StringIO()
+        unencrypted_pdf_io = StringIO()
         pdf_writer = PyPDF2.PdfFileWriter()
         page_count = pdf_reader.numPages
 
         for page_no in xrange(page_count):
             pdf_writer.addPage(pdf_reader.getPage(page_no))
+            pdf_writer.write(unencrypted_pdf_io)
 
-            pdf_writer.write(tmp)
-
-        return tmp
+        return unencrypted_pdf_io
 
     else:
+        pdf_file_obj.seek(0)
         return pdf_file_obj
 
 def get_or_store_parsed_resume(resume_file, filename_str):
