@@ -251,7 +251,7 @@ class GenerateCandidateData(object):
     def educations(talent_pool_ids=None, candidate_id=None, education_id=None, degree_id=None, bullet_id=None):
         """
         :type talent_pool_ids:  list[int]
-        :rtype:  dict[list]
+        :rtype:  dict[list[dict]]
         """
         data = {'candidates': [
             {
