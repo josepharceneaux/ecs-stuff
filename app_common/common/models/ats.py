@@ -24,7 +24,7 @@ class ATS(db.Model):
     updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
-        return "<ATS ( = %r)>" % self.body_text
+        return "<ATS ( = %r)>" % self.name
 
     def to_dict(self):
         """
@@ -69,3 +69,61 @@ class ATS(db.Model):
             return_json.append(item)
 
         return json.dumps(return_json)
+
+
+class ATSAccount(db.Model):
+    """
+    """
+    __tablename__ = 'ats_account'
+    id = db.Column(db.BigInteger, primary_key=True)
+    active = db.Column(db.Boolean, default=False)
+    ats_id = db.Column(db.BigInteger)
+    user_id = db.Column(db.BigInteger)
+    ats_credential_id = db.Column(db.BigInteger)
+    added_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+
+    def __repr__(self):
+        return "<ATS Credential ( = %r)>" % self.id
+
+class ATSCredential(db.Model):
+    """
+    """
+    __tablename__ = 'ats_credential'
+    id = db.Column(db.BigInteger, primary_key=True)
+    ats_account_id = db.Column(db.BigInteger)
+    auth_type = db.Column(db.String(45))
+    credentials_json = db.Column(db.Text)
+    updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+
+    def __repr__(self):
+        return "<ATS Credential ( = %r)>" % self.credentials_json
+
+
+class ATSCandidate(db.Model):
+    """
+    """
+    __tablename__ = 'ats_candidate'
+    id = db.Column(db.BigInteger, primary_key=True)
+    ats_remote_id = db.Column(db.String(100))
+    gt_candidate_id = db.Column(db.BigInteger)
+    added_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+
+    def __repr__(self):
+        return "<ATS Candidate ( = %r)>" % self.ats_remote_id
+
+
+class ATSCandidateProfile(db.Model):
+    """
+    """
+    __tablename__ = 'ats_candidate_profile'
+    id = db.Column(db.BigInteger, primary_key=True)
+    active = db.Column(db.Boolean, default=False)
+    profile_json = db.Column(db.Text)
+    ats_id  = db.Column(db.BigInteger)
+    added_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+
+    def __repr__(self):
+        return "<ATS Candidate Profile ( = %r)>" % self.profile_json
