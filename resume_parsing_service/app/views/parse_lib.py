@@ -9,6 +9,7 @@ from time import time
 import base64
 import json
 # Third Party/Framework Specific.
+from flask import current_app
 import PyPDF2
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
@@ -53,7 +54,8 @@ def parse_resume(file_obj, filename_str):
         doc_content = file_obj.getvalue()
 
     if not doc_content:
-        boto3_put(file_obj.getvalue(), filename_str, 'FailedResumes')
+        bucket = current_app.config['S3_BUCKET_NAME']
+        boto3_put(file_obj.getvalue(), bucket, filename_str, 'FailedResumes')
         raise InvalidUsage("Unable to determine the contents of the document: {}".format(filename_str))
 
     try:

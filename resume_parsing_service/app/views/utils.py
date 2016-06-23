@@ -6,6 +6,7 @@ import hashlib
 import json
 from cStringIO import StringIO
 # Third Party
+from flask import current_app
 import boto3
 import requests
 # Module Specific
@@ -205,7 +206,8 @@ def resume_file_from_params(parse_params):
 
     if filepicker_key:
         filename_str = filepicker_key
-        resume_file = boto3_get_file(filename_str)
+        resume_bucket = current_app.config['S3_FILEPICKER_BUCKET_NAME']
+        resume_file = boto3_get_file(resume_bucket, filename_str)
     elif parse_params.get('filename'):
         resume_bin = parse_params.get('resume_file')
         resume_file = StringIO(resume_bin.read())
