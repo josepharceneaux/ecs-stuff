@@ -1,5 +1,5 @@
 """Main resume parsing logic & functions."""
-# pylint: disable=wrong-import-position, fixme
+# pylint: disable=wrong-import-position, fixme, import-error
 # Standard library
 import json
 # Third Party/Framework Specific.
@@ -20,9 +20,7 @@ from resume_parsing_service.common.utils.talent_s3 import boto3_put
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
                  '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
 DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
-GOOGLE_API_KEY = "AIzaSyD4i4j-8C5jLvQJeJnLmoFW6boGkUhxSuw"
-GOOGLE_CLOUD_VISION_URL = "https://vision.googleapis.com/v1/images:annotate"
-RESUME_EXPIRE_TIME = 604800  # one week in seconds.
+RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 
 
 def process_resume(parse_params):
@@ -62,14 +60,14 @@ def process_resume(parse_params):
         logger.exception('Failure during s3 upload; reason: {}'.format(e.message))
 
     candidate_references = parsed_resume['candidate'].pop('references', None)
-    candidate_created, candidate_id = create_parsed_resume_candidate(parsed_resume['candidate'],
-                                                                     oauth_string, filename_str)
-    print "\ncandidate_created: {}\ncandidate_id: {}".format(candidate_created, candidate_id)
+    candidate_created, candidate_id = create_parsed_resume_candidate(
+        parsed_resume['candidate'], oauth_string, filename_str)
 
     if not candidate_created:
         # We must update!
         parsed_resume['candidate']['id'] = candidate_id
-        candidate_updated = update_candidate_from_resume(parsed_resume['candidate'], oauth_string, filename_str)
+        candidate_updated = update_candidate_from_resume(
+            parsed_resume['candidate'], oauth_string, filename_str)
 
     # References have their own endpoint and are not part of /candidates POSTed data.
     if candidate_references:

@@ -196,7 +196,8 @@ def domain_aoi(domain_first):
 
 @pytest.fixture()
 def domain_custom_fields(domain_first):
-    """Will add custom fields to domain
+    """
+    Will add custom fields to domain
     :rtype:  list[CustomField]
     """
     custom_fields = [{'name': fake.word(), 'type': 'string'}, {'name': fake.word(), 'type': 'string'}]
