@@ -41,8 +41,8 @@ def create_email_campaign(user):
                                    user_id=user.id,
                                    is_hidden=0,
                                    subject=uuid.uuid4().__str__()[0:8] + ' It is a test campaign',
-                                   _from='haniqadri.qc@gmail.com',
-                                   reply_to='haniqadri.qc@gmail.com',
+                                   _from='test.gettalent@gmail.com',
+                                   reply_to='test.gettalent@gmail.com',
                                    body_html="<html><body>Email campaign test</body></html>",
                                    body_text="Email campaign test"
                                    )
