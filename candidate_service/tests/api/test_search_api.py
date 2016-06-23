@@ -22,7 +22,7 @@ from redo import retrier
 # Models
 from candidate_service.common.models.candidate import CandidateAddress
 from candidate_service.common.models.candidate import CandidateStatus
-from candidate_service.common.models.user import DomainRole
+from candidate_service.common.models.user import Permission
 
 # Routes
 from candidate_service.common.routes import CandidateApiUrl, UserServiceApiUrl
@@ -739,7 +739,7 @@ def test_custom_fields(user_first, access_token_first, candidate_first):
     Test various custom_fields
     """
     AddUserRoles.all_roles(user_first)
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS])
+    add_role_to_test_user(user_first, [Permission.Roles.CAN_EDIT_DOMAINS])
 
     # Create custom field category named as 'Certifications'
     data = {'custom_fields': [{'name': 'Certifications'}]}

@@ -6,10 +6,10 @@ from flask_restful import Resource
 # Models
 from candidate_service.common.models.db import db
 from candidate_service.common.models.candidate import CandidateCustomField
-from candidate_service.common.models.user import DomainRole
+from candidate_service.common.models.user import Permission
 from candidate_service.common.models.misc import CustomField
 # Validators
-from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
+from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 from candidate_service.modules.validators import (
     get_candidate_if_validated, does_candidate_cf_exist, is_custom_field_authorized, get_json_data_if_validated
@@ -25,7 +25,7 @@ from candidate_service.modules.talent_cloud_search import upload_candidate_docum
 class CandidateCustomFieldResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoints:  POST /v1/candidates/:candidate_id/custom_fields
@@ -78,7 +78,7 @@ class CandidateCustomFieldResource(Resource):
         upload_candidate_documents([candidate_id])
         return {'candidate_custom_fields': [{'id': custom_field_id} for custom_field_id in created_ccf_ids]}, 201
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints:
@@ -128,7 +128,7 @@ class CandidateCustomFieldResource(Resource):
                     'created_at_datetime': ccf.added_time.isoformat()
                 } for ccf in CandidateCustomField.get_candidate_custom_fields(candidate_id)]}
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:

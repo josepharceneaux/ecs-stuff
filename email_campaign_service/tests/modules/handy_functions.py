@@ -12,7 +12,7 @@ from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import fake
-from email_campaign_service.common.models.user import DomainRole
+from email_campaign_service.common.models.user import Permission
 from email_campaign_service.common.models.misc import (Activity,
                                                        UrlConversion,
                                                        Frequency)
@@ -360,8 +360,8 @@ def add_email_template(token, template_owner, template_body):
     domain_id = template_owner.domain_id
 
     # Add 'CAN_CREATE_EMAIL_TEMPLATE' to template_owner
-    add_role_to_test_user(template_owner, [DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE,
-                                           DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER])
+    add_role_to_test_user(template_owner, [Permission.Roles.CAN_CREATE_EMAIL_TEMPLATE,
+                                           Permission.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER])
 
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(token)

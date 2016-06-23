@@ -4,7 +4,7 @@ from time import time
 from flask import request
 from flask_restful import Resource
 # Decorators
-from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
+from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
 # Validations
 from candidate_service.modules.validators import validate_and_format_data
 from jsonschema import validate, ValidationError
@@ -22,13 +22,13 @@ from candidate_service.modules.talent_cloud_search import (
 )
 from candidate_service.modules.talent_candidates import fetch_candidate_info, get_search_params_of_smartlists
 # Models
-from candidate_service.common.models.user import DomainRole
+from candidate_service.common.models.user import Permission
 
 
 class CandidateSearch(Resource):
     decorators = [require_oauth(allow_jwt_based_auth=True)]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def get(self):
         """
         Search candidates based on the given filter criteria
@@ -86,7 +86,7 @@ class CandidateDocuments(Resource):
 
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_ADD_CANDIDATES)
     def post(self):
         """
         Upload Candidate Documents to Amazon Cloud Search
@@ -100,7 +100,7 @@ class CandidateDocuments(Resource):
 
         return '', 204
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self):
         """
         Delete Candidate Documents from Amazon Cloud Search

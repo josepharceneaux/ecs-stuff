@@ -3,8 +3,8 @@ from flask import request, Blueprint
 from user_service.common.routes import UserServiceApi
 from user_service.common.error_handling import *
 from user_service.common.talent_api import TalentApi
-from user_service.common.models.user import User, Domain, UserScopedRoles, UserGroup, db, DomainRole
-from user_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
+from user_service.common.models.user import User, Domain, UserRoles, UserGroup, db, Permission
+from user_service.common.utils.auth_utils import require_oauth, require_any_permission, require_all_permissions
 
 
 class UserScopedRolesApi(Resource):
@@ -13,7 +13,7 @@ class UserScopedRolesApi(Resource):
     decorators = [require_oauth()]
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
-    @require_any_role('SELF', DomainRole.Roles.CAN_GET_USER_ROLES)
+    @require_any_permission('SELF', Permission.PermissionNames.CAN_GET_USER_ROLES)
     def get(self, **kwargs):
         """
         GET /users/<user_id>/roles Fetch all roles of a user
@@ -37,10 +37,10 @@ class UserScopedRolesApi(Resource):
                                                   % (request.user.id, requested_user.id))
 
         # GET all roles of given user
-        user_roles = UserScopedRoles.get_all_roles_of_user(requested_user_id)
+        user_roles = UserRoles.get_all_roles_of_user(requested_user_id)
         return {"roles": [user_scoped_role.role_id for user_scoped_role in user_roles]}
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_USER_ROLES)
+    @require_all_permissions(Permission.PermissionNames.CAN_ADD_USER_ROLES)
     def post(self, **kwargs):
         """
         POST /users/<user_id>/roles Add given roles to a user
@@ -63,10 +63,10 @@ class UserScopedRolesApi(Resource):
             raise UnauthorizedError(error_message="User %s doesn't have appropriate permission to add roles to user %s"
                                                   % (request.user.id, requested_user.id))
 
-        UserScopedRoles.add_roles(requested_user, posted_data.get('roles'))
+        UserRoles.add_roles(requested_user, posted_data.get('roles'))
         return {"success_message": "All given roles have been added successfully"}
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_USER_ROLES)
+    @require_all_permissions(Permission.PermissionNames.CAN_DELETE_USER_ROLES)
     def delete(self, **kwargs):
         """
         DELETE /users/<user_id>/roles Remove given roles from a user
@@ -89,7 +89,7 @@ class UserScopedRolesApi(Resource):
             raise UnauthorizedError(error_message="User %s doesn't have appropriate permission to remove roles from "
                                                   "user %s" % (request.user.id, requested_user.id))
 
-        UserScopedRoles.delete_roles(requested_user, posted_data.get('roles'))
+        UserRoles.delete_roles(requested_user, posted_data.get('roles'))
         return {"success_message": "All given roles have been removed successfully"}
 
 
@@ -98,7 +98,7 @@ class UserGroupsApi(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    @require_any_role(DomainRole.Roles.CAN_GET_GROUP_USERS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
+    @require_any_permission(Permission.PermissionNames.CAN_GET_GROUP_USERS, Permission.PermissionNames.CAN_EDIT_OTHER_DOMAIN_INFO)
     def get(self, **kwargs):
         """
         GET /groups/<group_id>/users Fetch all users in a user_group
@@ -120,7 +120,7 @@ class UserGroupsApi(Resource):
         all_users_of_group = UserGroup.all_users_of_group(requested_group_id)
         return {"users": [{'id': user.id, 'lastName': user.last_name} for user in all_users_of_group]}
 
-    @require_any_role(DomainRole.Roles.CAN_ADD_GROUP_USERS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
+    @require_any_permission(Permission.PermissionNames.CAN_ADD_GROUP_USERS, Permission.PermissionNames.CAN_EDIT_OTHER_DOMAIN_INFO)
     def post(self, **kwargs):
         """
         POST /groups/<group_id>/users Add users in a given user_group
@@ -152,7 +152,7 @@ class DomainGroupsApi(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    @require_any_role(DomainRole.Roles.CAN_GET_DOMAIN_GROUPS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
+    @require_any_permission(Permission.PermissionNames.CAN_GET_DOMAIN_GROUPS, Permission.PermissionNames.CAN_EDIT_OTHER_DOMAIN_INFO)
     def get(self, **kwargs):
         """
         GET /domain/<domain_id>/groups Fetch all user_groups of a given domain
@@ -175,7 +175,7 @@ class DomainGroupsApi(Resource):
         return {"user_groups": [{'id': user_group.id, 'name': user_group.name} for user_group in
                                 all_user_groups_of_domain]}
 
-    @require_any_role(DomainRole.Roles.CAN_ADD_DOMAIN_GROUPS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
+    @require_any_permission(Permission.PermissionNames.CAN_ADD_DOMAIN_GROUPS, Permission.PermissionNames.CAN_EDIT_OTHER_DOMAIN_INFO)
     def post(self, **kwargs):
         """
         POST /domain/<domain_id>/groups Add user_groups to a given domain
@@ -201,7 +201,7 @@ class DomainGroupsApi(Resource):
         user_groups = UserGroup.add_groups(posted_data.get('groups'), requested_domain_id)
         return {'user_groups': [user_group.id for user_group in user_groups]}
 
-    @require_any_role(DomainRole.Roles.CAN_EDIT_DOMAIN_GROUPS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
+    @require_any_permission(Permission.PermissionNames.CAN_EDIT_DOMAIN_GROUPS, Permission.PermissionNames.CAN_EDIT_OTHER_DOMAIN_INFO)
     def put(self, **kwargs):
         """
         PUT /domain/groups/<group_id> Edit a user group with given group_id
@@ -241,7 +241,7 @@ class DomainGroupsApi(Resource):
         db.session.commit()
         return {"success_message": "User group has been updated successfully"}
 
-    @require_any_role(DomainRole.Roles.CAN_DELETE_DOMAIN_GROUPS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
+    @require_any_permission(Permission.PermissionNames.CAN_DELETE_DOMAIN_GROUPS, Permission.PermissionNames.CAN_EDIT_OTHER_DOMAIN_INFO)
     def delete(self, **kwargs):
         """
         DELETE /domain/<domain_id>/groups Remove user_groups from a given domain

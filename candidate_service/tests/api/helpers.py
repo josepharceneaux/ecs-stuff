@@ -8,7 +8,7 @@ import pycountry as pc
 from redo import retrier
 
 # Models
-from candidate_service.common.models.user import DomainRole
+from candidate_service.common.models.user import Permission
 
 # User Roles
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
@@ -24,42 +24,42 @@ class AddUserRoles(object):
 
     @staticmethod
     def get(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_GET_CANDIDATES])
+        return add_role_to_test_user(user, [Permission.Roles.CAN_GET_CANDIDATES])
 
     @staticmethod
     def add(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES])
+        return add_role_to_test_user(user, [Permission.Roles.CAN_ADD_CANDIDATES])
 
     @staticmethod
     def edit(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_EDIT_CANDIDATES])
+        return add_role_to_test_user(user, [Permission.Roles.CAN_EDIT_CANDIDATES])
 
     @staticmethod
     def delete(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_DELETE_CANDIDATES])
+        return add_role_to_test_user(user, [Permission.Roles.CAN_DELETE_CANDIDATES])
 
     @staticmethod
     def add_and_get(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                            DomainRole.Roles.CAN_GET_CANDIDATES])
+        return add_role_to_test_user(user, [Permission.Roles.CAN_ADD_CANDIDATES,
+                                            Permission.Roles.CAN_GET_CANDIDATES])
 
     @staticmethod
     def add_and_delete(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                            DomainRole.Roles.CAN_DELETE_CANDIDATES])
+        return add_role_to_test_user(user, [Permission.Roles.CAN_ADD_CANDIDATES,
+                                            Permission.Roles.CAN_DELETE_CANDIDATES])
 
     @staticmethod
     def add_get_edit(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                            DomainRole.Roles.CAN_GET_CANDIDATES,
-                                            DomainRole.Roles.CAN_EDIT_CANDIDATES])
+        return add_role_to_test_user(user, [Permission.Roles.CAN_ADD_CANDIDATES,
+                                            Permission.Roles.CAN_GET_CANDIDATES,
+                                            Permission.Roles.CAN_EDIT_CANDIDATES])
 
     @staticmethod
     def all_roles(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                            DomainRole.Roles.CAN_GET_CANDIDATES,
-                                            DomainRole.Roles.CAN_EDIT_CANDIDATES,
-                                            DomainRole.Roles.CAN_DELETE_CANDIDATES])
+        return add_role_to_test_user(user, [Permission.Roles.CAN_ADD_CANDIDATES,
+                                            Permission.Roles.CAN_GET_CANDIDATES,
+                                            Permission.Roles.CAN_EDIT_CANDIDATES,
+                                            Permission.Roles.CAN_DELETE_CANDIDATES])
 
 
 def check_for_id(_dict):

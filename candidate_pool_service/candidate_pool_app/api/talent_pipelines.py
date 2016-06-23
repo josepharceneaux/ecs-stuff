@@ -10,9 +10,9 @@ from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.smartlist import Smartlist
-from candidate_pool_service.common.models.user import DomainRole
+from candidate_pool_service.common.models.user import Permission
 from candidate_pool_service.common.models.talent_pools_pipelines import *
-from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
+from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
     get_pipeline_growth, TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline,
     get_stats_generic_function, top_most_engaged_candidates_of_pipeline)
@@ -25,7 +25,7 @@ class TalentPipelineApi(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINES)
+    @require_all_permissions(Permission.Roles.CAN_GET_TALENT_PIPELINES)
     def get(self, **kwargs):
         """
         GET /talent-pipelines/<id>      Fetch talent-pipeline object
@@ -84,7 +84,7 @@ class TalentPipelineApi(Resource):
                         page_number=page,
                         talent_pipelines_per_page=per_page, total_number_of_talent_pipelines=len(talent_pipelines_data))
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_PIPELINES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_TALENT_PIPELINES)
     def delete(self, **kwargs):
         """
         DELETE /talent-pipelines/<id>  Remove talent-pipeline from Database
@@ -113,7 +113,7 @@ class TalentPipelineApi(Resource):
             'talent_pipeline': {'id': talent_pipeline_id}
         }
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_TALENT_PIPELINES)
+    @require_all_permissions(Permission.Roles.CAN_ADD_TALENT_PIPELINES)
     def post(self, **kwargs):
         """
         POST /talent-pipelines  Add new talent-pipelines to Database
@@ -203,7 +203,7 @@ class TalentPipelineApi(Resource):
             'talent_pipelines': [talent_pipeline_object.id for talent_pipeline_object in talent_pipeline_objects]
         }
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_PIPELINES)
+    @require_all_permissions(Permission.Roles.CAN_EDIT_TALENT_PIPELINES)
     def put(self, **kwargs):
         """
         PUT /talent-pipelines/<id>  Edit existing talent-pipeline
@@ -304,7 +304,7 @@ class TalentPipelineSmartListApi(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_SMART_LISTS)
+    @require_all_permissions(Permission.Roles.CAN_GET_TALENT_PIPELINE_SMART_LISTS)
     def get(self, **kwargs):
         """
         GET /talent-pipeline/<id>/smart_lists   Fetch all smartlists of a talent_pipeline
@@ -344,7 +344,7 @@ class TalentPipelineSmartListApi(Resource):
             'smartlists': [smartlist.to_dict(True, get_stats_generic_function) for smartlist in smartlists]
         }
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_TALENT_PIPELINE_SMART_LISTS)
+    @require_all_permissions(Permission.Roles.CAN_ADD_TALENT_PIPELINE_SMART_LISTS)
     def post(self, **kwargs):
         """
         POST /talent-pipeline/<id>/smartlists   Add smartlists to a talent_pipeline
@@ -407,7 +407,7 @@ class TalentPipelineSmartListApi(Resource):
             'smartlist_ids': [int(smartlist_id) for smartlist_id in smartlist_ids]
         }
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_PIPELINE_SMART_LISTS)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_TALENT_PIPELINE_SMART_LISTS)
     def delete(self, **kwargs):
         """
         DELETE /talent-pipeline/<id>/smartlists   Remove smartlists from a talent_pipeline
@@ -467,7 +467,7 @@ class TalentPipelineCandidates(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES)
     def get(self, **kwargs):
         """
         GET /talent-pipeline/<id>/candidates  Fetch all candidates of a talent-pipeline
@@ -501,7 +501,7 @@ class TalentPipelineMostEngagedCandidates(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES)
     def get(self, **kwargs):
         """
         GET /talent-pipelines/<id>/candidates/engagement?limit=5  Fetch candidates of a talent-pipeline
@@ -532,7 +532,7 @@ class TalentPipelineCampaigns(Resource):
     decorators = [require_oauth()]
 
     # TODO: Add Role here for CAN_GET_EMAIL_CAMPAIGNS once it becomes available, and CAN_GET_TALENT_PIPELINE_SMART_LISTS.
-    # @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_SMART_LISTS)
+    # @require_all_permissions(Permission.Roles.CAN_GET_TALENT_PIPELINE_SMART_LISTS)
     def get(self, **kwargs):
         """
         GET /talent-pipelines/<id>/campaigns?fields=id,subject&page=1&per_page=20

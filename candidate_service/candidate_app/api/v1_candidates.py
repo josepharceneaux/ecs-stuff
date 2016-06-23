@@ -43,7 +43,7 @@ from jsonschema import validate, FormatChecker, ValidationError
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
 
 # Decorators
-from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
+from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
 
 # Error handling
 from candidate_service.common.error_handling import (
@@ -64,7 +64,7 @@ from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
 from candidate_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.user import User, DomainRole
+from candidate_service.common.models.user import User, Permission
 
 # Module
 from candidate_service.modules.talent_candidates import (
@@ -91,7 +91,7 @@ from candidate_service.common.inter_service_calls.candidate_pool_service_calls i
 class CandidatesResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates
@@ -261,7 +261,7 @@ class CandidatesResource(Resource):
         logger.info('BENCHMARK - candidate POST: {}'.format(time() - start_time))
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
         Endpoints:
@@ -442,7 +442,7 @@ class CandidatesResource(Resource):
 class CandidateResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints can do these operations:
@@ -483,7 +483,7 @@ class CandidateResource(Resource):
         logger.info('BENCHMARK - candidate GET: {}'.format(time() - start_time))
         return {'candidate': candidate_data_dict}
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints can do these operations:
@@ -523,7 +523,7 @@ class CandidateResource(Resource):
 class CandidateAddressResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)  # todo: change to CAN_EDIT_CANDIDATE
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)  # todo: change to CAN_EDIT_CANDIDATE
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -569,7 +569,7 @@ class CandidateAddressResource(Resource):
 class CandidateAreaOfInterestResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -622,7 +622,7 @@ class CandidateAreaOfInterestResource(Resource):
 class CandidateEducationResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -668,7 +668,7 @@ class CandidateEducationResource(Resource):
 class CandidateEducationDegreeResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -722,7 +722,7 @@ class CandidateEducationDegreeResource(Resource):
 class CandidateEducationDegreeBulletResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -790,7 +790,7 @@ class CandidateEducationDegreeBulletResource(Resource):
 class CandidateWorkExperienceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Resources:
@@ -840,7 +840,7 @@ class CandidateWorkExperienceResource(Resource):
 class CandidateWorkExperienceBulletResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -901,7 +901,7 @@ class CandidateWorkExperienceBulletResource(Resource):
 class CandidateEmailResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -947,7 +947,7 @@ class CandidateEmailResource(Resource):
 class CandidateMilitaryServiceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -993,7 +993,7 @@ class CandidateMilitaryServiceResource(Resource):
 class CandidatePhoneResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -1039,7 +1039,7 @@ class CandidatePhoneResource(Resource):
 class CandidatePreferredLocationResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -1086,7 +1086,7 @@ class CandidatePreferredLocationResource(Resource):
 class CandidateSkillResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoint:
@@ -1133,7 +1133,7 @@ class CandidateSkillResource(Resource):
 class CandidateSocialNetworkResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoint:
@@ -1182,7 +1182,7 @@ class CandidateSocialNetworkResource(Resource):
 class CandidateWorkPreferenceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Resource:
@@ -1215,7 +1215,7 @@ class CandidateWorkPreferenceResource(Resource):
 class CandidateEditResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/edits
@@ -1239,7 +1239,7 @@ class CandidateEditResource(Resource):
 class CandidateOpenWebResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/openweb?url=http://...
@@ -1417,7 +1417,7 @@ class CandidateClientEmailCampaignResource(Resource):
 class CandidateViewResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:candidate_id/views
@@ -1435,7 +1435,7 @@ class CandidateViewResource(Resource):
         add_candidate_view(user_id=authed_user.id, candidate_id=candidate_id)
         return '', 204
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint:  GET /v1/candidates/:candidate_id/views
@@ -1465,7 +1465,7 @@ class CandidateViewResource(Resource):
 class CandidatePreferenceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/preferences
@@ -1484,7 +1484,7 @@ class CandidatePreferenceResource(Resource):
         candidate_subs_pref = fetch_candidate_subscription_preference(candidate_id=candidate_id)
         return {'candidate': {'id': candidate_id, 'subscription_preference': candidate_subs_pref}}
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:id/preferences
@@ -1524,7 +1524,7 @@ class CandidatePreferenceResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
     def put(self, **kwargs):
         """
         Endpoint:  PATCH /v1/candidates/:id/preferences
@@ -1565,7 +1565,7 @@ class CandidatePreferenceResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoint:  DELETE /v1/candidates/:id/preferences
@@ -1751,7 +1751,7 @@ class CandidateDeviceResource(Resource):
 class CandidatePhotosResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:id/photos
@@ -1781,7 +1781,7 @@ class CandidatePhotosResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints:
@@ -1823,7 +1823,7 @@ class CandidatePhotosResource(Resource):
                 {'id': photo.id, 'image_url': photo.image_url, 'is_default': photo.is_default}
                 for photo in photos]}
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
         Endpoint: PATCH /v1/candidates/:candidate_id/photos
@@ -1858,7 +1858,7 @@ class CandidatePhotosResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -1905,7 +1905,7 @@ class CandidatePhotosResource(Resource):
 class CandidateNotesResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:candidate_id/notes
@@ -1934,7 +1934,7 @@ class CandidateNotesResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints:  GET /v1/candidates/:candidate_id/notes
@@ -1959,7 +1959,7 @@ class CandidateNotesResource(Resource):
 class CandidateLanguageResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:candidate_id/languages
@@ -1985,7 +1985,7 @@ class CandidateLanguageResource(Resource):
         db.session.commit()
         return '', 204
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints:
@@ -2017,7 +2017,7 @@ class CandidateLanguageResource(Resource):
 
         return {'candidate_languages': fetch_candidate_languages(candidate_id, language)}
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
         Endpoint:  PATCH /v1/candidates/:candidate_id/languages
@@ -2043,7 +2043,7 @@ class CandidateLanguageResource(Resource):
         db.session.commit()
         return '', 204
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:

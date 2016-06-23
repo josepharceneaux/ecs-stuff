@@ -11,10 +11,10 @@ from flask_restful import Resource
 # Models
 from user_service.common.models.db import db
 from user_service.common.models.misc import CustomField
-from user_service.common.models.user import DomainRole
+from user_service.common.models.user import Permission
 
 # Decorators
-from user_service.common.utils.auth_utils import require_oauth, require_all_roles
+from user_service.common.utils.auth_utils import require_oauth, require_all_permissions
 
 # Validators
 from user_service.common.utils.validators import get_json_data_if_validated
@@ -31,7 +31,7 @@ from user_service.modules.domain_custom_fields import get_custom_field_if_valida
 class DomainCustomFieldsResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_DOMAINS)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
     def post(self):
         """
         Function will create custom field(s) for user's domain
@@ -74,7 +74,7 @@ class DomainCustomFieldsResource(Resource):
         db.session.commit()
         return {"custom_fields": [{"id": cf_id} for cf_id in created_custom_field_ids]}, 201
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_DOMAINS)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_DOMAINS)
     def get(self, **kwargs):
         """
         Function will return domain's custom field(s)
@@ -111,7 +111,7 @@ class DomainCustomFieldsResource(Resource):
                 "added_datetime": str(custom_field.added_time)
             } for custom_field in CustomField.get_domain_custom_fields(request.user.domain_id)]}
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_DOMAINS)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
     def put(self, **kwargs):
         """
         Function will update domain's custom field(s)
@@ -177,7 +177,7 @@ class DomainCustomFieldsResource(Resource):
         db.session.commit()
         return {'custom_fields': [{'id': custom_field_id} for custom_field_id in updated_custom_field_ids]}
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_DOMAINS)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
     def delete(self, **kwargs):
         """
         Function will delete domain's custom field(s)

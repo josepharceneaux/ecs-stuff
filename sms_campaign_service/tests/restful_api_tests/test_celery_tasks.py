@@ -22,7 +22,7 @@ from requests import codes
 # Common Utils
 from sms_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
     get_candidates_of_smartlist
-from sms_campaign_service.common.models.user import DomainRole
+from sms_campaign_service.common.models.user import Permission
 from sms_campaign_service.common.routes import SmsCampaignApiUrl, CandidateApiUrl
 from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
                                                                          EmptyDestinationUrl)
@@ -505,7 +505,7 @@ def _delete_candidate(candidate_id, headers, user):
     This deletes the given candidate from candidate_service API.
     """
     try:
-        add_role_to_test_user(user, [DomainRole.Roles.CAN_DELETE_CANDIDATES])
+        add_role_to_test_user(user, [Permission.Roles.CAN_DELETE_CANDIDATES])
     except InvalidUsage:
         pass  # Maybe roll has been assigned already to given user
     response = requests.delete(CandidateApiUrl.CANDIDATE % candidate_id, headers=headers)

@@ -12,7 +12,7 @@ from faker import Faker
 from werkzeug.security import gen_salt
 
 from ..models.candidate import Candidate
-from ..models.user import UserGroup, DomainRole
+from ..models.user import UserGroup
 from auth_utilities import get_access_token, get_or_create
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 
@@ -335,24 +335,6 @@ def domain_second(request):
             db.session.rollback()
     request.addfinalizer(tear_down)
     return test_domain
-
-
-@pytest.fixture()
-def domain_roles(request):
-    test_role_first = gen_salt(20)
-    test_role_first_id = DomainRole.save(test_role_first)
-    test_role_second = gen_salt(20)
-    test_role_second_id = DomainRole.save(test_role_second)
-
-    def tear_down():
-        try:
-            db.session.delete(DomainRole.query.get(test_role_first_id))
-            db.session.delete(DomainRole.query.get(test_role_second_id))
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return {'test_roles': [test_role_first, test_role_second]}
 
 
 @pytest.fixture()

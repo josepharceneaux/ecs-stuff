@@ -1,7 +1,7 @@
 from user_service.user_app import app
 from user_service.common.tests.conftest import *
 from user_service.common.utils.handy_functions import add_role_to_test_user
-from user_service.common.models.user import UserScopedRoles
+from user_service.common.models.user import UserRoles
 from common_functions import *
 
 
@@ -26,8 +26,8 @@ def test_user_scoped_roles_get(access_token_first, access_token_second, user_fir
     # Logged-in user getting roles of itself
     response, status_code = user_scoped_roles(access_token_first, user_id=user_first.id)
     assert status_code == 200
-    assert set(response.get('roles')) == set([domain_role.id for domain_role in DomainRole.query.filter(
-        DomainRole.role_name.in_(domain_roles['test_roles']))])
+    assert set(response.get('roles')) == set([domain_role.id for domain_role in Permission.query.filter(
+        Permission.role_name.in_(domain_roles['test_roles']))])
 
     # Add 'CAN_GET_USER_ROLES' to user_second
     add_role_to_test_user(user_second, ['CAN_GET_USER_ROLES'])
@@ -43,8 +43,8 @@ def test_user_scoped_roles_get(access_token_first, access_token_second, user_fir
     # Logged-in user with 'CAN_GET_USER_ROLES' role trying to get roles of an existing user of same domain
     response, status_code = user_scoped_roles(access_token_second, user_id=user_first.id)
     assert status_code == 200
-    assert set(response.get('roles')) == set([domain_role.id for domain_role in DomainRole.query.filter(
-        DomainRole.role_name.in_(domain_roles['test_roles']))])
+    assert set(response.get('roles')) == set([domain_role.id for domain_role in Permission.query.filter(
+        Permission.role_name.in_(domain_roles['test_roles']))])
 
 
 def test_user_scoped_roles_post(access_token_first, user_first, user_second, domain_roles):
@@ -77,7 +77,7 @@ def test_user_scoped_roles_post(access_token_first, user_first, user_second, dom
                                               test_roles=domain_roles['test_roles'])
     assert status_code == 200
     db.session.commit()
-    assert len(UserScopedRoles.get_all_roles_of_user(user_first.id)) == 3
+    assert len(UserRoles.get_all_roles_of_user(user_first.id)) == 3
 
 
 def test_user_scoped_roles_delete(access_token_first, user_first, user_second, domain_roles):
@@ -112,7 +112,7 @@ def test_user_scoped_roles_delete(access_token_first, user_first, user_second, d
                                               test_roles=domain_roles['test_roles'])
     assert status_code == 200
     db.session.commit()
-    assert len(UserScopedRoles.get_all_roles_of_user(user_first.id)) == 1
+    assert len(UserRoles.get_all_roles_of_user(user_first.id)) == 1
 
 
 def test_user_groups_get(access_token_first, user_first, user_second, first_group, second_group):
@@ -122,7 +122,7 @@ def test_user_groups_get(access_token_first, user_first, user_second, first_grou
     assert status_code == 401
 
     # Add 'CAN_GET_GROUP_USERS' role to user
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_GROUP_USERS])
+    add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_GET_GROUP_USERS])
 
     # Logged-in user getting all users of a non-existing user_group
     response, status_code = user_groups(access_token_first, first_group.id + 1000)
@@ -138,7 +138,7 @@ def test_user_groups_get(access_token_first, user_first, user_second, first_grou
     assert len(response['users']) == 1
 
     # Logged-in user getting all users of a user_group belonging to different domain
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_OTHER_DOMAIN_INFO])
     response, status_code = user_groups(access_token_first, second_group.id)
     assert status_code == 200
     assert len(response['users']) == 1
@@ -156,7 +156,7 @@ def test_user_groups_post(access_token_first, access_token_second, user_first, u
     assert status_code == 401
 
     # Add 'CAN_ADD_GROUP_USERS' role to user
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_GROUP_USERS])
+    add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_ADD_GROUP_USERS])
 
     # Logged-in user adding a user to non-existing user group
     response, status_code = user_groups(access_token_first, first_group.id + 1000, user_ids=[user_first.id], action='POST')
@@ -185,7 +185,7 @@ def test_user_groups_post(access_token_first, access_token_second, user_first, u
     assert user_first.user_group_id == first_group.id
 
     # Logged-in user adding a user to a user group
-    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    add_role_to_test_user(user_second, [Permission.PermissionNames.CAN_EDIT_OTHER_DOMAIN_INFO])
     response, status_code = user_groups(access_token_second, first_group.id, user_ids=[user_second.id],
                                         action='POST')
     assert status_code == 200
@@ -218,7 +218,7 @@ def test_get_all_roles_of_domain(access_token_first, user_first, user_second, do
     assert status_code == 200
     assert len(response['roles']) == 0
 
-    DomainRole.get_by_name(domain_roles['test_roles'][0]).domain_id = domain_first.id
+    Permission.get_by_name(domain_roles['test_roles'][0]).domain_id = domain_first.id
     db.session.commit()
 
     # Getting all roles of a domain
@@ -234,7 +234,7 @@ def test_domain_groups_api_get(access_token_first, first_group, user_first, user
     assert status_code == 401
 
     # Adding 'CAN_GET_DOMAIN_GROUPS' to user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_DOMAIN_GROUPS])
+    add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_GET_DOMAIN_GROUPS])
 
     # Logged in user trying to get groups of a non-existing domain
     response, status_code = domain_groups(access_token_first, user_first.domain_id + 1000)

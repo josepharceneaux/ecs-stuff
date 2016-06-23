@@ -24,10 +24,10 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
     response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id, 0)
     assert status_code == 401
 
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES,
-                                       DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
-    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES,
-                                        DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
+    add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_GET_TALENT_PIPELINE_CANDIDATES,
+                                       Permission.PermissionNames.CAN_ADD_CANDIDATES, Permission.PermissionNames.CAN_GET_CANDIDATES])
+    add_role_to_test_user(user_second, [Permission.PermissionNames.CAN_GET_TALENT_PIPELINE_CANDIDATES,
+                                        Permission.PermissionNames.CAN_ADD_CANDIDATES, Permission.PermissionNames.CAN_GET_CANDIDATES])
 
     # Logged-in user trying to get all candidates of non-existing talent-pipeline
     response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id + 1000, 0)

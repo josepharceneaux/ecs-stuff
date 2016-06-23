@@ -26,9 +26,9 @@ class TestSearchCandidatePipeline(object):
         Test: Use Pipeline search params to search for a candidate
         """
         AddUserRoles.add_and_get(user_first)
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_TALENT_PIPELINES,
-                                           DomainRole.Roles.CAN_GET_TALENT_PIPELINES,
-                                           DomainRole.Roles.CAN_ADD_TALENT_POOLS])
+        add_role_to_test_user(user_first, [Permission.Roles.CAN_ADD_TALENT_PIPELINES,
+                                           Permission.Roles.CAN_GET_TALENT_PIPELINES,
+                                           Permission.Roles.CAN_ADD_TALENT_POOLS])
 
         # Add talent pools
         data = {"talent_pools": [{"name": "test_{}".format(str(uuid.uuid4())[:3])} for _ in range(3)]}
@@ -73,7 +73,7 @@ class TestSearchCandidatePipeline(object):
     #         2. search using pipeline search params for the first candidate created
     #     """
     #     AddUserRoles.add_and_get(user_first)
-    #     add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_TALENT_PIPELINES])
+    #     add_role_to_test_user(user_first, [Permission.Roles.CAN_ADD_TALENT_PIPELINES])
     #
     #     # Create 16 candidates
     #     count = 16

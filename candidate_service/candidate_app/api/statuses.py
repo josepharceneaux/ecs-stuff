@@ -5,17 +5,17 @@ import requests
 from flask_restful import Resource
 
 # Decorators
-from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
+from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
 
 # Models
 from candidate_service.common.models.candidate import CandidateStatus
-from candidate_service.common.models.user import DomainRole
+from candidate_service.common.models.user import Permission
 
 
 class CandidateStatusesResources(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def get(self):
         """
         Function will create candidate's status(es)

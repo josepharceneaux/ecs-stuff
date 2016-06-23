@@ -21,7 +21,7 @@ from flask import current_app, request
 from ..models.db import db
 from werkzeug.exceptions import BadRequest
 from ..talent_config_manager import TalentConfigKeys
-from ..models.user import (User, UserScopedRoles, DomainRole)
+from ..models.user import (User, Role)
 from ..utils.validators import raise_if_not_positive_int_or_long
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
@@ -40,21 +40,19 @@ def random_letter_digit_string(size=6, chars=string.lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
 
-def add_role_to_test_user(test_user, role_names):
+def add_role_to_test_user(test_user, role_name):
     """
     This function will add roles to a test_user just for testing purpose
     :param User test_user: User object
-    :param list[str] role_names: List of role names
+    :param str role_name: Name of Role
     :return:
     """
-    for role_name in role_names:
-        try:
-            DomainRole.save(role_name)
-        except Exception:
-            db.session.rollback()
-            pass
+    role_object = Role.query.filter_by(name=role_name).first()
+    if not role_object:
+        raise Exception("Role `%s` doesn't exist in Database" % role_name)
 
-    UserScopedRoles.add_roles(test_user, role_names)
+    test_user.role_id = role_object.id
+    db.session.commit()
 
 
 def camel_case_to_snake_case(name):

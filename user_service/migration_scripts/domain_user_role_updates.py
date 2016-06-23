@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 from user_service.user_app import app
 from user_service.common.models.db import db
-from user_service.common.models.user import User, UserGroup, UserScopedRoles, Domain, DomainRole
+from user_service.common.models.user import User, UserGroup, UserRoles, Domain, Permission
 from user_service.common.models.talent_pools_pipelines import (
     TalentPool, TalentPoolCandidate, TalentPoolGroup, TalentPipeline
 )
@@ -20,8 +20,8 @@ from user_service.common.models.candidate import Candidate
 
 
 def get_role_names():
-    """ Function will get and return DomainRole constants """
-    constants = DomainRole.Roles.__dict__.keys()
+    """ Function will get and return Permission constants """
+    constants = Permission.PermissionNames.__dict__.keys()
     for constant in constants.__iter__():
         if "__" in constant:
             constants.remove(constant)
@@ -34,27 +34,27 @@ def add_domain_roles():
     """ Function will add roles to existing domains """
     print "running: add_domain_roles()"
     for role_name in get_role_names():
-        domain_role = DomainRole.get_by_name(role_name=role_name)
+        domain_role = Permission.get_by_name(role_name=role_name)
         if not domain_role:
-            db.session.add(DomainRole(role_name=role_name))
+            db.session.add(Permission(role_name=role_name))
             db.session.commit()
 
 
 def add_user_roles():
-    """ Function will associated each user with every DomainRole except delete-roles """
+    """ Function will associated each user with every Permission except delete-roles """
     print "running: add_user_roles()"
     existing_users = User.query.all()
-    domain_roles = DomainRole.query.filter(DomainRole.role_name.notlike('%delete_user%') &
-                                           DomainRole.role_name.notlike('%delete_domain%') &
-                                           DomainRole.role_name.notilike('%delete_talent%')).all()
+    domain_roles = Permission.query.filter(Permission.role_name.notlike('%delete_user%') &
+                                           Permission.role_name.notlike('%delete_domain%') &
+                                           Permission.role_name.notilike('%delete_talent%')).all()
     for user in existing_users:
         print "user in progress: {}".format(user)
         for role in domain_roles:
-            user_scoped_role = UserScopedRoles.query.filter_by(user_id=user.id,
-                                                               role_id=role.id).first()
+            user_scoped_role = UserRoles.query.filter_by(user_id=user.id,
+                                                         role_id=role.id).first()
             if not user_scoped_role:
                 print "role_id: {}, user_id: {}".format(role.id, user.id)
-                db.session.add(UserScopedRoles(user_id=user.id, role_id=role.id))
+                db.session.add(UserRoles(user_id=user.id, role_id=role.id))
                 db.session.commit()
 
 

@@ -2,7 +2,7 @@ __author__ = 'ufarooqi'
 import requests
 import json
 from user_service.user_app import db
-from user_service.common.models.user import DomainRole
+from user_service.common.models.user import Permission
 from user_service.common.routes import UserServiceApiUrl
 
 
@@ -16,7 +16,7 @@ def user_scoped_roles(access_token, user_id, test_roles=None, action="GET", fals
         return response.json(), response.status_code
     elif action == "POST":
         headers['content-type'] = 'application/json'
-        test_role_second = DomainRole.get_by_name(test_role_second)
+        test_role_second = Permission.get_by_name(test_role_second)
         if false_case:
             data = {'roles': [int(test_role_second.id) + 1000]}
         else:
@@ -25,7 +25,7 @@ def user_scoped_roles(access_token, user_id, test_roles=None, action="GET", fals
         return response.json(), response.status_code
     elif action == "DELETE":
         headers['content-type'] = 'application/json'
-        data = {'roles': [test_role_first, DomainRole.get_by_name(test_role_second).id]}
+        data = {'roles': [test_role_first, Permission.get_by_name(test_role_second).id]}
         response = requests.delete(UserServiceApiUrl.USER_ROLES_API % user_id, headers=headers, data=json.dumps(data))
         return response.json(), response.status_code
 

@@ -27,7 +27,7 @@ def test_domain_service_get(access_token_first, user_first, user_second, domain_
     assert response['domain']['name'] == domain_first.name
 
     # Adding 'CAN_GET_DOMAINS' role to user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_DOMAINS])
+    add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_GET_DOMAINS])
 
     # Logged-in user trying to get info of domain which different than its own domain
     response, status_code = domain_api(access_token_first, domain_second.id)
@@ -48,7 +48,7 @@ def test_domain_service_delete(access_token_first, user_first, domain_first, dom
     response, status_code = domain_api(access_token_first, domain_first.id, action='DELETE')
     assert status_code == 401
 
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_DELETE_DOMAINS])
+    add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_DELETE_DOMAINS])
 
     # Logged-in user trying to delete a domain where domain is not provided
     response, status_code = domain_api(access_token_first, action='DELETE')
@@ -86,7 +86,7 @@ def test_domain_service_put(access_token_first, user_first, domain_first, domain
     assert status_code == 401
 
     # Adding 'CAN_EDIT_DOMAINS' to user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS])
+    add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
 
     # Logged-in user trying to update a non-existing domain
     response, status_code = domain_api(access_token_first, domain_first.id + 1000, data=data, action='PUT')
@@ -155,7 +155,7 @@ def test_domain_service_post(access_token_first, user_first, domain_first):
     assert status_code == 401
 
     # Adding 'CAN_ADD_DOMAINS' to user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_DOMAINS])
+    add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_ADD_DOMAINS])
 
     # Logged-in user trying to add new domains with empty request body
     response, status_code = domain_api(access_token_first, action='POST')

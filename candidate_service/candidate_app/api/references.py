@@ -9,7 +9,7 @@ from candidate_service.modules.validators import (
 from candidate_service.json_schema.references import references_schema
 
 # Decorators
-from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
+from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
 
 # Error handling
 from candidate_service.common.error_handling import ForbiddenError, NotFoundError
@@ -17,7 +17,7 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 
 # Models
 from candidate_service.common.models.candidate import CandidateReference
-from candidate_service.common.models.user import DomainRole
+from candidate_service.common.models.user import Permission
 from candidate_service.modules.references import (
     get_references, get_reference_emails, get_reference_phones, get_reference_web_addresses,
     create_or_update_references, delete_reference, delete_all_references
@@ -27,7 +27,7 @@ from candidate_service.modules.references import (
 class CandidateReferencesResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:   POST /v1/candidates/:candidate_id/references
@@ -52,7 +52,7 @@ class CandidateReferencesResource(Resource):
                                                             is_creating=True)
         return {'candidate_references': [{'id': reference_id} for reference_id in created_reference_ids]}, 201
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints:
@@ -91,7 +91,7 @@ class CandidateReferencesResource(Resource):
 
         return {'candidate_references': get_references(candidate)}
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
         Function will update candidate's references' information
@@ -120,7 +120,7 @@ class CandidateReferencesResource(Resource):
                                                             reference_id_from_url=reference_id_from_url)
         return {'updated_candidate_references': [{'id': reference_id} for reference_id in updated_reference_ids]}
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:

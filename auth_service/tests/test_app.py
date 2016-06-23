@@ -242,7 +242,7 @@ def test_get_token_of_any_user_endpoint_v1(sample_client, access_token_first, us
     assert response.status_code == 401
 
     # Adding appropriate roles to logged-in user
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_IMPERSONATE_USERS])
+    add_role_to_test_user(user_first, [Permission.Roles.CAN_IMPERSONATE_USERS])
 
     # Logged-in user trying to get access_token of a non-existing user
     response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER_URL % 119946, headers=headers)
@@ -293,7 +293,7 @@ def test_get_token_of_any_user_endpoint_v2(user_first, user_second):
     assert response.status_code == 401
 
     # Adding appropriate roles to logged-in user
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_IMPERSONATE_USERS])
+    add_role_to_test_user(user_first, [Permission.Roles.CAN_IMPERSONATE_USERS])
 
     # Logged-in user trying to get access_token of a non-existing user
     response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER_URL % 119946, headers=headers)

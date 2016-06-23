@@ -12,25 +12,12 @@ from user_service_utilties import send_reset_password_email, PASSWORD_RECOVERY_J
 from user_service.common.error_handling import *
 from user_service.common.routes import UserServiceApi, get_web_app_url
 from user_service.common.utils.validators import is_valid_email
-from user_service.common.models.user import Domain, DomainRole, Token, db
+from user_service.common.models.user import Domain, Permission, Token, db
 from werkzeug.security import check_password_hash
-from user_service.common.utils.auth_utils import require_oauth, require_all_roles, gettalent_generate_password_hash
+from user_service.common.utils.auth_utils import require_oauth, require_all_permissions, gettalent_generate_password_hash
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 users_utilities_blueprint = Blueprint('users_utilities_api', __name__)
-
-
-@users_utilities_blueprint.route(UserServiceApi.DOMAIN_ROLES, methods=['GET'])
-@require_oauth()
-@require_all_roles(DomainRole.Roles.CAN_GET_DOMAIN_ROLES)
-def get_all_roles_of_domain(domain_id):
-    # if logged-in user should belong to same domain as input domain_id
-    if Domain.query.get(domain_id) and (request.user.domain_id == domain_id):
-        all_roles_of_domain = DomainRole.all_roles_of_domain(domain_id)
-        return jsonify(dict(roles=[{'id': domain_role.id, 'name': domain_role.role_name} for
-                                   domain_role in all_roles_of_domain]))
-    else:
-        raise InvalidUsage(error_message='Either domain_id is invalid or it is different than that of logged-in user')
 
 
 @users_utilities_blueprint.route(UserServiceApi.UPDATE_PASSWORD, methods=['PUT'])

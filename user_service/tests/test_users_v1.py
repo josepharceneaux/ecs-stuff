@@ -30,7 +30,7 @@ def test_user_service_get(access_token_first, user_first, user_second):
     assert status_code == 401
 
     # Adding 'CAN_GET_USERS' to user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_USERS])
+    add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_GET_USERS])
 
     # Logged-in user trying to get info of user
     response, status_code = user_api(access_token_first, user_first.id)
@@ -38,7 +38,7 @@ def test_user_service_get(access_token_first, user_first, user_second):
     assert response['user'].get('id') == user_first.id
 
     # Logged-in user trying to get info of user of different domain
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_OTHER_DOMAIN_INFO])
     response, status_code = user_api(access_token_first, user_second.id)
     assert status_code == 200
     assert response['user'].get('id') == user_second.id
@@ -97,7 +97,7 @@ def test_user_service_put(access_token_first, access_token_second, user_first, u
 
     # Logged-in user trying to update user
     data['email'] = 'sample_%s@gettalent.com' % gen_salt(15)
-    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    add_role_to_test_user(user_second, [Permission.PermissionNames.CAN_EDIT_OTHER_DOMAIN_INFO])
     response, status_code = user_api(access_token_second, user_first.id, data=data, action='PUT')
     assert status_code == 200
 
@@ -113,7 +113,7 @@ def test_user_service_put(access_token_first, access_token_second, user_first, u
     assert user_first.last_read_datetime.isoformat() == data['last_read_datetime']
 
     # Adding 'CAN_EDIT_USERS' in user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_USERS])
+    add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_USERS])
 
     # Logged-in user trying to update a different user without providing email address
     del data['email']
@@ -144,7 +144,7 @@ def test_user_service_post(access_token_first, access_token_second, user_first, 
     assert status_code == 401
 
     # Adding 'CAN_ADD_USERS' role to user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_USERS])
+    add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_ADD_USERS])
 
     # Logged-in user trying to add new users with empty request body
     response, status_code = user_api(access_token_first, action='POST')
@@ -179,7 +179,7 @@ def test_user_service_post(access_token_first, access_token_second, user_first, 
     data['users'][0]['locale'] = 'en-GB'
 
     # Logged-in user trying to add new users into different domain
-    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    add_role_to_test_user(user_second, [Permission.PermissionNames.CAN_EDIT_OTHER_DOMAIN_INFO])
     response, status_code = user_api(access_token_second, data=data, action='POST')
     assert status_code == 200
 

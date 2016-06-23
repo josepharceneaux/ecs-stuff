@@ -15,9 +15,9 @@ from common.utils.models_utils import init_talent_app
 app, logger = init_talent_app('test_app')
 
 from common.talent_config_manager import TalentConfigKeys, TalentEnvs
-from common.models.user import Domain, DomainRole, User, UserScopedRoles, UserGroup, Token, Client
+from common.models.user import Domain, Permission, User, UserGroup, Token, Client
 
-Roles = DomainRole.Roles
+Roles = Permission.Roles
 roles = (Roles.CAN_ADD_USER_ROLES, Roles.CAN_DELETE_USER_ROLES, Roles.CAN_ADD_USERS,
          Roles.CAN_GET_USERS, Roles.CAN_DELETE_USERS, Roles.CAN_ADD_TALENT_POOLS, Roles.CAN_GET_TALENT_POOLS,
          Roles.CAN_DELETE_TALENT_POOLS, Roles.CAN_ADD_TALENT_POOLS_TO_GROUP, Roles.CAN_ADD_CANDIDATES,
@@ -71,9 +71,9 @@ def create_test_user(email, domain_id, group_id):
 def add_domain_roles(roles):
     ids = []
     for role_name in roles:
-        domain_role = DomainRole.get_by_name(role_name)
+        domain_role = Permission.get_by_name(role_name)
         if not domain_role:
-            domain_role = DomainRole.save(role_name)
+            domain_role = Permission.save(role_name)
         logger.debug('User: %s', domain_role.role_name)
         ids.append(domain_role.id)
     return ids

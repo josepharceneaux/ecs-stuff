@@ -25,7 +25,7 @@ from ..error_codes import ErrorCodes
 class User(db.Model):
     __tablename__ = 'user'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.Id'))
+    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'))
     email = db.Column(db.String(60), unique=True, nullable=False)
     password = db.Column(db.String(512))
     device_token = db.Column('deviceToken', db.String(64))
@@ -37,14 +37,15 @@ class User(db.Model):
     registration_key = db.Column(db.String(512))
     reset_password_key = db.Column(db.String(512))
     registration_id = db.Column(db.String(512))
-    # name = db.Column(db.String(127))
     first_name = db.Column('firstName', db.String(255))
     last_name = db.Column('lastName', db.String(255))
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.utcnow)
     updated_time = db.Column('updatedTime', db.DateTime, default=datetime.datetime.utcnow)
     password_reset_time = db.Column('passwordResetTime', db.DateTime, default=datetime.datetime.utcnow)
     dice_user_id = db.Column('diceUserId', db.Integer)
-    user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.Id', ondelete='CASCADE'))
+    user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.Id'))
+    # I'm assuming First row of Role table will be Standard Role
+    role_id = db.Column('roleId', db.Integer, db.ForeignKey('role.id'), nullable=False, default=1)
     last_read_datetime = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
     thumbnail_url = db.Column('thumbnailUrl', db.TEXT)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
@@ -55,6 +56,7 @@ class User(db.Model):
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
     user_group = relationship('UserGroup', backref='user')
+    role = relationship('Role', backref='user')
     user_phones = relationship('UserPhone', cascade='all,delete-orphan', passive_deletes=True,
                                backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
@@ -351,20 +353,17 @@ class Token(db.Model):
         return Token.query.filter_by(access_token=access_token).first()
 
 
-class DomainRole(db.Model):
-    __tablename__ = 'domain_role'
+class Permission(db.Model):
+    __tablename__ = 'permission'
     id = db.Column(db.Integer, primary_key=True)
-    role_name = db.Column(db.String(255), nullable=False, unique=True)
-    domain_id = db.Column(db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), nullable=True)
-
-    domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
+    name = db.Column(db.String(255), nullable=False, unique=True)
 
     def __repr__(self):
-        return "<DomainRole (id = {})>".format(self.id)
+        return "<Permission (id = {})>".format(self.id)
 
-    class Roles(object):
+    class PermissionNames(object):
         """
-        Class entails constants that point to available user-role names
+        Class entails constants that point to available permission names
         """
         # Candidate Resources
         CAN_ADD_CANDIDATES = "CAN_ADD_CANDIDATES"
@@ -472,136 +471,97 @@ class DomainRole(db.Model):
         db.session.commit()
 
     @staticmethod
-    def save(role_name, domain_id=None):
+    def save(permission_name):
         """
-        Create a new Role record with the supplied domain_id and role_name. If domain_id is provided then role
-        would be domain specific otherwise it would be general
-        :param int | None domain_id: domain id of a role.
-        :param basestring role_name: role name of a role.
+        Create a new Permission record with the supplied permission_name.
+        :param basestring permission_name: Mame of a permission.
         :rtype: int
         """
-        role = DomainRole(role_name=role_name, domain_id=domain_id)
-        db.session.add(role)
+        permission = Permission(name=permission_name)
+        db.session.add(permission)
         db.session.commit()
-        return role.id
+        return permission.id
 
     @staticmethod
-    def get_by_id(role_id):
-        """ Get a role with supplied role_id.
-        :param int role_id: id of a role.
-        :rtype: DomainRole
+    def get_by_id(permission_id):
+        """ Get permission object with supplied permission_id.
+        :param int permission_id: Id of a role.
+        :rtype: Permission
         """
-        return DomainRole.query.get(role_id)
+        return Permission.query.get(permission_id)
 
     @staticmethod
-    def get_by_name(role_name):
-        """ Get a role with supplied role_name.
-        :param str role_name: Name of a role.
-        :rtype: DomainRole
+    def get_by_name(permission_name):
+        """ Get permission object with supplied permission_name.
+        :param str permission_name: Name of a permission.
+        :rtype: Permission
         """
-        return DomainRole.query.filter_by(role_name=role_name).first()
+        return Permission.query.filter_by(name=permission_name).first()
 
     @staticmethod
-    def get_by_names(role_names):
-        """ Get a role with supplied role_name.
-        :param list[str] role_names: List of role names.
-        :rtype: list[DomainRole]
+    def get_by_names(permission_names):
+        """ Get all permission objects with supplied permission_names.
+        :param list[str] permission_names: List of names of a permissions.
+        :rtype: list[Permission]
         """
-        return DomainRole.query.filter(DomainRole.role_name.in_(role_names)).all()
+        return Permission.query.filter(Permission.name.in_(permission_names)).all()
 
     @staticmethod
     def all():
         """
-        Get all roles_ids in database
-        :rtype: list[DomainRole]
+        Get all permission objects in database
+        :rtype: list[Permission]
         """
-        return DomainRole.query.all()
-
-    @staticmethod
-    def all_roles_of_domain(domain_id):
-        """ Get all roles with names for a given domain_id
-        :param int domain_id: id of a domain.
-        :rtype: list[DomainRole]
-        """
-        return DomainRole.query.filter_by(domain_id=domain_id).all()
+        return Permission.query.all()
 
 
-class UserScopedRoles(db.Model):
-    __tablename__ = 'user_scoped_roles'
-    id = db.Column('Id', db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
-    role_id = db.Column('RoleId', db.Integer, db.ForeignKey('domain_role.id', ondelete='CASCADE'), nullable=False)
-    domain_role = db.relationship('DomainRole', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
-    user = db.relationship('User', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
+class Role(db.Model):
+    __tablename__ = 'role'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False, unique=True)
 
-    def __repr__(self):
-        return "<UserScopedRoles (id = {})>".format(self.id)
-
-    @staticmethod
-    def add_roles(user, roles_list):
-        """ Add a role for user
-        :param User user: user object
-        :param list[int | str] roles_list: list of role_ids or role_names or both
-        :rtype: None
-        """
-        if user:
-            for role in roles_list:
-                if is_number(role):
-                    role_id = int(role)
-                else:
-                    domain_role = DomainRole.get_by_name(role)
-                    if domain_role:
-                        role_id = domain_role.id
-                    else:
-                        raise InvalidUsage(error_message="Role: %s doesn't exist" % role)
-                domain_role = DomainRole.query.get(role_id)
-                if domain_role and (not domain_role.domain_id or domain_role.domain_id == user.domain_id):
-                    if not UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id) &
-                                                                (UserScopedRoles.role_id == role_id)).first():
-                        user_scoped_role = UserScopedRoles(user_id=user.id, role_id=role_id)
-                        db.session.add(user_scoped_role)
-                    else:
-                        raise InvalidUsage(error_message="Role: %s already exists for user: %s" % (role, user.id),
-                                           error_code=ErrorCodes.ROLE_ALREADY_EXISTS)
-                else:
-                    raise InvalidUsage(
-                        error_message="Role: %s doesn't exist or it belongs to a different domain" % role)
-            db.session.commit()
-        else:
-            raise InvalidUsage(error_message="User %s doesn't exist" % user.id)
-
-    @staticmethod
-    def delete_roles(user, roles_list):
-        """ Delete a role for user
-        :param User user: user object
-        :param list[int | str] roles_list: list of role_ids or role_names or both
-        :rtype: None
-        """
-        for role in roles_list:
-            if is_number(role):
-                role_id = int(role)
-            else:
-                domain_role = DomainRole.get_by_name(role)
-                if domain_role:
-                    role_id = domain_role.id
-                else:
-                    raise InvalidUsage(error_message="Domain role %s doesn't exist" % role)
-
-            user_scoped_role = UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id)
-                                                            & (UserScopedRoles.role_id == role_id)).first()
-            if user_scoped_role:
-                db.session.delete(user_scoped_role)
-            else:
-                raise InvalidUsage(error_message="User %s doesn't have any role %s or " % (user.id, role_id))
+    def delete(self):
+        db.session.delete(self)
         db.session.commit()
 
     @staticmethod
-    def get_all_roles_of_user(user_id):
-        """ Get all roles for a user
-        :param int user_id: Id of a user
-        :rtype: list[UserScopedRoles]
+    def save(role_name):
         """
-        return UserScopedRoles.query.filter_by(user_id=user_id).all()
+        Create a new Role record with the supplied role_name.
+        :param basestring role_name: Mame of a role.
+        :rtype: int
+        """
+        role = Role(name=role_name)
+        db.session.add(role)
+        db.session.commit()
+        return role.id
+
+    def get_all_permissions_of_role(self):
+        """ Get all permissions of a role
+        :rtype: list[Permission]
+        """
+        permissions_of_role = PermissionsOfRole.query.filter_by(role_id=self.id).all()
+        return [permission_of_role.permission for permission_of_role in permissions_of_role]
+
+    @staticmethod
+    def all():
+        """
+        Get all role objects in database
+        :rtype: list[Permission]
+        """
+        return Role.query.all()
+
+
+class PermissionsOfRole(db.Model):
+    __tablename__ = 'permissions_of_role'
+    role_id = db.Column('RoleId', db.BIGINT, db.ForeignKey('role.id', ondelete='CASCADE'), nullable=False)
+    permission_id = db.Column('PermissionId', db.Integer, db.ForeignKey('permission.id', ondelete='CASCADE'), nullable=False)
+
+    permission = db.relationship('Permission', backref=db.backref('permissions_of_role', cascade="all, delete-orphan"))
+    role = db.relationship('Role', backref=db.backref('permissions_of_role', cascade="all, delete-orphan"))
+
+    def __repr__(self):
+        return "<PermissionsOfRole (id = {})>".format(self.id)
 
 
 class UserGroup(db.Model):

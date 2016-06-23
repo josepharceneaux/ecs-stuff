@@ -20,13 +20,13 @@ from candidate_service.modules.tags import (
 from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 
 # Models
-from candidate_service.common.models.user import DomainRole
+from candidate_service.common.models.user import Permission
 
 # JSON Schemas
 from candidate_service.modules.json_schema import tag_schema
 
 # Decorators
-from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
+from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
 
 # Error handling
 from candidate_service.common.error_handling import (ForbiddenError, InvalidUsage)
@@ -36,7 +36,7 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 class CandidateTagResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
     def post(self, **kwargs):
         """
         Function will create tags
@@ -77,7 +77,7 @@ class CandidateTagResource(Resource):
 
         return {'tags': [{'id': tag_id} for tag_id in created_tag_ids]}, 201
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Function will retrieve tag(s)
@@ -106,7 +106,7 @@ class CandidateTagResource(Resource):
         # Retrieve tag(s)
         return get_tags(candidate_id=candidate_id, tag_id=tag_id)
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
         Function will update candidate's tag(s)
@@ -155,7 +155,7 @@ class CandidateTagResource(Resource):
 
         return {'updated_tags': [{'id': tag_id} for tag_id in updated_tag_ids]}
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Function will delete candidate's tag(s)

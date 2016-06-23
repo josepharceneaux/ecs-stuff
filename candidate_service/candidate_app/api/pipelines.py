@@ -12,10 +12,10 @@ from flask_restful import Resource
 from candidate_service.modules.validators import get_candidate_if_validated
 
 # Decorators
-from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
+from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
 
 # Models
-from candidate_service.common.models.user import DomainRole, User
+from candidate_service.common.models.user import Permission, User
 from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.talent_pools_pipelines import TalentPipeline
 
@@ -25,7 +25,7 @@ from candidate_service.common.inter_service_calls.candidate_service_calls import
 class CandidatePipelineResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Function will return user's 5 most recently added Pipelines. One of the pipelines will

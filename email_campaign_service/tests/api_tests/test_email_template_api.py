@@ -4,7 +4,7 @@ import json
 import datetime
 import requests
 
-from email_campaign_service.common.models.user import DomainRole
+from email_campaign_service.common.models.user import Permission
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.utils.handy_functions import add_role_to_test_user
 from email_campaign_service.common.models.email_campaign import (EmailTemplateFolder, UserEmailTemplate)
@@ -23,7 +23,7 @@ def test_create_email_template_folder(user_first, access_token_first):
     :param access_token_first: For user authorization
     """
     # Add or get Role
-    role = DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER
+    role = Permission.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER
 
     # Add 'CAN_CREATE_EMAIL_TEMPLATE_FOLDER' to user_first
     add_role_to_test_user(user_first, [role])
@@ -51,7 +51,7 @@ def test_delete_email_template_folder(user_first, user_same_domain, access_token
     """
 
     # Add or get Role
-    role1 = DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER
+    role1 = Permission.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER
 
     # Add 'CAN_CREATE_EMAIL_TEMPLATE_FOLDER' to user_first
     add_role_to_test_user(user_first, [role1])
@@ -64,7 +64,7 @@ def test_delete_email_template_folder(user_first, user_same_domain, access_token
     assert folder_row.name == template_folder_name
 
     # Add or get Role
-    role = DomainRole.Roles.CAN_DELETE_EMAIL_TEMPLATE_FOLDER
+    role = Permission.Roles.CAN_DELETE_EMAIL_TEMPLATE_FOLDER
 
     # Add 'CAN_DELETE_EMAIL_TEMPLATE' to user_same_domain
     add_role_to_test_user(user_same_domain, [role])
@@ -104,11 +104,11 @@ def test_create_email_template_without_name(user_first, access_token_first):
     :param access_token_first: For user authentication
     """
     # Add or get Role
-    role = DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE
+    role = Permission.Roles.CAN_CREATE_EMAIL_TEMPLATE
 
     # Add 'CAN_CREATE_EMAIL_TEMPLATE' to user_first
     add_role_to_test_user(user_first, [role])
-    role = DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER
+    role = Permission.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER
 
     # Add 'CAN_CREATE_EMAIL_TEMPLATE_FOLDER' to user_first
     add_role_to_test_user(user_first, [role])
@@ -132,9 +132,9 @@ def test_create_template_without_email_body(user_first, access_token_first):
     :param access_token_first: For user authentication
     """
     # Add or get Role
-    role = DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE
+    role = Permission.Roles.CAN_CREATE_EMAIL_TEMPLATE
     add_role_to_test_user(user_first, [role])
-    role = DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER
+    role = Permission.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER
 
     # Add 'CAN_CREATE_EMAIL_TEMPLATE_FOLDER' to user_first
     add_role_to_test_user(user_first, [role])
@@ -165,7 +165,7 @@ def test_delete_email_template(user_first, user_same_domain, access_token_first,
     template_id = template['template_id']
 
     # Add or get Role
-    role = DomainRole.Roles.CAN_DELETE_EMAIL_TEMPLATE
+    role = Permission.Roles.CAN_DELETE_EMAIL_TEMPLATE
 
     # Add 'CAN_DELETE_EMAIL_TEMPLATE' to user_same_domain
     add_role_to_test_user(user_same_domain, [role])
@@ -192,7 +192,7 @@ def test_delete_template_with_non_existing_template_id(user_first, user_same_dom
     template_id = template['template_id']
 
     # Add or get Role
-    role = DomainRole.Roles.CAN_DELETE_EMAIL_TEMPLATE
+    role = Permission.Roles.CAN_DELETE_EMAIL_TEMPLATE
 
     # Add 'CAN_DELETE_EMAIL_TEMPLATE' to user_same_domain
     add_role_to_test_user(user_same_domain, [role])
@@ -219,7 +219,7 @@ def test_delete_template_from_different_domain(user_first, user_from_diff_domain
     template_id = template['template_id']
 
     # Add or get Role
-    role = DomainRole.Roles.CAN_DELETE_EMAIL_TEMPLATE
+    role = Permission.Roles.CAN_DELETE_EMAIL_TEMPLATE
 
     # Add 'CAN_DELETE_EMAIL_TEMPLATE' to user_same_domain
     add_role_to_test_user(user_from_diff_domain, [role])
@@ -246,7 +246,7 @@ def test_get_email_template_via_id(user_first, user_same_domain, access_token_fi
     template_id = template['template_id']
     # Get access token for user_same_domain
     # Add or get Role
-    role = DomainRole.Roles.CAN_GET_EMAIL_TEMPLATE
+    role = Permission.Roles.CAN_GET_EMAIL_TEMPLATE
 
     # Add 'CAN_GET_EMAIL_TEMPLATE' to user_same_domain
     add_role_to_test_user(user_same_domain, [role])
@@ -279,7 +279,7 @@ def test_get_email_template_with_non_existing_id(user_first, user_same_domain, a
     template_id = template['template_id']
 
     # Add or get Role
-    role = DomainRole.Roles.CAN_GET_EMAIL_TEMPLATE
+    role = Permission.Roles.CAN_GET_EMAIL_TEMPLATE
 
     # Add 'CAN_GET_EMAIL_TEMPLATE' to user_same_domain
     add_role_to_test_user(user_same_domain, [role])
@@ -305,7 +305,7 @@ def test_update_email_template(user_first, user_same_domain, access_token_first,
     # Add Email template
     template = add_email_template(access_token_first, user_first, template_body())
     # Add or get Role
-    role = DomainRole.Roles.CAN_UPDATE_EMAIL_TEMPLATE
+    role = Permission.Roles.CAN_UPDATE_EMAIL_TEMPLATE
     # Add 'CAN_UPDATE_EMAIL_TEMPLATE' to user_same_domain
     add_role_to_test_user(user_same_domain, [role])
 
@@ -337,7 +337,7 @@ def test_update_non_existing_email_template(user_first, user_same_domain, access
     template = add_email_template(access_token_first, user_first, template_body())
     template_id = template['template_id']
     # Add or get Role
-    role = DomainRole.Roles.CAN_UPDATE_EMAIL_TEMPLATE
+    role = Permission.Roles.CAN_UPDATE_EMAIL_TEMPLATE
     # Add 'CAN_UPDATE_EMAIL_TEMPLATE' to user_same_domain
     add_role_to_test_user(user_same_domain, [role])
 
