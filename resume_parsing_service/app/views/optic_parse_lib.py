@@ -20,6 +20,7 @@ from resume_parsing_service.app import logger
 from resume_parsing_service.app.views.OauthClient import OAuthClient
 from resume_parsing_service.common.error_handling import ForbiddenError, InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
+from resume_parsing_service.common.utils.handy_functions import normalize_value
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
 
@@ -151,7 +152,7 @@ def parse_candidate_emails(bs_contact_xml_list):
     for contact in bs_contact_xml_list:
         emails = contact.findAll('email')
         for e in emails:
-            email_addr = e.text.strip()
+            email_addr = normalize_value(e.text)
             output.append(email_addr)
 
     unique_emails = set(output)
