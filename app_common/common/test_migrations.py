@@ -113,7 +113,7 @@ class TestMigrations():
         migrations_subdir = "{}/im_a_directory".format(migrations_dir.__str__())
         os.mkdir(migrations_subdir, 0755)
         run_migrations(self.logger, db)
-        message = "Can't execute migration file ./migrations/im_a_directory"
+        message = "Unexpected non-file found in migrations directory: ./migrations/im_a_directory"
         self.logger.exception.assert_called_with(message)
 
     def test_bad_migration_filename(self, tmpdir, mocker):
@@ -223,5 +223,5 @@ class TestMigrations():
         filename = time.strftime(DATETIME_FORMAT, time.gmtime())
         self.create_migration_file(tmpdir, filename, 'break me')
         run_migrations(self.logger, db)
-        message = "Can't execute migration file ./migrations/{}".format(filename)
+        message = "Can't execute migration file ./migrations/{} due to invalid syntax ({}, line 1)".format(filename, filename)
         self.logger.exception.assert_called_with(message)
