@@ -74,7 +74,12 @@ def google_vision_ocr(file_string_io):
 
     logger.info("google_vision_ocr: Google API response JSON: %s", ocr_results)
 
-    return ocr_results['responses'][0]['textAnnotations'][0]['description']
+    text_annotations = ocr_results['responses'][0].get('textAnnotations')
+
+    if text_annotations:
+        return text_annotations[0].get('description', '')
+    else:
+        return ''
 
 
 def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):

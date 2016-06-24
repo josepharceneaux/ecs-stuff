@@ -227,24 +227,22 @@ def create_bucket():
     return bucket
 
 
-def boto3_get_file(filename):
-    BUCKET = app.config[TalentConfigKeys.S3_FILE_PICKER_BUCKET_KEY]
+def boto3_get_file(bucket, filename):
     client = boto3.client(
         's3',
         aws_access_key_id=app.config[TalentConfigKeys.AWS_KEY],
         aws_secret_access_key=app.config[TalentConfigKeys.AWS_SECRET]
     )
     try:
-        s3_file = client.get_object(Bucket=BUCKET, Key=filename)
+        s3_file = client.get_object(Bucket=bucket, Key=filename)
     except Exception as e:
-        app.logger.exception("S3 error. Error retrieving {} from {}. Exception: {}".format(filename, BUCKET, e.message))
+        app.logger.exception("S3 error. Error retrieving {} from {}. Exception: {}".format(filename, bucket, e.message))
         raise InvalidUsage(error_message="Error retrieving uploaded file.")
     from cStringIO import StringIO
     return StringIO(s3_file['Body'].read())
 
 
-def boto3_put(file_contents, key, key_path):
-    BUCKET = app.config[TalentConfigKeys.S3_FILE_PICKER_BUCKET_KEY]
+def boto3_put(file_contents, bucket, key, key_path):
     client = boto3.client(
         's3',
         aws_access_key_id=app.config[TalentConfigKeys.AWS_KEY],
@@ -253,7 +251,7 @@ def boto3_put(file_contents, key, key_path):
     try:
         client.put_object(
             Body=file_contents,
-            Bucket=BUCKET,
+            Bucket=bucket,
             Key='{}/{}'.format(key_path, key),
             Metadata={'Content-Disposition': 'attachment; filename={}'.format(key)}
         )
