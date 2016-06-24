@@ -68,14 +68,14 @@ def test_none_fp_key(token_fixture, user_fixture):
 def test_posting_no_file(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
     invalid_post = requests.post(ResumeApiUrl.PARSE,
-                                  headers={
-                                      'Authorization': 'Bearer {}'.format(
-                                          token_fixture.access_token),
-                                      'Content-Type': 'application/json'
-                                  },
-                                  data=json.dumps({'resume_file_name': 'foobarbaz',
-                                                   'create_candidate': True})
-                                 )
+                                 headers={
+                                     'Authorization': 'Bearer {}'.format(
+                                         token_fixture.access_token),
+                                     'Content-Type': 'application/json'
+                                 },
+                                 data=json.dumps({'resume_file_name': 'foobarbaz',
+                                                  'create_candidate': True})
+                                )
     content = json.loads(invalid_post.content)
     assert 'error' in content
     assert invalid_post.status_code == requests.codes.bad_request
@@ -84,14 +84,14 @@ def test_posting_no_file(token_fixture, user_fixture):
 def test_posting_None_file(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
     invalid_post = requests.post(ResumeApiUrl.PARSE,
-                                  headers={
-                                      'Authorization': 'Bearer {}'.format(
-                                          token_fixture.access_token),
-                                      'Content-Type': 'application/json'
-                                  },
-                                  data=json.dumps({'resume_file': None,
-                                                   'create_candidate': True})
-                                 )
+                                 headers={
+                                     'Authorization': 'Bearer {}'.format(
+                                         token_fixture.access_token),
+                                     'Content-Type': 'application/json'
+                                 },
+                                 data=json.dumps({'resume_file': None,
+                                                  'create_candidate': True})
+                                )
     content = json.loads(invalid_post.content)
     assert 'error' in content
     assert invalid_post.status_code == requests.codes.bad_request
@@ -99,14 +99,13 @@ def test_posting_None_file(token_fixture, user_fixture):
 
 def test_talent_pool_error(token_fixture):
     invalid_post = requests.post(ResumeApiUrl.PARSE,
-                                  headers={
-                                      'Authorization': 'Bearer {}'.format(
-                                          token_fixture.access_token),
-                                      'Content-Type': 'application/json'
-                                  },
-                                  data=json.dumps({'resume_file_name': 'foobarbaz',
-                                                   'create_candidate': True})
-                                 )
+                                 headers={
+                                     'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+                                     'Content-Type': 'application/json'
+                                 },
+                                 data=json.dumps({'resume_file_name': 'foobarbaz',
+                                                  'create_candidate': True})
+                                )
     content = json.loads(invalid_post.content)
     assert 'error' in content
     assert invalid_post.status_code == requests.codes.bad_request
@@ -134,14 +133,13 @@ def test_invalid_token_fails():
 def test_bad_header(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
     invalid_post = requests.post(ResumeApiUrl.PARSE,
-                                  headers={
-                                      'Authorization': 'Bearer {}'.format(
-                                          token_fixture.access_token),
-                                      'Content-Type': 'text/csv'
-                                  },
-                                  data=json.dumps({'resume_file_name': 'foobarbaz',
-                                                   'create_candidate': True})
-                                 )
+                                 headers={
+                                     'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+                                     'Content-Type': 'text/csv'
+                                 },
+                                 data=json.dumps({'resume_file_name': 'foobarbaz',
+                                                  'create_candidate': True})
+                                )
     content = json.loads(invalid_post.content)
     assert 'error' in content
     assert invalid_post.status_code == requests.codes.bad_request
@@ -406,7 +404,9 @@ def fetch_resume_post_response(token_fixture, file_name, create_mode=False):
                                  headers={'Authorization': 'Bearer {}'.format(
                                      token_fixture.access_token)},
                                  data={
-                                     'resume_file_name': file_name, 'create_candidate':create_mode},
+                                     # 'Local Test Upload' prefix.
+                                     'resume_file_name': 'LTU_{}'.format(file_name),
+                                     'create_candidate':create_mode},
                                  files=dict(resume_file=resume_file)
                                 )
     content = json.loads(response.content)
@@ -423,6 +423,8 @@ def fetch_resume_fp_key_response(token_fixture, fp_key, create_mode=False):
                                       'Content-Type': 'application/json'
                                   },
                                   data=json.dumps({'filepicker_key': fp_key,
+                                                   # 'Local Test Upload' prefix.
+                                                   'resume_file_name': 'LTU_{}'.format(fp_key),
                                                    'create_candidate': create_mode})
                                  )
     content = json.loads(test_response.content)
