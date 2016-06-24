@@ -205,6 +205,7 @@ def assert_and_delete_email(subject):
         print "Email(s) deleted with subject: %s" % subject
         mail_connection.close()
         mail_connection.logout()
+    assert msg_ids
     return msg_ids
 
 
