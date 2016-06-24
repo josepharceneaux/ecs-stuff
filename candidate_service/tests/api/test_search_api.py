@@ -13,10 +13,10 @@ from candidate_service.tests.modules.test_talent_cloud_search import (
 )
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from candidate_service.common.tests.conftest import *
-from candidate_service.common.utils.test_utils import send_request, response_info
+from candidate_service.common.utils.test_utils import send_request, response_info, get_response
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
-from helpers import AddUserRoles, get_response
+from helpers import AddUserRoles
 
 # Models
 from candidate_service.common.models.candidate import CandidateAddress

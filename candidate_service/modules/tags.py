@@ -174,8 +174,7 @@ def delete_tags(candidate_id):
     deleted_tag_ids = []
     for candidate_tag in CandidateTag.get_all(candidate_id):
         deleted_tag_ids.append(candidate_tag.tag_id)
-
         db.session.delete(candidate_tag)
-        db.session.commit()
 
+    db.session.commit()
     return [{'id': tag_id} for tag_id in deleted_tag_ids]

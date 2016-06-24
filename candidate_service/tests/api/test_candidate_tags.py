@@ -13,9 +13,9 @@ import uuid
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_errors
 
 # Helper functions
-from helpers import AddUserRoles, get_response
+from helpers import AddUserRoles
 from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.common.utils.test_utils import send_request, response_info
+from candidate_service.common.utils.test_utils import send_request, response_info, get_response
 
 DATA = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
 
