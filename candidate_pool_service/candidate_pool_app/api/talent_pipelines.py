@@ -530,6 +530,9 @@ class TalentPipelineMostEngagedCandidates(Resource):
 
 class CandidateMostEngagedPipelines(Resource):
 
+    # Access token decorator
+    decorators = [require_oauth()]
+
     @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
@@ -628,5 +631,5 @@ api.add_resource(TalentPipelineApi, CandidatePoolApi.TALENT_PIPELINE, CandidateP
 api.add_resource(TalentPipelineSmartListApi, CandidatePoolApi.TALENT_PIPELINE_SMARTLISTS)
 api.add_resource(TalentPipelineCandidates, CandidatePoolApi.TALENT_PIPELINE_CANDIDATES)
 api.add_resource(TalentPipelineMostEngagedCandidates, CandidatePoolApi.TALENT_PIPELINE_ENGAGED_CANDIDATES)
-api.add_resource(CandidateMostEngagedPipelines, CandidatePoolApi.TALENT_PIPELINE_ENGAGED_CANDIDATES)
+api.add_resource(CandidateMostEngagedPipelines, CandidatePoolApi.CANDIDATES_ENGAGED_TALENT_PIPELINES)
 api.add_resource(TalentPipelineCampaigns, CandidatePoolApi.TALENT_PIPELINE_CAMPAIGNS)
