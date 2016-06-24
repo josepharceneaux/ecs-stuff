@@ -14,7 +14,7 @@
     $rootScope.showSplash = true;
     vm.navline = {
       title: config.appTitle,
-      text: 'get-talent Admin',
+      text: 'getTalent Admin',
       link: '#'
     };
 
