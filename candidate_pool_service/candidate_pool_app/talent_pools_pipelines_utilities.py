@@ -12,7 +12,7 @@ from candidate_pool_service.common.redis_cache import redis_dict, redis_store
 from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
-from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool, User
+from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool, User, TalentPoolCandidate
 
 TALENT_PIPELINE_SEARCH_PARAMS = [
     "query",
@@ -515,7 +515,7 @@ def offset_date_time(date_object, offset):
 
 def top_most_engaged_candidates_of_pipeline(talent_pipeline_id, limit):
     """
-    This endpoint will candidate_ids of top 5 most engaged candidates of a talent_pipeline
+    This endpoint will return candidate_ids of top most engaged candidates of a talent_pipeline
     :param talent_pipeline_id: Id of talent_pipeline
     :param limit: Number of results returned by this method
     :return: List of candidate Ids of top (limit) most engaged candidates
@@ -555,5 +555,49 @@ def top_most_engaged_candidates_of_pipeline(talent_pipeline_id, limit):
                 engagement_score['engagement_score']))} for engagement_score in engagement_scores]
     except Exception as e:
         logger.exception("Couldn't get top most engaged candidates of talent-pipeline(%s) "
-                     "because (%s)" % (talent_pipeline_id, e.message))
+                         "because (%s)" % (talent_pipeline_id, e.message))
+        return []
+
+
+def top_most_engaged_pipelines_of_candidate(candidate_id, limit):
+    """
+    This endpoint will return top most engaged pipelines and their engagement score.
+    :param candidate_id: Id of candidate
+    :param limit: Number of results to be returned
+    :return: List of dicts containing pipeline's id, name and engagement score
+    """
+    talent_pool_ids_of_candidate = TalentPoolCandidate.query.with_entities(
+            TalentPoolCandidate.talent_pool_id).filter(TalentPoolCandidate.candidate_id == candidate_id).all()
+    talent_pool_ids_of_candidate = [talent_pool_id_of_candidate.talent_pool_id for
+                                    talent_pool_id_of_candidate in talent_pool_ids_of_candidate]
+
+    sql_query = """
+      SELECT talent_pipeline.id, talent_pipeline.name, avg(engagement_score_of_all_campaigns.engagement_score) as average_engagement_score_of_pipeline
+      FROM
+       (SELECT email_campaign_send.EmailCampaignId,
+               email_campaign_send_url_conversion.EmailCampaignSendId,
+               CASE WHEN sum(url_conversion.HitCount) = 0 THEN 0.0 WHEN sum(email_campaign_send_url_conversion.type * url_conversion.HitCount) > 0 THEN 100 ELSE 33.3 END AS engagement_score
+        FROM email_campaign_send
+        INNER JOIN email_campaign_send_url_conversion ON email_campaign_send.Id = email_campaign_send_url_conversion.EmailCampaignSendId
+        INNER JOIN url_conversion ON email_campaign_send_url_conversion.UrlConversionId = url_conversion.Id
+        WHERE email_campaign_send.candidateId = :candidate_id
+        GROUP BY email_campaign_send_url_conversion.EmailCampaignSendId) AS engagement_score_of_all_campaigns
+      NATURAL JOIN email_campaign_smart_list
+      INNER JOIN smart_list ON smart_list.Id = email_campaign_smart_list.SmartListId
+      INNER JOIN talent_pipeline ON talent_pipeline.id = smart_list.talentPipelineId
+      WHERE talent_pipeline.id IS NOT NULL AND talent_pipeline.talent_pool_id IN :talent_pool_ids GROUP BY talent_pipeline.id
+      ORDER BY average_engagement_score_of_pipeline DESC LIMIT :limit;
+    """
+
+    try:
+        engagement_scores = db.session.connection().execute(text(sql_query), candidate_id=candidate_id,
+                                                            limit=limit, talent_pool_ids=tuple(talent_pool_ids_of_candidate))
+        return [{
+                    'id': engagement_score['id'],
+                    'name': engagement_score['name'],
+                    'engagement_score': float(str(engagement_score['average_engagement_score_of_pipeline']))
+                } for engagement_score in engagement_scores]
+    except Exception as e:
+        logger.exception("Couldn't compute engagement score for all pipelines of a candidate(%s) "
+                         "because (%s)" % (candidate_id, e.message))
         return []
