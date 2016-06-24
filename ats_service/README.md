@@ -6,21 +6,21 @@
 #### API List
 
 - List each ATS we have integrated with
-    + `/v1/ats/list [GET]`
-- Register ATS account for a user with an ATS
-    + `/v1/users/:id/ats-account/ [POST]`
-- Decomission ATS account for a user with an ATS
-    + `/v1/users/:id/ats-account_id [DELETE]`
-- Retrieve all ATS accounts for a user
-    + `/v1/users/:id/ats-account-list [GET]`
-- Retrieve all ATS candidates associated with an ATS account
-    + `/v1/ats/candidates/:account_id [GET]`
+    + `/v1/ats [GET]`
 - Refresh all ATS candidates from an ATS account
-    + `/v1/ats/candidates/refresh/:account_id [PUT]`
+    + `/v1/ats/account/:id [PUT]`
+- Retrieve all ATS candidates associated with an ATS account
+    + `/v1/ats/account/:id [GET]`
+- Register ATS account for a user with an ATS
+    + `/v1/users/:id [POST]`
+- Decomission ATS account for a user with an ATS
+    + `/v1/users/:id [DELETE]`
+- Retrieve all ATS accounts for a user
+    + `/v1/users/:id [GET]`
 - Link getTalent candidate to ATS candidate
-    + `/v1/candidate/link/:candidate_id/:ats_candidate_id [POST]`
+    + `/v1/candidate/:candidate_id/:ats_candidate_id [POST]`
 - Unlink getTalent candidate from ATS candidate
-    + `/v1/candidate/unlink/:candidate_id [DELETE]`
+    + `/v1/candidate/ [DELETE]`
 
 #### Error Codes
 
