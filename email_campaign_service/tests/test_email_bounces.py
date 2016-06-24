@@ -42,9 +42,9 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         else:
             send_campaign_email_to_candidate(campaign, email, candidate_ids[0], blast_id=None)
 
-        retry(assert_is_bounced, sleeptime=3, attempts=33, sleepscale=1,
+        retry(assert_is_bounced, sleeptime=3, attempts=100, sleepscale=1,
               args=(email,), retry_exceptions=(AssertionError,))
-        campaign_blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, timeout=100)
+        campaign_blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, timeout=300)
 
         campaign_blast = campaign_blasts[0]
         assert campaign_blast.bounces == 1
@@ -102,7 +102,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
         for index in range(count):
             email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_ids[index])
             send_campaign_email_to_candidate(campaign, email, candidate_ids[index], email_campaign_blast.id)
-        retry(assert_is_bounced, sleeptime=3, attempts=33, sleepscale=1,
+        retry(assert_is_bounced, sleeptime=3, attempts=100, sleepscale=1,
               args=(email,), retry_exceptions=(AssertionError,))
 
         campaign_blasts = campaign.blasts.all()
