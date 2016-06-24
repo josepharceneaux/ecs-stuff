@@ -11,19 +11,19 @@
                 <thead>
                   <tr>
                     <th>Task ID</th>
-                    <th class="hideOnSMobile">Owner</th>
-                    <th class="hideOnMMobile">Task type</th>
-                    <th class="hideOnLMobile">Task Category</th>
-                    <th class="hideOnLaptop hideOnTablet">Data</th>
+                    <th class="hideOnLaptop hideOnTablet">Owner</th>
+                    <th class="hideOnSMobile">Task type</th>
+                    <th class="hideOnMMobile">Task Category</th>
+                    <th class="hideOnLMobile">Data</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr ng-repeat="task in vm.tasks">
-                    <td>{{task.id}}</td>
-                    <td class="hideOnSMobile overflow-text-S">{{task.user_email}}</td>
-                    <td class="hideOnMMobile">{{task.task_type}}</td>
-                    <td class="hideOnLMobile">{{task.task_category}}</td>
-                    <td class="hideOnLaptop hideOnTablet">
+                    <td class="overflow-text-id">{{task.id}}</td>
+                    <td class="hideOnLaptop hideOnTablet overflow-text-S">{{task.user_email}}</td>
+                    <td class="hideOnSMobile">{{task.task_type}}</td>
+                    <td class="hideOnMMobile">{{task.task_category}}</td>
+                    <td class="hideOnLMobile">
                       <div ng-switch on="task.task_type">
                         <div ng-switch-when="one_time">
                           <!-- one_time task block-->
@@ -64,7 +64,7 @@
                   </md-list-item>
                   <md-input-container class="md-block">
                     <label>User ID</label>
-                    <input ng-model="vm.userId" ng-change="vm.applyFilter()" ng-disabled="(vm.selectedTaskCategory === 'general')" min="1" type="number" step="1">
+                    <input ng-model="vm.userId" ng-change="vm.applyFilter()" ng-disabled="(vm.selectedTaskCategory === 'general')" min="1" max="2147483647" type="number" step="1">
                   </md-input-container>
   <md-divider></md-divider>
                   <md-subheader class="md-no-sticky">Task type</md-subheader>

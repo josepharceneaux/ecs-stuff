@@ -425,12 +425,9 @@ def get_user_job_ids(user_id):
     Return job_ids of a specific user
     :param user_id:
     :type user_id: int
-    :param count: number of job ids needed. By default, returns all job ids of a user.
-    :type count: int
     :return:
     :rtype: list
     """
-    # TODO: remove count from docs and empty :return:
     start_index = 0
     end_index = -1
     job_ids = redis_store.lrange(SchedulerUtils.REDIS_SCHEDULER_USER_TASK % user_id, start_index,

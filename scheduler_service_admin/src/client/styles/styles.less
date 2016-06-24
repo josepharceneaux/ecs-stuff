@@ -1808,6 +1808,13 @@ summary:focus {
      text-overflow: ellipsis;
    }
 
+.overflow-text-id {
+     white-space: nowrap;
+     width: 10em;
+     overflow: hidden;
+     text-overflow: ellipsis;
+   }
+
 .overflow-text-S {
      white-space: nowrap;
      max-width: 6em;
@@ -1819,6 +1826,8 @@ summary:focus {
    summary.overflow-text {
      width: 25em;
    }
+
+
  }
 
 
@@ -1837,6 +1846,12 @@ summary:focus {
 @media (max-width: 900px){
    .hideOnTablet {
      display:none;
+   }
+  .overflow-text-id {
+     white-space: nowrap;
+     width: 8em;
+     overflow: hidden;
+     text-overflow: ellipsis;
    }
  }
 
