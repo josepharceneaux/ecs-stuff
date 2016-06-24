@@ -42,6 +42,7 @@ other model classes inherit. But this changes will only effect this app or the a
              This will add all these method on db.Model and all its child classes.
 
 """
+
 # Standard Imports
 from types import MethodType
 
@@ -55,11 +56,12 @@ from sqlalchemy.orm.dynamic import AppenderQuery
 
 # Application Specific
 from ..models.db import db
+from ..models import migrations
 from ..routes import GTApis, HEALTH_CHECK
 from ..redis_cache import redis_store
 from ..talent_flask import TalentFlask
 from ..utils.talent_ec2 import get_ec2_instance_id
-from ..error_handling import register_error_handlers, InvalidUsage
+from ..error_handling import register_error_handlers, InvalidUsage, InternalServerError
 from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
 
@@ -75,9 +77,9 @@ def to_json(self, include_fields=None, field_parsers=dict()):
     to JSON serializable dict but we want our datetime object to be converted in
     ISO 8601 format, so we can pass a parser functions like
 
-        >>> from app_common.common.utils.handy_functions import to_utc_str
-        >>> parsers = dict(start_datetime=to_utc_str,
-        >>>                end_datetime=to_utc_str)
+        >>> from app_common.common.utils.datetime_utils import DatetimeUtils
+        >>> parsers = dict(start_datetime=DatetimeUtils.to_utc_str,
+        >>>                end_datetime=DatetimeUtils.to_utc_str)
         >>> event.to_json(field_parsers=parsers)
 
         >>> {
@@ -239,7 +241,7 @@ def get_by_id(cls, _id):
 
 
 @classmethod
-def delete(cls, ref, app=None):
+def delete(cls, ref, app=None, commit_session=True):
     """
     This method deletes a record from database given by id and the calling Model class.
     :param cls: model class, some child class of db.Model
@@ -247,6 +249,8 @@ def delete(cls, ref, app=None):
     :type ref: int | model object
     :param app: flask app, if someone wants to run this method using app_context
     :type app: Flask obj
+    :param commit_session: True if we want to commit the session per deletion
+    :type commit_session: bool
     :return: Boolean
     :rtype: bool
 
@@ -269,7 +273,8 @@ def delete(cls, ref, app=None):
         else:
             obj = ref
         db.session.delete(obj)
-        db.session.commit()
+        if commit_session:
+            db.session.commit()
     except Exception as error:
         db.session.rollback()
         if isinstance(app, Flask):
@@ -278,6 +283,18 @@ def delete(cls, ref, app=None):
                     "Couldn't delete record from db. Error is: %s" % error.message)
         return False
     return True
+
+
+@classmethod
+def get_invalid_fields(cls, data_to_be_verified):
+    """
+    This takes some data in dict from and checks if there is any key which is not a ATTRIBUTE of given model.`
+    It then returns all such fields in a list format.
+    :param db.Model cls: Database model class
+    :param dict data_to_be_verified: Dictionary of data.
+    :rtype: list
+    """
+    return [key for key in data_to_be_verified if key not in cls.__table__.columns]
 
 
 def add_model_helpers(cls):
@@ -307,7 +324,8 @@ def add_model_helpers(cls):
     cls.get = get_by_id
     # This method deletes an instance
     cls.delete = delete
-
+    # Register get_unexpected_fields() on model instance
+    cls.get_invalid_fields = get_invalid_fields
     # Sometimes we have lazy relationship, that is actually just a query (AppenderQuery instance)
     # it contains all methods like filter, filter_by, first, all etc but not paginate, so we are patching `paginate`
     # method from BaseQuery class to AppenderQuery class to get pagination functionality
@@ -362,10 +380,12 @@ def init_talent_app(app_name):
     """
     if not app_name:
         raise InvalidUsage('app_name is required to start an app.')
+
     flask_app = TalentFlask(app_name)
     load_gettalent_config(flask_app.config)
     # logger init
     logger = flask_app.config[TalentConfigKeys.LOGGER]
+
     try:
         add_model_helpers(db.Model)
         db.init_app(flask_app)
@@ -373,6 +393,10 @@ def init_talent_app(app_name):
 
         # Initialize Redis Cache
         redis_store.init_app(flask_app)
+        # noinspection PyProtectedMember
+        logger.info("Redis connection pool on app startup: %s", repr(redis_store._redis_client.connection_pool))
+        # noinspection PyProtectedMember
+        logger.info("Redis info on app startup: %s", redis_store._redis_client.info())
 
         # Enable CORS for *.gettalent.com and localhost
         CORS(flask_app, resources=GTApis.CORS_HEADERS)
@@ -386,7 +410,16 @@ def init_talent_app(app_name):
         logger.info("Starting %s in %s environment in EC2 instance %s"
                     % (flask_app.import_name, flask_app.config[TalentConfigKeys.ENV_KEY],
                        get_ec2_instance_id()))
+
+        # If there's a problem running migrations, let's try and work anyway.
+        try:
+            migrations.run_migrations(logger, db)
+        except Exception as e:
+            logger.exception("Exception running migrations: {}".format(e.message))
+            db.session.rollback()
+
         return flask_app, logger
+
     except Exception as error:
         logger.exception("Couldn't start %s in %s environment because: %s"
                      % (flask_app.name, flask_app.config[TalentConfigKeys.ENV_KEY],

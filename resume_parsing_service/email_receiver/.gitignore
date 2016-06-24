@@ -1,0 +1,5 @@
+# Lambda deployments
+resume_parsing_service/email_receiver/deployments/*
+
+# Local venv
+venv

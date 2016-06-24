@@ -50,7 +50,6 @@ def org_fixture(request):
 
 @pytest.fixture(autouse=True)
 def culture_fixture(request):
-    # culture_attrs = dict(description='Foo {}'.format(random_word(12)), code=random_word(5))
     culture_attrs = dict(id=1)
     culture, created = get_or_create(db.session, Culture, defaults=None, **culture_attrs)
     if created:
@@ -115,14 +114,11 @@ def user_fixture(domain_fixture, user_group_fixture, request):
                 added_time=datetime.datetime(2050, 4, 26))
     db.session.add(user)
     db.session.commit()
-    # Cannot currently delete users because of constraints on Candidate.OwnerUserId
-    # Cannot delete Candidates after search by this term due to un-implemented or not working
-    # delete cascades.
-    # @require_integrity
-    # def fin():
-    #     db.session.delete(user)
-    #     db.session.commit()
-    # request.addfinalizer(fin)
+    @require_integrity
+    def fin():
+        db.session.delete(user)
+        db.session.commit()
+    request.addfinalizer(fin)
     return user
 
 
@@ -130,7 +126,7 @@ def user_fixture(domain_fixture, user_group_fixture, request):
 def talent_pool_fixture(domain_fixture, user_fixture, request):
     talent_pool = TalentPool(domain_id=domain_fixture.id, user_id=user_fixture.id,
                              name=random_word(5), description=random_word(5),
-                             added_time=datetime.datetime(2050, 4, 26),
+                             simple_hash=random_word(8), added_time=datetime.datetime(2050, 4, 26),
                              updated_time=datetime.datetime(2050, 4, 26))
     db.session.add(talent_pool)
     db.session.commit()
@@ -156,9 +152,37 @@ def client_fixture(request):
 
 
 @pytest.fixture(autouse=True)
+def client_fixture2(request):
+    client = Client(client_id=random_word(12), client_secret=random_word(12))
+    db.session.add(client)
+    db.session.commit()
+    @require_integrity
+    def fin():
+        db.session.delete(client)
+        db.session.commit()
+    request.addfinalizer(fin)
+    return client
+
+
+@pytest.fixture(autouse=True)
 def token_fixture(user_fixture, client_fixture, request):
     token = Token(client_id=client_fixture.client_id, user_id=user_fixture.id, token_type='bearer', access_token=random_word(8),
                        refresh_token=random_word(8), expires=datetime.datetime(2050, 4, 26))
+    db.session.add(token)
+    db.session.commit()
+    @require_integrity
+    def fin():
+        db.session.delete(token)
+        db.session.commit()
+    request.addfinalizer(fin)
+    return token
+
+
+@pytest.fixture(autouse=True)
+def expired_token_fixture(user_fixture, client_fixture2, request):
+    token = Token(client_id=client_fixture2.client_id, user_id=user_fixture.id,
+                  token_type='bearer', access_token=random_word(8),
+                  refresh_token=random_word(8), expires=datetime.datetime(1970, 4, 26))
     db.session.add(token)
     db.session.commit()
     @require_integrity

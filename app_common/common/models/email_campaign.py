@@ -1,10 +1,14 @@
 import datetime
 
-from db import db
 from sqlalchemy import desc
 from sqlalchemy.orm import relationship
-from ..error_handling import (ResourceNotFound, ForbiddenError)
-from ..datetime_utils import utc_isoformat
+
+from db import db
+from ..utils.datetime_utils import DatetimeUtils
+from ..utils.validators import (raise_if_not_instance_of,
+                                raise_if_not_positive_int_or_long)
+from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError)
+
 
 __author__ = 'jitesh'
 
@@ -33,7 +37,7 @@ class EmailCampaign(db.Model):
     custom_html = db.Column('CustomHtml', db.Text)
     custom_url_params_json = db.Column('CustomUrlParamsJson', db.String(512))
     is_subscription = db.Column('isSubscription', db.Boolean, default=False)
-    added_datetime = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
+    added_datetime = db.Column('addedTime', db.DateTime, default=datetime.datetime.utcnow)
     email_client_id = db.Column('EmailClientId', db.Integer, db.ForeignKey('email_client.id'))
 
     # Relationships
@@ -58,9 +62,9 @@ class EmailCampaign(db.Model):
                        "subject": self.subject,
                        "from": self._from,
                        "reply_to": self.reply_to,
-                       "start_datetime": utc_isoformat(self.start_datetime) if self.start_datetime else None,
-                       "end_datetime": utc_isoformat(self.end_datetime) if self.end_datetime else None,
-                       "added_datetime": utc_isoformat(self.added_datetime) if self.added_datetime else None,
+                       "start_datetime": DatetimeUtils.utc_isoformat(self.start_datetime) if self.start_datetime else None,
+                       "end_datetime": DatetimeUtils.utc_isoformat(self.end_datetime) if self.end_datetime else None,
+                       "added_datetime": DatetimeUtils.utc_isoformat(self.added_datetime) if self.added_datetime else None,
                        # Conditionally include body_text and body_html because they are deferred fields
                        "body_html": self.body_html if (include_fields and 'body_html' in include_fields) else None,
                        "body_text": self.body_text if (include_fields and 'body_text' in include_fields) else None,
@@ -94,10 +98,20 @@ class EmailCampaignSmartlist(db.Model):
                              db.ForeignKey('smart_list.Id', ondelete='CASCADE'))
     campaign_id = db.Column('EmailCampaignId', db.Integer,
                             db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.utcnow)
 
     @classmethod
     def get_smartlists_of_campaign(cls, campaign_id, smartlist_ids_only=False):
+        """
+        Get smartlists associated with the given campaign.
+        :param campaign_id: Id of campaign for with smartlists are to be retrieved
+        :param smartlist_ids_only: True if only ids are to be returned
+        :type campaign_id: int | long
+        :type smartlist_ids_only: bool
+        :rtype list
+        """
+        raise_if_not_positive_int_or_long(campaign_id)
+        raise_if_not_instance_of(smartlist_ids_only, bool)
         records = cls.query.filter_by(campaign_id=campaign_id).all()
         if smartlist_ids_only:
             return [row.smartlist_id for row in records]
@@ -115,7 +129,11 @@ class EmailCampaignBlast(db.Model):
     bounces = db.Column('Bounces', db.Integer, default=0)
     complaints = db.Column('Complaints', db.Integer, default=0)
     sent_datetime = db.Column('SentTime', db.DateTime)
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.utcnow)
+
+    # Relationships
+    blast_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan',
+                               passive_deletes=True, backref='blast', lazy='dynamic')
 
     @classmethod
     def get_by_id(cls, _id):
@@ -133,6 +151,22 @@ class EmailCampaignBlast(db.Model):
         return cls.query.filter(
             cls.campaign_id == campaign_id).order_by(desc(cls.sent_datetime)).first()
 
+    @classmethod
+    def get_by_send(cls, send_obj):
+        """
+        This method takes EmailCampaignSend object as input and returns associated EmailCampaignBlast object.
+        It first tries to retrieve blast from backref. If that is None, then get blast by matching sent_datetime
+        :param EmailCampaignSend send_obj: campaign send object
+        :rtype EmailCampaignBlast | None
+        """
+        assert isinstance(send_obj, EmailCampaignSend), 'send_obj must be EmailCampaignSend instance, found: %s, type: %s' % (send_obj, type(send_obj))
+        blast = send_obj.blast
+        if isinstance(blast, EmailCampaignBlast):
+            return blast
+        # if blast_id is not there, match by sent_datetime as we are doing in web2py app:
+        # https://github.com/Veechi/Talent-Web/blob/master/web2py/applications/web/controllers/campaign.py#L63
+        return cls.query.filter_by(sent_datetime=send_obj.sent_datetime).first()
+
     def __repr__(self):
         return "<EmailCampaignBlast (Sends: %s, Opens: %s)>" % (self.sends, self.opens)
 
@@ -141,13 +175,14 @@ class EmailCampaignSend(db.Model):
     __tablename__ = 'email_campaign_send'
     id = db.Column('Id', db.Integer, primary_key=True)
     campaign_id = db.Column('EmailCampaignId', db.Integer, db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
+    blast_id = db.Column('EmailCampaignBlastId', db.Integer, db.ForeignKey('email_campaign_blast.id', ondelete='CASCADE'))
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     sent_datetime = db.Column('SentTime', db.DateTime)
     ses_message_id = db.Column('sesMessageId', db.String(63))
     ses_request_id = db.Column('sesRequestId', db.String(63))
     is_ses_bounce = db.Column('isSesBounce', db.Boolean, default=False)
     is_ses_complaint = db.Column('isSesComplaint', db.Boolean, default=False)
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.now())
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.utcnow)
     email_campaign = relationship('EmailCampaign', backref="email_campaign")
 
     # Relationships
@@ -181,6 +216,32 @@ class EmailCampaignSend(db.Model):
                                  % (send_id, requested_campaign_id))
         return send_obj
 
+    @classmethod
+    def get_by_amazon_ses_message_id(cls, message_id):
+        """
+        Get send email object from given SES message id.
+        :param message_id: Simple Email Service (SES) unique message id
+        :type message_id: str
+        :return: EmailCampaignSend object
+        """
+        assert isinstance(message_id, basestring) and message_id, 'message_id should have a valid value.'
+        return cls.query.filter_by(ses_message_id=message_id).first()
+
+    @classmethod
+    def get_already_emailed_candidates(cls, campaign):
+        """
+        Get candidates to whom email for specified campaign has already been sent.
+        :param campaign: Valid campaign object.
+        :return: Ids of candidates to whom email for specified campaign has already being sent.
+        """
+        if not isinstance(campaign, EmailCampaign):
+            raise InternalServerError(error_message='Must provide valid EmailCampaign object.')
+
+        already_emailed_candidates = cls.query.with_entities(
+            cls.candidate_id).filter_by(campaign_id=campaign.id).all()
+        emailed_candidate_ids = [row.candidate_id for row in already_emailed_candidates]
+        return emailed_candidate_ids
+
 
 class EmailClient(db.Model):
     __tablename__ = 'email_client'
@@ -206,3 +267,70 @@ class EmailCampaignSendUrlConversion(db.Model):
 
     # Relationships
     email_campaign_send = relationship('EmailCampaignSend', backref="email_campaign_send")
+
+
+class UserEmailTemplate(db.Model):
+    __tablename__ = 'user_email_template'
+    id = db.Column('Id', db.Integer, primary_key=True)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'), index=True)
+    type = db.Column('Type', db.Integer, server_default=db.text("'0'"))
+    name = db.Column('Name', db.String(255), nullable=False)
+    body_html = db.Column('EmailBodyHtml', db.Text)
+    body_text = db.Column('EmailBodyText', db.Text)
+    template_folder_id = db.Column('EmailTemplateFolderId', db.Integer, db.ForeignKey('email_template_folder.id',
+                                                                                      ondelete=u'SET NULL'), index=True)
+    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text(
+            "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+
+    # Relationships
+    template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
+                                                                              cascade="all, delete-orphan"))
+
+    @classmethod
+    def get_by_id(cls, template_id):
+        """
+        :type template_id:  int | long
+        :return: UserEmailTemplate
+        """
+        return cls.query.get(template_id)
+
+    @classmethod
+    def get_by_name(cls, template_name):
+        return cls.query.filter_by(name=template_name).first()
+
+
+class EmailTemplateFolder(db.Model):
+    __tablename__ = 'email_template_folder'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column('Name', db.String(512))
+    parent_id = db.Column('ParentId', db.Integer,  db.ForeignKey('email_template_folder.id', ondelete='CASCADE'),
+                          index=True)
+    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
+    domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
+    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False,
+                             server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+
+    domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
+    parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
+                                                                                      cascade="all, delete-orphan"))
+
+    @classmethod
+    def get_by_id(cls, folder_id):
+        """
+        :type folder_id:  int | long
+        :return: EmailTemplateFolder
+        """
+        return cls.query.get(folder_id)
+
+    @classmethod
+    def get_by_name_and_domain_id(cls, folder_name, domain_id):
+        """
+        Method to get email template folder based on folder name and domain id.
+        :type folder_name:  string
+        :type domain_id:  int | long
+        :rtype:  EmailTemplateFolder
+        """
+        assert folder_name, "folder_name not provided"
+        assert domain_id, "domain_id not provided"
+        return cls.query.filter_by(name=folder_name, domain_id=domain_id).first()

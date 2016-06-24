@@ -10,9 +10,11 @@ import json
 import pytest
 from faker import Faker
 from werkzeug.security import gen_salt
+
 from ..models.candidate import Candidate
 from ..models.user import UserGroup, DomainRole
 from auth_utilities import get_access_token, get_or_create
+from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 
 # Application Specific
 from ..models.db import db
@@ -184,7 +186,7 @@ def domain_aoi(domain_first):
     """Will add two areas-of-interest to domain
     :rtype:  list[AreaOfInterest]
     """
-    areas_of_interest = [{'name': fake.job()}, {'name': fake.job()}]
+    areas_of_interest = [{'name': fake.job().lower()}, {'name': fake.job().lower()}]
     for area_of_interest in areas_of_interest:
         db.session.add(AreaOfInterest(domain_id=domain_first.id, name=area_of_interest['name']))
 
@@ -194,7 +196,8 @@ def domain_aoi(domain_first):
 
 @pytest.fixture()
 def domain_custom_fields(domain_first):
-    """Will add custom fields to domain
+    """
+    Will add custom fields to domain
     :rtype:  list[CustomField]
     """
     custom_fields = [{'name': fake.word(), 'type': 'string'}, {'name': fake.word(), 'type': 'string'}]
@@ -412,7 +415,6 @@ def sample_user_2(domain_first, first_group, request):
     return user
 
 
-
 @pytest.fixture()
 def talent_pool(request, domain_first, first_group, user_first):
     talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, user_id=user_first.id)
@@ -475,14 +477,33 @@ def talent_pool_other(request, test_domain_2, second_group, user_from_diff_domai
 
 @pytest.fixture()
 def talent_pipeline(request, user_first, talent_pool):
+    talent_pipeline = TalentPipeline(name=gen_salt(6), description=gen_salt(15), positions=2,
+                                     date_needed=datetime.utcnow().isoformat(sep=' '), user_id=user_first.id,
+                                     talent_pool_id=talent_pool.id)
+    db.session.add(talent_pipeline)
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(talent_pipeline)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return talent_pipeline
+
+
+@pytest.fixture()
+def talent_pipeline_other(request, user_from_diff_domain, talent_pool_other):
     search_params = {
         "skills": "Python",
         "minimum_years_experience": "4",
         "location": "California"
     }
     talent_pipeline = TalentPipeline(name=gen_salt(6), description=gen_salt(15), positions=2,
-                                     date_needed=datetime.utcnow().isoformat(sep=' '), user_id=user_first.id,
-                                     talent_pool_id=talent_pool.id, search_params=json.dumps(search_params))
+                                     date_needed=datetime.utcnow().isoformat(sep=' '),
+                                     user_id=user_from_diff_domain.id,
+                                     talent_pool_id=talent_pool_other.id, search_params=json.dumps(search_params))
     db.session.add(talent_pipeline)
     db.session.commit()
 
@@ -513,6 +534,22 @@ def candidate_first(request, user_first):
 
 
 @pytest.fixture()
+def candidate_first_2(request, user_first):
+    candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_first.id)
+    db.session.add(candidate)
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(candidate)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return candidate
+
+
+@pytest.fixture()
 def candidate_second(request, user_first):
     candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_first.id)
     db.session.add(candidate)
@@ -528,5 +565,31 @@ def candidate_second(request, user_first):
     return candidate
 
 
+@pytest.fixture()
+def user_second_candidate(request, user_second):
+    candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_second.id)
+    db.session.add(candidate)
+    db.session.commit()
+
+    def tear_down():
+        try:
+            db.session.delete(candidate)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+    request.addfinalizer(tear_down)
+    return candidate
+
+
 def randomword(length):
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
+
+
+def get_auth_header(access_token):
+    """
+    This returns auth header dict.
+    :param access_token: access token of user
+    """
+    auth_header = {'Authorization': 'Bearer %s' % access_token}
+    auth_header.update(JSON_CONTENT_TYPE_HEADER)
+    return auth_header

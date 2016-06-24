@@ -31,11 +31,14 @@ This module contain PushCampaignVase class which is sub class of CampaignBase.
 """
 # Third Party
 import datetime
+import itertools
+
 from dateutil.relativedelta import relativedelta
 from onesignalsdk.one_signal_sdk import OneSignalSdk
 
 # Application Specific
 # Import all model classes from push_campaign module
+from push_campaign_service.common.error_handling import InvalidUsage
 from push_campaign_service.common.models.db import db
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.models.user import User
@@ -46,23 +49,22 @@ from push_campaign_service.common.campaign_services.campaign_base import Campaig
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from push_campaign_service.common.models.push_campaign import (PushCampaign, PushCampaignSend,
                                                                PushCampaignSendUrlConversion)
-from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY, CELERY_QUEUE
+from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 
 
 class PushCampaignBase(CampaignBase):
 
-    def __init__(self, user_id, *args, **kwargs):
+    def __init__(self, user_id, campaign_id=None):
         """
         Here we set the "user_id" by calling super constructor.
         In this method, initialize all instance attributes.
-        :param args:
-        :param kwargs:
+        :param (int|long) user_id: user unique id
+        :param (int|long) campaign_id: push campaign id
         """
         # sets the user_id
-        super(PushCampaignBase, self).__init__(user_id)
+        super(PushCampaignBase, self).__init__(user_id, campaign_id=campaign_id)
         self.campaign_blast = None
-        self.campaign_id = None
-        self.queue_name = kwargs.get('queue_name', CELERY_QUEUE)
+        self.campaign_id = campaign_id
         self.campaign_type = CampaignUtils.PUSH
 
     @staticmethod
@@ -122,12 +124,26 @@ class PushCampaignBase(CampaignBase):
         will override this if needed.
         :param candidates: list of candidates
         :type candidates: list
-        :return: generator
+        :return: list of candidates and their device ids as tuple [(device_id, [device_id1, device_id2])]
         """
-        return (candidate.id for candidate in candidates)
+        candidate_and_device_ids = []
+        for candidate in candidates:
+            devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
+            device_ids = [device.one_signal_device_id for device in devices]
+            if not device_ids:
+                logger.warn('Candidate (id: %s) does not have any push device associated', candidate.id)
+            else:
+                candidate_and_device_ids.append((candidate.id, device_ids))
+
+        # get all device ids and if there is no device associated with any candidate, raise InvalidUsage
+        all_device_ids = list(itertools.chain(*map(lambda item: item[1], candidate_and_device_ids)))
+        if not all_device_ids:
+            raise InvalidUsage('There is no device associated with any candidate. Candidate Ids: %s'
+                               % [candidate.id for candidate in candidates])
+        return candidate_and_device_ids
 
     @celery_app.task(name='send_campaign_to_candidate')
-    def send_campaign_to_candidate(self, candidate_id):
+    def send_campaign_to_candidate(self, candidate_and_device_ids):
         """
         This method sends campaign to a single candidate. It gets the devices associated with
         the candidate and sends this campaign to all devices using OneSignal's RESTful API.
@@ -139,10 +155,12 @@ class PushCampaignBase(CampaignBase):
         This URL is sent to candidate in push notification and when user clicks on notification
         he is redirected to our url redirection endpoint, which after updating campaign stats,
         redirected to original url given for campaign owner.
-        :param candidate_id: id of candidate in candidate table in getTalent database
+        :param candidate_and_device_ids: list of tuple and each tuple contains id of candidate and
+               list of candidate device ids
         :return: True | None
         """
         with app.app_context():
+            candidate_id, device_ids = candidate_and_device_ids
             candidate = Candidate.get_by_id(candidate_id)
             self.campaign = PushCampaign.get_by_id(self.campaign_id)
             assert isinstance(candidate, Candidate), \
@@ -150,8 +168,6 @@ class PushCampaignBase(CampaignBase):
             logger.info('Going to send campaign to candidate (id = %s)' % candidate.id)
             # A device is actually candidate's desktop, android or iOS machine where
             # candidate will receive push notifications. Device id is given by OneSignal.
-            devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
-            device_ids = [device.one_signal_device_id for device in devices]
             if not device_ids:
                 logger.error('Candidate has not subscribed for push notification. candidate_id: %s,'
                              'campaign_id: %s' % (candidate_id, self.campaign_id))
@@ -242,6 +258,7 @@ class PushCampaignBase(CampaignBase):
         It rollbacks the transaction otherwise it will cause other transactions (if any) to fail.
         :param uuid:
         """
+        logger.warn('Error occurred while sending push campaign.')
         db.session.rollback()
 
     def save(self, form_data):

@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 from dateutil.relativedelta import relativedelta
 
 # Service Specific
-from email_campaign_service.email_campaign_app import logger
+from email_campaign_service.email_campaign_app import (logger, celery_app)
 
 # Common Utils
 from email_campaign_service.common.models.user import User
@@ -18,16 +18,14 @@ from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-from email_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
-                                                          ForbiddenError)
-from email_campaign_service.common.utils.handy_functions import raise_if_not_instance_of
+from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
+                                                            raise_if_not_positive_int_or_long)
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
-from email_campaign_service.common.utils.handy_functions import (create_oauth_headers,
-                                                                 http_request)
-from email_campaign_service.common.routes import (CandidatePoolApiUrl, CandidateApiUrl,
-                                                  EmailCampaignUrl)
+from email_campaign_service.common.routes import (CandidateApiUrl,
+                                                  EmailCampaignApiUrl)
 from email_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
+from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
 DEFAULT_LAST_NAME_MERGETAG = "*|LASTNAME|*"
@@ -38,23 +36,23 @@ TEXT_CLICK_URL_TYPE = 1
 HTML_CLICK_URL_TYPE = 2
 
 
-def get_candidates_of_smartlist(list_id, candidate_ids_only=False):
+@celery_app.task(name='get_candidates_from_smartlist')
+def get_candidates_from_smartlist(list_id, candidate_ids_only=False, user_id=None):
     """
-    Calls smartlist API and retrieves the candidates of a smart or dumb list.
-
+    Calls inter services method and retrieves the candidates of a smart or dumb list.
     :param list_id: smartlist id.
-    :return:
+    :param candidate_ids_only: Whether or not to get only ids of candidates
+    :param user_id: Id of user.
+    :type list_id: int | long
+    :type candidate_ids_only: bool
+    :type user_id: int | long | None
+    :rtype: list
     """
-
-    params = {'fields': 'candidate_ids_only'} if candidate_ids_only else {}
-    response = http_request('get', CandidatePoolApiUrl.SMARTLIST_CANDIDATES % list_id,
-                            params=params, headers=create_oauth_headers())
-    if response.status_code == InvalidUsage.http_status_code():
-        raise InvalidUsage(response.content)
-    response_body = json.loads(response.content)
-    candidates = response_body['candidates']
-    if candidate_ids_only:
-        return [long(candidate['id']) for candidate in candidates]
+    raise_if_not_positive_int_or_long(list_id)
+    raise_if_not_instance_of(candidate_ids_only, bool)
+    raise_if_not_positive_int_or_long(user_id)
+    candidates = get_candidates_of_smartlist(list_id=list_id, candidate_ids_only=candidate_ids_only,
+                                             access_token=None, user_id=user_id)
     return candidates
 
 
@@ -141,8 +139,8 @@ def create_email_campaign_url_conversion(destination_url, email_campaign_send_id
     # source_url = current.HOST_NAME + str(URL(a='web', c='default', f='url_redirect',
     # args=url_conversion_id, hmac_key=current.HMAC_KEY))
     logger.info('create_email_campaign_url_conversion: url_conversion_id:%s' % url_conversion.id)
-    signed_source_url = CampaignUtils.sign_redirect_url(EmailCampaignUrl.URL_REDIRECT % url_conversion.id,
-                                           datetime.now() + relativedelta(years=+1))
+    signed_source_url = CampaignUtils.sign_redirect_url(EmailCampaignApiUrl.URL_REDIRECT % url_conversion.id,
+                                           datetime.utcnow() + relativedelta(years=+1))
 
     # In case of prod, do not save source URL
     if CampaignUtils.IS_DEV:

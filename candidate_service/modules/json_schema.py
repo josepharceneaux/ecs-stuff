@@ -1,7 +1,10 @@
 """
 JSON Schemas for validating data sent to CandidatesResource
 """
+import sys
 from datetime import datetime
+
+MAX_INT = sys.maxint
 CURRENT_YEAR = datetime.now().year
 
 candidates_resource_schema_post = {
@@ -43,7 +46,9 @@ candidates_resource_schema_post = {
                         "type": ["string", "null"]
                     },
                     "source_id": {
-                        "type": ["integer", "null"]
+                        "type": ["integer", "null"],
+                        "minimum": 1,
+                        "maximum": MAX_INT
                     },
                     "objective": {
                         "type": ["string", "null"]
@@ -112,7 +117,7 @@ candidates_resource_schema_post = {
                                     "maxLength": 50
                                 },
                                 "value": {
-                                    "type": ["string", "null"],
+                                    "type": ["string"],
                                     "maxLength": 20
                                 },
                                 "is_default": {
@@ -129,7 +134,7 @@ candidates_resource_schema_post = {
                             "additionalProperties": False,
                             "properties": {
                                 "area_of_interest_id": {
-                                    "type": ["integer", "null"]
+                                    "type": ["integer"]
                                 }
                             }
                         }
@@ -231,9 +236,17 @@ candidates_resource_schema_post = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
+                                },
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "po_box": {
                                     "type": ["string", "null"],
@@ -289,9 +302,17 @@ candidates_resource_schema_post = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
+                                },
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "is_current": {
                                     "type": ["boolean", "null"]
@@ -374,6 +395,10 @@ candidates_resource_schema_post = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
+                                },
                                 "region": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
@@ -381,6 +406,10 @@ candidates_resource_schema_post = {
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "zip_code": {
                                     "type": ["string", "null"],
@@ -411,9 +440,17 @@ candidates_resource_schema_post = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
+                                },
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "start_year": {
                                     "type": ["integer", "null"],
@@ -459,6 +496,10 @@ candidates_resource_schema_post = {
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "highest_rank": {
                                     "type": ["string", "null"],
@@ -530,7 +571,6 @@ candidates_resource_schema_patch = {
             "minItems": 1,
             "items": {
                 "type": "object",
-                "required": ["id"],
                 "additionalProperties": False,
                 "properties": {
                     "id": {
@@ -562,7 +602,9 @@ candidates_resource_schema_patch = {
                         "type": ["string", "null"]
                     },
                     "source_id": {
-                        "type": ["integer", "null"]
+                        "type": ["integer", "null"],
+                        "minimum": 1,
+                        "maximum": MAX_INT
                     },
                     "objective": {
                         "type": ["string", "null"]
@@ -748,9 +790,17 @@ candidates_resource_schema_patch = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
+                                },
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "po_box": {
                                     "type": ["string", "null"],
@@ -814,6 +864,10 @@ candidates_resource_schema_patch = {
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "is_current": {
                                     "type": ["boolean", "null"]
@@ -905,9 +959,17 @@ candidates_resource_schema_patch = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
+                                },
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "zip_code": {
                                     "type": ["string", "null"],
@@ -940,9 +1002,17 @@ candidates_resource_schema_patch = {
                                     "type": ["string", "null"],
                                     "maxLength": 100
                                 },
+                                "subdivision_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 10
+                                },
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "start_year": {
                                     "type": ["integer", "null"],
@@ -994,6 +1064,10 @@ candidates_resource_schema_patch = {
                                 "country": {
                                     "type": ["string", "null"],
                                     "maxLength": 100
+                                },
+                                "country_code": {
+                                    "type": ["string", "null"],
+                                    "maxLength": 2
                                 },
                                 "highest_rank": {
                                     "type": ["string", "null"],
@@ -1053,7 +1127,6 @@ candidates_resource_schema_patch = {
     }
 }
 
-
 candidates_resource_schema_get = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": ["object", "null"],
@@ -1068,7 +1141,6 @@ candidates_resource_schema_get = {
         }
     }
 }
-
 
 resource_schema_preferences = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -1140,7 +1212,6 @@ resource_schema_photos_patch = {
     }
 }
 
-
 notes_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
@@ -1161,48 +1232,51 @@ notes_schema = {
     }
 }
 
-
-resource_schema_source_post = {
+language_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
-    "additionalProperties": False,
-    "required": ["sources"],
+    # "additionalProperties": False,
+    "required": ["candidate_languages"],
     "properties": {
-        "sources": {
+        "notes": {
             "type": "array",
             "minItems": 1,
             "items": {
                 "type": "object",
-                "required": ["domain_id", "description"],
-                # "additionalProperties": False,
                 "properties": {
-                    "domain_id": {"type": "integer"},
-                    "description": {"type": "string"},
-                    "notes": {"type": ["string", "null"]}
+                    "id": {"type": ["integer", "null"]},
+                    "language_code": {"type": ["string", "null"]},
+                    "read": {"type": ["boolean", "null"]},
+                    "write": {"type": ["boolean", "null"]},
+                    "speak": {"type": ["boolean", "null"]}
                 }
             }
         }
     }
 }
 
-resource_schema_source_update = {
+
+tag_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "additionalProperties": False,
-    "required": ["sources"],
+    "required": ["tags"],
     "properties": {
-        "sources": {
-            "type": "array",
-            "minItems": 1,
+        "tags": {
+            "type": ["array"],
             "items": {
                 "type": "object",
-                "required": ["id"],
-                # "additionalProperties": False,
+                "additionalProperties": False,
+                "required": ["name"],
                 "properties": {
-                    "id": {"type": "integer"},
-                    "domain_id": {"type": "integer"},
-                    "description": {"type": "string"},
-                    "notes": {"type": ["string", "null"]}
+                    "id": {
+                        "type": ["integer", "null"]
+                    },
+                    "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 12
+                    }
                 }
             }
         }

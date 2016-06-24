@@ -8,13 +8,13 @@ from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
 
+from db import db
 from ..models.event import Event
 from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
 from email_campaign import EmailCampaign
-from db import db
 from ..error_handling import *
 from ..redis_cache import redis_store
 from ..utils.validators import is_number
@@ -40,13 +40,15 @@ class User(db.Model):
     # name = db.Column(db.String(127))
     first_name = db.Column('firstName', db.String(255))
     last_name = db.Column('lastName', db.String(255))
-    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.now())
-    updated_time = db.Column('updatedTime', db.DateTime, default=datetime.datetime.now())
+    added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_time = db.Column('updatedTime', db.DateTime, default=datetime.datetime.utcnow)
+    password_reset_time = db.Column('passwordResetTime', db.DateTime, default=datetime.datetime.utcnow)
     dice_user_id = db.Column('diceUserId', db.Integer)
     user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.Id', ondelete='CASCADE'))
     last_read_datetime = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
     thumbnail_url = db.Column('thumbnailUrl', db.TEXT)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
+    locale = db.Column(db.String(10), default='en-US')
     # TODO: Set Nullable = False after setting user_group_id for existing data
 
     # Relationships
@@ -56,7 +58,8 @@ class User(db.Model):
     user_phones = relationship('UserPhone', cascade='all,delete-orphan', passive_deletes=True,
                                backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
-    push_campaigns = relationship('PushCampaign', backref='user', cascade='all,delete-orphan', passive_deletes=True,)
+    email_templates = relationship('UserEmailTemplate', backref='user', cascade='all, delete-orphan')
+    push_campaigns = relationship('PushCampaign', backref='user', cascade='all,delete-orphan', passive_deletes=True, )
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship(Event, backref='user', lazy='dynamic',
                              cascade='all, delete-orphan', passive_deletes=True)
@@ -92,7 +95,7 @@ class User(db.Model):
             request.user = None
             return
 
-        raise UnauthorizedError(error_message="User with id=%s doesn't exist in database" % data['user_id'])
+        raise UnauthorizedError(error_message="User %s doesn't exist in database" % data['user_id'])
 
     def is_authenticated(self):
         return True
@@ -146,6 +149,15 @@ class User(db.Model):
         session.commit()
         return user
 
+    @staticmethod
+    def get_by_email(email):
+        """
+        This method returns a user with specified email or None if not found.
+        :param (str) email: user email address
+        :rtype User | None
+        """
+        return User.query.filter_by(email=email).first()
+
 
 class UserPhone(db.Model):
     __tablename__ = 'user_phone'
@@ -195,7 +207,7 @@ class Domain(db.Model):
     expiration = db.Column('Expiration', db.DateTime)
     added_time = db.Column('AddedTime', db.DateTime)
     default_from_name = db.Column('DefaultFromName', db.String(255))
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now())
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
     dice_company_id = db.Column('DiceCompanyId', db.Integer, index=True)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
 
@@ -257,7 +269,7 @@ class JobOpening(db.Model):
     job_code = db.Column('JobCode', db.String(100))
     description = db.Column('Description', db.String(500))
     title = db.Column('Title', db.String(150))
-    added_time = db.Column('AddedTime', db.TIMESTAMP, default=time.time())
+    added_time = db.Column('AddedTime', db.TIMESTAMP, default=time.time)
 
     def __repr__(self):
         return "<JobOpening (title=' %r')>" % self.title
@@ -439,6 +451,22 @@ class DomainRole(db.Model):
         # Admin Roles
         CAN_EDIT_OTHER_DOMAIN_INFO = "CAN_EDIT_OTHER_DOMAIN_INFO"
 
+        # Email Template Roles
+        CAN_CREATE_EMAIL_TEMPLATE = "CAN_CREATE_EMAIL_TEMPLATE"
+        CAN_GET_EMAIL_TEMPLATE = "CAN_GET_EMAIL_TEMPLATE"
+        CAN_UPDATE_EMAIL_TEMPLATE = "CAN_UPDATE_EMAIL_TEMPLATE"
+        CAN_DELETE_EMAIL_TEMPLATE = "CAN_DELETE_EMAIL_TEMPLATE"
+
+        # Email Template Folder Roles
+        CAN_CREATE_EMAIL_TEMPLATE_FOLDER = "CAN_CREATE_EMAIL_TEMPLATE_FOLDER"
+        CAN_DELETE_EMAIL_TEMPLATE_FOLDER = "CAN_DELETE_EMAIL_TEMPLATE_FOLDER"
+
+        CAN_IMPERSONATE_USERS = "CAN_IMPERSONATE_USERS"
+
+        # Scheduler Admin Role
+        # TODO--w: It should say 'CAN_GET_ALL_SCHEDULER_JOBS' to clearly indicate it belongs to Scheduler
+        CAN_GET_ALL_JOBS = "CAN_GET_ALL_JOBS"
+
     def delete(self):
         db.session.delete(self)
         db.session.commit()
@@ -536,7 +564,8 @@ class UserScopedRoles(db.Model):
                         raise InvalidUsage(error_message="Role: %s already exists for user: %s" % (role, user.id),
                                            error_code=ErrorCodes.ROLE_ALREADY_EXISTS)
                 else:
-                    raise InvalidUsage(error_message="Role: %s doesn't exist or it belongs to a different domain" % role)
+                    raise InvalidUsage(
+                        error_message="Role: %s doesn't exist or it belongs to a different domain" % role)
             db.session.commit()
         else:
             raise InvalidUsage(error_message="User %s doesn't exist" % user.id)
@@ -674,7 +703,7 @@ class UserGroup(db.Model):
                     else:
                         group_id = None
 
-                group = UserGroup.query.filter_by(id=group_id, domain_id=domain_id).first() or None if group_id else None
+                group = UserGroup.query.filter_by(id=group_id, domain_id=domain_id).first() or group_id
                 if group:
                     db.session.delete(group)
                 else:

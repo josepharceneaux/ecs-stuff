@@ -5,8 +5,6 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com
 We have CampaignUtils class here which contains following methods:
 
 We also have some functions here like
-    - to_utc_str()
-    - unix_time()
     - get_model() etc.
 """
 
@@ -16,11 +14,13 @@ import importlib
 from datetime import datetime
 
 # Third Party
-from dateutil.tz import tzutc
+import requests
 from flask import current_app
+from dateutil.tz import tzutc
 from ska import (sign_url, Signature)
 
 # Database Models
+
 from ..models.db import db
 from ..models.misc import Activity
 from ..models.email_campaign import EmailCampaign, EmailCampaignBlast, EmailCampaignSend
@@ -31,11 +31,12 @@ from ..models.push_campaign import (PushCampaign, PushCampaignBlast, PushCampaig
 
 # Common Utils
 from ..routes import SchedulerApiUrl
+from ..utils.datetime_utils import DatetimeUtils
 from ..talent_config_manager import TalentConfigKeys, TalentEnvs
-from ..error_handling import (InvalidUsage, ResourceNotFound)
+from ..error_handling import (InvalidUsage, ResourceNotFound, InternalServerError)
 from .validators import raise_if_dict_values_are_not_int_or_long
-from ..utils.handy_functions import (http_request, raise_if_not_instance_of,
-                                     snake_case_to_pascal_case)
+from ..utils.handy_functions import (http_request, snake_case_to_pascal_case, get_valid_json_data)
+from ..utils.validators import raise_if_not_instance_of
 
 
 def _get_campaign_type_prefix(campaign_type):
@@ -137,8 +138,7 @@ class CampaignUtils(object):
         db.session.commit()
 
     @classmethod
-    def get_send_url_con_obj_by_send_id_and_url_conversion_id(cls, model, send_id,
-                                                              url_conversion_id):
+    def get_send_url_con_obj_by_send_id_and_url_conversion_id(cls, model, send_id, url_conversion_id):
         """
         This gets the campaign_send_url_conversion object (e.g object of
         SmsCampaignSendUrlConversion  or PushCampaignSendUrlConversion etc.) by querying send_id
@@ -146,8 +146,7 @@ class CampaignUtils(object):
         """
         raise_if_dict_values_are_not_int_or_long(dict(send_id=send_id,
                                                       url_conversion_id=url_conversion_id))
-        return model.query.filter_by(send_id=send_id,
-                                     url_conversion_id=url_conversion_id).first()
+        return model.query.filter_by(send_id=send_id, url_conversion_id=url_conversion_id).first()
 
     @classmethod
     def get_campaign_smartlist_obj_by_campaign_and_smartlist_id(cls, model, campaign_id,
@@ -156,8 +155,7 @@ class CampaignUtils(object):
         This gets the campaign_smartlist object (e.g object of SmsCampaignSmartlist or
         PushCampaignSmartlist etc.) by querying campaign_id and smartlist_id.
         """
-        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id,
-                                                      smartlist_id=smartlist_id))
+        raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id, smartlist_id=smartlist_id))
         return model.query.filter_by(campaign_id=campaign_id, smartlist_id=smartlist_id).first()
 
     @classmethod
@@ -174,9 +172,6 @@ class CampaignUtils(object):
         """
         This gets campaign_send_url_conversion (e.g. object of SmsCampaignSendUrlConversion object)
         object from url_conversion_id.
-        :param model:
-        :param url_conversion_id:
-        :return:
         """
         return model.query.filter_by(url_conversion_id=url_conversion_id).first()
 
@@ -185,8 +180,6 @@ class CampaignUtils(object):
         """
         This gets the campaign_send_url_conversion model for respective campaign.
         e.g. SmsCampaignSendUrlConversion model etc.
-        :param campaign_type:
-        :return:
         """
         cls.raise_if_not_valid_campaign_type(campaign_type)
         return get_model(campaign_type, campaign_type + '_send_url_conversion')
@@ -257,14 +250,13 @@ class CampaignUtils(object):
         :param end_datetime: end_datetime of campaign
         :type redirect_url: str
         :type end_datetime: datetime
-        :return:
         """
         if not isinstance(end_datetime, datetime):
             raise InvalidUsage('end_datetime must be instance of datetime')
         return sign_url(auth_user='no_user',
                         secret_key=current_app.config[TalentConfigKeys.SECRET_KEY],
                         url=redirect_url,
-                        valid_until=unix_time(end_datetime.replace(tzinfo=tzutc())))
+                        valid_until=DatetimeUtils.unix_time(end_datetime.replace(tzinfo=tzutc())))
 
     @staticmethod
     def if_valid_signed_url(request_args):
@@ -319,6 +311,7 @@ class CampaignUtils(object):
             logger.error("post_campaign_sent_processing: Celery task's result is not a list")
         total_sends = sends_result.count(True)
         blast_model = get_model(campaign_type, campaign_type + '_blast')
+        db.session.commit()
         blast_obj = blast_model.get_by_id(blast_id)
         campaign = blast_obj.campaign
         if total_sends:
@@ -326,9 +319,8 @@ class CampaignUtils(object):
             try:
                 blast_obj.update(sends=blast_obj.sends + total_sends)
             except Exception:
-                logger.exception(
-                    'post_campaign_sent_processing: Error updating campaign(id:%s) blast(id:%s)'
-                    % (campaign.id, blast_obj.id))
+                logger.exception('post_campaign_sent_processing: Error updating campaign(id:%s) blast(id:%s)'
+                                 % (campaign.id, blast_obj.id))
                 raise
             base_class.create_campaign_send_activity(user_id, campaign, total_sends)
         logger.debug('post_campaign_sent_processing: %s(id:%s) has been sent to %s candidate(s).'
@@ -388,31 +380,42 @@ class CampaignUtils(object):
             raise ResourceNotFound('%s(id=%s) not found.' % (campaign_type, campaign_id))
         return campaign_obj
 
+    @staticmethod
+    def process_campaigns_delete(request_obj, campaign_class):
+        """
+        This is helper method which will be used across campaigns to delete multiple campaigns.
+        It raises
+        1- InvalidUsage error if
+            1.1- Requested campaigns ids are not in a list format
+            1.2- No campaign id is provided
+            1.3- Any of campaigns id is invalid (non-integer)
+        2- ResourceNotFound error if any of the requested campaign_ids is not found in database.
+        3- Forbidden error if any of the requested campaign_ids does not belong to user's domain.
+        4- InternalServerError if any of the campaigns is unable to delete.
 
-def to_utc_str(dt):
-    """
-    This converts given datetime in '2015-10-08T06:16:55Z' format.
-    :param dt: given datetime
-    :type dt: datetime
-    :return: UTC date in str
-    :rtype: str
-    """
-    if not isinstance(dt, datetime):
-        raise InvalidUsage('Given param should be datetime obj')
-    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def unix_time(dt):
-    """
-    Converts dt(UTC) datetime object to epoch in seconds
-    :param dt:
-    :type dt: datetime
-    :return: returns epoch time in milliseconds.
-    :rtype: long
-    """
-    epoch = datetime(1970, 1, 1, tzinfo=tzutc('UTC'))
-    delta = dt - epoch
-    return delta.total_seconds()
+        :param request_obj: API request object
+        :param campaign_class: Campaign base class. e.g. SmsCampaignBase or PushCampaignBase
+        """
+        requested_data = get_valid_json_data(request_obj)
+        campaign_ids =  requested_data.get('ids', [])
+        if not isinstance(campaign_ids, list):
+            raise InvalidUsage('Bad request, include campaign_ids as list data')
+        # check if list of campaigns_ids is not empty
+        if not campaign_ids:
+            raise InvalidUsage('No campaign id provided to delete')
+        if not any([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
+            raise InvalidUsage('Campaign_ids must be integer or long > 0.')
+        # Validate all requested campaigns exist in logged-in user's domain
+        campaigns = [campaign_class(request_obj.user.id, campaign_id) for campaign_id in campaign_ids]
+        # Delete all requested campaigns
+        for campaign_obj in campaigns:
+            campaign_obj.delete(commit_session=False)
+        try:
+            db.session.commit()
+        except Exception as error:
+            raise InternalServerError('Error occurred while deleting records from table `%s`. Campaigns ids: %s. '
+                                      'Error details: %s' % (campaigns[0].campaign_type, campaign_ids, error.message))
+        return dict(message='%d campaign(s) deleted successfully.' % len(campaign_ids)), requests.codes.OK
 
 
 def get_model(file_name, model_name, service_name=None):

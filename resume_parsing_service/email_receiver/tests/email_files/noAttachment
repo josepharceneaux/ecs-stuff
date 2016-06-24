@@ -1,0 +1,65 @@
+Return-Path: <erik@gettalent.com>
+Received: from mail-ig0-f175.google.com (mail-ig0-f175.google.com [209.85.213.175])
+ by inbound-smtp.us-east-1.amazonaws.com with SMTP id 7km6eogsslhkjd6o3pae3quf3nu98bpgqkaofe81
+ for resumes+qwerty@imports.gettalent.com;
+ Wed, 20 Apr 2016 18:00:52 +0000 (UTC)
+X-SES-Spam-Verdict: PASS
+X-SES-Virus-Verdict: PASS
+Received-SPF: none (spfCheck: 209.85.213.175 is neither permitted nor denied by domain of gettalent.com) client-ip=209.85.213.175; envelope-from=erik@gettalent.com; helo=mail-ig0-f175.google.com;
+Authentication-Results: amazonses.com;
+ spf=none (spfCheck: 209.85.213.175 is neither permitted nor denied by domain of gettalent.com) client-ip=209.85.213.175; envelope-from=erik@gettalent.com; helo=mail-ig0-f175.google.com;
+ dkim=pass header.i=@gettalent-com.20150623.gappssmtp.com;
+Received: by mail-ig0-f175.google.com with SMTP id kb1so25616871igb.0
+        for <resumes+qwerty@imports.gettalent.com>; Wed, 20 Apr 2016 11:00:52 -0700 (PDT)
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=gettalent-com.20150623.gappssmtp.com; s=20150623;
+        h=mime-version:date:message-id:subject:from:to;
+        bh=doXoIj6/fIMNKNlJGq74tXAknsZdbGJLirJDGRNK7hs=;
+        b=WkX+aH8IXFWKJPmx+kH0fhX39pz3+Xt1wt/CY/gZzvbtMh7OfPqWdgcPGTRU8Gj72G
+         iG1if6G1t2AF2Aqf0Du6K3OBnfC5GiCo4+OZIDQi9ORkHhKQIkSpuuEpaRVJkHPp6QiM
+         1KluKtgUhYxBDrDM2ndjnQoNcRaMYhC2JBU+WstIgpaDyI6DIqSKLIhQPjTQ5P1I0NJx
+         4p/SCYK8h6gHep+641ykTO7VrZpHZtJjTbfo4Lb4kKR8dXrQoqo8NjZ+zQjHRT0j7cjM
+         30WY9FgDj7RB6lmY4UFEiZM63u8LXIeuhc1wKoQDFkysNUPN6kl3hx8MmM6xzHmObE8b
+         y4sg==
+X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;
+        d=1e100.net; s=20130820;
+        h=x-gm-message-state:mime-version:date:message-id:subject:from:to;
+        bh=doXoIj6/fIMNKNlJGq74tXAknsZdbGJLirJDGRNK7hs=;
+        b=kHTG8L/7MvzdHshLQsN2AxB7JTmAI4a9LfHVo7MyUDI4SygSg3SUgivPyEtrRv0MG9
+         Yb6aAIx6VhR1mlCiSohabQRlr0hLnpFxgJXFoKEIXXAXrgROOQnVk0PAsyKiUQhD1Yj5
+         NY+H+Nbi2/eqDJRhHsRf9EzQQyM5edHsDbxj3Lt4E/bZzvOv6wCxaGld6hR1yagfvjgr
+         IP3s04Y6R7c9ypv+Lr8yaOU9dedjOe6krEixrKbaxR1rm6u6QFdiuFf9OJpL7o28JeG1
+         sFX4dattnoiA25IzuIgZJMUhTk2fTLoXSkilGio34fIXHYp3rLWN9Ipn8icIaqCJiFBj
+         xuDQ==
+X-Gm-Message-State: AOPr4FWMElzWf62qSqivwCOSeLMTF75gz+SQMyqZNxXWDbho7SThYQg5cYoQ+JrfJeLwPF780EdpKd2X6ijfzQ==
+MIME-Version: 1.0
+X-Received: by 10.50.93.42 with SMTP id cr10mr5241325igb.24.1461175251368;
+ Wed, 20 Apr 2016 11:00:51 -0700 (PDT)
+Received: by 10.107.35.209 with HTTP; Wed, 20 Apr 2016 11:00:51 -0700 (PDT)
+Date: Wed, 20 Apr 2016 11:00:51 -0700
+Message-ID: <CAEaEbC4+Kw+2m7fEnVP3iXxR5KcvLS3jfkAx9ifmEh9oxnUW3w@mail.gmail.com>
+Subject: Uh Oh! Im forgetting the attachment.
+From: Erik Farmer <erik@gettalent.com>
+To: resumes+qwerty@imports.gettalent.com
+Content-Type: multipart/alternative; boundary=047d7b2e15c7d0230d0530ee5ff1
+
+--047d7b2e15c7d0230d0530ee5ff1
+Content-Type: text/plain; charset=UTF-8
+
+Likely because Im too busy texting and driving at the same time.
+
+-- 
+Erik Farmer
+Software Engineer
+
+--047d7b2e15c7d0230d0530ee5ff1
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr"><div class=3D"gmail_default" style=3D"font-family:georgia,=
+serif">Likely because Im too busy texting and driving at the same time.</di=
+v><div><br></div>-- <br><div class=3D"gmail_signature"><div dir=3D"ltr">Eri=
+k Farmer<div>Software Engineer</div></div></div>
+</div>
+
+--047d7b2e15c7d0230d0530ee5ff1--

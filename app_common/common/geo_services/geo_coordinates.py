@@ -5,18 +5,24 @@ import requests
 
 from .geo_location import GeoLocation
 
-url = 'http://maps.google.com/maps/api/geocode/json'
+url = 'https://maps.google.com/maps/api/geocode/json'
 
 
-def get_geocoordinates(location):
+def get_geocoordinates(location, logger=None):
     """Google location (lat/lon) service.
     :param location
+    :param logger: Logging instance
     """
-    r = requests.get(url, params=dict(address=location, sensor='false'))
+    r = requests.get(url, params=dict(address=location, sensor='false', key="AIzaSyD4i4j-8C5jLvQJeJnLmoFW6boGkUhxSuw"))
     try:
         geo_data = r.json()
-    except Exception:
+    except Exception as e:
+        if logger:
+            logger.exception("Couldn't get coordinates from Google API because (%s)" % e.message)
         geo_data = {}
+
+    if logger:
+        logger.info("Google API response for location (%s) is (%s)", location, geo_data)
 
     results = geo_data.get('results')
     if results:
@@ -30,9 +36,8 @@ def get_geocoordinates(location):
     return lat, lng
 
 
-def get_coordinates(zipcode=None, city=None, state=None, address_line_1=None, location=None):
+def get_coordinates(zipcode=None, city=None, state=None, address_line_1=None, location=None, logger=None):
     """
-
     :param location: if provided, overrides all other inputs
     :param city
     :param state
@@ -48,21 +53,21 @@ def get_coordinates(zipcode=None, city=None, state=None, address_line_1=None, lo
         state + ", " if state else "",
         zipcode or ""
     )
-    latitude, longitude = get_geocoordinates(location)
+    latitude, longitude = get_geocoordinates(location, logger)
     if latitude and longitude:
         coordinates = "%s,%s" % (latitude, longitude)
 
     return coordinates
 
 
-def get_geocoordinates_bounding(address, distance):
+def get_geocoordinates_bounding(address, distance, logger=None):
     """
     Using google maps api get coordinates, get coordinates, and bounding box with top left and bottom right coordinates
     :param address
     :param distance
     :return: coordinates and bounding box coordinates
     """
-    lat, lng = get_geocoordinates(address)
+    lat, lng = get_geocoordinates(address, logger)
     if lat and lng:
         # get bounding box based on location coordinates and distance given
         loc = GeoLocation.from_degrees(lat, lng)

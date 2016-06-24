@@ -16,7 +16,7 @@ class CandidateEdit(db.Model):
     old_value = db.Column(db.String(255))  # Value of the field before update
     new_value = db.Column(db.String(255))  # Value of the field after update
     edit_type = db.Column(TINYINT, default=None)  # 1 for OpenWeb, 2 for Automatic ClearBit, Null otherwise
-    edit_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.now())  # Timestamp of when edit occurred
+    edit_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)  # Timestamp of when edit occurred
 
     def __repr__(self):
         return "<CandidateEdit (id = %r)" % self.id
@@ -145,6 +145,12 @@ class CandidateEdit(db.Model):
         'candidate_photo': {
             'image_url': 1601,
             'is_default': 1602
+        },
+        'candidate_language': {
+            'iso639_language': 1701,
+            'read': 1702,
+            'write': 1703,
+            'speak': 1704
         }
     }
 

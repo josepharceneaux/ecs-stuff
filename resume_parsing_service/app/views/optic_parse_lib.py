@@ -1,25 +1,30 @@
 """Parsing functions for extracting specific information from Burning Glass API responses."""
+# pylint: disable=wrong-import-position, fixme, import-error
 __author__ = 'erik@getTalent.com'
 # Standard Library
+from time import time
 import datetime
 import HTMLParser
 import re
 import string
+import sys
+import unicodedata
 import urllib2
 # Third Party
 from bs4 import BeautifulSoup as bs4
-from resume_parsing_service.app.views.OauthClient import OAuthClient
 import requests
+import phonenumbers
 # Module Specific
 from flask import current_app
-from resume_parsing_service.common.error_handling import ForbiddenError
-from resume_parsing_service.common.utils.validators import format_phone_number
+from resume_parsing_service.app import logger
+from resume_parsing_service.app.views.OauthClient import OAuthClient
+from resume_parsing_service.common.error_handling import ForbiddenError, InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
 
 
-def fetch_optic_response(resume):
+def fetch_optic_response(resume, filename_str):
     """
     Takes in an encoded resume file and returns a bs4 'soup-able' format
     (utf-decode and html escape).
@@ -27,34 +32,47 @@ def fetch_optic_response(resume):
     :return: str unescaped: an html unquoted, utf-decoded string that represents the Burning Glass
                             XML.
     """
-    BG_URL = current_app.config['BG_URL']
-    oauth = OAuthClient(url=BG_URL,
+    start_time = time()
+    bg_url = current_app.config['BG_URL']
+    oauth = OAuthClient(url=bg_url,
                         method='POST', consumerKey='osman',
                         consumerSecret='aRFKEc3AJdR9zogE@M9Sis%QjZPxA5Oy',
                         token='Utility',
                         tokenSecret='Q5JuWpaMLUi=yveieiNKNWxqqOvHLNJ$',
                         signatureMethod='HMAC-SHA1',
                         oauthVersion='1.0')
-    AUTH = oauth.get_authorizationString()
-    HEADERS = {
+    auth = oauth.get_authorizationString()
+    headers = {
         'accept': 'application/xml',
         'content-type': 'application/json',
-        'Authorization': AUTH,
+        'Authorization': auth,
     }
-    DATA = {
+    data = {
         'binaryData': resume,
         'instanceType': 'TM',
         'locale': 'en_us'
     }
-    r = requests.post(BG_URL, headers=HEADERS, json=DATA)
-    if r.status_code != requests.codes.ok:
+    bg_response = requests.post(bg_url, headers=headers, json=data)
+
+    if bg_response.status_code != requests.codes.ok:
         # Since this error is displayed to the user we may want to obfuscate it a bit and log more
         # developer friendly messages. "Error processing this resume. The development team has been
-        # notified of this isse" type of message.
+        # notified of this issue" type of message.
         raise ForbiddenError('Error connecting to BG instance.')
-    html_parser = HTMLParser.HTMLParser()
-    unquoted = urllib2.unquote(r.content).decode('utf8')
-    unescaped = html_parser.unescape(unquoted)
+
+    try:
+        html_parser = HTMLParser.HTMLParser()
+        unquoted = urllib2.unquote(bg_response.content).decode('utf8')
+        unescaped = html_parser.unescape(unquoted)
+
+    except Exception:
+        logger.exception('Error translating BG response.')
+        raise InternalServerError('Error decoding parsed resume text.')
+
+    logger.info(
+        "Benchmark: fetch_optic_response({}) took {}s".format(filename_str,
+                                                              time() - start_time)
+    )
     return unescaped
 
 
@@ -69,6 +87,7 @@ def parse_optic_xml(resume_xml_unicode):
     experience_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('experience')
     educations_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('education')
     skill_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('canonskill')
+    references_xml = bs4(resume_xml_unicode, 'lxml').findAll('references')
     name = parse_candidate_name(contact_xml_list)
     emails = parse_candidate_emails(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
@@ -76,6 +95,7 @@ def parse_optic_xml(resume_xml_unicode):
     educations = parse_candidate_educations(educations_xml_list)
     skills = parse_candidate_skills(skill_xml_list)
     addresses = parse_candidate_addresses(contact_xml_list)
+    references = parse_candidate_reference(references_xml)
     candidate = dict(
         first_name=name['first_name'],
         last_name=name['last_name'],
@@ -85,7 +105,8 @@ def parse_optic_xml(resume_xml_unicode):
         educations=educations,
         skills=skills,
         addresses=addresses,
-        talent_pool_ids={'add': None}
+        talent_pool_ids={'add': None},
+        references=references
     )
     return candidate
 
@@ -96,17 +117,27 @@ def parse_candidate_name(bs_contact_xml_list):
     :param bs4.element.Tag bs_contact_xml_list:
     :return dict: Formatted name strings using title() in a dictionary.
     """
+
     givenname = None
     surname = None
+
     for contact in bs_contact_xml_list:
-        # If a name is already parsed we do not want to reassign it. This is to protect against
-        # multiple parsed givennames/surnames
+        # If a name is already parsed we do not want to reassign it.
         if not givenname:
             givenname = _tag_text(contact, 'givenname')
+
         if not surname:
             surname = _tag_text(contact, 'surname')
-    first_name = givenname.title() if givenname else 'Unknown'
-    last_name = surname.title() if surname else 'Unknown'
+
+    if givenname:
+        givenname = scrub_candidate_name(givenname)
+
+    if surname:
+        surname = scrub_candidate_name(surname)
+
+    first_name = givenname or 'Unknown'
+    last_name = surname or 'Unknown'
+
     return {'first_name': first_name, 'last_name': last_name}
 
 
@@ -132,17 +163,45 @@ def parse_candidate_phones(bs_contact_xml_list):
     :return list output: List of dicts containing phone data.
     """
     output = []
+
     for contact in bs_contact_xml_list:
         phones = contact.findAll('phone')
-        #TODO: look into adding a type using p.attrs['type']
+
         for p in phones:
             raw_phone = p.text.strip()
+            phone_type = p.type
+
             # JSON_SCHEMA for candidates phone is max:20
+            # This fixes issues with numbers like '1-123-45            67'
             if raw_phone and len(raw_phone) > 20:
                 raw_phone = " ".join(raw_phone.split())
+
+            gt_phone_type = get_phone_type(phone_type)
+
             if raw_phone and len(raw_phone) <= 20:
-                output.append({'value': raw_phone})
+
+                try:
+                    unused_validated_phone = phonenumbers.parse(raw_phone, region='US')
+                    output.append({'value': raw_phone, 'label': gt_phone_type})
+
+                except UnicodeEncodeError:
+                    logger.error('Issue parsing phonenumber: {}'.format(raw_phone))
+
     return output
+
+
+def get_phone_type(bg_phone_type):
+    """
+    Provides a mapping between BurningGlass phone types to the the static values in the GT database.
+    :param string bg_phone_type:
+    :return string:
+    """
+    return {
+        'cell': 'Mobile',
+        'home': 'Home',
+        'fax': 'Home Fax',
+        'work': 'Work'
+    }.get(bg_phone_type, 'Other')
 
 
 def parse_candidate_experiences(bg_experience_xml_list):
@@ -284,17 +343,28 @@ def parse_candidate_skills(bg_skills_xml_list):
     :param bs4.element.Tag bg_skills_xml_list:
     :return list output: List of dicts containing skill data.
     """
+    skills_parsed = {}
     output = []
+
     for skill in bg_skills_xml_list:
         name = skill.get('name')
         skill_text = skill.text.strip()
-        # TODO months used doesnt appear to be a valid tag anymore.
-        # Should instead use start and end (count in days).
-        months_used = skill.get('experience', '').strip()
-        skill = dict(name=name or skill_text)
+        start_days = skill.get('start')
+        end_days = skill.get('end')
+        months_used = None
+        parsed_name = name or skill_text
+        processed_skill = {'name': parsed_name}
+
+        if start_days and end_days:
+            months_used = (int(end_days) - int(start_days)) / 30
+
         if months_used:
-            skill['months_used'] = int(months_used)
-        output.append(skill)
+            processed_skill['months_used'] = int(months_used)
+
+        if processed_skill['name'] not in skills_parsed:
+            output.append(processed_skill)
+            skills_parsed[processed_skill['name']] = True
+
     return output
 
 
@@ -316,11 +386,25 @@ def parse_candidate_addresses(bg_xml_list):
     return output
 
 
+def parse_candidate_reference(xml_references_list):
+    """
+    :param bs4.element.Tag xml_references_list:
+    :return: str | None
+    """
+    reference_comments = []
+    comment_string = None
+    for references in xml_references_list:
+        reference_comments.append(references.text.strip())
+    if reference_comments:
+        comment_string = ' '.join(reference_comments)
+    return comment_string
+
+
 ###################################################################################################
 # Utility functions.*
 ###################################################################################################
 
-_newlines_regexp = re.compile(r"[\r\n]+")
+NEWLINES_REGEXP = re.compile(r"[\r\n]+")
 
 
 def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines=True,
@@ -344,7 +428,7 @@ def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines
             if remove_questions:
                 text = text.replace("?", "")
             if remove_extra_newlines:
-                text = _newlines_regexp.sub(" ", text)
+                text = NEWLINES_REGEXP.sub(" ", text)
             if capwords:
                 text = string.capwords(text)
             text = text.encode('utf-8')
@@ -372,11 +456,39 @@ def is_experience_already_exists(candidate_experiences, organization, position_t
                                  start_year, end_month, end_year):
     """Logic for checking an experience has been parsed twice due to BG error"""
     for i, experience in enumerate(candidate_experiences):
-        if (experience['organization'] or '') == organization and\
-                        (experience['position'] or '') == position_title and\
-                        (experience['start_month'] == start_month and
-                         experience['start_year'] == start_year and
-                         experience['end_month'] == end_month and
-                         experience['end_year'] == end_year):
+        if (experience['organization'] or '') == organization and \
+           (experience['position'] or '') == position_title and \
+           (experience['start_month'] == start_month and
+            experience['start_year'] == start_year and
+            experience['end_month'] == end_month and
+            experience['end_year'] == end_year):
+
             return i + 1
     return False
+
+
+def scrub_candidate_name(name_unicode):
+    """
+    Takes a string and formats it to gT candidate spec. Names should have no punctuation, be at most
+    35 characters, and be in the 'string.title()' format.
+
+    This uses StackOverflow Answer:
+    http://stackoverflow.com/questions/11066400/
+    which is reinforced here:
+    http://stackoverflow.com/questions/20529449/
+
+    String version located:
+    http://stackoverflow.com/questions/265960/
+
+    :param unicode name_unicode:
+    :return unicode:
+    """
+
+    translate_table = dict.fromkeys(i for i in xrange(sys.maxunicode)
+                                    if unicodedata.category(unichr(i)).startswith('P'))
+
+    name_unicode = name_unicode[:35]
+    name_unicode = name_unicode.translate(translate_table)
+    name_unicode = name_unicode.title()
+
+    return name_unicode

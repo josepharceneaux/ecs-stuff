@@ -10,13 +10,16 @@ from sqlalchemy.sql import text
 from copy import deepcopy
 from datetime import datetime
 from flask import request
+from flask_sqlalchemy import Model
 from candidate_service.candidate_app import app, celery_app, logger
+from candidate_service.common.utils.validators import is_number
 from candidate_service.common.talent_celery import OneTimeSQLConnection
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
 from candidate_service.common.models.user import User, Domain
+from candidate_service.common.models.tag import Tag
 from candidate_service.common.models.misc import AreaOfInterest
 from candidate_service.common.talent_config_manager import TalentConfigKeys
-from candidate_service.common.error_handling import InternalServerError
+from candidate_service.common.error_handling import InternalServerError, InvalidUsage
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 
 API_VERSION = "2013-01-01"
@@ -93,11 +96,13 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'status_id':                     dict(IndexFieldType='int'),
     'objective':                     dict(IndexFieldType='text',            TextOptions={'Stopwords': STOPWORDS_JSON_ARRAY}),
     'text_comment':                  dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
+    'resume_text':                   dict(IndexFieldType='text',            TextOptions={'ReturnEnabled': False}),
     'unidentified_description':      dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
     'custom_field_id_and_value':     dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': False}),
     'candidate_rating_id_and_value': dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
     'area_of_interest_id':           dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
     'added_time':                    dict(IndexFieldType='date',            DateOptions={'FacetEnabled': False}),
+    'added_time_hour':               dict(IndexFieldType='int',             IntOptions={'FacetEnabled': True}),
 
     # Location
     'city':                          dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
@@ -131,8 +136,20 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'start_date_at_current_job':     dict(IndexFieldType='date',             DateOptions={'FacetEnabled': False,
                                                                                           'ReturnEnabled': True}),
     'candidate_engagement_score':    dict(IndexFieldType='double',          DoubleOptions={'FacetEnabled': True,
-                                                                                           'ReturnEnabled': False})
+                                                                                           'ReturnEnabled': False}),
+    'tag_ids':                       dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False})
 }
+
+# Filter all text, text-array, literal and literal-array index fields
+QUERY_OPTIONS = filter(lambda field: 'text' in field[1]['IndexFieldType'] or 'literal' in field[1]['IndexFieldType'],
+                       INDEX_FIELD_NAME_TO_OPTIONS.items())
+
+QUERY_OPTIONS = map(lambda option: option[0], QUERY_OPTIONS)
+
+QUERY_OPTIONS.remove('position')
+QUERY_OPTIONS.append('position^1.5')
+QUERY_OPTIONS.remove('skill_description')
+QUERY_OPTIONS.append('skill_description^1.2')
 
 coordinates = []
 geo_params = dict()
@@ -146,12 +163,12 @@ def get_cloud_search_connection():
 
     global _cloud_search_connection_layer_2, _cloud_search_domain
     if not _cloud_search_connection_layer_2:
-        _cloud_search_connection_layer_2 = boto.connect_cloudsearch2(aws_access_key_id=app.
-                                                                     config[TalentConfigKeys.AWS_KEY],
-                                                                     aws_secret_access_key=app.
-                                                                     config[TalentConfigKeys.AWS_SECRET],
-                                                                     sign_request=True,
-                                                                     region=app.config[TalentConfigKeys.CS_REGION_KEY])
+        _cloud_search_connection_layer_2 = boto.connect_cloudsearch2(
+            aws_access_key_id=app.config[TalentConfigKeys.AWS_KEY],
+            aws_secret_access_key=app.config[TalentConfigKeys.AWS_SECRET],
+            sign_request=True,
+            region=app.config[TalentConfigKeys.CS_REGION_KEY]
+        )
 
         _cloud_search_domain = _cloud_search_connection_layer_2.lookup(app.config[TalentConfigKeys.CS_DOMAIN_KEY])
         if not _cloud_search_domain:
@@ -253,8 +270,9 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate.id AS `id`, candidate.firstName AS `first_name`, candidate.lastName AS `last_name`,
                 candidate.statusId AS `status_id`, DATE_FORMAT(candidate.addedTime, :date_format) AS `added_time`,
                 candidate.ownerUserId AS `user_id`, candidate.objective AS `objective`,
-                candidate.sourceId AS `source_id`, candidate.sourceProductId AS `source_product_id`,
-                candidate.totalMonthsExperience AS `total_months_experience`, candidate.isWebHidden AS `is_web_hidden`,
+                HOUR(candidate.addedTime) AS `added_time_hour`, candidate.sourceId AS `source_id`,
+                candidate.sourceProductId AS `source_product_id`, candidate.totalMonthsExperience AS
+                `total_months_experience`, candidate.isWebHidden AS `is_web_hidden`,
 
                 # Address & contact info
                 candidate_address.city AS `city`, candidate_address.state AS `state`, candidate_address.zipCode AS `zip_code`,
@@ -279,7 +297,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
                 # Experience
                 GROUP_CONCAT(DISTINCT candidate_experience.organization SEPARATOR :sep) AS `organization`,
-                GROUP_CONCAT(DISTINCT candidate_experience.position SEPARATOR :sep) AS `position`,
+                GROUP_CONCAT(DISTINCT candidate_experience.position ORDER BY candidate_experience.IsCurrent DESC, candidate_experience.StartYear DESC, candidate_experience.StartMonth DESC SEPARATOR :sep) AS `position`,
                 GROUP_CONCAT(DISTINCT candidate_experience_bullet.description SEPARATOR :sep) AS `experience_description`,
 
                 # Start Date At Current Job
@@ -298,7 +316,10 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
                 # Rating and comments
                 GROUP_CONCAT(DISTINCT CONCAT(candidate_rating.ratingTagId, '|', candidate_rating.value) SEPARATOR :sep) AS `candidate_rating_id_and_value`,
-                GROUP_CONCAT(DISTINCT candidate_text_comment.comment SEPARATOR :sep) AS `text_comment`
+                GROUP_CONCAT(DISTINCT candidate_text_comment.comment SEPARATOR :sep) AS `text_comment`,
+
+                # Tags
+                GROUP_CONCAT(DISTINCT candidate_tag.tag_id SEPARATOR :sep) AS `tag_ids`
 
     FROM        candidate
 
@@ -326,6 +347,8 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
     LEFT JOIN   candidate_rating ON (candidate.id = candidate_rating.candidateId)
     LEFT JOIN   candidate_text_comment ON (candidate.id = candidate_text_comment.candidateId)
+
+    LEFT JOIN   candidate_tag ON (candidate.id = candidate_tag.candidate_id)
 
     WHERE       candidate.id IN :candidate_ids_string
 
@@ -366,6 +389,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
             field_name_to_sql_value['candidate_engagement_score'] = 1.0 if str(candidate_id) in candidate_engagement else 0.0
 
             # Massage 'field_name_to_sql_value' values into the types they are supposed to be
+            resume_text = ''
             for field_name in field_name_to_sql_value.keys():
                 index_field_options = INDEX_FIELD_NAME_TO_OPTIONS.get(field_name)
 
@@ -385,6 +409,14 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                         sql_value_array = [int(field_value) for field_value in sql_value_array]
                     field_name_to_sql_value[field_name] = sql_value_array
 
+                if 'literal' in index_field_type:
+                    if isinstance(field_name_to_sql_value[field_name], (list, set, tuple)):
+                        resume_text += ' ' + ' '.join(field_name_to_sql_value[field_name])
+                    else:
+                        resume_text += ' ' + field_name_to_sql_value[field_name]
+
+            field_name_to_sql_value['resume_text'] = resume_text.strip()
+
             # Add the required values we didn't get from DB
             if not domain_id:
                 field_name_to_sql_value_row = session.query(User).filter_by(id=field_name_to_sql_value['user_id']).first()
@@ -397,21 +429,20 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
 
 @celery_app.task()
-def upload_candidate_documents(candidate_ids, domain_id=None):
+def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_candidate=10):
     """
     Upload all the candidate documents to cloud search
     :param candidate_ids: id of candidates for documents to be uploaded
     :param domain_id: Domain Id
+    :param max_number_of_candidate: Default value is 10
     :return:
     """
     if isinstance(candidate_ids, (int, long)):
         candidate_ids = [candidate_ids]
 
-    # We'll not upload all candidate documents at once rather 10 candidate documents at once
-    max_number_of_candidate = 10
     for i in xrange(0, len(candidate_ids), max_number_of_candidate):
-        logger.info("Uploading %s candidate documents. Generating action dicts...",
-                    len(candidate_ids[i:i + max_number_of_candidate]))
+        logger.info("Uploading %s candidate documents (%s). Generating action dicts...",
+                    len(candidate_ids[i:i + max_number_of_candidate]), candidate_ids[i:i + max_number_of_candidate])
         start_time = time.time()
         action_dicts = _build_candidate_documents(candidate_ids[i:i + max_number_of_candidate], domain_id)
         logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
@@ -421,7 +452,8 @@ def upload_candidate_documents(candidate_ids, domain_id=None):
             logger.error("Shouldn't have gotten any deletes in a batch add operation.Got %s "
                          "deletes.candidate_ids: %s", deletes, candidate_ids[i:i + max_number_of_candidate])
         if adds:
-            logger.info("%s Candidate documents have been uploaded", len(candidate_ids[i:i + max_number_of_candidate]))
+            logger.info("%s Candidate documents (%s) have been uploaded",
+                        len(candidate_ids[i:i + max_number_of_candidate]), candidate_ids[i:i + max_number_of_candidate])
 
 
 def upload_candidate_documents_in_domain(domain_id):
@@ -435,7 +467,7 @@ def upload_candidate_documents_in_domain(domain_id):
                                                                                User.domain_id == domain_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of domain id %s", len(candidate_ids), domain_id)
-    return upload_candidate_documents.delay(candidate_ids, domain_id)
+    return upload_candidate_documents.delay(candidate_ids, domain_id, 10)
 
 
 def upload_candidate_documents_of_user(user_id):
@@ -447,7 +479,7 @@ def upload_candidate_documents_of_user(user_id):
     candidates = Candidate.query.with_entities(Candidate.id).filter_by(user_id=user_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of user (user id = %s)", len(candidate_ids), user_id)
-    return upload_candidate_documents.delay(candidate_ids)
+    return upload_candidate_documents.delay(candidate_ids, None, 50)
 
 
 def upload_all_candidate_documents():
@@ -522,7 +554,8 @@ def _send_batch_request(action_dicts):
     # If the batch request size > 5MB, split it up
     for i, action_dict in enumerate(action_dicts):
         try:
-            action_dict_json = simplejson.dumps(action_dict)
+            action_dict_json = simplejson.dumps(action_dict, encoding='ISO-8859-1')
+            action_dict = simplejson.loads(action_dict_json)
         except UnicodeDecodeError:
             logger.exception("talent_cloud_search._send_batch_request(): Couldn't encode action_dict to JSON: %s",
                              action_dict)
@@ -650,8 +683,16 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     sort = sort % (sort_field, sort_order.lower())
 
-    page = int(request_vars.get('page')) if (request_vars.get('page') and (int(request_vars.get('page')) > 0)) else 1
-    offset = (page - 1) * search_limit if search_limit else 0
+    cursor, offset = None, None
+    page = request_vars.get('page', 1)
+    if is_number(page):
+        page = int(request_vars.get('page')) if (request_vars.get('page') and (int(request_vars.get('page')) > 0)) else 1
+        offset = (page - 1) * search_limit if search_limit else 0
+        if page * search_limit > 10000:
+            logger.error("Pagination is only supported for first 10,000 candidates")
+            raise InvalidUsage("Pagination is only supported for first 10,000 candidates")
+    else:
+        cursor = page
 
     if count_only:
         search_limit = 0
@@ -674,8 +715,11 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     filter_query = "(and %s %s %s)" % (filter_query, domain_filter, talent_pool_filter)
 
-    params = dict(query=search_query, sort=sort, start=offset, size=search_limit)
-    params['query_parser'] = 'lucene'
+    params = dict(query=search_query, sort=sort, size=search_limit, query_parser='lucene', query_options={'fields': QUERY_OPTIONS})
+    if offset:
+        params['start'] = offset
+    else:
+        params['cursor'] = cursor
 
     params['filter_query'] = filter_query
 
@@ -689,12 +733,14 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     # Adding facet fields parameters
 
     if not count_only:
-        params['facet'] = "{area_of_interest_id:{size:500},source_id:{size:50}," \
+        params['facet'] = "{area_of_interest_id:{size:500},source_id:{size:50},total_months_experience:{size:50}," \
                           "user_id:{size:50},status_id:{size:50},skill_description:{size:500}," \
                           "position:{size:50},organization:{size:50},school_name:{size:500},degree_type:{size:50}," \
                           "concentration_type:{size:50},military_service_status:{size:50}," \
-                          "military_branch:{size:50},military_highest_grade:{size:50}," \
+                          "military_branch:{size:50},military_highest_grade:{size:50},tag_ids:{size:500}," \
                           "custom_field_id_and_value:{size:1000},candidate_engagement_score:{size:50}}"
+    else:
+        params['facet'] = "{added_time_hour:{size:24}}"
 
     if geo_params:
         params = dict(params.items() + geo_params.items())
@@ -724,7 +770,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         return dict(total_found=total_found, candidate_ids=candidate_ids)
 
     # Make search request with error handling
-
     search_service = _cloud_search_domain_connection()
 
     try:
@@ -739,7 +784,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     total_found = results['hits']['found']
 
     if count_only:
-        return dict(total_found=total_found, candidate_ids=[])
+        return dict(total_found=total_found, candidate_ids=[], facets={
+            'added_time_hour': get_added_time_hour_facet_count(results.get('facets').get('added_time_hour').get('buckets'))})
 
     facets = get_faceting_information(results.get('facets'))
 
@@ -762,6 +808,8 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     search_results['max_score'] = max_score
     search_results['max_pages'] = max_pages
     search_results['facets'] = facets
+    if 'cursor' in results['hits']:
+        search_results['cursor'] = results['hits']['cursor']
     # for values in search_results['candidates']:
     #     if 'email' in values:
     #         values['email'] = {"address": values['email']}
@@ -788,21 +836,20 @@ def get_faceting_information(facets):
     facet_military_highest_grade = facets.get('military_highest_grade').get('buckets')
     facet_custom_field_id_and_value = facets.get('custom_field_id_and_value').get('buckets')
     facet_candidate_engagement_score = facets.get('candidate_engagement_score').get('buckets')
+    facet_total_months_experience = facets.get('total_months_experience').get('buckets')
+    facet_tags = facets.get('tag_ids').get('buckets')
 
     if facet_owner:
         search_facets_values['username'] = get_username_facet_info_with_ids(facet_owner)
 
     if facet_aoi:
-        search_facets_values['area_of_interest'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi,
-                                                                                'name')
+        search_facets_values['area_of_interest'] = get_facet_info_with_ids(AreaOfInterest, facet_aoi, 'name')
 
     if facet_source:
-        search_facets_values['source'] = get_facet_info_with_ids(CandidateSource, facet_source,
-                                                                      'description')
+        search_facets_values['source'] = get_facet_info_with_ids(CandidateSource, facet_source, 'description')
 
     if facet_status:
-        search_facets_values['status'] = get_facet_info_with_ids(CandidateStatus, facet_status,
-                                                                      'description')
+        search_facets_values['status'] = get_facet_info_with_ids(CandidateStatus, facet_status, 'description')
 
     if facet_skills:
         search_facets_values['skills'] = get_bucket_facet_value_count(facet_skills)
@@ -814,7 +861,8 @@ def get_faceting_information(facets):
         search_facets_values['organization'] = get_bucket_facet_value_count(facet_organization)
 
     if facet_candidate_engagement_score:
-        search_facets_values['candidate_engagement_score'] = get_bucket_facet_value_count(facet_candidate_engagement_score)
+        search_facets_values['candidate_engagement_score'] = get_bucket_facet_value_count(
+            facet_candidate_engagement_score)
 
     if facet_university:
         search_facets_values['school_name'] = get_bucket_facet_value_count(facet_university)
@@ -834,9 +882,16 @@ def get_faceting_information(facets):
     if facet_military_highest_grade:
         search_facets_values['military_highest_grade'] = get_bucket_facet_value_count(facet_military_highest_grade)
 
+    if facet_total_months_experience:
+        search_facets_values['total_months_experience'] = get_bucket_facet_value_count(facet_total_months_experience)
+
+    if facet_tags:
+        search_facets_values['tags'] = get_facet_info_with_ids(Tag, facet_tags, 'name')
+
     # TODO: productFacet, customFieldKP facets are remaining, how to do it?
     if facet_custom_field_id_and_value:
-        search_facets_values['custom_field_id_and_value'] = get_bucket_facet_value_count(facet_custom_field_id_and_value)
+        search_facets_values['custom_field_id_and_value'] = get_bucket_facet_value_count(
+            facet_custom_field_id_and_value)
 
     return search_facets_values
 
@@ -861,11 +916,11 @@ def get_facet_info_with_ids(table_name, facet, field_name):
     Few facets are filtering using ids, for those facets with ids, get their names (from db) for displaying on html
     also send ids so as to ease search with filter queries,
     returned ids will serve as values to checkboxes.
+    :type table_name: Model
     :param facet: Facet as received from cloudsearch (bucket value contains id of facet)
     :param field_name: Name which is to be returned for UI. This is name of field from table
     :return: Dictionary with field name as key and count of candidates + facet id as value
     """
-
     facets_list = []
     for bucket in facet:
         tmp_dict = {}
@@ -893,6 +948,13 @@ def get_bucket_facet_value_count(facet):
         tmp_dict["value"] = bucket['value']
         tmp_dict["count"] = bucket['count']
         facet_bucket.append(tmp_dict)
+    return facet_bucket
+
+
+def get_added_time_hour_facet_count(facet):
+    facet_bucket = [0] * 24
+    for bucket in facet:
+        facet_bucket[int(bucket['value'])] = bucket['count']
     return facet_bucket
 
 
@@ -1046,7 +1108,7 @@ def _search_with_location(location, radius):
     # Convert miles to kilometers, required by geo_location calculator
     # if no radius is given set default distance to 80.47 (50 miles)
     distance_in_km = float(radius)/0.62137 if radius else 80.47
-    coords_dict = get_geocoordinates_bounding(location, distance_in_km)
+    coords_dict = get_geocoordinates_bounding(location, distance_in_km, logger)
     if coords_dict and coords_dict.get('point', ''):
         # If coordinates found, then only perform location search
         filter_queries.append("coordinates:['%s,%s','%s,%s']" % (coords_dict['top_left'][0],
@@ -1197,7 +1259,10 @@ def _get_max_score(params, search_service):
     # Limit search to one result, we only want max_score which is top most row when sorted with above criteria
     params['size'] = 1
     params['ret'] = "_score"
-    params['start'] = 0
+    if 'start' in params:
+        params['start'] = 0
+    else:
+        params['cursor'] = 'initial'
     params.pop("facet", None)
     single_result = search_service.search(**params)
     single_hit = single_result['hits']['hit']
@@ -1234,10 +1299,7 @@ def _get_candidates_fields_with_given_filters(fields_data):
 def get_filter_query_from_request_vars(request_vars, filter_queries_list):
     """
     Get the filter query from requested filters
-    :param request_vars:
-    :return: filter_query
     """
-
     filter_queries = []
 
     # If source_id has product_id in it, then remove it and add product_id to filter request_vars
@@ -1284,7 +1346,7 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
             request_vars.get('minimum_years_experience') else 0
         # set default to 480 (max for 40 years)
         max_months = int(request_vars.get('maximum_years_experience')) * 12 if \
-            request_vars.get('maximum_years_experience') else 480
+            request_vars.get('maximum_years_experience') else 1200
         filter_queries.append("(range field=total_months_experience [%s,%s])" % (min_months, max_months))
 
     # date filtering
@@ -1362,6 +1424,23 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
             request_vars.get('military_end_date_from'), request_vars.get('military_end_date_to'))
         if from_datetime_str is not None and to_datetime_str is not None:
             filter_queries.append("military_end_date:%s,%s" % (from_datetime_str, to_datetime_str))
+
+    # Tags
+    tags = request_vars.get('tag_ids')
+    if isinstance(tags, list):
+        tags_facets = ["tag_ids:'{}'".format(tag) for tag in tags]
+        filter_queries.append("(or {})".format(" ".join(tags_facets)))
+    elif tags:
+        filter_queries.append("(term field=tag_ids '{}')".format(tags))
+
+    # Custom fields
+    custom_fields = request_vars.get('custom_fields')
+    if isinstance(custom_fields, list):
+        custom_fields_facets = ["custom_field_id_and_value: '{}'".format(custom_field) for custom_field in custom_fields]
+        filter_queries.append("(or {})".format(" ".join(custom_fields_facets)))
+    elif custom_fields:
+        filter_queries.append("(term field=custom_field_id_and_value'{}')".format(custom_fields))
+
     # Handling custom fields
     for key, value in request_vars.items():
         if 'cf-' in key:
