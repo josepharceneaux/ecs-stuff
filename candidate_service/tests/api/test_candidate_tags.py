@@ -13,8 +13,7 @@ import uuid
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_errors
 
 # Helper functions
-from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
-from helpers import AddUserRoles
+from helpers import AddUserRoles, get_response
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 
@@ -174,8 +173,14 @@ class TestDeleteCandidateTags(object):
         # Retrieve candidate's tag that was just deleted
         get_resp = send_request('get', url, access_token_first)
         print response_info(get_resp)
-        assert get_resp.status_code == 403
+        assert get_resp.status_code == requests.codes.FORBIDDEN
         assert get_resp.json()['error']['code'] == custom_errors.TAG_FORBIDDEN
+
+        # Cloud search must also be updated
+        deleted_tag_id = del_resp.json()['deleted_tag']['id']
+        search_resp = get_response(access_token_first, '?tag_ids={}'.format(deleted_tag_id), expected_count=0)
+        print response_info(search_resp)
+        assert search_resp.json()['total_found'] == 0
 
     def test_delete_all(self, user_first, access_token_first, candidate_first):
         """

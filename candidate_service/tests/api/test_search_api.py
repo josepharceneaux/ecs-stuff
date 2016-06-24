@@ -16,8 +16,7 @@ from candidate_service.common.tests.conftest import *
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
-from helpers import AddUserRoles
-from redo import retrier
+from helpers import AddUserRoles, get_response
 
 # Models
 from candidate_service.common.models.candidate import CandidateAddress
@@ -69,6 +68,7 @@ def test_search_all_candidates_in_domain(user_first, access_token_first, talent_
     candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=5)
     response = get_response(access_token_first, '', len(candidate_ids))
     _assert_results(candidate_ids, response.json())
+
 
 # TODO: Commenting this flaky test for Amir (basit)
 # def test_search_location(user_first, access_token_first, talent_pool):
@@ -1117,16 +1117,3 @@ def _assert_results(candidate_ids, response):
     print '\nresultant_candidate_ids: {}'.format(resultant_candidate_ids)
     # Test whether every element in the set candidate_ids is in resultant_candidate_ids.
     assert set(candidate_ids).issubset(set(resultant_candidate_ids))
-
-
-def get_response(access_token, arguments_to_url, expected_count=1, attempts=10):
-    # Wait for cloudsearch to update the candidates
-    url = CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url
-    headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
-    for i in range(0, attempts):
-        sleep(3)
-        resp = requests.get(url, headers=headers)
-        print response_info(resp)
-        if len(resp.json()['candidates']) >= expected_count:
-            return resp
-    raise NotFoundError('Unable to get expected number of candidates')

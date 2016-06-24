@@ -2,6 +2,7 @@
 Helper functions for tests written for the candidate_service
 """
 import requests
+from time import sleep
 
 # Third party
 import pycountry as pc
@@ -15,6 +16,9 @@ from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
 # Error handling
 from candidate_service.common.error_handling import NotFoundError
+
+from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.utils.test_utils import response_info
 
 
 class AddUserRoles(object):
@@ -195,20 +199,14 @@ def get_int_version(x):
         pass
 
 
-def get_response(method, url, access_token, expected_status_code, attempts=10, timeout=100):
-    """
-    Function will make a request to resource until it obtains expected status code or times out
-    :param method:  string | request method, e.g. "get", "post", etc.
-    :param url:     string | resource url
-    :param access_token: string | hashed token for authorization
-    :param expected_status_code:  integer | expected http status code
-    :param timeout: integer | seconds to execute/wait before stopping
-    """
-    assert method.lower() in ["get", "post", "patch", "put", "delete"], "Invalid method"
-    request_method = getattr(requests, method.lower())
-    headers = {"Authorization": "Bearer {}".format(access_token), "content-type": "application/json"}
-    for _ in retrier(attempts=attempts, sleeptime=3, max_sleeptime=timeout):
-        resp = request_method(url, headers=headers)
-        if resp.status_code == expected_status_code:
+def get_response(access_token, arguments_to_url, expected_count=1, attempts=10):
+    # Wait for cloudsearch to update the candidates
+    url = CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url
+    headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
+    for i in range(0, attempts):
+        sleep(3)
+        resp = requests.get(url, headers=headers)
+        print response_info(resp)
+        if len(resp.json()['candidates']) >= expected_count:
             return resp
     raise NotFoundError('Unable to get expected number of candidates')
