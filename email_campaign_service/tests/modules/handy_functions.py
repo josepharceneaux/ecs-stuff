@@ -243,7 +243,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
                                                   campaign.id)
         # TODO: commented after discussing with osman -- basit
         if not email_client:
-            assert retry(assert_and_delete_email, sleeptime=3, attempts=101, sleepscale=1,
+            assert retry(assert_and_delete_email, sleeptime=3, attempts=130, sleepscale=1,
                          args=(campaign.subject,), retry_exceptions=(AssertionError,)),\
                    "Email with subject %s was not found at time: %s." % (campaign.subject,
                                                                          str(datetime.datetime.utcnow()))
