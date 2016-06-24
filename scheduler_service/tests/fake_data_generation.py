@@ -6,8 +6,11 @@ import requests
 from faker import Factory
 
 from scheduler_service.common.models.user import User
+from setup_environment.create_dummy_users import create_dummy_users
 
 fake = Factory.create()
+
+create_dummy_users()
 
 scheduler_data = {
     "task_type": "periodic",
@@ -46,7 +49,7 @@ for i in range(0, DATA_NUM):
         del data['post_data']
 
     headers = {
-        'Authorization': 'Bearer %s' % bearer_tokens[random.randrange(1, len(bearer_tokens)) - 1],
+        'Authorization': 'Bearer %s' % bearer_tokens[random.randrange(1, len(bearer_tokens) + 1) - 1],
         'Content-Type': 'application/json'
     }
 

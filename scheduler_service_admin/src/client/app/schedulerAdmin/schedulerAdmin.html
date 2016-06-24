@@ -19,17 +19,17 @@
                 </thead>
                 <tbody>
                   <tr ng-repeat="task in vm.tasks">
-                    <td class="overflow-text-id">{{task.id}}</td>
-                    <td class="hideOnLaptop hideOnTablet overflow-text-S">{{task.user_email}}</td>
-                    <td class="hideOnSMobile">{{task.task_type}}</td>
-                    <td class="hideOnMMobile">{{task.task_category}}</td>
-                    <td class="hideOnLMobile">
+                    <td class="overflow-text-id pointer">{{task.id}}</td>
+                    <td class="hideOnLaptop hideOnTablet overflow-text-S pointer">{{task.user_email}}</td>
+                    <td class="hideOnSMobile pointer">{{task.task_type}}</td>
+                    <td class="hideOnMMobile pointer">{{task.task_category}}</td>
+                    <td class="hideOnLMobile pointer">
                       <div ng-switch on="task.task_type">
                         <div ng-switch-when="one_time">
                           <!-- one_time task block-->
-                          <summary class="overflow-text">{{task.data | json}}</summary>
+                          <summary class="overflow-text pointer">{{task.data | json}}</summary>
                           <details>
-                          <pre><code>{{task.data}}</code></pre>
+                            <pre><code>{{task.data}}</code></pre>
                             </details>
                         </div>
                         <div ng-switch-when="periodic">
