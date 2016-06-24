@@ -1,5 +1,5 @@
 """
-This modules contains Twitter class. It inherits from SocialNetworkBase class.
+This module contains Twitter class. It inherits from SocialNetworkBase class.
 Currently it has only functionality related to user authentication. i.e. connecting getTalent users with their
 Twitter accounts.
 """
@@ -31,10 +31,10 @@ class Twitter(SocialNetworkBase):
 
     Here is the flow how getTalent user is connected with its Twitter account.
     1)    When user clicks on Twitter button on profile page to connect with Twitter account, endpoint
-    https://127.0.0.1:8007/v1/twitter_auth is hit where we create object of this class and call its method
+    https://127.0.0.1:8007/v1/twitter-auth is hit where we create object of this class and call its method
     authenticate(). This redirects the user to Twitter website to enter credentials and grant access to getTalent app.
     2)    Once user is successfully logged-in to Twitter account, it is redirected to the endpoint
-    https://127.0.0.1:8007/v1/twitter_callback to get access token where we create object of this class and call its
+    https://127.0.0.1:8007/v1/twitter-callback to get access token where we create object of this class and call its
     method callback().
     """
     def __init__(self, *args, **kwargs):
@@ -52,7 +52,7 @@ class Twitter(SocialNetworkBase):
         OAuthHandler which is http://127.0.0.1:8007/v1/twitter_callback (for local environment) in this case.
         In case of failure, we log the error and raises InternalServerError.
 
-        This method is called from endpoint http://127.0.0.1:8007/v1/twitter_auth defined in app.py
+        This method is called from endpoint http://127.0.0.1:8007/v1/twitter-auth defined in app.py
         """
         try:
             # redirect_url takes the user to login-page of Twitter to authorize getTalent app.
@@ -70,7 +70,7 @@ class Twitter(SocialNetworkBase):
     @contract
     def callback(self, oauth_verifier):
         """
-        This method is called from endpoint http://127.0.0.1:8007/v1/twitter_callback defined in app.py
+        This method is called from endpoint http://127.0.0.1:8007/v1/twitter-callback defined in app.py
         Here we use "oauth_verifier" to get access token for the user.
         If we get any error in getting access token, we log the error and raise InternalServerError.
 

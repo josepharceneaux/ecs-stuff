@@ -39,7 +39,7 @@ WEBHOOK_REDIRECT_URL = 'https://729c03b1.ngrok.io'
 
 @app.route('/')
 def index():
-    return 'Welcome to social-network-service'
+    return 'Welcome to social network service'
 
 
 @app.route(SocialNetworkApi.CODE)
