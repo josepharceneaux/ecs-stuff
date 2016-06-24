@@ -20,6 +20,7 @@ from resume_parsing_service.app import logger
 from resume_parsing_service.app.views.OauthClient import OAuthClient
 from resume_parsing_service.common.error_handling import ForbiddenError, InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
+from resume_parsing_service.common.utils.handy_functions import normalize_value
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
 
@@ -36,9 +37,9 @@ def fetch_optic_response(resume, filename_str):
     bg_url = current_app.config['BG_URL']
     oauth = OAuthClient(url=bg_url,
                         method='POST', consumerKey='osman',
-                        consumerSecret='aRFKEc3AJdR9zogE@M9Sis%QjZPxA5Oy',
+                        consumerSecret=current_app.config['CONSUMER_SECRET'],
                         token='Utility',
-                        tokenSecret='Q5JuWpaMLUi=yveieiNKNWxqqOvHLNJ$',
+                        tokenSecret=current_app.config['TOKEN_SECRET'],
                         signatureMethod='HMAC-SHA1',
                         oauthVersion='1.0')
     auth = oauth.get_authorizationString()
@@ -151,9 +152,16 @@ def parse_candidate_emails(bs_contact_xml_list):
     for contact in bs_contact_xml_list:
         emails = contact.findAll('email')
         for e in emails:
-            email = e.text.strip()
-            output.append({'address': email})
-    return output
+            email_addr = normalize_value(e.text)
+            output.append(email_addr)
+
+    unique_emails = set(output)
+    unique_output = []
+
+    for email in unique_emails:
+        unique_output.append({'address': email})
+
+    return unique_output
 
 
 def parse_candidate_phones(bs_contact_xml_list):
