@@ -170,20 +170,17 @@ class SocialNetworkBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self,  validate_credentials=True, *args, **kwargs):
+    def __init__(self,  user_id, social_network=None, validate_credentials=True):
         """
-        - This sets the user's credentials as base class property so that it
-            can be used in other classes.
+        - This sets the user's credentials as base class property so that it can be used in other classes.
         - We also check the validity of access token and try to refresh it in case it has expired.
+        :param int | long user_id: Id of User
+        :param SocialNetwork | None social_network: Social Network object
         :param bool validate_credentials: If True, this will validate the credentials of user for given social network.
-        :param list args: List of arguments to be passed
-        :param dict kwargs: Keyword arguments
         """
-        # TODO: update signature of __init__
         self.events = []
         self.api_relative_url = None
-        self.user, self.social_network = self.get_user_and_social_network(kwargs.get('user_id'),
-                                                                          kwargs.get('social_network'))
+        self.user, self.social_network = self.get_user_and_social_network(user_id, social_network)
         self.user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(self.user.id,
                                                                                               self.social_network.id)
         if validate_credentials:
@@ -235,7 +232,7 @@ class SocialNetworkBase(object):
         """
         This gets the User object and social network object from database.
         :param int | long user_id: Id of user
-        :param SocialNetwork | None social_network:
+        :param SocialNetwork | None social_network: Social Network object
         :rtype: tuple
         """
         raise_if_not_positive_int_or_long(user_id)
