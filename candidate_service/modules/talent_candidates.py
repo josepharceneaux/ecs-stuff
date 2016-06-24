@@ -158,6 +158,7 @@ def fetch_candidate_info(candidate, fields=None):
     return {
         'id': candidate_id,
         'owner_id': candidate.user_id,
+        'status_id': candidate.candidate_status_id,
         'first_name': candidate.first_name,
         'middle_name': candidate.middle_name,
         'last_name': candidate.last_name,
