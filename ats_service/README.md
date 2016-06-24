@@ -20,7 +20,7 @@
 - Link getTalent candidate to ATS candidate
     + `/v1/candidate/:candidate_id/:ats_candidate_id [POST]`
 - Unlink getTalent candidate from ATS candidate
-    + `/v1/candidate/ [DELETE]`
+    + `/v1/candidate/:candidate_id/:ats_candidate_id [DELETE]`
 
 #### Error Codes
 

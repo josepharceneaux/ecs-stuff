@@ -37,11 +37,26 @@ class ATSService(Resource):
         ats_service.app.logger.info("ATS {} {} ({})".format(request.method, request.path, request.user.email))
         return ATS.get_all_as_json()
 
+
+class ATSAccountService(Resource):
+    """
+    Controller for /v1/ats/account
+    """
+
+    decorators = [require_oauth()]
+
     def put(self, **kwargs):
         """
-        GET /v1/ats/:account_id
+        PUT /v1/ats/account/:id
 
         Refresh the ATS data for an account.
+        """
+
+    def get(self, **kwargs):
+        """
+        GET /v1/ats/account/:id
+
+        Retrieve all ATS candidates in an account.
         """
 
 
@@ -61,14 +76,14 @@ class UsersService(Resource):
 
     def post(self, **kwargs):
         """
-        GET /v1/users/:id
+        POST /v1/users/:id
 
         Register an ATS account with a user.
         """
 
     def delete(self, **kwargs):
         """
-        GET /v1/users/:id
+        DELETE /v1/users/:id
 
         Remove an ATS account associated with a user.
         """
@@ -78,3 +93,19 @@ class CandidateService(Resource):
     """
     Controller for /v1/candidate
     """
+    
+    decorators = [require_oauth()]
+
+    def post(self, **kwargs):
+        """
+        POST /v1/candidate/:id/:ats_candidate_id
+
+        Link a getTalent candidate to an ATS candidate.
+        """
+
+    def delete(self, **kwargs):
+        """
+        DELETE /v1/candidate/:id/:ats_candidate_id
+
+        Unlink a getTalent candidate from an ATS candidate.
+        """
