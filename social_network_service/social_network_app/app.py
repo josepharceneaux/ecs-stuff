@@ -52,7 +52,8 @@ def authorize():
     """
     code = request.args.get('code')
     url = SocialNetworkApiUrl.UI_APP_URL + '/events/subscribe?code=%s' % code
-    if len(code) == 32:  # 'state' in request.args:
+    meetup_code_length = 32
+    if len(code) == meetup_code_length:
         social_network = SocialNetwork.get_by_name('Meetup')
     else:
         social_network = SocialNetwork.get_by_name('Eventbrite')

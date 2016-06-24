@@ -109,6 +109,7 @@ from social_network_service.common.models.event import Event
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.social_network_app import logger
 from social_network_service.common.models.venue import Venue
 from social_network_service.modules.utilities import log_error
@@ -290,18 +291,12 @@ class EventBase(object):
         """
         # converting incoming Datetime object from Form submission into the
         # required format for API call
-        try:
-            start = data.get('start_datetime')
-            end = data.get('end_datetime')
-            utc_pattern = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
-            if not (re.match(utc_pattern, start) and re.match(utc_pattern, end)):
-                raise InvalidDatetime('Invalid DateTime: Kindly specify datetime '
-                                      'in UTC format like 2015-10-08T06:16:55Z')
-            data['start_datetime'] = parse(start) if start else ''
-            data['end_datetime'] = parse(end) if end else ''
-        except:
-            raise InvalidDatetime('Invalid DateTime: Kindly specify datetime '
-                                  'in UTC format like 2015-10-08T06:16:55Z')
+        start = data.get('start_datetime')
+        end = data.get('end_datetime')
+        # DatetimeUtils.validate_datetime_format(start)
+        # DatetimeUtils.validate_datetime_format(end)
+        data['start_datetime'] = DatetimeUtils.get_datetime_obj_if_format_is_valid(start)
+        data['end_datetime'] = DatetimeUtils.get_datetime_obj_if_format_is_valid(end)
 
     def pre_process_events(self, events):
         """
