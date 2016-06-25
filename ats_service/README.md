@@ -12,11 +12,11 @@
 - Retrieve all ATS candidates associated with an ATS account
     + `/v1/ats/account/:id [GET]`
 - Register ATS account for a user with an ATS
-    + `/v1/users/:id [POST]`
+    + `/v1/user/:id [POST]`
 - Decomission ATS account for a user with an ATS
-    + `/v1/users/:id [DELETE]`
+    + `/v1/user/:id [DELETE]`
 - Retrieve all ATS accounts for a user
-    + `/v1/users/:id [GET]`
+    + `/v1/user/:id [GET]`
 - Link getTalent candidate to ATS candidate
     + `/v1/candidate/:candidate_id/:ats_candidate_id [POST]`
 - Unlink getTalent candidate from ATS candidate

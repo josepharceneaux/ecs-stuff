@@ -819,8 +819,9 @@ class ATSServiceApi(object):
     """
     VERSION = 'v1'
     SERVICES = '/' + VERSION + '/ats'
-    USERS = '/' + VERSION + '/users'
-    URL_REDIRECT = '/' + VERSION + '/redirect/<int:url_conversion_id>'
+    ACCOUNT = '/' + VERSION + '/ats/account'
+    USER = '/' + VERSION + '/user/<int:id>'
+    CANDIDATE = '/' + VERSION + '/candidate'
 
 
 class ATSServiceApiUrl(object):
@@ -831,5 +832,6 @@ class ATSServiceApiUrl(object):
     HOST_NAME = _get_host_name(GTApis.ATS_SERVICE_NAME, GTApis.ATS_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     SERVICES = HOST_NAME % ('/' + VERSION + '/ats')
-    USERS = HOST_NAME % ('/' + VERSION + '/users')
-    URL_REDIRECT = HOST_NAME % ('/' + VERSION + '/redirect/%s')
+    ACCOUNT  = HOST_NAME % ('/' + VERSION + '/ats/account')
+    USER = HOST_NAME % ('/' + VERSION + '/user/%s')
+    CANDIDATE = HOST_NAME % ('/' + VERSION + '/candidate')

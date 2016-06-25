@@ -5,7 +5,7 @@ from ats_service.common.talent_config_manager import TalentConfigKeys
 from ats_service.common.models.db import db
 from ats_service.common.talent_api import TalentApi
 from ats_service.common.routes import ATSServiceApi
-from ats_service.app.api.services import ATSService, UsersService
+from ats_service.app.api.services import ATSService, UserService, ATSAccountService, CandidateService
 
 # from ats_service.common.models.ats import ATS
 
@@ -13,7 +13,10 @@ app, logger = init_talent_app(__name__)
 
 try:
     api = TalentApi(app=app)
-    api.add_resource(ATSService, ATSServiceApi.SERVICES, endpoint='ats-services')
+    api.add_resource(ATSService, ATSServiceApi.SERVICES)
+    api.add_resource(UserService, ATSServiceApi.USER)
+    api.add_resource(ATSAccountService, ATSServiceApi.ACCOUNT)
+    api.add_resource(CandidateService, ATSServiceApi.CANDIDATE)
 
     db.create_all()
     db.session.commit()
