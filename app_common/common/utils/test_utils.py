@@ -4,6 +4,8 @@ This module contains utility methods will be used in API based tests.
 # Standard imports
 import json
 import uuid
+import operator
+from time import sleep
 from datetime import datetime, timedelta
 
 # 3rd party imports
@@ -19,6 +21,7 @@ from ..tests.conftest import randomword
 from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
                       CandidatePoolApiUrl, SchedulerApiUrl)
 from ..custom_contracts import define_custom_contracts
+from ..error_handling import NotFoundError
 
 define_custom_contracts()
 fake = Faker()
@@ -492,3 +495,44 @@ def delete_talent_pool(talent_pool_id, token, expected_status=(200,)):
     print('common_tests : delete_talent_pool: ', response.content)
     assert response.status_code in expected_status
     return response.json()
+
+
+def get_response(access_token, arguments_to_url, expected_count=1, attempts=20, pause=3, comp_operator='>='):
+    """
+    Function will a send request to cloud search until desired response is obtained.
+    Since CS takes sometime to update, multiple attempts may be needed. A 3 seconds sleep time is set
+    between each attempt.
+    :param access_token: user's access token
+    :param arguments_to_url: search params, i.e. "?tag_ids=1,2,3"
+    :param expected_count: expected number of candidates that must be returned from CS
+    :param attempts: maximum number of attempts that must be made
+    :param pause: seconds to wait before making next attempt
+    :param comp_operator: the comparison operator used to obtain desired response
+    :rtype:  requests.Response
+    """
+
+    # Define comparison operator
+    def get_comp_operator(comp_op):
+        comps = {
+            '==': operator.eq,
+            '>=': operator.ge,
+        }
+        assert comp_op in comps, 'comparison operator not recognized'
+        return comps[comp_op]
+
+    # Comparison operator object
+    comparison_operator = get_comp_operator(comp_op=comp_operator)
+
+    # Cloud Search API URL
+    url = CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url
+
+    headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
+
+    for i in range(0, attempts):
+        sleep(pause)
+        resp = requests.get(url, headers=headers)
+        print response_info(resp)
+        if comparison_operator(len(resp.json()['candidates']), expected_count):
+            return resp
+
+    raise NotFoundError('Unable to get expected number of candidates')

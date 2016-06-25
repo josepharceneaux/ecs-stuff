@@ -82,11 +82,9 @@ def user_same_domain():
 
 
 @pytest.fixture(scope='function')
-def candidate_first(request, talent_pool, token_first):
+def candidate_first(talent_pool, token_first):
     """
-    This fixture created a test candidate in domain first and it will be deleted
-    after test has run.
-    :param request: request object
+    Fixture will add a candidate in domain-first
     :param talent_pool: talent pool dict object associated to user_first
     :param token_first: auth token for  first user
     """
@@ -96,11 +94,6 @@ def candidate_first(request, talent_pool, token_first):
                      args=([candidate_id], token_first))
     candidate = response['candidates'][0]
 
-    def tear_down():
-        delete_candidate(candidate_id, token_first,
-                         expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return candidate
 
 
