@@ -181,9 +181,6 @@ class TestResourceEvents:
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
         assert response.status_code == 400
-        response = response.json()
-        # TODO break the line
-        assert 'error' in response and response['error']['code'] == InvalidDatetime.error_code, 'Invalid start datetime format'
 
     def test_events_post_invalid_end_datetime(self, token, test_event):
         """
@@ -210,9 +207,6 @@ class TestResourceEvents:
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
         logger.info(response.text)
         assert response.status_code == 400
-        response = response.json()
-        assert 'error' in response and response['error']['code'] == InvalidDatetime.error_code, 'Invalid end datetime format'
-        event_data['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime('%Y-%m-%dT%H:%M:%SZ')
 
     def test_events_post_with_valid_token(self, token, test_event):
         """

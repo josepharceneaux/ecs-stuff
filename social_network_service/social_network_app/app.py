@@ -48,10 +48,9 @@ def authorize():
     This is a redirect URL which will be hit when a user accept the invitation on meetup or eventbrite
     In case of meetup the querystring args contain 'state'
     and in case of eventbrite the querystring args does not contain 'state' parameter
-    :return:
     """
     code = request.args.get('code')
-    url = SocialNetworkApiUrl.UI_APP_URL + '/events/subscribe?code=%s' % code
+    url = SocialNetworkApiUrl.SUBSCRIBE % code
     meetup_code_length = 32
     if len(code) == meetup_code_length:
         social_network = SocialNetwork.get_by_name('Meetup')

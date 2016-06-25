@@ -95,11 +95,9 @@ To add another social network for events management, following are steps:
 """
 
 # Standard Library
-import re
 from abc import ABCMeta
 from abc import abstractmethod
 # Application Specific
-from dateutil.parser import parse
 from flask import request
 
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
@@ -115,7 +113,6 @@ from social_network_service.common.models.venue import Venue
 from social_network_service.modules.utilities import log_error
 from social_network_service.modules.utilities import get_class
 from social_network_service.custom_exceptions import NoUserFound, VenueNotFound, EventOrganizerNotFound
-from social_network_service.custom_exceptions import InvalidDatetime
 from social_network_service.custom_exceptions import EventNotSaveInDb
 from social_network_service.custom_exceptions import EventNotUnpublished
 from social_network_service.custom_exceptions import UserCredentialsNotFound
@@ -293,8 +290,6 @@ class EventBase(object):
         # required format for API call
         start = data.get('start_datetime')
         end = data.get('end_datetime')
-        # DatetimeUtils.validate_datetime_format(start)
-        # DatetimeUtils.validate_datetime_format(end)
         data['start_datetime'] = DatetimeUtils.get_datetime_obj_if_format_is_valid(start)
         data['end_datetime'] = DatetimeUtils.get_datetime_obj_if_format_is_valid(end)
 

@@ -631,9 +631,11 @@ class SocialNetworkApiUrl(object):
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
     if env == TalentEnvs.DEV:
-        UI_APP_URL = LOCAL_HOST + ':3000'
+        UI_APP_URL = 'http://127.0.0.1:3000/%s'
     else:
-        UI_APP_URL = 'https://dev.gettalent.com'
+        UI_APP_URL = 'https://dev.gettalent.com/%s'
+
+    SUBSCRIBE = UI_APP_URL % 'events/subscribe?code=%s'
     EVENTS = HOST_NAME % ('/' + VERSION + '/events')
     EVENT = HOST_NAME % ('/' + VERSION + '/events/%s')
     SOCIAL_NETWORKS = HOST_NAME % ('/' + VERSION + '/social-networks')
