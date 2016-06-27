@@ -444,18 +444,19 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
             }
 
 
-def send_campaign_email_to_candidate(campaign, email, candidate_id, blast_id=None):
+def send_campaign_email_to_candidate(campaign, email, candidate_id, sent_datetime, blast_id=None):
     """
     This function will create a campaign send object and then it will send the email to given email address.
     :param EmailCampaign campaign: EmailCampaign object
     :param CandidateEmail email: CandidateEmail object
     :param (int | long) candidate_id: candidate unique id
+    :param (datetime.datetime) sent_datetime: Campaign send time to be set in campaign send object.
     :param (None| int | long) blast_id: campaign blast id
     """
     # Create an campaign send object
     email_campaign_send = EmailCampaignSend(campaign_id=campaign.id,
                                             candidate_id=candidate_id,
-                                            sent_datetime=datetime.datetime.now(),
+                                            sent_datetime=sent_datetime,
                                             blast_id=blast_id)
     EmailCampaignSend.save(email_campaign_send)
     default_email = get_default_email_info()['email']

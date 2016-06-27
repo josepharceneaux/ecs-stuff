@@ -37,15 +37,17 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         email = CandidateEmail.get_email_by_candidate_id(candidate_ids[0])
         email.update(address=invalid_email)
         db.session.commit()
+        sent_datetime = email_campaign_blast.sent_datetime
         if blast_foreign_key:
-            send_campaign_email_to_candidate(campaign, email, candidate_ids[0], blast_id=email_campaign_blast.id)
+            send_campaign_email_to_candidate(campaign, email, candidate_ids[0], sent_datetime,
+                                             blast_id=email_campaign_blast.id)
         else:
-            send_campaign_email_to_candidate(campaign, email, candidate_ids[0], blast_id=None)
+            send_campaign_email_to_candidate(campaign, email, candidate_ids[0], sent_datetime, blast_id=None)
 
         retry(assert_is_bounced, sleeptime=3, attempts=100, sleepscale=1,
               args=(email,), retry_exceptions=(AssertionError,))
-        campaign_blasts = CampaignsTestsHelpers.assert_campaign_blasts(campaign, expected_count=1, timeout=300)
-        CampaignsTestsHelpers.assert_blast_sends(campaign, expected_count=1)
+        campaign_blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, timeout=300)
+
         campaign_blast = campaign_blasts[0]
         assert campaign_blast.bounces == 1
 

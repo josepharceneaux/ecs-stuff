@@ -555,16 +555,14 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(expected_count, int)
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
-        recieved_blasts = CampaignsTestsHelpers.get_blasts(campaign, access_token,
-                                                                     blasts_url)
-        received_blasts_count = len(recieved_blasts)
+        received_blasts_count = len(CampaignsTestsHelpers.get_blasts(campaign, access_token,
+                                                                     blasts_url))
         print 'Expected Blasts:%s' % expected_count
         print 'Received Blasts:%s' % received_blasts_count
         assert received_blasts_count == expected_count
-        return recieved_blasts
 
     @staticmethod
-    def assert_campaign_blasts(campaign, expected_count, access_token=None, blasts_url=None, timeout=100):
+    def assert_campaign_blasts(campaign, expected_count, access_token=None, blasts_url=None, timeout=10):
         """
         This function polls verify_blasts() to assert that given campaign has expected number
         of blast objects.
@@ -575,10 +573,9 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(blasts_url, basestring) if blasts_url else None
         raise_if_not_instance_of(timeout, int)
         attempts = timeout / 3 + 1
-        blasts = retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
+        retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
               args=(campaign, access_token, blasts_url, expected_count),
               retry_exceptions=(AssertionError,))
-        return blasts
 
     @staticmethod
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1, data=None,
