@@ -13,17 +13,18 @@ from abc import abstractmethod
 # Application Specific
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
+from social_network_service.common.inter_service_calls.candidate_service_calls import \
+    create_candidates_from_candidate_api
+from social_network_service.common.models import db
 from social_network_service.common.models.rsvp import RSVP
 from social_network_service.common.models.talent_pools_pipelines import TalentPool
-from social_network_service.common.models.user import User
+from social_network_service.common.models.user import User, Token
 from social_network_service.common.models.misc import Product
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.candidate import Candidate
 from social_network_service.common.models.candidate import CandidateSource
 from social_network_service.common.models.candidate import CandidateSocialNetwork
-from social_network_service.common.routes import CandidateApiUrl
-from social_network_service.common.utils.candidate_service_calls import create_candidates_from_candidate_api
-from social_network_service.common.utils.handy_functions import generate_jwt_headers, http_request
+from social_network_service.common.utils.handy_functions import generate_jwt_headers
 from social_network_service.custom_exceptions import UserCredentialsNotFound, ProductNotFound
 from social_network_service.social_network_app import logger
 
@@ -454,24 +455,12 @@ class RSVPBase(object):
         :return attendee:
         :rtype: object
         """
-
-        data = {'description': attendee.event.title,
-                'notes': attendee.event.description[:495] if attendee.event.description else None,
-                # field is 500 chars
-                'domain_id': self.user.domain_id}
-
-        headers = generate_jwt_headers(user_id=attendee.gt_user_id,
-                                       content_type='application/json')
-
-        data = dict(sources=[data])
-        response = http_request('post',
-                                url=CandidateApiUrl.SOURCES,
-                                headers=headers,
-                                data=json.dumps(data)
-                                )
-
-        entry_id = response.json()['ids'][0]
-        attendee.candidate_source_id = entry_id
+        candidate_source = CandidateSource(notes=attendee.event.description[:495] if attendee.event.description else None,
+                                            domain_id=self.user.domain_id,
+                                            description=attendee.event.title
+                                            )
+        candidate_source.save()
+        attendee.candidate_source_id = candidate_source.id
         return attendee
 
     @staticmethod
@@ -524,7 +513,7 @@ class RSVPBase(object):
                 }
 
         social_network_data = {
-                         'name': attendee.full_name,
+                         'name': attendee.event.social_network.name,
                          'profile_url': attendee.social_profile_url
                         }
 
@@ -547,13 +536,10 @@ class RSVPBase(object):
 
         # Update social network data to be sent with candidate
         data.update({'social_networks': [social_network_data]})
-
-        # Generate JWT header and send request to candidate service for candidate creation/modification
-        headers = generate_jwt_headers(user_id=attendee.gt_user_id)
-        response = create_candidates_from_candidate_api(headers['Authorization'],
-                                                        data=data,
-                                                        return_candidate_ids_only=True,
-                                                        secret_key_id=headers['X-Talent-Secret-Key-ID'])
+        token = Token.get_by_user_id(attendee.gt_user_id)
+        response = create_candidates_from_candidate_api(oauth_token=token.access_token if token else None,
+                                                        data=dict(candidates=[data]),
+                                                        return_candidate_ids_only=True)
 
         # Get created candidate id
         candidate_id = response[0]
