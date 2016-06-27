@@ -2,21 +2,37 @@
 Classes implementing the ATS services endpoints.
 """
 
-from flask import request
+import types
+
+from flask import request, Blueprint
 from flask_restful import Resource
+
+from ats_service.common.talent_api import TalentApi
 
 # Decorators
 from ats_service.common.utils.auth_utils import require_oauth
 
 # Modules
-import ats_service.app
+from ats_service.common.routes import ATSServiceApi
+
 # Why doesn't this work?
 # from ats_service.app import logger
+
+import ats_service.app
 
 # Database
 from ats_service.common.models.ats import ATS
 
+from ats_service.common.utils.api_utils import api_route
 
+
+api = TalentApi()
+ats_service_blueprint = Blueprint('ats_service_api', __name__)
+api.init_app(ats_service_blueprint)
+api.route = types.MethodType(api_route, api)
+
+
+@api.route(ATSServiceApi.ATS)
 class ATSService(Resource):
     """
     Controller for /v1/ats
@@ -38,6 +54,7 @@ class ATSService(Resource):
         return ATS.get_all_as_json()
 
 
+@api.route(ATSServiceApi.ACCOUNTS)
 class ATSAccountService(Resource):
     """
     Controller for /v1/ats-accounts
@@ -45,7 +62,7 @@ class ATSAccountService(Resource):
 
     decorators = [require_oauth()]
 
-    def get(self, **kwargs):
+    def get(self, user_id):
         """
         GET /v1/ats-accounts/:id
 
@@ -54,8 +71,10 @@ class ATSAccountService(Resource):
 
         authenticated_user = request.user
         ats_service.app.logger.info("ATSAccount {} {} ({})".format(request.method, request.path, request.user.email))
+        # ats_service.app.logger.info("kargs: |{}|".format(kwargs))
+        ats_service.app.logger.info("user_id: |{}|".format(user_id))
 
-        return "{ 'here-is' : 'a-value' }"
+        return "{ 'accounts' : 'get', 'user_id' : ? }"
 
     def delete(self, **kwargs):
         """
@@ -67,7 +86,7 @@ class ATSAccountService(Resource):
         authenticated_user = request.user
         ats_service.app.logger.info("ATSAccount {} {} ({})".format(request.method, request.path, request.user.email))
 
-        return "{ 'here-is' : 'a-value' }"
+        return "{ 'accounts' : 'delete' }"
 
     def post(self, **kwargs):
         """
@@ -79,9 +98,10 @@ class ATSAccountService(Resource):
         authenticated_user = request.user
         ats_service.app.logger.info("ATSAccount {} {} ({})".format(request.method, request.path, request.user.email))
 
-        return "{ 'here-is' : 'a-value' }"
+        return "{ 'accounts' : 'post' }"
 
 
+@api.route(ATSServiceApi.CANDIDATES)
 class ATSCandidateService(Resource):
     """
     Controller for /v1/ats-candidates
@@ -100,43 +120,41 @@ class ATSCandidateService(Resource):
         authenticated_user = request.user
         ats_service.app.logger.info("User {} {} ({} {})".format(request.method, request.path, request.user.email, user_id))
 
-        return "{ 'user' : '{}' }".format(user_id)
+        return "{ 'candidates' : 'get' }"
 
-    def get(self, **kwargs):
+    # def get(self, **kwargs):
+    #     """
+    #     GET /v1/ats-candidates/refresh/:account_id
+
+    #     Update our local store of ATS candidates associated with an account from the ATS itself.
+    #     """
+
+    #     user_id = kwargs.get('id')
+    #     authenticated_user = request.user
+    #     ats_service.app.logger.info("User {} {} ({} {})".format(request.method, request.path, request.user.email, user_id))
+
+    #     return "{ 'user' : '{}' }".format(user_id)
+
+    def post(self, **kwargs):
         """
-        GET /v1/ats-candidates/refresh/:account_id
+        POST /v1/ats-candidates/:candidate_id/:ats_candidate_id
 
-        Update our local store of ATS candidates associated with an account from the ATS itself.
+        Link a getTalent candidate to an ATS candidate.
         """
 
-        user_id = kwargs.get('id')
         authenticated_user = request.user
-        ats_service.app.logger.info("User {} {} ({} {})".format(request.method, request.path, request.user.email, user_id))
+        ats_service.app.logger.info("User {} {} ({})".format(request.method, request.path, request.user.email))
 
-        return "{ 'user' : '{}' }".format(user_id)
+        return "{ 'candidates' : 'post' }"
 
-    # def post(self, **kwargs):
-    #     """
-    #     POST /v1/ats-candidates/:candidate_id/:ats_candidate_id
+    def delete(self, **kwargs):
+        """
+        DELETE /v1/ats-candidates/:candidate_id/:ats_candidate_id
 
-    #     Link a getTalent candidate to an ATS candidate.
-    #     """
+        Remove an ATS account associated with a user.
+        """
 
-    #     authenticated_user = request.user
-    #     ats_service.app.logger.info("User {} {} ({})".format(request.method, request.path, request.user.email))
+        authenticated_user = request.user
+        ats_service.app.logger.info("User {} {} ({})".format(request.method, request.path, request.user.email))
 
-    #     return "{ 'here-is' : 'a-value' }"
-
-    # def delete(self, **kwargs):
-    #     """
-    #     DELETE /v1/ats-candidates/:candidate_id/:ats_candidate_id
-
-    #     Remove an ATS account associated with a user.
-    #     """
-
-    #     authenticated_user = request.user
-    #     ats_service.app.logger.info("User {} {} ({})".format(request.method, request.path, request.user.email))
-
-    #     return "{ 'here-is' : 'a-value' }"
-
-
+        return "{ 'candidates' : 'delete' }"
