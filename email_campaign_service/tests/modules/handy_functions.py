@@ -23,8 +23,7 @@ from email_campaign_service.common.utils.amazon_ses import (send_email,
 from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailClient, EmailCampaignSend)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.common.utils.handy_functions import (add_role_to_test_user,
-                                                                 define_and_send_request)
+from email_campaign_service.common.utils.handy_functions import define_and_send_request
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
@@ -208,7 +207,7 @@ def assert_and_delete_email(subject):
 
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False,
-                         expected_status=200, abort_time_for_sends=20):
+                         expected_status=200, abort_time_for_sends=150):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
@@ -358,10 +357,6 @@ def add_email_template(token, template_owner, template_body):
     This function will create email template
     """
     domain_id = template_owner.domain_id
-
-    # Add 'CAN_CREATE_EMAIL_TEMPLATE' to template_owner
-    add_role_to_test_user(template_owner, [Permission.Roles.CAN_CREATE_EMAIL_TEMPLATE,
-                                           Permission.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER])
 
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(token)

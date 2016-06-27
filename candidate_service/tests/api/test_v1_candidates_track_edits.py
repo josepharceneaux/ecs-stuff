@@ -8,9 +8,9 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles, get_int_version
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.tests.api.helpers import get_int_version
 
 # Candidate sample data
 from candidate_sample_data import generate_single_candidate_data
@@ -23,7 +23,6 @@ class TestTrackCandidateEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -59,7 +58,6 @@ class TestTrackCandidateAddressEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -98,7 +96,6 @@ class TestTrackCandidateCustomFieldEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -135,7 +132,6 @@ class TestTrackCandidateEducationEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -173,7 +169,6 @@ class TestTrackCandidateEducationEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -218,7 +213,6 @@ class TestTrackCandidateEducationEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -263,7 +257,6 @@ class TestTrackCandidateExperienceEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -304,7 +297,6 @@ class TestTrackCandidateExperienceEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -346,7 +338,6 @@ class TestTrackCandidateWorkPreferenceEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -390,7 +381,6 @@ class TestTrackCandidateEmailEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -426,7 +416,6 @@ class TestTrackCandidatePhoneEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -462,7 +451,6 @@ class TestTrackCandidateMilitaryServiceEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -497,7 +485,6 @@ class TestTrackCandidatePreferredLocationEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -537,7 +524,6 @@ class TestTrackCandidateSkillEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -575,7 +561,6 @@ class TestTrackCandidateSocialNetworkEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 

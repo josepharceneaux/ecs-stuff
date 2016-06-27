@@ -40,21 +40,6 @@ def random_letter_digit_string(size=6, chars=string.lowercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
 
-def add_role_to_test_user(test_user, role_name):
-    """
-    This function will add roles to a test_user just for testing purpose
-    :param User test_user: User object
-    :param str role_name: Name of Role
-    :return:
-    """
-    role_object = Role.query.filter_by(name=role_name).first()
-    if not role_object:
-        raise Exception("Role `%s` doesn't exist in Database" % role_name)
-
-    test_user.role_id = role_object.id
-    db.session.commit()
-
-
 def camel_case_to_snake_case(name):
     """ Convert camel case to underscore case
         socialNetworkId --> social_network_id

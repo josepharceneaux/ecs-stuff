@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 from user_service.user_app import app
 from user_service.common.models.db import db
-from user_service.common.models.user import User, UserGroup, UserRoles, Domain, Permission
+from user_service.common.models.user import User, UserGroup, Role, Domain, Permission, PermissionsOfRole
 from user_service.common.models.talent_pools_pipelines import (
     TalentPool, TalentPoolCandidate, TalentPoolGroup, TalentPipeline
 )
@@ -19,43 +19,52 @@ from user_service.common.models.smartlist import Smartlist
 from user_service.common.models.candidate import Candidate
 
 
-def get_role_names():
+def get_permissions():
     """ Function will get and return Permission constants """
-    constants = Permission.PermissionNames.__dict__.keys()
-    for constant in constants.__iter__():
-        if "__" in constant:
-            constants.remove(constant)
-
-    print "ROLE_NAMES: {}".format(constants)
-    return constants
+    permission_names = [key for key in Permission.PermissionNames.__dict__.keys() if not key.startswith('__')]
+    print "ROLE_NAMES: {}".format(permission_names)
+    return permission_names
 
 
-def add_domain_roles():
+def add_permissions():
     """ Function will add roles to existing domains """
-    print "running: add_domain_roles()"
-    for role_name in get_role_names():
-        domain_role = Permission.get_by_name(role_name=role_name)
-        if not domain_role:
-            db.session.add(Permission(role_name=role_name))
-            db.session.commit()
+    print "running: add_permissions()"
+    permission_names = get_permissions()
+
+    for permission_name in permission_names:
+        db.session.add(Permission(name=permission_name))
+    db.session.commit()
 
 
-def add_user_roles():
+def add_roles():
     """ Function will associated each user with every Permission except delete-roles """
-    print "running: add_user_roles()"
-    existing_users = User.query.all()
-    domain_roles = Permission.query.filter(Permission.role_name.notlike('%delete_user%') &
-                                           Permission.role_name.notlike('%delete_domain%') &
-                                           Permission.role_name.notilike('%delete_talent%')).all()
-    for user in existing_users:
-        print "user in progress: {}".format(user)
-        for role in domain_roles:
-            user_scoped_role = UserRoles.query.filter_by(user_id=user.id,
-                                                         role_id=role.id).first()
-            if not user_scoped_role:
-                print "role_id: {}, user_id: {}".format(role.id, user.id)
-                db.session.add(UserRoles(user_id=user.id, role_id=role.id))
-                db.session.commit()
+    print "running: add_roles()"
+    permission_names = get_permissions()
+    permissions_not_allowed_for_roles = dict()
+    permissions_not_allowed_for_roles['TALENT_ADMIN'] = []
+    permissions_not_allowed_for_roles['DOMAIN_ADMIN'] = [Permission.PermissionNames.CAN_IMPERSONATE_USERS,
+                                                         Permission.PermissionNames.CAN_DELETE_DOMAINS,
+                                                         Permission.PermissionNames.CAN_ADD_DOMAINS]
+    permissions_not_allowed_for_roles['ADMIN'] = permissions_not_allowed_for_roles['DOMAIN_ADMIN'] + [
+        Permission.PermissionNames.CAN_EDIT_DOMAINS, Permission.PermissionNames.CAN_ADD_TALENT_POOLS,
+        Permission.PermissionNames.CAN_ADD_DOMAIN_GROUPS, Permission.PermissionNames.CAN_DELETE_DOMAIN_GROUPS,
+        Permission.PermissionNames.CAN_EDIT_DOMAIN_GROUPS, Permission.PermissionNames.CAN_GET_DOMAIN_GROUPS,
+        Permission.PermissionNames.CAN_DELETE_TALENT_POOLS, Permission.PermissionNames.CAN_EDIT_USER_ROLE]
+
+    permissions_not_allowed_for_roles['USER'] = permissions_not_allowed_for_roles['ADMIN'] + [
+        Permission.PermissionNames.CAN_EDIT_TALENT_POOLS, Permission.PermissionNames.CAN_ADD_WIDGETS,
+        Permission.PermissionNames.CAN_EDIT_WIDGETS, Permission.PermissionNames.CAN_DELETE_WIDGETS,
+        Permission.PermissionNames.CAN_DELETE_USERS, Permission.PermissionNames.CAN_ADD_USERS,
+        Permission.PermissionNames.CAN_DELETE_CANDIDATES]
+
+    role_names = permissions_not_allowed_for_roles.keys()
+    for role_name in role_names:
+        role_id = Role.save(role_name)
+        for permission_name in permission_names:
+            if permission_name not in permissions_not_allowed_for_roles[role_name]:
+                db.session.add(PermissionsOfRole(role_id=role_id, permission_id=Permission.get_by_name(permission_name).id))
+
+    db.session.commit()
 
 
 def add_user_group_to_domains():
@@ -160,11 +169,11 @@ if __name__ == '__main__':
     print "database: {}".format(db)
     try:
         start_time = time.time()
-        add_domain_roles()
+        add_permissions()
         print "completed: add_domain_roles()\ntime: {}".format(time.time() - start_time)
 
         time_1 = time.time()
-        add_user_roles()
+        add_roles()
         print "completed: add_user_roles()\ntime: {}".format(time.time() - time_1)
 
         time_2 = time.time()

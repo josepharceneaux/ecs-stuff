@@ -13,7 +13,6 @@ from candidate_service.common.models.candidate import CandidateEmail
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
 
@@ -31,7 +30,6 @@ class TestUpdateCandidate(object):
         Expect: 200; candidate should not be retrievable
         """
         # Create candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -55,7 +53,6 @@ class TestUpdateCandidate(object):
         Test:  Create candidates, hide them, and unhide them again via Patch call
         """
         # Create candidates
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
         create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
@@ -97,8 +94,6 @@ class TestUpdateCandidate(object):
         Expect: 403
         """
         # Create Candidate
-        AddUserRoles.add(user_first)
-        AddUserRoles.edit(user_second)
 
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
@@ -117,7 +112,6 @@ class TestUpdateCandidate(object):
         Expect: 400
         """
         # Update Candidate's first_name
-        AddUserRoles.edit(user_first)
         data = {'candidate': {'first_name': fake.first_name()}}
         resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -131,7 +125,6 @@ class TestUpdateCandidate(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -161,7 +154,6 @@ class TestUpdateCandidate(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -190,7 +182,6 @@ class TestUpdateCandidate(object):
         Expect: 400; no record should be added to the db
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         email_1, email_2 = fake.safe_email(), fake.safe_email()
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'label': None, 'address': email_1}]},
@@ -231,7 +222,6 @@ class TestUpdateCandidateAddress(object):
     #     Expect: 200
     #     """
     #     # Create Candidate
-    #     AddUserRoles.add_get_edit(user_first)
     #     data = generate_single_candidate_data([talent_pool.id])
     #     create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
     #
@@ -257,7 +247,6 @@ class TestUpdateCandidateAddress(object):
         Expect: 200, but only one CandidateAddress must have is_default True, the rest must be False
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -279,7 +268,6 @@ class TestUpdateCandidateAddress(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -313,7 +301,6 @@ class TestUpdateCandidateAddress(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -351,7 +338,6 @@ class TestUpdateCandidateAOI(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -377,162 +363,12 @@ class TestUpdateCandidateAOI(object):
         assert len(candidate_aois) == candidate_area_of_interest_count + 2
 
 
-class TestUpdateCandidateEducation(object):
-    def test_add_new_education(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Add a new CandidateEducation. Candidate's CandidateEducation count should
-                increase by 1.
-        Expect: 200
-        """
-        # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-
-        can_educations_count = len(candidate_dict['educations'])
-
-        # Add new CandidateEducation
-        data = GenerateCandidateData.educations(candidate_id=candidate_id)
-        updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(updated_resp)
-
-        # Retrieve Candidate after update
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        updated_can_dict = get_resp.json()['candidate']
-        updated_educations = updated_can_dict['educations']
-
-        can_ed_from_data = data['candidates'][0]['educations'][0]
-        can_ed_degrees = can_ed_from_data['degrees'][0]
-        can_ed_degree_bullets = can_ed_degrees['bullets'][0]
-
-        assert candidate_id == updated_can_dict['id']
-        assert isinstance(updated_educations, list)
-        assert updated_educations[-1]['city'] == can_ed_from_data['city']
-        assert updated_educations[-1]['school_name'] == can_ed_from_data['school_name']
-        assert updated_educations[-1]['degrees'][-1]['type'] == can_ed_degrees['type']
-        assert updated_educations[-1]['degrees'][-1]['title'] == can_ed_degrees['title']
-        assert updated_educations[-1]['degrees'][-1]['bullets'][-1]['major'] == can_ed_degree_bullets['major']
-        assert updated_educations[-1]['country'] == pycountry.countries.get(
-            alpha2=can_ed_from_data['country_code']).name
-        assert len(updated_educations) == can_educations_count + 1
-
-    def test_update_education_of_a_diff_candidate(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Update education information of a different Candidate
-        Expect: 403
-        """
-        AddUserRoles.all_roles(user_first)
-
-        # Create Candidate
-        data_1 = generate_single_candidate_data([talent_pool.id])
-        data_2 = generate_single_candidate_data([talent_pool.id])
-        resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
-        resp_2 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_2)
-        candidate_1_id = resp_1.json()['candidates'][0]['id']
-        candidate_2_id = resp_2.json()['candidates'][0]['id']
-
-        # Retrieve Candidate
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_1_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-
-        # Update existing CandidateEducation of a different Candidate
-        data = GenerateCandidateData.educations(candidate_id=candidate_2_id,
-                                                education_id=candidate_dict['educations'][0]['id'])
-        updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(updated_resp)
-        assert updated_resp.status_code == 403
-        assert updated_resp.json()['error']['code'] == custom_error.EDUCATION_FORBIDDEN
-
-    def test_update_education_primary_info(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Updates candidate's education's city, school_name, and state
-                Since this is an update only, total number of candidate's education
-                must remain unchanged.
-        Expect: 200
-        """
-        # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-
-        candidate_education_count = len(candidate_dict['educations'])
-
-        # Update existing CandidateEducation
-        data = GenerateCandidateData.educations(candidate_id=candidate_id,
-                                                education_id=candidate_dict['educations'][0]['id'])
-        updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(updated_resp)
-
-        # Retrieve Candidate after update
-        updated_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        education_dict = updated_resp.json()['candidate']['educations'][0]
-
-        can_ed_from_data = data['candidates'][0]['educations'][0]
-        assert education_dict['city'] == can_ed_from_data['city']
-        assert education_dict['subdivision'] == pycountry.subdivisions.get(
-            code=can_ed_from_data['subdivision_code']).name
-        assert education_dict['school_name'] == can_ed_from_data['school_name']
-        assert education_dict['country'] == pycountry.countries.get(alpha2=can_ed_from_data['country_code']).name
-        assert len(updated_resp.json()['candidate']['educations']) == candidate_education_count
-
-    def test_add_education_degree(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Add CandidateEducationDegree to an existing candidate's education.
-                The number of CandidateEducationDegree must increase by 1 for this candidate.
-        Expect: 200
-        """
-        # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-
-        candidate_education_count = len(candidate_dict['educations'][0]['degrees'])
-
-        # Update existing CandidateEducation
-        data = {'candidates': [{'id': candidate_id, 'educations': [
-            {'id': candidate_dict['educations'][0]['id'], 'degrees': [
-                {'type': 'AA', 'title': 'associate', 'bullets': [
-                    {'major': 'mathematics', 'comments': 'obtained a high GPA whilst working full time'}
-                ]}
-            ]}
-        ]}]}
-        updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(updated_resp)
-
-        # Retrieve Candidate after update
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        updated_can_dict = get_resp.json()['candidate']
-        education_dict = updated_can_dict['educations'][0]
-
-        assert candidate_id == updated_can_dict['id']
-        assert len(education_dict['degrees']) == candidate_education_count + 1
-        assert education_dict['degrees'][-1]['type'] == 'AA'
-        assert education_dict['degrees'][-1]['title'] == 'associate'
-        assert education_dict['degrees'][-1]['bullets'][-1]['major'] == 'mathematics'
-
-
 class TestUpdateWorkExperience(object):
     def test_add_experiences(self, access_token_first, user_first, talent_pool):
         """
         Test:  Add candidate work experience and check for total months of experiences accumulated
         Expct: Candidate.total_months_experience to be updated accordingly
         """
-        AddUserRoles.all_roles(user_first)
         data = {'candidates': [
             {
                 'talent_pool_ids': {'add': [talent_pool.id]},
@@ -573,7 +409,6 @@ class TestUpdateWorkExperience(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -609,7 +444,6 @@ class TestUpdateWorkExperience(object):
         Expect: 200, but only one CandidateExperience must have is_current True, the rest must be False
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -633,7 +467,6 @@ class TestUpdateWorkExperience(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -670,7 +503,6 @@ class TestUpdateWorkExperience(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -707,7 +539,6 @@ class TestUpdateWorkPreference(object):
         Expect: 400
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -726,7 +557,6 @@ class TestUpdateWorkPreference(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -762,7 +592,6 @@ class TestUpdateCandidateEmails(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -795,7 +624,6 @@ class TestUpdateCandidateEmails(object):
         Expect: 200, but only one CandidateEmail must have is_current True, the rest must be False
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -817,7 +645,6 @@ class TestUpdateCandidateEmails(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -850,7 +677,6 @@ class TestUpdateCandidateEmails(object):
         Expect: 400
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -881,7 +707,6 @@ class TestUpdateCandidateEmails(object):
         """
         Test: Add two candidates. Then add another email to candidate 2 using candidate's 1 email
         """
-        AddUserRoles.add_get_edit(user_first)
 
         # Define email address
         first_candidates_email = fake.safe_email()
@@ -911,7 +736,6 @@ class TestUpdateCandidatePhones(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -943,7 +767,6 @@ class TestUpdateCandidatePhones(object):
         Expect: 200, but only one CandidatePhone must have is_current True, the rest must be False
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -965,7 +788,6 @@ class TestUpdateCandidatePhones(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -998,7 +820,6 @@ class TestUpdateCandidateMilitaryService(object):
         Expect: 400
         """
         # Create candidate + candidate military service
-        AddUserRoles.add_and_get(user_first)
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'military_services': [
                 {'from_date': '2005', 'to_date': '2012-12-12'}
@@ -1015,7 +836,6 @@ class TestUpdateCandidateMilitaryService(object):
                 Number of candidate's military_services should increase by 1.
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -1048,7 +868,6 @@ class TestUpdateCandidateMilitaryService(object):
                 Number of candidate's military_services should remain unchanged.
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -1084,7 +903,6 @@ class TestUpdateCandidatePreferredLocation(object):
                 Number of candidate's preferred_location should increase by 1.
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -1115,7 +933,6 @@ class TestUpdateCandidatePreferredLocation(object):
                 Number of candidate's preferred_location should remain unchanged.
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -1149,7 +966,6 @@ class TestUpdateCandidateSkill(object):
                 Number of candidate's preferred_location should increase by 1.
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -1179,7 +995,6 @@ class TestUpdateCandidateSkill(object):
                 Number of candidate's preferred_location should remain unchanged.
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -1211,7 +1026,6 @@ class TestUpdateCandidateSocialNetwork(object):
                 Number of candidate's social_networks should increase by 1.
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -1244,7 +1058,6 @@ class TestUpdateCandidateSocialNetwork(object):
                 Number of candidate's social_networks should remain unchanged.
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 

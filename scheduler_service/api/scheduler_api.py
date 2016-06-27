@@ -754,7 +754,7 @@ class AdminTasks(Resource):
     decorators = [require_oauth()]
     # a parent class and put all the core pagination functionality in its get() and then we can later override that
 
-    @require_all_permissions(Permission.Roles.CAN_GET_ALL_JOBS)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_ALL_JOBS)
     def get(self):
         """
         This action returns a list of apscheduler scheduled tasks.

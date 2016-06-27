@@ -21,7 +21,7 @@ HEADER_ROW_PARAMS = ['first_name', 'last_name', 'email']
 
 @mod.route(SpreadsheetImportApi.CONVERT_TO_TABLE, methods=['GET'])
 @require_oauth()
-@require_all_permissions(Permission.Roles.CAN_ADD_CANDIDATES)
+@require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
 def spreadsheet_to_table():
     """
     POST /parse_spreadsheet/convert_to_table:  Convert given spreadsheet to table of candidates
@@ -46,7 +46,7 @@ def spreadsheet_to_table():
 
 @mod.route(SpreadsheetImportApi.IMPORT_CANDIDATES, methods=['POST'])
 @require_oauth()
-@require_all_permissions(Permission.Roles.CAN_ADD_CANDIDATES)
+@require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
 def import_from_table():
     """
     POST /parse_spreadsheet/import_from_table: Import candidates from a python table object (arrays of arrays)

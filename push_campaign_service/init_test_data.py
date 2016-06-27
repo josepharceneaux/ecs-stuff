@@ -17,7 +17,7 @@ app, logger = init_talent_app('test_app')
 from common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from common.models.user import Domain, Permission, User, UserGroup, Token, Client
 
-Roles = Permission.Roles
+Roles = Permission.PermissionNames
 roles = (Roles.CAN_ADD_USER_ROLES, Roles.CAN_DELETE_USER_ROLES, Roles.CAN_ADD_USERS,
          Roles.CAN_GET_USERS, Roles.CAN_DELETE_USERS, Roles.CAN_ADD_TALENT_POOLS, Roles.CAN_GET_TALENT_POOLS,
          Roles.CAN_DELETE_TALENT_POOLS, Roles.CAN_ADD_TALENT_POOLS_TO_GROUP, Roles.CAN_ADD_CANDIDATES,

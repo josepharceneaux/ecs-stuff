@@ -7,10 +7,9 @@ from user_service.common.tests.conftest import *
 # Helper functions
 from user_service.common.routes import UserServiceApiUrl
 from user_service.common.utils.test_utils import send_request, response_info
-from user_service.common.utils.handy_functions import add_role_to_test_user
 
 # Models
-from user_service.common.models.user import Permission
+from user_service.common.models.user import Role
 
 import sys
 
@@ -22,7 +21,8 @@ class TestCreateDomainCustomFields(object):
         """
         Test:  Access end point without an access token
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
         resp = send_request('post', self.URL, None, {})
         print response_info(resp)
         assert resp.status_code == requests.codes.UNAUTHORIZED
@@ -31,7 +31,8 @@ class TestCreateDomainCustomFields(object):
         """
         Test: Attempt to create a custom field with empty
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
         data = {'custom_fields': [{'name': '   '}]}
         create_resp = send_request('post', self.URL, access_token_first, data)
         print response_info(create_resp)
@@ -41,7 +42,8 @@ class TestCreateDomainCustomFields(object):
         """
         Test:  Add custom fields to domain
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # Create domain custom fields
         data = {'custom_fields': [{'name': str(uuid.uuid4())[:5]}, {'name': str(uuid.uuid4())[:5]}]}
@@ -57,7 +59,8 @@ class TestCreateDomainCustomFields(object):
         Test:  Add identical custom fields to the same domain
         Expect:  201, but only one should be created
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         name = str(uuid.uuid4())[:5]
         data = {'custom_fields': [{'name': name}, {'name': name}]}
@@ -80,19 +83,13 @@ class TestGetDomainCustomFields(object):
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.UNAUTHORIZED
 
-    def test_get_custom_field_without_user_permission(self, access_token_first):
-        """
-        Test: Access endpoint without user's appropriate permission
-        """
-        get_resp = send_request('get', self.CFS_URL, access_token_first)
-        print response_info(get_resp)
-        assert get_resp.status_code == requests.codes.UNAUTHORIZED
 
     def test_get_domains_custom_fields(self, access_token_first, user_first, domain_custom_fields):
         """
         Test:  Retrieve domain custom fields
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_GET_DOMAINS])
+        user_first.role_id = Role.get_by_name('USER').id
+        db.session.commit()
 
         # Retrieve all of domain's custom fields
         get_resp = send_request('get', self.CFS_URL, access_token_first)
@@ -106,7 +103,8 @@ class TestGetDomainCustomFields(object):
         """
         Test: Retrieve domain custom field by ID
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_GET_DOMAINS])
+        user_first.role_id = Role.get_by_name('USER').id
+        db.session.commit()
 
         custom_field_id = domain_custom_fields[0].id
 
@@ -118,11 +116,12 @@ class TestGetDomainCustomFields(object):
         assert get_resp.json()['custom_field']['domain_id'] == user_first.domain_id
         assert get_resp.json()['custom_field']['name'] == domain_custom_fields[0].name
 
-    def test_get_custom_field_of_another_domain(self, user_second, access_token_second, domain_custom_fields):
+    def test_get_custom_field_of_another_domain(self, access_token_second, domain_custom_fields):
         """
         Test: Retrieve custom fields of another domain
         """
-        add_role_to_test_user(user_second, [Permission.PermissionNames.CAN_GET_DOMAINS])
+        user_first.role_id = Role.get_by_name('USER').id
+        db.session.commit()
 
         custom_field_id = domain_custom_fields[0].id
 
@@ -135,7 +134,8 @@ class TestGetDomainCustomFields(object):
         """
         Test: Retrieve custom field using an id that is not recognized
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_GET_DOMAINS])
+        user_first.role_id = Role.get_by_name('USER').id
+        db.session.commit()
 
         non_existing_cf_id = sys.maxint
 
@@ -168,7 +168,8 @@ class TestUpdateDomainCustomFields(object):
         """
         Test:  Update domain custom fields
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # Update all of domain's custom fields
         data = {'custom_fields': [
@@ -186,7 +187,8 @@ class TestUpdateDomainCustomFields(object):
         """
         Test: Update domain custom field by ID
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS, Permission.PermissionNames.CAN_GET_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         custom_field_id = domain_custom_fields[0].id
 
@@ -206,24 +208,26 @@ class TestUpdateDomainCustomFields(object):
 
 
     def test_update_custom_field_of_another_domain(self, user_second, access_token_second, domain_custom_fields):
-            """
-            Test: Update custom fields of another domain
-            """
-            add_role_to_test_user(user_second, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        """
+        Test: Update custom fields of another domain
+        """
+        user_second.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
-            custom_field_id = domain_custom_fields[0].id
+        custom_field_id = domain_custom_fields[0].id
 
-            # Update another domain's custom field
-            data = {'custom_field': {'id': domain_custom_fields[0].id, 'name': str(uuid.uuid4())[:5]}}
-            update_resp = send_request('put', self.CF_URL % custom_field_id, access_token_second, data)
-            print response_info(update_resp)
-            assert update_resp.status_code == requests.codes.FORBIDDEN
+        # Update another domain's custom field
+        data = {'custom_field': {'id': domain_custom_fields[0].id, 'name': str(uuid.uuid4())[:5]}}
+        update_resp = send_request('put', self.CF_URL % custom_field_id, access_token_second, data)
+        print response_info(update_resp)
+        assert update_resp.status_code == requests.codes.FORBIDDEN
 
     def test_update_non_existing_custom_field(self, user_first, access_token_first):
         """
         Test: Update custom field using an id that is not recognized
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         non_existing_cf_id = sys.maxint
 
@@ -257,7 +261,8 @@ class TestDeleteDomainCustomFields(object):
         """
         Test: Delete domain custom field by ID
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         custom_field_id = domain_custom_fields[0].id
 
@@ -271,7 +276,8 @@ class TestDeleteDomainCustomFields(object):
         """
         Test: Delete custom fields of another domain
         """
-        add_role_to_test_user(user_second, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_second.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         custom_field_id = domain_custom_fields[0].id
 
@@ -284,7 +290,8 @@ class TestDeleteDomainCustomFields(object):
         """
         Test: Delete custom field using an ID that is not recognized
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         non_existing_cf_id = sys.maxint
 

@@ -61,11 +61,13 @@ with app.app_context():
             create_rating_tags, create_social_networks
         )
         from user_service.migration_scripts.domain_user_role_updates import (
-            add_domain_roles, add_user_group_to_domains, update_users_group_id, add_talent_pool,
+            add_permissions, add_roles, add_user_group_to_domains, update_users_group_id, add_talent_pool,
             add_talent_pool_group, add_default_talent_pipelines
         )
 
         add_user_group_to_domains()
+        add_permissions()
+        add_roles()
         create_user(email=app.config[TalentConfigKeys.EMAIL_KEY], domain_id=domain.id, first_name='John',
                     last_name='Doe', expiration=None)
         create_candidate_status()
@@ -78,7 +80,6 @@ with app.app_context():
         create_products()
         create_rating_tags()
         create_social_networks()
-        add_domain_roles()
         update_users_group_id()
         add_talent_pool()
         add_talent_pool_group()

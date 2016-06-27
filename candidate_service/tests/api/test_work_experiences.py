@@ -8,9 +8,9 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles, get_country_code_from_name
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
+from candidate_service.tests.api.helpers import get_country_code_from_name
 
 # Sample data
 from candidate_sample_data import (GenerateCandidateData, generate_single_candidate_data)
@@ -36,7 +36,6 @@ class TestDeleteWorkExperience(object):
         Test:  Delete one of candidate's work experiences
         Expect:  Candidate.total_months_experience to be updated accordingly
         """
-        AddUserRoles.all_roles(user_first)
         data = {'candidates': [
             {
                 'talent_pool_ids': {'add': [talent_pool.id]},
@@ -100,8 +99,6 @@ class TestDeleteWorkExperience(object):
         Expect: 403
         """
         # Create candidate_1 & candidate_2 with sample_user & sample_user_2
-        AddUserRoles.add(user_first)
-        AddUserRoles.delete(user_second)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp_1 = send_request('post', self.CANDIDATES_URL, access_token_first, data)
 
@@ -119,7 +116,6 @@ class TestDeleteWorkExperience(object):
         Expect: 403
         """
         # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', self.CANDIDATES_URL, access_token_first, data_1)
@@ -144,7 +140,6 @@ class TestDeleteWorkExperience(object):
         Expect: 204; Candidate should not have any experience left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', self.CANDIDATES_URL, access_token_first, data)
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -165,7 +160,6 @@ class TestDeleteWorkExperience(object):
         Expect: 204, Candidate's experience must be less 1.
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', self.CANDIDATES_URL, access_token_first, data)
 
@@ -200,16 +194,6 @@ class TestDeleteWorkExperienceBullet(object):
     BULLET_URL = CandidateApiUrl.EXPERIENCE_BULLET
     BULLETS_URL = CandidateApiUrl.EXPERIENCE_BULLETS
 
-    def test_non_logged_in_user_delete_can_experience_bullets(self, access_token_first):
-        """
-        Test:   Delete candidate's experience-bullets without logging in
-        Expect: 401
-        """
-        # Delete Candidate's experience-bullets
-        resp = send_request('delete', self.BULLETS_URL % (5, 5), access_token_first)
-        print response_info(resp)
-        assert resp.status_code == self.UNAUTHORIZED
-
     def test_delete_candidate_experience_bullet_with_bad_input(self, access_token_first):
         """
         Test:   Attempt to delete candidate experience-bullet with non integer values
@@ -237,8 +221,6 @@ class TestDeleteWorkExperienceBullet(object):
         Expect: 403
         """
         # Get access token_1 & access_token_second for sample_user & sample_user_2, respectively
-        AddUserRoles.add_and_get(user_first)
-        AddUserRoles.delete(user_second)
 
         # Create candidate_1 & candidate_2 with sample_user & sample_user_2
         data = generate_single_candidate_data([talent_pool.id])
@@ -261,7 +243,6 @@ class TestDeleteWorkExperienceBullet(object):
         Expect: 403
         """
         # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
@@ -287,7 +268,6 @@ class TestDeleteWorkExperienceBullet(object):
                 No experiences should be removed
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -317,7 +297,6 @@ class TestDeleteWorkExperienceBullet(object):
         Expect: 204, Candidate's experience-bullet must be less 1; no experiences must be removed
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -357,7 +336,6 @@ class TestCreateWorkExperience(object):
         Expect: 201
         """
         # Create candidate +  work experience
-        AddUserRoles.add_and_get(user_first)
         data = GenerateCandidateData.work_experiences([talent_pool.id])
         country_code = data['candidates'][0]['work_experiences'][0]['country_code']
         create_resp = send_request('post', self.CANDIDATES_URL, access_token_first, data)
@@ -376,7 +354,6 @@ class TestCreateWorkExperience(object):
         """
         Test:  Add candidate work experience and check for total months of experiences accumulated
         """
-        AddUserRoles.add_and_get(user_first)
         data = {'candidates': [
             {
                 'talent_pool_ids': {'add': [talent_pool.id]},
@@ -401,7 +378,6 @@ class TestCreateWorkExperience(object):
         Test:   Create CandidateExperience for Candidate
         Expect: 201
         """
-        AddUserRoles.add_and_get(user=user_first)
 
         # Create Candidate
         data = generate_single_candidate_data([talent_pool.id])
@@ -434,7 +410,6 @@ class TestCreateWorkExperience(object):
         Expect: 201
         """
         # Create Candidate without degrees
-        AddUserRoles.add_and_get(user_first)
         data = {'candidates': [
             {'work_experiences': [
                 {'organization': 'Apple', 'city': 'Cupertino', 'state': None, 'country': None,

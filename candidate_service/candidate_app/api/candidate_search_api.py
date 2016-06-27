@@ -28,7 +28,7 @@ from candidate_service.common.models.user import Permission
 class CandidateSearch(Resource):
     decorators = [require_oauth(allow_jwt_based_auth=True)]
 
-    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self):
         """
         Search candidates based on the given filter criteria
@@ -86,7 +86,7 @@ class CandidateDocuments(Resource):
 
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_ADD_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
     def post(self):
         """
         Upload Candidate Documents to Amazon Cloud Search
@@ -100,7 +100,7 @@ class CandidateDocuments(Resource):
 
         return '', 204
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_DELETE_CANDIDATES)
     def delete(self):
         """
         Delete Candidate Documents from Amazon Cloud Search

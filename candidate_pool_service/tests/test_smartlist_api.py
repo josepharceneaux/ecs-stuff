@@ -1,12 +1,10 @@
 from redo import retry
-from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.tests.conftest import *
 from common_functions import create_candidates_from_candidate_api
 from candidate_pool_service.modules.smartlists import save_smartlist
 from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from candidate_pool_service.common.tests.fake_testing_data_generator import FakeCandidatesData
-from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
 from candidate_pool_service.common.routes import CandidatePoolApiUrl
 from candidate_pool_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 from candidate_pool_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
@@ -205,13 +203,10 @@ class TestSmartlistResource(object):
                 user_second):
             """Test user should not be allowed to create smartlist with candidates not belonging to his own domain"""
             # user_second creates candidates
-            add_role_to_test_user(user_second, [Permission.Roles.CAN_ADD_CANDIDATES])
             data = FakeCandidatesData.create(talent_pool=talent_pool_second, count=3)
             candidate_ids = create_candidates_from_candidate_api(access_token_second, data)
             data = {'name': fake.word(), 'candidate_ids': candidate_ids, 'talent_pipeline_id': talent_pipeline.id}
 
-            # first user (access_token_first) trying to create smartlist with second user's candidates.
-            add_role_to_test_user(user_first, [Permission.Roles.CAN_ADD_CANDIDATES])
             resp = self.call_post_api(data, access_token_first)
 
             assert resp.status_code == 403
@@ -227,9 +222,6 @@ class TestSmartlistResource(object):
 
             assert resp.status_code == 201  # Successfully created
             assert resp.json()['smartlist']['id']  # assert smartlist id is there
-
-            # add role to test user be able to get candidates
-            add_role_to_test_user(user_first, ['CAN_GET_CANDIDATES'])
 
             # get the smartlist via id
             list_id = resp.json()['smartlist']['id']
@@ -292,7 +284,6 @@ class TestSmartlistResource(object):
             Test GET API for smartlist (with search_params)
             """
             list_name = fake.name()
-            add_role_to_test_user(user_first, [Permission.Roles.CAN_GET_CANDIDATES])
             search_params = json.dumps({"location": "San Jose, CA"})
             smartlist = save_smartlist(user_id=user_first.id,
                                        name=list_name,
@@ -311,7 +302,6 @@ class TestSmartlistResource(object):
                                                    access_token_second, talent_pipeline):
             """Test for validate_list_belongs_to_domain"""
             list_name = fake.name()
-            add_role_to_test_user(user_first, [Permission.Roles.CAN_GET_CANDIDATES])
             search_params = json.dumps({"location": "San Jose, CA"})
             # user 1 of domain 1 saving smartlist
             smartlist = save_smartlist(user_id=user_first.id,
@@ -343,7 +333,6 @@ class TestSmartlistResource(object):
             """
             list_name = fake.name()
             data = FakeCandidatesData.create(talent_pool, count=1)
-            add_role_to_test_user(user_first, [Permission.Roles.CAN_ADD_CANDIDATES])
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
             smartlist = save_smartlist(user_id=user_first.id, name=list_name, talent_pipeline_id=talent_pipeline.id,
                                        candidate_ids=candidate_ids, access_token=access_token_first)
@@ -382,7 +371,6 @@ class TestSmartlistResource(object):
                                         search_params=json.dumps({'maximum_years_experience': '5'}),
                                         talent_pipeline_id=talent_pipeline.id)
 
-            add_role_to_test_user(user_first, [Permission.Roles.CAN_GET_CANDIDATES])
             # Call GET all smartlists and it should give both the smartlist ids
             resp1 = requests.get(
                 url=CandidatePoolApiUrl.SMARTLISTS,
@@ -412,7 +400,6 @@ class TestSmartlistResource(object):
 
         def test_delete_smartlist_from_other_domain(self, user_first, access_token_first,
                                                     access_token_second, talent_pool, talent_pipeline):
-            add_role_to_test_user(user_first, [Permission.Roles.CAN_ADD_CANDIDATES])
             list_name = fake.name()
             data = FakeCandidatesData.create(talent_pool, count=1)
             candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
@@ -535,8 +522,6 @@ class TestSmartlistCandidatesApi(object):
         first_name = 'special'
         data = FakeCandidatesData.create(talent_pool, count=no_of_candidates, first_name=first_name,
                                          address_list=address)
-        add_role_to_test_user(user_first, [Permission.Roles.CAN_ADD_CANDIDATES,
-                                           Permission.Roles.CAN_GET_CANDIDATES])
         candidate_ids = create_candidates_from_candidate_api(access_token_first, data)
 
         talent_pipeline.search_params = ''

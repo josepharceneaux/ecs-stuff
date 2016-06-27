@@ -53,6 +53,7 @@ class DomainAreaOfInterestResource(Resource):
         created_aoi_ids = create_or_update_domain_aois(domain_id, body_dict['areas_of_interest'], is_creating=True)
         return {"areas_of_interest": [{"id": cf_id} for cf_id in created_aoi_ids]}, 201
 
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_DOMAINS)
     def get(self, **kwargs):
         """
         Function will return domain's area(s) of interest

@@ -9,9 +9,7 @@ from flask import request
 from flask_restful import Resource
 
 # Validators
-from candidate_service.modules.validators import (
-    get_candidate_if_exists, does_candidate_belong_to_users_domain, get_json_data_if_validated
-)
+from candidate_service.modules.validators import get_json_data_if_validated, get_candidate_if_validated
 
 # Modules
 from candidate_service.modules.tags import (
@@ -36,7 +34,7 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 class CandidateTagResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def post(self, **kwargs):
         """
         Function will create tags
@@ -63,11 +61,7 @@ class CandidateTagResource(Resource):
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         # Create tags
         created_tag_ids = create_tags(candidate_id=candidate_id, tags=body_dict['tags'])
@@ -77,7 +71,7 @@ class CandidateTagResource(Resource):
 
         return {'tags': [{'id': tag_id} for tag_id in created_tag_ids]}, 201
 
-    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Function will retrieve tag(s)
@@ -97,16 +91,12 @@ class CandidateTagResource(Resource):
         authed_user, candidate_id, tag_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         # Retrieve tag(s)
         return get_tags(candidate_id=candidate_id, tag_id=tag_id)
 
-    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
         Function will update candidate's tag(s)
@@ -137,11 +127,7 @@ class CandidateTagResource(Resource):
             raise InvalidUsage("Updating multiple Tags via this resource is not permitted.", custom_error.INVALID_USAGE)
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         # If tag_id is provided in the url, update only one record
         if tag_id:
@@ -155,7 +141,7 @@ class CandidateTagResource(Resource):
 
         return {'updated_tags': [{'id': tag_id} for tag_id in updated_tag_ids]}
 
-    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Function will delete candidate's tag(s)
@@ -171,18 +157,24 @@ class CandidateTagResource(Resource):
         authed_user, candidate_id, tag_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         # Delete specified tag
         if tag_id:
-            return {'deleted_tag': delete_tag(candidate_id=candidate_id, tag_id=tag_id)}
+
+            # Delete
+            deleted_tag_id = delete_tag(candidate_id=candidate_id, tag_id=tag_id)
+
+            # Update cloud search
+            upload_candidate_documents([candidate_id])
+
+            return {'deleted_tag': deleted_tag_id}
+
+        # Delete all of candidate's tags
+        deleted_tag_ids = delete_tags(candidate_id)
 
         # Update cloud search
         upload_candidate_documents([candidate_id])
 
         # Delete all of candidate's tags
-        return {'deleted_tags': delete_tags(candidate_id)}
+        return {'deleted_tags': deleted_tag_ids}

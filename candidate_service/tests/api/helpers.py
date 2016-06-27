@@ -1,7 +1,8 @@
 """
 Helper functions for tests written for the candidate_service
 """
-import requests
+import requests, operator
+from time import sleep
 
 # Third party
 import pycountry as pc
@@ -10,56 +11,12 @@ from redo import retrier
 # Models
 from candidate_service.common.models.user import Permission
 
-# User Roles
-from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
 # Error handling
 from candidate_service.common.error_handling import NotFoundError
 
-
-class AddUserRoles(object):
-    """
-    Class entails functions that will help add specific roles to test-user
-    """
-
-    @staticmethod
-    def get(user):
-        return add_role_to_test_user(user, [Permission.Roles.CAN_GET_CANDIDATES])
-
-    @staticmethod
-    def add(user):
-        return add_role_to_test_user(user, [Permission.Roles.CAN_ADD_CANDIDATES])
-
-    @staticmethod
-    def edit(user):
-        return add_role_to_test_user(user, [Permission.Roles.CAN_EDIT_CANDIDATES])
-
-    @staticmethod
-    def delete(user):
-        return add_role_to_test_user(user, [Permission.Roles.CAN_DELETE_CANDIDATES])
-
-    @staticmethod
-    def add_and_get(user):
-        return add_role_to_test_user(user, [Permission.Roles.CAN_ADD_CANDIDATES,
-                                            Permission.Roles.CAN_GET_CANDIDATES])
-
-    @staticmethod
-    def add_and_delete(user):
-        return add_role_to_test_user(user, [Permission.Roles.CAN_ADD_CANDIDATES,
-                                            Permission.Roles.CAN_DELETE_CANDIDATES])
-
-    @staticmethod
-    def add_get_edit(user):
-        return add_role_to_test_user(user, [Permission.Roles.CAN_ADD_CANDIDATES,
-                                            Permission.Roles.CAN_GET_CANDIDATES,
-                                            Permission.Roles.CAN_EDIT_CANDIDATES])
-
-    @staticmethod
-    def all_roles(user):
-        return add_role_to_test_user(user, [Permission.Roles.CAN_ADD_CANDIDATES,
-                                            Permission.Roles.CAN_GET_CANDIDATES,
-                                            Permission.Roles.CAN_EDIT_CANDIDATES,
-                                            Permission.Roles.CAN_DELETE_CANDIDATES])
+from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.utils.test_utils import response_info
 
 
 def check_for_id(_dict):
@@ -193,22 +150,3 @@ def get_int_version(x):
         pass
     except TypeError:
         pass
-
-
-def get_response(method, url, access_token, expected_status_code, attempts=10, timeout=100):
-    """
-    Function will make a request to resource until it obtains expected status code or times out
-    :param method:  string | request method, e.g. "get", "post", etc.
-    :param url:     string | resource url
-    :param access_token: string | hashed token for authorization
-    :param expected_status_code:  integer | expected http status code
-    :param timeout: integer | seconds to execute/wait before stopping
-    """
-    assert method.lower() in ["get", "post", "patch", "put", "delete"], "Invalid method"
-    request_method = getattr(requests, method.lower())
-    headers = {"Authorization": "Bearer {}".format(access_token), "content-type": "application/json"}
-    for _ in retrier(attempts=attempts, sleeptime=3, max_sleeptime=timeout):
-        resp = request_method(url, headers=headers)
-        if resp.status_code == expected_status_code:
-            return resp
-    raise NotFoundError('Unable to get expected number of candidates')

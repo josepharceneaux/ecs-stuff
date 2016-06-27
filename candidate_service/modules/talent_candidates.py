@@ -29,10 +29,11 @@ from candidate_service.common.models.candidate import (
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.email_campaign import EmailCampaign
-from candidate_service.common.models.misc import AreaOfInterest
+from candidate_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend, \
+    EmailCampaignSendUrlConversion
+from candidate_service.common.models.misc import AreaOfInterest, UrlConversion
 from candidate_service.common.models.language import CandidateLanguage
-from candidate_service.common.models.user import User
+from candidate_service.common.models.user import User, Permission
 
 # Modules
 from track_changes import track_edits, track_areas_of_interest_edits
@@ -131,11 +132,17 @@ def fetch_candidate_info(candidate, fields=None):
 
     social_networks = None
     if get_all_fields or 'social_networks' in fields:
-        social_networks = candidate_social_networks(candidate=candidate)
+        if Permission.PermissionNames.CAN_GET_CANDIDATE_SOCIAL_PROFILE in request.user_permissions:
+            social_networks = candidate_social_networks(candidate=candidate)
+        else:
+            raise ForbiddenError("You are not authorized to get social networks of this candidate")
 
     history = None
     if get_all_fields or 'contact_history' in fields:
-        history = candidate_contact_history(candidate=candidate)
+        if Permission.PermissionNames.CAN_GET_CANDIDATE_CONTACT_HISTORY in request.user_permissions:
+            history = candidate_contact_history(candidate=candidate)
+        else:
+            raise ForbiddenError("You are not authorized to get contact history of this candidate")
 
     openweb_id = None
     if get_all_fields or 'openweb_id' in fields:
@@ -157,6 +164,7 @@ def fetch_candidate_info(candidate, fields=None):
     return {
         'id': candidate_id,
         'owner_id': candidate.user_id,
+        'status_id': candidate.candidate_status_id,
         'first_name': candidate.first_name,
         'middle_name': candidate.middle_name,
         'last_name': candidate.last_name,
@@ -464,16 +472,40 @@ def candidate_contact_history(candidate):
     # Campaign sends & campaigns
     timeline = []
     for email_campaign_send in candidate.email_campaign_sends:
+
         if not email_campaign_send.campaign_id:
             logger.error("contact_history: email_campaign_send has no campaign_id: %s", email_campaign_send.id)
             continue
-        email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.campaign_id)
+
+        email_campaign = EmailCampaign.get(email_campaign_send.campaign_id)
+
         timeline.insert(0, dict(id=email_campaign.id,
                                 event_datetime=email_campaign_send.sent_datetime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
                                 campaign_name=email_campaign.name))
 
-    # Sort events by datetime and convert all datetimes to isoformat
+        # Get email campaign sends if its url was clicked by the candidate
+        email_campaign_sends = EmailCampaignSend.query.join(EmailCampaignSendUrlConversion).join(UrlConversion). \
+            filter(EmailCampaignSend.candidate_id == candidate.id). \
+            filter((EmailCampaignSendUrlConversion.type == 0) | (EmailCampaignSendUrlConversion.type == 1)). \
+            filter(UrlConversion.hit_count > 0).all()
+
+        for email_campaign_send_ in email_campaign_sends:
+
+            # Get email campaign send's url conversion
+            url_conversion_id = EmailCampaignSendUrlConversion.query.filter(
+                EmailCampaignSendUrlConversion.email_campaign_send_id == email_campaign_send_.id
+            ).first().url_conversion_id
+            url_conversion = UrlConversion.get(url_conversion_id)
+
+            timeline.append(dict(
+                id=email_campaign.id,
+                campaign_name=email_campaign.name,
+                event_type=ContactHistoryEvent.EMAIL_OPEN,
+                event_datetime=url_conversion.last_hit_time
+            ))
+
+    # Sort events by datetime and convert all date-times to ISO format
     timeline = sorted(timeline, key=lambda entry: entry['event_datetime'], reverse=True)
     for event in timeline:
         event['event_datetime'] = event['event_datetime'].isoformat()
@@ -972,7 +1004,11 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's social_network(s)
     if social_networks:
-        _add_or_update_social_networks(candidate, social_networks, user_id, is_updating)
+        if (is_creating and Permission.PermissionNames.CAN_ADD_CANDIDATE_SOCIAL_PROFILE in request.user_permissions) or (
+                    is_updating and Permission.PermissionNames.CAN_EDIT_CANDIDATE_SOCIAL_PROFILE in request.user_permissions):
+            _add_or_update_social_networks(candidate, social_networks, user_id, is_updating)
+        else:
+            raise ForbiddenError("You are not authorized to add/modify social networks of this candidate")
 
     # Commit to database after all insertions/updates are executed successfully
     db.session.commit()
@@ -1101,8 +1137,18 @@ def social_network_name_from_url(url):
 def _update_candidate(first_name, middle_name, last_name, formatted_name, objective,
                       summary, candidate_id, user_id, resume_url, source_id, candidate_status_id):
     """
-    Function will update Candidate
-    :return:    Candidate ID
+    Function will update Candidate's primary information.
+    Candidate's Primary information include:
+      - first name, middle name, last name, status ID, source ID, objective, summary, and resume url
+
+    Caveats:
+        - status_id, source_id, objective, summary, and resume_url will be deleted if their
+            respective values are NULL.
+        - candidate's full name, first name, middle name, and/or last name will be removed
+            if their respective values are an empty string. NULL values will be ignored.
+
+    :return:  Candidate ID
+    :rtype: int | long
     """
     # If formatted name is provided, must also update first name, middle name, and last name
     if formatted_name:
@@ -1133,10 +1179,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
     if not update_dict:
         return candidate_id
 
-    # Candidate ID must be recognized
     candidate_object = Candidate.get_by_id(candidate_id)
-    if not candidate_object:
-        raise NotFoundError('Candidate not found', custom_error.CANDIDATE_NOT_FOUND)
 
     # Track all edits
     track_edits(update_dict=update_dict, table_name='candidate', candidate_id=candidate_id,
@@ -1153,18 +1196,25 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
                    dice_profile_id, dice_social_profile_id, source_id,
                    objective, summary, resume_url):
     """
-    Function will create Candidate
-    :rtype:  Candidate.id
+    Function will add Candidate and its primary information to db
+    All empty values (None or empty strings) will be ignored
+    :rtype:  int | long
     """
-    candidate = Candidate(
+    add_dict = dict(
         first_name=first_name, middle_name=middle_name, last_name=last_name, formatted_name=formatted_name,
         added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
         dice_profile_id=dice_profile_id, dice_social_profile_id=dice_social_profile_id,
         source_id=source_id, objective=objective, summary=summary, filename=resume_url,
-        is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the field is successfully removed.
+        is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     )
+
+    # All empty values must be removed
+    add_dict = purge_dict(add_dict)
+
+    candidate = Candidate(**add_dict)
     db.session.add(candidate)
     db.session.flush()
+
     return candidate.id
 
 
@@ -1355,13 +1405,20 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
 
             # CandidateEducationDegree
             for education_degree in education_degrees:
+
+                # Start year must not be later than end year
+                start_year, end_year = education_degree.get('start_year'), education_degree.get('end_year')
+                if (start_year and end_year) and (start_year > end_year):
+                    raise InvalidUsage('Start year of education cannot be later than end year of education',
+                                       custom_error.INVALID_USAGE)
+
                 education_degree_dict = dict(
                     list_order=education_degree.get('list_order'),
                     degree_type=education_degree['type'].strip() if education_degree.get('type') else None,
                     degree_title=education_degree['title'].strip() if education_degree.get('title') else None,
-                    start_year=education_degree.get('start_year'),
+                    start_year=start_year,
                     start_month=education_degree.get('start_month'),
-                    end_year=education_degree.get('end_year'),
+                    end_year=end_year,
                     end_month=education_degree.get('end_month'),
                     gpa_num=education_degree.get('gpa'),
                     added_time=added_datetime,
@@ -1500,15 +1557,22 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
 
             # CandidateEducationDegree
             for education_degree in education_degrees:
+
+                # Start year must not be later than end year
+                start_year, end_year = education_degree.get('start_year'), education_degree.get('end_year')
+                if (start_year and end_year) and (start_year > end_year):
+                    raise InvalidUsage('Start year of education cannot be later than end year of education',
+                                       custom_error.INVALID_USAGE)
+
                 degree_type=education_degree['type'].strip() if education_degree.get('type') else None
                 degree_title=education_degree['title'].strip() if education_degree.get('title') else None
                 education_degree_dict = dict(
                     list_order=education_degree.get('list_order'),
                     degree_type=degree_type,
                     degree_title=degree_title,
-                    start_year=education_degree.get('start_year') if degree_title or degree_type else None,
+                    start_year=start_year if degree_title or degree_type else None,
                     start_month=education_degree.get('start_month') if degree_title or degree_type else None,
-                    end_year=education_degree.get('end_year') if degree_title or degree_type else None,
+                    end_year=end_year if degree_title or degree_type else None,
                     end_month=education_degree.get('end_month') if degree_title or degree_type else None,
                     gpa_num=education_degree.get('gpa') if degree_title or degree_type else None,
                     classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),

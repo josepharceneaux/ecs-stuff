@@ -10,7 +10,6 @@ from candidate_service.common.models.user import Permission
 from candidate_service.common.models.misc import CustomField
 # Validators
 from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
-from candidate_service.modules.talent_cloud_search import upload_candidate_documents
 from candidate_service.modules.validators import (
     get_candidate_if_validated, does_candidate_cf_exist, is_custom_field_authorized, get_json_data_if_validated
 )
@@ -25,7 +24,7 @@ from candidate_service.modules.talent_cloud_search import upload_candidate_docum
 class CandidateCustomFieldResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoints:  POST /v1/candidates/:candidate_id/custom_fields
@@ -62,7 +61,7 @@ class CandidateCustomFieldResource(Resource):
                                     custom_error.CUSTOM_FIELD_NOT_FOUND)
 
             # Custom Field must belong to user's domain
-            if custom_field.domain_id != authed_user.domain_id:
+            if custom_field.domain_id != candidate.user.domain_id:
                 raise ForbiddenError("Custom field ID ({}) does not belong to user ({})".format(
                     custom_field_id, authed_user.id), custom_error.CUSTOM_FIELD_FORBIDDEN)
 
@@ -78,7 +77,7 @@ class CandidateCustomFieldResource(Resource):
         upload_candidate_documents([candidate_id])
         return {'candidate_custom_fields': [{'id': custom_field_id} for custom_field_id in created_ccf_ids]}, 201
 
-    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints:
@@ -128,7 +127,7 @@ class CandidateCustomFieldResource(Resource):
                     'created_at_datetime': ccf.added_time.isoformat()
                 } for ccf in CandidateCustomField.get_candidate_custom_fields(candidate_id)]}
 
-    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:

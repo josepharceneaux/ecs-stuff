@@ -505,7 +505,7 @@ def _delete_candidate(candidate_id, headers, user):
     This deletes the given candidate from candidate_service API.
     """
     try:
-        add_role_to_test_user(user, [Permission.Roles.CAN_DELETE_CANDIDATES])
+        add_role_to_test_user(user, [Permission.PermissionNames.CAN_DELETE_CANDIDATES])
     except InvalidUsage:
         pass  # Maybe roll has been assigned already to given user
     response = requests.delete(CandidateApiUrl.CANDIDATE % candidate_id, headers=headers)

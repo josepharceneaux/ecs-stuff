@@ -76,7 +76,7 @@ def get_candidate_if_validated(user, candidate_id):
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
                             error_code=custom_error.CANDIDATE_IS_HIDDEN)
 
-    if candidate.user.domain_id != user.domain_id:
+    if user.role.name != 'TALENT_ADMIN' and candidate.user.domain_id != user.domain_id:
         raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
     return candidate

@@ -8,7 +8,6 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 
@@ -53,8 +52,6 @@ class TestDeleteCandidateEmail(object):
         Expect: 403
         """
         # Create candidate_1 & candidate_2 with sample_user & sample_user_2
-        AddUserRoles.add(user_first)
-        AddUserRoles.edit(user_second)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         candidate_1_id = create_resp_1.json()['candidates'][0]['id']
@@ -71,7 +68,6 @@ class TestDeleteCandidateEmail(object):
         Expect: 403
         """
         # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
@@ -96,7 +92,6 @@ class TestDeleteCandidateEmail(object):
         Expect: 204, Candidate must not have any emails left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -117,7 +112,6 @@ class TestDeleteCandidateEmail(object):
         Expect: 204, Candidate's emails must be less 1
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -177,8 +171,6 @@ class TestDeleteCandidateMilitaryService(object):
         Expect: 403
         """
         # Create candidate_1 & candidate_2 with sample_user & sample_user_2
-        AddUserRoles.add(user_first)
-        AddUserRoles.delete(user_second)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -197,7 +189,6 @@ class TestDeleteCandidateMilitaryService(object):
         Expect: 403
         """
         # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
@@ -222,7 +213,6 @@ class TestDeleteCandidateMilitaryService(object):
         Expect: 204, Candidate must not have any military services left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -244,7 +234,6 @@ class TestDeleteCandidateMilitaryService(object):
         """
         # Create Candidate
         data = generate_single_candidate_data([talent_pool.id])
-        AddUserRoles.all_roles(user_first)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
         # Retrieve Candidate's military services
@@ -302,8 +291,6 @@ class TestDeleteCandidatePhone(object):
         Expect: 403
         """
         # Create candidate_1 & candidate_2 with sample_user & sample_user_2
-        AddUserRoles.add(user_first)
-        AddUserRoles.delete(user_second)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -322,7 +309,6 @@ class TestDeleteCandidatePhone(object):
         Expect: 403
         """
         # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
@@ -347,7 +333,6 @@ class TestDeleteCandidatePhone(object):
         Expect: 204, Candidate must not have any phones left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -368,7 +353,6 @@ class TestDeleteCandidatePhone(object):
         Expect: 204, Candidate's phones must be less 1
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -428,8 +412,6 @@ class TestDeleteCandidatePreferredLocation(object):
         Expect: 403
         """
         # Create candidate_1 & candidate_2 with sample_user & sample_user_2
-        AddUserRoles.add(user_first)
-        AddUserRoles.delete(user_second)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -449,7 +431,6 @@ class TestDeleteCandidatePreferredLocation(object):
         """
 
         # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
@@ -473,7 +454,6 @@ class TestDeleteCandidatePreferredLocation(object):
         Expect: 204, Candidate must not have any preferred locations left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -494,7 +474,6 @@ class TestDeleteCandidatePreferredLocation(object):
         Expect: 204, Candidate's preferred locations must be less 1
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -553,8 +532,6 @@ class TestDeleteCandidateSkill(object):
         Expect: 403
         """
         # Create candidate_1 & candidate_2
-        AddUserRoles.add(user_first)
-        AddUserRoles.delete(user_second)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp_1)
@@ -574,7 +551,6 @@ class TestDeleteCandidateSkill(object):
         Expect: 403
         """
         # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
@@ -599,7 +575,6 @@ class TestDeleteCandidateSkill(object):
         Expect: 204, Candidate must not have any skills left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -620,7 +595,6 @@ class TestDeleteCandidateSkill(object):
         Expect: 204, Candidate's skills must be less 1
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -680,8 +654,6 @@ class TestDeleteCandidateSocialNetwork(object):
         Expect: 403
         """
         # Create candidate_1 & candidate_2 with sample_user & sample_user_2
-        AddUserRoles.add(user_first)
-        AddUserRoles.delete(user_second)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -700,7 +672,6 @@ class TestDeleteCandidateSocialNetwork(object):
         Expect: 403
         """
         # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
@@ -726,7 +697,6 @@ class TestDeleteCandidateSocialNetwork(object):
         Expect: 204, Candidate must not have any social networks left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -747,7 +717,6 @@ class TestDeleteCandidateSocialNetwork(object):
         Expect: 204, Candidate's social networks must be less 1
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -802,8 +771,6 @@ class TestDeleteWorkPreference(object):
         Expect: 403
         """
         # Get access token_1 & access_token_second for sample_user & sample_user_2, respectively
-        AddUserRoles.add_and_get(user_first)
-        AddUserRoles.delete(user_second)
 
         # Create candidate_1 & candidate_2 with sample_user & sample_user_2
         data = generate_single_candidate_data([talent_pool.id])
@@ -822,7 +789,6 @@ class TestDeleteWorkPreference(object):
         Expect: 204, Candidate must not have any work-preference left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 

@@ -18,14 +18,14 @@ from candidate_service.common.utils.auth_utils import require_oauth, require_all
 from candidate_service.common.models.user import Permission, User
 from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.talent_pools_pipelines import TalentPipeline
-
+from candidate_service.modules.candidate_engagement import top_most_engaged_pipelines_of_candidate
 from candidate_service.common.inter_service_calls.candidate_service_calls import search_candidates_from_params
 
 
 class CandidatePipelineResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Function will return user's 5 most recently added Pipelines. One of the pipelines will
@@ -72,6 +72,7 @@ class CandidatePipelineResource(Resource):
 
         # Only return pipeline data if candidate is found from pipeline's search params
         if talent_pipeline_ids:
+            pipeline_engagements = top_most_engaged_pipelines_of_candidate(candidate_id)
             candidates_talent_pipelines = TalentPipeline.query.filter(TalentPipeline.id.in_(talent_pipeline_ids)).all()
             for talent_pipeline in candidates_talent_pipelines:
                 user_id = talent_pipeline.user_id
@@ -83,6 +84,7 @@ class CandidatePipelineResource(Resource):
                         "name": talent_pipeline.name,
                         "description": talent_pipeline.description,
                         "open_positions": talent_pipeline.positions,
+                        "pipeline_engagement": pipeline_engagements.get(int(talent_pipeline.id), None),
                         "datetime_needed": str(talent_pipeline.date_needed),
                         "user_id": user_id,
                         "added_datetime": str(talent_pipeline.added_time)

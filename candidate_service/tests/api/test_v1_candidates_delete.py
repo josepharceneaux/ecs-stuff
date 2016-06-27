@@ -6,12 +6,12 @@ from candidate_service.candidate_app import app
 
 # Models
 from candidate_service.common.models.candidate import CandidateCustomField, CandidateEmail
+from candidate_service.common.models.user import Role
 
 # Conftest
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
 from candidate_service.common.utils.test_utils import send_request, response_info
 
@@ -28,7 +28,10 @@ class TestDeleteCandidate(object):
         Test: Attempt to delete a candidate that isn't recognized via ID or Email
         Expect: 404
         """
-        AddUserRoles.delete(user_first)
+
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
+
         last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
         non_existing_candidate_id = last_candidate.id * 100
 
@@ -53,7 +56,6 @@ class TestDeleteCandidate(object):
         Expect: 404, Not Found error
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -75,7 +77,6 @@ class TestDeleteCandidate(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -95,7 +96,10 @@ class TestDeleteCandidate(object):
         Expect: 404
         """
         # Delete Candidate
-        AddUserRoles.delete(user_first)
+
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
+
         candidate_email='email_not_found_45623@simple.com'
         resp = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_email, access_token_first)
         print response_info(resp)
@@ -108,8 +112,9 @@ class TestDeleteCandidate(object):
         Test:   Delete a Candidate via candidate's email
         Expect: 200
         """
-        AddUserRoles.all_roles(user_first)
-        AddUserRoles.all_roles(user_second)
+
+        user_second.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # Create Candidate with user_first
         data = generate_single_candidate_data([talent_pool.id])
@@ -160,9 +165,6 @@ class TestDeleteCandidateAddress(object):
         Test:   Delete the address of a Candidate that belongs to a different user in the same domain
         Expect: 204
         """
-        AddUserRoles.add(user_first)
-        AddUserRoles.add_and_delete(user_same_domain)
-
         # Create candidate_1 & candidate_2 with user_first & user_first_2
         data = generate_single_candidate_data([talent_pool.id])
         create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
@@ -180,7 +182,6 @@ class TestDeleteCandidateAddress(object):
         Test:   Attempt to delete the address of a different Candidate
         Expect: 403
         """
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
 
@@ -207,7 +208,6 @@ class TestDeleteCandidateAddress(object):
         Expect: 204, Candidate's addresses must be less 1
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -237,7 +237,6 @@ class TestDeleteCandidateAddress(object):
         Expect: 204, Candidate should not have any addresses left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -255,15 +254,6 @@ class TestDeleteCandidateAddress(object):
 
 
 class TestDeleteCandidateAOI(object):
-    def test_non_logged_in_user_delete_can_aoi(self, access_token_first):
-        """
-        Test:   Delete candidate's aoi without logging in
-        Expect: 401
-        """
-        # Delete Candidate's areas of interest
-        resp = send_request('delete', CandidateApiUrl.AOIS % 5, access_token_first)
-        print response_info(resp)
-        assert resp.status_code == 401
 
     def test_delete_candidate_aoi_with_bad_input(self):
         """
@@ -286,8 +276,6 @@ class TestDeleteCandidateAOI(object):
         Test:   Attempt to delete the aois of a Candidate that belongs to a user in a diff domain
         Expect: 204
         """
-        AddUserRoles.add(user_first)
-        AddUserRoles.delete(user_second)
 
         # Create candidate_1 & candidate_2 with user_first & user_first_2
         data = generate_single_candidate_data([talent_pool.id])
@@ -306,7 +294,6 @@ class TestDeleteCandidateAOI(object):
         Expect: 204, Candidate should not have any aois left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id], domain_aoi)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -334,7 +321,6 @@ class TestDeleteCandidateAOI(object):
         Expect: 204, Candidate's aois must be less 1 AND no AreaOfInterest should be deleted
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id], domain_aoi)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -362,16 +348,6 @@ class TestDeleteCandidateAOI(object):
 
 
 class TestDeleteCandidateCustomField(object):
-    def test_non_logged_in_user_delete_can_custom_field(self, access_token_first):
-        """
-        Test:   Delete candidate's custom fields without logging in
-        Expect: 401
-        """
-        # Delete Candidate's custom fields
-        resp = send_request('delete', CandidateApiUrl.CUSTOM_FIELDS % 5, access_token_first)
-        print response_info(resp)
-        assert resp.status_code == 401
-
 
     def test_delete_candidate_custom_field_with_bad_input(self):
         """
@@ -395,8 +371,6 @@ class TestDeleteCandidateCustomField(object):
         Test:   Delete custom fields of a Candidate that belongs to a user in a different domain
         Expect: 204
         """
-        AddUserRoles.all_roles(user_first)
-        AddUserRoles.all_roles(user_second)
 
         # Create candidate_1 & candidate_2 with user_first & user_first_2
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
@@ -418,7 +392,6 @@ class TestDeleteCandidateCustomField(object):
         Expect: 204, Candidate should not have any custom fields left AND no CustomField should be deleted
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -449,7 +422,6 @@ class TestDeleteCandidateCustomField(object):
         Expect: 204, Candidate's custom fields must be less 1 AND no CustomField should be deleted
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -468,421 +440,3 @@ class TestDeleteCandidateCustomField(object):
         assert updated_resp.status_code == 204
         assert CustomField.query.get(custom_field_id_1) # CustomField should still be in db
         assert CustomField.query.get(custom_field_id_2) # CustomField should still be in db
-
-
-class TestDeleteCandidateEducation(object):
-    def test_non_logged_in_user_delete_can_education(self):
-        """
-        Test:   Delete candidate's education without logging in
-        Expect: 401
-        """
-        # Delete Candidate's educations
-        resp = send_request('delete', CandidateApiUrl.EDUCATIONS % 5, None)
-        print response_info(resp)
-        assert resp.status_code == 401
-
-    def test_delete_candidate_education_with_bad_input(self):
-        """
-        Test:   Attempt to delete candidate education with non integer values for candidate_id & education_id
-        Expect: 404
-        """
-        # Delete Candidate's educations
-        resp = send_request('delete', CandidateApiUrl.EDUCATIONS % 'x', None)
-        print response_info(resp)
-        assert resp.status_code == 404
-
-        # Delete Candidate's education
-        resp = send_request('delete', CandidateApiUrl.EDUCATION % (5, 'x'), None)
-        print response_info(resp)
-        assert resp.status_code == 404
-
-    def test_delete_education_of_a_candidate_in_same_domain(self, access_token_first, user_first, talent_pool,
-                                                            user_second, access_token_second):
-        """
-        Test:   Attempt to delete the education of a Candidate that belongs to a user in a different domain
-        Expect: 204, deletion must be prevented
-        """
-        AddUserRoles.all_roles(user_first)
-        AddUserRoles.all_roles(user_second)
-
-        # Create candidate_1 & candidate_2 with user_first & user_first_2
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve candidate_1
-        candidate_1_id = create_resp_1.json()['candidates'][0]['id']
-
-        # Delete candidate_1's education with user_first_2 logged in
-        updated_resp = send_request('delete', CandidateApiUrl.EDUCATIONS % candidate_1_id, access_token_second)
-        print response_info(updated_resp)
-        assert updated_resp.status_code == 403
-        assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
-
-    def test_delete_education_of_a_different_candidate(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Attempt to delete the education of a different Candidate in the same domain
-        Expect: 403
-        """
-        # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
-        data_1 = generate_single_candidate_data([talent_pool.id])
-        data_2 = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
-        candidate_1_id = create_resp.json()['candidates'][0]['id']
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_2)
-        candidate_2_id = create_resp.json()['candidates'][0]['id']
-
-        # Retrieve candidate_2's educations
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_2_id, access_token_first)
-        can_2_educations = get_resp.json()['candidate']['educations']
-
-        # Delete candidate_2's id using candidate_1_id
-        url = CandidateApiUrl.EDUCATION % (candidate_1_id, can_2_educations[0]['id'])
-        updated_resp = send_request('delete', url, access_token_first)
-        print response_info(updated_resp)
-        assert updated_resp.status_code == 403
-        assert updated_resp.json()['error']['code'] == custom_error.EDUCATION_FORBIDDEN
-
-    def test_delete_candidate_educations(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Remove all of candidate's educations from db
-        Expect: 204, Candidate should not have any educations left
-        """
-        # Create Candidate
-        AddUserRoles.all_roles(user_first)
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Remove all of Candidate's educations
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        updated_resp = send_request('delete', CandidateApiUrl.EDUCATIONS % candidate_id, access_token_first)
-        print response_info(updated_resp)
-
-        # Retrieve Candidate after update
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        can_dict_after_update = get_resp.json()['candidate']
-        assert updated_resp.status_code == 204
-        assert len(can_dict_after_update['educations']) == 0
-
-    def test_delete_candidates_education(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Remove Candidate's education from db
-        Expect: 204, Candidate's education must be less 1
-        """
-        # Create Candidate
-        AddUserRoles.all_roles(user_first)
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-        candidate_educations = candidate_dict['educations']
-
-        # Current number of Candidate's educations
-        candidate_educations_count = len(candidate_educations)
-
-        # Remove one of Candidate's education
-        url = CandidateApiUrl.EDUCATION % (candidate_id, candidate_educations[0]['id'])
-        updated_resp = send_request('delete', url, access_token_first)
-        print response_info(updated_resp)
-
-        # Retrieve Candidate after update
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        can_dict_after_update = get_resp.json()['candidate']
-        assert updated_resp.status_code == 204
-        assert len(can_dict_after_update['educations']) == candidate_educations_count - 1
-
-
-class TestDeleteCandidateEducationDegree(object):
-    def test_non_logged_in_user_delete_can_edu_degree(self):
-        """
-        Test:   Delete Candidate's education degree without logging in
-        Expect: 401
-        """
-        # Delete Candidate's education degrees
-        resp = send_request('delete', CandidateApiUrl.DEGREES % (5, 5), None)
-        print response_info(resp)
-        assert resp.status_code == 401
-
-    def test_delete_candidate_education_degrees_with_bad_input(self):
-        """
-        Test:   Attempt to delete Candidate's education-degree with non integer values
-                for candidate_id & degree_id
-        Expect: 404
-        """
-        # Delete Candidate's education degrees
-        resp = send_request('delete', CandidateApiUrl.DEGREES % ('x', 5), None)
-        print response_info(resp)
-        assert resp.status_code == 404
-
-        # Delete Candidate's education degree
-        resp = send_request('delete', CandidateApiUrl.DEGREE % (5, 5, 'x'), None)
-        print response_info(resp)
-        assert resp.status_code == 404
-
-    def test_delete_edu_degree_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, user_first,
-                                                                       talent_pool, user_second,
-                                                                       access_token_second):
-        """
-        Test:   Attempt to delete the education-degrees of a Candidate that belongs to user from a diff domain
-        Expect: 403, deletion must be prevented
-        """
-        AddUserRoles.add_and_get(user_first)
-        AddUserRoles.delete(user_second)
-
-        # Create candidate_1 & candidate_2 with user_first & user_first_2
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve candidate_1
-        candidate_1_id = create_resp_1.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_1_id, access_token_first)
-        can_1_edu_id = get_resp.json()['candidate']['educations'][0]['id']
-
-        # Delete candidate_1's education degree with user_first_2 logged in
-        url = CandidateApiUrl.DEGREES % (candidate_1_id, can_1_edu_id)
-        updated_resp = send_request('delete', url, access_token_second)
-        print response_info(updated_resp)
-        assert updated_resp.status_code == 403
-        assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
-
-    def test_delete_education_degree_of_a_different_candidate(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Attempt to delete the education-degrees of a different Candidate
-        Expect: 403
-        """
-        # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
-        data_1 = generate_single_candidate_data([talent_pool.id])
-        data_2 = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
-        candidate_1_id = create_resp.json()['candidates'][0]['id']
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_2)
-        candidate_2_id = create_resp.json()['candidates'][0]['id']
-
-        # Retrieve candidate_2's education degrees
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_2_id, access_token_first)
-        can_2_educations = get_resp.json()['candidate']['educations']
-
-        # Delete candidate_2's id using candidate_1_id
-        url = CandidateApiUrl.DEGREES % (candidate_1_id, can_2_educations[0]['id'])
-        updated_resp = send_request('delete', url, access_token_first)
-        print response_info(updated_resp)
-        assert updated_resp.status_code == 403
-        assert updated_resp.json()['error']['code'] == custom_error.EDUCATION_FORBIDDEN
-
-    def test_delete_candidate_education_degrees(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Remove all of candidate's degrees from db
-        Expect: 204; Candidate should not have any degrees left; Candidate's Education should not be removed
-        """
-        # Create Candidate
-        AddUserRoles.all_roles(user_first)
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        can_educations = get_resp.json()['candidate']['educations']
-
-        # Current number of candidate educations
-        count_of_edu_degrees_before_deleting = len(can_educations[0])
-
-        # Remove all of Candidate's degrees
-        url = CandidateApiUrl.DEGREES % (candidate_id, can_educations[0]['id'])
-        updated_resp = send_request('delete', url, access_token_first)
-        print response_info(updated_resp)
-
-        # Retrieve Candidate after update
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        can_dict_after_update = get_resp.json()['candidate']
-        assert updated_resp.status_code == 204
-        assert len(can_dict_after_update['educations'][0]['degrees']) == 0
-        assert len(can_dict_after_update['educations'][0]) == count_of_edu_degrees_before_deleting
-
-    def test_delete_candidates_education_degree(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Remove Candidate's education from db
-        Expect: 204, Candidate's education must be less 1
-        """
-        # Create Candidate
-        AddUserRoles.all_roles(user_first)
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-        candidate_educations = candidate_dict['educations']
-
-        # Current number of Candidate's educations
-        candidate_educations_count = len(candidate_educations)
-
-        # Remove one of Candidate's education degree
-        url = CandidateApiUrl.DEGREE % (candidate_id, candidate_educations[0]['id'], candidate_educations[0]['degrees'][0]['id'])
-        updated_resp = send_request('delete', url, access_token_first)
-        print response_info(updated_resp)
-
-        # Retrieve Candidate after update
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        can_dict_after_update = get_resp.json()['candidate']
-        assert updated_resp.status_code == 204
-        assert len(can_dict_after_update['educations']) == candidate_educations_count - 1
-
-
-class TestDeleteCandidateEducationDegreeBullet(object):
-    def test_non_logged_in_user_delete_can_edu_degree_bullets(self):
-        """
-        Test:   Delete candidate's degree-bullets without logging in
-        Expect: 401
-        """
-        # Delete Candidate's degree-bullets
-        resp = send_request('delete', CandidateApiUrl.DEGREE_BULLETS % (5, 5, 5), None)
-        print response_info(resp)
-        assert resp.status_code == 401
-        assert resp.json()['error']['code'] == 11
-
-    def test_delete_candidate_edu_degree_bullets_with_bad_input(self):
-        """
-        Test:   Attempt to delete candidate degree-bullets with non integer values for candidate_id & education_id
-        Expect: 404
-        """
-        # Delete Candidate's degree-bullets
-        resp = send_request('delete', CandidateApiUrl.DEGREE_BULLETS % ('x', 5, 5), None)
-        print response_info(resp)
-        assert resp.status_code == 404
-
-        # Delete Candidate's degree-bullets
-        resp = send_request('delete', CandidateApiUrl.DEGREE_BULLETS % (5, 'x', 5), None)
-        print response_info(resp)
-        assert resp.status_code == 404
-
-    def test_delete_degree_bullets_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, user_first,
-                                                                           talent_pool, user_second,
-                                                                           access_token_second):
-        """
-        Test:   Attempt to delete degree-bullets of a Candidate that belongs to a user from a diff domain
-        Expect: 204
-        """
-        AddUserRoles.add_and_get(user_first)
-        AddUserRoles.delete(user_second)
-
-        # Create candidate_1 & candidate_2 with user_first & user_first_2
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve candidate_1
-        candidate_1_id = create_resp_1.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_1_id, access_token_first)
-        can_1_educations = get_resp.json()['candidate']['educations']
-
-        # Delete candidate_1's degree-bullets with user_first_2 logged in
-        url = CandidateApiUrl.DEGREE_BULLETS % (candidate_1_id, can_1_educations[0]['id'],
-                                                can_1_educations[0]['degrees'][0]['id'])
-        updated_resp = send_request('delete', url, access_token_second)
-        print response_info(updated_resp)
-        assert updated_resp.status_code == 403
-        assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
-
-    def test_delete_can_edu_degree_bullets_of_a_different_candidate(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Attempt to delete degree-bullets of a different Candidate
-        Expect: 403
-        """
-        # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
-        data_1 = generate_single_candidate_data([talent_pool.id])
-        data_2 = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
-        candidate_1_id = create_resp.json()['candidates'][0]['id']
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_2)
-        candidate_2_id = create_resp.json()['candidates'][0]['id']
-
-        # Retrieve candidate_2's degree-bullets
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_2_id, access_token_first)
-        can_2_edu = get_resp.json()['candidate']['educations'][0]
-        can_2_edu_degree = can_2_edu['degrees'][0]
-        can_2_edu_degree_bullet = can_2_edu['degrees'][0]['bullets'][0]
-
-        # Delete candidate_2's degree bullet using candidate_1_id
-        url = CandidateApiUrl.DEGREE_BULLET % (candidate_1_id, can_2_edu['id'], can_2_edu_degree['id'],
-                                               can_2_edu_degree_bullet['id'])
-        updated_resp = send_request('delete', url, access_token_first)
-        print response_info(updated_resp)
-        assert updated_resp.status_code == 404
-        assert updated_resp.json()['error']['code'] == custom_error.DEGREE_NOT_FOUND
-
-    def test_delete_candidate_education_degree_bullets(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Remove all of candidate's degree_bullets from db
-        Expect: 204; Candidate should not have any degrees left; Candidate's
-        Education and degrees should not be removed
-        """
-        # Create Candidate
-        AddUserRoles.all_roles(user_first)
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        can_educations = get_resp.json()['candidate']['educations']
-
-        # Current number of candidate educations & degrees
-        count_of_educations_before_deleting = len(can_educations[0])
-        count_of_edu_degrees_before_deleting = len(can_educations[0]['degrees'])
-
-        # Remove all of Candidate's degree_bullets
-        url = CandidateApiUrl.DEGREE_BULLETS % (candidate_id, can_educations[0]['id'],
-                                                can_educations[0]['degrees'][0]['id'])
-        updated_resp = send_request('delete', url, access_token_first)
-        print response_info(updated_resp)
-
-        # Retrieve Candidate after update
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        can_dict_after_update = get_resp.json()['candidate']
-        assert updated_resp.status_code == 204
-        assert len(can_dict_after_update['educations'][0]['degrees'][0]['bullets']) == 0
-        assert len(can_dict_after_update['educations'][0]) == count_of_educations_before_deleting
-        assert len(can_dict_after_update['educations'][0]['degrees']) == count_of_edu_degrees_before_deleting
-
-    def test_delete_candidates_education_degree_bullet(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Remove Candidate's degree_bullet from db
-        Expect: 204, Candidate's degree_bullet must be less 1. Candidate's education and degrees
-                should not be removed
-        """
-        # Create Candidate
-        AddUserRoles.all_roles(user_first)
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-        candidate_educations = candidate_dict['educations']
-
-        # Current number of Candidate's educations, degrees, and bullets
-        educations_count_before_delete = len(candidate_educations)
-        degrees_count_before_delete = len(candidate_educations[0]['degrees'])
-        degree_bullets_count_before_delete = len(candidate_educations[0]['degrees'][0]['bullets'])
-
-        # Remove one of Candidate's education degree bullet
-        url = CandidateApiUrl.DEGREE_BULLET % (candidate_id, candidate_educations[0]['id'],
-                                               candidate_educations[0]['degrees'][0]['id'],
-                                               candidate_educations[0]['degrees'][0]['bullets'][0]['id'])
-        updated_resp = send_request('delete', url, access_token_first)
-        print response_info(updated_resp)
-
-        # Retrieve Candidate after update
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        can_dict_after_update = get_resp.json()['candidate']
-        assert updated_resp.status_code == 204
-        assert len(can_dict_after_update['educations']) == educations_count_before_delete
-        assert len(can_dict_after_update['educations'][0]['degrees']) == degrees_count_before_delete
-        assert len(can_dict_after_update['educations'][0]['degrees'][0]['bullets']) == degree_bullets_count_before_delete - 1

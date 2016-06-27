@@ -5,9 +5,7 @@ Notes:
     other specified inputs or no inputs (if not specified)
 """
 # Standard libraries
-import logging
-import datetime
-import os
+import logging, datetime, os, requests, json
 from time import time
 from datetime import date
 
@@ -31,7 +29,7 @@ from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
     get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid,
-    get_json_data_if_validated, get_email_if_validated
+    get_json_data_if_validated, get_email_if_validated, get_candidate_if_validated
 )
 
 # JSON Schemas
@@ -91,7 +89,7 @@ from candidate_service.common.inter_service_calls.candidate_pool_service_calls i
 class CandidatesResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_ADD_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates
@@ -163,8 +161,7 @@ class CandidatesResource(Resource):
             # Provided source ID must belong to candidate's domain
             source_id = _candidate_dict.get('source_id')
             if source_id:
-                source = CandidateSource.get_by(id=source_id, domain_id=domain_id)
-                if not source:
+                if not CandidateSource.get_domain_source(source_id=source_id, domain_id=domain_id):
                     raise InvalidUsage("Provided source ID ({source_id}) not "
                                        "recognized for candidate's domain (id = {domain_id})"
                                        .format(source_id=source_id, domain_id=domain_id),
@@ -261,22 +258,36 @@ class CandidatesResource(Resource):
         logger.info('BENCHMARK - candidate POST: {}'.format(time() - start_time))
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
 
-    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
         Endpoints:
              i. PATCH /v1/candidates
             ii. PATCH /v1/candidates/:id
-        Input: {'candidates': [CandidateObject, CandidateObject, ...]}
 
         Function can update any of candidate(s)'s information.
 
         Caveats:
-              i. Requires a JSON dict containing a 'candidates'-key
-                 and a-list-of-candidate-dict(s) as values
+              i. Requires a JSON dict containing a 'candidates'-key and a-list-of-candidate-dict(s) as values
              ii. Each JSON dict must contain candidate's ID
             iii. To update any of candidate's fields, the field ID must be provided,
                  otherwise a new record will be added to the specified candidate
+        Usage:
+            >>> url = 'host/v1/candidates'
+            >>> headers = {'Authorization': 'Bearer {access_token}', 'content-type': 'application/json'}
+            >>> data =
+                        {
+                            'candidates': [
+                                {
+                                    'id': 4, 'objective': 'looking for new opportunity',
+                                    'emails': [
+                                        {'id': 546, 'address': 'updated.address@example.com'}
+                                    ]
+                                }
+                            ]
+                        }
+            >>> requests.patch(url=url, headers=headers, data=json.dumps(data))
+            <Response [200]>
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
@@ -357,11 +368,13 @@ class CandidatesResource(Resource):
                             raise InvalidUsage("Military service's date must be in a date format",
                                                error_code=custom_error.MILITARY_INVALID_DATE)
 
+            # If source_id key is not provided, its value must default to empty string
+            # this is because this API will treat NULL values as "delete the record"
+            source_id = _candidate_dict.get('source_id', '')
+
             # Provided source ID must belong to candidate's domain
-            source_id = _candidate_dict.get('source_id')
             if source_id:
-                source = CandidateSource.get_by(id=source_id, domain_id=domain_id)
-                if not source:
+                if not CandidateSource.get_domain_source(source_id=source_id, domain_id=domain_id):
                     raise InvalidUsage("Provided source ID ({source_id}) not "
                                        "recognized for candidate's domain (id = {domain_id})"
                                        .format(source_id=source_id, domain_id=domain_id),
@@ -401,6 +414,11 @@ class CandidatesResource(Resource):
             added_datetime = DatetimeUtils.isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
                 if candidate_dict.get('added_datetime') else None
 
+            """
+            status_id, source_id, objective, summary, and resume_url will default to an empty-string
+            if the keys are not provided in the request body. This is because NULL values for the
+            aforementioned fields will be treated as "delete the record"
+            """
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
                 is_updating=True,
@@ -409,7 +427,7 @@ class CandidatesResource(Resource):
                 middle_name=candidate_dict.get('middle_name'),
                 last_name=candidate_dict.get('last_name'),
                 formatted_name=candidate_dict.get('full_name'),
-                status_id=candidate_dict.get('status_id'),
+                status_id=candidate_dict.get('status_id', ''),
                 emails=emails,
                 phones=candidate_dict.get('phones'),
                 addresses=candidate_dict.get('addresses'),
@@ -425,11 +443,11 @@ class CandidatesResource(Resource):
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
                 dice_profile_id=candidate_dict.get('dice_profile_id'),
                 added_datetime=added_datetime,
-                source_id=candidate_dict.get('source_id'),
-                objective=candidate_dict.get('objective'),
-                summary=candidate_dict.get('summary'),
+                source_id=candidate_dict.get('source_id', ''),
+                objective=candidate_dict.get('objective', ''),
+                summary=candidate_dict.get('summary', ''),
                 talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []}),
-                resume_url=candidate_dict.get('resume_url')
+                resume_url=candidate_dict.get('resume_url', '')
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
@@ -442,7 +460,7 @@ class CandidatesResource(Resource):
 class CandidateResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints can do these operations:
@@ -471,11 +489,7 @@ class CandidateResource(Resource):
             candidate_id = get_candidate_id_from_email_if_exists_in_domain(authed_user, candidate_email)
 
         # Check for candidate's existence and web-hidden status
-        candidate = get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         candidate_data_dict = fetch_candidate_info(candidate=candidate)
         candidate_data_dict['engagement_score'] = calculate_candidate_engagement_score(candidate_id)
@@ -483,7 +497,7 @@ class CandidateResource(Resource):
         logger.info('BENCHMARK - candidate GET: {}'.format(time() - start_time))
         return {'candidate': candidate_data_dict}
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_DELETE_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints can do these operations:
@@ -505,11 +519,7 @@ class CandidateResource(Resource):
             candidate_id = get_candidate_id_from_email_if_exists_in_domain(authed_user, candidate_email)
 
         # Check for candidate's existence and web-hidden status
-        candidate = get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         # Delete Candidate
         db.session.delete(candidate)
@@ -523,7 +533,7 @@ class CandidateResource(Resource):
 class CandidateAddressResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)  # todo: change to CAN_EDIT_CANDIDATE
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -539,11 +549,7 @@ class CandidateAddressResource(Resource):
         candidate_id, address_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         if address_id:  # Delete specified address
             candidate_address = CandidateAddress.get_by_id(_id=address_id)
@@ -569,7 +575,7 @@ class CandidateAddressResource(Resource):
 class CandidateAreaOfInterestResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -585,11 +591,7 @@ class CandidateAreaOfInterestResource(Resource):
         candidate_id, area_of_interest_id = kwargs['candidate_id'], kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         # Prevent user from deleting area_of_interest of candidates outside of its domain
         if not is_area_of_interest_authorized(authed_user.domain_id, [area_of_interest_id]):
@@ -622,7 +624,7 @@ class CandidateAreaOfInterestResource(Resource):
 class CandidateEducationResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -638,11 +640,7 @@ class CandidateEducationResource(Resource):
         candidate_id, education_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         if education_id:  # Delete specified Candidate's education
             can_education = CandidateEducation.get_by_id(_id=education_id)
@@ -668,7 +666,7 @@ class CandidateEducationResource(Resource):
 class CandidateEducationDegreeResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -685,11 +683,7 @@ class CandidateEducationDegreeResource(Resource):
         degree_id = kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         if degree_id:  # Delete specified degree
             # Verify that degree belongs to education, and education belongs to candidate
@@ -722,7 +716,7 @@ class CandidateEducationDegreeResource(Resource):
 class CandidateEducationDegreeBulletResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -739,12 +733,7 @@ class CandidateEducationDegreeBulletResource(Resource):
         degree_id, bullet_id = kwargs.get('degree_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError(error_message='Not authorized',
-                                 error_code=custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         if bullet_id:  # Delete specified bullet
             # degree_bullet must belongs to degree; degree must belongs to education;
@@ -790,7 +779,7 @@ class CandidateEducationDegreeBulletResource(Resource):
 class CandidateWorkExperienceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Resources:
@@ -806,11 +795,7 @@ class CandidateWorkExperienceResource(Resource):
         candidate_id, experience_id = kwargs['candidate_id'], kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         if experience_id:  # Delete specified experience
             experience = CandidateExperience.get_by_id(experience_id)
@@ -840,7 +825,7 @@ class CandidateWorkExperienceResource(Resource):
 class CandidateWorkExperienceBulletResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -857,11 +842,7 @@ class CandidateWorkExperienceBulletResource(Resource):
         bullet_id = kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         if bullet_id:
             # Experience must belong to Candidate and bullet must belong to CandidateExperience
@@ -901,7 +882,7 @@ class CandidateWorkExperienceBulletResource(Resource):
 class CandidateEmailResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -917,11 +898,7 @@ class CandidateEmailResource(Resource):
         candidate_id, email_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         if email_id:  # Delete specified email
             email = CandidateEmail.get_by_id(_id=email_id)
@@ -947,7 +924,7 @@ class CandidateEmailResource(Resource):
 class CandidateMilitaryServiceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -963,11 +940,7 @@ class CandidateMilitaryServiceResource(Resource):
         candidate_id, military_service_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         if military_service_id:  # Delete specified military-service
             military_service = CandidateMilitaryService.get_by_id(_id=military_service_id)
@@ -993,7 +966,7 @@ class CandidateMilitaryServiceResource(Resource):
 class CandidatePhoneResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -1009,11 +982,7 @@ class CandidatePhoneResource(Resource):
         candidate_id, phone_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         if phone_id:  # Delete specified phone
             phone = CandidatePhone.get_by_id(_id=phone_id)
@@ -1039,7 +1008,7 @@ class CandidatePhoneResource(Resource):
 class CandidatePreferredLocationResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -1055,11 +1024,7 @@ class CandidatePreferredLocationResource(Resource):
         candidate_id, preferred_location_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         if preferred_location_id:  # Delete specified preferred location
             preferred_location = CandidatePreferredLocation.get_by_id(_id=preferred_location_id)
@@ -1086,7 +1051,7 @@ class CandidatePreferredLocationResource(Resource):
 class CandidateSkillResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoint:
@@ -1102,11 +1067,7 @@ class CandidateSkillResource(Resource):
         candidate_id, skill_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         if skill_id:  # Delete specified skill
             # skill = CandidateSkill.get_by_id(_id=skill_id)
@@ -1133,7 +1094,7 @@ class CandidateSkillResource(Resource):
 class CandidateSocialNetworkResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_DELETE_CANDIDATE_SOCIAL_PROFILE)
     def delete(self, **kwargs):
         """
         Endpoint:
@@ -1149,11 +1110,7 @@ class CandidateSocialNetworkResource(Resource):
         candidate_id, social_networks_id = kwargs.get('candidate_id'), kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        candidate = get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         if social_networks_id:  # Delete specified social network
             # social_network = CandidateSocialNetwork.get_by_id(_id=social_networks_id)
@@ -1182,7 +1139,7 @@ class CandidateSocialNetworkResource(Resource):
 class CandidateWorkPreferenceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Resource:
@@ -1194,11 +1151,7 @@ class CandidateWorkPreferenceResource(Resource):
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         work_preference = CandidateWorkPreference.get_by_candidate_id(candidate_id)
         if not work_preference:
@@ -1215,7 +1168,7 @@ class CandidateWorkPreferenceResource(Resource):
 class CandidateEditResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/edits
@@ -1225,11 +1178,7 @@ class CandidateEditResource(Resource):
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         candidate_edits = fetch_candidate_edits(candidate_id=candidate_id)
         return {'candidate': {'id': candidate_id, 'edits': [
@@ -1239,7 +1188,7 @@ class CandidateEditResource(Resource):
 class CandidateOpenWebResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/openweb?url=http://...
@@ -1417,7 +1366,7 @@ class CandidateClientEmailCampaignResource(Resource):
 class CandidateViewResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:candidate_id/views
@@ -1426,16 +1375,12 @@ class CandidateViewResource(Resource):
         authed_user, candidate_id = request.user, kwargs['id']
 
         # Check for candidate's existence & web-hidden status
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         add_candidate_view(user_id=authed_user.id, candidate_id=candidate_id)
         return '', 204
 
-    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint:  GET /v1/candidates/:candidate_id/views
@@ -1445,11 +1390,7 @@ class CandidateViewResource(Resource):
         authed_user, candidate_id = request.user, kwargs['id']
 
         # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         request_vars = request.args
         aggregate_by = request_vars.get('aggregate_by')
@@ -1465,7 +1406,7 @@ class CandidateViewResource(Resource):
 class CandidatePreferenceResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/preferences
@@ -1475,16 +1416,12 @@ class CandidatePreferenceResource(Resource):
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure Candidate exists & is not web-hidden
-        get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         candidate_subs_pref = fetch_candidate_subscription_preference(candidate_id=candidate_id)
         return {'candidate': {'id': candidate_id, 'subscription_preference': candidate_subs_pref}}
 
-    @require_all_permissions(Permission.Roles.CAN_ADD_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:id/preferences
@@ -1495,11 +1432,7 @@ class CandidatePreferenceResource(Resource):
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure candidate exists & is not web-hidden
-        get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         body_dict = get_json_if_exist(_request=request)
         try:
@@ -1524,7 +1457,7 @@ class CandidatePreferenceResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def put(self, **kwargs):
         """
         Endpoint:  PATCH /v1/candidates/:id/preferences
@@ -1535,11 +1468,7 @@ class CandidatePreferenceResource(Resource):
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure candidate exists & is not web-hidden
-        get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         body_dict = get_json_if_exist(_request=request)
         try:
@@ -1565,7 +1494,7 @@ class CandidatePreferenceResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoint:  DELETE /v1/candidates/:id/preferences
@@ -1575,11 +1504,7 @@ class CandidatePreferenceResource(Resource):
         authed_user, candidate_id = request.user, kwargs.get('id')
 
         # Ensure candidate exists & is not web-hidden
-        get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorize', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         candidate_subs_pref = CandidateSubscriptionPreference.get_by_candidate_id(candidate_id)
         if not candidate_subs_pref:
@@ -1613,10 +1538,7 @@ class CandidateDeviceResource(Resource):
         authenticated_user, candidate_id = request.user, kwargs['id']
 
         # Ensure Candidate exists & is not web-hidden
-        candidate = get_candidate_if_exists(candidate_id=candidate_id)
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authenticated_user, candidate.id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authenticated_user, candidate_id)
 
         devices = candidate.devices.all()
         devices = [to_json(device) for device in devices]
@@ -1662,11 +1584,7 @@ class CandidateDeviceResource(Resource):
         authenticated_user, candidate_id = request.user, kwargs['id']
 
         # Ensure candidate exists & is not web-hidden
-        candidate = get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authenticated_user, candidate_id):
-            raise ForbiddenError('Not authorized to access other domain candidate', custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authenticated_user, candidate_id)
 
         data = get_json_if_exist(_request=request)
         one_signal_device_id = data.get('one_signal_device_id')
@@ -1727,11 +1645,7 @@ class CandidateDeviceResource(Resource):
         authenticated_user, candidate_id = request.user, kwargs['id']
 
         # Ensure candidate exists & is not web-hidden
-        get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authenticated_user, candidate_id):
-            raise ForbiddenError('Not authorized to access other domain candidate', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authenticated_user, candidate_id)
 
         data = get_json_if_exist(_request=request)
         one_signal_device_id = data.get('one_signal_device_id')
@@ -1751,7 +1665,7 @@ class CandidateDeviceResource(Resource):
 class CandidatePhotosResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_ADD_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:id/photos
@@ -1761,7 +1675,7 @@ class CandidatePhotosResource(Resource):
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check if candidate exists & is not web-hidden
-        get_candidate_if_exists(candidate_id=candidate_id)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         # Validate request body
         body_dict = get_json_if_exist(_request=request)
@@ -1771,17 +1685,13 @@ class CandidatePhotosResource(Resource):
             raise InvalidUsage('JSON schema validation error: {}'.format(e),
                                error_code=custom_error.INVALID_INPUT)
 
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
-
         add_photos(candidate_id, body_dict['photos'])
 
         # Update cloud search
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints:
@@ -1794,11 +1704,7 @@ class CandidatePhotosResource(Resource):
         photo_id = kwargs.get('id')
 
         # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         if photo_id:
             # Photo must be recognized
@@ -1823,7 +1729,7 @@ class CandidatePhotosResource(Resource):
                 {'id': photo.id, 'image_url': photo.image_url, 'is_default': photo.is_default}
                 for photo in photos]}
 
-    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
         Endpoint: PATCH /v1/candidates/:candidate_id/photos
@@ -1833,11 +1739,7 @@ class CandidatePhotosResource(Resource):
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id=candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         # Validate request body
         body_dict = get_json_if_exist(_request=request)
@@ -1858,7 +1760,7 @@ class CandidatePhotosResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -1871,11 +1773,8 @@ class CandidatePhotosResource(Resource):
         photo_id = kwargs.get('id')
 
         # Check if candidate exists & is web-hidden
-        candidate = get_candidate_if_exists(candidate_id)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
         if photo_id:
             # Photo must already exist
             photo = CandidatePhoto.get_by_id(_id=photo_id)
@@ -1905,7 +1804,7 @@ class CandidatePhotosResource(Resource):
 class CandidateNotesResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_ADD_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATE_NOTES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:candidate_id/notes
@@ -1915,11 +1814,7 @@ class CandidateNotesResource(Resource):
         authed_user, candidate_id = request.user, kwargs['id']
 
         # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         body_dict = get_json_if_exist(request)
         try:
@@ -1934,7 +1829,7 @@ class CandidateNotesResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATE_NOTES)
     def get(self, **kwargs):
         """
         Endpoints:  GET /v1/candidates/:candidate_id/notes
@@ -1944,11 +1839,7 @@ class CandidateNotesResource(Resource):
         authed_user, candidate_id = request.user, kwargs['id']
 
         # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         return {'candidate_notes': [
             {'id': note.id, 'candidate_id': note.candidate_id,
@@ -1959,7 +1850,7 @@ class CandidateNotesResource(Resource):
 class CandidateLanguageResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.Roles.CAN_ADD_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:candidate_id/languages
@@ -1969,11 +1860,7 @@ class CandidateLanguageResource(Resource):
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         body_dict = get_json_if_exist(request)
         try:
@@ -1985,7 +1872,7 @@ class CandidateLanguageResource(Resource):
         db.session.commit()
         return '', 204
 
-    @require_all_permissions(Permission.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints:
@@ -1997,11 +1884,7 @@ class CandidateLanguageResource(Resource):
         authed_user, candidate_id, language_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         language = None
         if language_id:  # Get specified candidate's language
@@ -2017,7 +1900,7 @@ class CandidateLanguageResource(Resource):
 
         return {'candidate_languages': fetch_candidate_languages(candidate_id, language)}
 
-    @require_all_permissions(Permission.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
         Endpoint:  PATCH /v1/candidates/:candidate_id/languages
@@ -2027,11 +1910,7 @@ class CandidateLanguageResource(Resource):
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         body_dict = get_json_if_exist(request)
         try:
@@ -2043,7 +1922,7 @@ class CandidateLanguageResource(Resource):
         db.session.commit()
         return '', 204
 
-    @require_all_permissions(Permission.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -2057,11 +1936,7 @@ class CandidateLanguageResource(Resource):
         authed_user, candidate_id, language_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check if candidate exists & is web-hidden
-        candidate = get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         if language_id:  # Delete specified candidate's language
             language = CandidateLanguage.get_by_id(language_id)

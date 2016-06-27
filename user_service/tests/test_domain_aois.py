@@ -5,12 +5,11 @@ from user_service.user_app import app
 from user_service.common.tests.conftest import *
 
 # Models
-from user_service.common.models.user import Permission
+from user_service.common.models.user import Role
 
 # Helper functions
 from user_service.common.routes import UserServiceApiUrl
 from user_service.common.utils.test_utils import send_request, response_info
-from user_service.common.utils.handy_functions import add_role_to_test_user
 
 import sys
 
@@ -30,7 +29,8 @@ class TestCreateDomainAOIS(object):
         Test: access domain aois resource without access token
         Expect: 401
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
         resp = send_request(method=self.METHOD, url=AOIS_URL, access_token=None, data=None)
         print response_info(resp)
         assert resp.status_code == requests.codes.UNAUTHORIZED
@@ -40,7 +40,8 @@ class TestCreateDomainAOIS(object):
         Test: Attempt to add area of interest with empty (None or empty string) value for description field
         Expect: 400; description field is required
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # data with description's value set to None
         data_1 = dict(areas_of_interest=[dict(description=None)])
@@ -64,7 +65,8 @@ class TestCreateDomainAOIS(object):
         """
         Test: Add areas of interest to users' domain
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         create_resp = send_request(self.METHOD, AOIS_URL, access_token_first, DATA)
         print response_info(create_resp)
@@ -77,7 +79,8 @@ class TestCreateDomainAOIS(object):
         Test: Attempt to an aoi to domain that already exists
         Expect: 400
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # Necessary data for test case
         existing_aoi_description = domain_aoi[0].name
@@ -104,20 +107,24 @@ class TestCreateDomainAOIS(object):
 class TestRetrieveDomainAOIS(object):
     METHOD = 'GET'
 
-    def test_get_domain_aois(self, access_token_first, domain_aoi):
+    def test_get_domain_aois(self, user_first, access_token_first, domain_aoi):
         """
         Test: Get all of domain's areas of interest
         """
+        user_first.role_id = Role.get_by_name('USER').id
+        db.session.commit()
         number_of_aois_in_domain = len(domain_aoi)
         get_resp = send_request(self.METHOD, AOIS_URL, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.OK
         assert len(get_resp.json()['areas_of_interest']) == number_of_aois_in_domain
 
-    def test_get_a_specified_aoi(self, access_token_first, domain_aoi):
+    def test_get_a_specified_aoi(self, user_first, access_token_first, domain_aoi):
         """
         Test: Get area of interest by providing its ID
         """
+        user_first.role_id = Role.get_by_name('USER').id
+        db.session.commit()
         aoi_id = domain_aoi[0].id
         get_resp = send_request(self.METHOD, AOI_URL % aoi_id, access_token_first)
         print response_info(get_resp)
@@ -126,11 +133,13 @@ class TestRetrieveDomainAOIS(object):
         assert get_resp.json()['area_of_interest']['id'] == aoi_id
         assert get_resp.json()['area_of_interest']['description'] == domain_aoi[0].name
 
-    def test_get_an_aoi_belonging_to_a_diff_domain(self, access_token_second, domain_aoi):
+    def test_get_an_aoi_belonging_to_a_diff_domain(self, user_first, access_token_second, domain_aoi):
         """
         Test: Get area of interest of a different domain
         Expect: 403
         """
+        user_first.role_id = Role.get_by_name('USER').id
+        db.session.commit()
         aoi_id = domain_aoi[0].id
         get_resp = send_request(self.METHOD, AOI_URL % aoi_id, access_token_second)
         print response_info(get_resp)
@@ -144,7 +153,8 @@ class TestUpdateDomainAOIS(object):
         """
         Test: Update domain's area of interest's description by providing aoi ID via the url
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         aoi_id = domain_aoi[0].id
         update_data = {"areas_of_interest": [{"description": str(uuid.uuid4())[:5]}]}
@@ -165,7 +175,8 @@ class TestUpdateDomainAOIS(object):
         """
         Test: Update domain's areas of interest in bulk
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         aoi_1_id, aoi_2_id = domain_aoi[0].id, domain_aoi[1].id
         update_data = {'areas_of_interest': [
@@ -184,7 +195,8 @@ class TestUpdateDomainAOIS(object):
         Test: Attempt to update the aoi of a different domain
         Expect: 403
         """
-        add_role_to_test_user(user_second, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_second.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         aoi_id = domain_aoi[0].id
         update_data = {"areas_of_interest": [{"description": str(uuid.uuid4())[:5]}]}
@@ -197,7 +209,8 @@ class TestUpdateDomainAOIS(object):
         Test: Update domain aoi without providing the description field
         Expect: 400; description is required
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         aoi_id = domain_aoi[0].id
 
@@ -223,7 +236,8 @@ class TestUpdateDomainAOIS(object):
         """
         Test: Attempt to update an area of interest that doesn't exist
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         update_data = {'areas_of_interest': [{'description': fake.word()}]}
         updated_resp = send_request(self.METHOD, AOI_URL % MAX_INT, access_token_first, update_data)
@@ -238,7 +252,8 @@ class TestDeleteDomainAOIS(object):
         """
         Test: Delete all of domain's AOIS
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         domain_aoi_ids = [aoi.id for aoi in domain_aoi]
 
@@ -259,7 +274,8 @@ class TestDeleteDomainAOIS(object):
         Test: Attempt to delete area of interest of another domain
         Expect: 403; no aoi should be deleted
         """
-        add_role_to_test_user(user_second, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_second.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         aoi_id = domain_aoi[0].id
         del_resp = send_request(self.METHOD, AOI_URL % aoi_id, access_token_second)
@@ -271,7 +287,8 @@ class TestDeleteDomainAOIS(object):
         Test: Attempt to delete area of interest that doesn't exist
         Expect: 404
         """
-        add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         del_resp = send_request(self.METHOD, AOI_URL % MAX_INT, access_token_first)
         print response_info(del_resp)

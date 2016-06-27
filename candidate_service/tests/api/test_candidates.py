@@ -6,6 +6,7 @@ from candidate_service.candidate_app import app
 
 import sys
 from requests.status_codes import codes as http_status_codes
+from candidate_service.common.models.user import Role
 
 # Conftest
 from candidate_service.common.tests.conftest import *
@@ -14,7 +15,6 @@ from candidate_service.common.tests.conftest import *
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_errors
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
 from candidate_service.common.routes import CandidateApiUrl, UserServiceApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
@@ -29,7 +29,6 @@ class TestCandidateSourceId(object):
         """
         Test: Add a candidate using an invalid source ID
         """
-        AddUserRoles.add(user_first)
 
         # Create candidate
         data = {'candidates': [{'source_id': sys.maxint, 'talent_pool_ids': {'add': [talent_pool.id]}}]}
@@ -38,12 +37,14 @@ class TestCandidateSourceId(object):
         assert create_resp.status_code == http_status_codes.bad_request
         assert create_resp.json()['error']['code'] == custom_errors.INVALID_SOURCE_ID
 
-    def test_add_candidate_with_source_id_not_belonging_to_domain(self, user_first, access_token_first,
+    def test_add_candidate_with_source_id_not_belonging_to_domain(self, user_second, access_token_first,
                                                                   talent_pool, access_token_second):
         """
         Test: Add a candidate using an source ID not belonging to candidate's domain
         """
-        AddUserRoles.add(user_first)
+
+        user_second.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # Create source in user_second's domain
         source_data = {"source": {"description": "testing_{}".format(str(uuid.uuid4())[:5])}}
@@ -63,7 +64,9 @@ class TestCandidateSourceId(object):
         """
         Test: Add candidate with valid source ID
         """
-        AddUserRoles.add_and_get(user_first)
+
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # Add source to candidate's domain
         source_data = {"source": {"description": "testing_{}".format(str(uuid.uuid4())[:5])}}
@@ -90,7 +93,9 @@ class TestCandidateSourceId(object):
         """
         Test: Remove candidate's source ID by sending in a "None" value
         """
-        AddUserRoles.all_roles(user_first)
+
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # Add source to candidate's domain
         source_data = {"source": {"description": "testing_{}".format(str(uuid.uuid4())[:5])}}
@@ -130,7 +135,6 @@ class TestUpdateCandidateName(object):
         Expect: 200, candidate's full name should also be updated
         """
         # Create candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', self.URL, access_token_first, data)
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -156,7 +160,6 @@ class TestUpdateCandidateName(object):
         Expect: 200, candidate's full name should also be updated
         """
         # Create candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', self.URL, access_token_first, data)
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -182,7 +185,6 @@ class TestUpdateCandidateName(object):
         Expect: 200, candidate's full name should also be updated
         """
         # Create candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', self.URL, access_token_first, data)
         candidate_id = create_resp.json()['candidates'][0]['id']

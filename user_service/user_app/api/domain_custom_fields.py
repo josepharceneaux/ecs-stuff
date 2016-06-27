@@ -201,7 +201,7 @@ class DomainCustomFieldsResource(Resource):
                 raise NotFoundError("Custom field ID ({}) not recognized.".format(custom_field_id))
 
             # Custom field must belong to user's domain
-            if custom_field.domain_id != request.user.domain_id:
+            if request.user.role.name != 'TALENT_ADMIN' and custom_field.domain_id != request.user.domain_id:
                 raise ForbiddenError("Not authorized")
 
             db.session.delete(custom_field)

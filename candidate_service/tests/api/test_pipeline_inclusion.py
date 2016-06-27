@@ -6,12 +6,11 @@ from candidate_service.common.tests.conftest import *
 
 # Helper functions
 from redo import retrier
-from helpers import AddUserRoles
 from candidate_service.tests.modules.test_talent_cloud_search import populate_candidates
 from candidate_service.common.routes import CandidateApiUrl, CandidatePoolApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.inter_service_calls.candidate_service_calls import search_candidates_from_params as search
-from candidate_service.common.utils.handy_functions import add_role_to_test_user
+from candidate_service.common.models.user import Role
 
 # Define urls used in this file
 CANDIDATE_URL = CandidateApiUrl.CANDIDATES
@@ -25,10 +24,8 @@ class TestSearchCandidatePipeline(object):
         """
         Test: Use Pipeline search params to search for a candidate
         """
-        AddUserRoles.add_and_get(user_first)
-        add_role_to_test_user(user_first, [Permission.Roles.CAN_ADD_TALENT_PIPELINES,
-                                           Permission.Roles.CAN_GET_TALENT_PIPELINES,
-                                           Permission.Roles.CAN_ADD_TALENT_POOLS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # Add talent pools
         data = {"talent_pools": [{"name": "test_{}".format(str(uuid.uuid4())[:3])} for _ in range(3)]}
@@ -72,8 +69,7 @@ class TestSearchCandidatePipeline(object):
     #         1. create 16 candidates to ensure multiple pages will return from the search result
     #         2. search using pipeline search params for the first candidate created
     #     """
-    #     AddUserRoles.add_and_get(user_first)
-    #     add_role_to_test_user(user_first, [Permission.Roles.CAN_ADD_TALENT_PIPELINES])
+    #     add_role_to_test_user(user_first, [Permission.PermissionNames.CAN_ADD_TALENT_PIPELINES])
     #
     #     # Create 16 candidates
     #     count = 16
@@ -115,7 +111,6 @@ class TestSearchCandidatePipeline(object):
         Test:  Use Pipeline search params to search for a candidate that is not found via pipeline's search params
         Expect:  200 status code but should just return an empty list
         """
-        AddUserRoles.add_and_get(user_first)
 
         # Search
         get_resp = send_request('get', PIPELINE_INCLUSION_URL % candidate_first.id, access_token_first)
@@ -127,7 +122,6 @@ class TestSearchCandidatePipeline(object):
         """
         Test:  Access resource without sending in a valid access token
         """
-        AddUserRoles.add_and_get(user_first)
 
         # Search
         get_resp = send_request('get', PIPELINE_INCLUSION_URL % candidate_first.id, None)

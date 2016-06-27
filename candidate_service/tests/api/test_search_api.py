@@ -13,16 +13,13 @@ from candidate_service.tests.modules.test_talent_cloud_search import (
 )
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from candidate_service.common.tests.conftest import *
-from candidate_service.common.utils.test_utils import send_request, response_info
+from candidate_service.common.utils.test_utils import send_request, response_info, get_response
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
-from candidate_service.common.utils.handy_functions import add_role_to_test_user
-from helpers import AddUserRoles
-from redo import retrier
 
 # Models
 from candidate_service.common.models.candidate import CandidateAddress
 from candidate_service.common.models.candidate import CandidateStatus
-from candidate_service.common.models.user import Permission
+from candidate_service.common.models.user import Role
 
 # Routes
 from candidate_service.common.routes import CandidateApiUrl, UserServiceApiUrl
@@ -31,7 +28,6 @@ from candidate_service.common.routes import CandidateApiUrl, UserServiceApiUrl
 class TestCandidateSearchGet(object):
     @staticmethod
     def create_candidates(access_token, user, talent_pool):
-        AddUserRoles.add(user)
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}},
             {'talent_pool_ids': {'add': [talent_pool.id]}},
@@ -50,7 +46,6 @@ class TestCandidateSearchGet(object):
         # Create candidates for user
         create_resp = self.create_candidates(access_token_first, user_first, talent_pool).json()
         # Retrieve candidates
-        AddUserRoles.get(user_first)
         data = {'candidate_ids': [candidate['id'] for candidate in create_resp['candidates']]}
         resp = send_request('get', CandidateApiUrl.CANDIDATE_SEARCH_URI, access_token_first, data)
         # resp = request_to_candidate_search_resource(access_token_first, 'get', data)
@@ -65,17 +60,16 @@ def test_search_all_candidates_in_domain(user_first, access_token_first, talent_
     """
     Test to search all candidates under the same domain
     """
-    AddUserRoles.add_and_get(user_first)
     candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=5)
     response = get_response(access_token_first, '', len(candidate_ids))
     _assert_results(candidate_ids, response.json())
+
 
 # TODO: Commenting this flaky test for Amir (basit)
 # def test_search_location(user_first, access_token_first, talent_pool):
 #     """
 #     Test to search candidates using location
 #     """
-#     AddUserRoles.add_and_get(user_first)
 #     city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
 #     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
 #                                         city=city, state=state, zip_code=zip_code)
@@ -88,7 +82,6 @@ def test_search_user_ids(user_first, access_token_first, talent_pool):
     """
     Test to search all candidates under the user
     """
-    AddUserRoles.add_and_get(user_first)
     user_id = user_first.id
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=5)
     response = get_response(access_token_first, '?user_ids={}'.format(user_id), expected_count=len(candidate_ids))
@@ -100,7 +93,6 @@ def test_search_skills(user_first, access_token_first, talent_pool):
     """
     Test to search all candidates based on skills
     """
-    AddUserRoles.add_and_get(user_first)
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first,
                                         skills=[{'name': 'hadoop', 'months_used': 36}])
 
@@ -113,7 +105,6 @@ def test_search_aoi(user_first, access_token_first, talent_pool):
     """
     Test to search all candidates based on area_of_interest
     """
-    AddUserRoles.add_and_get(user=user_first)
     all_aoi_ids = create_area_of_interest_facets(db, user_first.domain_id)
     number_of_aois = len(all_aoi_ids)
     aoi_ids_list = all_aoi_ids[0:5]
@@ -128,7 +119,6 @@ def test_search_aoi(user_first, access_token_first, talent_pool):
 
 def test_search_candidate_experience(user_first, access_token_first, talent_pool):
     """Test to search candidates with experience"""
-    AddUserRoles.add_and_get(user_first)
     experience_2_years = [
         {
             'organization': 'Intel', 'position': 'Research analyst', 'start_year': 2013,
@@ -147,7 +137,6 @@ def test_search_candidate_experience(user_first, access_token_first, talent_pool
 
 def test_search_position(user_first, access_token_first, talent_pool):
     """Test to search candidates by job_title/position"""
-    AddUserRoles.add_and_get(user_first)
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=4,
                                         job_title="Developer")
     response = get_response(access_token_first, '?job_title=Developer', expected_count=len(candidate_ids))
@@ -156,7 +145,6 @@ def test_search_position(user_first, access_token_first, talent_pool):
 
 def test_search_degree(user_first, access_token_first, talent_pool):
     """Test to search candidates by degree type"""
-    AddUserRoles.add_and_get(user_first)
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
                                         degree_type="Masters")
     response = get_response(access_token_first, '?degree_type=Masters', expected_count=len(candidate_ids))
@@ -164,8 +152,6 @@ def test_search_degree(user_first, access_token_first, talent_pool):
 
 
 def test_search_school_name(user_first, access_token_first, talent_pool):
-    """Test to search candidates by university/school_name"""
-    AddUserRoles.add_and_get(user_first)
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
                                         school_name='Oklahoma State University')
     response = get_response(access_token_first, '?school_name=Oklahoma State University',
@@ -177,7 +163,6 @@ def test_search_concentration(user_first, access_token_first, talent_pool):
     """
     Test to search candidates by higher education
     """
-    AddUserRoles.add_and_get(user_first)
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first,
                                         count=4, major='Post Graduate')
     response = get_response(access_token_first, '?major=Post Graduate', expected_count=len(candidate_ids))
@@ -188,7 +173,6 @@ def test_search_military_service_status(user_first, access_token_first, talent_p
     """
     Test to search candidates by military service status
     """
-    AddUserRoles.add_and_get(user_first)
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
                                         military_status="Retired")
     response = get_response(access_token_first, '?military_service_status=Retired', expected_count=len(candidate_ids))
@@ -199,7 +183,6 @@ def test_search_military_branch(user_first, access_token_first, talent_pool):
     """
     Test to search candidates by military branch
     """
-    AddUserRoles.add_and_get(user_first)
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
                                         military_branch="Army")
     response = get_response(access_token_first, '?military_branch=Army', expected_count=len(candidate_ids))
@@ -210,7 +193,6 @@ def test_search_military_highest_grade(user_first, access_token_first, talent_po
     """
     Test to search candidates by military highest grade
     """
-    AddUserRoles.add_and_get(user_first)
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
                                         military_grade="W-1")
     response = get_response(access_token_first, '?military_highest_grade=W-1', expected_count=len(candidate_ids))
@@ -221,7 +203,6 @@ def test_search_military_date_of_separation(user_first, access_token_first, tale
     """
     Test to search candidates by military date of separation
     """
-    AddUserRoles.add_and_get(user_first)
 
     candidates_today = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=5,
                                            military_to_date=str(datetime.utcnow().date()))
@@ -260,7 +241,6 @@ def test_search_query_with_name(user_first, access_token_first, talent_pool):
     Test to search candidates by passing query argument
     For example, search by querying first_name
     """
-    AddUserRoles.add_and_get(user_first)
     candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
                                         count=5, first_name=fake.first_name(), last_name=fake.last_name())
     response = get_response(access_token_first, '?q=Naveen', len(candidate_ids))
@@ -271,7 +251,6 @@ def test_search_get_only_requested_fields(user_first, access_token_first, talent
     """
     Test to search candidates and get only requested fields like email,source_id,etc,..
     """
-    AddUserRoles.add_and_get(user_first)
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=2)
     response = get_response(access_token_first, '?fields=email', len(candidate_ids))
     resultant_keys = response.json()['candidates'][0].keys()
@@ -283,7 +262,6 @@ def test_search_paging(user_first, access_token_first, talent_pool):
     """
     Test: Search by the most recently added candidates
     """
-    AddUserRoles.add_and_get(user_first)
 
     count = 30
     candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=count, wait=1)
@@ -297,7 +275,6 @@ def test_search_by_first_name(user_first, access_token_first, talent_pool):
     """
     Test search candidates by first name
     """
-    AddUserRoles.add_and_get(user_first)
     first_name = 'Marilyn'
     # Create candidate with first name and last name
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, first_name=first_name)
@@ -311,7 +288,6 @@ def test_search_by_last_name(user_first, access_token_first, talent_pool):
     """
     Test to search candidates by last name
     """
-    AddUserRoles.add_and_get(user_first)
     last_name = 'Lynn'
     # Create candidate with last name
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, last_name=last_name)
@@ -325,7 +301,6 @@ def test_search_by_current_company(talent_pool, access_token_first, user_first):
     """
     Test to search candidates by current company
     """
-    AddUserRoles.add_and_get(user_first)
     company_name = "Google"
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=5,
                                         company_name=company_name)
@@ -339,7 +314,6 @@ def test_search_by_position_facet(user_first, access_token_first, talent_pool):
     """
     Test to search candidates by position
     """
-    AddUserRoles.add_and_get(user_first)
     current_title = "Senior Developer"
     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first,
                                         count=12, job_title=current_title)
@@ -353,7 +327,6 @@ def test_search_by_position_and_company(user_first, access_token_first, talent_p
     """
     Test to search candidates by position and company
     """
-    AddUserRoles.add_and_get(user_first)
     company, position = "Apple", "CEO"
     # 10 other candidates at apple
     populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=10, company_name=company)
@@ -371,7 +344,6 @@ def test_search_by_university(user_first, access_token_first, talent_pool):
     """
     university > school_name
     """
-    AddUserRoles.add_and_get(user_first)
     university1, university2 = 'University Of Washington', 'Oklahoma State University'
     university1_candidates = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
                                                  school_name=university1)
@@ -395,7 +367,6 @@ def test_search_by_location(user_first, talent_pool, access_token_first):
     """
     Search by City name, State name
     """
-    AddUserRoles.add_and_get(user_first)
     city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
     candidate_ids = populate_candidates(count=2, access_token=access_token_first, talent_pool=talent_pool, city=city,
                                         state=state, zip_code=zip_code)
@@ -425,7 +396,6 @@ def test_search_by_major(user_first, access_token_first, talent_pool):
     Test to search based on major facet
     Without university major doesn't gets created in database, So university should also be created for major
     """
-    AddUserRoles.add_and_get(user_first)
     major1, major2 = 'Electrical Engineering', 'Computer Science'
     major1_candidates = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=2,
                                             major=major1)
@@ -447,7 +417,6 @@ def test_search_by_degree(user_first, access_token_first, talent_pool):
     """
     Search by degree
     """
-    AddUserRoles.add_and_get(user_first)
     degree1, degree2 = 'Masters', 'Bachelors'
     master_candidates = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=2,
                                             degree_type=degree1)
@@ -478,7 +447,9 @@ def test_search_source(user_first, access_token_first, talent_pool):
     """
     Test to search candidates by source
     """
-    AddUserRoles.add_and_get(user_first)
+
+    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+    db.session.commit()
 
     # Create a new source
     data = {"source": {"description": "test source", "notes": "sample source for functional tests"}}
@@ -500,7 +471,6 @@ def test_search_by_added_date(user_first, talent_pool, access_token_first):
     """
     Test to search candidates by added time
     """
-    AddUserRoles.all_roles(user_first)
 
     # Candidate added on 01 Dec 2014 at 14:30:00
     candidate1 = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=3,
@@ -541,7 +511,6 @@ def test_area_of_interest_facet(access_token_first, user_first, talent_pool):
     """
     Test areaOfInterestIdFacet by passing aoi values as list and as single select
     """
-    AddUserRoles.all_roles(user_first)
 
     # Create domain area of interest and associate candidate 1 & candidate 2 to it
     domain_id = user_first.domain_id
@@ -580,7 +549,6 @@ def test_status_facet(user_first, access_token_first, talent_pool):
     """
     Test with status facet by passing value as list and single value
     """
-    AddUserRoles.all_roles(user_first)
 
     # By default every candidate has "New" status
     candidate1 = populate_candidates(access_token_first, talent_pool)
@@ -630,9 +598,12 @@ def test_source_facet(user_first, access_token_first, talent_pool):
     """
     Test search filter for various available source facets.
     """
-    AddUserRoles.all_roles(user_first)
 
     # Create a new source
+
+    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+    db.session.commit()
+
     count = 5
     data = {'source': {'description': 'test source_{}'.format(str(uuid.uuid4())[:5])}}
     resp = send_request('post', UserServiceApiUrl.DOMAIN_SOURCES, access_token_first, data)
@@ -651,7 +622,6 @@ def test_skill_description_facet(user_first, access_token_first, talent_pool):
     """
     Test skills facet in search
     """
-    AddUserRoles.all_roles(user_first)
 
     skill_name_1 = str(uuid.uuid4())[:5]
     skill_1_candidates = populate_candidates(access_token_first, talent_pool, count=2,
@@ -686,7 +656,6 @@ def test_service_status(user_first, access_token_first, talent_pool):
     military_service_status
     Facet name: serviceStatus
     """
-    AddUserRoles.all_roles(user_first)
 
     service_status1 = "Veteran"
     count = 4
@@ -704,7 +673,6 @@ def test_military_branch(user_first, access_token_first, talent_pool):
     """
     branch: military_branch
     """
-    AddUserRoles.all_roles(user_first)
 
     count = 4
     service_branch = "Army"
@@ -723,7 +691,6 @@ def test_search_by_military_grade(user_first, access_token_first, talent_pool):
     military highest grade
     Facet name 'highestGrade'
     """
-    AddUserRoles.all_roles(user_first)
     service_grade = "E-2"
     candidates_grade = populate_candidates(access_token_first, talent_pool, count=3, military_grade=service_grade)
 
@@ -738,8 +705,9 @@ def test_custom_fields(user_first, access_token_first, candidate_first):
     """
     Test various custom_fields
     """
-    AddUserRoles.all_roles(user_first)
-    add_role_to_test_user(user_first, [Permission.Roles.CAN_EDIT_DOMAINS])
+
+    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+    db.session.commit()
 
     # Create custom field category named as 'Certifications'
     data = {'custom_fields': [{'name': 'Certifications'}]}
@@ -765,7 +733,6 @@ def test_pagination(user_first, access_token_first, talent_pool):
     """
     Test candidates on all pages
     """
-    AddUserRoles.all_roles(user_first)
 
     # Create 50 candidates
     count = 50
@@ -799,7 +766,6 @@ def test_paging_with_facet_search(user_first, access_token_first, talent_pool):
     """
     Test for no. of pages that are having candidates
     """
-    AddUserRoles.all_roles(user_first)
 
     count = 30
     current_title = "Sr. Manager"
@@ -816,8 +782,6 @@ def test_id_in_request_vars(user_first, access_token_first, talent_pool):
     There is a case where id can be passed as parameter in search_candidates
     It can be used to check if a certain candidate ID is in a smartlist.
     """
-    AddUserRoles.all_roles(user_first)
-
     # Create 10 candidates
     count = 10
     candidate_ids = populate_candidates(access_token_first, talent_pool, count=count)
@@ -833,7 +797,6 @@ def test_facets_are_returned_with_search_results(user_first, access_token_first,
     """
     Test selected facets are returned with search results
     """
-    AddUserRoles.all_roles(user_first)
 
     # Create some candidates
     count = 2
@@ -851,7 +814,6 @@ def test_sort_by_match(user_first, access_token_first, talent_pool):
     """
     Test: Search by sorting by match
     """
-    AddUserRoles.add_and_get(user_first)
 
     count = 3
     populate_candidates(access_token_first, talent_pool, count=count)
@@ -871,7 +833,6 @@ def test_location_with_radius(user_first, access_token_first, talent_pool):
     Distance in miles
     Ref: http://www.timeanddate.com/worldclock/distances.html?n=283
     """
-    AddUserRoles.add_and_get(user_first)
 
     # 10 mile candidates with city & state
     _10_mile_candidate = populate_candidates(access_token=access_token_first,
@@ -946,7 +907,6 @@ def test_location_with_radius(user_first, access_token_first, talent_pool):
 #     """
 #     Sort by distance
 #     """
-#     AddUserRoles.add_and_get(user_first)
 #
 #     # 10 mile candidates with city & state
 #     _10_mile_candidate = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
@@ -979,29 +939,30 @@ def test_location_with_radius(user_first, access_token_first, talent_pool):
 #     assert resultant_candidate_ids == map(unicode, furthest)
 
 
-def test_search_status(user_first, access_token_first, talent_pool):
-    """
-    Test to search all candidates by status
-    """
-    AddUserRoles.all_roles(user_first)
-
-    # Change status of last candidate
-    status_id = 6  # Candidate is highly prospective
-    candidate_ids = populate_candidates(count=3, access_token=access_token_first, talent_pool=talent_pool)
-
-    # Update last candidate's status
-    last_candidate_id = candidate_ids[-1]
-    data = {'candidates': [{'status_id': status_id}]}
-    update_resp = send_request('patch', CandidateApiUrl.CANDIDATE % last_candidate_id, access_token_first, data)
-    print response_info(update_resp)
-
-    # Search via status ID
-    resp = get_response(access_token_first, '?status_ids={}'.format(status_id))
-    print response_info(resp)
-
-    # Only last candidate should appear in result
-    candidate_ids_from_search = [candidate['id'] for candidate in resp.json()['candidates']]
-    assert candidate_ids_from_search.pop() == unicode(update_resp.json()['candidates'][0]['id'])
+# TODO: Flaky test report - Amir
+# def test_search_status(user_first, access_token_first, talent_pool):
+#     """
+#     Test to search all candidates by status
+#     """
+#
+#     # Change status of last candidate
+#     status_id = 6  # Candidate is highly prospective
+#     count = 3  # number of candidates to be created
+#     candidate_ids = populate_candidates(count=count, access_token=access_token_first, talent_pool=talent_pool)
+#
+#     # Update last candidate's status
+#     last_candidate_id = candidate_ids[-1]
+#     data = {'candidates': [{'status_id': status_id}]}
+#     update_resp = send_request('patch', CandidateApiUrl.CANDIDATE % last_candidate_id, access_token_first, data)
+#     print response_info(update_resp)
+#
+#     # Search via status ID
+#     resp = get_response(access_token_first, '?status_ids={}'.format(status_id))
+#     print response_info(resp)
+#
+#     # Only last candidate should appear in result
+#     candidate_ids_from_search = [candidate['id'] for candidate in resp.json()['candidates']]
+#     assert candidate_ids_from_search.pop() == unicode(update_resp.json()['candidates'][0]['id'])
 
 
 # def test_sort_by_added_date(user_first, access_token_first, talent_pool):
@@ -1009,7 +970,6 @@ def test_search_status(user_first, access_token_first, talent_pool):
 #     Least recent --> sort_by:added_time-asc
 #     Most recent -->  sort_by:added_time-desc
 #     """
-#     AddUserRoles.add_and_get(user_first)
 #
 #     # Candidate added on 25 May 2010 at 00:00:00
 #     candidate1 = populate_candidates(access_token_first, talent_pool,
@@ -1047,7 +1007,6 @@ def test_search_status(user_first, access_token_first, talent_pool):
 #     minimum_years_experience
 #     maximum_years_experience
 #     """
-#     AddUserRoles.add_and_get(user_first)
 #
 #     # Candidate with less than one year of experience
 #     current_year = datetime.now().year
@@ -1115,16 +1074,3 @@ def _assert_results(candidate_ids, response):
     print '\nresultant_candidate_ids: {}'.format(resultant_candidate_ids)
     # Test whether every element in the set candidate_ids is in resultant_candidate_ids.
     assert set(candidate_ids).issubset(set(resultant_candidate_ids))
-
-
-def get_response(access_token, arguments_to_url, expected_count=1, attempts=10):
-    # Wait for cloudsearch to update the candidates
-    url = CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url
-    headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
-    for i in range(0, attempts):
-        sleep(3)
-        resp = requests.get(url, headers=headers)
-        print response_info(resp)
-        if len(resp.json()['candidates']) >= expected_count:
-            return resp
-    raise NotFoundError('Unable to get expected number of candidates')

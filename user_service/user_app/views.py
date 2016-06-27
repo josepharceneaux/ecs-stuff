@@ -12,9 +12,9 @@ from user_service_utilties import send_reset_password_email, PASSWORD_RECOVERY_J
 from user_service.common.error_handling import *
 from user_service.common.routes import UserServiceApi, get_web_app_url
 from user_service.common.utils.validators import is_valid_email
-from user_service.common.models.user import Domain, Permission, Token, db
+from user_service.common.models.user import Token, db
 from werkzeug.security import check_password_hash
-from user_service.common.utils.auth_utils import require_oauth, require_all_permissions, gettalent_generate_password_hash
+from user_service.common.utils.auth_utils import require_oauth, gettalent_generate_password_hash
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 users_utilities_blueprint = Blueprint('users_utilities_api', __name__)

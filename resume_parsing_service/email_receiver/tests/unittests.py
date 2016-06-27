@@ -183,9 +183,9 @@ def test_lambda_handler(token_fixture, talent_pool_fixture, user_fixture):
     :param talent_pool_fixture:
     :param user_fixture:
     """
-    add_role_to_test_user(user_fixture, [Permission.Roles.CAN_ADD_CANDIDATES,
-                                         Permission.Roles.CAN_GET_TALENT_POOLS,
-                                         Permission.Roles.CAN_GET_CANDIDATES])
+    add_role_to_test_user(user_fixture, [Permission.PermissionNames.CAN_ADD_CANDIDATES,
+                                         Permission.PermissionNames.CAN_GET_TALENT_POOLS,
+                                         Permission.PermissionNames.CAN_GET_CANDIDATES])
     with open(EMAIL_FILES_ROOT + 'valid1', 'r') as infile:
         email_file = email.message_from_file(infile)
     raw_attachment = get_email_attachment(email_file, 'unused Key')

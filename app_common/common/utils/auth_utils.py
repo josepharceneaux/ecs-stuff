@@ -86,6 +86,8 @@ def require_all_permissions(*permission_names):
                 if permission_name not in user_permissions:
                     raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
                                                           "perform this operation")
+
+            request.user_permissions = user_permissions
             return func(*args, **kwargs)
 
         return authenticate_permission
@@ -110,14 +112,13 @@ def require_any_permission(*permission_names):
             else:
                 user_permissions = []
 
-            user_permissions.append('SELF')
             authenticated_permissions = []
             for permission_name in permission_names:
                 if permission_name in user_permissions:
                     authenticated_permissions.append(permission_name)
 
             if authenticated_permissions:
-                request.authenticated_permissions = authenticated_permissions
+                request.user_permissions = user_permissions
                 return func(*args, **kwargs)
 
             raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "

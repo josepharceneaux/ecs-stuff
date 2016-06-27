@@ -8,7 +8,8 @@ from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate
 from candidate_pool_service.common.utils.validators import is_number
-from candidate_pool_service.common.utils.auth_utils import require_oauth
+from candidate_pool_service.common.models.user import Permission
+from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from candidate_pool_service.modules.validators import validate_and_format_smartlist_post_data
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
@@ -24,6 +25,7 @@ class SmartlistCandidates(Resource):
 
     decorators = [require_oauth()]
 
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_SMART_LISTS)
     def get(self, **kwargs):
         """
         Use this endpoint to retrieve all candidates present in list (smart or dumb list)
@@ -43,7 +45,7 @@ class SmartlistCandidates(Resource):
             raise NotFoundError("List id does not exists.")
 
         # check whether smartlist belongs to user's domain
-        if smartlist.user.domain_id != request.user.domain_id:
+        if request.user.role.name != 'TALENT_ADMIN' and smartlist.user.domain_id != request.user.domain_id:
             raise ForbiddenError("Provided list does not belong to user's domain")
 
         request_params = dict()
@@ -58,6 +60,7 @@ class SmartlistCandidates(Resource):
 class SmartlistResource(Resource):
     decorators = [require_oauth()]
 
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_SMART_LISTS)
     def get(self, **kwargs):
         """Retrieve list information
         List must belong to auth user's domain
@@ -84,7 +87,7 @@ class SmartlistResource(Resource):
             if not smartlist or smartlist.is_hidden:
                 raise NotFoundError("List id does not exists")
             # check whether smartlist belongs to user's domain
-            if smartlist.user.domain_id != auth_user.domain_id:
+            if request.user.role.name != 'TALENT_ADMIN' and smartlist.user.domain_id != auth_user.domain_id:
                 raise ForbiddenError("List does not belong to user's domain")
             return {'smartlist': create_smartlist_dict(smartlist, request.oauth_token)}
         else:
@@ -104,6 +107,7 @@ class SmartlistResource(Resource):
                     'page_number': page, 'smartlists_per_page': per_page,
                     'total_number_of_smartlists': total_number_of_smartlists}
 
+    @require_all_permissions(Permission.PermissionNames.CAN_ADD_SMART_LISTS)
     def post(self):
         """
         Creates list with search params or with list of candidate ids
@@ -126,6 +130,7 @@ class SmartlistResource(Resource):
                                    access_token=request.oauth_token)
         return {'smartlist': {'id': smartlist.id}}, 201
 
+    @require_all_permissions(Permission.PermissionNames.CAN_DELETE_SMART_LISTS)
     def delete(self, **kwargs):
         """
         Deletes (hides) the smartlist
@@ -139,9 +144,14 @@ class SmartlistResource(Resource):
         smartlist = Smartlist.query.get(list_id)
         if not smartlist or smartlist.is_hidden:
             raise NotFoundError("List id does not exists")
+
+        if request.user.role.name == 'USER' and smartlist.user.id != request.user.id:
+            raise ForbiddenError("Logged-in user doesn't have appropriate permissions to delete this smartlist")
+
         # check whether smartlist belongs to user's domain
-        if smartlist.user.domain_id != request.user.domain_id:
-            raise ForbiddenError("List does not belong to user's domain")
+        if request.user.role.name != 'TALENT_ADMIN' and smartlist.user.domain_id != request.user.domain_id:
+            raise ForbiddenError("Logged-in user doesn't have appropriate permissions to delete this smartlist")
+
         smartlist_candidate_ids = SmartlistCandidate.query.with_entities(SmartlistCandidate.candidate_id).filter(
                 SmartlistCandidate.smartlist_id == list_id).all()
         smartlist_candidate_ids = [smartlist_candidate_id[0] for smartlist_candidate_id in smartlist_candidate_ids]
