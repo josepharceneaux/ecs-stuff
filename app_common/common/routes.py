@@ -635,8 +635,8 @@ class SocialNetworkApi(object):
     TIMEZONES = '/' + VERSION + '/data/timezones'
     RSVP = '/' + VERSION + '/rsvp'
     CODE = '/' + VERSION + '/code'
-    IMPORTER = '/' + VERSION + 'importer' + '/<string:mode>/<string:social_network>'
-    EVENTBRITE_IMPORTER = '/' + VERSION + 'importer' + 'importer/eventbrite'
+    IMPORTER = '/' + VERSION + '/importer' + '/<string:mode>/<string:social_network>'
+    EVENTBRITE_IMPORTER = '/' + VERSION + '/importer/eventbrite'
 
 
 class SocialNetworkApiUrl(object):
