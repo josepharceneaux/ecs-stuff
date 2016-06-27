@@ -38,7 +38,7 @@ class TalentApi(Api):
                             UserEmail: %s
                             Error Details: %s
                             ''' % (app_name, url, user_id, user_email, str(e))
-            if e.code in [codes.METHOD_NOT_ALLOWED]:
+            if hasattr(e, 'code') and e.code in [codes.METHOD_NOT_ALLOWED]:
                 logger.warn(error_message)
             else:
                 logger.error(error_message)
