@@ -709,26 +709,6 @@ def update_photo(candidate_id, user_id, update_dict):
     return
 
 
-######################################
-# Helper Functions For Candidate Notes
-######################################
-def add_notes(candidate_id, data):
-    """
-    Function will insert candidate notes into the db
-    :type candidate_id:  int|long
-    :type data:  list[dict]
-    """
-    # Format inputs
-    for note in data:
-        notes_dict = dict(
-            candidate_id=candidate_id,
-            comment=note.get('comment'),
-            added_time=datetime.datetime.utcnow()
-        )
-        notes_dict = dict((k, v) for k, v in notes_dict.iteritems() if v is not None)
-        db.session.add(CandidateTextComment(**notes_dict))
-
-
 ##########################################
 # Helper Functions For Candidate Languages
 ##########################################

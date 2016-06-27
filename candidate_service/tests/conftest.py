@@ -3,9 +3,16 @@ from candidate_service.candidate_app import app
 from candidate_service.candidate_app import db
 from candidate_service.common.tests.conftest import candidate_first
 
+from candidate_service.tests.api.helpers import AddUserRoles
+from candidate_service.common.utils.test_utils import send_request, response_info
+from candidate_service.common.routes import CandidateApiUrl
+
 from candidate_service.common.models.candidate import CandidateDevice
 from candidate_service.common.test_config_manager import load_test_config
 
+from faker import Faker
+
+fake = Faker()
 
 test_config = load_test_config()
 PUSH_DEVICE_ID = test_config['PUSH_CONFIG']['device_id_1']
@@ -61,3 +68,15 @@ def client_email_campaign_subject(request):
      the email subject in the POST request.
     """
     return request.param
+
+
+@pytest.fixture()
+def notes_first(user_first, candidate_first, access_token_first):
+    """
+    Fixture will create 3 notes for candidate first
+    """
+    AddUserRoles.edit(user_first)
+    data = {'notes': [{'comment': fake.bs()}, {'comment': fake.bs()}]}
+    create_resp = send_request('post', CandidateApiUrl.NOTES % candidate_first.id, access_token_first, data)
+    print response_info(create_resp)
+    return dict(user=user_first, candidate=candidate_first, data=data, notes=create_resp.json())
