@@ -29,8 +29,9 @@ from candidate_service.common.models.candidate import (
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.email_campaign import EmailCampaign
-from candidate_service.common.models.misc import AreaOfInterest
+from candidate_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend, \
+    EmailCampaignSendUrlConversion
+from candidate_service.common.models.misc import AreaOfInterest, UrlConversion
 from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.user import User
 
@@ -157,6 +158,7 @@ def fetch_candidate_info(candidate, fields=None):
     return {
         'id': candidate_id,
         'owner_id': candidate.user_id,
+        'status_id': candidate.candidate_status_id,
         'first_name': candidate.first_name,
         'middle_name': candidate.middle_name,
         'last_name': candidate.last_name,
@@ -464,16 +466,40 @@ def candidate_contact_history(candidate):
     # Campaign sends & campaigns
     timeline = []
     for email_campaign_send in candidate.email_campaign_sends:
+
         if not email_campaign_send.campaign_id:
             logger.error("contact_history: email_campaign_send has no campaign_id: %s", email_campaign_send.id)
             continue
-        email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.campaign_id)
+
+        email_campaign = EmailCampaign.get(email_campaign_send.campaign_id)
+
         timeline.insert(0, dict(id=email_campaign.id,
                                 event_datetime=email_campaign_send.sent_datetime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
                                 campaign_name=email_campaign.name))
 
-    # Sort events by datetime and convert all datetimes to isoformat
+        # Get email campaign sends if its url was clicked by the candidate
+        email_campaign_sends = EmailCampaignSend.query.join(EmailCampaignSendUrlConversion).join(UrlConversion). \
+            filter(EmailCampaignSend.candidate_id == candidate.id). \
+            filter((EmailCampaignSendUrlConversion.type == 0) | (EmailCampaignSendUrlConversion.type == 1)). \
+            filter(UrlConversion.hit_count > 0).all()
+
+        for email_campaign_send_ in email_campaign_sends:
+
+            # Get email campaign send's url conversion
+            url_conversion_id = EmailCampaignSendUrlConversion.query.filter(
+                EmailCampaignSendUrlConversion.email_campaign_send_id == email_campaign_send_.id
+            ).first().url_conversion_id
+            url_conversion = UrlConversion.get(url_conversion_id)
+
+            timeline.append(dict(
+                id=email_campaign.id,
+                campaign_name=email_campaign.name,
+                event_type=ContactHistoryEvent.EMAIL_OPEN,
+                event_datetime=url_conversion.last_hit_time
+            ))
+
+    # Sort events by datetime and convert all date-times to ISO format
     timeline = sorted(timeline, key=lambda entry: entry['event_datetime'], reverse=True)
     for event in timeline:
         event['event_datetime'] = event['event_datetime'].isoformat()

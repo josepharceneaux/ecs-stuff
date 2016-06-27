@@ -496,6 +496,7 @@ class CandidatePoolApi(object):
     TALENT_PIPELINE_SMARTLISTS = 'talent-pipelines/<int:id>/smartlists'
     TALENT_PIPELINE_CANDIDATES = 'talent-pipelines/<int:id>/candidates'
     TALENT_PIPELINE_ENGAGED_CANDIDATES = 'talent-pipelines/<int:id>/candidates/engagement'
+    CANDIDATES_ENGAGED_TALENT_PIPELINES = 'candidates/<int:id>/talent-pipelines'
     TALENT_PIPELINE_CAMPAIGNS = 'talent-pipelines/<int:id>/campaigns'
     TALENT_PIPELINE_UPDATE_STATS = 'talent-pipelines/stats'
     TALENT_PIPELINE_GET_STATS = 'talent-pipelines/<int:talent_pipeline_id>/stats'

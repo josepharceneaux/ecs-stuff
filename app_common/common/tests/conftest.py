@@ -522,14 +522,6 @@ def candidate_first(request, user_first):
     candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_first.id)
     db.session.add(candidate)
     db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(candidate)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return candidate
 
 
