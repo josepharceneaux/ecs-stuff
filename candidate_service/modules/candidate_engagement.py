@@ -50,3 +50,43 @@ def calculate_candidate_engagement_score(candidate_id):
     except Exception as e:
         logger.exception("Couldn't compute engagement score for candidate(%s) because (%s)" % (candidate_id, e.message))
         return None
+
+
+def top_most_engaged_pipelines_of_candidate(candidate_id):
+    """
+    This endpoint will return top most engaged pipelines and their engagement score.
+    :param candidate_id: Id of candidate
+    :return: List of dicts containing pipeline's id, name and engagement score
+    """
+    talent_pool_ids_of_candidate = TalentPoolCandidate.query.with_entities(
+            TalentPoolCandidate.talent_pool_id).filter(TalentPoolCandidate.candidate_id == candidate_id).all()
+    talent_pool_ids_of_candidate = [talent_pool_id_of_candidate.talent_pool_id for
+                                    talent_pool_id_of_candidate in talent_pool_ids_of_candidate]
+
+    sql_query = """
+      SELECT talent_pipeline.id, avg(engagement_score_of_all_campaigns.engagement_score) as average_engagement_score_of_pipeline
+      FROM
+       (SELECT email_campaign_send.EmailCampaignId,
+               email_campaign_send_url_conversion.EmailCampaignSendId,
+               CASE WHEN sum(url_conversion.HitCount) = 0 THEN 0.0 WHEN sum(email_campaign_send_url_conversion.type * url_conversion.HitCount) > 0 THEN 100 ELSE 33.3 END AS engagement_score
+        FROM email_campaign_send
+        INNER JOIN email_campaign_send_url_conversion ON email_campaign_send.Id = email_campaign_send_url_conversion.EmailCampaignSendId
+        INNER JOIN url_conversion ON email_campaign_send_url_conversion.UrlConversionId = url_conversion.Id
+        WHERE email_campaign_send.candidateId = :candidate_id
+        GROUP BY email_campaign_send_url_conversion.EmailCampaignSendId) AS engagement_score_of_all_campaigns
+      NATURAL JOIN email_campaign_smart_list
+      INNER JOIN smart_list ON smart_list.Id = email_campaign_smart_list.SmartListId
+      INNER JOIN talent_pipeline ON talent_pipeline.id = smart_list.talentPipelineId
+      WHERE talent_pipeline.id IS NOT NULL AND talent_pipeline.talent_pool_id IN :talent_pool_ids GROUP BY talent_pipeline.id
+      ORDER BY average_engagement_score_of_pipeline DESC;
+    """
+
+    try:
+        engagement_scores = db.session.connection().execute(text(sql_query), candidate_id=candidate_id,
+                                                            talent_pool_ids=tuple(talent_pool_ids_of_candidate))
+        return {int(engagement_score['id']): float(str(engagement_score['average_engagement_score_of_pipeline']))
+                for engagement_score in engagement_scores}
+    except Exception as e:
+        logger.exception("Couldn't compute engagement score for all pipelines of a candidate(%s) "
+                         "because (%s)" % (candidate_id, e.message))
+        return {}
