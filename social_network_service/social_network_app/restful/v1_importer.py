@@ -3,12 +3,13 @@ import json
 import types
 
 # 3rd party imports
+import datetime
 import flask
 import requests
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 
-from social_network_service.common.error_handling import InvalidUsage
+from social_network_service.common.error_handling import InvalidUsage, InternalServerError
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential, User
 from social_network_service.common.routes import SocialNetworkApi, SchedulerApiUrl, SocialNetworkApiUrl
@@ -167,6 +168,29 @@ def schedule_importer_job():
     Schedule a general job which hit RSVP importer endpoint every hour.
     :return:
     """
+    task_name_meetup = 'Retrieve Meetup RSVP'
+    task_name_facebook = 'Retrieve Facebook RSVP'
+
+    url = SocialNetworkApiUrl.IMPORTER % ('rsvp', 'meetup')
+    schedule_job(task_name=task_name_meetup, url=url)
+
+    url = SocialNetworkApiUrl.IMPORTER % ('rsvp', 'facebook')
+    schedule_job(task_name=task_name_facebook, url=url)
+
+
+def schedule_job(url, task_name):
+    """
+    Schedule a general job which hit RSVP importer endpoint every hour.
+    :param url: URL to hit
+    :type url: basestring
+    :param task_name: task_name of scheduler job
+    :type task_name: basestring
+    """
+    start_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
+    # Infinite times
+    end_datetime = datetime.datetime.utcnow() + datetime.timedelta(weeks=52 * 100)
+    frequency = 3600
+
     secret_key_id, access_token = User.generate_jw_token()
     headers = {
             'Content-Type': 'application/json',
@@ -174,9 +198,21 @@ def schedule_importer_job():
             'Authorization': access_token
         }
     data = {
-        'url': SocialNetworkApiUrl.IMPORTER % ('rsvp', 'meetup'),
-        'start_datetime':,
-        'end_datetime': ,
-        'task_name': '',
+        'start_datetime': start_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+        'end_datetime': end_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+        'frequency': frequency
     }
-    requests.post(SchedulerApiUrl.TASKS, headers=headers)
+    response = requests.get(SchedulerApiUrl.TASK_NAME % task_name, headers=headers)
+    # If job is not scheduled then schedule it
+    if response.status_code == 404:
+        data.update({'url': url})
+        data.update({'task_name': task_name})
+
+        response = requests.post(SchedulerApiUrl.TASKS, headers=headers,
+                                 data=data)
+
+        if response.status_code != 200:
+            logger.error(response.text)
+            raise InternalServerError(error_message='Unable to schedule meetup importer job')
+    elif response.status_code == 401:
+        logger.info('Job already scheduled')
