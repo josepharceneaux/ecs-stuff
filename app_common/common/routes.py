@@ -819,10 +819,11 @@ class ATSServiceApi(object):
     REST URLs for ATS service endpoints
     """
     VERSION = 'v1'
-    SERVICES = '/' + VERSION + '/ats'
-    ACCOUNT = '/' + VERSION + '/ats/account'
-    USER = '/' + VERSION + '/user/<int:id>'
-    CANDIDATE = '/' + VERSION + '/candidate'
+    ATS = '/' + VERSION + '/ats'
+    ACCOUNTS = '/' + VERSION + '/ats-accounts/:id'
+    CANDIDATES = '/' + VERSION + '/ats-candidates/:account_id'
+    CANDIDATE_REFRESH = '/' + VERSION + '/ats-candidates/refresh/:account_id'
+    LINK = '/' + VERSION + '/ats-candidates/:candidate_id/:ats_candidate_id'
 
 
 class ATSServiceApiUrl(object):
@@ -832,7 +833,8 @@ class ATSServiceApiUrl(object):
     VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.ATS_SERVICE_NAME, GTApis.ATS_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    SERVICES = HOST_NAME % ('/' + VERSION + '/ats')
-    ACCOUNT  = HOST_NAME % ('/' + VERSION + '/ats/account')
-    USER = HOST_NAME % ('/' + VERSION + '/user/%s')
-    CANDIDATE = HOST_NAME % ('/' + VERSION + '/candidate')
+    ATS = HOST_NAME % ('/' + VERSION + '/ats')
+    ACCOUNTS = HOST_NAME % ('/' + VERSION  + '/ats-accounts/:id')
+    CANDIDATES = HOST_NAME % ('/' + VERSION + '/ats-candidates/:account_id')
+    CANDIDATE_REFRESH = HOST_NAME % ('/' + VERSION + '/ats-candidates/refresh/:account_id')
+    LINK = HOST_NAME % ('/' + VERSION + '/ats-candidates/:candidate_id/:ats_candidate_id')

@@ -40,16 +40,16 @@ class ATSService(Resource):
 
 class ATSAccountService(Resource):
     """
-    Controller for /v1/ats/account
+    Controller for /v1/ats-accounts
     """
 
     decorators = [require_oauth()]
 
-    def put(self, **kwargs):
+    def get(self, **kwargs):
         """
-        PUT /v1/ats/account/:id
+        GET /v1/ats-accounts/:id
 
-        Refresh the ATS data for an account.
+        Retrieve all ATS candidates in an ATS account of a user.
         """
 
         authenticated_user = request.user
@@ -57,11 +57,23 @@ class ATSAccountService(Resource):
 
         return "{ 'here-is' : 'a-value' }"
 
-    def get(self, **kwargs):
+    def delete(self, **kwargs):
         """
-        GET /v1/ats/account/:id
+        DELETE /v1/ats-accounts/:id/:account_id
 
-        Retrieve all ATS candidates in an account.
+        Decomission an ATS account for a user.
+        """
+
+        authenticated_user = request.user
+        ats_service.app.logger.info("ATSAccount {} {} ({})".format(request.method, request.path, request.user.email))
+
+        return "{ 'here-is' : 'a-value' }"
+
+    def post(self, **kwargs):
+        """
+        POST /v1/ats-accounts/:id
+
+        Register an ATS account for a user.
         """
 
         authenticated_user = request.user
@@ -70,18 +82,18 @@ class ATSAccountService(Resource):
         return "{ 'here-is' : 'a-value' }"
 
 
-class UserService(Resource):
+class ATSCandidateService(Resource):
     """
-    Controller for /v1/user
+    Controller for /v1/ats-candidates
     """
-    
+
     decorators = [require_oauth()]
 
     def get(self, **kwargs):
         """
-        GET /v1/user/:id
+        GET /v1/ats-candidates/:account_id
 
-        Retrieve a list of ATS accounts associated with a user.
+        Retrieve all ATS candidates stored locally associated with an ATS account
         """
 
         user_id = kwargs.get('id')
@@ -90,58 +102,41 @@ class UserService(Resource):
 
         return "{ 'user' : '{}' }".format(user_id)
 
-    def post(self, **kwargs):
+    def get(self, **kwargs):
         """
-        POST /v1/user/:id
+        GET /v1/ats-candidates/refresh/:account_id
 
-        Register an ATS account with a user.
+        Update our local store of ATS candidates associated with an account from the ATS itself.
         """
 
+        user_id = kwargs.get('id')
         authenticated_user = request.user
-        ats_service.app.logger.info("User {} {} ({})".format(request.method, request.path, request.user.email))
+        ats_service.app.logger.info("User {} {} ({} {})".format(request.method, request.path, request.user.email, user_id))
 
-        return "{ 'here-is' : 'a-value' }"
+        return "{ 'user' : '{}' }".format(user_id)
 
-    def delete(self, **kwargs):
-        """
-        DELETE /v1/user/:id
+    # def post(self, **kwargs):
+    #     """
+    #     POST /v1/ats-candidates/:candidate_id/:ats_candidate_id
 
-        Remove an ATS account associated with a user.
-        """
+    #     Link a getTalent candidate to an ATS candidate.
+    #     """
 
-        authenticated_user = request.user
-        ats_service.app.logger.info("User {} {} ({})".format(request.method, request.path, request.user.email))
+    #     authenticated_user = request.user
+    #     ats_service.app.logger.info("User {} {} ({})".format(request.method, request.path, request.user.email))
 
-        return "{ 'here-is' : 'a-value' }"
+    #     return "{ 'here-is' : 'a-value' }"
+
+    # def delete(self, **kwargs):
+    #     """
+    #     DELETE /v1/ats-candidates/:candidate_id/:ats_candidate_id
+
+    #     Remove an ATS account associated with a user.
+    #     """
+
+    #     authenticated_user = request.user
+    #     ats_service.app.logger.info("User {} {} ({})".format(request.method, request.path, request.user.email))
+
+    #     return "{ 'here-is' : 'a-value' }"
 
 
-class CandidateService(Resource):
-    """
-    Controller for /v1/candidate
-    """
-    
-    decorators = [require_oauth()]
-
-    def post(self, **kwargs):
-        """
-        POST /v1/candidate/:id/:ats_candidate_id
-
-        Link a getTalent candidate to an ATS candidate.
-        """
-
-        authenticated_user = request.user
-        ats_service.app.logger.info("Candidate {} {} ({})".format(request.method, request.path, request.user.email))
-
-        return "{ 'here-is' : 'a-value' }"
-
-    def delete(self, **kwargs):
-        """
-        DELETE /v1/candidate/:id/:ats_candidate_id
-
-        Unlink a getTalent candidate from an ATS candidate.
-        """
-
-        authenticated_user = request.user
-        ats_service.app.logger.info("Candidate {} {} ({})".format(request.method, request.path, request.user.email))
-
-        return "{ 'here-is' : 'a-value' }"
