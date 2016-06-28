@@ -100,10 +100,12 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
         email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_ids[1])
         email.update(address=invalid_email)
         db.session.commit()
+        sent_datetime = email_campaign_blast.sent_datetime
 
         for index in range(count):
             email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_ids[index])
-            send_campaign_email_to_candidate(campaign, email, candidate_ids[index], email_campaign_blast.id)
+            send_campaign_email_to_candidate(campaign, email, candidate_ids[index], sent_datetime=sent_datetime,
+                                             blast_id=email_campaign_blast.id)
         retry(assert_is_bounced, sleeptime=3, attempts=100, sleepscale=1,
               args=(email,), retry_exceptions=(AssertionError,))
 
