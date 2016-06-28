@@ -43,12 +43,12 @@ EVENT_DATA = {
     "registration_instruction": "Just Come",
     "start_datetime": (datetime.now() + timedelta(days=20)).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "end_datetime": (datetime.now() + timedelta(days=22)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "group_url_name": "QC-Python-Learning",
+    "group_url_name": "Python-Learning-Meetup",
     "social_network_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
     "timezone": "Asia/Karachi",
     "cost": 0,
     "currency": "USD",
-    "social_network_group_id": 18837246,
+    "social_network_group_id": 18837203,
     "max_attendees": 10
 }
 

@@ -11,6 +11,8 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 # Application Specific
+import requests
+
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.inter_service_calls.candidate_service_calls import \
@@ -24,6 +26,7 @@ from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.candidate import Candidate
 from social_network_service.common.models.candidate import CandidateSource
 from social_network_service.common.models.candidate import CandidateSocialNetwork
+from social_network_service.common.routes import UserServiceApiUrl
 from social_network_service.common.utils.handy_functions import generate_jwt_headers
 from social_network_service.custom_exceptions import UserCredentialsNotFound, ProductNotFound
 from social_network_service.social_network_app import logger
@@ -455,12 +458,29 @@ class RSVPBase(object):
         :return attendee:
         :rtype: object
         """
-        candidate_source = CandidateSource(notes=attendee.event.description[:495] if attendee.event.description else None,
-                                            domain_id=self.user.domain_id,
-                                            description=attendee.event.title
-                                            )
-        candidate_source.save()
-        attendee.candidate_source_id = candidate_source.id
+
+        token = Token.get_by_user_id(attendee.gt_user_id)
+
+        headers = {'Authorization': 'Bearer {}'.format(token.access_token if token else None),
+                   "Content-Type": "application/json"}
+
+        candidate_source = {
+            "source": {
+                "description": attendee.event.description[:495] if attendee.event.description else None,
+                "notes": attendee.event.title
+            }
+        }
+
+        response = requests.post(UserServiceApiUrl.DOMAIN_SOURCES,
+                                 headers=headers,
+                                 data=json.dumps(candidate_source))
+
+        if response.status_code != 201:
+            logger.exception(response.text)
+            raise InternalServerError(error_message="Error while creating candidate source")
+
+        attendee.candidate_source_id = response.json()['source']['id']
+
         return attendee
 
     @staticmethod
