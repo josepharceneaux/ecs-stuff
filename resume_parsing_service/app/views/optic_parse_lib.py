@@ -177,7 +177,7 @@ def parse_candidate_phones(bs_contact_xml_list):
 
         for p in phones:
             raw_phone = p.text.strip()
-            phone_type = p['type']
+            phone_type = p.get('type')
 
             # JSON_SCHEMA for candidates phone is max:20
             # This fixes issues with numbers like '1-123-45            67'
