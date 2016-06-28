@@ -128,7 +128,7 @@ class TestDeleteNotes(object):
         assert get_resp.status_code == requests.codes.OK
         assert get_resp.json()['candidate_notes'] == []
 
-    def test_delete_candidate_notesdf(self, notes_first, access_token_first):
+    def test_delete_candidate_note(self, notes_first, access_token_first):
         """
         Test: Delete one of candidate's notes
         """
