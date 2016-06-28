@@ -345,7 +345,9 @@ class CandidateApi(object):
     CANDIDATE_CLIENT_CAMPAIGN = '/' + VERSION + '/candidates/client_email_campaign'
     CANDIDATE_VIEWS = '/' + VERSION + '/candidates/<int:id>/views'
     CANDIDATE_PREFERENCES = '/' + VERSION + '/candidates/<int:id>/preferences'
-    CANDIDATE_NOTES = '/' + VERSION + '/candidates/<int:id>/notes'
+
+    CANDIDATE_NOTES = '/' + VERSION + '/candidates/<int:candidate_id>/notes'
+    CANDIDATE_NOTE = CANDIDATE_NOTES + '/<int:id>'
 
     LANGUAGES = '/' + VERSION + '/candidates/<int:candidate_id>/languages'
     LANGUAGE = '/' + VERSION + '/candidates/<int:candidate_id>/languages/<int:id>'
@@ -427,7 +429,9 @@ class CandidateApiUrl(object):
     CANDIDATE_EDIT = HOST_NAME % ('/' + VERSION + '/candidates/%s/edits')
     CANDIDATE_VIEW = HOST_NAME % ('/' + VERSION + '/candidates/%s/views')
     CANDIDATE_PREFERENCE = HOST_NAME % ('/' + VERSION + '/candidates/%s/preferences')
+
     NOTES = HOST_NAME % ('/' + VERSION + '/candidates/%s/notes')
+    NOTE = NOTES + '/%s'
 
     CANDIDATE_CLIENT_CAMPAIGN = HOST_NAME % ('/' + VERSION + '/candidates/client_email_campaign')
 
@@ -493,6 +497,7 @@ class CandidatePoolApi(object):
     TALENT_PIPELINE_SMARTLISTS = 'talent-pipelines/<int:id>/smartlists'
     TALENT_PIPELINE_CANDIDATES = 'talent-pipelines/<int:id>/candidates'
     TALENT_PIPELINE_ENGAGED_CANDIDATES = 'talent-pipelines/<int:id>/candidates/engagement'
+    CANDIDATES_ENGAGED_TALENT_PIPELINES = 'candidates/<int:id>/talent-pipelines'
     TALENT_PIPELINE_CAMPAIGNS = 'talent-pipelines/<int:id>/campaigns'
     TALENT_PIPELINE_UPDATE_STATS = 'talent-pipelines/stats'
     TALENT_PIPELINE_GET_STATS = 'talent-pipelines/<int:talent_pipeline_id>/stats'

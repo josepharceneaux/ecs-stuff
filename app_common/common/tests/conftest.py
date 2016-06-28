@@ -260,17 +260,11 @@ def access_token_other(user_from_diff_domain, sample_client):
 
 
 @pytest.fixture()
-def user_first(request, domain_first, first_group):
+def user_first(domain_first, first_group):
+    """
+    Fixture will insert new user in domain_first
+    """
     user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
-    db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return user
 
 
@@ -518,18 +512,14 @@ def talent_pipeline_other(request, user_from_diff_domain, talent_pool_other):
 
 
 @pytest.fixture()
-def candidate_first(request, user_first):
+def candidate_first(user_first):
+    """
+    Fixture will create a candidate in user_first's domain
+    :rtype: Candidate
+    """
     candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_first.id)
     db.session.add(candidate)
     db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(candidate)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return candidate
 
 
