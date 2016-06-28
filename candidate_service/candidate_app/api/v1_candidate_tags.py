@@ -179,10 +179,20 @@ class CandidateTagResource(Resource):
 
         # Delete specified tag
         if tag_id:
-            return {'deleted_tag': delete_tag(candidate_id=candidate_id, tag_id=tag_id)}
+
+            # Delete
+            deleted_tag_id = delete_tag(candidate_id=candidate_id, tag_id=tag_id)
+
+            # Update cloud search
+            upload_candidate_documents([candidate_id])
+
+            return {'deleted_tag': deleted_tag_id}
+
+        # Delete all of candidate's tags
+        deleted_tag_ids = delete_tags(candidate_id)
 
         # Update cloud search
         upload_candidate_documents([candidate_id])
 
         # Delete all of candidate's tags
-        return {'deleted_tags': delete_tags(candidate_id)}
+        return {'deleted_tags': deleted_tag_ids}
