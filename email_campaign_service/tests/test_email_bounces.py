@@ -42,7 +42,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
             send_campaign_email_to_candidate(campaign, email, candidate_ids[0], sent_datetime,
                                              blast_id=email_campaign_blast.id)
         else:
-            send_campaign_email_to_candidate(campaign, email, candidate_ids[0], sent_datetime, blast_id=None)
+            send_campaign_email_to_candidate(campaign, email, candidate_ids[0], blast_id=None)
 
         retry(assert_is_bounced, sleeptime=3, attempts=100, sleepscale=1,
               args=(email,), retry_exceptions=(AssertionError,))
@@ -104,7 +104,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
 
         for index in range(count):
             email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_ids[index])
-            send_campaign_email_to_candidate(campaign, email, candidate_ids[index], sent_datetime=sent_datetime,
+            send_campaign_email_to_candidate(campaign, email, candidate_ids[index],
                                              blast_id=email_campaign_blast.id)
         retry(assert_is_bounced, sleeptime=3, attempts=100, sleepscale=1,
               args=(email,), retry_exceptions=(AssertionError,))
