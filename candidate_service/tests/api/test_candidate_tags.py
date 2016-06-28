@@ -154,39 +154,10 @@ class TestUpdateCandidateTags(object):
 
 
 class TestDeleteCandidateTags(object):
-    def test_delete_one(self, user_first, access_token_first, candidate_first):
-        """
-        Test:  Delete one of candidate's tags
-        Expect: 403, tag is not permitted for candidate (since it was not created or it was deleted)
-        """
-        AddUserRoles.all_roles(user_first)
-
-        # Create some tags for candidate_first
-        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, DATA)
-        print response_info(create_resp)
-
-        # Delete one tag
-        url = CandidateApiUrl.TAG % (candidate_first.id, create_resp.json()['tags'][0]['id'])
-        del_resp = send_request('delete', url, access_token_first)
-        print response_info(del_resp)
-
-        # Retrieve candidate's tag that was just deleted
-        get_resp = send_request('get', url, access_token_first)
-        print response_info(get_resp)
-        assert get_resp.status_code == requests.codes.FORBIDDEN
-        assert get_resp.json()['error']['code'] == custom_errors.TAG_FORBIDDEN
-
-        # Cloud search must also be updated
-        deleted_tag_id = del_resp.json()['deleted_tag']['id']
-        search_resp = get_response(access_token_first, '?tag_ids={}'.format(deleted_tag_id),
-                                   expected_count=0, pause=10, comp_operator='==')
-        print response_info(search_resp)
-        assert search_resp.json()['total_found'] == 0
-
-    # def test_delete_all(self, user_first, access_token_first, candidate_first):
+    # def test_delete_one(self, user_first, access_token_first, candidate_first):
     #     """
-    #     Test:  Delete all of candidate's tags
-    #     Expect: 404, candidate does not have any tags
+    #     Test:  Delete one of candidate's tags
+    #     Expect: 403, tag is not permitted for candidate (since it was not created or it was deleted)
     #     """
     #     AddUserRoles.all_roles(user_first)
     #
@@ -194,19 +165,48 @@ class TestDeleteCandidateTags(object):
     #     create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, DATA)
     #     print response_info(create_resp)
     #
-    #     # Delete all of candidate's tags
-    #     del_resp = send_request('delete', CandidateApiUrl.TAGS % candidate_first.id, access_token_first)
+    #     # Delete one tag
+    #     url = CandidateApiUrl.TAG % (candidate_first.id, create_resp.json()['tags'][0]['id'])
+    #     del_resp = send_request('delete', url, access_token_first)
     #     print response_info(del_resp)
     #
-    #     # Retrieve candidate's tags
-    #     get_resp = send_request('get', CandidateApiUrl.TAGS % candidate_first.id, access_token_first)
+    #     # Retrieve candidate's tag that was just deleted
+    #     get_resp = send_request('get', url, access_token_first)
     #     print response_info(get_resp)
-    #     assert get_resp.status_code == requests.codes.NOT_FOUND
-    #     assert get_resp.json()['error']['code'] == custom_errors.TAG_NOT_FOUND
+    #     assert get_resp.status_code == requests.codes.FORBIDDEN
+    #     assert get_resp.json()['error']['code'] == custom_errors.TAG_FORBIDDEN
     #
     #     # Cloud search must also be updated
-    #     deleted_tag_ids = [tag['id'] for tag in del_resp.json()['deleted_tags']]
-    #     search_resp = get_response(access_token_first, '?tag_ids={}'.format(','.join(map(str, deleted_tag_ids))),
+    #     deleted_tag_id = del_resp.json()['deleted_tag']['id']
+    #     search_resp = get_response(access_token_first, '?tag_ids={}'.format(deleted_tag_id),
     #                                expected_count=0, pause=10, comp_operator='==')
     #     print response_info(search_resp)
     #     assert search_resp.json()['total_found'] == 0
+    #
+    # # def test_delete_all(self, user_first, access_token_first, candidate_first):
+    # #     """
+    # #     Test:  Delete all of candidate's tags
+    # #     Expect: 404, candidate does not have any tags
+    # #     """
+    # #     AddUserRoles.all_roles(user_first)
+    # #
+    # #     # Create some tags for candidate_first
+    # #     create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, DATA)
+    # #     print response_info(create_resp)
+    # #
+    # #     # Delete all of candidate's tags
+    # #     del_resp = send_request('delete', CandidateApiUrl.TAGS % candidate_first.id, access_token_first)
+    # #     print response_info(del_resp)
+    # #
+    # #     # Retrieve candidate's tags
+    # #     get_resp = send_request('get', CandidateApiUrl.TAGS % candidate_first.id, access_token_first)
+    # #     print response_info(get_resp)
+    # #     assert get_resp.status_code == requests.codes.NOT_FOUND
+    # #     assert get_resp.json()['error']['code'] == custom_errors.TAG_NOT_FOUND
+    # #
+    # #     # Cloud search must also be updated
+    # #     deleted_tag_ids = [tag['id'] for tag in del_resp.json()['deleted_tags']]
+    # #     search_resp = get_response(access_token_first, '?tag_ids={}'.format(','.join(map(str, deleted_tag_ids))),
+    # #                                expected_count=0, pause=10, comp_operator='==')
+    # #     print response_info(search_resp)
+    # #     assert search_resp.json()['total_found'] == 0
