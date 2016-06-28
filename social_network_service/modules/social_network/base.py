@@ -170,7 +170,7 @@ class SocialNetworkBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self,  user_id, social_network=None, validate_credentials=True):
+    def __init__(self,  user_id, social_network_id=None, validate_credentials=True):
         """
         - This sets the user's credentials as base class property so that it can be used in other classes.
         - We also check the validity of access token and try to refresh it in case it has expired.
@@ -180,7 +180,7 @@ class SocialNetworkBase(object):
         """
         self.events = []
         self.api_relative_url = None
-        self.user, self.social_network = self.get_user_and_social_network(user_id, social_network)
+        self.user, self.social_network = self.get_user_and_social_network(user_id, social_network_id)
         self.user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(self.user.id,
                                                                                               self.social_network.id)
         if validate_credentials:
@@ -228,19 +228,20 @@ class SocialNetworkBase(object):
                 # gets and save the member id of gt-user
                 self.get_member_id()
 
-    def get_user_and_social_network(self, user_id, social_network=None):
+    def get_user_and_social_network(self, user_id, social_network_id=None):
         """
         This gets the User object and social network object from database.
         :param int | long user_id: Id of user
-        :param SocialNetwork | None social_network: Social Network object
+        :param int | long | None social_network_id: Id of SocialNetwork object
         :rtype: tuple
         """
         raise_if_not_positive_int_or_long(user_id)
         user = User.query.get(user_id)
         if not user:
             raise NoUserFound("No User found in database with id %(user_id)s" % user_id)
-        if social_network and isinstance(social_network, SocialNetwork):
-            social_network = social_network
+        if social_network_id:
+            raise_if_not_positive_int_or_long(social_network_id)
+            social_network = SocialNetwork.get_by_id(social_network_id)
         else:
             social_network = SocialNetwork.get_by_name(self.__class__.__name__)
         return user, social_network
