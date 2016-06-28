@@ -89,7 +89,8 @@ class TestGetNotes(object):
 
         note_data = notes_first['data']['notes'][0]
         assert get_resp.status_code == requests.codes.OK
-        assert get_resp.json()['candidate_note']['comment'] == note_data['comment']
+        assert get_resp.json()['candidate_note']['comment'] == note_data['comment'].lower()
+        assert get_resp.json()['candidate_note']['title'] == note_data['title'].lower()
         assert get_resp.json()['candidate_note']['candidate_id'] == notes_first['candidate'].id
         assert get_resp.json()['candidate_note']['id'] == note_id
         assert get_resp.json()['candidate_note']['owner_id'] == notes_first['user'].id
