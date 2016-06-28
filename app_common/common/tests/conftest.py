@@ -260,17 +260,11 @@ def access_token_other(user_from_diff_domain, sample_client):
 
 
 @pytest.fixture()
-def user_first(request, domain_first, first_group):
+def user_first(domain_first, first_group):
+    """
+    Fixture will insert new user in domain_first
+    """
     user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
-    db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return user
 
 

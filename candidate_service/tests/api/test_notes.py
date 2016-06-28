@@ -38,8 +38,8 @@ class TestAddNotes(object):
 
         # Create notes for candidate
         notes_data = {'notes': [
-            {'comment': 'Interested in internet security'},
-            {'comment': 'Contributed to Linux OSS'}
+            {'title': 'interests', 'comment': 'Interested in internet security'},
+            {'title': 'Open Source Contributor', 'comment': 'Contributed to Linux OSS'}
         ]}
         create_resp = send_request('post', CandidateApiUrl.NOTES % candidate_first.id, access_token_first, notes_data)
         print response_info(create_resp)
@@ -88,9 +88,9 @@ class TestGetNotes(object):
         print response_info(get_resp)
 
         note_data = notes_first['data']['notes'][0]
-        print '\nnote_data = {}'.format(note_data)
         assert get_resp.status_code == requests.codes.OK
-        assert get_resp.json()['candidate_note']['comment'] == note_data['comment']
+        assert get_resp.json()['candidate_note']['comment'] == note_data['comment'].lower()
+        assert get_resp.json()['candidate_note']['title'] == note_data['title'].lower()
         assert get_resp.json()['candidate_note']['candidate_id'] == notes_first['candidate'].id
         assert get_resp.json()['candidate_note']['id'] == note_id
         assert get_resp.json()['candidate_note']['owner_id'] == notes_first['user'].id

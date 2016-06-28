@@ -22,6 +22,7 @@ def add_notes(candidate_id, data):
     for note in data:
 
         # Normalize value
+        title = normalize_value(note.get('title'))
         comments = normalize_value(note.get('comment'))
 
         # Notes must have a comment
@@ -30,6 +31,7 @@ def add_notes(candidate_id, data):
 
         notes_dict = dict(
             candidate_id=candidate_id,
+            title=title,
             comment=comments,
             added_time=datetime.utcnow()
         )
@@ -73,6 +75,7 @@ def get_notes(candidate, note_id=None):
                 'id': note_id,
                 'candidate_id': candidate_id,
                 'owner_id': candidate.user.id,
+                'title': note.title,
                 'comment': note.comment,
                 'added_time': str(note.added_time)
             }
@@ -89,6 +92,7 @@ def get_notes(candidate, note_id=None):
                 'id': note.id,
                 'candidate_id': candidate_id,
                 'owner_id': owner_id,
+                'title': note.title,
                 'comment': note.comment,
                 'added_time': str(note.added_time)
             })
