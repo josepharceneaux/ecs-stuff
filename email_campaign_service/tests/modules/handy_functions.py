@@ -456,7 +456,7 @@ def send_campaign_email_to_candidate(campaign, email, candidate_id, sent_datetim
     # Create an campaign send object
     email_campaign_send = EmailCampaignSend(campaign_id=campaign.id,
                                             candidate_id=candidate_id,
-                                            sent_datetime=sent_datetime if sent_datetime else datetime.datetime.utcnow(),
+                                            sent_datetime=sent_datetime if sent_datetime else datetime.datetime.now(),
                                             blast_id=blast_id)
     EmailCampaignSend.save(email_campaign_send)
     default_email = get_default_email_info()['email']

@@ -4,7 +4,7 @@ Author: Zohaib Ijaz, QC-Technologies, <mzohaib.qc@gmail.com>
     This module contains pyTests for send an email campaign to invalid emails and
     then expecting bounce messages from Amazon SNS which will mark invalid email as bounced.
 """
-
+import time
 from redo import retry
 
 from email_campaign_service.common.models.candidate import CandidateEmail
@@ -14,7 +14,6 @@ from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaignBlast
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
-from email_campaign_service.common.campaign_services.custom_errors import CampaignException
 from email_campaign_service.tests.modules.handy_functions import send_campaign_email_to_candidate
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
@@ -39,6 +38,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         db.session.commit()
         sent_datetime = email_campaign_blast.sent_datetime
         if blast_foreign_key:
+            time.sleep(1)
             send_campaign_email_to_candidate(campaign, email, candidate_ids[0],
                                              blast_id=email_campaign_blast.id)
         else:
@@ -91,7 +91,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
                                                                                  talent_pipeline, candidate_count=count)
 
         # Update first candidate's email to a valid email, i.e. testing email.
-        valid_email = 'gettalentmailtest@gmail.com'
+        valid_email = 'test.gettalent@gmail.com'
         email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_ids[0])
         email.update(address=valid_email)
 
@@ -100,7 +100,6 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
         email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_ids[1])
         email.update(address=invalid_email)
         db.session.commit()
-        sent_datetime = email_campaign_blast.sent_datetime
 
         for index in range(count):
             email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_ids[index])
