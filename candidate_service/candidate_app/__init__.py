@@ -22,7 +22,7 @@ try:
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
         CandidateEditResource, CandidatesResource, CandidateOpenWebResource, CandidateViewResource,
         CandidatePreferenceResource, CandidateClientEmailCampaignResource,
-        CandidateDeviceResource, CandidatePhotosResource, CandidateNotesResource, CandidateLanguageResource
+        CandidateDeviceResource, CandidatePhotosResource, CandidateLanguageResource
     )
     from candidate_service.candidate_app.api.references import CandidateReferencesResource
     from candidate_service.candidate_app.api.candidate_search_api import CandidateSearch, CandidateDocuments
@@ -30,6 +30,7 @@ try:
     from candidate_service.candidate_app.api.pipelines import CandidatePipelineResource
     from candidate_service.candidate_app.api.candidate_custom_fields import CandidateCustomFieldResource
     from candidate_service.candidate_app.api.statuses import CandidateStatusesResources
+    from candidate_service.candidate_app.api.notes import CandidateNotesResource
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)
@@ -199,6 +200,7 @@ try:
 
     # ****** CandidatePreferenceResource *******
     api.add_resource(CandidateNotesResource, CandidateApi.CANDIDATE_NOTES, endpoint='candidate_notes')
+    api.add_resource(CandidateNotesResource, CandidateApi.CANDIDATE_NOTE, endpoint='candidate_note')
 
     # ****** CandidateLanguageResource *******
     api.add_resource(CandidateLanguageResource, CandidateApi.LANGUAGES, endpoint='candidate_languages')

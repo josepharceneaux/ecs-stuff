@@ -518,7 +518,11 @@ def talent_pipeline_other(request, user_from_diff_domain, talent_pool_other):
 
 
 @pytest.fixture()
-def candidate_first(request, user_first):
+def candidate_first(user_first):
+    """
+    Fixture will create a candidate in user_first's domain
+    :rtype: Candidate
+    """
     candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_first.id)
     db.session.add(candidate)
     db.session.commit()
