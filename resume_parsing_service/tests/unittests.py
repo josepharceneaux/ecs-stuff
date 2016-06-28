@@ -778,3 +778,22 @@ def test_parses_duplicate_emails():
     contact = soup.findAll('contact')
     parsed_emails = parse_candidate_emails(contact)
     assert len(parsed_emails) == 2
+
+
+def test_phone_label_testing():
+    phones_mixed = """
+        <contact>
+            <phone area="408" type="cell">(408) 867-5309</phone>
+            <phone area="409" type="work">(409) 867-5309</phone>
+            <phone area="410" type="fax">(410) 867-5309</phone>
+            <phone area="411" type="home">(411) 867-5309</phone>
+        </contact>
+    """
+    soup = bs4(phones_mixed)
+    contact = soup.findAll('contact')
+    parsed_phones = parse_candidate_phones(contact)
+    assert len(parsed_phones) == 4
+    assert any(phone['label'] == 'Mobile' for phone in parsed_phones)
+    assert any(phone['label'] == 'Work' for phone in parsed_phones)
+    assert any(phone['label'] == 'Home Fax' for phone in parsed_phones)
+    assert any(phone['label'] == 'Home' for phone in parsed_phones)
