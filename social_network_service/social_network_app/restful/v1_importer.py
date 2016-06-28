@@ -63,7 +63,8 @@ class RsvpEventImporter(Resource):
         if mode.lower() not in ["event", "rsvp"]:
             raise InvalidUsage("No mode of value %s found" % mode)
 
-        if social_network.lower() not in ["meetup", "facebook"]:
+        if not (social_network.lower() in ["meetup", "facebook"] or
+                    (mode.lower() == 'event' and social_network.lower() == 'eventbrite')):
             raise InvalidUsage("No social network with name %s found." % social_network)
 
         social_network_id = None
@@ -89,7 +90,7 @@ class RsvpEventImporter(Resource):
 
 
 @api.route(SocialNetworkApi.EVENTBRITE_IMPORTER)
-class RsvpEventImporterEventbrite(Resource):
+class RsvpImporterEventbrite(Resource):
     """
         This resource get all RSVPs or events. This callback method will be called when someone hit register
         on an eventbrite event.
