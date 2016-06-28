@@ -11,7 +11,13 @@ notes_schema = {
                 "type": "object",
                 "required": ["comment"],
                 "properties": {
-                    "comment": {"type": "string"}
+                    "title": {
+                        "type": ["string", "null"],
+                        "maxLength": 255
+                    },
+                    "comment": {
+                        "type": "string"
+                    }
                 }
             }
         }
