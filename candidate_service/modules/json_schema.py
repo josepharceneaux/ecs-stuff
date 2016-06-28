@@ -1255,7 +1255,7 @@ tag_schema = {
                     "name": {
                         "type": "string",
                         "minLength": 1,
-                        "maxLength": 12
+                        "maxLength": 50
                     }
                 }
             }
