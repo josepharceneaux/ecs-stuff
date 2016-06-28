@@ -563,7 +563,7 @@ class SocialNetwork(db.Model):
         else:
             # Didn't input 'ids' it means we we need list of all, the following
             # probably help us avoid the expensive in_ with empty sequence
-            SocialNetwork.get_all()
+            return SocialNetwork.get_all()
 
     @classmethod
     def get_by_ids(cls, ids):

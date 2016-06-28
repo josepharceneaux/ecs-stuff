@@ -568,8 +568,8 @@ class SocialNetworkBase(object):
             if user_credentials_in_db:
                 user_credentials_in_db.update(**user_credentials)
             else:
-                user_credentials = UserSocialNetworkCredential(**user_credentials)
-                UserSocialNetworkCredential.save(user_credentials)
+                user_credentials_in_db = UserSocialNetworkCredential(**user_credentials)
+                UserSocialNetworkCredential.save(user_credentials_in_db)
             return user_credentials_in_db
         except:
             logger.exception('save_user_credentials_in_db: user_id: %s',
