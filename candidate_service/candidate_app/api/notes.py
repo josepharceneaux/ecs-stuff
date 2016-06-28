@@ -38,7 +38,7 @@ class CandidateNotesResource(Resource):
         # Get authenticated user & Candidate ID
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
-        # Check if candidate exists & is web-hidden
+        # Check if candidate exists & is not web-hidden
         get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user's domain
@@ -70,7 +70,7 @@ class CandidateNotesResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
-        return get_notes(candidate_id, candidate, note_id)
+        return get_notes(candidate, note_id)
 
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
@@ -84,7 +84,7 @@ class CandidateNotesResource(Resource):
         # Get authenticated user & candidate ID
         authed_user, candidate_id, note_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
-        # Check if candidate exists & is web-hidden
+        # Check if candidate exists & is not web-hidden
         candidate = get_candidate_if_exists(candidate_id)
 
         # Candidate must belong to user's domain

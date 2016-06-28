@@ -1,7 +1,7 @@
 import pytest
 from candidate_service.candidate_app import app
 from candidate_service.candidate_app import db
-from candidate_service.common.tests.conftest import candidate_first
+from candidate_service.common.tests.conftest import candidate_first, fake
 
 from candidate_service.tests.api.helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
@@ -10,9 +10,6 @@ from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.models.candidate import CandidateDevice
 from candidate_service.common.test_config_manager import load_test_config
 
-from faker import Faker
-
-fake = Faker()
 
 test_config = load_test_config()
 PUSH_DEVICE_ID = test_config['PUSH_CONFIG']['device_id_1']

@@ -44,14 +44,16 @@ def add_notes(candidate_id, data):
     return created_note_ids
 
 
-def get_notes(candidate_id, candidate, note_id=None):
+def get_notes(candidate, note_id=None):
     """
     Function will return all of candidate's notes if note_id is not provided, otherwise it
     will return a single note object.
-    :type candidate_id:  int | long
     :type candidate:  Candidate
     :type note_id:  int | long | None
+    :rtype: dict | list[dict]
     """
+    candidate_id = candidate.id
+
     # return specified note
     if note_id:
 
@@ -66,22 +68,23 @@ def get_notes(candidate_id, candidate, note_id=None):
             raise ForbiddenError('Note (id = {}) does not belong to candidate (id = {})'.format(note_id, candidate_id),
                                  custom_error.NOTE_FORBIDDEN)
 
-        return {'candidate_note':
-            {
+        return {
+            'candidate_note': {
                 'id': note_id,
                 'candidate_id': candidate_id,
                 'owner_id': candidate.user.id,
                 'comment': note.comment,
-                'added_time': str(note.added_time)}
+                'added_time': str(note.added_time)
+            }
         }
 
     # return all of candidate's notes
     else:
+        # Note's owner ID
+        owner_id = candidate.user.id
+
         candidate_notes = []
         for note in CandidateTextComment.get_by_candidate_id(candidate_id):
-            # Note's owner ID
-            owner_id = candidate.user.id
-
             candidate_notes.append({
                 'id': note.id,
                 'candidate_id': candidate_id,
