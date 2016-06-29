@@ -572,7 +572,7 @@ class TestUpdateWorkPreference(object):
 
     def test_update_work_preference(self, access_token_first, user_first, talent_pool):
         """
-        Test:   Update existing CandidateWorkPreference. Since this is an update,
+        Test:   Update candidate's work preference. Since this is an update,
                 number of CandidateWorkPreference must remain unchanged.
         Expect: 200
         """
@@ -594,12 +594,12 @@ class TestUpdateWorkPreference(object):
 
         # Retrieve Candidate after update
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-        work_preference_dict = candidate_dict['work_preference']
+        updated_candidate_dict = get_resp.json()['candidate']
+        work_preference_dict = updated_candidate_dict['work_preference']
 
         work_pref_from_data = data['candidates'][0]['work_preference']
 
-        assert candidate_id == candidate_dict['id']
+        assert candidate_id == updated_candidate_dict['id']
         assert isinstance(work_preference_dict, dict)
         assert work_preference_dict['salary'] == work_pref_from_data['salary']
         assert work_preference_dict['hourly_rate'] == float(work_pref_from_data['hourly_rate'])
