@@ -473,11 +473,14 @@ class RSVPBase(object):
                                  headers=headers,
                                  data=json.dumps(candidate_source))
 
-        if response.status_code != 201:
+        # Source already exist
+        if response.status_code == 400:
+            attendee.candidate_source_id = response.json()['error']['source_id']
+        elif response.status_code != 201:
             logger.exception(response.text)
             raise InternalServerError(error_message="Error while creating candidate source")
-
-        attendee.candidate_source_id = response.json()['source']['id']
+        else:
+            attendee.candidate_source_id = response.json()['source']['id']
 
         return attendee
 
