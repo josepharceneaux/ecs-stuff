@@ -29,15 +29,16 @@ api.route = types.MethodType(api_route, api)
 
 @api.route(SocialNetworkApi.IMPORTER)
 class RsvpEventImporter(Resource):
+    # TODO--are the following comments OK and correct?
     """
         This resource gets all RSVPs or events.
 
         This function is called when we run celery to import events or RSVPs from
         social network website.
 
-        1- meetup
-        2- facebook.
-        3- eventbrite (only in case of events)
+        1- Meetup
+        2- Facebook.
+        3- Eventbrite (only in case of events)
 
         ** Working **
         What this method does, is explained in following steps:
@@ -63,7 +64,9 @@ class RsvpEventImporter(Resource):
         # Start celery rsvp importer method here.
         if mode.lower() not in ["event", "rsvp"]:
             raise InvalidUsage("No mode of value %s found" % mode)
-        # TODO: Pep8 issue
+
+        # TODO: Pep8 issue (Basit)
+        # TODO--I think we need to break after 'or' and raise exceptions seperately
         if not (social_network.lower() in ["meetup", "facebook"] or
                     (mode.lower() == 'event' and social_network.lower() == 'eventbrite')):
             # TODO: Should raise not implemented
@@ -73,6 +76,8 @@ class RsvpEventImporter(Resource):
         if social_network is not None: # TODO: We have validated this above I think
             social_network_name = social_network.lower()
             try:
+                # TODO--I think we should keep only the following statement within try/except and catch a more
+                # specific exception
                 social_network_obj = SocialNetwork.get_by_name(social_network_name)
                 # TODO: if not social_network_obj: raise ...
                 social_network_id = social_network_obj.id
@@ -82,7 +87,9 @@ class RsvpEventImporter(Resource):
                                           % social_network_name)
 
         all_user_credentials = UserSocialNetworkCredential.get_all_credentials(social_network_id)
-        # TODO: we can add logger.info() here that we got say 1000 users for Meetup.
+
+        # TODO: we can add logger.info() here that we got say 1000 users for Meetup.(Basit)
+        # TODO--please comment the code here
         if all_user_credentials:
             for user_credentials in all_user_credentials:
                 rsvp_events_importer.apply_async([social_network, mode, user_credentials])
@@ -96,9 +103,10 @@ class RsvpEventImporter(Resource):
 
 @api.route(SocialNetworkApi.EVENTBRITE_IMPORTER)
 class RsvpImporterEventbrite(Resource):
+    # TODO--are the following comments OK?
     """
         This resource get all RSVPs or events. This callback method will be called when someone hit register
-        on an eventbrite event.
+        on an Eventbrite event.
 
         ** Working **
         What this method does, is explained in following steps:
@@ -124,13 +132,16 @@ class RsvpImporterEventbrite(Resource):
         It first finds the getTalent user having incoming webhook id.
         Then it creates the candidate in candidate table by getting information
         of attendee. Then it inserts in rsvp table the required information.
-        It will also insert an entry in DB table activity
+        It will also insert an entry in activity database table.
         """
         user_id = ''
+
         if request.data:
+            # TODO--try / except shouldn't contain this much code
             try:
                 data = json.loads(request.data)
                 action = data['config']['action']
+                # TODO -- strip and lower action
                 if action == 'order.placed':
                     webhook_id = data['config']['webhook_id']
                     user_credentials = \
@@ -154,6 +165,7 @@ class RsvpImporterEventbrite(Resource):
             except Exception as error:
                 logger.exception('handle_rsvp: Request data: %s, user_id: %s',
                                  request.data, user_id)
+                # TODO--kindly use request.codes instead of 500 and 200
                 data = {'message': error.message,
                         'status_code': 500}
                 return flask.jsonify(**data), 500
@@ -171,7 +183,7 @@ class RsvpImporterEventbrite(Resource):
 
 def schedule_importer_job():
     """
-    Schedule a general job which hit RSVP importer endpoint every hour.
+    Schedule a general job that hits RSVP importer endpoint every hour.
     :return:
     """
     task_name_meetup = 'Retrieve Meetup RSVP'
@@ -186,7 +198,7 @@ def schedule_importer_job():
 
 def schedule_job(url, task_name):
     """
-    Schedule a general job which hit RSVP importer endpoint every hour.
+    Schedule a general job that hits RSVP importer endpoint every hour.
     :param url: URL to hit
     :type url: basestring
     :param task_name: task_name of scheduler job
@@ -213,6 +225,7 @@ def schedule_job(url, task_name):
     }
     response = requests.get(SchedulerApiUrl.TASK_NAME % task_name, headers=headers)
     # If job is not scheduled then schedule it
+    # TODO--use request.codes
     if response.status_code == 404:
         data.update({'url': url})
         data.update({'task_name': task_name})

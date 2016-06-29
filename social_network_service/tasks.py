@@ -21,7 +21,7 @@ from social_network_service.social_network_app import celery_app as celery, app
 def rsvp_events_importer(social_network_name, mode, user_credentials):
     """
     Imports RSVPs or events of a user, create candidates store them in db and also upload them on Cloud search
-    :param social_network_name: facebook, eventbrite, meetup
+    :param social_network_name: Facebook, Eventbrite, Meetup
     :param mode: rsvp or event
     :param app: Flask app
     :return:

@@ -72,14 +72,15 @@ def get_web_app_url():
 
 def get_webhook_app_url():
     """
-    Returns callback webhook url for eventbrite
+    Returns callback webhook url for Eventbrite
     :return:
     """
+    # TODO--kindly add bit more detial in the comment i.e. this webhook is used where and what's its purpose
     env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
     if env == TalentEnvs.DEV:
         return 'http://gettalent.ngrok.io/%s' % SocialNetworkApi.EVENTBRITE_IMPORTER
     else:
-        return _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME, GTApis.SOCIAL_NETWORK_SERVICE_PORT) + '/' \
+        return _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME, GTApis.SOCIAL_NETWORK_SERVICE_PORT) \
                + SocialNetworkApi.EVENTBRITE_IMPORTER
     # TODO: If it is specific to social-network-service, it should be inside respective service or respective
     # TODO: class in routes.py
@@ -644,7 +645,7 @@ class SocialNetworkApi(object):
     # TODO: you be so kind to explain this?
     TIMEZONES = '/' + VERSION + '/data/timezones'
     RSVP = '/' + VERSION + '/rsvp'
-    CODE = '/' + VERSION + '/code'
+    CODE = '/' + VERSION + '/coe'
     # TODO: Why second '+' here?
     # TODO: Is this restful? We need to discuss this. IMO, /v1/importer?social_network=meetup&mode=rsvp is clearer.
     # TODO: (http://rest.elkstein.org/2008/02/more-complex-rest-requests.html)
@@ -678,6 +679,7 @@ class SocialNetworkApiUrl(object):
     CODE = HOST_NAME % ('/' + VERSION + '/code')
     IMPORTER = HOST_NAME % ('/' + VERSION + '/importer/%s/%s')
     EVENTBRITE_IMPORTER = HOST_NAME % ('/' + VERSION + '/importer/eventbrite')
+    #TODO--we should avoid concatenation
 
 
 class SmsCampaignApi(object):

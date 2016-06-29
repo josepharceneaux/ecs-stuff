@@ -44,6 +44,7 @@ class TalentPool(db.Model):
         # TODO: Add rtype
         # TODO: kindly make sure of these minor nits before asking for code review. Thanks.
         # TODO: Docs says first record, I don't see .first() here. Kindly double check.
+        # TODO--document the arg in docstring and assert (Waqas)
         return cls.query.filter_by(user_id=user_id)
 
 
