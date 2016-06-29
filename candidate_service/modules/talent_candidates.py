@@ -476,7 +476,7 @@ def candidate_contact_history(candidate):
         event_datetime = email_campaign_send.sent_datetime
         event_type = ContactHistoryEvent.EMAIL_SEND
 
-        timeline.insert(0, dict(id=hashlib.md5(str(event_datetime) + event_type).hexdigest(),
+        timeline.insert(0, dict(id=hashlib.md5(str(event_datetime) + event_type + str(email_campaign.id)).hexdigest(),
                                 email_campaign_id=email_campaign.id,
                                 event_datetime=email_campaign_send.sent_datetime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
@@ -500,7 +500,7 @@ def candidate_contact_history(candidate):
             event_type = ContactHistoryEvent.EMAIL_OPEN
 
             timeline.append(dict(
-                id=hashlib.md5(str(event_datetime) + event_type).hexdigest(),
+                id=hashlib.md5(str(event_datetime) + event_type + str(email_campaign.id)).hexdigest(),
                 email_campaign_id=email_campaign.id,
                 campaign_name=email_campaign.name,
                 event_type=event_type,
