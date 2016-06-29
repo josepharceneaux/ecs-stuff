@@ -37,6 +37,7 @@ class RsvpEventImporter(Resource):
 
         1- meetup
         2- facebook.
+        3- eventbrite (only in case of events)
 
         ** Working **
         What this method does, is explained in following steps:

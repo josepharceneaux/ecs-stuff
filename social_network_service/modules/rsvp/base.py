@@ -10,24 +10,22 @@ import json
 from abc import ABCMeta
 from abc import abstractmethod
 
-# Application Specific
+# Third Party libraries
 import requests
 
+# Application Specific
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.inter_service_calls.candidate_service_calls import \
     create_candidates_from_candidate_api
-from social_network_service.common.models import db
 from social_network_service.common.models.rsvp import RSVP
 from social_network_service.common.models.talent_pools_pipelines import TalentPool
 from social_network_service.common.models.user import User, Token
 from social_network_service.common.models.misc import Product
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.candidate import Candidate
-from social_network_service.common.models.candidate import CandidateSource
 from social_network_service.common.models.candidate import CandidateSocialNetwork
 from social_network_service.common.routes import UserServiceApiUrl
-from social_network_service.common.utils.handy_functions import generate_jwt_headers
 from social_network_service.custom_exceptions import UserCredentialsNotFound, ProductNotFound
 from social_network_service.social_network_app import logger
 
