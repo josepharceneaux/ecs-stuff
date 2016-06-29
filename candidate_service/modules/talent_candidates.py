@@ -1865,6 +1865,12 @@ def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
             if candidate_email_obj.candidate_id != candidate_id:
                 raise ForbiddenError('Unauthorized candidate email', custom_error.EMAIL_FORBIDDEN)
 
+            # Email must not belong to another candidate in the same domain
+            unauthorized_email = CandidateEmail.get_email_in_users_domain(request.user.domain_id, email_address)
+            if unauthorized_email:
+                raise ForbiddenError("Email (address = {}) belongs to someone else!".
+                                     format(unauthorized_email.address), custom_error.EMAIL_FORBIDDEN)
+
             # Track all changes
             track_edits(update_dict=email_dict, table_name='candidate_email',
                         candidate_id=candidate_id, user_id=user_id, query_obj=candidate_email_obj)
