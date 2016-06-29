@@ -381,7 +381,7 @@ class TestUpdateWorkExperience(object):
     def test_add_experiences(self, access_token_first, user_first, talent_pool):
         """
         Test:  Add candidate work experience and check for total months of experiences accumulated
-        Expct: Candidate.total_months_experience to be updated accordingly
+        Expect: Candidate.total_months_experience to be updated accordingly
         """
         AddUserRoles.all_roles(user_first)
         data = {'candidates': [
@@ -395,7 +395,7 @@ class TestUpdateWorkExperience(object):
         ]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 201
+        assert create_resp.status_code == requests.codes.CREATED
 
         # Check candidate's total_months_experience from db
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -410,12 +410,13 @@ class TestUpdateWorkExperience(object):
         experience_id = get_resp.json()['candidate']['work_experiences'][0]['id']
         update_data = {'candidates': [
             {'id': candidate_id, 'work_experiences': [
-                {'id': experience_id, 'start_year': 2003, 'end_year': 2007}]  # 12*4 = 48 months of experience
-             }]}
+                {'id': experience_id, 'start_year': 2003, 'end_year': 2011}]  # 12 * 8 = 96 months of experience
+             }
+        ]}
         update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, update_data)
         print response_info(update_resp)
         db.session.commit()
-        assert candidate.total_months_experience == 72  # (84 - 60) + 48
+        assert candidate.total_months_experience == 120  # (84 - 60) + 96
 
     def test_add_candidate_experience(self, access_token_first, user_first, talent_pool):
         """
@@ -520,8 +521,9 @@ class TestUpdateWorkExperience(object):
                 must remain unchanged.
         Expect: 200
         """
-        # Create Candidate
         AddUserRoles.add_get_edit(user_first)
+
+        # Create Candidate
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -537,6 +539,7 @@ class TestUpdateWorkExperience(object):
         data = GenerateCandidateData.work_experiences(candidate_id=candidate_id,
                                                       experience_id=experience_dict['id'],
                                                       bullet_id=experience_dict['bullets'][0]['id'])
+        print "\ndata: {}".format(data)
         updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(updated_resp)
 

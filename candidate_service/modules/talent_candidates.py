@@ -1427,12 +1427,12 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                         raise ForbiddenError('Unauthorized candidate degree', custom_error.DEGREE_FORBIDDEN)
 
                     # If start year needs to be updated, it cannot be greater than existing end year
-                    if start_year > can_edu_degree_obj.end_year:
+                    if start_year and not end_year and (start_year > can_edu_degree_obj.end_year):
                         raise InvalidUsage('Start year ({}) cannot be greater than end year ({})'.format(
                             start_year, can_edu_degree_obj.end_year))
 
                     # If end year needs to be updated, it cannot be less than existing start year
-                    if end_year < can_edu_degree_obj.start_year:
+                    if end_year and not start_year and (end_year < can_edu_degree_obj.start_year):
                         raise InvalidUsage('End year ({}) cannot be less than start year ({})'.format(
                             end_year, can_edu_degree_obj.start_year))
 
@@ -1687,12 +1687,11 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                 raise ForbiddenError('Unauthorized candidate experience', custom_error.EXPERIENCE_FORBIDDEN)
 
             # If start year needs to be updated, it must not be greater than existing end year
-            if start_year > can_exp_obj.end_year:
+            if start_year and not end_year and (start_year > can_exp_obj.end_year):
                 raise InvalidUsage('Start year ({}) cannot be greater than end year ({})'.format(start_year,
                                                                                                  can_exp_obj.end_year))
-
             # If end year needs to be updated, it must not be less than existing start year
-            if end_year < can_exp_obj.start_year:
+            if end_year and not start_year and (end_year < can_exp_obj.start_year):
                 raise InvalidUsage('End year ({}) cannot be less than start year ({})'.format(end_year,
                                                                                               can_exp_obj.start_year))
 
