@@ -293,7 +293,8 @@ def test_v15_pdf_by_post_with_create(token_fixture, user_fixture):
     """Test that v1.5 pdf files can be posted."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS,
-                                         DomainRole.Roles.CAN_GET_CANDIDATES])
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES])
     content, status = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
@@ -301,7 +302,8 @@ def test_v15_pdf_by_post_with_create(token_fixture, user_fixture):
 def test_doc_FP_with_create(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES])
     content, status = fetch_resume_fp_key_response(token_fixture, DOC_890, create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
@@ -310,7 +312,8 @@ def test_985_from_fp_key(token_fixture, user_fixture):
     """Test that .doc files from S3 can be parsed."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS,
-                                         DomainRole.Roles.CAN_GET_CANDIDATES])
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES])
     content, status = fetch_resume_fp_key_response(token_fixture, "Bruncak.Daren.doc", create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
@@ -318,7 +321,8 @@ def test_985_from_fp_key(token_fixture, user_fixture):
 def test_create_candidate_from_resume_without_name(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES])
     content, status = fetch_resume_post_response(token_fixture, 'Adams.John.doc', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
@@ -326,7 +330,8 @@ def test_create_candidate_from_resume_without_name(token_fixture, user_fixture):
 def test_create_candidate_from_resume_ben_fred(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES])
     content, status = fetch_resume_post_response(token_fixture, 'ben.fred.doc', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
@@ -334,7 +339,8 @@ def test_create_candidate_from_resume_ben_fred(token_fixture, user_fixture):
 def test_create_candidate_from_no_email_resume(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES])
     content, status = fetch_resume_post_response(token_fixture, 'no_email_resume.doc', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
@@ -342,7 +348,8 @@ def test_create_candidate_from_no_email_resume(token_fixture, user_fixture):
 def test_create_candidate_from_no_address_resume(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES])
     content, status = fetch_resume_post_response(token_fixture, 'no_address.doc', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
