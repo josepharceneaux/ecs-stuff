@@ -1384,6 +1384,8 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
             # CandidateEducationDegree
             for education_degree in education_degrees:
 
+                # TODO: validate all date inputs. For example, start date must be before end date
+
                 # Start year must not be later than end year
                 start_year, end_year = education_degree.get('start_year'), education_degree.get('end_year')
                 if (start_year and end_year) and (start_year > end_year):
@@ -1423,6 +1425,16 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     # CandidateEducationDegree must belong to Candidate
                     if can_edu_degree_obj.candidate_education.candidate_id != candidate_id:
                         raise ForbiddenError('Unauthorized candidate degree', custom_error.DEGREE_FORBIDDEN)
+
+                    # If start year needs to be updated, it cannot be greater than existing end year
+                    if start_year > can_edu_degree_obj.end_year:
+                        raise InvalidUsage('Start year ({}) cannot be greater than end year ({})'.format(
+                            start_year, can_edu_degree_obj.end_year))
+
+                    # If end year needs to be updated, it cannot be less than existing start year
+                    if end_year < can_edu_degree_obj.start_year:
+                        raise InvalidUsage('End year ({}) cannot be less than start year ({})'.format(
+                            end_year, can_edu_degree_obj.start_year))
 
                     # Track all changes made to CandidateEducationDegree
                     track_edits(update_dict=education_degree_dict, table_name='candidate_education_degree',
@@ -1638,6 +1650,10 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             elif not end_year and (start_year != latest_start_date):
                 end_year = start_year + 1
 
+        # Start year cannot be greater than end year
+        if (start_year and end_year) and start_year > end_year:
+            raise InvalidUsage('Start year ({}) cannot be greater than end year ({})'.format(start_year, end_year))
+
         country_code = work_experience['country_code'].upper().strip() if work_experience.get('country_code') else None
         subdivision_code = work_experience['subdivision_code'].upper().strip() \
             if work_experience.get('subdivision_code') else None
@@ -1669,6 +1685,16 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             # CandidateExperience must belong to Candidate
             if can_exp_obj.candidate_id != candidate_id:
                 raise ForbiddenError('Unauthorized candidate experience', custom_error.EXPERIENCE_FORBIDDEN)
+
+            # If start year needs to be updated, it must not be greater than existing end year
+            if start_year > can_exp_obj.end_year:
+                raise InvalidUsage('Start year ({}) cannot be greater than end year ({})'.format(start_year,
+                                                                                                 can_exp_obj.end_year))
+
+            # If end year needs to be updated, it must not be less than existing start year
+            if end_year < can_exp_obj.start_year:
+                raise InvalidUsage('End year ({}) cannot be less than start year ({})'.format(end_year,
+                                                                                              can_exp_obj.start_year))
 
             # Add up candidate's total months of experience
             update_total_months_experience(candidate, experience_dict, can_exp_obj)
