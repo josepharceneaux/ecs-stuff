@@ -476,7 +476,7 @@ def candidate_contact_history(candidate):
         event_datetime = email_campaign_send.sent_datetime
         event_type = ContactHistoryEvent.EMAIL_SEND
 
-        timeline.insert(0, dict(id=hashlib.md5(str(event_datetime) + event_type).hexdigest(),
+        timeline.insert(0, dict(id=hashlib.md5(str(event_datetime) + event_type + str(email_campaign.id)).hexdigest(),
                                 email_campaign_id=email_campaign.id,
                                 event_datetime=email_campaign_send.sent_datetime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
@@ -500,7 +500,7 @@ def candidate_contact_history(candidate):
             event_type = ContactHistoryEvent.EMAIL_OPEN
 
             timeline.append(dict(
-                id=hashlib.md5(str(event_datetime) + event_type).hexdigest(),
+                id=hashlib.md5(str(event_datetime) + event_type + str(email_campaign.id)).hexdigest(),
                 email_campaign_id=email_campaign.id,
                 campaign_name=email_campaign.name,
                 event_type=event_type,
@@ -1864,6 +1864,12 @@ def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
             # CandidateEmail must belong to Candidate
             if candidate_email_obj.candidate_id != candidate_id:
                 raise ForbiddenError('Unauthorized candidate email', custom_error.EMAIL_FORBIDDEN)
+
+            # Email must not belong to another candidate in the same domain
+            unauthorized_email = CandidateEmail.get_email_in_users_domain(request.user.domain_id, email_address)
+            if unauthorized_email:
+                raise ForbiddenError("Email (address = {}) belongs to someone else!".
+                                     format(unauthorized_email.address), custom_error.EMAIL_FORBIDDEN)
 
             # Track all changes
             track_edits(update_dict=email_dict, table_name='candidate_email',
