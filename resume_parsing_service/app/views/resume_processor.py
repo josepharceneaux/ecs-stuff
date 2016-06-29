@@ -4,6 +4,7 @@
 import json
 # Third Party/Framework Specific.
 import requests
+from flask import current_app
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.views.parse_lib import parse_resume
@@ -53,7 +54,8 @@ def process_resume(parse_params):
     # Upload resumes we want to create candidates from.
     try:
         resume_file.seek(0)
-        boto3_put(resume_file.read(), filename_str, 'OriginalFiles')
+        bucket = current_app.config['S3_BUCKET_NAME']
+        boto3_put(resume_file.read(), bucket, filename_str, 'OriginalFiles')
         parsed_resume['candidate']['resume_url'] = filename_str
 
     except Exception as e:
@@ -91,7 +93,7 @@ def get_or_store_parsed_resume(resume_file, filename_str):
     :param filename_str:
     :return:
     """
-    hashed_file_name = gen_hash_from_file(resume_file)
+    hashed_file_name = 'parsedResume_{}'.format(gen_hash_from_file(resume_file))
     cached_resume = redis_store.get(hashed_file_name)
 
     if cached_resume:

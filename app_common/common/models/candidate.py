@@ -24,6 +24,7 @@ class Candidate(db.Model):
     is_mobile_hidden = db.Column('IsMobileHidden', TINYINT, default=False)
     user_id = db.Column('OwnerUserId', BIGINT, db.ForeignKey('user.Id'))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
     domain_can_read = db.Column('DomainCanRead', TINYINT, default=True)
     domain_can_write = db.Column('DomainCanWrite', TINYINT, default=False)
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
@@ -221,6 +222,16 @@ class CandidateSource(db.Model):
         :rtype:  list[CandidateSource]
         """
         return cls.query.filter_by(domain_id=domain_id).all()
+
+    @classmethod
+    def get_domain_source(cls, source_id, domain_id):
+        """
+        Function will return domain source
+        :type source_id:  int | long
+        :type domain_id:  int | long
+        :rtype:  CandidateSource | None
+        """
+        return cls.query.filter_by(id=source_id, domain_id=domain_id).first()
 
 
 class PublicCandidateSharing(db.Model):
@@ -507,6 +518,7 @@ class CandidateTextComment(db.Model):
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     list_order = db.Column('ListOrder', db.Integer)
+    title = db.Column(db.String(255))
     comment = db.Column('Comment', db.Text)
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)

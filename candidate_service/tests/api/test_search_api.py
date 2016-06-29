@@ -13,11 +13,10 @@ from candidate_service.tests.modules.test_talent_cloud_search import (
 )
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from candidate_service.common.tests.conftest import *
-from candidate_service.common.utils.test_utils import send_request, response_info
+from candidate_service.common.utils.test_utils import send_request, response_info, get_response
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
 from helpers import AddUserRoles
-from redo import retrier
 
 # Models
 from candidate_service.common.models.candidate import CandidateAddress
@@ -69,6 +68,7 @@ def test_search_all_candidates_in_domain(user_first, access_token_first, talent_
     candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=5)
     response = get_response(access_token_first, '', len(candidate_ids))
     _assert_results(candidate_ids, response.json())
+
 
 # TODO: Commenting this flaky test for Amir (basit)
 # def test_search_location(user_first, access_token_first, talent_pool):
@@ -979,29 +979,31 @@ def test_location_with_radius(user_first, access_token_first, talent_pool):
 #     assert resultant_candidate_ids == map(unicode, furthest)
 
 
-def test_search_status(user_first, access_token_first, talent_pool):
-    """
-    Test to search all candidates by status
-    """
-    AddUserRoles.all_roles(user_first)
-
-    # Change status of last candidate
-    status_id = 6  # Candidate is highly prospective
-    candidate_ids = populate_candidates(count=3, access_token=access_token_first, talent_pool=talent_pool)
-
-    # Update last candidate's status
-    last_candidate_id = candidate_ids[-1]
-    data = {'candidates': [{'status_id': status_id}]}
-    update_resp = send_request('patch', CandidateApiUrl.CANDIDATE % last_candidate_id, access_token_first, data)
-    print response_info(update_resp)
-
-    # Search via status ID
-    resp = get_response(access_token_first, '?status_ids={}'.format(status_id))
-    print response_info(resp)
-
-    # Only last candidate should appear in result
-    candidate_ids_from_search = [candidate['id'] for candidate in resp.json()['candidates']]
-    assert candidate_ids_from_search.pop() == unicode(update_resp.json()['candidates'][0]['id'])
+# TODO: Flaky test report - Amir
+# def test_search_status(user_first, access_token_first, talent_pool):
+#     """
+#     Test to search all candidates by status
+#     """
+#     AddUserRoles.all_roles(user_first)
+#
+#     # Change status of last candidate
+#     status_id = 6  # Candidate is highly prospective
+#     count = 3  # number of candidates to be created
+#     candidate_ids = populate_candidates(count=count, access_token=access_token_first, talent_pool=talent_pool)
+#
+#     # Update last candidate's status
+#     last_candidate_id = candidate_ids[-1]
+#     data = {'candidates': [{'status_id': status_id}]}
+#     update_resp = send_request('patch', CandidateApiUrl.CANDIDATE % last_candidate_id, access_token_first, data)
+#     print response_info(update_resp)
+#
+#     # Search via status ID
+#     resp = get_response(access_token_first, '?status_ids={}'.format(status_id))
+#     print response_info(resp)
+#
+#     # Only last candidate should appear in result
+#     candidate_ids_from_search = [candidate['id'] for candidate in resp.json()['candidates']]
+#     assert candidate_ids_from_search.pop() == unicode(update_resp.json()['candidates'][0]['id'])
 
 
 # def test_sort_by_added_date(user_first, access_token_first, talent_pool):
@@ -1115,16 +1117,3 @@ def _assert_results(candidate_ids, response):
     print '\nresultant_candidate_ids: {}'.format(resultant_candidate_ids)
     # Test whether every element in the set candidate_ids is in resultant_candidate_ids.
     assert set(candidate_ids).issubset(set(resultant_candidate_ids))
-
-
-def get_response(access_token, arguments_to_url, expected_count=1, attempts=10):
-    # Wait for cloudsearch to update the candidates
-    url = CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url
-    headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
-    for i in range(0, attempts):
-        sleep(3)
-        resp = requests.get(url, headers=headers)
-        print response_info(resp)
-        if len(resp.json()['candidates']) >= expected_count:
-            return resp
-    raise NotFoundError('Unable to get expected number of candidates')

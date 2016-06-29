@@ -377,155 +377,6 @@ class TestUpdateCandidateAOI(object):
         assert len(candidate_aois) == candidate_area_of_interest_count + 2
 
 
-class TestUpdateCandidateEducation(object):
-    def test_add_new_education(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Add a new CandidateEducation. Candidate's CandidateEducation count should
-                increase by 1.
-        Expect: 200
-        """
-        # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-
-        can_educations_count = len(candidate_dict['educations'])
-
-        # Add new CandidateEducation
-        data = GenerateCandidateData.educations(candidate_id=candidate_id)
-        updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(updated_resp)
-
-        # Retrieve Candidate after update
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        updated_can_dict = get_resp.json()['candidate']
-        updated_educations = updated_can_dict['educations']
-
-        can_ed_from_data = data['candidates'][0]['educations'][0]
-        can_ed_degrees = can_ed_from_data['degrees'][0]
-        can_ed_degree_bullets = can_ed_degrees['bullets'][0]
-
-        assert candidate_id == updated_can_dict['id']
-        assert isinstance(updated_educations, list)
-        assert updated_educations[-1]['city'] == can_ed_from_data['city']
-        assert updated_educations[-1]['school_name'] == can_ed_from_data['school_name']
-        assert updated_educations[-1]['degrees'][-1]['type'] == can_ed_degrees['type']
-        assert updated_educations[-1]['degrees'][-1]['title'] == can_ed_degrees['title']
-        assert updated_educations[-1]['degrees'][-1]['bullets'][-1]['major'] == can_ed_degree_bullets['major']
-        assert updated_educations[-1]['country'] == pycountry.countries.get(
-            alpha2=can_ed_from_data['country_code']).name
-        assert len(updated_educations) == can_educations_count + 1
-
-    def test_update_education_of_a_diff_candidate(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Update education information of a different Candidate
-        Expect: 403
-        """
-        AddUserRoles.all_roles(user_first)
-
-        # Create Candidate
-        data_1 = generate_single_candidate_data([talent_pool.id])
-        data_2 = generate_single_candidate_data([talent_pool.id])
-        resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
-        resp_2 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_2)
-        candidate_1_id = resp_1.json()['candidates'][0]['id']
-        candidate_2_id = resp_2.json()['candidates'][0]['id']
-
-        # Retrieve Candidate
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_1_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-
-        # Update existing CandidateEducation of a different Candidate
-        data = GenerateCandidateData.educations(candidate_id=candidate_2_id,
-                                                education_id=candidate_dict['educations'][0]['id'])
-        updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(updated_resp)
-        assert updated_resp.status_code == 403
-        assert updated_resp.json()['error']['code'] == custom_error.EDUCATION_FORBIDDEN
-
-    def test_update_education_primary_info(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Updates candidate's education's city, school_name, and state
-                Since this is an update only, total number of candidate's education
-                must remain unchanged.
-        Expect: 200
-        """
-        # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-
-        candidate_education_count = len(candidate_dict['educations'])
-
-        # Update existing CandidateEducation
-        data = GenerateCandidateData.educations(candidate_id=candidate_id,
-                                                education_id=candidate_dict['educations'][0]['id'])
-        updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(updated_resp)
-
-        # Retrieve Candidate after update
-        updated_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        education_dict = updated_resp.json()['candidate']['educations'][0]
-
-        can_ed_from_data = data['candidates'][0]['educations'][0]
-        assert education_dict['city'] == can_ed_from_data['city']
-        assert education_dict['subdivision'] == pycountry.subdivisions.get(
-            code=can_ed_from_data['subdivision_code']).name
-        assert education_dict['school_name'] == can_ed_from_data['school_name']
-        assert education_dict['country'] == pycountry.countries.get(alpha2=can_ed_from_data['country_code']).name
-        assert len(updated_resp.json()['candidate']['educations']) == candidate_education_count
-
-    def test_add_education_degree(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Add CandidateEducationDegree to an existing candidate's education.
-                The number of CandidateEducationDegree must increase by 1 for this candidate.
-        Expect: 200
-        """
-        # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-
-        candidate_education_count = len(candidate_dict['educations'][0]['degrees'])
-
-        # Update existing CandidateEducation
-        data = {'candidates': [{'id': candidate_id, 'educations': [
-            {'id': candidate_dict['educations'][0]['id'], 'degrees': [
-                {'type': 'AA', 'title': 'associate', 'bullets': [
-                    {'major': 'mathematics', 'comments': 'obtained a high GPA whilst working full time'}
-                ]}
-            ]}
-        ]}]}
-        updated_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(updated_resp)
-
-        # Retrieve Candidate after update
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        updated_can_dict = get_resp.json()['candidate']
-        education_dict = updated_can_dict['educations'][0]
-
-        assert candidate_id == updated_can_dict['id']
-        assert len(education_dict['degrees']) == candidate_education_count + 1
-        assert education_dict['degrees'][-1]['type'] == 'AA'
-        assert education_dict['degrees'][-1]['title'] == 'associate'
-        assert education_dict['degrees'][-1]['bullets'][-1]['major'] == 'mathematics'
-
-
 class TestUpdateWorkExperience(object):
     def test_add_experiences(self, access_token_first, user_first, talent_pool):
         """
@@ -721,7 +572,7 @@ class TestUpdateWorkPreference(object):
 
     def test_update_work_preference(self, access_token_first, user_first, talent_pool):
         """
-        Test:   Update existing CandidateWorkPreference. Since this is an update,
+        Test:   Update candidate's work preference. Since this is an update,
                 number of CandidateWorkPreference must remain unchanged.
         Expect: 200
         """
@@ -743,12 +594,12 @@ class TestUpdateWorkPreference(object):
 
         # Retrieve Candidate after update
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-        work_preference_dict = candidate_dict['work_preference']
+        updated_candidate_dict = get_resp.json()['candidate']
+        work_preference_dict = updated_candidate_dict['work_preference']
 
         work_pref_from_data = data['candidates'][0]['work_preference']
 
-        assert candidate_id == candidate_dict['id']
+        assert candidate_id == updated_candidate_dict['id']
         assert isinstance(work_preference_dict, dict)
         assert work_preference_dict['salary'] == work_pref_from_data['salary']
         assert work_preference_dict['hourly_rate'] == float(work_pref_from_data['hourly_rate'])

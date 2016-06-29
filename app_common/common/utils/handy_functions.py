@@ -464,3 +464,4 @@ def normalize_value(value):
     """
     assert isinstance(value, basestring), "value must be of type string"
     return value.strip().lower()
+

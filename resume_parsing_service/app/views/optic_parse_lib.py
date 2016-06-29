@@ -20,6 +20,7 @@ from resume_parsing_service.app import logger
 from resume_parsing_service.app.views.OauthClient import OAuthClient
 from resume_parsing_service.common.error_handling import ForbiddenError, InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
+from resume_parsing_service.common.utils.handy_functions import normalize_value
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
 
@@ -151,9 +152,16 @@ def parse_candidate_emails(bs_contact_xml_list):
     for contact in bs_contact_xml_list:
         emails = contact.findAll('email')
         for e in emails:
-            email = e.text.strip()
-            output.append({'address': email})
-    return output
+            email_addr = normalize_value(e.text)
+            output.append(email_addr)
+
+    unique_emails = set(output)
+    unique_output = []
+
+    for email in unique_emails:
+        unique_output.append({'address': email})
+
+    return unique_output
 
 
 def parse_candidate_phones(bs_contact_xml_list):
@@ -169,7 +177,7 @@ def parse_candidate_phones(bs_contact_xml_list):
 
         for p in phones:
             raw_phone = p.text.strip()
-            phone_type = p.type
+            phone_type = p.get('type')
 
             # JSON_SCHEMA for candidates phone is max:20
             # This fixes issues with numbers like '1-123-45            67'

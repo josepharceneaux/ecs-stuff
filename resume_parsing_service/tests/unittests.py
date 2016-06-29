@@ -252,8 +252,8 @@ def test_g642_accuracy():
     addresses = parse_candidate_addresses(contact_xml_list)
     assert contact_xml['first_name'] == u'Bobby'
     assert contact_xml['last_name'] == u'Breland'
-    assert {'value': u'513-759-5877', 'label': 'Other'} in phones
-    assert {'value': u'513-477-3784', 'label': 'Other'} in phones
+    assert {'value': u'513-759-5877', 'label': 'Home'} in phones
+    assert {'value': u'513-477-3784', 'label': 'Mobile'} in phones
     assert GET_642_ADDRESS in addresses
     # Experience parsing.
     experience_xml_list = bs4(GET_642, 'lxml').findAll('experience')
@@ -348,12 +348,12 @@ def test_g646_accuracy():
     assert contact_xml['first_name'] == 'Patrick'
     assert contact_xml['last_name'] == 'Kaldawy'
     assert GET_646_ADDRESS in addresses
-    assert {'value': u'(858) 353-1111', 'label': 'Other'} in phones
-    assert {'value': u'(858) 353-2222', 'label': 'Other'} in phones
-    assert {'value': u'(858) 353-5555', 'label': 'Other'} in phones
-    assert {'value': u'(858) 353-3333', 'label': 'Other'} in phones
-    assert {'value': u'(858) 353-4444', 'label': 'Other'} in phones
-    assert {'value': u'+961 (70) 345-340', 'label': 'Other'} in phones
+    assert {'value': u'(858) 353-1111', 'label': 'Home'} in phones
+    assert {'value': u'(858) 353-2222', 'label': 'Mobile'} in phones
+    assert {'value': u'(858) 353-5555', 'label': 'Work'} in phones
+    assert {'value': u'(858) 353-3333', 'label': 'Work'} in phones
+    assert {'value': u'(858) 353-4444', 'label': 'Home Fax'} in phones
+    assert {'value': u'+961 (70) 345-340', 'label': 'Mobile'} in phones
     # Experience parsing.
     experience_xml_list = bs4(GET_646, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
@@ -764,3 +764,36 @@ def test_reference_parsing():
     references_list = soup.findAll('references')
     references = parse_candidate_reference(references_list)
     assert references == u'References\n\nDerek Framer - (408) 835-6219\nJamtry Jonas - (408) 923-7259\nJoaquín Rodrigo'
+
+
+def test_parses_duplicate_emails():
+    double_email = """
+        <contact>
+            <email>k_begonia@yahoo.com</email>
+            <email>k_begonia@yahoo.com</email>
+            <email>k_begonia2@yahoo.com</email>
+        </contact>
+    """
+    soup = bs4(double_email)
+    contact = soup.findAll('contact')
+    parsed_emails = parse_candidate_emails(contact)
+    assert len(parsed_emails) == 2
+
+
+def test_phone_label_testing():
+    phones_mixed = """
+        <contact>
+            <phone area="408" type="cell">(408) 867-5309</phone>
+            <phone area="409" type="work">(409) 867-5309</phone>
+            <phone area="410" type="fax">(410) 867-5309</phone>
+            <phone area="411" type="home">(411) 867-5309</phone>
+        </contact>
+    """
+    soup = bs4(phones_mixed)
+    contact = soup.findAll('contact')
+    parsed_phones = parse_candidate_phones(contact)
+    assert len(parsed_phones) == 4
+    assert any(phone['label'] == 'Mobile' for phone in parsed_phones)
+    assert any(phone['label'] == 'Work' for phone in parsed_phones)
+    assert any(phone['label'] == 'Home Fax' for phone in parsed_phones)
+    assert any(phone['label'] == 'Home' for phone in parsed_phones)

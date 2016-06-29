@@ -186,7 +186,15 @@ def test_meetup_credentials(request, sample_user, meetup):
 
 
 @pytest.fixture()
-def meetup_event_data(request, sample_user, meetup, meetup_venue, organizer_in_db):
+def meetup_group(test_meetup_credentials, token):
+    resp = send_request('get', SocialNetworkApiUrl.MEETUP_GROUPS, token)
+    assert resp.status_code == 200
+    # return first group
+    return resp.json()['groups'][0]
+
+
+@pytest.fixture()
+def meetup_event_data(request, sample_user, meetup, meetup_venue, organizer_in_db, meetup_group):
     """
     This fixture creates a dictionary containing event data to
     create event on Meetup social network.
@@ -197,6 +205,8 @@ def meetup_event_data(request, sample_user, meetup, meetup_venue, organizer_in_d
     data['social_network_id'] = meetup.id
     data['venue_id'] = meetup_venue.id
     data['organizer_id'] = organizer_in_db.id
+    data['group_url_name'] = meetup_group['urlname']
+    data['social_network_group_id'] = meetup_group['id']
 
     return data
 
@@ -214,16 +224,11 @@ def eventbrite_event_data(request, eventbrite, sample_user, eventbrite_venue,
 
 @pytest.fixture()
 def meetup_event(request, sample_user, test_meetup_credentials, meetup,
-                 meetup_venue, organizer_in_db, token):
-    event = EVENT_DATA.copy()
-    event['title'] = 'Meetup ' + event['title']
-    event['social_network_id'] = meetup.id
-    event['venue_id'] = meetup_venue.id
-    event['organizer_id'] = organizer_in_db.id
+                 meetup_venue, organizer_in_db, token, meetup_event_data):
     response = send_request('post',
                             url=SocialNetworkApiUrl.EVENTS,
                             access_token=token,
-                            data=event)
+                            data=meetup_event_data)
 
     assert response.status_code == 201
 
