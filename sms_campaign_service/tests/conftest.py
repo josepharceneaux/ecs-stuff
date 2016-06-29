@@ -297,20 +297,16 @@ def sms_campaign_with_one_valid_candidate(request, campaign_valid_data, access_t
 
 @pytest.fixture()
 def sms_campaign_with_same_candidate_in_multiple_smartlists(request, campaign_valid_data, talent_pipeline, headers,
-                                                            smartlist_with_two_candidates, access_token_first):
+                                                            access_token_first):
     """
     This fixture creates an SMS campaign with two smartlists.
     Smartlist 1 will have two candidates and smartlist 2 will have one candidate (which will be
     same as one of the two candidates of smartlist 1).
     """
-    smartlist_1_id, candidate_ids = smartlist_with_two_candidates
-    # Going to assign a candidate belonging to smartlist_1 to smartlist_2 so both will have same candidate
-    candidate_ids_for_smartlist_2 = [candidate_ids[0]]
-    smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, candidate_ids=candidate_ids_for_smartlist_2)
-    campaign_valid_data['smartlist_ids'] = [smartlist_1_id, smartlist_2_id]
-    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers,
-                                                    talent_pipeline.user.id)
+    smartlist_ids = CampaignsTestsHelpers.get_two_smartlists_with_same_candidate(talent_pipeline, access_token_first,
+                                                                                 count=2, create_phone=True)
+    campaign_valid_data['smartlist_ids'] = smartlist_ids
+    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers, talent_pipeline.user.id)
 
     def fin():
         _delete_campaign(test_sms_campaign, headers)

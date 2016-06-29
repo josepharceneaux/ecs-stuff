@@ -25,7 +25,7 @@ def get_task_definition(client, td_name):
         task_definition = client.describe_task_definition(taskDefinition=td_name)
         ecs_utils.validate_http_status('get_task_description', task_definition)
     except Exception as e:
-        print "Exception {} searching for task definition {}".format(e.message, td_name)
+        print "Exception searching for task definition {}: {}".format(e.message, td_name)
         exit(1)
 
     return task_definition
