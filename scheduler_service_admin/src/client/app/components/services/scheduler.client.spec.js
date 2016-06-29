@@ -152,7 +152,6 @@ describe('SchedulerClientService', function () {
         .respond(oneTimeTasks);
 
       schedulerClientService.getTasks({'task_category': 'one_time'}).then(function (response) {
-        console.log(response.data.tasks);
           expect(response.data.tasks).to.deep.equal(oneTimeTasks.tasks);
       });
 

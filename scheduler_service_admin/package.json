@@ -6,7 +6,8 @@
     "init": "npm install",
     "install": "bower install",
     "start": "node src/server/app.js",
-    "test": "gulp test"
+    "test": "gulp test",
+    "build": "gulp build"
   },
   "dependencies": {
     "body-parser": "^1.8.2",

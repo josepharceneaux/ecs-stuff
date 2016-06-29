@@ -16,11 +16,11 @@ var colors = $.util.colors;
 var envenv = $.util.env;
 var port = process.env.PORT || config.defaultPort;
 
-if(typeof(process.env.NODE_ENV) == 'undefined'){
-    process.env.ENV = 'dev';
+if(typeof(process.env.GT_NODE_ENV) == 'undefined'){
+    process.env.ENV = 'development';
 }
 else{
-  process.env.ENV = process.env.NODE_ENV;
+  process.env.ENV = process.env.GT_NODE_ENV;
 }
 
 /**
@@ -508,7 +508,7 @@ function getNodeOptions(isDev) {
     delayTime: 1,
     env: {
       'PORT': port,
-      'NODE_ENV': isDev ? 'dev' : 'build'
+      'NODE_ENV': isDev ? 'development' : 'build'
     },
     watch: [config.server]
   };
@@ -610,8 +610,8 @@ function startTests(singleRun, done) {
   var fork = require('child_process').fork;
   var Karma = require('karma').Server;
 
-  var env = process.env.NODE_ENV;
-  if (env === 'dev') {
+  var env = process.env.GT_NODE_ENV;
+  if (env === 'development') {
     log('Starting servers');
     var savedEnv = process.env;
     savedEnv.PORT = 8888;
