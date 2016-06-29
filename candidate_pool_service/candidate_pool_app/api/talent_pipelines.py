@@ -14,7 +14,7 @@ from candidate_pool_service.common.models.user import DomainRole
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
-    get_pipeline_growth, TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline,
+    get_pipeline_growth, TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, engagement_score_of_pipeline,
     get_stats_generic_function, top_most_engaged_candidates_of_pipeline, top_most_engaged_pipelines_of_candidate)
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 
@@ -58,13 +58,18 @@ class TalentPipelineApi(Resource):
                                                            get_growth_function=get_pipeline_growth)
             }
         else:
-            talent_pipelines = TalentPipeline.query.join(TalentPipeline.user).filter(User.domain_id ==
-                                                                              request.user.domain_id).all()
             sort_by = request.args.get('sort_by', 'added_time')
+            sort_type = request.args.get('sort_type', 'DESC')
+            search_keyword = request.args.get('search', '').strip()
+
+            talent_pipelines = TalentPipeline.query.join(TalentPipeline.user).filter(
+                    User.domain_id == request.user.domain_id and (TalentPipeline.name.ilike(
+                            '%' + search_keyword + '%') or TalentPipeline.description.ilike('%' + search_keyword + '%'))).all()
+
             page = request.args.get('page', DEFAULT_PAGE)
             per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
 
-            if talent_pipelines and sort_by not in ('growth', 'added_time'):
+            if talent_pipelines and sort_by not in ('growth', 'added_time', 'name', 'engagement_score'):
                 raise InvalidUsage('Value of sort parameter is not valid')
 
             if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
@@ -77,12 +82,25 @@ class TalentPipelineApi(Resource):
                                                              get_growth_function=get_pipeline_growth
                                                              ) for talent_pipeline in talent_pipelines
             ]
-            talent_pipelines_data = sorted(talent_pipelines_data,
-                                           key=lambda talent_pipeline_data: talent_pipeline_data[sort_by], reverse=True)
-            return dict(talent_pipelines=talent_pipelines_data[(page - DEFAULT_PAGE) *
-                                                               DEFAULT_PAGE_SIZE:page * DEFAULT_PAGE_SIZE],
-                        page_number=page,
-                        talent_pipelines_per_page=per_page, total_number_of_talent_pipelines=len(talent_pipelines_data))
+
+            if sort_by == 'engagement_score':
+                for talent_pipeline_data in talent_pipelines_data:
+                    talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_id)
+
+            talent_pipelines_data = sorted(talent_pipelines_data, key=lambda talent_pipeline_data: talent_pipeline_data[
+                sort_by], reverse=(True if sort_type == 'ASC' else False))
+
+            total_number_of_talent_pipelines = len(talent_pipelines_data)
+
+            talent_pipelines_data = talent_pipelines_data[(page - DEFAULT_PAGE) * DEFAULT_PAGE_SIZE:page * DEFAULT_PAGE_SIZE]
+
+            if sort_by != 'engagement_score':
+                for talent_pipeline_data in talent_pipelines_data:
+                    talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_id)
+
+            return dict(talent_pipelines=talent_pipelines_data,
+                        page_number=page, talent_pipelines_per_page=per_page,
+                        total_number_of_talent_pipelines=total_number_of_talent_pipelines)
 
     @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_PIPELINES)
     def delete(self, **kwargs):

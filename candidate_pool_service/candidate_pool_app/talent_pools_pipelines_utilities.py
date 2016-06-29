@@ -559,6 +559,41 @@ def top_most_engaged_candidates_of_pipeline(talent_pipeline_id, limit):
         return []
 
 
+def engagement_score_of_pipeline(talent_pipeline_id):
+    """
+    This endpoint will calculate engagement_score of a talent_pipeline
+    :param talent_pipeline_id: Id of talent_pipeline
+    :return: engagement_score of talent_pipeline
+    :rtype: list
+    """
+
+    sql_query = """
+    SELECT avg(engagement_score_for_each_sent.engagement_score) AS pipeline_engagement_score
+       FROM
+         (SELECT email_campaign_send.Id,
+                 email_campaign_send.EmailCampaignId,
+                 CASE WHEN sum(url_conversion.HitCount) = 0 THEN 0.0 WHEN sum(email_campaign_send_url_conversion.type * url_conversion.HitCount) > 0 THEN 100 ELSE 33.3 END AS engagement_score
+          FROM smart_list
+          INNER JOIN email_campaign_smart_list ON smart_list.Id = email_campaign_smart_list.SmartListId
+          INNER JOIN email_campaign_send ON email_campaign_send.EmailCampaignId = email_campaign_smart_list.EmailCampaignId
+          INNER JOIN email_campaign_send_url_conversion ON email_campaign_send_url_conversion.EmailCampaignSendId = email_campaign_send.Id
+          INNER JOIN url_conversion ON email_campaign_send_url_conversion.UrlConversionId = url_conversion.Id
+          WHERE smart_list.talentPipelineId = :talent_pipeline_id
+          GROUP BY email_campaign_send.Id, email_campaign_send.EmailCampaignId)
+    """
+
+    try:
+        engagement_score = db.session.connection().execute(text(sql_query), talent_pipeline_id=talent_pipeline_id)
+        result = engagement_score.fetchone()
+        if not result or not result['pipeline_engagement_score']:
+            return None
+        else:
+            return float(str(result['pipeline_engagement_score']))
+    except Exception as e:
+        logger.exception("Couldn't compute engagement score for pipeline(%s) because (%s)" % (talent_pipeline_id, e.message))
+        return None
+
+
 def top_most_engaged_pipelines_of_candidate(candidate_id, limit):
     """
     This endpoint will return top most engaged pipelines and their engagement score.
