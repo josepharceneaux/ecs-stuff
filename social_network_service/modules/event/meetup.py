@@ -246,8 +246,7 @@ class Meetup(EventBase):
                     # Organizer data looks like
                     # { u'name': u'Waqas Younas', u'member_id': 183366764}
                     group_organizer = group['results'][0]['organizer']
-                    url = self.api_url + '/member/' + \
-                          str(group_organizer['member_id']) + '?sign=true'
+                    url = self.api_url + '/member/' + str(group_organizer['member_id']) + '?sign=true'
                     response = http_request('GET', url, headers=self.headers,
                                             user_id=self.user.id)
                     if response.ok:
@@ -283,6 +282,7 @@ class Meetup(EventBase):
                 organizer_id = organizer_instance.id
         if venue:
             venue_data = dict(
+                social_network_id=self.social_network.id,
                 social_network_venue_id=venue['id'],
                 user_id=self.user.id,
                 address_line_1=venue['address_1'] if venue else '',
