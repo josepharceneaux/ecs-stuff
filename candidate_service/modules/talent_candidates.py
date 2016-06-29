@@ -1217,6 +1217,7 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
             address_line_1=address['address_line_1'].strip() if address.get('address_line_1') else None,
             address_line_2=address['address_line_2'].strip() if address.get('address_line_2') else None,
             city=city,
+            state=(address.get('state') or '').strip().lower(),
             iso3166_subdivision=subdivision_code,
             iso3166_country=country_code,
             zip_code=zip_code,
@@ -1347,6 +1348,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
             school_name=education['school_name'].strip() if education.get('school_name') else None,
             school_type=education['school_type'].strip() if education.get('school_type') else None,
             city=education['city'].strip() if education.get('city') else None,
+            state=(education.get('state') or '').strip().lower(),
             iso3166_subdivision=subdivision_code,
             iso3166_country=country_code,
             is_current=education.get('is_current')
@@ -1647,6 +1649,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             position=work_experience['position'].strip() if work_experience.get('position') else None,
             city=work_experience['city'].strip() if work_experience.get('city') else None,
             iso3166_subdivision=subdivision_code,
+            state=(work_experience.get('state') or '').strip().lower(),
             iso3166_country=country_code,
             end_month=work_experience.get('end_month') or 1,
             start_year=start_year,
@@ -1996,8 +1999,6 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
                                            additional_error_info={'id': candidate_id,
                                                                   'domain_id': request.user.domain_id})
                     db.session.add(CandidatePhone(**phone_dict))
-
-
 
 
 def _add_or_update_military_services(candidate, military_services, user_id, is_updating):
