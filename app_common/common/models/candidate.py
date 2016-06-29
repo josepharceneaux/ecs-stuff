@@ -24,6 +24,7 @@ class Candidate(db.Model):
     is_mobile_hidden = db.Column('IsMobileHidden', TINYINT, default=False)
     user_id = db.Column('OwnerUserId', BIGINT, db.ForeignKey('user.Id'))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
     domain_can_read = db.Column('DomainCanRead', TINYINT, default=True)
     domain_can_write = db.Column('DomainCanWrite', TINYINT, default=False)
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
