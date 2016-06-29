@@ -29,7 +29,7 @@ job_id_list = []
 
 bearer_tokens = ['9ery8pVOxTOvQU0oJsENRek4lj6ZT6', 'uTl6zNUdoNATwwUg0GOuSFvyrtyCCW', 'iM0WU5y76laIJph5LS1jidKcdjWk4a']
 task_type_opts = ['periodic', 'one_time']
-post_methods = ['get', 'post', 'patch', 'delete']
+request_methods = ['get', 'post', 'patch', 'delete']
 
 for i in range(0, DATA_NUM):
     data = deepcopy(scheduler_data)

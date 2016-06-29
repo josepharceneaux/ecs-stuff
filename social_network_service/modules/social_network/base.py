@@ -276,6 +276,9 @@ class SocialNetworkBase(object):
         .. seealso:: start() function defined in social network manager
             inside social_network_service/manager.py.
         """
+        social_network_id = self.social_network.id
+        user_id = self.user.id
+        social_network_name = self.social_network.name
         try:
             sn_name = self.social_network.name.strip()
             # get_required class under social_network_service/event/ to
@@ -285,6 +288,7 @@ class SocialNetworkBase(object):
             sn_event_obj = event_class(user_credentials=user_credentials,
                                        social_network=self.social_network,
                                        headers=self.headers)
+
             if mode == 'event':
                 # gets events using respective API of Social Network
                 logger.debug('Getting event(s) of %s(UserId: %s) from '
@@ -303,8 +307,8 @@ class SocialNetworkBase(object):
         except:
             logger.exception('process: running %s importer, user_id: %s, '
                              'social network: %s(id: %s)'
-                             % (mode, self.user.id, self.social_network.name,
-                                self.social_network.id))
+                             % (mode, user_id, social_network_name,
+                                social_network_id))
 
     @classmethod
     def get_access_and_refresh_token(cls, user_id, social_network,

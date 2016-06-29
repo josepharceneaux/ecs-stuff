@@ -34,10 +34,8 @@ def send_request(access_token, secret_key_id, url, content_type, post_data, is_j
     :param post_data: Data to post with post request
     :param is_jwt_request: If true, then request will be send using JWT authorization
     :param request_method: The type of request i.e POST, DELETE, GET, UPDATE, PATCH
-    :param kwargs: post data i.e campaign name, smartlist ids
     :return:
     """
-    # TODO: kwargs is not a param, remove from docs. Add types for others
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
         headers = {

@@ -466,7 +466,7 @@ class TaskByName(Resource):
         """
         Deletes/removes a tasks from scheduler jobstore
         :param _name: name of general task
-        :type: str
+        :type _name: str
         :return:
         :Example:
         In case of SECRET_KEY
@@ -815,9 +815,10 @@ class AdminTasks(Resource):
         tasks = scheduler.get_jobs()
 
         # Get all param filters
-        user_id, paused, task_type, task_category = \
-            request.args.get('user_id'), request.args.get('paused'), request.args.get('task_type'), \
-            request.args.get('task_category')
+        user_id = request.args.get('user_id')
+        paused =  request.args.get('paused')
+        task_type = request.args.get('task_type')
+        task_category = request.args.get('task_category')
 
         # If user_id is given then only return jobs of that particular user
         if user_id:

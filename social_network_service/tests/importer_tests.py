@@ -1,4 +1,5 @@
 # Application Specific
+from social_network_service.common.models import db
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.rsvp import RSVP
@@ -81,6 +82,7 @@ class Test_Event_Importer:
         # access token is refreshed and we use fresh token to make HTTP calls
         sn = social_network_class(user_id=user_credentials.user_id)
         sn.process('event', user_credentials=user_credentials)
+        db.db.session.commit()
         # get the imported event by social_network_event_id and user_id
         event = Event.get_by_user_and_social_network_event_id(
             sample_user.id, social_network_event_id)

@@ -578,7 +578,7 @@ class SchedulerApi(object):
 
     # Test endpoints for scheduler service
     SCHEDULER_TASKS_TEST = '/' + VERSION + '/tasks/test'
-    SCHEDULER_TASKS_TEST_POST = '/' + VERSION + "tasks/test-post"
+    SCHEDULER_TASKS_TEST_POST = '/' + VERSION + "/tasks/test-post"
 
 
 class SchedulerApiUrl(object):
@@ -605,7 +605,7 @@ class SchedulerApiUrl(object):
 
     # Test URLs for scheduler service
     TEST_TASK = HOST_NAME % ('/' + VERSION + '/tasks/test')
-    TEST_TASK_POST = HOST_NAME % ('/' + VERSION + 'tasks/test-post')
+    TEST_TASK_POST = HOST_NAME % ('/' + VERSION + '/tasks/test-post')
 
 
 class SocialNetworkApi(object):
