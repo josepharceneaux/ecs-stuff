@@ -33,6 +33,7 @@ class SocialNetworkBase(object):
         1- Meetup
         2- Eventbrite
         3- Facebook
+        4- Twitter (Only authentication part for now)
 
     - Usually API of any social network requires user permission to gain access
         of user's account. Once user allows access, we get an access token to
@@ -40,6 +41,7 @@ class SocialNetworkBase(object):
         1- One hour (Meetup)
         2- Not expires until account password is changed (Eventbrite)
         3- Sixty days (Facebook).
+        4- Not expires until user removes getTalent app from allowed apps (Twitter)
 
     - Before going to event part, we first check the validity of access token,
         and try to refresh it without user interaction inside __init__().

@@ -11,15 +11,16 @@ import base64
 
 # Third Party
 import tweepy
-import requests
 from contracts import contract
 from flask import session, redirect
 
 # Application Specific
 from base import SocialNetworkBase
-from social_network_service.social_network_app import logger
+from social_network_service.social_network_app import app, logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.error_handling import InternalServerError
+from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.modules.constants import APPLICATION_BASED_AUTH_URL
 from social_network_service.common.models.user import UserSocialNetworkCredential
 
 
@@ -40,7 +41,11 @@ class Twitter(SocialNetworkBase):
     def __init__(self, *args, **kwargs):
         super(Twitter, self).__init__(**kwargs)
         self.consumer_key = self.social_network.client_key
+        if not self.consumer_key:
+            raise InternalServerError('Twitter client_key not set correctly')
         self.consumer_secret = self.social_network.secret_key
+        if not self.consumer_secret:
+            raise InternalServerError('Twitter secret key not set correctly')
         self.auth = tweepy.OAuthHandler(self.consumer_key, self.consumer_secret,
                                         SocialNetworkApiUrl.TWITTER_CALLBACK % self.user.id)
 
@@ -106,16 +111,19 @@ class Twitter(SocialNetworkBase):
         """
         This function does application based authentication with Twitter. This do not need any user interaction
         to connect with Twitter account because it makes request on behalf of App.
+        It raises InternalServerError in case authentication fails.
         Here are the detailed docs https://dev.twitter.com/oauth/application-only.
         :return: Access token for getTalent app to access Twitter's API.
         :rtype: str
         """
         combined_key = self.consumer_key + ':' + self.consumer_secret
         combined_key = base64.b64encode(combined_key)
-        url = 'https://api.twitter.com/oauth2/token'
         headers = {'Authorization': 'Basic %s' % combined_key,
                    'Content-Type': 'application/x-www-form-urlencoded'}
         data = {'grant_type': 'client_credentials'}
-        result = requests.post(url, headers=headers, data=data)
-        access_token = result.json()['access_token']
-        return access_token
+        result = http_request('post', APPLICATION_BASED_AUTH_URL, headers=headers, data=data, app=app)
+        if result.ok:
+            logger.info('Successfully authenticated from Twitter API. User(id:%s).', self.user.id)
+            access_token = result.json()['access_token']
+            return access_token
+        raise InternalServerError('Error Occurred while authenticating from Twitter')
