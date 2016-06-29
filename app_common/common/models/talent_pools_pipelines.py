@@ -39,6 +39,7 @@ class TalentPool(db.Model):
         :param user_id:
         :return:
         """
+        # TODO--document the arg in docstring and assert
         return cls.query.filter_by(user_id=user_id)
 
 

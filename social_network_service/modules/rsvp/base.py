@@ -155,7 +155,7 @@ class RSVPBase(object):
         if kwargs.get('user_credentials'):
             self.user_credentials = kwargs.get('user_credentials')
 
-            # To resolve session expire issue, save the fields in a dict
+            # To resolve session expiry issue, save the fields in a dict
             self.user_credentials_dict = dict(id=self.user_credentials.id,
                                               access_token=self.user_credentials.access_token,
                                               refresh_token=self.user_credentials.refresh_token,
@@ -457,8 +457,9 @@ class RSVPBase(object):
         :rtype: object
         """
 
+        # TODO--please ensure the comments of this method still reflect the reality
         token = Token.get_by_user_id(attendee.gt_user_id)
-
+        # TODO--not sure but is not None a problem in the headers?
         headers = {'Authorization': 'Bearer {}'.format(token.access_token if token else None),
                    "Content-Type": "application/json"}
 
@@ -472,7 +473,7 @@ class RSVPBase(object):
         response = requests.post(UserServiceApiUrl.DOMAIN_SOURCES,
                                  headers=headers,
                                  data=json.dumps(candidate_source))
-
+        # TODO--please don't use constants like 201 instead use request.codes
         if response.status_code != 201:
             logger.exception(response.text)
             raise InternalServerError(error_message="Error while creating candidate source")
@@ -508,6 +509,8 @@ class RSVPBase(object):
         :return attendee:
         :rtype: object
         """
+        # TODO--kindly ensure the above comments reflect the reality
+        #TODO--following isn't being used anywhere
         newly_added_candidate = 1  # 1 represents entity is new candidate
         candidate_in_db = \
             Candidate.get_by_first_last_name_owner_user_id_source_id_product(
@@ -517,9 +520,10 @@ class RSVPBase(object):
                 attendee.candidate_source_id,
                 attendee.source_product_id)
 
+        # TODO--kindly add comments why the need of talent pool id
         talent_pools = TalentPool.get_by_user_id(attendee.gt_user_id)
         talent_pool_ids = map(lambda talent_pool: talent_pool.id, talent_pools)
-
+        # TODO--what if talent_pool_ids has [None, '', 0]. Please cater this scenario when you check for None. Yes, assume this may happen
         if not talent_pool_ids:
             raise InternalServerError("save_attendee_as_candidate: user doesn't have any talent_pool")
 
@@ -531,19 +535,19 @@ class RSVPBase(object):
                 }
 
         social_network_data = {
-                         'name': attendee.event.social_network.name,
-                         'profile_url': attendee.social_profile_url
-                        }
+             'name': attendee.event.social_network.name,
+             'profile_url': attendee.social_profile_url
+        }
 
         # Update if already exist
         if candidate_in_db:
             candidate_id = candidate_in_db.id
             data = dict(candidates=[data])
 
-            # Get candidate social network if already exist
+            # Get candidate's social network if already exist
             candidate_social_network_in_db = \
                 CandidateSocialNetwork.get_by_candidate_id_and_sn_id(
-                                    candidate_id, attendee.social_network_id)
+                    candidate_id, attendee.social_network_id)
             if candidate_social_network_in_db:
                 social_network_data.update({'id': candidate_social_network_in_db.id})
 
@@ -558,7 +562,7 @@ class RSVPBase(object):
         response = create_candidates_from_candidate_api(oauth_token=token.access_token if token else None,
                                                         data=dict(candidates=[data]),
                                                         return_candidate_ids_only=True)
-
+        # TODO --is the response being validated
         # Get created candidate id
         candidate_id = response[0]
         attendee.candidate_id = candidate_id
