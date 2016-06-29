@@ -10,7 +10,10 @@ from setup_environment.create_dummy_users import create_dummy_users
 
 fake = Factory.create()
 
-create_dummy_users()
+try:
+    create_dummy_users()
+except:
+    pass
 
 scheduler_data = {
     "task_type": "periodic",
