@@ -14,8 +14,8 @@ from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.email_campaign import EmailCampaignBlast
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
-from email_campaign_service.tests.modules.handy_functions import send_campaign_email_to_candidate
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.tests.modules.handy_functions import send_campaign_email_to_candidate, TEST_EMAIL_ID
 
 
 @pytest.mark.parametrize("blast_foreign_key", [True, False])
@@ -91,9 +91,8 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
                                                                                  talent_pipeline, candidate_count=count)
 
         # Update first candidate's email to a valid email, i.e. testing email.
-        valid_email = 'test.gettalent@gmail.com'
         email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_ids[0])
-        email.update(address=valid_email)
+        email.update(address=TEST_EMAIL_ID)
 
         # Update second candidate's email to an invalid email, so we can test email bounce
         invalid_email = 'invalid_' + fake.uuid4() + '@gmail.com'

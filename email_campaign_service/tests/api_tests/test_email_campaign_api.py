@@ -575,7 +575,7 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_same_candidate_in_multiple_smartlists
         response = requests.post(self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_campaign_send(response, campaign, user_first, 1, abort_time_for_sends=300)
+        assert_campaign_send(response, campaign, user_first, expected_count=1)
 
 
 # Test for healthcheck

@@ -183,6 +183,7 @@ class TestDeleteCandidateTags(object):
         print response_info(search_resp)
         assert search_resp.json()['total_found'] == 0
 
+    # TODO: Flaky test commented for Amir (Hani)
     # def test_delete_all(self, user_first, access_token_first, candidate_first):
     #     """
     #     Test:  Delete all of candidate's tags
