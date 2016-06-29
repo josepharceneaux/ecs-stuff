@@ -2009,9 +2009,14 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
                 phone_dict.update(dict(candidate_id=candidate_id))
 
                 if is_updating:
-                    # Prevent duplicate entries
-                    if not do_phones_exist(candidate_phones, phone_dict):
-                        db.session.add(CandidatePhone(**phone_dict))
+                    # Phone must not belong to any other candidate in the same domain
+                    if CandidatePhone.search_phone_number_in_user_domain(str(value), request.user):
+                        raise InvalidUsage(
+                            error_message="Candidate with phone number ({}) already exists.".format(value),
+                            error_code=custom_error.PHONE_EXISTS,
+                            additional_error_info={'id': candidate_id, 'domain_id': request.user.domain_id})
+
+                    db.session.add(CandidatePhone(**phone_dict))
 
                     # Track all changes
                     track_edits(update_dict=phone_dict, table_name='candidate_phone',
