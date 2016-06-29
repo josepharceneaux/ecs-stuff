@@ -5,6 +5,7 @@ Helper functions for candidate CRUD operations and tracking edits made to the Ca
 import re
 import datetime
 import urlparse
+import hashlib
 import dateutil.parser
 import simplejson as json
 import pycountry
@@ -472,8 +473,11 @@ def candidate_contact_history(candidate):
             continue
 
         email_campaign = EmailCampaign.get(email_campaign_send.campaign_id)
+        event_datetime = email_campaign_send.sent_datetime
+        event_type = ContactHistoryEvent.EMAIL_SEND
 
-        timeline.insert(0, dict(id=email_campaign.id,
+        timeline.insert(0, dict(id=hashlib.md5(str(event_datetime) + event_type).hexdigest(),
+                                email_campaign_id=email_campaign.id,
                                 event_datetime=email_campaign_send.sent_datetime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
                                 campaign_name=email_campaign.name))
@@ -492,11 +496,15 @@ def candidate_contact_history(candidate):
             ).first().url_conversion_id
             url_conversion = UrlConversion.get(url_conversion_id)
 
+            event_datetime = url_conversion.last_hit_time
+            event_type = ContactHistoryEvent.EMAIL_OPEN
+
             timeline.append(dict(
-                id=email_campaign.id,
+                id=hashlib.md5(str(event_datetime) + event_type).hexdigest(),
+                email_campaign_id=email_campaign.id,
                 campaign_name=email_campaign.name,
-                event_type=ContactHistoryEvent.EMAIL_OPEN,
-                event_datetime=url_conversion.last_hit_time
+                event_type=event_type,
+                event_datetime=event_datetime
             ))
 
     # Sort events by datetime and convert all date-times to ISO format
@@ -707,26 +715,6 @@ def update_photo(candidate_id, user_id, update_dict):
     # Update candidate's photo
     photo_query.update(photo_update_dict)
     return
-
-
-######################################
-# Helper Functions For Candidate Notes
-######################################
-def add_notes(candidate_id, data):
-    """
-    Function will insert candidate notes into the db
-    :type candidate_id:  int|long
-    :type data:  list[dict]
-    """
-    # Format inputs
-    for note in data:
-        notes_dict = dict(
-            candidate_id=candidate_id,
-            comment=note.get('comment'),
-            added_time=datetime.datetime.utcnow()
-        )
-        notes_dict = dict((k, v) for k, v in notes_dict.iteritems() if v is not None)
-        db.session.add(CandidateTextComment(**notes_dict))
 
 
 ##########################################
