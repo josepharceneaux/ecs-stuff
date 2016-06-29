@@ -401,7 +401,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(count, int)
         raise_if_not_instance_of(entity, basestring)
         raise_if_not_instance_of(check_count, bool)
-        assert response.status_code == 200, 'Response should be "OK" (200)'
+        assert response.status_code == requests.codes.OK, 'Response should be "OK" (200)'
         json_response = response.json()
         assert entity in json_response
         if check_count:

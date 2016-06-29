@@ -54,7 +54,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         # Since there is no candidate associated with campaign with valid email, so no more blasts would be created
         response = requests.post(
             EmailCampaignApiUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response.status_code == 200
+        assert response.status_code == requests.codes.OK
         CampaignsTestsHelpers.assert_campaign_blasts(campaign, 1,
                                                      access_token=access_token_first, timeout=300)
 
@@ -123,7 +123,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
         # this campaign because email has been marked as bounced.
         response = requests.post(
             EmailCampaignApiUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response.status_code == 200
+        assert response.status_code == requests.codes.OK
         CampaignsTestsHelpers.assert_campaign_blasts(campaign, 2,
                                                      access_token=access_token_first, timeout=300)
 

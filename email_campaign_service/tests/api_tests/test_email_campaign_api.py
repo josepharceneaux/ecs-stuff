@@ -529,7 +529,7 @@ class TestSendCampaign(object):
         opens_count_before = email_campaign_blast.opens
         hit_count_before = url_conversion.hit_count
         response = requests.get(redirect_url)
-        assert response.status_code == 200
+        assert response.status_code == requests.codes.OK
         db.session.commit()
         opens_count_after = email_campaign_blast.opens
         hit_count_after = url_conversion.hit_count
@@ -581,8 +581,8 @@ class TestSendCampaign(object):
 # Test for healthcheck
 def test_health_check():
     response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK)
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK
 
     # Testing Health Check URL with trailing slash
     response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK + '/')
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK

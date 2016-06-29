@@ -242,7 +242,6 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         # assert on activity for whole campaign send
         CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_SEND,
                                                   campaign.id)
-        # TODO: commented after discussing with osman -- basit
         if not email_client:
             assert retry(assert_and_delete_email, sleeptime=3, attempts=130, sleepscale=1,
                          args=(campaign.subject,), retry_exceptions=(AssertionError,)),\

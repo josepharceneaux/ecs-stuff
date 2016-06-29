@@ -70,7 +70,6 @@ class TestSmartlistResource(object):
             total_found = response.json()['total_found']
             assert total_found == 20
 
-        # TODO: Commenting this test for hani - (basit)
         def test_create_smartlist_with_candidate_ids_using_pagination_params(self, access_token_first, talent_pipeline):
             """
             Test to create smartlist with candidate ids (dumb list) and get candidates from that
