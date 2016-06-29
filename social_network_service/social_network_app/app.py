@@ -3,6 +3,8 @@
     We register blueprints for different APIs with this app.
     Error handlers are added at the end of file.
 """
+# TODO: Many unused imports
+
 # Standard imports
 import json
 
@@ -36,7 +38,7 @@ api = TalentApi(app)
 # Initialize Redis Cache
 redis_store.init_app(app)
 
-
+# TODO: IMO, remove GLOBAL var now as we can get now from func.
 WEBHOOK_REDIRECT_URL = get_webhook_app_url()
 
 

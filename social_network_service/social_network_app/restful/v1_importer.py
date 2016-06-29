@@ -30,9 +30,9 @@ api.route = types.MethodType(api_route, api)
 @api.route(SocialNetworkApi.IMPORTER)
 class RsvpEventImporter(Resource):
     """
-        This resource get all RSVPs or events.
+        This resource gets all RSVPs or events.
 
-        This function is called when we run celery to import events or rsvps from
+        This function is called when we run celery to import events or RSVPs from
         social network website.
 
         1- meetup
@@ -63,16 +63,18 @@ class RsvpEventImporter(Resource):
         # Start celery rsvp importer method here.
         if mode.lower() not in ["event", "rsvp"]:
             raise InvalidUsage("No mode of value %s found" % mode)
-
+        # TODO: Pep8 issue
         if not (social_network.lower() in ["meetup", "facebook"] or
                     (mode.lower() == 'event' and social_network.lower() == 'eventbrite')):
+            # TODO: Should raise not implemented
             raise InvalidUsage("No social network with name %s found." % social_network)
 
         social_network_id = None
-        if social_network is not None:
+        if social_network is not None: # TODO: We have validated this above I think
             social_network_name = social_network.lower()
             try:
                 social_network_obj = SocialNetwork.get_by_name(social_network_name)
+                # TODO: if not social_network_obj: raise ...
                 social_network_id = social_network_obj.id
             except Exception:
                 raise NotImplementedError('Social Network "%s" is not allowed for now, '
@@ -80,10 +82,12 @@ class RsvpEventImporter(Resource):
                                           % social_network_name)
 
         all_user_credentials = UserSocialNetworkCredential.get_all_credentials(social_network_id)
+        # TODO: we can add logger.info() here that we got say 1000 users for Meetup.
         if all_user_credentials:
             for user_credentials in all_user_credentials:
                 rsvp_events_importer.apply_async([social_network, mode, user_credentials])
         else:
+            # TODO: IMO incorrect error message. We found no user_credentials for given user
             logger.error('There is no User in db for social network %s'
                          % social_network)
 
@@ -113,15 +117,15 @@ class RsvpImporterEventbrite(Resource):
                     social_network_service/base.py.
 
     """
-
+    # TODO: Previously there were both GET and POST. Why only POST now?
     def post(self, **kwargs):
         """
-    This function only receives data when a candidate rsvp to some event.
-    It first finds the getTalent user having incoming webhook id.
-    Then it creates the candidate in candidate table by getting information
-    of attendee. Then it inserts in rsvp table the required information.
-    It will also insert an entry in DB table activity
-    """
+        This function only receives data when a candidate rsvp to some event.
+        It first finds the getTalent user having incoming webhook id.
+        Then it creates the candidate in candidate table by getting information
+        of attendee. Then it inserts in rsvp table the required information.
+        It will also insert an entry in DB table activity
+        """
         user_id = ''
         if request.data:
             try:
@@ -190,10 +194,13 @@ def schedule_job(url, task_name):
     """
     start_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
     # Infinite times
+    # TODO: Is there a reason of explicitly multiplying?
     end_datetime = datetime.datetime.utcnow() + datetime.timedelta(weeks=52 * 100)
+    # TODO: IMO, it should be configurable in case of dev testing.
     frequency = 3600
 
     secret_key_id, access_token = User.generate_jw_token()
+    # TODO: PEP08
     headers = {
             'Content-Type': 'application/json',
             'X-Talent-Secret-Key-ID': secret_key_id,
@@ -216,5 +223,5 @@ def schedule_job(url, task_name):
         if response.status_code != 200:
             logger.error(response.text)
             raise InternalServerError(error_message='Unable to schedule meetup importer job')
-    elif response.status_code == 401:
+    elif response.status_code == 401:  # TODO: What if token has expired?
         logger.info('Job already scheduled')

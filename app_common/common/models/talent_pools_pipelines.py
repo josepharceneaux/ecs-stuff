@@ -39,6 +39,11 @@ class TalentPool(db.Model):
         :param user_id:
         :return:
         """
+        # TODO: add inline param type
+        # TODO: Update empty :return: here and every where else.
+        # TODO: Add rtype
+        # TODO: kindly make sure of these minor nits before asking for code review. Thanks.
+        # TODO: Docs says first record, I don't see .first() here. Kindly double check.
         return cls.query.filter_by(user_id=user_id)
 
 

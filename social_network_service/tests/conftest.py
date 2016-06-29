@@ -34,6 +34,7 @@ from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.tests.helper_functions import send_request
 
+# TODO: IMO, move group_url_name and group_id to web.cfg so that we don't need to make changes in code.
 # This is common data for creating test events
 EVENT_DATA = {
     "organizer_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
