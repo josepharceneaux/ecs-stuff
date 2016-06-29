@@ -44,7 +44,7 @@ for i in range(0, DATA_NUM):
         data['run_datetime'] = (datetime.datetime.now() + datetime.timedelta(days=5)).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
 
     data['url'] = 'http://www.{0}.com'.format(fake.first_name())
-    data['request_method'] = post_methods[random.randrange(1, len(post_methods)) - 1]
+    data['request_method'] = request_methods[random.randrange(1, len(request_methods)) - 1]
     if data['request_method'] in ['get', 'delete']:
         del data['post_data']
 
