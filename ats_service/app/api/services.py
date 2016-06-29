@@ -42,43 +42,28 @@ class ATSService(Resource):
 
     decorators = [require_oauth()]
 
-    def get(self, **kwargs):
+    def get(self):
         """
         GET /v1/ats
         """
 
-        # Authenticated user
         authenticated_user = request.user
         ats_service.app.logger.info("ATS {} {} ({})".format(request.method, request.path, request.user.email))
 
         return ATS.get_all_as_json()
 
 
-@api.route(ATSServiceApi.ACCOUNTS)
+@api.route(ATSServiceApi.ACCOUNT)
 class ATSAccountService(Resource):
     """
-    Controller for /v1/ats-accounts
+    Controller for /v1/ats-accounts/:user_id/:account_id
     """
 
     decorators = [require_oauth()]
 
-    def get(self, user_id):
+    def delete(self, user_id, account_id):
         """
-        GET /v1/ats-accounts/:id
-
-        Retrieve all ATS candidates in an ATS account of a user.
-        """
-
-        authenticated_user = request.user
-        ats_service.app.logger.info("ATSAccount {} {} ({})".format(request.method, request.path, request.user.email))
-        # ats_service.app.logger.info("kargs: |{}|".format(kwargs))
-        ats_service.app.logger.info("user_id: |{}|".format(user_id))
-
-        return "{ 'accounts' : 'get', 'user_id' : ? }"
-
-    def delete(self, **kwargs):
-        """
-        DELETE /v1/ats-accounts/:id/:account_id
+        DELETE /v1/ats-accounts/:user_id/:account_id
 
         Decomission an ATS account for a user.
         """
@@ -86,11 +71,34 @@ class ATSAccountService(Resource):
         authenticated_user = request.user
         ats_service.app.logger.info("ATSAccount {} {} ({})".format(request.method, request.path, request.user.email))
 
-        return "{ 'accounts' : 'delete' }"
+        values = "`user`: {}, 'account': {}".format(user_id, account_id)
+        return "{ 'accounts' : 'delete', " + values + " }"
 
-    def post(self, **kwargs):
+
+@api.route(ATSServiceApi.ACCOUNTS)
+class ATSAccountsService(Resource):
+    """
+    Controller for /v1/ats-accounts/:user_id
+    """
+
+    decorators = [require_oauth()]
+
+    def get(self, user_id):
         """
-        POST /v1/ats-accounts/:id
+        GET /v1/ats-accounts/:user_id
+
+        Retrieve all ATS candidates in an ATS account of a user.
+        """
+
+        authenticated_user = request.user
+        ats_service.app.logger.info("ATSAccount {} {} ({})".format(request.method, request.path, request.user.email))
+        ats_service.app.logger.info("user_id: |{}|".format(user_id))
+
+        return "{" + "'accounts' : 'get', 'user_id' : {}".format(user_id) +  "}"
+
+    def post(self, user_id):
+        """
+        POST /v1/ats-accounts/:user_id
 
         Register an ATS account for a user.
         """
@@ -98,10 +106,32 @@ class ATSAccountService(Resource):
         authenticated_user = request.user
         ats_service.app.logger.info("ATSAccount {} {} ({})".format(request.method, request.path, request.user.email))
 
-        return "{ 'accounts' : 'post' }"
+        return "{" + "'accounts' : 'post', 'user_id' : {}".format(user_id) +  "}"
 
 
 @api.route(ATSServiceApi.CANDIDATES)
+class ATSCandidatesService(Resource):
+    """
+    Controller for /v1/ats-candidates
+    """
+
+    decorators = [require_oauth()]
+
+    def get(self, account_id):
+        """
+        GET /v1/ats-candidates/:account_id
+
+        Retrieve all ATS candidates stored locally associated with an ATS account
+        """
+
+        authenticated_user = request.user
+        ats_service.app.logger.info("User {} {} ({} {})".format(request.method, request.path, request.user.email, account_id))
+
+        values = "'account': {}".format(account_id)
+        return "{ 'candidates' : 'get', " + values + " }"
+
+
+@api.route(ATSServiceApi.CANDIDATE)
 class ATSCandidateService(Resource):
     """
     Controller for /v1/ats-candidates
@@ -109,33 +139,7 @@ class ATSCandidateService(Resource):
 
     decorators = [require_oauth()]
 
-    def get(self, **kwargs):
-        """
-        GET /v1/ats-candidates/:account_id
-
-        Retrieve all ATS candidates stored locally associated with an ATS account
-        """
-
-        user_id = kwargs.get('id')
-        authenticated_user = request.user
-        ats_service.app.logger.info("User {} {} ({} {})".format(request.method, request.path, request.user.email, user_id))
-
-        return "{ 'candidates' : 'get' }"
-
-    # def get(self, **kwargs):
-    #     """
-    #     GET /v1/ats-candidates/refresh/:account_id
-
-    #     Update our local store of ATS candidates associated with an account from the ATS itself.
-    #     """
-
-    #     user_id = kwargs.get('id')
-    #     authenticated_user = request.user
-    #     ats_service.app.logger.info("User {} {} ({} {})".format(request.method, request.path, request.user.email, user_id))
-
-    #     return "{ 'user' : '{}' }".format(user_id)
-
-    def post(self, **kwargs):
+    def post(self, candidate_id, ats_id):
         """
         POST /v1/ats-candidates/:candidate_id/:ats_candidate_id
 
@@ -145,9 +149,10 @@ class ATSCandidateService(Resource):
         authenticated_user = request.user
         ats_service.app.logger.info("User {} {} ({})".format(request.method, request.path, request.user.email))
 
-        return "{ 'candidates' : 'post' }"
+        values = "'candidate': {}, ats: {}".format(candidate_id, ats_id)
+        return "{ 'candidates' : 'post', " + values + " }"
 
-    def delete(self, **kwargs):
+    def delete(self, candidate_id, ats_id):
         """
         DELETE /v1/ats-candidates/:candidate_id/:ats_candidate_id
 
@@ -157,4 +162,27 @@ class ATSCandidateService(Resource):
         authenticated_user = request.user
         ats_service.app.logger.info("User {} {} ({})".format(request.method, request.path, request.user.email))
 
-        return "{ 'candidates' : 'delete' }"
+        values = "'candidate': {}, ats: {}".format(candidate_id, ats_id)
+        return "{ 'candidates' : 'delete', " + values + " }"
+
+
+@api.route(ATSServiceApi.CANDIDATES_REFRESH)
+class ATSCandidateRefreshService(Resource):
+    """
+    Controller for /v1/ats-candidates/refresh
+    """
+
+    decorators = [require_oauth()]
+
+    def get(self, account_id):
+        """
+        GET /v1/ats-candidates/refresh/:account_id
+
+        Update our local store of ATS candidates associated with an account from the ATS itself.
+        """
+
+        authenticated_user = request.user
+        ats_service.app.logger.info("User {} {} ({} {})".format(request.method, request.path, request.user.email, account_id))
+
+        values = "'account': {}".format(account_id)
+        return "{ 'refresh' : 'get', " + values + " }"
