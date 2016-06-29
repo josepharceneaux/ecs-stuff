@@ -78,7 +78,7 @@ class TestGetCampaigns(object):
         This is the test to GET the campaign by providing campaign_id & filters.
         It should get OK response
         """
-        fields = ['id', 'subject', 'body_html', 'is_hidden']
+        fields = ['id', 'subject', 'body_html', 'body_text', 'is_hidden']
 
         email_campaign = get_campaign_or_campaigns(
             access_token_first,
