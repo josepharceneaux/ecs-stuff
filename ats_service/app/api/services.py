@@ -3,6 +3,7 @@ Classes implementing the ATS services endpoints.
 """
 
 import types
+import json
 
 from flask import request, Blueprint
 from flask_restful import Resource
@@ -11,19 +12,19 @@ from flask_restful import Resource
 from ats_service.common.utils.auth_utils import require_oauth
 
 # Modules
-from ats_service.common.routes import ATSServiceApi
+from ats_service.common.routes import ATSServiceApi, ATSServiceApiUrl
 from ats_service.common.utils.api_utils import ApiResponse, api_route
 from ats_service.common.talent_api import TalentApi
 from ats_service.common.utils.handy_functions import get_valid_json_data
 
-from ats_utils import validate_ats_account_data
+from ats_utils import validate_ats_account_data, new_ats, new_ats_account
 
 # Why doesn't this work?
 # from ats_service.app import logger
 import ats_service.app
 
 # Database
-from ats_service.common.models.ats import ATS
+from ats_service.common.models.ats import ATS, ATSAccount, ATSCredential
 
 
 api = TalentApi()
@@ -110,19 +111,26 @@ class ATSAccountsService(Resource):
         validate_ats_account_data(data)
 
         # Search for this ATS account entry already existing
-        account = find_ats_account(authenticated_user.id, data['ats_name'])
+        account = ATSAccount.get_account(authenticated_user.id, data['ats_name'])
         if account:
+            ats_service.app.logger.info("Attempt to create already existing ATS account {}".format(account.id))
             response = json.dumps(dict(id=account.id, message="ATS account already exists."))
-            headers = ATSServiceApiUrl.ACCOUNTS % account.id
+            headers = dict(Location=ATSServiceApiUrl.ACCOUNTS % account.id)
             return ApiResponse(response, headers=headers, status=200)
 
         # Search for ATS entry, create if absent
+        ats = ATS.get_by_name(data['ats_name'])
+        if not ats:
+            ats = new_ats(data)
+            ats_service.app.logger.info("Adding new ATS account {}, id {}".format(ats.name, ats.id))
 
         # Create ATS account for user
+        account = new_ats_account(authenticated_user.id, ats.id, data)
+        ats_service.app.logger.info("Added new ATS account {}.".format(account.id))
 
-        # Create ATS credentials entry
-
-        return "{" + "'accounts' : 'post', 'user_id' : {}".format(user_id) +  "}"
+        response = json.dumps(dict(id=account.id, message="ATS account successfully created."))
+        headers = dict(Location=ATSServiceApiUrl.ACCOUNTS % account.id)
+        return ApiResponse(response, headers=headers, status=201)
 
 
 @api.route(ATSServiceApi.CANDIDATES)

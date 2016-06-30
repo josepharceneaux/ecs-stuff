@@ -37,14 +37,14 @@ class ATS(db.Model):
         """
         assert isinstance(ats_id, (int, long)) and ats_id > 0, \
             'ATS Id should be a valid positive number'
-        return cls.query.filter_by(id=_id).all()
+        return cls.query.filter_by(id=ats_id).first()
 
     @classmethod
     def get_by_name(cls, ats_name):
         """
         """
         assert isinstance(ats_name, basestring), 'ATS Name should be a string'
-        return cls.query.filter_by(name=ats_name).all()
+        return cls.query.filter_by(name=ats_name).first()
 
     @classmethod
     def get_all(cls):
@@ -82,6 +82,17 @@ class ATSAccount(db.Model):
     ats_credential_id = db.Column(db.BigInteger)
     added_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+
+    @classmethod
+    def get_account(cls, user_id, ats_name):
+        """
+        """
+        accounts = cls.query.filter_by(user_id=user_id).all()
+        if accounts:
+            for a in accounts:
+                ats = ATS.get_by_id(a.ats_id)
+                if ats and ats.name == ats_name:
+                    return ats
 
     def __repr__(self):
         return "<ATS Credential ( = %r)>" % self.id
