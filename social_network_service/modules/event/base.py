@@ -536,3 +536,4 @@ class EventBase(object):
             raise EventNotSaveInDb('Error occurred while saving event '
                                    'in database')
         return event.id
+

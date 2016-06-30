@@ -756,10 +756,20 @@ class Eventbrite(EventBase):
         self.venue_id = data['venue_id']
         # Creating ticket data as Eventbrite wants us to associate tickets with
         # events. This dict is used to create tickets for a specified event.
-        self.ticket_payload = {
-            'ticket_class.name': 'Event Ticket',
-            'ticket_class.quantity_total': data['max_attendees'],
-            'ticket_class.free': True,
-        }
+
+        max_attendees = data['max_attendees']
+        cost = data.get('cost')
+        if max_attendees and cost:
+            self.ticket_payload = {
+                'ticket_class.name': 'Event Ticket',
+                'ticket_class.quantity_total': max_attendees,
+                'ticket_class.cost': 'USD,' + str(cost) + '00'
+            }
+        else:
+            self.ticket_payload = {
+                'ticket_class.name': 'Event Ticket',
+                'ticket_class.quantity_total': max_attendees,
+                'ticket_class.free': True,
+            }
         self.social_network_event_id = data.get('social_network_event_id')
 
