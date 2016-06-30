@@ -1,14 +1,26 @@
 from datetime import datetime, timedelta
 from werkzeug.exceptions import BadRequest
 
-from scheduler_service import flask_app, TalentConfigKeys
+from scheduler_service import flask_app, TalentConfigKeys, redis_store, logger
 from scheduler_service.common.error_handling import ForbiddenError, InvalidUsage
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token, User
 from scheduler_service.common.talent_config_manager import TalentEnvs
 from scheduler_service.custom_exceptions import SchedulerNotRunningError, PendingJobError, JobAlreadyPausedError, \
     JobAlreadyRunningError
+from scheduler_service.modules.CONSTANTS import REQUEST_COUNTER
 from scheduler_service.modules.scheduler import run_job, scheduler
+
+
+def test_dummy_endpoint_hits(_request):
+    # Increment the count in redis whenever this endpoint hits
+    request_counter_key = REQUEST_COUNTER % (_request.method.lower())
+
+    # Add a counter key in redis to check how many times this dummy endpoint is called
+    if redis_store.exists(request_counter_key):
+        redis_store.set(request_counter_key, int(redis_store.get(request_counter_key))+1)
+    else:
+        redis_store.set(request_counter_key, 1)
 
 
 def dummy_request_method(_request):
@@ -51,8 +63,8 @@ def dummy_request_method(_request):
             test_user_id = task['test_user_id']
             test_user = User.query.filter_by(id=test_user_id).first()
             test_user.delete()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.exception(e.message)
 
 
 def raise_if_scheduler_not_running():

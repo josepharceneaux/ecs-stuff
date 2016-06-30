@@ -24,6 +24,7 @@ class UserScopedRolesApi(Resource):
 
         requested_user_id = kwargs.get('user_id')
         requested_user = User.query.get(requested_user_id)
+        role_id_only = request.args.get('role_id_only', True)
 
         if not requested_user:
             raise NotFoundError(error_message="User with user_id %s doesn't exist" % requested_user_id)
@@ -36,9 +37,23 @@ class UserScopedRolesApi(Resource):
             raise UnauthorizedError(error_message="User %s doesn't have appropriate permission to get roles of user %s"
                                                   % (request.user.id, requested_user.id))
 
+        if str(role_id_only).lower() not in ['0', 'false', 'true', '1']:
+            raise InvalidUsage(error_message="Invalid value of role_id_only. role_id_only should have value `true`"
+                                             " or `false`")
+
         # GET all roles of given user
         user_roles = UserScopedRoles.get_all_roles_of_user(requested_user_id)
-        return {"roles": [user_scoped_role.role_id for user_scoped_role in user_roles]}
+
+        # If user provided role_id_only parameter explicitly with 'false' or '0', then return role and name dictionary
+        # list. Otherwise just return return role_id list
+        if str(role_id_only).lower() in ['0', 'false']:
+            roles = {"roles": [dict(role_id=user_scoped_role.role_id,
+                                    name=DomainRole.get_by_id(user_scoped_role.role_id).role_name)
+                               for user_scoped_role in user_roles]}
+        else:
+            roles = {"roles": [user_scoped_role.role_id for user_scoped_role in user_roles]}
+
+        return roles
 
     @require_all_roles(DomainRole.Roles.CAN_ADD_USER_ROLES)
     def post(self, **kwargs):

@@ -53,10 +53,6 @@ def scheduler_remove_job(job_id):
     Removes the job from redis as well as apscheduler
     :param job_id: job_id returned by scheduler when job was scheduled e.g. w4523kd1sdf23kljfdjflsdf
     :type job_id: str
-    :param user_id:
-    :type user_id: int | str
-    :param task_name: name of task to be deleted
-    :type task_name: str
     """
     scheduler.remove_job(job_id=job_id)
 
@@ -269,7 +265,7 @@ def schedule_job(data, user_id=None, access_token=None):
         job_config['is_jwt_request'] = is_jwt_request if is_jwt_request and str(is_jwt_request).lower() == 'true' else None
 
     trigger = str(job_config['task_type']).lower().strip()
-    request_method = job_config.get('request_method', 'post')
+    request_method = data.get('request_method', 'post')
 
     callback_method = 'scheduler_service.modules.scheduler:run_job'
 
@@ -285,8 +281,7 @@ def schedule_job(data, user_id=None, access_token=None):
                                     end_date=valid_data['end_datetime'],
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
-                                          job_config['post_data'], job_config.get('is_jwt_request'),
-                                          request_method]
+                                          job_config['post_data'], job_config.get('is_jwt_request'), request_method]
                                     )
             # Due to request timeout delay, there will be a delay in scheduling job sometimes.
             # And if start time is passed due to this request delay, then job should be run
@@ -307,8 +302,9 @@ def schedule_job(data, user_id=None, access_token=None):
                                     run_date=valid_data['run_datetime'],
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
-                                          job_config['post_data'], job_config.get('is_jwt_request')]
-                                    );
+                                          job_config['post_data'], job_config.get('is_jwt_request'),
+                                          request_method]
+                                    )
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
             return job.id
         except Exception as e:
@@ -335,12 +331,11 @@ def remove_tasks(ids, user_id):
     return removed
 
 
-def serialize_task(task, is_admin_api=False):
+def serialize_task(task):
     """
     Serialize task data to JSON object
     :param task: APScheduler task to convert to JSON dict
-                 task.args: user_id, access_token, url, content_type, post_data, is_jwt_request
-    :param is_admin_api: If true, then request is made to admin API, so add user_email to task_dict.
+                 task.args: user_id, access_token, url, content_type, post_data, is_jwt_request, request_type
     :return: JSON converted dict object
     """
     task_dict = None
@@ -387,16 +382,40 @@ def serialize_task(task, is_admin_api=False):
     if task_dict and task.name and not task.args[0]:
         task_dict['task_name'] = task.name
 
-    # For scheduler admin API
-    if is_admin_api and task_dict:
-        if task.args[0]:
-            task_dict['user_id'] = task.args[0]
-            user = User.get_by_id(task.args[0])
-            if not user:
-                logger.error("serialize_task: user with id %s doesn't exist." % task.args[0])
-                task_dict['user_email'] = 'user_id: %s, User Deleted' % task.args[0]
-            else:
-                task_dict['user_email'] = user.email
+    return task_dict
+
+
+def serialize_task_admin(task):
+    """
+    Serialize task data to JSON object (for admin)
+    :param task: APScheduler task
+    :type task: object
+    :return: JSON converted dict object
+    :rtype: dict
+    """
+    task_dict = serialize_task(task)
+
+    # Create a new field `data` and add all request info in it
+    task_dict['data'] = dict(URL=task_dict.get('url'),
+                             RequestMethod=task_dict.get('request_method'),
+                             post_data=task_dict.get('post_data'))
+
+    # Delete redundant fields
+    for entry in ['post_data', 'url', 'request_method']:
+        del task_dict[entry]
+
+    # task.args[0] -> user_id
+    if task.args[0]:
+        task_dict['user_id'] = task.args[0]
+        task_dict['task_category'] = SchedulerUtils.CATEGORY_USER
+        user = User.get_by_id(task.args[0])
+        if not user:
+            logger.error("serialize_task: user with id %s doesn't exist." % task.args[0])
+            task_dict['user_email'] = 'user_id: %s, User deleted' % task.args[0]
+        else:
+            task_dict['user_email'] = user.email
+    else:
+        task_dict['task_category'] = SchedulerUtils.CATEGORY_GENERAL
 
     return task_dict
 
@@ -406,9 +425,8 @@ def get_user_job_ids(user_id):
     Return job_ids of a specific user
     :param user_id:
     :type user_id: int
-    :param count: number of job ids needed. By default, returns all job ids of a user.
-    :type count: int
     :return:
+    :rtype: list
     """
     start_index = 0
     end_index = -1
@@ -419,10 +437,10 @@ def get_user_job_ids(user_id):
 
 def get_general_job_id(task_name):
     """
-    Return id of scheduled general task
+    Returns id of scheduled general task
     :param task_name: general task name which is scheduled
     :type task_name: str
-    :return:
+    :return:str|None
     """
     start_index = 0
     end_index = -1
@@ -432,8 +450,7 @@ def get_general_job_id(task_name):
 
 def get_all_general_job_ids():
     """
-    Return id of scheduled general task
-    :return:
+    Return id of scheduled general task:
     """
     general_task_keys = redis_store.keys(SchedulerUtils.REDIS_SCHEDULER_GENERAL_TASK % '*')
     general_task_ids = [next(iter(redis_store.lrange(key, 0, -1)), None) for key in general_task_keys]
