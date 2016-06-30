@@ -104,8 +104,9 @@ class TestGetCampaigns(object):
         # Test GET api of email campaign
         email_campaigns = get_campaign_or_campaigns(access_token_first)
         assert len(email_campaigns) == 2
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
-        assert_valid_campaign_get(email_campaigns[1], email_campaign_of_user_second)
+        reference_campaigns = [email_campaign_of_user_first, email_campaign_of_user_second]
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
+        assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
 
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)

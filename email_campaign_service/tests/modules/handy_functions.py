@@ -105,12 +105,12 @@ def delete_campaign(campaign):
         pass
 
 
-def assert_valid_campaign_get(email_campaign_dict, referenced_campaign, fields=None):
+def assert_valid_campaign_get(email_campaign_dict, referenced_campaigns, fields=None):
     """
     This asserts that the campaign we get from GET call has valid values as we have for
     referenced email-campaign.
     :param dict email_campaign_dict: EmailCampaign object as received by GET call
-    :param referenced_campaign: EmailCampaign object by which we compare the campaign
+    :param referenced_campaigns: EmailCampaign objects with which we compare the campaign
             we GET in response
     :param list[str] fields: List of fields that the campaign should have, or all of them if None
     """
@@ -122,10 +122,13 @@ def assert_valid_campaign_get(email_campaign_dict, referenced_campaign, fields=N
         "Response's email campaign fields (%s) should match the expected email campaign fields (%s)" % (
             actual_email_campaign_fields_set, expected_email_campaign_fields_set
         )
-
+    found = False
     # Assert id is correct, if returned by API
     if 'id' in expected_email_campaign_fields_set:
-        assert email_campaign_dict['id'] == referenced_campaign.id
+        for referenced_campaign in referenced_campaigns:
+            if email_campaign_dict['id'] == referenced_campaign.id:
+                found = True
+        assert found
 
 
 def get_campaign_or_campaigns(access_token, campaign_id=None, fields=None, pagination_query=None):
