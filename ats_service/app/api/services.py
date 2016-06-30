@@ -57,14 +57,14 @@ class ATSService(Resource):
 @api.route(ATSServiceApi.ACCOUNT)
 class ATSAccountService(Resource):
     """
-    Controller for /v1/ats-accounts/:user_id/:account_id
+    Controller for /v1/ats-accounts/:account_id
     """
 
     decorators = [require_oauth()]
 
-    def delete(self, user_id, account_id):
+    def delete(self, account_id):
         """
-        DELETE /v1/ats-accounts/:user_id/:account_id
+        DELETE /v1/ats-accounts/:account_id
 
         Decomission an ATS account for a user.
         """
@@ -72,21 +72,21 @@ class ATSAccountService(Resource):
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
 
-        values = "`user`: {}, 'account': {}".format(user_id, account_id)
+        values = "`user`: {}, 'account': {}".format(authenticated_user.id, account_id)
         return "{ 'accounts' : 'delete', " + values + " }"
 
 
 @api.route(ATSServiceApi.ACCOUNTS)
 class ATSAccountsService(Resource):
     """
-    Controller for /v1/ats-accounts/:user_id
+    Controller for /v1/ats-accounts
     """
 
     decorators = [require_oauth()]
 
-    def get(self, user_id):
+    def get(self):
         """
-        GET /v1/ats-accounts/:user_id
+        GET /v1/ats-accounts
 
         Retrieve all ATS candidates in an ATS account of a user.
         """
@@ -94,11 +94,11 @@ class ATSAccountsService(Resource):
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
 
-        return "{" + "'accounts' : 'get', 'user_id' : {}".format(user_id) +  "}"
+        return "{" + "'accounts' : 'get', 'user_id' : {}".format(authenticated_user.id) +  "}"
 
-    def post(self, user_id):
+    def post(self):
         """
-        POST /v1/ats-accounts/:user_id
+        POST /v1/ats-accounts/
 
         Register an ATS account for a user.
         """
