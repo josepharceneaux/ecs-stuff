@@ -33,7 +33,6 @@ class TestAddNotes(object):
         """
         Test:  Add notes to candidate
         """
-        # Create Candidate
         AddUserRoles.add_get_edit(user_first)
 
         # Create notes for candidate
@@ -41,6 +40,18 @@ class TestAddNotes(object):
             {'title': 'interests', 'comment': 'Interested in internet security'},
             {'title': 'Open Source Contributor', 'comment': 'Contributed to Linux OSS'}
         ]}
+        create_resp = send_request('post', CandidateApiUrl.NOTES % candidate_first.id, access_token_first, notes_data)
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.CREATED
+        assert len(create_resp.json()['candidate_notes']) == len(notes_data['notes'])
+
+    def test_add_note_without_title(self, user_first, access_token_first, candidate_first):
+        """
+        Test: Add note for candidate without providing a note title
+        """
+        AddUserRoles.add_get_edit(user_first)
+
+        notes_data = {'notes': [{'comment': fake.bs()}, {'comment': fake.bs()}]}
         create_resp = send_request('post', CandidateApiUrl.NOTES % candidate_first.id, access_token_first, notes_data)
         print response_info(create_resp)
         assert create_resp.status_code == requests.codes.CREATED

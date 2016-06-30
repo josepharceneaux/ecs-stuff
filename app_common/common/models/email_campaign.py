@@ -87,6 +87,22 @@ class EmailCampaign(db.Model):
         from user import User  # This has to be here to avoid circular import
         return cls.query.join(User).filter(User.domain_id == domain_id)
 
+    @classmethod
+    def get_by_domain_id_and_filter_by_name(cls, domain_id, search_keyword, sort_by, sort_type):
+        assert domain_id, 'domain_id not given'
+        from user import User  # This has to be here to avoid circular import
+        if sort_by == 'name':
+            sort_by_object = EmailCampaign.name
+        else:
+            sort_by_object = EmailCampaign.added_datetime
+
+        if sort_by == 'ASC':
+            sort_by_object = sort_by_object.asc()
+        else:
+            sort_by_object = sort_by_object.desc()
+        return cls.query.join(User).filter(User.domain_id == domain_id and cls.name.ilike('%' + search_keyword + '%')).order_by(sort_by_object)
+
+
     def __repr__(self):
         return "<EmailCampaign(name=' %r')>" % self.name
 
