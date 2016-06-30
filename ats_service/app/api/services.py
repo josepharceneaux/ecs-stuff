@@ -7,23 +7,23 @@ import types
 from flask import request, Blueprint
 from flask_restful import Resource
 
-from ats_service.common.talent_api import TalentApi
-
 # Decorators
 from ats_service.common.utils.auth_utils import require_oauth
 
 # Modules
 from ats_service.common.routes import ATSServiceApi
+from ats_service.common.utils.api_utils import ApiResponse, api_route
+from ats_service.common.talent_api import TalentApi
+from ats_service.common.utils.handy_functions import get_valid_json_data
+
+from ats_utils import validate_ats_account_data
 
 # Why doesn't this work?
 # from ats_service.app import logger
-
 import ats_service.app
 
 # Database
 from ats_service.common.models.ats import ATS
-
-from ats_service.common.utils.api_utils import api_route
 
 
 api = TalentApi()
@@ -47,8 +47,8 @@ class ATSService(Resource):
         GET /v1/ats
         """
 
+        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
-        ats_service.app.logger.info("ATS {} {} ({})".format(request.method, request.path, request.user.email))
 
         return ATS.get_all_as_json()
 
@@ -68,8 +68,8 @@ class ATSAccountService(Resource):
         Decomission an ATS account for a user.
         """
 
+        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
-        ats_service.app.logger.info("ATSAccount {} {} ({})".format(request.method, request.path, request.user.email))
 
         values = "`user`: {}, 'account': {}".format(user_id, account_id)
         return "{ 'accounts' : 'delete', " + values + " }"
@@ -90,9 +90,8 @@ class ATSAccountsService(Resource):
         Retrieve all ATS candidates in an ATS account of a user.
         """
 
+        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
-        ats_service.app.logger.info("ATSAccount {} {} ({})".format(request.method, request.path, request.user.email))
-        ats_service.app.logger.info("user_id: |{}|".format(user_id))
 
         return "{" + "'accounts' : 'get', 'user_id' : {}".format(user_id) +  "}"
 
@@ -103,8 +102,25 @@ class ATSAccountsService(Resource):
         Register an ATS account for a user.
         """
 
+        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
-        ats_service.app.logger.info("ATSAccount {} {} ({})".format(request.method, request.path, request.user.email))
+        data = get_valid_json_data(request)
+
+        # Validate data fields
+        validate_ats_account_data(data)
+
+        # Search for this ATS account entry already existing
+        account = find_ats_account(authenticated_user.id, data['ats_name'])
+        if account:
+            response = json.dumps(dict(id=account.id, message="ATS account already exists."))
+            headers = ATSServiceApiUrl.ACCOUNTS % account.id
+            return ApiResponse(response, headers=headers, status=200)
+
+        # Search for ATS entry, create if absent
+
+        # Create ATS account for user
+
+        # Create ATS credentials entry
 
         return "{" + "'accounts' : 'post', 'user_id' : {}".format(user_id) +  "}"
 
@@ -124,8 +140,8 @@ class ATSCandidatesService(Resource):
         Retrieve all ATS candidates stored locally associated with an ATS account
         """
 
+        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
-        ats_service.app.logger.info("User {} {} ({} {})".format(request.method, request.path, request.user.email, account_id))
 
         values = "'account': {}".format(account_id)
         return "{ 'candidates' : 'get', " + values + " }"
@@ -146,8 +162,8 @@ class ATSCandidateService(Resource):
         Link a getTalent candidate to an ATS candidate.
         """
 
+        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
-        ats_service.app.logger.info("User {} {} ({})".format(request.method, request.path, request.user.email))
 
         values = "'candidate': {}, ats: {}".format(candidate_id, ats_id)
         return "{ 'candidates' : 'post', " + values + " }"
@@ -159,8 +175,8 @@ class ATSCandidateService(Resource):
         Remove an ATS account associated with a user.
         """
 
+        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
-        ats_service.app.logger.info("User {} {} ({})".format(request.method, request.path, request.user.email))
 
         values = "'candidate': {}, ats: {}".format(candidate_id, ats_id)
         return "{ 'candidates' : 'delete', " + values + " }"
@@ -181,8 +197,8 @@ class ATSCandidateRefreshService(Resource):
         Update our local store of ATS candidates associated with an account from the ATS itself.
         """
 
+        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
-        ats_service.app.logger.info("User {} {} ({} {})".format(request.method, request.path, request.user.email, account_id))
 
         values = "'account': {}".format(account_id)
         return "{ 'refresh' : 'get', " + values + " }"
