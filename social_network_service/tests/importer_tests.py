@@ -2,8 +2,9 @@
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.rsvp import RSVP
-from social_network_service.common.models.user import UserSocialNetworkCredential
-from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.common.models.user import UserSocialNetworkCredential, DomainRole
+from social_network_service.common.tests.conftest import talent_pool_sample
+from social_network_service.common.utils.handy_functions import http_request, add_role_to_test_user
 from social_network_service.modules.utilities import get_class
 from social_network_service.social_network_app import logger
 
@@ -132,7 +133,7 @@ class Test_Event_Importer:
         assert rsvp_in_db is None
         meetup_event_dict['id'] = event.id
 
-    def test_meetup_rsvp_importer_with_valid_token(self, sample_user, meetup_event_dict):
+    def test_meetup_rsvp_importer_with_valid_token(self, sample_user, talent_pool_sample, meetup_event_dict):
         """
         :param auth_data: This creates a test user and its social network
             credentials.
@@ -151,6 +152,8 @@ class Test_Event_Importer:
         - We add 'id' of newly created event to delete it from social network
             website in the finalizer of meetup_event_dict.
         """
+        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_EDIT_CANDIDATES,
+                                            DomainRole.Roles.CAN_DELETE_CANDIDATES])
         event = meetup_event_dict['event']
         social_network_event_id = event.social_network_event_id
         user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(

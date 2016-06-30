@@ -3,16 +3,10 @@
 # Third Party
 import json
 from datetime import datetime, timedelta
-from urllib import urlencode
-
 import pytest
 
-# App Settings
-import redis
-import requests
-
 from social_network_service.common.redis_cache import redis_store
-from social_network_service.common.tests.conftest import user_auth, sample_user, domain_first, first_group
+from social_network_service.common.tests.conftest import user_auth, sample_user, domain_first, first_group, talent_pool
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.social_network.meetup import Meetup
 from social_network_service.social_network_app import app
@@ -41,8 +35,8 @@ EVENT_DATA = {
     "title": "Test Event",
     "description": "Test Event Description",
     "registration_instruction": "Just Come",
-    "start_datetime": (datetime.now() + timedelta(days=20)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "end_datetime": (datetime.now() + timedelta(days=22)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "start_datetime": (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "end_datetime": (datetime.now() + timedelta(days=4)).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "group_url_name": "Python-Learning-Meetup",
     "social_network_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
     "timezone": "Asia/Karachi",
@@ -289,8 +283,6 @@ def meetup_event_dict(request, sample_user, meetup_event):
         and from our database.
         """
 
-        if 'id' in meetup_event_in_db:
-            delete_events(sample_user.id, [meetup_event_in_db['id']])
     request.addfinalizer(fin)
     return meetup_event_in_db
 

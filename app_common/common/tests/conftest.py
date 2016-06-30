@@ -317,6 +317,20 @@ def talent_pool(domain_first, first_group, user_first):
 
     return tp
 
+@pytest.fixture()
+def talent_pool_sample(domain_first, first_group, sample_user):
+    """
+    Fixture adds a talent pool in domain_first
+    """
+    tp = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, user_id=sample_user.id)
+    db.session.add(tp)
+    db.session.commit()
+
+    db.session.add(TalentPoolGroup(talent_pool_id=tp.id, user_group_id=first_group.id))
+    db.session.commit()
+
+    return tp
+
 
 @pytest.fixture()
 def talent_pool_second(domain_second, second_group, user_second):
