@@ -66,7 +66,7 @@ class TestGetCampaigns(object):
         """
         email_campaign = get_campaign_or_campaigns(
             access_token_first, campaign_id=campaign_with_candidate_having_no_email.id)
-        assert_valid_campaign_get(email_campaign, campaign_with_candidate_having_no_email)
+        assert_valid_campaign_get(email_campaign, [campaign_with_candidate_having_no_email])
 
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
@@ -84,7 +84,7 @@ class TestGetCampaigns(object):
             access_token_first,
             campaign_id=campaign_with_candidate_having_no_email.id,
             fields=fields)
-        assert_valid_campaign_get(email_campaign, campaign_with_candidate_having_no_email,
+        assert_valid_campaign_get(email_campaign, [campaign_with_candidate_having_no_email],
                                   fields=fields)
 
         # Test GET api of talent-pipelines/:id/campaigns
@@ -125,7 +125,8 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?per_page=1')
         assert len(email_campaigns) == 1
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
+        reference_campaigns = [email_campaign_of_user_first, email_campaign_of_user_second]
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
 
@@ -134,14 +135,14 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?per_page=1&page=2')
         assert len(email_campaigns) == 1
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_second)
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
 
         # Test GET api of email campaign with 2 results per_page
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?per_page=2')
         assert len(email_campaigns) == 2
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
-        assert_valid_campaign_get(email_campaigns[1], email_campaign_of_user_second)
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
+        assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
 
@@ -150,8 +151,8 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?&page=1')
         assert len(email_campaigns) == 2
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
-        assert_valid_campaign_get(email_campaigns[1], email_campaign_of_user_second)
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
+        assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
 
         # Test GET api of email campaign with page = 2. No campaign should be received in response
         # as we have created only two campaigns so far and default per_page is 10.
