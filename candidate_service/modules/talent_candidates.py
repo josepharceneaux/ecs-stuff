@@ -1895,7 +1895,7 @@ def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
 
             # Email must not belong to another candidate in the same domain
             unauthorized_email = CandidateEmail.get_email_in_users_domain(request.user.domain_id, email_address)
-            if unauthorized_email:
+            if unauthorized_email and unauthorized_email.candidate_id != candidate_id:
                 raise ForbiddenError("Email (address = {}) belongs to someone else!".
                                      format(unauthorized_email.address), custom_error.EMAIL_FORBIDDEN)
 
@@ -2009,8 +2009,10 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
                 phone_dict.update(dict(candidate_id=candidate_id))
 
                 if is_updating:
+
                     # Phone must not belong to any other candidate in the same domain
-                    if CandidatePhone.search_phone_number_in_user_domain(str(value), request.user):
+                    matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(str(value), request.user)
+                    if matching_phone_values and matching_phone_values[0].candidate_id != candidate_id:
                         raise InvalidUsage(
                             error_message="Candidate with phone number ({}) already exists.".format(value),
                             error_code=custom_error.PHONE_EXISTS,
