@@ -85,7 +85,7 @@ class TalentPipelineApi(Resource):
 
             if sort_by == 'engagement_score':
                 for talent_pipeline_data in talent_pipelines_data:
-                    talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_id)
+                    talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_data['id'])
 
             talent_pipelines_data = sorted(talent_pipelines_data, key=lambda talent_pipeline_data: talent_pipeline_data[
                 sort_by], reverse=(True if sort_type == 'ASC' else False))
@@ -96,7 +96,7 @@ class TalentPipelineApi(Resource):
 
             if sort_by != 'engagement_score':
                 for talent_pipeline_data in talent_pipelines_data:
-                    talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_id)
+                    talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_data['id'])
 
             return dict(talent_pipelines=talent_pipelines_data,
                         page_number=page, talent_pipelines_per_page=per_page,
