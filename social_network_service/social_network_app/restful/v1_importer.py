@@ -58,7 +58,7 @@ class RsvpEventImporter(Resource):
     """
     decorators = [require_oauth()]
 
-    def get(self, mode, social_network):
+    def post(self, mode, social_network):
 
         # Start celery rsvp importer method here.
         if mode.lower() not in ["event", "rsvp"]:

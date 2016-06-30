@@ -1,9 +1,12 @@
 # Application Specific
+import requests
+
 from social_network_service.common.models import db
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.rsvp import RSVP
 from social_network_service.common.models.user import UserSocialNetworkCredential, DomainRole
+from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.tests.conftest import talent_pool_sample
 from social_network_service.common.utils.handy_functions import http_request, add_role_to_test_user
 from social_network_service.modules.utilities import get_class
@@ -181,3 +184,36 @@ class Test_Event_Importer:
         assert isinstance(rsvp_in_db, RSVP)
         assert rsvp_in_db.status == payload['rsvp']
         meetup_event_dict['id'] = event.id
+
+    def test_meetup_rsvp_importer_endpoint_with_valid_token(self, sample_user, talent_pool_sample,  meetup_event_dict,
+                                                            token):
+        """
+        :param auth_data: This creates a test user and its social network
+            credentials.
+        :param meetup_event_dict: This creates an event on social network website
+            and saves it in database.
+        :type auth_data: pyTest fixture present in conftest.py.
+        :type meetup_event_dict: pyTest fixture present in conftest.py.
+
+        - We post an RSVP on this event. We assert on response of RSVP POST.
+            If it is in 2xx, then we run rsvp importer to import RSVP
+            (that we just posted) in database. After importing RSVPs, we pick
+            the imported record using social_network_rsvp_id and finally assert
+            on the status of RSVP. It should be same as given in POST request's
+            payload.
+
+        - We add 'id' of newly created event to delete it from social network
+            website in the finalizer of meetup_event_dict.
+        """
+        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_EDIT_CANDIDATES,
+                                            DomainRole.Roles.CAN_DELETE_CANDIDATES])
+        event = meetup_event_dict['event']
+        social_network_event_id = event.social_network_event_id
+        user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
+            sample_user.id, event.social_network.id)
+
+        headers = dict(Authorization='Bearer %s' % token)
+        headers['Content-Type'] = 'application/json'
+        response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('rsvp', 'meetup'), headers=headers)
+        assert response.status_code == 200
+
