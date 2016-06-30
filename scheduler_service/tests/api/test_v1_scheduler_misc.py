@@ -13,11 +13,13 @@ from time import sleep
 import requests
 
 # Application imports
+from scheduler_service import redis_store
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.conftest import sample_user
 from scheduler_service.common.utils.models_utils import get_by_id
+from scheduler_service.modules.CONSTANTS import REQUEST_COUNTER
 
 __author__ = 'saad'
 
@@ -44,6 +46,7 @@ class TestSchedulerMisc(object):
 
         current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=40)
         job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        job_config['url'] = SchedulerApiUrl.TEST_TASK
 
         # Set the expiry after 20 seconds and update token expiry in db
         expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=20)
@@ -83,7 +86,7 @@ class TestSchedulerMisc(object):
             POST data while hitting the endpoint.
         :return:
         """
-
+        redis_store.delete(REQUEST_COUNTER % 'get')
         auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
 
         auth_header = {'Authorization': 'Bearer ' + auth_token_row['access_token'],
@@ -91,6 +94,7 @@ class TestSchedulerMisc(object):
 
         current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=40)
         job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        job_config['url'] = SchedulerApiUrl.TEST_TASK
         job_config['request_method'] = 'get'
 
         # Set the expiry after 20 seconds and update token expiry in db
@@ -117,6 +121,56 @@ class TestSchedulerMisc(object):
         auth_header['Authorization'] = 'Bearer ' + token.access_token
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
+        assert redis_store.get(REQUEST_COUNTER % 'get') == '1'
+
+    def test_scheduled_job_post_request(self, sample_user, user_auth, job_config, job_cleanup):
+        """
+        Schedule a job 40 seconds from now and then set token expiry after 20 seconds.
+        So that after 20 seconds token will expire and job will be in running state.
+        When job time comes, endpoint will call run_job method and which will refresh the expired token.
+        Then check the new expiry time of expired token in test which should be in future
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        redis_store.delete(REQUEST_COUNTER % 'post')
+        auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+
+        auth_header = {'Authorization': 'Bearer ' + auth_token_row['access_token'],
+                       'Content-Type': 'application/json'}
+
+        current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=40)
+        job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        job_config['url'] = SchedulerApiUrl.TEST_TASK_POST
+        job_config['request_method'] = 'post'
+
+        # Set the expiry after 20 seconds and update token expiry in db
+        expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=20)
+
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+                                 headers=auth_header)
+
+        assert response.status_code == 201
+        data = response.json()
+        assert data['id']
+
+        _update_token_expiry_(auth_token_row['user_id'], expiry)
+
+        # Sleep for 60 seconds till the job start and refresh oauth token
+        sleep(60)
+
+        # After running the job first time. Token should be refreshed
+        db.db.session.commit()
+        token = Token.query.filter_by(user_id=auth_token_row['user_id']).first()
+        assert token.expires > datetime.datetime.utcnow()
+
+        # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
+        auth_header['Authorization'] = 'Bearer ' + token.access_token
+        job_cleanup['header'] = auth_header
+        job_cleanup['job_ids'] = [data['id']]
+        assert redis_store.get(REQUEST_COUNTER % 'post') == '1'
 
     def test_scheduled_job_delete_request(self, sample_user, user_auth, job_config, job_cleanup):
         """
@@ -131,6 +185,7 @@ class TestSchedulerMisc(object):
         :return:
         """
 
+        redis_store.delete(REQUEST_COUNTER % 'delete')
         auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
 
         auth_header = {'Authorization': 'Bearer ' + auth_token_row['access_token'],
@@ -138,6 +193,7 @@ class TestSchedulerMisc(object):
 
         current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=40)
         job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        job_config['url'] = SchedulerApiUrl.TEST_TASK
         job_config['request_method'] = 'delete'
 
         # Set the expiry after 20 seconds and update token expiry in db
@@ -164,6 +220,8 @@ class TestSchedulerMisc(object):
         auth_header['Authorization'] = 'Bearer ' + token.access_token
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
+
+        assert redis_store.get(REQUEST_COUNTER % 'delete') ==  '1'
 
     def test_scheduled_job_patch_request(self, sample_user, user_auth, job_config, job_cleanup):
         """
@@ -178,6 +236,7 @@ class TestSchedulerMisc(object):
         :return:
         """
 
+        redis_store.delete(REQUEST_COUNTER % 'patch')
         auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
 
         auth_header = {'Authorization': 'Bearer ' + auth_token_row['access_token'],
@@ -185,7 +244,8 @@ class TestSchedulerMisc(object):
 
         current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=40)
         job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
-        job_config['request_method'] = 'delete'
+        job_config['url'] = SchedulerApiUrl.TEST_TASK
+        job_config['request_method'] = 'patch'
 
         # Set the expiry after 20 seconds and update token expiry in db
         expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=20)
@@ -211,6 +271,8 @@ class TestSchedulerMisc(object):
         auth_header['Authorization'] = 'Bearer ' + token.access_token
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
+
+        assert redis_store.get(REQUEST_COUNTER % 'patch') == '1'
 
     def test_scheduled_job_put_request(self, sample_user, user_auth, job_config, job_cleanup):
         """
@@ -225,6 +287,7 @@ class TestSchedulerMisc(object):
         :return:
         """
 
+        redis_store.delete(REQUEST_COUNTER % 'put')
         auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
 
         auth_header = {'Authorization': 'Bearer ' + auth_token_row['access_token'],
@@ -232,7 +295,8 @@ class TestSchedulerMisc(object):
 
         current_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=40)
         job_config['start_datetime'] = current_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
-        job_config['request_method'] = 'delete'
+        job_config['url'] = SchedulerApiUrl.TEST_TASK
+        job_config['request_method'] = 'put'
 
         # Set the expiry after 20 seconds and update token expiry in db
         expiry = datetime.datetime.utcnow() + datetime.timedelta(seconds=20)
@@ -258,6 +322,8 @@ class TestSchedulerMisc(object):
         auth_header['Authorization'] = 'Bearer ' + token.access_token
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = [data['id']]
+
+        assert redis_store.get(REQUEST_COUNTER % 'put') == '1'
 
     def test_run_job_with_expired_token(self, sample_user, user_auth, job_config):
         """

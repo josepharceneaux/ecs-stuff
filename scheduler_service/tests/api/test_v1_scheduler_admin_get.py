@@ -42,7 +42,7 @@ class TestSchedulerGet(object):
         auth_header['Authorization'] = valid_token
 
         # Assign admin role to user
-        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
+        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_SCHEDULER_JOBS])
 
         response = requests.get(SchedulerApiUrl.ADMIN_TASKS + '?per_page=50',
                                 headers=auth_header)
@@ -59,7 +59,7 @@ class TestSchedulerGet(object):
         Test covers user_id, paused, task_category, task_type filters to test response from scheduler service endpoint
         """
         users_list = create_five_users
-        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
+        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_SCHEDULER_JOBS])
 
         # Get jobs of only first user
         response = requests.get('{0}?per_page=50&user_id={1}'.format(SchedulerApiUrl.ADMIN_TASKS, users_list[0][0].id),
@@ -71,12 +71,12 @@ class TestSchedulerGet(object):
         assert len(response.json()['tasks']) >= 10
 
     def test_retrieve_jobs_as_admin_using_task_category_filters(self, sample_user, auth_header, create_five_users,
-                                                                schedule_ten_jobs_for_each_user):
+                                                                schedule_ten_jobs_for_each_user, schedule_ten_general_jobs):
         """
         In this test, use filters to get filtered tasks from admin API
         Test covers user_id, paused, task_category, task_type filters to test response from scheduler service endpoint
         """
-        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
+        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_SCHEDULER_JOBS])
 
         # Get only user jobs by specifying task_category
         response = requests.get('{0}?per_page=50&task_category={1}'
@@ -102,7 +102,7 @@ class TestSchedulerGet(object):
         In this test, use filters to get filtered tasks from admin API
         Test covers user_id, paused, task_category, task_type filters to test response from scheduler service endpoint
         """
-        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
+        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_SCHEDULER_JOBS])
 
         # Get only periodic jobs by specifying task_type
         response = requests.get('{0}?per_page=50&task_type={1}'
@@ -128,7 +128,7 @@ class TestSchedulerGet(object):
         In this test, use filters to get filtered tasks from admin API
         Test covers user_id, paused, task_category, task_type filters to test response from scheduler service endpoint
         """
-        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
+        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_SCHEDULER_JOBS])
 
         # Get paused jobs only
         response = requests.get('{0}?per_page=50&paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'true'),
@@ -148,7 +148,7 @@ class TestSchedulerGet(object):
         Test covers user_id, paused, task_category, task_type filters to test response from scheduler service endpoint
         """
         users_list = create_five_users
-        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
+        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_SCHEDULER_JOBS])
 
         # Try to get jobs using wrong paused value
         response = requests.get('{0}?per_page=50&paused={1}'.format(SchedulerApiUrl.ADMIN_TASKS, 'None'),
@@ -181,7 +181,7 @@ class TestSchedulerGet(object):
         Test covers user_id, paused, task_category, task_type filters to test response from scheduler service endpoint
         """
         users_list = create_five_users
-        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_JOBS])
+        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_GET_ALL_SCHEDULER_JOBS])
 
         # Get jobs by specifying task_category as user and user_id. This will return all jobs of first user.
         response = requests.get('{0}?per_page=50&user_id={1}&task_category={2}'.format(SchedulerApiUrl.ADMIN_TASKS,
