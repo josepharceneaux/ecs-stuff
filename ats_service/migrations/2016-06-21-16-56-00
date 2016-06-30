@@ -6,6 +6,7 @@ from sqlalchemy import text
 
 from ats_service.app import db
 from ats_service.common.models.ats import ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
+from ats_service.common.models.user import User
 
 
 if ATS.__tablename__ not in db.engine.table_names():
@@ -67,3 +68,6 @@ if ATSCandidateProfile.__tablename__ not in db.engine.table_names():
                                                     `updated_at` timestamp not null \
                                                    )")
         )
+
+if 'ats_enabled' not in User.__table__.columns.keys():
+    db.session.execute(text("alter table user add column ats_enabled boolean"))

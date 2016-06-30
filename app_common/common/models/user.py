@@ -50,6 +50,7 @@ class User(db.Model):
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
     locale = db.Column(db.String(10), default='en-US')
     # TODO: Set Nullable = False after setting user_group_id for existing data
+    ats_enabled = db.Column(db.Boolean, default=False)
 
     # Relationships
     candidates = relationship('Candidate', backref='user')
