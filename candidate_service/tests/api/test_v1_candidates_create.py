@@ -236,8 +236,6 @@ class TestCreateCandidate(object):
         db.session.commit()
         assert create_resp.status_code == 400
         assert create_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
-        assert not CandidateEmail.get_by_address(email_address=email_1)
-        assert not CandidateEmail.get_by_address(email_address=email_2)
 
     def test_add_candidate_without_emails(self, access_token_first, user_first, talent_pool):
         """

@@ -1,0 +1,14 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Build: Scheduler Service Admin (stagging)" type="js.build_tools.gulp" factoryName="Gulp.js" folderName="Scheduler Service Admin" singleton="false">
+    <node-options />
+    <gulpfile>$PROJECT_DIR$/scheduler_service_admin/gulpfile.js</gulpfile>
+    <tasks />
+    <arguments>build</arguments>
+    <pass-parent-envs>true</pass-parent-envs>
+    <envs>
+      <env name="NODE_ENV" value="stag" />
+      <env name="" value="" />
+    </envs>
+    <method />
+  </configuration>
+</component>

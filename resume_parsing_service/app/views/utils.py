@@ -205,14 +205,13 @@ def resume_file_from_params(parse_params):
     filepicker_key = parse_params.get('filepicker_key')
 
     if filepicker_key:
-        filename_str = filepicker_key
         resume_bucket = current_app.config['S3_FILEPICKER_BUCKET_NAME']
-        resume_file = boto3_get_file(resume_bucket, filename_str)
+        resume_file = boto3_get_file(resume_bucket, filepicker_key)
     elif parse_params.get('filename'):
         resume_bin = parse_params.get('resume_file')
         resume_file = StringIO(resume_bin.read())
-        filename_str = parse_params.get('filename')
+
     else:
         raise InvalidUsage('Invalid query params for /parse_resume')
 
-    return resume_file, filename_str
+    return resume_file
