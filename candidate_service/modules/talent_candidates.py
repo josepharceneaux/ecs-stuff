@@ -25,7 +25,7 @@ from candidate_service.common.models.candidate import (
     CandidateAddress, CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField, CandidateSocialNetwork,
     SocialNetwork, CandidateEducationDegreeBullet, CandidateExperienceBullet, ClassificationType,
-    CandidatePhoto, CandidateTextComment, PhoneLabel, EmailLabel, CandidateSubscriptionPreference
+    CandidatePhoto, PhoneLabel, EmailLabel, CandidateSubscriptionPreference
 )
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
@@ -165,7 +165,7 @@ def fetch_candidate_info(candidate, fields=None):
         'last_name': candidate.last_name,
         'full_name': full_name,
         'created_at_datetime': created_at_datetime,
-        'updated_at_datetime': created_at_datetime,
+        'updated_at_datetime': DatetimeUtils.utc_isoformat(candidate.updated_datetime),
         'emails': emails,
         'phones': phones,
         'addresses': addresses,
@@ -1112,8 +1112,8 @@ def social_network_name_from_url(url):
             return "Unknown"
 
 
-def _update_candidate(first_name, middle_name, last_name, formatted_name, objective,
-                      summary, candidate_id, user_id, resume_url, source_id, candidate_status_id):
+def _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
+                      candidate_id, user_id, resume_url, source_id, candidate_status_id):
     """
     Function will update Candidate's primary information.
     Candidate's Primary information include:
