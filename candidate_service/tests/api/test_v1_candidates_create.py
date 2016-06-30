@@ -894,8 +894,8 @@ class TestAddCandidatePhones(object):
         # Create another candidate using the same phone number as above
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == requests.codes.BAD
-        assert create_resp.json()['error']['code'] == custom_error.PHONE_EXISTS
+        assert create_resp.status_code == requests.codes.FORBIDDEN
+        assert create_resp.json()['error']['code'] == custom_error.PHONE_FORBIDDEN
 
 
 class TestCreateMilitaryService(object):
