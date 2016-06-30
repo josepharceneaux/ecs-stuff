@@ -22,7 +22,7 @@ def add_notes(candidate_id, data):
     for note in data:
 
         # Normalize value
-        title = normalize_value(note.get('title'))
+        title = normalize_value(note.get('title')) if note.get('title') else None
         comments = normalize_value(note.get('comment'))
 
         # Notes must have a comment
