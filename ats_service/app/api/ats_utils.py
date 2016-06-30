@@ -42,6 +42,8 @@ def new_ats_account(user_id, ats_id, data):
     ATSAccount.query.filter(ATSAccount.id == account.id).update(update_dict)
     update_dict = { 'ats_account_id': account.id }
     ATSCredential.query.filter(ATSCredential.id == credentials.id).update(update_dict)
+    update_dict = { 'ats_enabled': True }
+    User.query.filter(User.id == user_id).update(update_dict)
     db.session.commit()
 
     return account
