@@ -836,7 +836,7 @@ class ATSServiceApi(object):
     ATS = '/' + VERSION + '/ats'
     ACCOUNT = '/' + VERSION + '/ats-accounts/<int:account_id>'
     ACCOUNTS = '/' + VERSION + '/ats-accounts'
-    CANDIDATE = '/' + VERSION + '/ats-candidates/<int:candidate_id>/<int:ats_id>'
+    CANDIDATE = '/' + VERSION + '/ats-candidates/<int:candidate_id>/<int:ats_candidate_id>'
     CANDIDATES = '/' + VERSION + '/ats-candidates/<int:account_id>'
     CANDIDATES_REFRESH = '/' + VERSION + '/ats-candidates/refresh/<int:account_id>'
 

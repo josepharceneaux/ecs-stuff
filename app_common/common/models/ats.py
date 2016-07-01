@@ -88,6 +88,13 @@ class ATSAccount(db.Model):
         return { 'active' : self.active, 'ats_id' : self.ats_id, 'user_id' : self.user_id, 'ats_credential_id' : self.ats_credential_id }
 
     @classmethod
+    def get_by_id(cls, account_id):
+        """
+        """
+        assert isinstance(account_id, (int, long)) and account_id > 0, 'Account Id should be a valid positive number'
+        return cls.query.filter_by(id=account_id).first()
+
+    @classmethod
     def get_account(cls, user_id, ats_name):
         """
         """
@@ -117,7 +124,7 @@ class ATSAccount(db.Model):
             ats = ATS.get_by_id(a.ats_id)
             item.update(ats.to_dict())
             item.update({ 'credentials': credentials.credentials_json})
-            return_json.append(item)
+            return_json.append( { a.id : item })
 
         return json.dumps(return_json)
 
@@ -150,10 +157,40 @@ class ATSCandidate(db.Model):
     """
     __tablename__ = 'ats_candidate'
     id = db.Column(db.BigInteger, primary_key=True)
+    ats_account_id = db.Column(db.BigInteger)
     ats_remote_id = db.Column(db.String(100))
     gt_candidate_id = db.Column(db.BigInteger)
+    profile_id = db.Column(db.BigInteger)
     added_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+
+    def to_dict(self):
+        """
+        """
+        return { 'id' : self.id, 'ats_account_id' : self.ats_account_id, 'ats_remote_id' : self.ats_remote_id, 'gt_candidate_id' : self.gt_candidate_id }
+
+    @classmethod
+    def get_all(cls, account_id):
+        """
+        """
+        return cls.query.filter_by(ats_account_id=account_id).all()
+
+    @classmethod
+    def get_all_as_json(cls, account_id):
+        """
+        """
+        candidates = ATSCandidate.get_all(account_id)
+        if not candidates:
+            return
+
+        return_json = []
+        for c in candidates:
+            item = c.to_dict()
+            profile = ATSCandidateProfile.get_by_id(c.profile_id)
+            item.update(profile.to_dict())
+            return_json.append( { c.id : item } )
+
+        return json.dumps(return_json)
 
     def __repr__(self):
         return "<ATS Candidate ( = %r)>" % self.ats_remote_id
@@ -169,6 +206,18 @@ class ATSCandidateProfile(db.Model):
     ats_id  = db.Column(db.BigInteger)
     added_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+
+    def to_dict(self):
+        """
+        """
+        return { 'active' : self.active, 'profile_json' : self.profile_json }
+
+    @classmethod
+    def get_by_id(cls, profile_id):
+        """
+        """
+        assert isinstance(profile_id, (int, long)) and profile_id > 0, 'Candidate profile id should be a valid positive number'
+        return cls.query.filter_by(id=profile_id).first()
 
     def __repr__(self):
         return "<ATS Candidate Profile ( = %r)>" % self.profile_json

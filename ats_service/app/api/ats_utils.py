@@ -2,13 +2,15 @@
 """
 
 
-from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential
+from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
 from ats_service.common.models.user import User
+from ats_service.common.error_handling import *
 
 from ats_service.common.error_handling import InternalServerError, ResourceNotFound, ForbiddenError, InvalidUsage
 
 
 ATS_ACCOUNT_FIELDS = ['ats_name', 'ats_homepage', 'ats_login', 'ats_auth_type', 'ats_id', 'ats_credentials']
+ATS_CANDIDATE_FIELDS = ['ats_remote_id', 'profile_json']
 
 
 def validate_ats_account_data(data):
@@ -16,8 +18,14 @@ def validate_ats_account_data(data):
     """
     missing_fields = [field for field in ATS_ACCOUNT_FIELDS if field not in data or not data[field]]
     if missing_fields:
-        raise InvalidUsage('Some required fields are missing', additional_error_info=dict(missing_fields=missing_fields),
-                           error_code=CampaignException.MISSING_REQUIRED_FIELD)
+        raise MissingRequiredField('Some required fields are missing', additional_error_info=dict(missing_fields=missing_fields))
+
+def validate_ats_candidate_data(data):
+    """
+    """
+    missing_fields = [field for field in ATS_CANDIDATE_FIELDS if field not in data or not data[field]]
+    if missing_fields:
+        raise MissingRequiredField('Some required fields are missing', additional_error_info=dict(missing_fields=missing_fields))
 
 def new_ats(data):
     """
@@ -47,3 +55,16 @@ def new_ats_account(user_id, ats_id, data):
     db.session.commit()
 
     return account
+
+def new_ats_candidate(account, data):
+    """
+    """
+    gt_candidate_id = data.get('gt_candidate_id', None)
+    profile = ATSCandidateProfile(active=True, profile_json=data['profile_json'], ats_id=account.ats_id)
+    db.session.add(profile)
+    db.session.commit()
+    candidate = ATSCandidate(ats_account_id=account.id, ats_remote_id=data['ats_remote_id'], gt_candidate_id=gt_candidate_id, profile_id=profile.id)
+    db.session.add(candidate)
+    db.session.commit()
+
+    return candidate

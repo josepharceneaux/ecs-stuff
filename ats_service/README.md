@@ -9,6 +9,8 @@
     + `/v1/ats [GET]`
 - Register ATS account for a user with ATS credentials
     + `/v1/ats-accounts [POST]`
+- Return an ATS account by its id
+    + `/v1/ats-accounts/:account_id [GET]`
 - Decomission an ATS account for a user
     + `/v1/ats-accounts/:account_id [DELETE]`
 - Retrieve all ATS accounts belonging to a user
