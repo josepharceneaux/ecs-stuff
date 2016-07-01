@@ -38,7 +38,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         db.session.commit()
         sent_datetime = email_campaign_blast.sent_datetime
         if blast_foreign_key:
-            time.sleep(1)
+            time.sleep(5)
             send_campaign_email_to_candidate(campaign, email, candidate_ids[0],
                                              blast_id=email_campaign_blast.id)
         else:
