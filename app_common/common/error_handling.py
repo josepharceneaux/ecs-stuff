@@ -83,6 +83,12 @@ class ResourceNotFound(TalentError):
         return 404
 
 
+class MissingRequiredField(TalentError):
+    @classmethod
+    def http_status_code(cls):
+        return 400
+
+
 def register_error_handlers(app, logger):
     """
     :type app: flask.app.Flask
