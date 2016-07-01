@@ -35,8 +35,7 @@ class ATS(db.Model):
     def get_by_id(cls, ats_id):
         """
         """
-        assert isinstance(ats_id, (int, long)) and ats_id > 0, \
-            'ATS Id should be a valid positive number'
+        assert isinstance(ats_id, (int, long)) and ats_id > 0, 'ATS Id should be a valid positive number'
         return cls.query.filter_by(id=ats_id).first()
 
     @classmethod
@@ -83,6 +82,11 @@ class ATSAccount(db.Model):
     added_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
+    def to_dict(self):
+        """
+        """
+        return { 'active' : self.active, 'ats_id' : self.ats_id, 'user_id' : self.user_id, 'ats_credential_id' : self.ats_credential_id }
+
     @classmethod
     def get_account(cls, user_id, ats_name):
         """
@@ -93,6 +97,29 @@ class ATSAccount(db.Model):
                 ats = ATS.get_by_id(a.ats_id)
                 if ats and ats.name == ats_name:
                     return ats
+
+    @classmethod
+    def get_accounts_for_user(cls, user_id):
+        """
+        """
+        accounts = cls.query.filter(ATSAccount.user_id == user_id)
+        return accounts
+
+    @classmethod
+    def get_accounts_for_user_as_json(cls, user_id):
+        """
+        """
+        return_json = []
+        accounts = ATSAccount.get_accounts_for_user(user_id)
+        for a in accounts:
+            credentials = ATSCredential.get_by_id(a.ats_credential_id)
+            item = a.to_dict()
+            ats = ATS.get_by_id(a.ats_id)
+            item.update(ats.to_dict())
+            item.update({ 'credentials': credentials.credentials_json})
+            return_json.append(item)
+
+        return json.dumps(return_json)
 
     def __repr__(self):
         return "<ATS Credential ( = %r)>" % self.id
@@ -106,6 +133,13 @@ class ATSCredential(db.Model):
     auth_type = db.Column(db.String(45))
     credentials_json = db.Column(db.Text)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+
+    @classmethod
+    def get_by_id(cls, credentials_id):
+        """
+        """
+        assert isinstance(credentials_id, (int, long)) and credentials_id > 0, 'ATS Id {} should be a valid positive number'.format(credentials_id)
+        return cls.query.filter_by(id=credentials_id).first()
 
     def __repr__(self):
         return "<ATS Credential ( = %r)>" % self.credentials_json

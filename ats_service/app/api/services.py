@@ -88,13 +88,14 @@ class ATSAccountsService(Resource):
         """
         GET /v1/ats-accounts
 
-        Retrieve all ATS candidates in an ATS account of a user.
+        Retrieve all ATS accounts of a user.
         """
 
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
+        return_json = ATSAccount.get_accounts_for_user_as_json(authenticated_user.id)
 
-        return "{" + "'accounts' : 'get', 'user_id' : {}".format(authenticated_user.id) +  "}"
+        return return_json
 
     def post(self):
         """
