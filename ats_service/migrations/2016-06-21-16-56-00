@@ -52,6 +52,7 @@ if ATSCandidate.__tablename__ not in db.engine.table_names():
                                             `id` bigint auto_increment key, \
                                             `ats_remote_id` varchar(100), \
                                             `gt_candidate_id` bigint, \
+                                            `profile_id` bigint, \
                                             `added_at` timestamp not null, \
                                             `updated_at` timestamp not null \
                                            )")
