@@ -92,7 +92,7 @@ def create_smartlist_with_given_email_candidate(access_token, campaign,
 def delete_campaign(campaign):
     """
     This deletes the campaign created during tests from database
-    :param campaign: Email campaign object
+    :param campaign: EmailCampaign object
     """
     try:
         with app.app_context():
@@ -208,7 +208,7 @@ def assert_and_delete_email(subject):
 
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False,
-                         expected_status=200, abort_time_for_sends=20):
+                         expected_status=200, abort_time_for_sends=150):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
@@ -220,10 +220,8 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         json_resp = response.json()
         assert str(campaign.id) in json_resp['message']
     # Need to add this as processing of POST request runs on Celery
-    blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign)
+    CampaignsTestsHelpers.assert_campaign_blasts(campaign, 1, timeout=abort_time_for_sends)
 
-    assert blasts, 'Email campaign blasts not found'
-    assert len(blasts) == 1
     # assert on sends
     CampaignsTestsHelpers.assert_blast_sends(campaign, expected_count,
                                              abort_time_for_sends=abort_time_for_sends)

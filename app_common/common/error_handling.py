@@ -3,7 +3,8 @@ This module contains our custom exception types (Errors) and error handlers for 
 
     TalentError is the base class for all other exceptions classes.
 """
-from flask import jsonify, request, has_request_context
+from sqlalchemy.orm.exc import DetachedInstanceError
+from flask import (jsonify, request, has_request_context)
 
 __author__ = 'oamasood'
 
@@ -84,23 +85,14 @@ class ResourceNotFound(TalentError):
 
 def register_error_handlers(app, logger):
     """
-
     :type app: flask.app.Flask
     :type logger: logging.Logger
     """
     logger.info("Registering error handlers for app %s", app.import_name)
 
-    @app.errorhandler(405)
-    def handle_method_not_allowed(ignored):
-        return jsonify({'error': {'message': 'Given HTTP method is not allowed on this endpoint'}}), 405
-
     @app.errorhandler(InvalidUsage)
     def handle_invalid_usage(error):
         return handle_error(error, 'Invalid API usage.')
-
-    @app.errorhandler(InternalServerError)
-    def handle_server_serror(error):
-        return handle_error(error, 'Internal Server Error.')
 
     @app.errorhandler(NotFoundError)
     def handle_not_found(error):
@@ -131,8 +123,6 @@ def register_error_handlers(app, logger):
             error = exc.message
             response = {'error': {'message': "Internal server error"}}
         app_name, url, user_id, user_email = get_request_info(app)
-        logger.error("Internal server error. App: %s,\nUrl: %s,\nError Details: %s", app.import_name,
-                     request.url if has_request_context() else None, error)
         logger.error('''Internal server error.
                         App: %s,
                         Url: %s
@@ -181,7 +171,10 @@ def get_request_info(app):
         app_name = app.import_name
         url = request.url
         if hasattr(request, 'user') and isinstance(request.user, User):
-            user_id = request.user.id
-            user_email = request.user.email
+            try:
+                user_id = request.user.id
+                user_email = request.user.email
+            except DetachedInstanceError:
+                user_id = None
+                user_email = None
     return app_name, url, user_id, user_email
-

@@ -74,9 +74,13 @@ class TestSendSmsCampaign(object):
         """
         campaign = SmsCampaign.get(sms_campaign_with_no_candidate['id'])
         with app.app_context():
-            CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
+            response_post = CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
                 self.URL % campaign.id, access_token_first,
                 campaign, talent_pipeline.id)
+            error_resp = CampaignsTestsHelpers.assert_api_response(response_post,
+                                                                   expected_status_code=InvalidUsage.http_status_code())
+            assert error_resp['code'] == CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
+            assert error_resp['message']
 
     def test_post_with_invalid_campaign_id(self, access_token_first):
         """

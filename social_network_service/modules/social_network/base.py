@@ -14,6 +14,7 @@ import requests
 from social_network_service.common.error_handling import InvalidUsage
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.common.utils.validators import raise_if_not_positive_int_or_long
 from social_network_service.modules.utilities import get_class
 from social_network_service.modules.utilities import log_error
 from social_network_service.common.models.user import User
@@ -34,6 +35,7 @@ class SocialNetworkBase(object):
         1- Meetup
         2- Eventbrite
         3- Facebook
+        4- Twitter (Only authentication part for now)
 
     - Usually API of any social network requires user permission to gain access
         of user's account. Once user allows access, we get an access token to
@@ -41,6 +43,7 @@ class SocialNetworkBase(object):
         1- One hour (Meetup)
         2- Not expires until account password is changed (Eventbrite)
         3- Sixty days (Facebook).
+        4- Not expires until user removes getTalent app from allowed apps (Twitter)
 
     - Before going to event part, we first check the validity of access token,
         and try to refresh it without user interaction inside __init__().
@@ -171,88 +174,81 @@ class SocialNetworkBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self,  *args, **kwargs):
+    def __init__(self,  user_id, social_network_id=None, validate_credentials=True):
         """
-        - This sets the user's credentials as base class property so that it
-            can be used in other classes.
-
-        - We also check the validity of access token and try to refresh it in
-            case it has expired.
-        :param args:
-        :param kwargs:
-        :return:
+        - This sets the user's credentials as base class property so that it can be used in other classes.
+        - We also check the validity of access token and try to refresh it in case it has expired.
+        :param int | long user_id: Id of User
+        :param SocialNetwork | None social_network: Social Network object
+        :param bool validate_credentials: If True, this will validate the credentials of user for given social network.
         """
         self.events = []
         self.api_relative_url = None
-        user_id = kwargs.get('user_id')
-        self.user = User.query.get(user_id)
-        if isinstance(self.user, User):
-            social_network = kwargs.get('social_network')
-            if social_network and isinstance(social_network, SocialNetwork):
-                self.social_network = social_network
-            else:
-                self.social_network = \
-                    SocialNetwork.get_by_name(self.__class__.__name__)
-            self.user_credentials = \
-                UserSocialNetworkCredential.get_by_user_and_social_network_id(
-                    user_id, self.social_network.id)
-            if self.user_credentials:
-                data = {
-                    "access_token": self.user_credentials.access_token,
-                    "gt_user_id": self.user_credentials.user_id,
-                    "social_network_id": self.social_network.id,
-                    "api_url": self.social_network.api_url,
-                }
-                # checks if any field is missing for given user credentials
-                items = [value for key, value in data.iteritems()
-                         if key is not "api_url"]
-                if all(items):
-                    self.api_url = data['api_url']
-                    self.gt_user_id = data['gt_user_id']
-                    self.social_network_id = data['social_network_id']
-                    self.access_token = data['access_token']
-                    self.headers = {
-                        'Authorization': 'Bearer ' + self.access_token
-                    }
-                else:
-                    # gets fields which are missing
-                    items = [key for key, value in data.iteritems()
-                             if key is not "api_url" and not value]
-                    data_to_log = {'user_id': self.user.id,
-                                   'missing_items': items}
-                    # Log those fields in error which are not present in Database
-                    error_message = \
-                        "User id: %(user_id)s\n Missing Item(s) in user's " \
-                        "credential: %(missing_items)s\n" % data_to_log
-                    raise MissingFieldsInUserCredentials('API Error: %s'
-                                                         % error_message)
-            else:
+        self.user, self.social_network = self.get_user_and_social_network(user_id, social_network_id)
+        self.user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(self.user.id,
+                                                                                              self.social_network.id)
+        if validate_credentials:
+            if not self.user_credentials:
                 raise UserCredentialsNotFound('UserSocialNetworkCredential for social network '
                                               '%s and User Id %s not found in db.'
-                                              % (self.__class__.__name__,
-                                                 self.user.id))
+                                              % (self.__class__.__name__, self.user.id))
+            data = {
+                "access_token": self.user_credentials.access_token,
+                "gt_user_id": self.user_credentials.user_id,
+                "social_network_id": self.social_network.id,
+                "api_url": self.social_network.api_url,
+            }
+            # checks if any field is missing for given user credentials
+            items = [value for key, value in data.iteritems() if key is not "api_url"]
+            if all(items):
+                self.api_url = data['api_url']
+                self.gt_user_id = data['gt_user_id']
+                self.social_network_id = data['social_network_id']
+                self.access_token = data['access_token']
+            else:
+                # gets fields which are missing
+                items = [key for key, value in data.iteritems() if key is not "api_url" and not value]
+                data_to_log = {'user_id': self.user.id, 'missing_items': items}
+                # Log those fields in error which are not present in Database
+                error_message = "User id: %(user_id)s\n Missing Item(s) in user's " \
+                                "credential: %(missing_items)s\n" % data_to_log
+                raise MissingFieldsInUserCredentials('API Error: %s' % error_message)
+            # Eventbrite and meetup social networks take access token in header
+            # so here we generate authorization header to be used by both of them
+            self.headers = {'Authorization': 'Bearer ' + self.access_token}
+            # token validity is checked here. If token is expired, we refresh it
+            # here and save new access token in database.
+            self.access_token_status = self.validate_and_refresh_access_token()
+            if not self.access_token_status:
+                # Access token has expired. Couldn't refresh it for given
+                # social network.
+                logger.debug('__init__: Access token has expired. '
+                             'Please connect with %s again from "Profile" page. user_id: %s'
+                             % (self.social_network.name, self.user.id))
+                raise AccessTokenHasExpired('Access token has expired for %s' % self.social_network.name)
+            self.start_date_dt = None
+            self.webhook_id = None
+            if not self.user_credentials.member_id:
+                # gets and save the member id of gt-user
+                self.get_member_id()
+
+    def get_user_and_social_network(self, user_id, social_network_id=None):
+        """
+        This gets the User object and social network object from database.
+        :param int | long user_id: Id of user
+        :param int | long | None social_network_id: Id of SocialNetwork object
+        :rtype: tuple
+        """
+        raise_if_not_positive_int_or_long(user_id)
+        user = User.query.get(user_id)
+        if not user:
+            raise NoUserFound("No User found in database with id %(user_id)s" % user_id)
+        if social_network_id:
+            raise_if_not_positive_int_or_long(social_network_id)
+            social_network = SocialNetwork.get_by_id(social_network_id)
         else:
-            error_message = "No User found in database with id %(user_id)s" \
-                            % kwargs.get('user_id')
-            raise NoUserFound('API Error: %s' % error_message)
-        # Eventbrite and meetup social networks take access token in header
-        # so here we generate authorization header to be used by both of them
-        self.headers = {'Authorization': 'Bearer ' + self.access_token}
-        # token validity is checked here. If token is expired, we refresh it
-        # here and save new access token in database.
-        self.access_token_status = self.validate_and_refresh_access_token()
-        if not self.access_token_status:
-            # Access token has expired. Couldn't refresh it for given
-            # social network.
-            logger.debug('__init__: Access token has expired. '
-                         'Please connect with %s again from "Profile" page. user_id: %s'
-                         % (self.user.id, self.social_network.name))
-            raise AccessTokenHasExpired('Access token has expired for %s' % self.social_network.name)
-        self.start_date_dt = None
-        self.webhook_id = None
-        if not self.user_credentials.member_id:
-            # gets and save the member id of gt-user
-            self.get_member_id()
+            social_network = SocialNetwork.get_by_name(self.__class__.__name__)
+        return user, social_network
 
     def process(self, mode, user_credentials=None, rsvp_data=None):
         """
@@ -278,6 +274,9 @@ class SocialNetworkBase(object):
         .. seealso:: start() function defined in social network manager
             inside social_network_service/manager.py.
         """
+        social_network_id = self.social_network.id
+        user_id = self.user.id
+        social_network_name = self.social_network.name
         try:
             sn_name = self.social_network.name.strip()
             # get_required class under social_network_service/event/ to
@@ -287,6 +286,7 @@ class SocialNetworkBase(object):
             sn_event_obj = event_class(user_credentials=user_credentials,
                                        social_network=self.social_network,
                                        headers=self.headers)
+
             if mode == 'event':
                 # gets events using respective API of Social Network
                 logger.debug('Getting event(s) of %s(UserId: %s) from '
@@ -305,8 +305,8 @@ class SocialNetworkBase(object):
         except:
             logger.exception('process: running %s importer, user_id: %s, '
                              'social network: %s(id: %s)'
-                             % (mode, self.user.id, self.social_network.name,
-                                self.social_network.id))
+                             % (mode, user_id, social_network_name,
+                                social_network_id))
 
     @classmethod
     def get_access_and_refresh_token(cls, user_id, social_network,

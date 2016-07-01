@@ -1,11 +1,12 @@
 """Utilities related to the parsing of resumes."""
-# pylint: disable=wrong-import-position, fixme
+# pylint: disable=wrong-import-position, fixme, import-error
 __author__ = 'erikfarmer'
 # Standard Library
 import hashlib
 import json
 from cStringIO import StringIO
 # Third Party
+from flask import current_app
 import boto3
 import requests
 # Module Specific
@@ -133,7 +134,6 @@ def send_candidate_references(candidate_references, candidate_id, oauth_string):
             candidate_id, references_response.content))
 
 
-# TODO: write tests for this.
 def get_users_talent_pools(formatted_token_str):
     """
     Uses the candidate pool service to get talent pools of a user's domain via their token.
@@ -143,21 +143,25 @@ def get_users_talent_pools(formatted_token_str):
     """
     try:
         talent_pool_response = requests.get(CandidatePoolApiUrl.TALENT_POOLS,
-                                           headers={'Authorization': formatted_token_str})
+                                            headers={'Authorization': formatted_token_str})
     except requests.exceptions.ConnectionError:
-        raise InvalidUsage("ResumeParsingService could not reach CandidatePool API in "
-                           "get_users_talent_pools")
+        raise InvalidUsage("ResumeParsingService could not reach CandidatePool API in get_users_talent_pools")
+
     talent_pools_response = json.loads(talent_pool_response.content)
+
     if 'error' in talent_pools_response:
         raise InvalidUsage(error_message=talent_pools_response['error'].get(
             'message', 'Error in getting user talent pools.'))
+
     try:
         return [talent_pools_response['talent_pools'][0]['id']]
+
     except IndexError:
         return []
 
 
 def gen_hash_from_file(_file):
+    """Handy function for creating file hashes. Used as redis keys to store parsed resumes."""
     return hashlib.md5(_file.read()).hexdigest()
 
 
@@ -201,13 +205,13 @@ def resume_file_from_params(parse_params):
     filepicker_key = parse_params.get('filepicker_key')
 
     if filepicker_key:
-        filename_str = filepicker_key
-        resume_file = boto3_get_file(filename_str)
+        resume_bucket = current_app.config['S3_FILEPICKER_BUCKET_NAME']
+        resume_file = boto3_get_file(resume_bucket, filepicker_key)
     elif parse_params.get('filename'):
         resume_bin = parse_params.get('resume_file')
         resume_file = StringIO(resume_bin.read())
-        filename_str = parse_params.get('filename')
+
     else:
         raise InvalidUsage('Invalid query params for /parse_resume')
 
-    return resume_file, filename_str
+    return resume_file

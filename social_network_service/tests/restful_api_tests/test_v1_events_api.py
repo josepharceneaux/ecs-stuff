@@ -211,10 +211,9 @@ class TestResourceEvents:
     def test_events_post_with_valid_token(self, token, test_event):
         """
         Post event and it should create an event with 201 response
-        (Scoail Network not found)
+        (Social Network not found)
         :param token: access_token for oauth
         :param test_event: test_event for post a valid event data
-        :return:
         """
         event_data = test_event
 

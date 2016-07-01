@@ -6,13 +6,17 @@ from user_service.common.models.user import DomainRole
 from user_service.common.routes import UserServiceApiUrl
 
 
-def user_scoped_roles(access_token, user_id, test_roles=None, action="GET", false_case=False):
+def user_scoped_roles(access_token, user_id, test_roles=None, action="GET", false_case=False, role_id_only=None):
     if test_roles:
         test_role_first = test_roles[0]
         test_role_second = test_roles[1]
     headers = {'Authorization': 'Bearer %s' % access_token}
     if action == "GET":
-        response = requests.get(UserServiceApiUrl.USER_ROLES_API % user_id, headers=headers)
+        url = UserServiceApiUrl.USER_ROLES_API % user_id
+        if role_id_only:
+           url = str.format('{0}?role_id_only={1}',
+                            url, role_id_only)
+        response = requests.get(url=url, headers=headers)
         return response.json(), response.status_code
     elif action == "POST":
         headers['content-type'] = 'application/json'

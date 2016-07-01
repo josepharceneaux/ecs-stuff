@@ -42,7 +42,7 @@ from campaign_utils import (get_model, CampaignUtils)
 from ..utils.validators import raise_if_not_instance_of
 from custom_errors import (CampaignException, EmptyDestinationUrl)
 from ..routes import (ActivityApiUrl, SchedulerApiUrl)
-from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound)
+from ..error_handling import (ForbiddenError, InvalidUsage, ResourceNotFound, InternalServerError)
 from ..inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 from validators import (validate_form_data,
                         validation_of_data_to_schedule_campaign,
@@ -461,10 +461,7 @@ class CampaignBase(object):
         # set params
         params = {'username': user.name, 'campaign_name': source.name,
                   'campaign_type': CampaignUtils.get_campaign_type_prefix(source.__tablename__)}
-        cls.create_activity(user.id,
-                            _type=Activity.MessageIds.CAMPAIGN_CREATE,
-                            source=source,
-                            params=params)
+        cls.create_activity(user.id, _type=Activity.MessageIds.CAMPAIGN_CREATE, source=source, params=params)
 
     @classmethod
     def get_campaign_and_scheduled_task(cls, campaign_id, current_user, campaign_type):
@@ -485,14 +482,33 @@ class CampaignBase(object):
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
         raise_if_not_instance_of(current_user, User)
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
-        campaign_obj = cls.get_campaign_if_domain_is_valid(campaign_id, current_user,
-                                                           campaign_type)
+        # get campaign object
+        campaign_obj = cls.get_campaign_if_domain_is_valid(campaign_id, current_user, campaign_type)
         CampaignUtils.raise_if_not_instance_of_campaign_models(campaign_obj)
+        # get scheduled_task object and auth headers
+        scheduled_task, oauth_header = cls.get_scheduled_task_and_auth_headers(campaign_obj, current_user)
+        return campaign_obj, scheduled_task, oauth_header
+
+    @classmethod
+    def get_scheduled_task_and_auth_headers(cls, campaign, current_user):
+        """
+        1) It gets the scheduled task data from scheduler_service
+        2) It gets the auth header for logged in user
+
+        :param campaign: Campaign object
+        :param current_user: logged-in user's object
+        :type campaign: SmsCampaign | PushCampaign | EmailCampaign
+        :type current_user: User
+        :exception: Invalid usage
+        :return: This returns the scheduled task data and oauth_header
+        :rtype: tuple
+        """
+        CampaignUtils.raise_if_not_instance_of_campaign_models(campaign)
+        raise_if_not_instance_of(current_user, User)
         oauth_header = cls.get_authorization_header(current_user.id)
         # check if campaign is already scheduled
-        scheduled_task = cls.is_already_scheduled(campaign_obj.scheduler_task_id,
-                                                  oauth_header)
-        return campaign_obj, scheduled_task, oauth_header
+        scheduled_task = cls.is_already_scheduled(campaign.scheduler_task_id, oauth_header)
+        return scheduled_task, oauth_header
 
     @classmethod
     def get_campaign_if_domain_is_valid(cls, campaign_id, current_user, campaign_type):
@@ -587,7 +603,7 @@ class CampaignBase(object):
         # using relationship
         return campaign_obj.user.domain_id
 
-    def delete(self, campaign_id):
+    def delete(self, commit_session=True):
         """
         This function is used to delete the campaign in following given steps.
         1- Calls get_campaign_and_scheduled_task() method to validate that requested campaign
@@ -609,28 +625,22 @@ class CampaignBase(object):
              In case of SMS campaign, this method is used as
 
             >>> from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
-            >>> campaign_obj =  SmsCampaignBase(int('user_id'))
-            >>> campaign_obj.delete(int('campaign_id'))
-
-        :param campaign_id: id of campaign
-        :type campaign_id: int | long
+            >>> campaign_obj =  SmsCampaignBase(int('user_id'), int('campaign_id'))
+            >>> campaign_obj.delete()
+        :param bool commit_session: True if we want to commit the session per deletion
         :exception: Forbidden error (status_code = 403)
         :exception: Resource not found error (status_code = 404)
         :exception: Invalid Usage (status_code = 400)
-        :return: True if record deleted successfully, False otherwise.
-        :rtype: bool
+        :return: Raises InternalServerError if record is not deleted successfully from database.
 
         **See Also**
         .. see also:: endpoints /v1/sms-campaigns/:id in v1_sms_campaign_api.py
         """
-        if not campaign_id:
-            raise InvalidUsage('delete: campaign_id cannot be emtpy.')
-        if not self.user:
-            raise InvalidUsage('delete: user cannot be emtpy.')
+        CampaignUtils.raise_if_not_instance_of_campaign_models(self.campaign)
+        raise_if_not_instance_of(self.user, User)
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        # get campaign_obj, scheduled_task data and oauth_header
-        campaign_obj, scheduled_task, oauth_header = \
-            self.get_campaign_and_scheduled_task(campaign_id, self.user, self.campaign_type)
+        # get scheduled_task data and oauth_header
+        scheduled_task, oauth_header = self.get_scheduled_task_and_auth_headers(self.campaign, self.user)
         # campaign object has scheduler_task_id assigned
         if scheduled_task:
             # campaign was scheduled, remove task from scheduler_service
@@ -638,17 +648,16 @@ class CampaignBase(object):
             if not unscheduled:
                 return False
         campaign_model = get_model(self.campaign_type, self.campaign_type)
-        if not campaign_model.delete(campaign_obj):
-            logger.error("%s(id:%s) couldn't be deleted." % (self.campaign_type, campaign_obj.id))
-            return False
+        if not campaign_model.delete(self.campaign, app=current_app, commit_session=commit_session):
+            logger.error("%s(id:%s) couldn't be deleted." % (self.campaign_type, self.campaign.id))
+            raise InternalServerError("%s(id:%s) couldn't be deleted." % (self.campaign_type, self.campaign.id),
+                                      error_code=CampaignException.ERROR_DELETING_CAMPAIGN)
         try:
-            self.create_activity_for_campaign_delete(campaign_obj)
+            self.create_activity_for_campaign_delete(self.campaign)
         except Exception:
             # In case activity_service is not running, we proceed normally and log the error.
             logger.exception('delete: Error creating campaign delete activity.')
-        logger.info('delete: %s(id:%s) has been deleted successfully.' % (self.campaign_type,
-                                                                          campaign_obj.id))
-        return True
+        logger.info('delete: %s(id:%s) has been deleted successfully.' % (self.campaign_type, self.campaign.id))
 
     def create_activity_for_campaign_delete(self, source):
         """

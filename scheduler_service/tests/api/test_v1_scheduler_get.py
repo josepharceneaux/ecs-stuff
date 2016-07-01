@@ -149,7 +149,7 @@ class TestSchedulerGet(object):
         jobs_id = []
         word = random_word(5)
         # Create tasks
-        for i in range(10):
+        for i in range(3):
             job_config['task_name'] = word + str(i)
             response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                      headers=auth_header_no_user)
@@ -157,7 +157,7 @@ class TestSchedulerGet(object):
             jobs_id.append(response.json()['id'])
 
         # Get tasks
-        response_get = requests.get(SchedulerApiUrl.TASKS,
+        response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 1, 50),
                                     headers=auth_header_no_user)
 
         get_jobs_id = map(lambda job_: job_['id'], response_get.json()['tasks'])

@@ -11,10 +11,11 @@ import requests
 # Application imports
 import time
 from datetime import timedelta, datetime
-from scheduler_service import db
+from scheduler_service import db, redis_store
 from scheduler_service.common.models.user import User
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.conftest import sample_user
+from scheduler_service.modules.CONSTANTS import REQUEST_COUNTER
 
 __author__ = 'saad'
 
@@ -116,7 +117,7 @@ class TestSchedulerCreate(object):
         """
         Create a job by hitting the endpoint with secret_key (global tasks) and make sure we get job_id in
         response.
-        This test case is to create a named task which is in case of server to server communication (global tasks)
+        This test case is to create a named task which is in case of server to server user_auth (global tasks)
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as

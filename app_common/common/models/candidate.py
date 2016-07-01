@@ -2,13 +2,14 @@ from sqlalchemy import and_
 from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
-from ..error_handling import InvalidUsage, InternalServerError
+from ..error_handling import InternalServerError
+from ..utils.validators import raise_if_not_positive_int_or_long
 from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
-from email_campaign import EmailCampaignSend
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
 from sms_campaign import SmsCampaignReply
+from email_campaign import (EmailCampaign, EmailCampaignSend)
 
 
 class Candidate(db.Model):
@@ -23,6 +24,7 @@ class Candidate(db.Model):
     is_mobile_hidden = db.Column('IsMobileHidden', TINYINT, default=False)
     user_id = db.Column('OwnerUserId', BIGINT, db.ForeignKey('user.Id'))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
     domain_can_read = db.Column('DomainCanRead', TINYINT, default=True)
     domain_can_write = db.Column('DomainCanWrite', TINYINT, default=False)
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
@@ -221,6 +223,16 @@ class CandidateSource(db.Model):
         """
         return cls.query.filter_by(domain_id=domain_id).all()
 
+    @classmethod
+    def get_domain_source(cls, source_id, domain_id):
+        """
+        Function will return domain source
+        :type source_id:  int | long
+        :type domain_id:  int | long
+        :rtype:  CandidateSource | None
+        """
+        return cls.query.filter_by(id=source_id, domain_id=domain_id).first()
+
 
 class PublicCandidateSharing(db.Model):
     __tablename__ = 'public_candidate_sharing'
@@ -375,6 +387,7 @@ class CandidateEmail(db.Model):
         :param email_address: email address
         :type email_address: str
         :return: True | False
+        :rtype: bool
         """
         assert isinstance(email_address, basestring) and email_address, 'email_address should have a valid value.'
         bounced_email = cls.query.filter_by(address=email_address, is_bounced=True).first()
@@ -393,6 +406,32 @@ class CandidateEmail(db.Model):
         query = CandidateEmail.query.filter(CandidateEmail.address.in_(emails))
         query.update(dict(is_bounced=True), synchronize_session=False)
         db.session.commit()
+
+    @classmethod
+    def get_email_by_candidate_id(cls, candidate_id):
+        """
+        Returns CandidateEmail object based on specified candidate id.
+        :param candidate_id: Id of candidate for which email address is to be retrieved.
+        :type candidate_id: int | long
+        :return: Candidate Email
+        :rtype: CandidateEmail
+        """
+        raise_if_not_positive_int_or_long(candidate_id)
+        email = cls.query.filter_by(candidate_id=candidate_id).first()
+        return email
+
+    @classmethod
+    def get_email_in_users_domain(cls, domain_id, email_address):
+        """
+        Returns CandidateEmail object if found in user's domain
+        :type domain_id:  int | long
+        :type email_address: str
+        :rtype: CandidateEmail | None
+        """
+        from user import User  # This is to avoid circular import error
+        return cls.query.join(Candidate).join(User). \
+            filter(User.domain_id == domain_id). \
+            filter(cls.address == email_address).first()
 
 
 class CandidatePhoto(db.Model):
@@ -479,6 +518,7 @@ class CandidateTextComment(db.Model):
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     list_order = db.Column('ListOrder', db.Integer)
+    title = db.Column(db.String(255))
     comment = db.Column('Comment', db.Text)
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)
@@ -1140,12 +1180,36 @@ class CandidateSubscriptionPreference(db.Model):
     def get_by_candidate_id(cls, candidate_id):
         return cls.query.filter_by(candidate_id=candidate_id).first()
 
+    @classmethod
+    def get_subscribed_candidate_ids(cls, campaign, all_candidate_ids):
+        """
+        Get ids of candidates subscribed to the campaign.
+        :param campaign: Valid campaign object.
+        :param all_candidate_ids: Ids of candidates.
+        :type campaign: EmailCampaign
+        :type all_candidate_ids: list
+        :return: List of subscribed candidate ids.
+        :rtype: list
+        """
+        if not isinstance(campaign, EmailCampaign):
+            raise InternalServerError(error_message='Must provide valid EmailCampaign object.')
+        if not isinstance(all_candidate_ids, list) or len(all_candidate_ids) <= 0:
+            raise InternalServerError(error_message='all_candidates_ids must be a non empty list. Given: %s' %
+                                                    all_candidate_ids)
+        subscribed_candidates_rows = CandidateSubscriptionPreference.with_entities(
+            CandidateSubscriptionPreference.candidate_id).filter(
+            and_(CandidateSubscriptionPreference.candidate_id.in_(all_candidate_ids),
+                 CandidateSubscriptionPreference.frequency_id == campaign.frequency_id)).all()
+        subscribed_candidate_ids = [row.candidate_id for row in
+                                    subscribed_candidates_rows]  # Subscribed candidate ids
+        return subscribed_candidate_ids
+
 
 class CandidateDevice(db.Model):
     __tablename__ = 'candidate_device'
     id = db.Column(db.Integer, primary_key=True)
     one_signal_device_id = db.Column(db.String(100))
-    candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
+    candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id'))
     registered_at_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):

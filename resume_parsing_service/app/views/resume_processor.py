@@ -1,9 +1,10 @@
 """Main resume parsing logic & functions."""
-# pylint: disable=wrong-import-position, fixme
+# pylint: disable=wrong-import-position, fixme, import-error
 # Standard library
 import json
 # Third Party/Framework Specific.
 import requests
+from flask import current_app
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.views.parse_lib import parse_resume
@@ -20,9 +21,7 @@ from resume_parsing_service.common.utils.talent_s3 import boto3_put
 IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp', '.dcx',
                  '.pcx', '.jp2', '.jpc', '.jb2', '.djvu', '.djv']
 DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
-GOOGLE_API_KEY = "AIzaSyD4i4j-8C5jLvQJeJnLmoFW6boGkUhxSuw"
-GOOGLE_CLOUD_VISION_URL = "https://vision.googleapis.com/v1/images:annotate"
-RESUME_EXPIRE_TIME = 604800  # one week in seconds.
+RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 
 
 def process_resume(parse_params):
@@ -36,7 +35,8 @@ def process_resume(parse_params):
     create_candidate = parse_params.get('create_candidate', False)
 
     # We need to obtain/define the file from our params.
-    resume_file, filename_str = resume_file_from_params(parse_params)
+    resume_file = resume_file_from_params(parse_params)
+    filename_str = parse_params['filename'] # This is always set by param_builders.py
 
     # Checks to see if we already have BG contents in Redis.
     parsed_resume = get_or_store_parsed_resume(resume_file, filename_str)
@@ -55,20 +55,22 @@ def process_resume(parse_params):
     # Upload resumes we want to create candidates from.
     try:
         resume_file.seek(0)
-        boto3_put(resume_file.read(), filename_str, 'OriginalFiles')
+        bucket = current_app.config['S3_BUCKET_NAME']
+        boto3_put(resume_file.read(), bucket, filename_str, 'OriginalFiles')
         parsed_resume['candidate']['resume_url'] = filename_str
 
     except Exception as e:
         logger.exception('Failure during s3 upload; reason: {}'.format(e.message))
 
     candidate_references = parsed_resume['candidate'].pop('references', None)
-    candidate_created, candidate_id = create_parsed_resume_candidate(parsed_resume['candidate'],
-                                                             oauth_string, filename_str)
+    candidate_created, candidate_id = create_parsed_resume_candidate(
+        parsed_resume['candidate'], oauth_string, filename_str)
 
     if not candidate_created:
         # We must update!
         parsed_resume['candidate']['id'] = candidate_id
-        candidate_updated = update_candidate_from_resume(parsed_resume['candidate'], oauth_string, filename_str)
+        candidate_updated = update_candidate_from_resume(
+            parsed_resume['candidate'], oauth_string, filename_str)
 
     # References have their own endpoint and are not part of /candidates POSTed data.
     if candidate_references:
@@ -92,7 +94,7 @@ def get_or_store_parsed_resume(resume_file, filename_str):
     :param filename_str:
     :return:
     """
-    hashed_file_name = gen_hash_from_file(resume_file)
+    hashed_file_name = 'parsedResume_{}'.format(gen_hash_from_file(resume_file))
     cached_resume = redis_store.get(hashed_file_name)
 
     if cached_resume:

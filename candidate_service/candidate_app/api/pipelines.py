@@ -18,7 +18,7 @@ from candidate_service.common.utils.auth_utils import require_oauth, require_all
 from candidate_service.common.models.user import DomainRole, User
 from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.talent_pools_pipelines import TalentPipeline
-
+from candidate_service.modules.candidate_engagement import top_most_engaged_pipelines_of_candidate
 from candidate_service.common.inter_service_calls.candidate_service_calls import search_candidates_from_params
 
 
@@ -56,7 +56,8 @@ class CandidatePipelineResource(Resource):
         for number_of_requests, talent_pipeline in enumerate(talent_pipelines, start=1):
             search_response = search_candidates_from_params(search_params=talent_pipeline.search_params,
                                                             access_token=request.oauth_token,
-                                                            url_args='?id={}'.format(candidate_id))
+                                                            url_args='?id={}&talent_pool_id={}'.
+                                                            format(candidate_id, talent_pipeline.talent_pool_id))
 
             found_candidate_ids.extend(candidate['id'] for candidate in search_response['candidates'])
 
@@ -71,19 +72,22 @@ class CandidatePipelineResource(Resource):
 
         # Only return pipeline data if candidate is found from pipeline's search params
         if talent_pipeline_ids:
+            pipeline_engagements = top_most_engaged_pipelines_of_candidate(candidate_id)
             candidates_talent_pipelines = TalentPipeline.query.filter(TalentPipeline.id.in_(talent_pipeline_ids)).all()
             for talent_pipeline in candidates_talent_pipelines:
                 user_id = talent_pipeline.user_id
                 user_candidate = Candidate.query.filter_by(user_id=user_id, id=candidate_id).first()
-                result.append({
-                    "id": talent_pipeline.id,
-                    "candidate_id": user_candidate.id if user_candidate else None,
-                    "name": talent_pipeline.name,
-                    "description": talent_pipeline.description,
-                    "open_positions": talent_pipeline.positions,
-                    "datetime_needed": str(talent_pipeline.date_needed),
-                    "user_id": user_id,
-                    "added_datetime": str(talent_pipeline.added_time)
-                })
+                if user_candidate:
+                    result.append({
+                        "id": talent_pipeline.id,
+                        "candidate_id": user_candidate.id if user_candidate else None,
+                        "name": talent_pipeline.name,
+                        "description": talent_pipeline.description,
+                        "open_positions": talent_pipeline.positions,
+                        "pipeline_engagement": pipeline_engagements.get(int(talent_pipeline.id), None),
+                        "datetime_needed": str(talent_pipeline.date_needed),
+                        "user_id": user_id,
+                        "added_datetime": str(talent_pipeline.added_time)
+                    })
 
         return {'candidate_pipelines': result}

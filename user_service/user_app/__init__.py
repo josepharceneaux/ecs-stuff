@@ -28,6 +28,7 @@ try:
     # Register & add resource for Domain Custom Field API
     api = TalentApi(app)
     api.add_resource(DomainCustomFieldsResource, UserServiceApi.DOMAIN_CUSTOM_FIELDS, endpoint='domain_custom_fields')
+    api.add_resource(DomainCustomFieldsResource, UserServiceApi.DOMAIN_CUSTOM_FIELD, endpoint='domain_custom_field')
 
     from views import users_utilities_blueprint
     from api.users_v1 import users_blueprint

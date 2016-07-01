@@ -22,6 +22,7 @@ from ..models.db import db
 from werkzeug.exceptions import BadRequest
 from ..talent_config_manager import TalentConfigKeys
 from ..models.user import (User, UserScopedRoles, DomainRole)
+from ..utils.validators import raise_if_not_positive_int_or_long
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
 
@@ -176,10 +177,10 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     :param app: flask app object if wanted to use this method using app_context()
     :type method_type: str
     :type url: str
-    :type params: dict
-    :type headers: dict
-    :type data: dict
-    :type user_id: int | long
+    :type params: dict | None
+    :type headers: dict | None
+    :type data: dict | None
+    :type user_id: int | long | None
     :return: response from HTTP request or None
     :Example:
         If we are requesting scheduler_service to GET a task, we will use this method as
@@ -187,15 +188,15 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     """
 
     if app and not isinstance(app, Flask):
-        raise InvalidUsage(error_message="app instance should be flask")
+        raise InternalServerError(error_message="app instance should be flask")
 
     if not isinstance(method_type, basestring):
-        raise InvalidUsage('Method type should be str. e.g. POST etc')
+        raise InternalServerError('Method type should be str. arg given: %s' % method_type)
     if not isinstance(url, basestring):
         error_message = 'URL must be string. Unable to make "%s" Call' % method_type
         log_error('http_request: Error: %s, user_id: %s, URL: %s, Headers: %s, Data: %s'
                   % (error_message, user_id, url, headers, data), app=app)
-        raise InvalidUsage(error_message)
+        raise InternalServerError(error_message)
     if method_type.upper() in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']:
         method = getattr(requests, method_type.lower())
         response = None
@@ -262,8 +263,9 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     else:
         log_error('http_request: Unknown Method type %s. URL: %s, Headers: %s, Data: %s' % (method_type, url, headers,
                                                                                            data), app=app)
-        raise InvalidUsage('Unknown method type(%s) provided. URL: %s, Headers: %s, Data: %s' % (method_type, url,
-                                                                                                headers, data))
+        raise InternalServerError('Unknown method type(%s) provided. URL: %s, Headers: %s, Data: %s' %
+                                  (method_type, url,
+                                   headers, data))
 
 
 def validate_required_fields(data_dict, required_fields):
@@ -340,8 +342,11 @@ def generate_jwt_headers(content_type=None, user_id=None):
     """
     This function will return a dict of JWT based on the user ID and X-Talent-Secret-Key-ID and optional content-type
     :param str content_type: content-type header value
-    :return:
+    :param (int | long | None) user_id: Id of user.
+    :rtype: dict
     """
+    if user_id:
+        raise_if_not_positive_int_or_long(user_id)
     secret_key_id, jw_token = User.generate_jw_token(
         user_id=request.user.id if hasattr(request, 'user') else user_id)
     headers = {'Authorization': jw_token, 'X-Talent-Secret-Key-ID': secret_key_id}
@@ -350,14 +355,20 @@ def generate_jwt_headers(content_type=None, user_id=None):
     return headers
 
 
-def create_oauth_headers(oauth_token=None):
+def create_oauth_headers(oauth_token=None, user_id=None):
     """
     This function will return dict of Authorization and Content-Type headers. If the request context does not
     contain an access token, a dict of JWT based on the user ID and X-Talent-Secret-Key-ID headers are generated.
+    :param oauth_token: Token for authentication.
+    :param user_id: Id of user in case we are calling this function out od request context such as through celery.
+    :type oauth_token: str | unicode | None
+    :type user_id: int | long | None
     """
     oauth_token = oauth_token if oauth_token else request.oauth_token if hasattr(request, 'oauth_token') else None
+    if user_id:
+        raise_if_not_positive_int_or_long(user_id)
     if not oauth_token:
-        return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'])
+        return generate_jwt_headers(JSON_CONTENT_TYPE_HEADER['content-type'], user_id)
     else:
         authorization_header_value = oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token
         return {'Authorization': authorization_header_value, 'Content-Type': 'application/json'}
@@ -441,3 +452,16 @@ def purge_dict(dictionary, strip=True, remove_empty_strings_only=False):
     # return keys with values that aren't None
     else:
         return {k: v for k, v in dictionary.items() if (v or clean(v))}
+
+
+def normalize_value(value):
+    """
+    Function will strip & lower value
+    Value must be string, not None
+    :param value: any string value
+    :type value: str
+    :rtype:  str
+    """
+    assert isinstance(value, basestring), "value must be of type string"
+    return value.strip().lower()
+

@@ -4,12 +4,15 @@ This module contains utility methods will be used in API based tests.
 # Standard imports
 import json
 import uuid
+import operator
+from time import sleep
 from datetime import datetime, timedelta
 
 # 3rd party imports
 import requests
 from faker import Faker
 from requests import codes
+from contracts import contract
 from dateutil.parser import parse
 
 # Service specific imports
@@ -17,28 +20,30 @@ from ..error_codes import ErrorCodes
 from ..tests.conftest import randomword
 from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
                       CandidatePoolApiUrl, SchedulerApiUrl)
+from ..custom_contracts import define_custom_contracts
+from ..error_handling import NotFoundError
 
+define_custom_contracts()
 fake = Faker()
 
 
+@contract
 def send_request(method, url, access_token, data=None, params=None, is_json=True, verify=True):
     """
     This is a generic method to send HTTP request. We can just pass our data/ payload
     and it will make it json and send it to target url with application/json as content-type
     header.
-    :param method: standard HTTP method like post, get (in lowercase)
-    :param url: target url
-    :param access_token: authentication token, token can be empty, None or invalid
-    :param data: payload data for request
-    :param params: query params
-    :param is_json: a flag to determine, whether we need to dump given data or not.
+    :param http_method method: standard HTTP method like post, get (in lowercase)
+    :param string url: target url
+    :param (string | None)  access_token: authentication token, token can be empty, None or invalid
+    :param (dict | None) data: payload data for request
+    :param (dict | None) params: query params
+    :param bool is_json: a flag to determine, whether we need to dump given data or not.
             default value is true because most of the APIs are using json content-type.
-    :param verify: set this to false 
+    :param bool verify: set this to false
     :return:
     """
     method = method.lower()
-    assert method in ['get', 'post', 'put', 'delete', 'patch'], 'Invalid method'
-    assert url and isinstance(url, basestring), 'url must have a valid string value'
     request_method = getattr(requests, method)
     headers = dict(Authorization='Bearer %s' % access_token)
     if is_json:
@@ -65,35 +70,32 @@ def response_info(response):
     return content.format(url, request, status_code, jsoned)
 
 
+@contract
 def get_user(user_id, token):
     """
     This utility is used to get user info from UserService
     :param user_id: user unique identifier
     :type user_id: int | long
     :param token: authentication token for user
-    :type token: str
+    :type token: string
     :return: user dictionary
     :rtype: dict
     """
-    assert isinstance(token, basestring), \
-        'token must be a string, given type is %s' % type(token)
-    assert str(user_id).isdigit(), 'user_id must be valid number'
     response = send_request('get', UserServiceApiUrl.USER % user_id, token)
     print('common_tests : get_user: ', response.content)
     assert response.status_code == codes.OK
     return response.json()['user']
 
 
+@contract
 def refresh_token(data):
     """
     This utility function gets required data (client_id, client_secret, refresh_token)
     from data (dict) and refreshes token from AuthService
-    :param data: a dictionary containing client info
-    :type data: dict
+    :param dict data: a dictionary containing client info
     :return: auth token for user
-    :rtype: str
+    :rtype: string
     """
-    assert isinstance(data, dict), 'info must be dictionary'
     data = {'client_id': data.get('client_id'),
             'client_secret': data.get('client_secret'),
             'refresh_token': data.get('refresh_token'),
@@ -106,6 +108,7 @@ def refresh_token(data):
     return resp['access_token']
 
 
+@contract
 def get_token(info):
     """
     This utility function gets required data (client_id, client_secret, username, password)
@@ -113,9 +116,8 @@ def get_token(info):
     :param info: a dictionary containing client info
     :type info: dict
     :return: auth token for user
-    :rtype: str
+    :rtype: string
     """
-    assert isinstance(info, dict), 'info must be dictionary'
     data = {'client_id': info.get('client_id'),
             'client_secret': info.get('client_secret'),
             'username': info.get('username'),
@@ -134,12 +136,13 @@ def get_token(info):
     return access_token
 
 
+@contract
 def unauthorize_test(method, url, data=None):
     """
     This method is used to test for unauthorized requests (401).
-    :param method: http method
-    :param url: target url
-    :param data: dictionary payload
+    :param http_method method: http method
+    :param string url: target url
+    :param (dict | None) data: dictionary payload
     :return:
     """
     response = send_request(method, url, 'invalid_token',  data)
@@ -147,18 +150,16 @@ def unauthorize_test(method, url, data=None):
     assert response.status_code == codes.UNAUTHORIZED
 
 
+@contract
 def invalid_data_test(method, url, token):
     """
     This functions sends http request to a given url with different
     invalid data and checks for InvalidUsage
-    :param method: http method e.g. POST, PUT
-    :param url: api url
-    :param token: auth token
+    :param http_method method: http method e.g. POST, PUT
+    :param string url: api url
+    :param string token: auth token
     :return:
     """
-    assert method in ['get', 'post', 'put', 'delete', 'patch'], 'Invalid method'
-    assert url and isinstance(url, basestring), 'url must have a valid string value'
-    assert token and isinstance(token, basestring), 'token must have a valid string value'
     data = None
     response = send_request(method, url, token, data, is_json=True)
     assert response.status_code == codes.BAD_REQUEST
@@ -174,6 +175,7 @@ def invalid_data_test(method, url, token):
     assert response.status_code == codes.BAD_REQUEST
 
 
+@contract
 def get_fake_dict(key_count=3):
     """
     This method just creates a dictionary with 3 random keys and values
@@ -195,17 +197,16 @@ def get_fake_dict(key_count=3):
     return data
 
 
+@contract
 def add_roles(user_id, roles, token):
     """
     This method sends a POST request to UserService to add given roles to given user
-    :param user_id: id of user
-    :param roles: permissions list
-    :param token: auth token
-    :return: True | False
+    :param ((int | long), >0) user_id: user unique id in gt database
+    :param list | tuple roles: permissions list
+    :param string token: auth token
     """
-    assert isinstance(user_id, (int, long)) and user_id > 0, 'user_id is invalid. given :%s' % user_id
-    assert isinstance(roles, (list, tuple)) and roles, 'roles should be a non-empty list or tuple, given: %s' % roles
-    assert isinstance(token, basestring) and token, 'token should be a non-empty string, given: %s' % token
+    assert roles, 'roles should be a non-empty list or tuple, given: %s' % roles
+    assert token, 'token should be a non-empty string, given: %s' % token
     for role in roles:
         data = {"roles": [role]}
         response = send_request('post', UserServiceApiUrl.USER_ROLES_API % user_id,
@@ -216,13 +217,13 @@ def add_roles(user_id, roles, token):
             assert response.status_code == codes.OK
 
 
+@contract
 def remove_roles(user_id, roles, token):
     """
     This method sends a DELETE request to UserService to remove given roles to given user
-    :param user_id: id of user
-    :param roles: permissions list
-    :param token: auth token
-    :return: True | False
+    :param (int | long) user_id: id of user
+    :param list[>0] roles: permissions list
+    :param string token: auth token
     """
     data = {
         "roles": roles
@@ -233,11 +234,12 @@ def remove_roles(user_id, roles, token):
     assert response.status_code in [codes.OK, codes.BAD_REQUEST]
 
 
+@contract
 def delete_scheduler_task(task_id, token, expected_status=(200,)):
     """
     This method sends a DELETE request to Scheduler API to delete  a scheduled task.
-    :type task_id: str
-    :type token: str
+    :type task_id: string
+    :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """
@@ -247,11 +249,12 @@ def delete_scheduler_task(task_id, token, expected_status=(200,)):
     return response.json()
 
 
+@contract
 def create_candidate(talent_pool_id, token, expected_status=(201,)):
     """
     This method sends a POST request to Candidate API to create  a candidate.
     :type talent_pool_id: int | long
-    :type token: str
+    :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """
@@ -281,11 +284,12 @@ def create_candidate(talent_pool_id, token, expected_status=(201,)):
     return response.json()
 
 
+@contract
 def get_candidate(candidate_id, token, expected_status=(200,)):
     """
     This method sends a GET request to Candidate API to get a candidate info.
     :type candidate_id: int | long
-    :type token: str
+    :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """
@@ -295,11 +299,12 @@ def get_candidate(candidate_id, token, expected_status=(200,)):
     return response.json()
 
 
+@contract
 def search_candidates(candidate_ids, token, expected_status=(200,)):
     """
     This method sends a GET request to Candidate Search API to get candidates from CloudSearch.
-    :type candidate_ids: list[int | long]
-    :type token: str
+    :type candidate_ids: list|tuple
+    :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """
@@ -310,6 +315,7 @@ def search_candidates(candidate_ids, token, expected_status=(200,)):
     return response.json()
 
 
+@contract
 def delete_candidate(candidate_id, token, expected_status=(200,)):
     """
     This method sends a DELETE request to Candidate API to delete a candidate given by candidate_id.
@@ -323,16 +329,16 @@ def delete_candidate(candidate_id, token, expected_status=(200,)):
     assert response.status_code in expected_status
 
 
+@contract
 def create_smartlist(candidate_ids, talent_pipeline_id, token, expected_status=(201,)):
     """
     This method sends a POST request to CandidatePool API to create a smartlist.
-    :type candidate_ids: list[int]
+    :type candidate_ids: list|tuple
     :type talent_pipeline_id: int | long
-    :type token: str
+    :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """
-    assert isinstance(candidate_ids, (list, tuple)), 'candidate_ids must be list or tuple'
     data = {
         'candidate_ids': candidate_ids,
         'name': fake.word(),
@@ -344,11 +350,12 @@ def create_smartlist(candidate_ids, talent_pipeline_id, token, expected_status=(
     return response.json()
 
 
+@contract
 def delete_smartlist(smartlist_id, token, expected_status=(200,)):
     """
     This method sends a DELETE request to CandidatePool API to delete a smartlist.
     :type smartlist_id: int | long
-    :type token: str
+    :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """
@@ -358,11 +365,12 @@ def delete_smartlist(smartlist_id, token, expected_status=(200,)):
     return response.json()
 
 
+@contract
 def get_smartlist_candidates(smartlist_id, token, expected_status=(200,), count=None):
     """
     This method sends a GET request to CandidatePool API to get list of candidates associated to  a smartlist.
     :type smartlist_id: int | long
-    :type token: str
+    :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """
@@ -376,10 +384,11 @@ def get_smartlist_candidates(smartlist_id, token, expected_status=(200,), count=
     return response
 
 
+@contract
 def create_talent_pipelines(token, talent_pool_id, count=1, expected_status=(200,)):
     """
     This method sends a POST request to CandidatePool API to create  a talent pipeline.
-    :type token: str
+    :type token: string
     :type talent_pool_id: int | long
     :type count: int
     :type expected_status: tuple[int]
@@ -402,11 +411,12 @@ def create_talent_pipelines(token, talent_pool_id, count=1, expected_status=(200
     return response.json()
 
 
+@contract
 def get_talent_pipeline(talent_pipeline_id, token, expected_status=(200,)):
     """
     This method sends a GET request to CandidatePool API to get talent pipeline.
     :type talent_pipeline_id: int | long
-    :type token: str
+    :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """
@@ -416,11 +426,12 @@ def get_talent_pipeline(talent_pipeline_id, token, expected_status=(200,)):
     return response.json()
 
 
+@contract
 def delete_talent_pipeline(talent_pipeline_id, token, expected_status=(200,)):
     """
     This method sends a DELETE request to CandidatePool API to delete a specific talent pipeline.
     :type talent_pipeline_id: int | long
-    :type token: str
+    :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """
@@ -431,10 +442,11 @@ def delete_talent_pipeline(talent_pipeline_id, token, expected_status=(200,)):
     return response.json()
 
 
+@contract
 def create_talent_pools(token, count=1, expected_status=(200,)):
     """
     This method sends a POST request to CandidatePool API to create a talent pool.
-    :type token: str
+    :type token: string
     :type count: int | long
     :type expected_status: tuple[int]
     :rtype dict
@@ -454,11 +466,12 @@ def create_talent_pools(token, count=1, expected_status=(200,)):
     return response.json()
 
 
+@contract
 def get_talent_pool(talent_pool_id, token, expected_status=(200,)):
     """
     This method sends a GET request to CandidatePool API to get a specific talent pool.
     :type talent_pool_id: int | long
-    :type token: str
+    :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """
@@ -468,11 +481,12 @@ def get_talent_pool(talent_pool_id, token, expected_status=(200,)):
     return response.json()
 
 
+@contract
 def delete_talent_pool(talent_pool_id, token, expected_status=(200,)):
     """
     This method sends a DELETE request to CandidatePool API to delete a talent pool.
     :type talent_pool_id: int | long
-    :type token: str
+    :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """
@@ -482,3 +496,43 @@ def delete_talent_pool(talent_pool_id, token, expected_status=(200,)):
     assert response.status_code in expected_status
     return response.json()
 
+
+def get_response(access_token, arguments_to_url, expected_count=1, attempts=20, pause=3, comp_operator='>='):
+    """
+    Function will a send request to cloud search until desired response is obtained.
+    Since CS takes sometime to update, multiple attempts may be needed. A 3 seconds sleep time is set
+    between each attempt.
+    :param access_token: user's access token
+    :param arguments_to_url: search params, i.e. "?tag_ids=1,2,3"
+    :param expected_count: expected number of candidates that must be returned from CS
+    :param attempts: maximum number of attempts that must be made
+    :param pause: seconds to wait before making next attempt
+    :param comp_operator: the comparison operator used to obtain desired response
+    :rtype:  requests.Response
+    """
+
+    # Define comparison operator
+    def get_comp_operator(comp_op):
+        comps = {
+            '==': operator.eq,
+            '>=': operator.ge,
+        }
+        assert comp_op in comps, 'comparison operator not recognized'
+        return comps[comp_op]
+
+    # Comparison operator object
+    comparison_operator = get_comp_operator(comp_op=comp_operator)
+
+    # Cloud Search API URL
+    url = CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url
+
+    headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
+
+    for i in range(0, attempts):
+        sleep(pause)
+        resp = requests.get(url, headers=headers)
+        print response_info(resp)
+        if comparison_operator(len(resp.json()['candidates']), expected_count):
+            return resp
+
+    raise NotFoundError('Unable to get expected number of candidates')

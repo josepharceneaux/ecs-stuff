@@ -13,12 +13,9 @@ import uuid
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_errors
 
 # Helper functions
-from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
 from helpers import AddUserRoles
 from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.common.utils.test_utils import send_request, response_info
-
-data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
+from candidate_service.common.utils.test_utils import send_request, response_info, get_response
 
 
 class TestCreateCandidateTags(object):
@@ -28,6 +25,7 @@ class TestCreateCandidateTags(object):
         Expect: 401
         """
         # Unauthorized user
+        data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
         create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, None, data)
         print response_info(create_resp)
         assert create_resp.status_code == 401
@@ -45,6 +43,7 @@ class TestCreateCandidateTags(object):
         AddUserRoles.edit(user_first)
 
         # Create candidate Tags
+        data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
         create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
         assert create_resp.status_code == 201
@@ -78,6 +77,7 @@ class TestGetCandidateTags(object):
         AddUserRoles.all_roles(user_first)
 
         # Create candidate Tags
+        data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
         send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
 
         # Retrieve all of candidate's tags
@@ -95,6 +95,7 @@ class TestGetCandidateTags(object):
         AddUserRoles.all_roles(user_first)
 
         # Create candidate Tags
+        data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
         create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
 
         # Retrieve all of candidate's tags
@@ -116,6 +117,7 @@ class TestUpdateCandidateTags(object):
 
         # Create some tags for candidate_first
         url = CandidateApiUrl.TAGS % candidate_first.id
+        data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
         create_resp = send_request('post', url, access_token_first, data)
         print response_info(create_resp)
 
@@ -137,6 +139,7 @@ class TestUpdateCandidateTags(object):
 
         # Create two tags for candidate
         url = CandidateApiUrl.TAGS % candidate_first.id
+        data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
         create_resp = send_request('post', url, access_token_first, data)
         print response_info(create_resp)
 
@@ -163,6 +166,7 @@ class TestDeleteCandidateTags(object):
         AddUserRoles.all_roles(user_first)
 
         # Create some tags for candidate_first
+        data = {"tags": [{"name": str(uuid.uuid4())[:8]}, {"name": str(uuid.uuid4())[:8]}]}
         create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
 
@@ -174,8 +178,16 @@ class TestDeleteCandidateTags(object):
         # Retrieve candidate's tag that was just deleted
         get_resp = send_request('get', url, access_token_first)
         print response_info(get_resp)
-        assert get_resp.status_code == 403
+        assert get_resp.status_code == requests.codes.FORBIDDEN
         assert get_resp.json()['error']['code'] == custom_errors.TAG_FORBIDDEN
+
+        # TODO: Fix flaky test and uncomment - Amir
+        # Cloud search must also be updated
+        # deleted_tag_id = del_resp.json()['deleted_tag']['id']
+        # search_resp = get_response(access_token_first, '?tag_ids={}'.format(deleted_tag_id),
+        #                            expected_count=0, attempts=30, pause=5, comp_operator='==')
+        # print response_info(search_resp)
+        # assert search_resp.json()['total_found'] == 0
 
     def test_delete_all(self, user_first, access_token_first, candidate_first):
         """
@@ -185,15 +197,24 @@ class TestDeleteCandidateTags(object):
         AddUserRoles.all_roles(user_first)
 
         # Create some tags for candidate_first
+        data = {"tags": [{"name": str(uuid.uuid4())[:8]}, {"name": str(uuid.uuid4())[:8]}]}
         create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
 
-        # Delete one tag
+        # Delete all of candidate's tags
         del_resp = send_request('delete', CandidateApiUrl.TAGS % candidate_first.id, access_token_first)
         print response_info(del_resp)
 
-        # Retrieve candidate's tag that was just deleted
+        # Retrieve candidate's tags
         get_resp = send_request('get', CandidateApiUrl.TAGS % candidate_first.id, access_token_first)
         print response_info(get_resp)
-        assert get_resp.status_code == 404
+        assert get_resp.status_code == requests.codes.NOT_FOUND
         assert get_resp.json()['error']['code'] == custom_errors.TAG_NOT_FOUND
+
+        # TODO: Fix flaky test and uncomment - Amir
+        # Cloud search must also be updated
+        # deleted_tag_ids = [tag['id'] for tag in del_resp.json()['deleted_tags']]
+        # search_resp = get_response(access_token_first, '?tag_ids={}'.format(','.join(map(str, deleted_tag_ids))),
+        #                            expected_count=0, attempts=30, pause=5, comp_operator='==')
+        # print response_info(search_resp)
+        # assert search_resp.json()['total_found'] == 0

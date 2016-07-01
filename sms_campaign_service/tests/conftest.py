@@ -19,7 +19,7 @@ from sms_campaign_service.common.tests.conftest import \
      sample_client, test_domain, first_group, domain_first, user_first, candidate_first,
      test_domain_2, second_group, domain_second, candidate_second,
      user_same_domain, user_from_diff_domain, access_token_second, talent_pipeline, talent_pool,
-     access_token_other, access_token_same, talent_pool_other, talent_pipeline_other)
+     access_token_other, access_token_same, talent_pool_other, talent_pipeline_other, get_auth_header)
 
 # Service specific
 from sms_campaign_service.sms_campaign_app import app
@@ -45,7 +45,6 @@ from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidateP
 # Common Utils
 from sms_campaign_service.common.routes import CandidateApiUrl
 from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
-from sms_campaign_service.common.utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers, \
     FixtureHelpers
 
@@ -88,7 +87,7 @@ def headers(access_token_first):
     for "user_first".
     :param access_token_first: fixture to get access token of user
     """
-    return _get_auth_header(access_token_first)
+    return get_auth_header(access_token_first)
 
 
 @pytest.fixture()
@@ -98,7 +97,7 @@ def headers_same_domain(access_token_same):
     to make POST/DELETE requests.
     :param access_token_same: fixture to get access token of other user from same domain
     """
-    return _get_auth_header(access_token_same)
+    return get_auth_header(access_token_same)
 
 
 @pytest.fixture(params=['user_first', 'user_same_domain'])
@@ -136,7 +135,7 @@ def headers_other(access_token_other):
     to make POST/DELETE requests.
     :param access_token_other: fixture to get access token of user from some other domain
     """
-    return _get_auth_header(access_token_other)
+    return get_auth_header(access_token_other)
 
 
 @pytest.fixture()
@@ -206,10 +205,10 @@ def invalid_data_for_campaign_creation(request):
     return campaign_data, request.param
 
 
-@pytest.fixture(params=[0, 'abcdef', None, dict(), list()])
-def invalid_smartlist_id(request):
+@pytest.fixture(params=[0, 'a', '1', None, dict(), list()])
+def invalid_id(request):
     """
-    This function returns invalid smartlist Ids to create an sms-campaign.
+    This function returns invalid Ids to create/update/delete an sms-campaign.
     """
     return [request.param]
 
@@ -257,10 +256,10 @@ def sms_campaign_with_two_smartlists(request, campaign_valid_data, access_token_
     This creates the SMS campaign for "user_first"(fixture) using valid data and two smartlists.
     It then returns the campaign object.
     """
-    smartlist_1_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-access_token_first, talent_pipeline, create_phone=True)
-    smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, create_phone=True)
+    smartlist_1_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
+                                                                              talent_pipeline, create_phone=True)
+    smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
+                                                                              talent_pipeline, create_phone=True)
     campaign_valid_data['smartlist_ids'] = [smartlist_1_id, smartlist_2_id]
     test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers, talent_pipeline.user.id)
 
@@ -298,20 +297,16 @@ def sms_campaign_with_one_valid_candidate(request, campaign_valid_data, access_t
 
 @pytest.fixture()
 def sms_campaign_with_same_candidate_in_multiple_smartlists(request, campaign_valid_data, talent_pipeline, headers,
-                                                            smartlist_with_two_candidates, access_token_first):
+                                                            access_token_first):
     """
     This fixture creates an SMS campaign with two smartlists.
     Smartlist 1 will have two candidates and smartlist 2 will have one candidate (which will be
     same as one of the two candidates of smartlist 1).
     """
-    smartlist_1_id, candidate_ids = smartlist_with_two_candidates
-    # Going to assign a candidate belonging to smartlist_1 to smartlist_2 so both will have same candidate
-    candidate_ids_for_smartlist_2 = [candidate_ids[0]]
-    smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, candidate_ids=candidate_ids_for_smartlist_2)
-    campaign_valid_data['smartlist_ids'] = [smartlist_1_id, smartlist_2_id]
-    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers,
-                                                    talent_pipeline.user.id)
+    smartlist_ids = CampaignsTestsHelpers.get_two_smartlists_with_same_candidate(talent_pipeline, access_token_first,
+                                                                                 count=2, create_phone=True)
+    campaign_valid_data['smartlist_ids'] = smartlist_ids
+    test_sms_campaign = create_sms_campaign_via_api(campaign_valid_data, headers, talent_pipeline.user.id)
 
     def fin():
         _delete_campaign(test_sms_campaign, headers)
@@ -887,16 +882,6 @@ def _delete_blast(blast_obj):
         SmsCampaignBlast.delete(blast_obj)
     except Exception:  # resource may have been deleted in case of DELETE request
         pass
-
-
-def _get_auth_header(access_token):
-    """
-    This returns auth header dict.
-    :param access_token: access token of user
-    """
-    auth_header = {'Authorization': 'Bearer %s' % access_token}
-    auth_header.update(JSON_CONTENT_TYPE_HEADER)
-    return auth_header
 
 
 def _get_candidate_and_phone_tuple(request, sent_campaign_and_blast_ids, access_token_first,

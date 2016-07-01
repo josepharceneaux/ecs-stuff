@@ -55,7 +55,7 @@ from flask import request, Blueprint, jsonify
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.email_marketing import (create_email_campaign,
-                                                            send_emails_to_campaign,
+                                                            send_email_campaign,
                                                             update_hit_count)
 from email_campaign_service.modules.validations import validate_and_format_request_data
 
@@ -91,8 +91,8 @@ class EmailCampaigns(Resource):
 
     def get(self, **kwargs):
         """
-        GET /v1/email-campaigns/<id>    Fetch email campaign object
-        GET /v1/email-campaigns         Fetches all email campaign objects from auth user's domain
+        GET /v1/email-campaigns/<id>    Fetch EmailCampaign object
+        GET /v1/email-campaigns         Fetches all EmailCampaign objects from auth user's domain
 
         """
         user = request.user
@@ -110,10 +110,18 @@ class EmailCampaigns(Resource):
             return {"email_campaign": email_campaign.to_dict(include_fields=include_fields)}
         else:
             page, per_page = get_pagination_params(request)
+            sort_type = request.args.get('sort_type', 'DESC')
+            search_keyword = request.args.get('search', '')
+            sort_by = request.args.get('sort_by', 'added_datetime')
+
+            if sort_by not in ('added_datetime', 'name'):
+                raise InvalidUsage('Value of sort parameter is not valid')
+
             # Get all email campaigns from logged in user's domain
-            query = EmailCampaign.get_by_domain_id(user.domain_id)
-            return get_paginated_response('email_campaigns', query, page, per_page,
-                                          parser=EmailCampaign.to_dict)
+            query = EmailCampaign.get_by_domain_id_and_filter_by_name(
+                    user.domain_id, search_keyword, sort_by, sort_type)
+
+            return get_paginated_response('email_campaigns', query, page, per_page, parser=EmailCampaign.to_dict)
 
     def post(self):
         """
@@ -161,17 +169,18 @@ class EmailCampaignSendApi(Resource):
         """
         Sends campaign emails to the candidates present in smartlists of campaign.
         Scheduler service will call this to send emails to candidates.
-        :param campaign_id: Campaign id
+        :param (int, long) campaign_id: Campaign id
         """
         raise_if_dict_values_are_not_int_or_long(dict(campaign_id=campaign_id))
         campaign = EmailCampaign.query.get(campaign_id)
         if not campaign:
             raise NotFoundError("Given campaign_id: %s does not exists." % campaign_id)
+        email_client_id = campaign.email_client_id
 
         if not campaign.user.domain_id == request.user.domain_id:
             raise ForbiddenError("Email campaign doesn't belongs to user's domain")
-        results_send = send_emails_to_campaign(campaign, new_candidates_only=False)
-        if campaign.email_client_id:
+        results_send = send_email_campaign(request.user.id, campaign, new_candidates_only=False)
+        if email_client_id:
             if not isinstance(results_send, list):
                 raise InvalidUsage(error_message="Something went wrong, response is not list")
             data = {
