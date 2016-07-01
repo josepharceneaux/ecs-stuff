@@ -137,15 +137,15 @@ class TestGetListOfCampaigns(object):
         and one campaign when using token for `user_second`.
         :return:
         """
-        created_campaign_ids = [campaign_in_db['id'], campaign_in_db_same_domain['id']]
+        created_campaign_ids = {campaign_in_db['id'], campaign_in_db_same_domain['id']}
         response = get_campaigns(token_first, expected_status=(codes.OK,))
-        assert set(created_campaign_ids).issubset([campaign['id'] for campaign in response['campaigns']])
+        assert created_campaign_ids.issubset({campaign['id'] for campaign in response['campaigns']})
 
         response = get_campaigns(token_same_domain, expected_status=(codes.OK,))
-        assert set(created_campaign_ids).issubset([campaign['id'] for campaign in response['campaigns']])
+        assert created_campaign_ids.issubset({campaign['id'] for campaign in response['campaigns']})
 
         response = get_campaigns(token_second, expected_status=(codes.OK,))
-        assert set([campaign_in_db_second['id']]).issubset([campaign['id'] for campaign in response['campaigns']])
+        assert {campaign_in_db_second['id']}.issubset({campaign['id'] for campaign in response['campaigns']})
 
 
 class TestDeleteMultipleCampaigns(object):
