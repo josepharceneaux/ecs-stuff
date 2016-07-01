@@ -561,6 +561,20 @@ def do_phones_exist(phones, phone_dict):
     return False
 
 
+def do_emails_exist(emails, email_dict):
+    """
+    Function will return true if candidate's email already exists, otherwise false
+    :type emails:  list[CandidateEmail]
+    :type email_dict: dict[str]
+    :rtype: bool
+    """
+    for email in emails:
+        email_address = email_dict.get('address')
+        if email_address and (email_address == email.address):
+            return True
+        return False
+
+
 def does_preferred_location_exist(preferred_locations, preferred_location_dict):
     """
     :type preferred_locations:  list[CandidatePreferredLocation]
