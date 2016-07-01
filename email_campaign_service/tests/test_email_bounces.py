@@ -38,7 +38,7 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         db.session.commit()
         sent_datetime = email_campaign_blast.sent_datetime
         if blast_foreign_key:
-            time.sleep(5)
+            time.sleep(10)
             send_campaign_email_to_candidate(campaign, email, candidate_ids[0],
                                              blast_id=email_campaign_blast.id)
         else:
@@ -102,6 +102,7 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
 
         for candidate_id in candidate_ids:
             email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_id)
+            time.sleep(2)
             send_campaign_email_to_candidate(campaign, email, candidate_id,
                                              blast_id=email_campaign_blast.id)
         retry(assert_is_bounced, sleeptime=3, attempts=100, sleepscale=1,
