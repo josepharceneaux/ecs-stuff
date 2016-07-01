@@ -8,11 +8,11 @@
 - List each ATS we have integrated with
     + `/v1/ats [GET]`
 - Register ATS account for a user with ATS credentials
-    + `/v1/ats-accounts/:id [POST]`
+    + `/v1/ats-accounts [POST]`
 - Decomission an ATS account for a user
-    + `/v1/ats-accounts/:id/:account_id [DELETE]`
+    + `/v1/ats-accounts/:account_id [DELETE]`
 - Retrieve all ATS accounts belonging to a user
-    + `/v1/ats-accounts/:id [GET]`
+    + `/v1/ats-accounts [GET]`
 - Update a GT ATS account from the the ATS itself
     + `/v1/ats-candidates/refresh/:account_id/ [GET]`
 - Retrieve all ATS candidates (stored locally) associated with an ATS account
