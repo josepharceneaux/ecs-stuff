@@ -23,9 +23,10 @@ def build_params_from_json(request):
     if not isinstance(talent_pool_ids, (list, type(None))):
         raise InvalidUsage('Invalid type for `talent_pool_ids`')
 
+    resume_file_name = request_json.get('resume_file_name', filepicker_key)
+
     create_candidate = request_json.get('create_candidate', False)
     resume_file = None
-    resume_file_name = str(filepicker_key)
 
     parse_params = {
         'create_candidate': create_candidate,

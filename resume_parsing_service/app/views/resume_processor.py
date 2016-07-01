@@ -35,7 +35,8 @@ def process_resume(parse_params):
     create_candidate = parse_params.get('create_candidate', False)
 
     # We need to obtain/define the file from our params.
-    resume_file, filename_str = resume_file_from_params(parse_params)
+    resume_file = resume_file_from_params(parse_params)
+    filename_str = parse_params['filename'] # This is always set by param_builders.py
 
     # Checks to see if we already have BG contents in Redis.
     parsed_resume = get_or_store_parsed_resume(resume_file, filename_str)

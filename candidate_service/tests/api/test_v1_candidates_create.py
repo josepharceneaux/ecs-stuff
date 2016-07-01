@@ -236,8 +236,6 @@ class TestCreateCandidate(object):
         db.session.commit()
         assert create_resp.status_code == 400
         assert create_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
-        assert not CandidateEmail.get_by_address(email_address=email_1)
-        assert not CandidateEmail.get_by_address(email_address=email_2)
 
     def test_add_candidate_without_emails(self, access_token_first, user_first, talent_pool):
         """
@@ -896,8 +894,8 @@ class TestAddCandidatePhones(object):
         # Create another candidate using the same phone number as above
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == requests.codes.BAD
-        assert create_resp.json()['error']['code'] == custom_error.PHONE_EXISTS
+        assert create_resp.status_code == requests.codes.FORBIDDEN
+        assert create_resp.json()['error']['code'] == custom_error.PHONE_FORBIDDEN
 
 
 class TestCreateMilitaryService(object):
@@ -1124,7 +1122,7 @@ class TestCreateSkills(object):
         # Create candidate + candidate's skill
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 201
+        assert create_resp.status_code == requests.codes.CREATED
 
         # Retrieve Candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -1132,9 +1130,14 @@ class TestCreateSkills(object):
         candidate_skills = get_resp.json()['candidate']['skills']
         assert len(candidate_skills) == 3, "Of the six records provided, 3 of them should not be " \
                                            "inserted into db because they do not have a 'name' value"
-        assert candidate_skills[0]['name'] == data['candidates'][0]['skills'][0]['name'].strip()
-        assert candidate_skills[1]['name'] == data['candidates'][0]['skills'][1]['name'].strip()
-        assert candidate_skills[2]['name'] == data['candidates'][0]['skills'][2]['name'].strip()
+
+        print "\ncandidate_skills = {}".format(candidate_skills)
+        print "\ndata_skills = {}".format(data['candidates'])
+
+        candidate_skill_names = [skill['name'] for skill in candidate_skills]
+        data_skill_names = [skill['name'] for skill in data['candidates'][0]['skills']]
+        cleaned_data_skill_names = [skill.strip() for skill in data_skill_names if (skill or '').strip()]
+        assert set(candidate_skill_names).issubset(cleaned_data_skill_names)
 
     def test_add_with_empty_values(self, access_token_first, user_first, talent_pool):
         """

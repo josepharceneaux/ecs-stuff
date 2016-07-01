@@ -440,16 +440,20 @@ def organizer_in_db(request, sample_user):
 
 @pytest.fixture()
 def get_test_events(request, sample_user, meetup, eventbrite, meetup_venue,
-                    eventbrite_venue, test_eventbrite_credentials,
+                    eventbrite_venue, test_eventbrite_credentials, meetup_group,
                     test_meetup_credentials, organizer_in_db, token):
     """
     This fixture returns data (dictionary) to create meetup and eventbrite events
     """
+    # Data for Meetup
     meetup_dict = EVENT_DATA.copy()
     meetup_dict['social_network_id'] = meetup.id
     meetup_dict['venue_id'] = meetup_venue.id
     meetup_dict['organizer_id'] = organizer_in_db.id
     meetup_dict['user_id'] = sample_user.id
+    meetup_dict['group_url_name'] = meetup_group['urlname']
+    meetup_dict['social_network_group_id'] = meetup_group['id']
+    # Data for Eventbrite
     eventbrite_dict = EVENT_DATA.copy()
     eventbrite_dict['social_network_id'] = eventbrite.id
     eventbrite_dict['venue_id'] = eventbrite_venue.id

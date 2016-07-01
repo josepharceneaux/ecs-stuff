@@ -802,7 +802,7 @@ def test_paging_with_facet_search(user_first, access_token_first, talent_pool):
     AddUserRoles.all_roles(user_first)
 
     count = 30
-    current_title = "Sr. Manager"
+    current_title = "Manager of {}".format(str(uuid.uuid4())[:5])
     populate_candidates(access_token_first, talent_pool, count=count, job_title=current_title)
 
     # Search by sorting
