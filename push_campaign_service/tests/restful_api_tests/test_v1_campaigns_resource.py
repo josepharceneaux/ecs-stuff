@@ -31,7 +31,6 @@ Delete Multiple Campaigns: /v1/push-campaigns [DELETE]
 import sys
 
 # 3rd party imports
-from flaky import flaky
 from requests import codes
 
 # Application specific imports
@@ -129,7 +128,6 @@ class TestGetListOfCampaigns(object):
         per_page = MAX_PAGE_SIZE + 1
         get_campaigns(token_first, per_page=per_page, expected_status=(codes.BAD_REQUEST,))
 
-    @flaky(max_runs=3)
     def test_get_all_campaigns_in_user_domain(self, token_first, token_same_domain, token_second,
                                               campaign_in_db, campaign_in_db_same_domain, campaign_in_db_second,
                                               ):
@@ -139,14 +137,15 @@ class TestGetListOfCampaigns(object):
         and one campaign when using token for `user_second`.
         :return:
         """
+        created_campaign_ids = [campaign_in_db['id'], campaign_in_db_same_domain['id']]
         response = get_campaigns(token_first, expected_status=(codes.OK,))
-        assert len(response['campaigns']) == 2
+        assert set(created_campaign_ids).issubset([campaign['id'] for campaign in response['campaigns']])
 
         response = get_campaigns(token_same_domain, expected_status=(codes.OK,))
-        assert len(response['campaigns']) == 2
+        assert set(created_campaign_ids).issubset([campaign['id'] for campaign in response['campaigns']])
 
         response = get_campaigns(token_second, expected_status=(codes.OK,))
-        assert len(response['campaigns']) == 1
+        assert set([campaign_in_db_second['id']]).issubset([campaign['id'] for campaign in response['campaigns']])
 
 
 class TestDeleteMultipleCampaigns(object):
