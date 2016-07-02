@@ -98,9 +98,7 @@ from sms_campaign_service.common.campaign_services.campaign_base import Campaign
 from sms_campaign_service.common.campaign_services.validators import get_valid_json_data
 from sms_campaign_service.common.campaign_services.campaign_utils import \
     (CampaignUtils, raise_if_dict_values_are_not_int_or_long)
-from sms_campaign_service.common.campaign_services.custom_errors import CampaignException
-from sms_campaign_service.common.error_handling import (ResourceNotFound, InvalidUsage,
-                                                        ForbiddenError,  InternalServerError)
+from sms_campaign_service.common.error_handling import InternalServerError
 
 
 # creating blueprint

@@ -151,8 +151,7 @@ class TestUpdateCampaign(object):
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
         invalid_id = sys.maxint
-        for _id in [0, invalid_id]:
-            update_campaign(_id, data, token_first, expected_status=(codes.NOT_FOUND,))
+        update_campaign(invalid_id, data, token_first, expected_status=(codes.NOT_FOUND,))
 
     def test_update_deleted_campaign(self, token_first, campaign_in_db, smartlist_first):
         """
@@ -180,10 +179,7 @@ class TestUpdateCampaign(object):
         data = generate_campaign_data()
         data['invalid_field_name'] = 'Any Value'
         campaign_id = campaign_in_db['id']
-        response = update_campaign(campaign_id, data, token_first,
-                                   expected_status=(codes.BAD_REQUEST,))
-        error = response['error']
-        assert error['invalid_field'] == 'invalid_field_name'
+        update_campaign(campaign_id, data, token_first, expected_status=(codes.BAD_REQUEST,))
 
     def test_put_by_id_with_missing_required_key(self, token_first, smartlist_first, campaign_in_db):
         """
