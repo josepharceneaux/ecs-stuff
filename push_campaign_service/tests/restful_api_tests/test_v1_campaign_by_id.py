@@ -152,6 +152,8 @@ class TestUpdateCampaign(object):
         data['smartlist_ids'] = [smartlist_first['id']]
         invalid_id = sys.maxint
         update_campaign(invalid_id, data, token_first, expected_status=(codes.NOT_FOUND,))
+        # test with id: 0, it should raise InvalidUsage
+        update_campaign(0, data, token_first, expected_status=(codes.BAD_REQUEST,))
 
     def test_update_deleted_campaign(self, token_first, campaign_in_db, smartlist_first):
         """

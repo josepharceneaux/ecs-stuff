@@ -1705,8 +1705,7 @@ class CandidateDeviceResource(Resource):
             candidate_device = CandidateDevice(candidate_id=candidate.id,
                                                one_signal_device_id=one_signal_device_id,
                                                registered_at_datetime=datetime.datetime.utcnow())
-            db.session.add(candidate_device)
-            db.session.commit()
+            CandidateDevice.save(candidate_device)
             return dict(message='Device (id: %s) registered successfully with candidate (id: %s)'
                                 % (candidate_device.id, candidate.id)), 201
         else:
