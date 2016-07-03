@@ -1,0 +1,12 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run Scheduler Service (Staging)" type="js.build_tools.gulp" factoryName="Gulp.js" folderName="Scheduler Service" singleton="false">
+    <node-options />
+    <gulpfile>$PROJECT_DIR$/scheduler_service_admin/gulpfile.js</gulpfile>
+    <tasks />
+    <arguments>serve-dev</arguments>
+    <envs>
+      <env name="GT_NODE_ENV" value="staging" />
+    </envs>
+    <method />
+  </configuration>
+</component>
