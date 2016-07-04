@@ -25,7 +25,7 @@ from candidate_service.common.models.candidate import (
     CandidateAddress, CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField, CandidateSocialNetwork,
     SocialNetwork, CandidateEducationDegreeBullet, CandidateExperienceBullet, ClassificationType,
-    CandidatePhoto, CandidateTextComment, PhoneLabel, EmailLabel, CandidateSubscriptionPreference
+    CandidatePhoto, PhoneLabel, EmailLabel, CandidateSubscriptionPreference
 )
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
@@ -165,7 +165,7 @@ def fetch_candidate_info(candidate, fields=None):
         'last_name': candidate.last_name,
         'full_name': full_name,
         'created_at_datetime': created_at_datetime,
-        'updated_at_datetime': created_at_datetime,
+        'updated_at_datetime': DatetimeUtils.utc_isoformat(candidate.updated_datetime),
         'emails': emails,
         'phones': phones,
         'addresses': addresses,
@@ -1112,8 +1112,8 @@ def social_network_name_from_url(url):
             return "Unknown"
 
 
-def _update_candidate(first_name, middle_name, last_name, formatted_name, objective,
-                      summary, candidate_id, user_id, resume_url, source_id, candidate_status_id):
+def _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
+                      candidate_id, user_id, resume_url, source_id, candidate_status_id):
     """
     Function will update Candidate's primary information.
     Candidate's Primary information include:
@@ -1895,7 +1895,7 @@ def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
 
             # Email must not belong to another candidate in the same domain
             unauthorized_email = CandidateEmail.get_email_in_users_domain(request.user.domain_id, email_address)
-            if unauthorized_email:
+            if unauthorized_email and unauthorized_email.candidate_id != candidate_id:
                 raise ForbiddenError("Email (address = {}) belongs to someone else!".
                                      format(unauthorized_email.address), custom_error.EMAIL_FORBIDDEN)
 
@@ -1914,9 +1914,13 @@ def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
 
                 # Email must not belong to another candidate in the same domain
                 unauthorized_email = CandidateEmail.get_email_in_users_domain(request.user.domain_id, email_address)
-                if unauthorized_email:
+                if unauthorized_email and unauthorized_email.candidate_id != candidate_id:
                     raise ForbiddenError("Email (address = {}) belongs to someone else!".
                                          format(unauthorized_email.address), custom_error.EMAIL_FORBIDDEN)
+
+                # Prevent adding duplicate email(s) to candidate's profile
+                elif unauthorized_email and unauthorized_email.candidate_id == candidate_id:
+                    continue
 
                 email_dict.update(dict(candidate_id=candidate_id))
                 db.session.add(CandidateEmail(**email_dict))
@@ -2009,20 +2013,29 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
                 phone_dict.update(dict(candidate_id=candidate_id))
 
                 if is_updating:
-                    # Prevent duplicate entries
-                    if not do_phones_exist(candidate_phones, phone_dict):
-                        db.session.add(CandidatePhone(**phone_dict))
+
+                    # Phone must not belong to any other candidate in the same domain
+                    matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(str(value), request.user)
+                    if matching_phone_values and matching_phone_values[0].candidate_id != candidate_id:
+                        raise ForbiddenError(error_message="Phone number ({}) belongs to someone else.".format(value),
+                                             error_code=custom_error.PHONE_FORBIDDEN)
+
+                    db.session.add(CandidatePhone(**phone_dict))
 
                     # Track all changes
                     track_edits(update_dict=phone_dict, table_name='candidate_phone',
                                 candidate_id=candidate_id, user_id=user_id)
                 else:
-                    # If phone number exists in same domain, prevent updating/creating candidate
-                    if CandidatePhone.search_phone_number_in_user_domain(str(value), request.user):
-                        raise InvalidUsage(error_message="Candidate with phone number ({}) already exists.".format(value),
-                                           error_code=custom_error.PHONE_EXISTS,
-                                           additional_error_info={'id': candidate_id,
-                                                                  'domain_id': request.user.domain_id})
+                    # Phone must not belong to any other candidate in the same domain
+                    matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(str(value), request.user)
+                    if matching_phone_values and matching_phone_values[0].candidate_id != candidate_id:
+                        raise ForbiddenError(error_message="Phone number ({}) belongs to someone else.".format(value),
+                                             error_code=custom_error.PHONE_FORBIDDEN)
+
+                    # Prevent adding duplicate phone number(s) to candidate's profile
+                    elif matching_phone_values and matching_phone_values[0].candidate_id == candidate_id:
+                        continue
+
                     db.session.add(CandidatePhone(**phone_dict))
 
 
