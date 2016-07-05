@@ -170,6 +170,13 @@ class ATSCandidate(db.Model):
         return { 'id' : self.id, 'ats_account_id' : self.ats_account_id, 'ats_remote_id' : self.ats_remote_id, 'gt_candidate_id' : self.gt_candidate_id }
 
     @classmethod
+    def get_by_id(cls, ats_candidate_id):
+        """
+        """
+        assert isinstance(ats_candidate_id, (int, long)) and ats_candidate_id > 0, 'ATS Candidate Id should be a valid positive number'
+        return cls.query.filter_by(id=ats_candidate_id).first()
+
+    @classmethod
     def get_all(cls, account_id):
         """
         """

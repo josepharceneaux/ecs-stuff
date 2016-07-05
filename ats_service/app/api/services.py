@@ -17,7 +17,7 @@ from ats_service.common.utils.api_utils import ApiResponse, api_route
 from ats_service.common.talent_api import TalentApi
 from ats_service.common.utils.handy_functions import get_valid_json_data
 
-from ats_utils import validate_ats_account_data, validate_ats_candidate_data, new_ats, new_ats_account, new_ats_candidate
+from ats_utils import validate_ats_account_data, validate_ats_candidate_data, new_ats, new_ats_account, new_ats_candidate, link_ats_candidate,  unlink_ats_candidate, delete_ats_account
 
 # Why doesn't this work?
 # from ats_service.app import logger
@@ -46,6 +46,8 @@ class ATSService(Resource):
     def get(self):
         """
         GET /v1/ats
+
+        :rtype string, JSON describing all ATS in our system.
         """
 
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
@@ -67,6 +69,9 @@ class ATSAccountService(Resource):
         GET /v1/ats-accounts/:account_id
 
         Retrieve an ATS accoun.
+
+        :param account_id: int, id of the ATS account.
+        :rtype string, JSON describing the account.
         """
 
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
@@ -83,13 +88,15 @@ class ATSAccountService(Resource):
         DELETE /v1/ats-accounts/:account_id
 
         Decomission an ATS account for a user.
+
+        :param account_id: int, id of the ATS account.
+        :rtype string, JSON indicating success.
         """
 
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
-        authenticated_user = request.user
+        delete_ats_account(request.user.id, account_id)
 
-        values = "`user`: {}, 'account': {}".format(authenticated_user.id, account_id)
-        return "{ 'accounts' : 'delete', " + values + " }"
+        return "{{ delete : success }}"
 
 
 @api.route(ATSServiceApi.ACCOUNTS)
@@ -105,6 +112,8 @@ class ATSAccountsService(Resource):
         GET /v1/ats-accounts
 
         Retrieve all ATS accounts of a user.
+
+        :rtype string, JSON describing account.
         """
 
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
@@ -118,6 +127,8 @@ class ATSAccountsService(Resource):
         POST /v1/ats-accounts/
 
         Register an ATS account for a user.
+
+        :rtype string, JSON indicating success.
         """
 
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
@@ -163,6 +174,9 @@ class ATSCandidatesService(Resource):
         GET /v1/ats-candidates/:account_id
 
         Retrieve all ATS candidates stored locally associated with an ATS account
+
+        :param account_id: int, id of the ATS account.
+        :rtype string, JSON with all candidates.
         """
 
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
@@ -188,6 +202,9 @@ class ATSCandidatesService(Resource):
         POST /v1/ats-candidates/:account_id
 
         Create a new ATS candidate.
+
+        :param account_id: int, id of the ATS account.
+        :rtype string, JSON indicating success.
         """
 
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
@@ -213,7 +230,6 @@ class ATSCandidatesService(Resource):
         return ApiResponse(response, headers=headers, status=201)
 
 
-
 @api.route(ATSServiceApi.CANDIDATE)
 class ATSCandidateService(Resource):
     """
@@ -227,26 +243,32 @@ class ATSCandidateService(Resource):
         POST /v1/ats-candidates/:candidate_id/:ats_candidate_id
 
         Link a getTalent candidate to an ATS candidate.
+
+        :param candidate_id: int, id of the getTalent candidate.
+        :param ats_candidate_id: int, id of the ATS candidate.
+        :rtype string, JSON indicating success.
         """
 
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
-        authenticated_user = request.user
+        link_ats_candidate(candidate_id, ats_candidate_id)
 
-        values = "'candidate': {}, ats: {}".format(candidate_id, ats_id)
-        return "{ 'candidates' : 'post', " + values + " }"
+        return  "{ link : success }"
 
     def delete(self, candidate_id, ats_candidate_id):
         """
         DELETE /v1/ats-candidates/:candidate_id/:ats_candidate_id
 
         Unlink a getTalent candidate from an ATS candidate.
+
+        :param candidate_id: int, id of the getTalent candidate.
+        :param ats_candidate_id: int, id of the ATS candidate.
+        :rtype string, JSON indicating success.
         """
 
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
-        authenticated_user = request.user
+        unlink_ats_candidate(candidate_id, ats_candidate_id)
 
-        values = "'candidate': {}, ats: {}".format(candidate_id, ats_id)
-        return "{ 'candidates' : 'delete', " + values + " }"
+        return "{ unlink : success }"
 
 
 @api.route(ATSServiceApi.CANDIDATES_REFRESH)
@@ -262,9 +284,14 @@ class ATSCandidateRefreshService(Resource):
         GET /v1/ats-candidates/refresh/:account_id
 
         Update our local store of ATS candidates associated with an account from the ATS itself.
+
+        :param account_id: int, id of the ATS account.
+        :rtype string, JSON indicating success.
         """
 
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
+
+        # Magic happens here
 
         return "{{ account_id : {},  refresh : success }}".format(account_id)
