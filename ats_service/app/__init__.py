@@ -4,7 +4,7 @@ from ats_service.common.utils.models_utils import init_talent_app
 from ats_service.common.talent_config_manager import TalentConfigKeys
 from ats_service.common.talent_api import TalentApi
 from ats_service.common.models.db import db
-from ats_service.app.api.services import ats_service_blueprint
+from ats_service.app.api.services_v1 import ats_service_blueprint
 
 app, logger = init_talent_app(__name__)
 app.register_blueprint(ats_service_blueprint)
