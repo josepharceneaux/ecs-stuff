@@ -7,6 +7,8 @@ from candidate_service.candidate_app import app
 # Conftest
 from candidate_service.common.tests.conftest import *
 
+from candidate_service.common.models.candidate import PhoneLabel
+
 # Helper functions
 from helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
@@ -68,7 +70,7 @@ class TestAddCandidatePhones(object):
     def test_create_candidate_without_phone_label(self, access_token_first, user_first, talent_pool):
         """
         Test:   Create a Candidate without providing phone's label
-        Expect: 201, phone's label must be 'Primary'
+        Expect: 201; phone's label must be 'Home'
         """
         # Create Candidate without label
         AddUserRoles.add_and_get(user_first)
@@ -86,8 +88,8 @@ class TestAddCandidatePhones(object):
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         candidate_dict = get_resp.json()['candidate']
         assert create_resp.status_code == requests.codes.CREATED
-        assert candidate_dict['phones'][0]['label'] == 'Home'
-        assert candidate_dict['phones'][-1]['label'] == 'Other'
+        assert candidate_dict['phones'][0]['label'] == PhoneLabel.DEFAULT_LABEL
+        assert candidate_dict['phones'][-1]['label'] == PhoneLabel.OTHER_LABEL
 
     def test_create_candidate_with_bad_phone_label(self, access_token_first, user_first, talent_pool):
         """
@@ -110,8 +112,8 @@ class TestAddCandidatePhones(object):
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         candidate_dict = get_resp.json()['candidate']
         assert create_resp.status_code == requests.codes.CREATED
-        assert candidate_dict['phones'][0]['label'] == 'Other'
-        assert candidate_dict['phones'][-1]['label'] == 'Other'
+        assert candidate_dict['phones'][0]['label'] == PhoneLabel.OTHER_LABEL
+        assert candidate_dict['phones'][-1]['label'] == PhoneLabel.OTHER_LABEL
 
     def test_add_phone_without_value(self, access_token_first, user_first, talent_pool):
         """

@@ -1978,22 +1978,14 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         """
 
         # phonenumbers.format() will append "+None" if phone_number_obj.country_code is None
-        national_number = None
         if phone_number_obj:
             if not phone_number_obj.country_code:
                 value = str(phone_number_obj.national_number)
             else:
                 value = str(phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164))
-                national_number = str(phone_number_obj.national_number)
 
         # Phone number must not belong to any other candidate in the same domain
-        # Check for candidate's phone number using its value as provided by the client
         matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(value, request.user)
-
-        # Check for candidate's phone number using its parsed national number, i.e. without its leading country code
-        if national_number:
-            matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(national_number, request.user)
-
         if matching_phone_values and matching_phone_values[0].candidate_id != candidate_id:
             raise ForbiddenError(error_message="Phone number ({}) belongs to someone else.".format(value),
                                  error_code=custom_error.PHONE_FORBIDDEN)

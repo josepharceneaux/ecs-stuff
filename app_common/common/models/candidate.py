@@ -153,6 +153,7 @@ class PhoneLabel(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     DEFAULT_LABEL = 'Home'
+    OTHER_LABEL = 'Other'
 
     # Relationships
     candidate_phones = relationship('CandidatePhone', backref='phone_label')
@@ -305,6 +306,7 @@ class EmailLabel(db.Model):
     reference_emails = relationship('ReferenceEmail', backref='email_label')
 
     PRIMARY_DESCRIPTION = "Primary"
+    OTHER_DESCRIPTION = "Other"
 
     def __repr__(self):
         return "<EmailLabel (description=' %r')>" % self.description
