@@ -383,42 +383,6 @@ class TestTrackCandidateWorkPreferenceEdits(object):
         assert get_int_version(new_work_pref_dict['hourly_rate']) in new_values
 
 
-class TestTrackCandidateEmailEdits(object):
-    def test_edit_candidate_email(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Change Candidate's email record
-        Expect: 200
-        """
-        # Create Candidate
-        AddUserRoles.all_roles(user_first)
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        old_email_dict = get_resp.json()['candidate']['emails'][0]
-
-        # Update Candidate's email
-        data = {'candidates': [
-            {'id': candidate_id, 'emails': [{'id': old_email_dict['id'], 'address': 'someone@gettalent.com'}]}
-        ]}
-        send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Retrieve Candidate
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        new_email_dict = get_resp.json()['candidate']['emails'][0]
-
-        # Retrieve Candidate Edits
-        edit_resp = send_request('get', CandidateApiUrl.CANDIDATE_EDIT % candidate_id, access_token_first)
-        print response_info(edit_resp)
-
-        candidate_edits = edit_resp.json()['candidate']['edits']
-        assert edit_resp.status_code == 200
-        assert old_email_dict['address'] in [edit['old_value'] for edit in candidate_edits]
-        assert new_email_dict['address'] in [edit['new_value'] for edit in candidate_edits]
-
-
 class TestTrackCandidatePhoneEdits(object):
     def test_edit_candidate_phone(self, access_token_first, user_first, talent_pool):
         """
