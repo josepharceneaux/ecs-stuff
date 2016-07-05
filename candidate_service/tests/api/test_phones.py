@@ -163,6 +163,30 @@ class TestAddCandidatePhones(object):
 
 
 class TestUpdateCandidatePhones(object):
+    def test_add_invlid_phone_number(self, access_token_first, user_first, candidate_first):
+        """
+        Test:  Add invalid phone numbers to candidate's profile
+        Expect: 400; phone numbers should not be added to candidate's profile
+        """
+        AddUserRoles.edit(user_first)
+
+        data_1 = {'candidates': [{'phones': [{'value': '+19-984abcde'}]}]}  # value contains letters + only 5 letters
+        data_2 = {'candidates': [{'phones': [{'value': 'lettersonly'}]}]}  # value contains letters only
+        data_3 = {'candidates': [{'phones': [{'value': '408556'}]}]}  # value too short
+
+        resp = send_request('patch', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first, data_1)
+        print response_info(resp)
+        assert resp.status_code == requests.codes.BAD
+
+        resp = send_request('patch', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first, data_2)
+        print response_info(resp)
+        assert resp.status_code == requests.codes.BAD
+
+        resp = send_request('patch', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first, data_3)
+        print response_info(resp)
+        assert resp.status_code == requests.codes.BAD
+
+
     def test_add_candidate_phones(self, access_token_first, user_first, talent_pool):
         """
         Test:   Add CandidatePhone to an existing Candidate. Number of candidate's phones must increase by 1.

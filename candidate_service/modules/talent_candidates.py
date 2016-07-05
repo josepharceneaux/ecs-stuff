@@ -1964,6 +1964,13 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         phone_label = 'Home' if (not phones_has_label and i == 0) else (phone.get('label') or '').strip().title()
         # Format phone number
         value = (phone.get('value') or '').strip()
+
+        # Phone number must contain at least 7 digits
+        # http://stackoverflow.com/questions/14894899/what-is-the-minimum-length-of-a-valid-international-phone-number
+        number = re.sub('\D', '', value)
+        if len(number) < 7:
+            raise InvalidUsage("Invalid phone number: {}".format(value), custom_error.INVALID_PHONE)
+
         iso3166_country_code = CachedData.country_codes[0] if CachedData.country_codes else None
         phone_number_obj = parse_phone_number(value, iso3166_country_code=iso3166_country_code) if value else None
         """
@@ -1971,14 +1978,22 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         """
 
         # phonenumbers.format() will append "+None" if phone_number_obj.country_code is None
+        national_number = None
         if phone_number_obj:
             if not phone_number_obj.country_code:
-                value = phone_number_obj.national_number
+                value = str(phone_number_obj.national_number)
             else:
-                value = phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164)
+                value = str(phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164))
+                national_number = str(phone_number_obj.national_number)
 
         # Phone number must not belong to any other candidate in the same domain
-        matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(str(value), request.user)
+        # Check for candidate's phone number using its value as provided by the client
+        matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(value, request.user)
+
+        # Check for candidate's phone number using its parsed national number, i.e. without its leading country code
+        if national_number:
+            matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(national_number, request.user)
+
         if matching_phone_values and matching_phone_values[0].candidate_id != candidate_id:
             raise ForbiddenError(error_message="Phone number ({}) belongs to someone else.".format(value),
                                  error_code=custom_error.PHONE_FORBIDDEN)
