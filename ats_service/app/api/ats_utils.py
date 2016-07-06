@@ -9,8 +9,6 @@ from ats_service.common.models.candidate import Candidate
 from ats_service.common.models.user import User
 from ats_service.common.error_handling import *
 
-from ats_service.common.error_handling import InternalServerError, ResourceNotFound, ForbiddenError, InvalidUsage
-
 
 ATS_ACCOUNT_FIELDS = ['ats_name', 'ats_homepage', 'ats_login', 'ats_auth_type', 'ats_id', 'ats_credentials']
 ATS_CANDIDATE_FIELDS = ['ats_remote_id', 'profile_json']
@@ -27,6 +25,7 @@ def validate_ats_account_data(data):
     if missing_fields:
         raise MissingRequiredField('Some required fields are missing', additional_error_info=dict(missing_fields=missing_fields))
 
+
 def validate_ats_candidate_data(data):
     """
     Verify that POST data contains all required fields for dealing with an ATS candidate.
@@ -37,6 +36,7 @@ def validate_ats_candidate_data(data):
     missing_fields = [field for field in ATS_CANDIDATE_FIELDS if field not in data or not data[field]]
     if missing_fields:
         raise MissingRequiredField('Some required fields are missing', additional_error_info=dict(missing_fields=missing_fields))
+
 
 def new_ats(data):
     """
@@ -49,6 +49,7 @@ def new_ats(data):
     db.session.add(ats)
     db.session.commit()
     return ats
+
 
 def new_ats_account(user_id, ats_id, data):
     """
@@ -76,6 +77,7 @@ def new_ats_account(user_id, ats_id, data):
     db.session.commit()
 
     return account
+
 
 def delete_ats_account(user_id, ats_account_id):
     """
@@ -115,6 +117,7 @@ def delete_ats_account(user_id, ats_account_id):
         User.query.filter(User.id == user_id).update(update_dict)
         db.session.commit()
 
+
 def new_ats_candidate(account, data):
     """
     Register an ATS candidate with an ATS account.
@@ -133,6 +136,7 @@ def new_ats_candidate(account, data):
 
     return candidate
  
+
 def link_ats_candidate(candidate_id, ats_candidate_id):
     """
     Mark an ATS candidate as being the same as a getTalent candidate.
@@ -152,6 +156,7 @@ def link_ats_candidate(candidate_id, ats_candidate_id):
     update_dict = { 'gt_candidate_id': candidate_id }
     ATSCandidate.query.filter(ATSCandidate.id == ats_candidate_id).update(update_dict)
     db.session.commit()
+
 
 def unlink_ats_candidate(candidate_id, ats_candidate_id):
     """
