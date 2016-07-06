@@ -11,7 +11,7 @@ from ats_service.common.utils.test_utils import send_request
 from ats_service.common.routes import ATSServiceApi, ATSServiceApiUrl
 
 
-def missing_key_test(data, key, token):
+def missing_field_test(data, key, token):
     """
     This function sends a POST request to the ATS account api with data which has one required field
     missing and checks that it MissingRequiredField 400
@@ -26,3 +26,4 @@ def missing_key_test(data, key, token):
     error = response['error']
     assert error['code'] == MissingRequiredField
     assert error['missing_fields'] == [key]
+    assert True
