@@ -401,7 +401,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(count, int)
         raise_if_not_instance_of(entity, basestring)
         raise_if_not_instance_of(check_count, bool)
-        assert response.status_code == 200, 'Response should be "OK" (200)'
+        assert response.status_code == requests.codes.OK, 'Response should be "OK" (200)'
         json_response = response.json()
         assert entity in json_response
         if check_count:
@@ -457,9 +457,9 @@ class CampaignsTestsHelpers(object):
         return blasts
 
     @staticmethod
-    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=20):
+    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=300):
         """
-        This polls the result of blasts of a campaign for given timeout (default 10s).
+        This polls the result of blasts of a campaign for given timeout (default 300s).
         """
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         raise_if_not_instance_of(access_token, basestring) if access_token else None
@@ -528,7 +528,7 @@ class CampaignsTestsHelpers(object):
                 assert response.json()['blast']['sends'] == expected_count
 
     @staticmethod
-    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=200,
+    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=300,
                            blast_url=None, access_token=None):
         """
         This function asserts that particular blast of given campaign has expected number of sends
