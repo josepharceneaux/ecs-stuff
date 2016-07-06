@@ -29,6 +29,17 @@ def test_user_scoped_roles_get(access_token_first, access_token_second, user_fir
     assert set(response.get('roles')) == set([domain_role.id for domain_role in DomainRole.query.filter(
         DomainRole.role_name.in_(domain_roles['test_roles']))])
 
+    # Logged-in user getting roles of itself with role_id_only=false
+    response, status_code = user_scoped_roles(access_token_first, user_id=user_first.id, role_id_only="0")
+    assert status_code == 200
+    roles_db = [dict(role_id=domain_role.id, role_name=domain_role.role_name)
+                                              for domain_role in DomainRole.query.filter(
+                                              DomainRole.role_name.in_(domain_roles['test_roles']))]
+    unmatched = [role_get for role_get in response.get('roles')
+                 if role_get in roles_db]
+
+    assert not unmatched
+
     # Add 'CAN_GET_USER_ROLES' to user_second
     add_role_to_test_user(user_second, ['CAN_GET_USER_ROLES'])
 
