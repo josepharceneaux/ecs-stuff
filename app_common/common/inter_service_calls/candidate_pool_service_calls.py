@@ -16,7 +16,7 @@ def create_smartlist_from_api(data, access_token):
             headers={'Authorization': access_token,
                      'content-type': 'application/json'}
             )
-    assert response.status_code == 201
+    assert response.status_code == requests.codes.CREATED
     return response.json()
 
 
@@ -28,7 +28,7 @@ def create_campaign_from_api(data, access_token):
             headers={'Authorization': access_token,
                      'content-type': 'application/json'}
             )
-    assert response.status_code == 201
+    assert response.status_code == requests.codes.CREATED
     return response.json()
 
 
@@ -39,7 +39,7 @@ def create_campaign_send_from_api(campaign_id, access_token):
             headers={'Authorization': access_token,
                      'content-type': 'application/json'}
             )
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK
     return response.json()
 
 

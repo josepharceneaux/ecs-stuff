@@ -8,6 +8,7 @@ from flask import current_app
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
+from resume_parsing_service.app.views.decorators import upload_failed_IO
 from resume_parsing_service.app.views.parse_lib import parse_resume
 from resume_parsing_service.app.views.utils import update_candidate_from_resume
 from resume_parsing_service.app.views.utils import create_parsed_resume_candidate
@@ -88,6 +89,7 @@ def process_resume(parse_params):
     return candidate
 
 
+@upload_failed_IO
 def get_or_store_parsed_resume(resume_file, filename_str):
     """
     Tries to retrieve processed resume data from redis or parses it and stores it.
