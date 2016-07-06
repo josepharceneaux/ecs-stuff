@@ -26,7 +26,8 @@ IMAGE_FORMATS = ['.pdf', '.jpg', '.jpeg', '.png', '.tiff', '.tif', '.gif', '.bmp
 DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
 RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 
-def parse_resume(file_obj, filename_str):
+
+def parse_resume(file_obj, filename_str, cache_key):
     """Primary resume parsing function.
 
     :param cStringIO.StringI file_obj: a StringIO representation of the raw binary.
@@ -68,6 +69,8 @@ def parse_resume(file_obj, filename_str):
     optic_response = fetch_optic_response(encoded_resume, filename_str)
 
     if optic_response:
+        redis_store.set(cache_key, optic_response)
+        redis_store.expire(cache_key, RESUME_EXPIRE_TIME)
         candidate_data = parse_optic_xml(optic_response)
         return {'raw_response': optic_response, 'candidate': candidate_data}
 
