@@ -12,6 +12,12 @@ from resume_parsing_service.common.utils.talent_s3 import boto3_put
 
 
 def upload_failed_IO(f):
+    """Catch all decorator for handling unexpected errors in the Resume Parsing Service.
+    If an uncaught exception occurs the resume will be uploaded to the s3 bucket associated
+    with the environment in the FailedResume bucket.
+    :param function f:
+    :rtype function:
+    """
     @wraps(f)
     def wrapper(*args, **kwargs):
         try:
