@@ -22,7 +22,7 @@ from resume_parsing_service.tests.test_fixtures import phone_label_fixture
 from resume_parsing_service.tests.test_fixtures import product_fixture
 from resume_parsing_service.tests.test_fixtures import talent_pool_fixture
 from resume_parsing_service.tests.test_fixtures import talent_pool_group_fixture
-from resume_parsing_service.common.routes import ResumeApiUrl, ResumeApi, SchedulerApiUrl
+from resume_parsing_service.common.routes import ResumeApiUrl
 
 from resume_parsing_service.common.models.user import DomainRole
 from resume_parsing_service.common.utils.handy_functions import add_role_to_test_user
