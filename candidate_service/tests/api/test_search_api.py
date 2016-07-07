@@ -742,13 +742,14 @@ def test_custom_fields(user_first, access_token_first, candidate_first):
     add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS])
 
     # Create custom field category named as 'Certifications'
-    data = {'custom_fields': [{'name': 'Certifications'}]}
+    name = str(uuid.uuid4())[:5]
+    data = {'custom_fields': [{'name': name}]}
     resp = send_request('post', UserServiceApiUrl.DOMAIN_CUSTOM_FIELDS, access_token_first, data)
     print response_info(resp)
     custom_field_id = resp.json()['custom_fields'][0]['id']
 
     # Create candidate custom field
-    value = 'senior'
+    value = str(uuid.uuid4())[:5]
     data = {'candidate_custom_fields': [{'custom_field_id': custom_field_id, 'value': value}]}
     resp = send_request('post', CandidateApiUrl.CUSTOM_FIELDS % candidate_first.id, access_token_first, data)
     print response_info(resp)

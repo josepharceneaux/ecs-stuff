@@ -427,7 +427,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 domain_id = field_name_to_sql_value_row.domain_id
 
             # Add tag
-            tag_ids = field_name_to_sql_value['tag_ids']
+            tag_ids = field_name_to_sql_value.get('tag_ids')
             if tag_ids:
                 tags = session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
                 field_name_to_sql_value['tags'] = [tag.name for tag in tags]
