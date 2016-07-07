@@ -153,6 +153,10 @@ class PhoneLabel(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     DEFAULT_LABEL = 'Home'
+    MOBILE_LABEL = 'Mobile'
+    WORK_LABEL = 'Work'
+    HOME_FAX = 'Home Fax'
+    OFFICE_FAX = 'Office Fax'
     OTHER_LABEL = 'Other'
 
     # Relationships
@@ -306,6 +310,8 @@ class EmailLabel(db.Model):
     reference_emails = relationship('ReferenceEmail', backref='email_label')
 
     PRIMARY_DESCRIPTION = "Primary"
+    HOME_DESCRIPTION = 'Home'
+    WORK_DESCRIPTION = 'Work'
     OTHER_DESCRIPTION = "Other"
 
     def __repr__(self):
