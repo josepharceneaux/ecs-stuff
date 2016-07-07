@@ -78,7 +78,12 @@ class User(db.Model):
 
     @staticmethod
     def verify_jw_token(secret_key_id, token, allow_null_user=False):
-        s = Serializer(redis_store.get(secret_key_id))
+        secret_key = redis_store.get(secret_key_id)
+        if not secret_key:
+            raise UnauthorizedError(
+                error_message='Error retrieving secret key from redis. \
+                secret_key_id: {}, token: {}'.format(secret_key_id, token))
+        s = Serializer(secret_key)
         try:
             data = s.loads(token)
         except SignatureExpired:
