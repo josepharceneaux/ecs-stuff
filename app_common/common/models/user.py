@@ -3,7 +3,7 @@ import os
 import time
 import uuid
 
-from flask import request
+from flask import request, current_app
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
@@ -74,6 +74,8 @@ class User(db.Model):
         secret_key = os.urandom(24)
         redis_store.setex(secret_key_id, secret_key, expiration)
         s = Serializer(secret_key, expires_in=expiration)
+        if current_app:
+            current_app.logger.info('Creating jw token. secret_key_id %s, secret_key: %s', secret_key_id, secret_key)
         return secret_key_id, 'Bearer %s' % s.dumps({'user_id': user_id})
 
     @staticmethod
