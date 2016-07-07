@@ -288,6 +288,7 @@ SEARCH_INPUT_AND_VALIDATIONS = {
     "military_end_date_from": 'digit',
     "military_end_date_to": 'digit',
     "tag_ids": "id_list",
+    "tags": "string_list",
     "custom_fields": 'string_list',
     # return fields
     "fields": 'return_fields',
