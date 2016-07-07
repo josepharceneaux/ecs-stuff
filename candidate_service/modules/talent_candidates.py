@@ -1969,7 +1969,7 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         # http://stackoverflow.com/questions/14894899/what-is-the-minimum-length-of-a-valid-international-phone-number
         number = re.sub('\D', '', value)
         if len(number) < 7:
-            raise InvalidUsage("Invalid phone number: {}".format(value), custom_error.INVALID_PHONE)
+            raise InvalidUsage("Phone number ({}) must be at least 7 digits".format(value), custom_error.INVALID_PHONE)
 
         iso3166_country_code = CachedData.country_codes[0] if CachedData.country_codes else None
         phone_number_obj = parse_phone_number(value, iso3166_country_code=iso3166_country_code) if value else None

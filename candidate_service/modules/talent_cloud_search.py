@@ -114,7 +114,7 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
 
     # Experience
     'total_months_experience':       dict(IndexFieldType='int',             IntOptions={'ReturnEnabled': False}),
-    'organization':                  dict(IndexFieldType='literal-array', LiteralArrayOptions={'FacetEnabled': True}),
+    'organization':                  dict(IndexFieldType='literal-array',   LiteralArrayOptions={'FacetEnabled': True}),
     'position':                      dict(IndexFieldType='literal-array'),
     'experience_description':        dict(IndexFieldType='text-array',      TextArrayOptions={'ReturnEnabled': False}),
     'skill_description':             dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': False}),
@@ -133,11 +133,14 @@ INDEX_FIELD_NAME_TO_OPTIONS = {
     'military_end_date':             dict(IndexFieldType='date-array',      DateArrayOptions={'ReturnEnabled': False}),
     'talent_pools':                  dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
     'dumb_lists':                    dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
-    'start_date_at_current_job':     dict(IndexFieldType='date',             DateOptions={'FacetEnabled': False,
-                                                                                          'ReturnEnabled': True}),
+    'start_date_at_current_job':     dict(IndexFieldType='date',            DateOptions={'FacetEnabled': False,
+                                                                                         'ReturnEnabled': True}),
     'candidate_engagement_score':    dict(IndexFieldType='double',          DoubleOptions={'FacetEnabled': True,
                                                                                            'ReturnEnabled': False}),
-    'tag_ids':                       dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False})
+
+    # Tags
+    'tag_ids':                       dict(IndexFieldType='int-array',       IntArrayOptions={'ReturnEnabled': False}),
+    'tags':                          dict(IndexFieldType='literal-array',   LiteralArrayOptions={'ReturnEnabled': True})
 }
 
 # Filter all text, text-array, literal and literal-array index fields
@@ -348,6 +351,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
     LEFT JOIN   candidate_rating ON (candidate.id = candidate_rating.candidateId)
     LEFT JOIN   candidate_text_comment ON (candidate.id = candidate_text_comment.candidateId)
 
+    # Tags
     LEFT JOIN   candidate_tag ON (candidate.id = candidate_tag.candidate_id)
 
     WHERE       candidate.id IN :candidate_ids_string
@@ -417,10 +421,17 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
 
             field_name_to_sql_value['resume_text'] = resume_text.strip()
 
-            # Add the required values we didn't get from DB
+            # Add domain ID
             if not domain_id:
                 field_name_to_sql_value_row = session.query(User).filter_by(id=field_name_to_sql_value['user_id']).first()
                 domain_id = field_name_to_sql_value_row.domain_id
+
+            # Add tag
+            tag_ids = field_name_to_sql_value['tag_ids']
+            if tag_ids:
+                tags = session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+                field_name_to_sql_value['tags'] = [tag.name for tag in tags]
+
             field_name_to_sql_value['domain_id'] = domain_id
             action_dict['fields'] = field_name_to_sql_value
             action_dicts.append(action_dict)
@@ -736,7 +747,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
         params['facet'] = "{area_of_interest_id:{size:500},source_id:{size:50},total_months_experience:{size:50}," \
                           "user_id:{size:50},status_id:{size:50},skill_description:{size:500}," \
                           "position:{size:50},organization:{size:50},school_name:{size:500},degree_type:{size:50}," \
-                          "concentration_type:{size:50},military_service_status:{size:50}," \
+                          "concentration_type:{size:50},military_service_status:{size:50},tags:{size:1000}," \
                           "military_branch:{size:50},military_highest_grade:{size:50},tag_ids:{size:500}," \
                           "custom_field_id_and_value:{size:1000},candidate_engagement_score:{size:50}}"
     else:
@@ -837,7 +848,7 @@ def get_faceting_information(facets):
     facet_custom_field_id_and_value = facets.get('custom_field_id_and_value').get('buckets')
     facet_candidate_engagement_score = facets.get('candidate_engagement_score').get('buckets')
     facet_total_months_experience = facets.get('total_months_experience').get('buckets')
-    facet_tags = facets.get('tag_ids').get('buckets')
+    facet_tag_ids = facets.get('tag_ids').get('buckets')
 
     if facet_owner:
         search_facets_values['username'] = get_username_facet_info_with_ids(facet_owner)
@@ -885,8 +896,8 @@ def get_faceting_information(facets):
     if facet_total_months_experience:
         search_facets_values['total_months_experience'] = get_bucket_facet_value_count(facet_total_months_experience)
 
-    if facet_tags:
-        search_facets_values['tags'] = get_facet_info_with_ids(Tag, facet_tags, 'name')
+    if facet_tag_ids:
+        search_facets_values['tags'] = get_facet_info_with_ids(Tag, facet_tag_ids, 'name')
 
     # TODO: productFacet, customFieldKP facets are remaining, how to do it?
     if facet_custom_field_id_and_value:
@@ -1425,13 +1436,21 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
         if from_datetime_str is not None and to_datetime_str is not None:
             filter_queries.append("military_end_date:%s,%s" % (from_datetime_str, to_datetime_str))
 
-    # Tags
-    tags = request_vars.get('tag_ids')
-    if isinstance(tags, list):
-        tags_facets = ["tag_ids:'{}'".format(tag) for tag in tags]
+    # Tag IDs
+    tag_ids = request_vars.get('tag_ids')
+    if isinstance(tag_ids, list):
+        tags_facets = ["tag_ids:'{}'".format(tag) for tag in tag_ids]
         filter_queries.append("(or {})".format(" ".join(tags_facets)))
-    elif tags:
-        filter_queries.append("(term field=tag_ids '{}')".format(tags))
+    elif tag_ids:
+        filter_queries.append("(term field=tag_ids '{}')".format(tag_ids))
+
+    # Tag names
+    tags = request_vars.get('tags')
+    if isinstance(tags, list):
+        tag_name_facets = ["tags:'{}'".format(tag_facet) for tag_facet in tags]
+        filter_queries.append("(and {} )".format(" ".join(tag_name_facets)))
+    elif request_vars.get('tags'):
+        filter_queries.append("(term field=tags '{}')".format(tags))
 
     # Custom fields
     custom_fields = request_vars.get('custom_fields')
