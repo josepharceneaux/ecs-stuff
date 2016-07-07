@@ -849,4 +849,5 @@ class ATSServiceApiUrl(object):
     HOST_NAME = _get_host_name(GTApis.ATS_SERVICE_NAME, GTApis.ATS_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
     ATS = HOST_NAME % ('/' + VERSION + '/ats')
-    ACCOUNT = HOST_NAME % ('/' + VERSION  + '/ats-accounts')
+    ACCOUNT = HOST_NAME % ('/' + VERSION  + '/ats-accounts/%s')
+    ACCOUNTS = HOST_NAME % ('/' + VERSION  + '/ats-accounts')

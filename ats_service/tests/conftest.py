@@ -5,7 +5,8 @@ import pytest
 
 from push_campaign_service.common.test_config_manager import load_test_config
 from push_campaign_service.common.tests.api_conftest import token_first
-                                                             
+from ats_service.common.tests.conftest import *
+
 test_config = load_test_config()
 
 

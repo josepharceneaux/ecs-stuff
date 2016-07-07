@@ -4,6 +4,8 @@ Utility functions for the ATS service.
 
 __author__ = 'Joseph Arceneaux'
 
+from requests import codes
+
 from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
 from ats_service.common.models.candidate import Candidate
 from ats_service.common.models.user import User

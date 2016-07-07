@@ -120,6 +120,10 @@ def register_error_handlers(app, logger):
     def handle_unprocessable(error):
         return handle_error(error, 'Unprocessable data for this resource.')
 
+    @app.errorhandler(MissingRequiredField)
+    def handle_missing(error):
+        return handle_error(error, 'Missing required field for this resource.')
+
     @app.errorhandler(500)
     def handle_internal_server_errors(exc):
         if isinstance(exc, InternalServerError):
