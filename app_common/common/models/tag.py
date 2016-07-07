@@ -8,7 +8,7 @@ from ..models.candidate import Candidate
 class Tag(db.Model):
     __tablename__ = 'tag'
     id = Column(INTEGER, primary_key=True)
-    name = Column(VARCHAR(12), nullable=False, unique=True)
+    name = Column(VARCHAR(50), nullable=False, unique=True)
     added_datetime = Column(TIMESTAMP, default=datetime.datetime.utcnow)
     updated_datetime = db.Column(TIMESTAMP, default=datetime.datetime.utcnow)
 
