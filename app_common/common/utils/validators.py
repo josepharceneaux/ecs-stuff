@@ -129,7 +129,10 @@ def sanitize_zip_code(zip_code):
     if zip_code and not ''.join([char for char in zip_code if not char.isdigit()]):
         zip_code = zip_code.zfill(5) if len(zip_code) <= 5 else zip_code.zfill(9) if len(zip_code) <= 9 else ''
         if zip_code:
-            return (zip_code[:5] + ' ' + zip_code[5:]).strip()
+            if len(zip_code) > 5:
+                return (zip_code[:5] + '-' + zip_code[5:]).strip()
+            else:
+                return (zip_code[:5] + ' ' + zip_code[5:]).strip()
     # logger.info("[%s] is not a valid US Zip Code", zip_code)
     return None
 

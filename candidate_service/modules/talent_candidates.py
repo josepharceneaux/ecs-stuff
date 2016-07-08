@@ -1217,7 +1217,7 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
             address_line_1=address['address_line_1'].strip() if address.get('address_line_1') else None,
             address_line_2=address['address_line_2'].strip() if address.get('address_line_2') else None,
             city=city,
-            state=(address.get('state') or '').strip().lower(),
+            state=(address.get('state') or '').strip(),
             iso3166_subdivision=subdivision_code,
             iso3166_country=country_code,
             zip_code=zip_code,
@@ -1337,7 +1337,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
     """
     # If any of educations is_current, set all of Candidate's educations' is_current to False
     candidate_id, candidate_educations = candidate.id, candidate.educations
-    if any([education.get('is_current') for education in educations]):
+    if any([education.get('is_current') for education in educations]):  # TODO: this is to be done when updating only
         CandidateEducation.set_is_current_to_false(candidate_id=candidate_id)
 
     for education in educations:
@@ -1348,14 +1348,14 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
             school_name=education['school_name'].strip() if education.get('school_name') else None,
             school_type=education['school_type'].strip() if education.get('school_type') else None,
             city=education['city'].strip() if education.get('city') else None,
-            state=(education.get('state') or '').strip().lower(),
+            state=(education.get('state') or '').strip(),
             iso3166_subdivision=subdivision_code,
             iso3166_country=country_code,
             is_current=education.get('is_current')
         )
 
         # Remove keys with empty values
-        education_dict = {k: v for k, v in education_dict.items() if v}
+        education_dict = {k: v for k, v in education_dict.items() if (v is not None or v != '')}
 
         # Prevent empty records from being added to the db
         education_degrees = education.get('degrees') or []
@@ -1665,7 +1665,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             position=work_experience['position'].strip() if work_experience.get('position') else None,
             city=work_experience['city'].strip() if work_experience.get('city') else None,
             iso3166_subdivision=subdivision_code,
-            state=(work_experience.get('state') or '').strip().lower(),
+            state=(work_experience.get('state') or '').strip(),
             iso3166_country=country_code,
             end_month=work_experience.get('end_month') or 1,
             start_year=start_year,
@@ -1814,7 +1814,7 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id):
     )
 
     # Remove empty values from update_dict
-    work_preference_dict = {k: v for k, v in work_preference_dict.items() if v}
+    work_preference_dict = {k: v for k, v in work_preference_dict.items() if (v is not None or v != '')}
 
     work_preference_id = work_preference.get('id')
     if work_preference_id:  # Update
@@ -1850,15 +1850,12 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
     """
     candidate_id = candidate.id
 
-    # Strip all values from emails
-    emails = [purge_dict(email) for email in emails]
-
     # If any of emails' is_default is True, set all of candidate's emails' is_default to False
     if any([email.get('is_default') for email in emails]):
         CandidateEmail.set_is_default_to_false(candidate_id=candidate_id)
 
     emails_has_label = any([email.get('label') for email in emails])
-    emails_has_default = any([email.get('is_default') for email in emails])
+    emails_has_default = any([isinstance(email.get('is_default'), bool) for email in emails])
 
     # Prevent duplicate email addresses
     email_addresses = [email.get('address') for email in emails]
@@ -1872,7 +1869,8 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
         # If there's no is_default, the first email should be default
         is_default = i == 0 if not emails_has_default else email.get('is_default')
         # If there's no label, the first email's label will be 'Primary', rest will be 'Other'
-        email_label = 'Primary' if (not emails_has_label and i == 0) else (email.get('label') or '').title()
+        email_label = EmailLabel.PRIMARY_DESCRIPTION if (not emails_has_label and i == 0) \
+            else (email.get('label') or '').strip().title()
         email_address = email.get('address')
 
         email_dict = dict(
@@ -1882,7 +1880,7 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
         )
 
         # Remove empty values from email_dict
-        email_dict = {k: v for k, v in email_dict.items() if v}
+        email_dict = {k: v for k, v in email_dict.items() if (v is not None or v != '')}
 
         email_id = email.get('id')
         if email_id:  # Update

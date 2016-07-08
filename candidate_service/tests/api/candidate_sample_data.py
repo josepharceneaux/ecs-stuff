@@ -12,7 +12,7 @@ from candidate_service.common.utils.handy_functions import sample_phone_number
 from candidate_service.common.tests.fake_testing_data_generator import generate_international_phone_number
 
 from candidate_service.common.tests.fake_testing_data_generator import college_majors
-from candidate_service.common.models.candidate import EmailLabel, PhoneLabel
+from candidate_service.common.models.candidate import EmailLabel, PhoneLabel, CandidateStatus
 
 # Faker
 from faker import Faker
@@ -54,15 +54,21 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                 'last_name': fake.last_name(),
                 'objective': fake.bs(),
                 'summary': fake.bs(),
+                'status_id': CandidateStatus.DEFAULT_STATUS_ID,
                 'emails': [
                     {
-                        'label': EmailLabel.PRIMARY_DESCRIPTION, 'address': fake.safe_email(), 'is_default': True
+                        'label': EmailLabel.PRIMARY_DESCRIPTION,
+                        'address': fake.safe_email(),
+                        'is_default': True
                     },
                     {
-                        'label': EmailLabel.WORK_DESCRIPTION, 'address': fake.company_email(), 'is_default': False
+                        'label': EmailLabel.WORK_DESCRIPTION,
+                        'address': fake.company_email(),
+                        'is_default': False
                     },
                     {
-                        'label': EmailLabel.OTHER_DESCRIPTION, 'address': fake.company_email()
+                        'label': EmailLabel.OTHER_DESCRIPTION,
+                        'address': fake.company_email()
                     }
                 ],
                 'addresses': [
@@ -72,7 +78,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                         'city': fake.city(),
                         'state': fake.state(),
                         'zip_code': fake.zipcode(),
-                        'country': fake.country_code(),
+                        'country_code': fake.country_code(),
                         'is_default': True,
                         'po_box': None
                     },
@@ -82,8 +88,9 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                         'city': fake.city(),
                         'state': fake.state(),
                         'zip_code': fake.postcode(),
-                        'country': fake.country_code(),
-                        'is_default': False
+                        'country_code': fake.country_code(),
+                        'is_default': False,
+                        'po_box': None
                     }
                 ],
                 'areas_of_interest': [
@@ -99,7 +106,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                         'school_name': fake.word(),
                         'city': fake.city(),
                         'state': fake.state(),
-                        'country': fake.country(),
+                        'country_code': fake.country_code(),
                         'school_type': random.choice(['university', 'college', 'technical school']),
                         'is_current': True,
                         'degrees': [
@@ -124,7 +131,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                         'school_name': fake.word(),
                         'city': fake.city(),
                         'state': fake.state(),
-                        'country': fake.country(),
+                        'country_code': fake.country_code(),
                         'school_type': random.choice(['university', 'college', 'technical school']),
                         'is_current': False,
                         'degrees': [
@@ -179,7 +186,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                         'start_month': CURRENT_DATE.month,
                         'start_year': CURRENT_DATE.year - 10,
                         'is_current': True,
-                        'country': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
+                        'country_code': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
                         'bullets': [
                             {
                                 'description': fake.bs()
@@ -200,7 +207,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                         'is_current': False,
                         'end_month': CURRENT_DATE.month,
                         'end_year': CURRENT_DATE.year - 3,
-                        'country': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
+                        'country_code': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
                         'bullets': [
                             {
                                 'description': fake.bs()

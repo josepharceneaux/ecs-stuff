@@ -124,7 +124,7 @@ class CandidatesResource(Resource):
             for email in _candidate_dict.get('emails') or []:
 
                 # email address is required within the email dict
-                email_address = email['address'].strip()
+                email_address = email['address'].strip().lower()
 
                 # If candidate's email is found, check if it's web-hidden
                 candidate_email_obj = get_email_if_validated(email_address, domain_id)
@@ -214,8 +214,13 @@ class CandidatesResource(Resource):
         for candidate_dict in candidates:
 
             user_id = authed_user.id
-            emails = [{'label': (email.get('label') or '').strip(), 'address': email['address'].strip(),
-                       'is_default': email.get('is_default')} for email in candidate_dict.get('emails') or []]
+            emails = [
+                {
+                    'label': (email.get('label') or '').strip(),
+                    'address': email['address'].strip(),
+                    'is_default': email.get('is_default')
+                } for email in candidate_dict.get('emails') or []
+            ]
 
             added_datetime = DatetimeUtils.isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
                 if candidate_dict.get('added_datetime') else None

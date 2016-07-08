@@ -4,6 +4,8 @@ Test cases for CandidateResource/post()
 # Candidate Service app instance
 from candidate_service.candidate_app import app
 
+import pycountry
+
 # Conftest
 from candidate_service.common.tests.conftest import *
 
@@ -103,6 +105,9 @@ class CommonData(object):
 
 
 class TestCreateCandidate(object):
+    CANDIDATES_URL = CandidateApiUrl.CANDIDATES
+    CANDIDATE_URL = CandidateApiUrl.CANDIDATE
+
     def test_create_candidate_without_talent_pools(self, access_token_first, user_first):
         """
         Test: Attempt to create a candidate without providing talent pool IDs
@@ -111,22 +116,201 @@ class TestCreateCandidate(object):
         # Create Candidate
         AddUserRoles.add(user=user_first)
         data = {'candidates': [{'first_name': 'cher'}]}
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        create_resp = send_request('post', self.CANDIDATES_URL, access_token_first, data)
         print response_info(response=create_resp)
-        assert create_resp.status_code == 400
+        assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
+
+    def test_create_candidate_with_all_fields(self, access_token_first, user_first, talent_pool,
+                                              domain_aois, domain_custom_fields):
+        """
+        Test:  Create candidate with all fields populated
+        """
+        AddUserRoles.add_and_get(user_first)
+
+        # Generate candidate's data
+        data = generate_single_candidate_data([talent_pool.id], areas_of_interest=domain_aois,
+                                              custom_fields=domain_custom_fields)
+        print "\ndata = {}".format(data)
+
+        # Create candidate with all fields accepted by the endpoint
+        create_resp = send_request('post', self.CANDIDATES_URL, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.CREATED
+        assert create_resp.json()['candidates'][0]['id']  # candidate's ID must be provided
+
+        # Retrieve candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', self.CANDIDATE_URL % candidate_id, access_token_first)
+        print response_info(get_resp)
+        assert get_resp.status_code == requests.codes.OK
+
+        # Assert on created candidate's data
+        data_sent_in = data['candidates'][0]
+        candidate_data = get_resp.json()['candidate']
+
+        # Candidate's primary information
+        assert candidate_data['id'] == candidate_id
+        assert candidate_data['first_name'] == data_sent_in['first_name']
+        assert candidate_data['middle_name'] == data_sent_in['middle_name']
+        assert candidate_data['last_name'] == data_sent_in['last_name']
+        assert candidate_data['full_name'] == data_sent_in['first_name'] + ' ' + data_sent_in['middle_name'] + ' ' \
+                                              + data_sent_in['last_name']
+        assert candidate_data['owner_id'] == user_first.id
+        assert candidate_data['status_id'] == data_sent_in['status_id']
+        assert candidate_data['objective'] == data_sent_in['objective']
+        assert candidate_data['summary'] == data_sent_in['summary']
+        assert candidate_data['resume_url'] == data_sent_in['resume_url']
+
+        # Candidate's addresses
+        addresses = candidate_data['addresses']
+        assert addresses[0]['id']
+        assert addresses[0]['address_line_1'] == data_sent_in['addresses'][0]['address_line_1']
+        assert addresses[0]['address_line_2'] == data_sent_in['addresses'][0]['address_line_2']
+        assert addresses[0]['city'] == data_sent_in['addresses'][0]['city']
+        assert addresses[0]['state'] == data_sent_in['addresses'][0]['state']
+        assert addresses[0]['country'] == pycountry.countries.get(alpha2=data_sent_in['addresses'][0]['country_code']).name
+        assert addresses[0]['po_box'] == data_sent_in['addresses'][0]['po_box']
+        assert addresses[0]['zip_code'] == data_sent_in['addresses'][0]['zip_code']
+        assert addresses[0]['is_default'] == data_sent_in['addresses'][0]['is_default']
+        assert addresses[1]['id']
+        assert addresses[1]['address_line_1'] == data_sent_in['addresses'][1]['address_line_1']
+        assert addresses[1]['address_line_2'] == data_sent_in['addresses'][1]['address_line_2']
+        assert addresses[1]['city'] == data_sent_in['addresses'][1]['city']
+        assert addresses[1]['state'] == data_sent_in['addresses'][1]['state']
+        assert addresses[1]['country'] == pycountry.countries.get(alpha2=data_sent_in['addresses'][1]['country_code']).name
+        assert addresses[1]['po_box'] == data_sent_in['addresses'][1]['po_box']
+        assert addresses[1]['zip_code'] == data_sent_in['addresses'][1]['zip_code']
+        assert addresses[1]['is_default'] == data_sent_in['addresses'][1]['is_default']
+
+        # Candidate's areas of interests
+        areas_of_interest = candidate_data['areas_of_interest']
+        assert areas_of_interest[0]['id'] == data_sent_in['areas_of_interest'][0]['area_of_interest_id']
+        assert areas_of_interest[1]['id'] == data_sent_in['areas_of_interest'][1]['area_of_interest_id']
+
+        # Candidate's custom fields
+        custom_fields = candidate_data['custom_fields']
+        assert custom_fields[0]['value'] == data_sent_in['custom_fields'][0]['value']
+        assert custom_fields[0]['custom_field_id'] == data_sent_in['custom_fields'][0]['custom_field_id']
+        assert custom_fields[1]['value'] == data_sent_in['custom_fields'][1]['value']
+        assert custom_fields[1]['custom_field_id'] == data_sent_in['custom_fields'][1]['custom_field_id']
+
+        # Candidate's educations
+        educations = candidate_data['educations']
+        assert educations[0]['id']
+        assert educations[0]['city'] == data_sent_in['educations'][0]['city']
+        assert educations[0]['country'] == pycountry.countries.get(alpha2=data_sent_in['educations'][0]['country_code']).name
+        assert educations[0]['is_current'] == data_sent_in['educations'][0]['is_current']
+        assert educations[0]['school_name'] == data_sent_in['educations'][0]['school_name']
+        assert educations[0]['school_type'] == data_sent_in['educations'][0]['school_type']
+        assert educations[0]['state'] == data_sent_in['educations'][0]['state']
+        assert educations[0]['degrees'][0]['id']
+        assert educations[0]['degrees'][0]['title'] == data_sent_in['educations'][0]['degrees'][0]['title']
+        assert educations[0]['degrees'][0]['type'] == data_sent_in['educations'][0]['degrees'][0]['type']
+        assert educations[0]['degrees'][0]['gpa'] == '{0:.2f}'.format(data_sent_in['educations'][0]['degrees'][0]['gpa'])
+        assert educations[0]['degrees'][0]['start_year'] == str(data_sent_in['educations'][0]['degrees'][0]['start_year'])
+        assert educations[0]['degrees'][0]['start_year'] == str(data_sent_in['educations'][0]['degrees'][0]['start_year'])
+        assert educations[0]['degrees'][0]['start_month'] == str(data_sent_in['educations'][0]['degrees'][0]['start_month'])
+        assert educations[0]['degrees'][0]['end_year'] == str(data_sent_in['educations'][0]['degrees'][0]['end_year'])
+        assert educations[0]['degrees'][0]['end_month'] == str(data_sent_in['educations'][0]['degrees'][0]['end_month'])
+        assert educations[0]['degrees'][0]['bullets'][0]['id']
+        assert educations[0]['degrees'][0]['bullets'][0]['major'] == data_sent_in['educations'][0]['degrees'][0]['bullets'][0]['major']
+        assert educations[0]['degrees'][0]['bullets'][0]['comments'] == data_sent_in['educations'][0]['degrees'][0]['bullets'][0]['comments']
+        assert educations[1]['id']
+        assert educations[1]['city'] == data_sent_in['educations'][1]['city']
+        assert educations[1]['country'] == pycountry.countries.get(alpha2=data_sent_in['educations'][1]['country_code']).name
+        assert educations[1]['is_current'] == data_sent_in['educations'][1]['is_current']
+        assert educations[1]['school_name'] == data_sent_in['educations'][1]['school_name']
+        assert educations[1]['school_type'] == data_sent_in['educations'][1]['school_type']
+        assert educations[1]['state'] == data_sent_in['educations'][1]['state']
+        assert educations[1]['degrees'][0]['id']
+        assert educations[1]['degrees'][0]['title'] == data_sent_in['educations'][1]['degrees'][0]['title']
+        assert educations[1]['degrees'][0]['type'] == data_sent_in['educations'][1]['degrees'][0]['type']
+        assert educations[1]['degrees'][0]['gpa'] == '{0:.2f}'.format(data_sent_in['educations'][1]['degrees'][0]['gpa'])
+        assert educations[1]['degrees'][0]['start_year'] == str(data_sent_in['educations'][1]['degrees'][0]['start_year'])
+        assert educations[1]['degrees'][0]['start_year'] == str(data_sent_in['educations'][1]['degrees'][0]['start_year'])
+        assert educations[1]['degrees'][0]['start_month'] == str(data_sent_in['educations'][1]['degrees'][0]['start_month'])
+        assert educations[1]['degrees'][0]['end_year'] == str(data_sent_in['educations'][1]['degrees'][0]['end_year'])
+        assert educations[1]['degrees'][0]['end_month'] == str(data_sent_in['educations'][1]['degrees'][0]['end_month'])
+        assert educations[1]['degrees'][0]['bullets'][0]['id']
+        assert educations[1]['degrees'][0]['bullets'][0]['major'] == data_sent_in['educations'][1]['degrees'][0]['bullets'][0]['major']
+        assert educations[1]['degrees'][0]['bullets'][0]['comments'] == data_sent_in['educations'][1]['degrees'][0]['bullets'][0]['comments']
+
+        # Candidate's phones
+        phones = candidate_data['phones']
+        assert phones[0]['id']
+        assert phones[0]['label'] == data_sent_in['phones'][0]['label']
+        parsed_number_from_data_sent_in = get_phone_number_extension_if_exists(data_sent_in['phones'][0]['value'])
+        assert phones[0]['value'] == parsed_number_from_data_sent_in[0]
+        assert phones[0]['extension'] == parsed_number_from_data_sent_in[2]
+        assert phones[1]['id']
+        assert phones[1]['label'] == data_sent_in['phones'][1]['label']
+        assert phones[1]['value'] == data_sent_in['phones'][1]['value']  # second phone object does not have an extension
+
+        # Candidate's emails
+        emails = candidate_data['emails']
+        assert emails[0]['id']
+        assert emails[0]['address'] == data_sent_in['emails'][0]['address']
+        assert emails[0]['label'] == data_sent_in['emails'][0]['label']
+        assert emails[0]['is_default'] == data_sent_in['emails'][0]['is_default']
+        assert emails[1]['id']
+        assert emails[1]['address'] == data_sent_in['emails'][1]['address']
+        assert emails[1]['label'] == data_sent_in['emails'][1]['label']
+        assert emails[1]['is_default'] == data_sent_in['emails'][1]['is_default']
+        assert emails[2]['id']
+        assert emails[2]['address'] == data_sent_in['emails'][2]['address']
+        assert emails[2]['label'] == data_sent_in['emails'][2]['label']
+        assert emails[2]['is_default'] is None  # last email obj doesn't have is_default key
+
+        # Candidate's Work Experience
+        experiences = candidate_data['work_experiences']
+        assert experiences[0]['id']
+        assert experiences[0]['city'] == data_sent_in['work_experiences'][0]['city']
+        assert experiences[0]['country'] == pycountry.countries.get(alpha2=data_sent_in['work_experiences'][0]['country_code']).name
+        assert experiences[0]['is_current'] == data_sent_in['work_experiences'][0]['is_current']
+        assert experiences[0]['state'] == data_sent_in['work_experiences'][0]['state']
+        assert experiences[0]['organization'] == data_sent_in['work_experiences'][0]['organization']
+        assert experiences[0]['position'] == data_sent_in['work_experiences'][0]['position']
+        assert experiences[0]['bullets'][0]['id']
+        assert experiences[0]['bullets'][0]['description'] == data_sent_in['work_experiences'][0]['bullets'][0]['description']
+        assert experiences[1]['id']
+        assert experiences[1]['city'] == data_sent_in['work_experiences'][1]['city']
+        assert experiences[1]['country'] == pycountry.countries.get(alpha2=data_sent_in['work_experiences'][1]['country_code']).name
+        assert experiences[1]['is_current'] == data_sent_in['work_experiences'][1]['is_current']
+        assert experiences[1]['state'] == data_sent_in['work_experiences'][1]['state']
+        assert experiences[1]['organization'] == data_sent_in['work_experiences'][1]['organization']
+        assert experiences[1]['position'] == data_sent_in['work_experiences'][1]['position']
+        assert experiences[1]['bullets'][0]['id']
+        assert experiences[1]['bullets'][0]['description'] == data_sent_in['work_experiences'][1]['bullets'][0]['description']
+
+        # Candidate's work preference
+        work_preference = candidate_data['work_preference']
+        assert work_preference['id']
+        assert work_preference['employment_type'] == data_sent_in['work_preference']['employment_type']
+        assert work_preference['hourly_rate'] == data_sent_in['work_preference']['hourly_rate']
+        assert work_preference['salary'] == data_sent_in['work_preference']['salary']
+        assert work_preference['telecommute'] == data_sent_in['work_preference']['telecommute']
+        assert work_preference['travel_percentage'] == data_sent_in['work_preference']['travel_percentage']
+
+        # TODO: assert on the rest of the data
+        # Candidate's military services
+        # Candidate's skills
+        # Candidate's social networks
+        # Candidate's preferred locations
+
 
     def test_create_candidate_successfully(self, access_token_first, user_first, talent_pool):
         """
         Test:   Create a new candidate and candidate's info
         Expect: 201
         """
+        AddUserRoles.add(user_first)
+
         # Create Candidate
-        AddUserRoles.add(user=user_first)
         data = {'candidates': [{'first_name': 'joker', 'talent_pool_ids': {'add': [talent_pool.id]}}]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 201
+        assert create_resp.status_code == requests.codes.CREATED
 
     def test_add_candidate_without_name(self, access_token_first, user_first, talent_pool):
         """
