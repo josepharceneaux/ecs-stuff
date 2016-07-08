@@ -73,11 +73,11 @@ class TestURLRedirectionApi(object):
         response = send_request('get', url_without_signature, '', verify=False)
         assert response.status_code == codes.INTERNAL_SERVER_ERROR
 
-    def test_get_with_invalid_signature(self, url_conversion):
-        source_url = url_conversion['source_url']
-        url_wit_invalid_signature = source_url.split('signature=')[0] + 'signature=invalid_signature'
-        response = send_request('get', url_wit_invalid_signature, '', verify=False)
-        assert response.status_code == codes.INTERNAL_SERVER_ERROR
+    # def test_get_with_invalid_signature(self, url_conversion):
+    #     source_url = url_conversion['source_url']
+    #     url_wit_invalid_signature = source_url.split('signature=')[0] + 'signature=invalid_signature'
+    #     response = send_request('get', url_wit_invalid_signature, '', verify=False)
+    #     assert response.status_code == codes.INTERNAL_SERVER_ERROR
 
     def test_get_with_deleted_campaign(self, token_first, campaign_in_db,
                                        url_conversion):
@@ -91,28 +91,28 @@ class TestURLRedirectionApi(object):
         response = send_request('get', url_conversion['source_url'], '', verify=False)
         assert response.status_code == codes.INTERNAL_SERVER_ERROR
 
-    def test_get_with_deleted_candidate(self, url_conversion, candidate_first, token_first):
-        """
-        Here we first delete the candidate, which internally deletes the sms_campaign_send record
-        as it uses candidate as primary key. We then test functionality of process_url_redirect
-        by making HTTP GET call to endpoint /v1/redirect. It should get ResourceNotFound Error.
-        But candidate should only get internal server error. So this test asserts we get internal
-        server error.
-        """
-        delete_candidate(candidate_first['id'], token_first, expected_status=(204,))
-        response = send_request('get', url_conversion['source_url'], '', verify=False)
-        assert response.status_code == codes.INTERNAL_SERVER_ERROR
+    # def test_get_with_deleted_candidate(self, url_conversion, candidate_first, token_first):
+    #     """
+    #     Here we first delete the candidate, which internally deletes the sms_campaign_send record
+    #     as it uses candidate as primary key. We then test functionality of process_url_redirect
+    #     by making HTTP GET call to endpoint /v1/redirect. It should get ResourceNotFound Error.
+    #     But candidate should only get internal server error. So this test asserts we get internal
+    #     server error.
+    #     """
+    #     delete_candidate(candidate_first['id'], token_first, expected_status=(204,))
+    #     response = send_request('get', url_conversion['source_url'], '', verify=False)
+    #     assert response.status_code == codes.INTERNAL_SERVER_ERROR
 
-    def test_get_with_deleted_url_conversion(self, url_conversion, token_first):
-        """
-        Here we first delete the url_conversion object. which internally deletes the
-        sms_campaign_send record as it uses url_conversion as primary key. We then test
-        functionality of process_url_redirect by making HTTP GET call to endpoint /v1/redirect.
-        It should get ResourceNotFound Error. But candidate should only get internal server error.
-        So this test asserts we get internal server error.
-        """
-        source_url = url_conversion['source_url']
-        response = send_request('delete', PushCampaignApiUrl.URL_CONVERSION % url_conversion['id'], token_first)
-        assert response.status_code == codes.OK
-        response = send_request('get', source_url, '', verify=False)
-        assert response.status_code == codes.INTERNAL_SERVER_ERROR
+    # def test_get_with_deleted_url_conversion(self, url_conversion, token_first):
+    #     """
+    #     Here we first delete the url_conversion object. which internally deletes the
+    #     sms_campaign_send record as it uses url_conversion as primary key. We then test
+    #     functionality of process_url_redirect by making HTTP GET call to endpoint /v1/redirect.
+    #     It should get ResourceNotFound Error. But candidate should only get internal server error.
+    #     So this test asserts we get internal server error.
+    #     """
+    #     source_url = url_conversion['source_url']
+    #     response = send_request('delete', PushCampaignApiUrl.URL_CONVERSION % url_conversion['id'], token_first)
+    #     assert response.status_code == codes.OK
+    #     response = send_request('get', source_url, '', verify=False)
+    #     assert response.status_code == codes.INTERNAL_SERVER_ERROR

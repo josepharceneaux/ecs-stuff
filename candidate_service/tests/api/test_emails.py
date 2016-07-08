@@ -7,6 +7,8 @@ from candidate_service.candidate_app import app
 # Conftest
 from candidate_service.common.tests.conftest import *
 
+from candidate_service.common.models.candidate import EmailLabel
+
 # Helper functions
 from helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
@@ -78,8 +80,8 @@ class TestCreateCandidateEmail(object):
         print response_info(get_resp)
         candidate_dict = get_resp.json()['candidate']
         assert create_resp.status_code == requests.codes.CREATED
-        assert candidate_dict['emails'][0]['label'] == 'Primary'
-        assert candidate_dict['emails'][-1]['label'] == 'Other'
+        assert candidate_dict['emails'][0]['label'] == EmailLabel.PRIMARY_DESCRIPTION
+        assert candidate_dict['emails'][-1]['label'] == EmailLabel.OTHER_DESCRIPTION
 
     def test_add_email_with_empty_values(self, access_token_first, user_first, talent_pool):
         """
@@ -380,7 +382,7 @@ class TestDeleteCandidateEmail(object):
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_2_id, access_token_first)
         can_2_emails = get_resp.json()['candidate']['emails']
 
-        # Delete candidate_2's id using candidate_1_id
+        # Delete candidate_2's email using candidate_1_id
         url = CandidateApiUrl.EMAIL % (candidate_1_id, can_2_emails[0]['id'])
         updated_resp = send_request('delete', url, access_token_first)
         print response_info(updated_resp)
