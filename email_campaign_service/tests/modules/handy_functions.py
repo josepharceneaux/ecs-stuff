@@ -6,6 +6,7 @@ import datetime
 
 # Third Party
 import requests
+from redo import retry
 
 # Application Specific
 from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
@@ -29,7 +30,7 @@ from email_campaign_service.common.tests.fake_testing_data_generator import Fake
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 __author__ = 'basit'
-
+TEST_EMAIL_ID = 'test.gettalent@gmail.com'
 
 def create_email_campaign(user):
     """
@@ -39,8 +40,8 @@ def create_email_campaign(user):
                                    user_id=user.id,
                                    is_hidden=0,
                                    subject=uuid.uuid4().__str__()[0:8] + ' It is a test campaign',
-                                   _from=fake.safe_email(),
-                                   reply_to=fake.safe_email(),
+                                   _from=TEST_EMAIL_ID,
+                                   reply_to=TEST_EMAIL_ID,
                                    body_html="<html><body>Email campaign test</body></html>",
                                    body_text="Email campaign test"
                                    )
@@ -103,12 +104,12 @@ def delete_campaign(campaign):
         pass
 
 
-def assert_valid_campaign_get(email_campaign_dict, referenced_campaign, fields=None):
+def assert_valid_campaign_get(email_campaign_dict, referenced_campaigns, fields=None):
     """
     This asserts that the campaign we get from GET call has valid values as we have for
     referenced email-campaign.
     :param dict email_campaign_dict: EmailCampaign object as received by GET call
-    :param referenced_campaign: EmailCampaign object by which we compare the campaign
+    :param referenced_campaigns: EmailCampaign objects with which we compare the campaign
             we GET in response
     :param list[str] fields: List of fields that the campaign should have, or all of them if None
     """
@@ -120,10 +121,13 @@ def assert_valid_campaign_get(email_campaign_dict, referenced_campaign, fields=N
         "Response's email campaign fields (%s) should match the expected email campaign fields (%s)" % (
             actual_email_campaign_fields_set, expected_email_campaign_fields_set
         )
-
+    found = False
     # Assert id is correct, if returned by API
     if 'id' in expected_email_campaign_fields_set:
-        assert email_campaign_dict['id'] == referenced_campaign.id
+        for referenced_campaign in referenced_campaigns:
+            if email_campaign_dict['id'] == referenced_campaign.id:
+                found = True
+        assert found
 
 
 def get_campaign_or_campaigns(access_token, campaign_id=None, fields=None, pagination_query=None):
@@ -203,11 +207,12 @@ def assert_and_delete_email(subject):
         print "Email(s) deleted with subject: %s" % subject
         mail_connection.close()
         mail_connection.logout()
+    assert msg_ids
     return msg_ids
 
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False,
-                         expected_status=200, abort_time_for_sends=150):
+                         expected_status=200, abort_time_for_sends=300):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
@@ -239,10 +244,11 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         # assert on activity for whole campaign send
         CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_SEND,
                                                   campaign.id)
-        # TODO: commented after discussing with osman -- basit
-        # if not email_client:
-        #     assert poll(assert_and_delete_email, step=3, args=(campaign.subject,), timeout=60), \
-        #         "Email with subject %s was not found." % campaign.subject
+        if not email_client:
+            assert retry(assert_and_delete_email, sleeptime=3, attempts=130, sleepscale=1,
+                         args=(campaign.subject,), retry_exceptions=(AssertionError,)),\
+                   "Email with subject %s was not found at time: %s." % (campaign.subject,
+                                                                         str(datetime.datetime.utcnow()))
 
     # For each url_conversion record we assert that source_url is saved correctly
     for send_url_conversion in sends_url_conversions:
@@ -435,18 +441,20 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
             }
 
 
-def send_campaign_email_to_candidate(campaign, email, candidate_id, blast_id=None):
+def send_campaign_email_to_candidate(campaign, email, candidate_id, sent_datetime=None, blast_id=None):
     """
     This function will create a campaign send object and then it will send the email to given email address.
     :param EmailCampaign campaign: EmailCampaign object
     :param CandidateEmail email: CandidateEmail object
     :param (int | long) candidate_id: candidate unique id
+    :param (datetime.datetime | None) sent_datetime: Campaign send time to be set in campaign send object.
     :param (None| int | long) blast_id: campaign blast id
     """
     # Create an campaign send object
     email_campaign_send = EmailCampaignSend(campaign_id=campaign.id,
                                             candidate_id=candidate_id,
-                                            sent_datetime=datetime.datetime.now(),
+                                            sent_datetime=sent_datetime if sent_datetime
+                                            else datetime.datetime.utcnow(),
                                             blast_id=blast_id)
     EmailCampaignSend.save(email_campaign_send)
     default_email = get_default_email_info()['email']

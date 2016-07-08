@@ -171,15 +171,15 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     """
 
     if app and not isinstance(app, Flask):
-        raise InvalidUsage(error_message="app instance should be flask")
+        raise InternalServerError(error_message="app instance should be flask")
 
     if not isinstance(method_type, basestring):
-        raise InvalidUsage('Method type should be str. e.g. POST etc')
+        raise InternalServerError('Method type should be str. arg given: %s' % method_type)
     if not isinstance(url, basestring):
         error_message = 'URL must be string. Unable to make "%s" Call' % method_type
         log_error('http_request: Error: %s, user_id: %s, URL: %s, Headers: %s, Data: %s'
                   % (error_message, user_id, url, headers, data), app=app)
-        raise InvalidUsage(error_message)
+        raise InternalServerError(error_message)
     if method_type.upper() in ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']:
         method = getattr(requests, method_type.lower())
         response = None
@@ -246,8 +246,9 @@ def http_request(method_type, url, params=None, headers=None, data=None, user_id
     else:
         log_error('http_request: Unknown Method type %s. URL: %s, Headers: %s, Data: %s' % (method_type, url, headers,
                                                                                            data), app=app)
-        raise InvalidUsage('Unknown method type(%s) provided. URL: %s, Headers: %s, Data: %s' % (method_type, url,
-                                                                                                headers, data))
+        raise InternalServerError('Unknown method type(%s) provided. URL: %s, Headers: %s, Data: %s' %
+                                  (method_type, url,
+                                   headers, data))
 
 
 def validate_required_fields(data_dict, required_fields):
@@ -446,3 +447,4 @@ def normalize_value(value):
     """
     assert isinstance(value, basestring), "value must be of type string"
     return value.strip().lower()
+

@@ -10,7 +10,8 @@ def user_scoped_roles(access_token, user_id, action="GET", data=''):
 
     headers = {'Authorization': 'Bearer %s' % access_token}
     if action == "GET":
-        response = requests.get(UserServiceApiUrl.USER_ROLES_API % user_id, headers=headers)
+        url = UserServiceApiUrl.USER_ROLES_API % user_id
+        response = requests.get(url=url, headers=headers)
         return response.json(), response.status_code
     elif action == "PUT":
         headers['content-type'] = 'application/json'

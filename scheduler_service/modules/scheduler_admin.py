@@ -66,8 +66,9 @@ def filter_jobs_using_task_category(tasks, task_category):
                            "`{0}` or `{1}`".format(SchedulerUtils.CATEGORY_USER, SchedulerUtils.CATEGORY_GENERAL))
 
     if task_category.lower() == SchedulerUtils.CATEGORY_GENERAL.lower():
-        tasks = filter(lambda _task: _task.name, tasks)
+        tasks = filter(lambda _task: _task.name != SchedulerUtils.RUN_JOB_METHOD_NAME, tasks)
     else:
         tasks = filter(lambda _task: _task.name == SchedulerUtils.RUN_JOB_METHOD_NAME, tasks)
 
     return tasks
+

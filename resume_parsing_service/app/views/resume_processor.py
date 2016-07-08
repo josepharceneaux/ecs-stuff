@@ -7,6 +7,8 @@ import requests
 from flask import current_app
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
+from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
+from resume_parsing_service.app.views.decorators import upload_failed_IO
 from resume_parsing_service.app.views.parse_lib import parse_resume
 from resume_parsing_service.app.views.utils import update_candidate_from_resume
 from resume_parsing_service.app.views.utils import create_parsed_resume_candidate
@@ -35,7 +37,8 @@ def process_resume(parse_params):
     create_candidate = parse_params.get('create_candidate', False)
 
     # We need to obtain/define the file from our params.
-    resume_file, filename_str = resume_file_from_params(parse_params)
+    resume_file = resume_file_from_params(parse_params)
+    filename_str = parse_params['filename'] # This is always set by param_builders.py
 
     # Checks to see if we already have BG contents in Redis.
     parsed_resume = get_or_store_parsed_resume(resume_file, filename_str)
@@ -86,6 +89,7 @@ def process_resume(parse_params):
     return candidate
 
 
+@upload_failed_IO
 def get_or_store_parsed_resume(resume_file, filename_str):
     """
     Tries to retrieve processed resume data from redis or parses it and stores it.
@@ -93,20 +97,21 @@ def get_or_store_parsed_resume(resume_file, filename_str):
     :param filename_str:
     :return:
     """
-    hashed_file_name = 'parsedResume_{}'.format(gen_hash_from_file(resume_file))
-    cached_resume = redis_store.get(hashed_file_name)
+    cache_key_from_file = 'parsedResume_{}'.format(gen_hash_from_file(resume_file))
+    cached_bg_xml = redis_store.get(cache_key_from_file)
 
-    if cached_resume:
-        parsed_resume = json.loads(cached_resume)
-        logger.info('Resume {} has been loaded from cache and its hashed_key is {}'.format(
-            filename_str, hashed_file_name))
+    if cached_bg_xml:
+        parsed_resume = {
+            'candidate': parse_optic_xml(cached_bg_xml),
+            'raw_response': cached_bg_xml
+        }
+        logger.info('BG data for {} loaded with key {}'.format(
+            filename_str, cache_key_from_file))
 
     else:
         # Parse the resume if not hashed.
         logger.info('Couldn\'t find Resume {} in cache with hashed_key: {}'.format(filename_str,
-                                                                                   hashed_file_name))
-        parsed_resume = parse_resume(file_obj=resume_file, filename_str=filename_str)
-        redis_store.set(hashed_file_name, json.dumps(parsed_resume))
-        redis_store.expire(hashed_file_name, RESUME_EXPIRE_TIME)
+                                                                                   cache_key_from_file))
+        parsed_resume = parse_resume(resume_file, filename_str, cache_key_from_file)
 
     return parsed_resume

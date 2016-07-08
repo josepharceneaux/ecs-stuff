@@ -110,10 +110,18 @@ class EmailCampaigns(Resource):
             return {"email_campaign": email_campaign.to_dict(include_fields=include_fields)}
         else:
             page, per_page = get_pagination_params(request)
+            sort_type = request.args.get('sort_type', 'DESC')
+            search_keyword = request.args.get('search', '')
+            sort_by = request.args.get('sort_by', 'added_datetime')
+
+            if sort_by not in ('added_datetime', 'name'):
+                raise InvalidUsage('Value of sort parameter is not valid')
+
             # Get all email campaigns from logged in user's domain
-            query = EmailCampaign.get_by_domain_id(user.domain_id)
-            return get_paginated_response('email_campaigns', query, page, per_page,
-                                          parser=EmailCampaign.to_dict)
+            query = EmailCampaign.get_by_domain_id_and_filter_by_name(
+                    user.domain_id, search_keyword, sort_by, sort_type)
+
+            return get_paginated_response('email_campaigns', query, page, per_page, parser=EmailCampaign.to_dict)
 
     def post(self):
         """

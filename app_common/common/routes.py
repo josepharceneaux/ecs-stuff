@@ -345,7 +345,9 @@ class CandidateApi(object):
     CANDIDATE_CLIENT_CAMPAIGN = '/' + VERSION + '/candidates/client_email_campaign'
     CANDIDATE_VIEWS = '/' + VERSION + '/candidates/<int:id>/views'
     CANDIDATE_PREFERENCES = '/' + VERSION + '/candidates/<int:id>/preferences'
-    CANDIDATE_NOTES = '/' + VERSION + '/candidates/<int:id>/notes'
+
+    CANDIDATE_NOTES = '/' + VERSION + '/candidates/<int:candidate_id>/notes'
+    CANDIDATE_NOTE = CANDIDATE_NOTES + '/<int:id>'
 
     LANGUAGES = '/' + VERSION + '/candidates/<int:candidate_id>/languages'
     LANGUAGE = '/' + VERSION + '/candidates/<int:candidate_id>/languages/<int:id>'
@@ -427,7 +429,9 @@ class CandidateApiUrl(object):
     CANDIDATE_EDIT = HOST_NAME % ('/' + VERSION + '/candidates/%s/edits')
     CANDIDATE_VIEW = HOST_NAME % ('/' + VERSION + '/candidates/%s/views')
     CANDIDATE_PREFERENCE = HOST_NAME % ('/' + VERSION + '/candidates/%s/preferences')
+
     NOTES = HOST_NAME % ('/' + VERSION + '/candidates/%s/notes')
+    NOTE = NOTES + '/%s'
 
     CANDIDATE_CLIENT_CAMPAIGN = HOST_NAME % ('/' + VERSION + '/candidates/client_email_campaign')
 
@@ -568,7 +572,6 @@ class SchedulerApi(object):
     VERSION = 'v1'
     # URLs, in case of API
     SCHEDULER_MULTIPLE_TASKS = '/' + VERSION + '/tasks'
-    SCHEDULER_TASKS_TEST = '/' + VERSION + '/tasks/test'
     SCHEDULER_ONE_TASK = '/' + VERSION + '/tasks/id/<string:_id>'
     SCHEDULER_NAMED_TASK = '/' + VERSION + '/tasks/name/<string:_name>'
     SCHEDULER_ONE_TASK_NAME = '/' + VERSION + '/tasks/name/<string:_name>'
@@ -577,6 +580,10 @@ class SchedulerApi(object):
     SCHEDULER_SINGLE_TASK_RESUME = '/' + VERSION + '/tasks/<string:_id>/resume'
     SCHEDULER_SINGLE_TASK_PAUSE = '/' + VERSION + '/tasks/<string:_id>/pause'
     SCHEDULER_ADMIN_TASKS = '/' + VERSION + '/admin/tasks'
+
+    # Test endpoints for scheduler service
+    SCHEDULER_TASKS_TEST = '/' + VERSION + '/tasks/test'
+    SCHEDULER_TASKS_TEST_POST = '/' + VERSION + "/tasks/test-post"
 
 
 class SchedulerApiUrl(object):
@@ -594,13 +601,16 @@ class SchedulerApiUrl(object):
     RESUME_TASK = HOST_NAME % ('/' + VERSION + '/tasks/%s/resume')
     PAUSE_TASKS = HOST_NAME % ('/' + VERSION + '/tasks/pause')
     RESUME_TASKS = HOST_NAME % ('/' + VERSION + '/tasks/resume')
-    TEST_TASK = HOST_NAME % ('/' + VERSION + '/tasks/test')
 
     # Scheduler Admin API
     ADMIN_TASKS = HOST_NAME % ('/' + VERSION + '/admin/tasks')
 
     # Use different port of scheduler service URL
     FLOWER_MONITORING_PORT = '--port=5511'
+
+    # Test URLs for scheduler service
+    TEST_TASK = HOST_NAME % ('/' + VERSION + '/tasks/test')
+    TEST_TASK_POST = HOST_NAME % ('/' + VERSION + '/tasks/test-post')
 
 
 class SocialNetworkApi(object):
@@ -623,6 +633,9 @@ class SocialNetworkApi(object):
     TIMEZONES = '/' + VERSION + '/data/timezones'
     RSVP = '/' + VERSION + '/rsvp'
     CODE = '/' + VERSION + '/code'
+    # URL for Twitter authentication
+    TWITTER_AUTH = '/' + VERSION + '/twitter-auth/<int:user_id>'
+    TWITTER_CALLBACK = '/' + VERSION + '/twitter-callback/<int:user_id>'
 
 
 class SocialNetworkApiUrl(object):
@@ -648,6 +661,7 @@ class SocialNetworkApiUrl(object):
     USER_SOCIAL_NETWORK_CREDENTIALS = HOST_NAME % ('/' + VERSION + '/social-networks/%s/user/credentials')
     RSVP = HOST_NAME % ('/' + VERSION + '/rsvp')
     CODE = HOST_NAME % ('/' + VERSION + '/code')
+    TWITTER_CALLBACK= HOST_NAME % ('/' + VERSION + '/twitter-callback/%s')
 
 
 class SmsCampaignApi(object):

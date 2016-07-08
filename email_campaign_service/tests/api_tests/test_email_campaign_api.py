@@ -66,7 +66,7 @@ class TestGetCampaigns(object):
         """
         email_campaign = get_campaign_or_campaigns(
             access_token_first, campaign_id=campaign_with_candidate_having_no_email.id)
-        assert_valid_campaign_get(email_campaign, campaign_with_candidate_having_no_email)
+        assert_valid_campaign_get(email_campaign, [campaign_with_candidate_having_no_email])
 
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
@@ -78,13 +78,13 @@ class TestGetCampaigns(object):
         This is the test to GET the campaign by providing campaign_id & filters.
         It should get OK response
         """
-        fields = ['id', 'subject', 'body_html', 'is_hidden']
+        fields = ['id', 'subject', 'body_html', 'body_text', 'is_hidden']
 
         email_campaign = get_campaign_or_campaigns(
             access_token_first,
             campaign_id=campaign_with_candidate_having_no_email.id,
             fields=fields)
-        assert_valid_campaign_get(email_campaign, campaign_with_candidate_having_no_email,
+        assert_valid_campaign_get(email_campaign, [campaign_with_candidate_having_no_email],
                                   fields=fields)
 
         # Test GET api of talent-pipelines/:id/campaigns
@@ -104,8 +104,9 @@ class TestGetCampaigns(object):
         # Test GET api of email campaign
         email_campaigns = get_campaign_or_campaigns(access_token_first)
         assert len(email_campaigns) == 2
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
-        assert_valid_campaign_get(email_campaigns[1], email_campaign_of_user_second)
+        reference_campaigns = [email_campaign_of_user_first, email_campaign_of_user_second]
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
+        assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
 
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
@@ -124,7 +125,8 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?per_page=1')
         assert len(email_campaigns) == 1
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
+        reference_campaigns = [email_campaign_of_user_first, email_campaign_of_user_second]
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
 
@@ -133,14 +135,14 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?per_page=1&page=2')
         assert len(email_campaigns) == 1
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_second)
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
 
         # Test GET api of email campaign with 2 results per_page
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?per_page=2')
         assert len(email_campaigns) == 2
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
-        assert_valid_campaign_get(email_campaigns[1], email_campaign_of_user_second)
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
+        assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
 
@@ -149,8 +151,8 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?&page=1')
         assert len(email_campaigns) == 2
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
-        assert_valid_campaign_get(email_campaigns[1], email_campaign_of_user_second)
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
+        assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
 
         # Test GET api of email campaign with page = 2. No campaign should be received in response
         # as we have created only two campaigns so far and default per_page is 10.
@@ -470,7 +472,7 @@ class TestSendCampaign(object):
         campaign = campaign_with_candidates_having_same_email_in_diff_domain
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_campaign_send(response, campaign, user_first, 2)
+        assert_campaign_send(response, campaign, user_first, 2, abort_time_for_sends=300)
 
     def test_campaign_send_with_email_client_id(
             self, send_email_campaign_by_client_id_response, user_first):
@@ -529,7 +531,7 @@ class TestSendCampaign(object):
         opens_count_before = email_campaign_blast.opens
         hit_count_before = url_conversion.hit_count
         response = requests.get(redirect_url)
-        assert response.status_code == 200
+        assert response.status_code == requests.codes.OK
         db.session.commit()
         opens_count_after = email_campaign_blast.opens
         hit_count_after = url_conversion.hit_count
@@ -575,14 +577,14 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_same_candidate_in_multiple_smartlists
         response = requests.post(self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_campaign_send(response, campaign, user_first, 1, abort_time_for_sends=300)
+        assert_campaign_send(response, campaign, user_first, expected_count=1)
 
 
 # Test for healthcheck
 def test_health_check():
     response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK)
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK
 
     # Testing Health Check URL with trailing slash
     response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK + '/')
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK

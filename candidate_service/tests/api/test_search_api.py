@@ -710,13 +710,14 @@ def test_custom_fields(user_first, access_token_first, candidate_first):
     db.session.commit()
 
     # Create custom field category named as 'Certifications'
-    data = {'custom_fields': [{'name': 'Certifications'}]}
+    name = str(uuid.uuid4())[:5]
+    data = {'custom_fields': [{'name': name}]}
     resp = send_request('post', UserServiceApiUrl.DOMAIN_CUSTOM_FIELDS, access_token_first, data)
     print response_info(resp)
     custom_field_id = resp.json()['custom_fields'][0]['id']
 
     # Create candidate custom field
-    value = 'senior'
+    value = str(uuid.uuid4())[:5]
     data = {'candidate_custom_fields': [{'custom_field_id': custom_field_id, 'value': value}]}
     resp = send_request('post', CandidateApiUrl.CUSTOM_FIELDS % candidate_first.id, access_token_first, data)
     print response_info(resp)
@@ -768,7 +769,7 @@ def test_paging_with_facet_search(user_first, access_token_first, talent_pool):
     """
 
     count = 30
-    current_title = "Sr. Manager"
+    current_title = "Manager of {}".format(str(uuid.uuid4())[:5])
     populate_candidates(access_token_first, talent_pool, count=count, job_title=current_title)
 
     # Search by sorting
@@ -1028,6 +1029,35 @@ def test_location_with_radius(user_first, access_token_first, talent_pool):
 #
 #     resp = get_response(access_token_first, '?minimum_years_experience={}'.format(2))
 #     print response_info(resp)
+
+# TODO: Comment out flaky test - Amir
+# def test_search_by_tag_ids_and_names(user_first, access_token_first, candidate_first):
+#     """
+#     Test: Add tags to candidate's profile, then search for candidate using tag IDs
+#     """
+#     AddUserRoles.add_get_edit(user_first)
+#
+#     # Add tags to candidate's profile
+#     data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
+#     create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
+#     print response_info(create_resp)
+#     assert create_resp.status_code == requests.codes.CREATED
+#     assert len(create_resp.json()['tags']) == len(data['tags'])
+#
+#     # Search for candidates using tag IDs
+#     created_tag_ids = [tag['id'] for tag in create_resp.json()['tags']]
+#     tag_ids = ','.join(map(str, created_tag_ids))
+#     get_resp = get_response(access_token_first, '?tag_ids={}'.format(tag_ids))
+#     print response_info(get_resp)
+#     assert get_resp.json()['total_found'] == 1  # tags associated with only 1 candidate
+#     assert get_resp.json()['candidates'][0]['tag_ids'] == map(unicode, created_tag_ids)
+#
+#     # Search for candidates using tag names
+#     created_tag_names = ','.join(tag['name'] for tag in data['tags'])
+#     get_resp = get_response(access_token_first, '?tags={}'.format(created_tag_names))
+#     print response_info(get_resp)
+#     assert get_resp.json()['total_found'] == 1  # tags associated with only 1 candidate
+#     assert get_resp.json()['candidates'][0]['tag_ids'] == map(unicode, created_tag_ids)
 
 
 def _log_bounding_box_and_coordinates(base_location, radius, candidate_ids):

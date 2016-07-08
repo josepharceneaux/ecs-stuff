@@ -266,6 +266,64 @@ class TestUpdateCandidateEducation(object):
         assert education_dict['degrees'][-1]['title'] == 'associate'
         assert education_dict['degrees'][-1]['bullets'][-1]['major'] == 'mathematics'
 
+    def test_update_start_year_with_incorrect_value(self, user_first, access_token_first, talent_pool):
+        """
+        Test: Update candidate's education start year to a year that is greater than its end year
+        """
+
+        # Create candidate + education
+        data = GenerateCandidateData.educations([talent_pool.id])
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+
+        # Retrieve candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_resp)
+
+        # Format inputs
+        education_id = get_resp.json()['candidate']['educations'][0]['id']
+        degree_id = get_resp.json()['candidate']['educations'][0]['degrees'][0]['id']
+        education_end_year = get_resp.json()['candidate']['educations'][0]['degrees'][0]['end_year']
+
+        # Update candidate-education's end year
+        update_data = {'candidates': [
+            {'educations': [
+                {'id': education_id, 'degrees': [{'id': degree_id, 'start_year': int(education_end_year) + 1}]}
+            ]}
+        ]}
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first, update_data)
+        print response_info(update_resp)
+        assert update_resp.status_code == requests.codes.BAD
+
+    def test_update_end_year_with_incorrect_value(self, user_first, access_token_first, talent_pool):
+        """
+        Test: Update candidate's education end year to a year that is less than its start year
+        """
+
+        # Create candidate + education
+        data = GenerateCandidateData.educations([talent_pool.id])
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+
+        # Retrieve candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_resp)
+
+        # Format inputs
+        education_id = get_resp.json()['candidate']['educations'][0]['id']
+        degree_id = get_resp.json()['candidate']['educations'][0]['degrees'][0]['id']
+        education_start_year = get_resp.json()['candidate']['educations'][0]['degrees'][0]['start_year']
+
+        # Update candidate-education's end year
+        update_data = {'candidates': [
+            {'educations': [
+                {'id': education_id, 'degrees': [{'id': degree_id, 'end_year': int(education_start_year) - 1}]}
+            ]}
+        ]}
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first, update_data)
+        print response_info(update_resp)
+        assert update_resp.status_code == requests.codes.BAD
+
 
 class TestCreateCandidateEducationDegree(object):
     def test_with_empty_values(self, access_token_first, user_first, talent_pool):

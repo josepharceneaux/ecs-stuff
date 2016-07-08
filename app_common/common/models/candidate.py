@@ -24,6 +24,7 @@ class Candidate(db.Model):
     is_mobile_hidden = db.Column('IsMobileHidden', TINYINT, default=False)
     user_id = db.Column('OwnerUserId', BIGINT, db.ForeignKey('user.Id'))
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
     domain_can_read = db.Column('DomainCanRead', TINYINT, default=True)
     domain_can_write = db.Column('DomainCanWrite', TINYINT, default=False)
     dice_social_profile_id = db.Column('DiceSocialProfileId', db.String(128))
@@ -152,6 +153,7 @@ class PhoneLabel(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     DEFAULT_LABEL = 'Home'
+    OTHER_LABEL = 'Other'
 
     # Relationships
     candidate_phones = relationship('CandidatePhone', backref='phone_label')
@@ -304,6 +306,7 @@ class EmailLabel(db.Model):
     reference_emails = relationship('ReferenceEmail', backref='email_label')
 
     PRIMARY_DESCRIPTION = "Primary"
+    OTHER_DESCRIPTION = "Other"
 
     def __repr__(self):
         return "<EmailLabel (description=' %r')>" % self.description
@@ -517,6 +520,7 @@ class CandidateTextComment(db.Model):
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     list_order = db.Column('ListOrder', db.Integer)
+    title = db.Column(db.String(255))
     comment = db.Column('Comment', db.Text)
     added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)

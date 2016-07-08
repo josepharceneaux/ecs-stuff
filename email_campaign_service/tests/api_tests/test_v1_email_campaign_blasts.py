@@ -101,6 +101,8 @@ class TestEmailCampaignBlasts(object):
             CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND,
                                                 sent_campaign, access_token_first)
         db.session.commit()
+        CampaignsTestsHelpers.assert_campaign_blasts(sent_campaign, expected_count=10,
+                                                     access_token=access_token_first, timeout=300)
         CampaignsTestsHelpers.assert_blast_sends(sent_campaign, expected_sends_count, blast_index=3)
         #  Test GET blasts of email campaign with 4 results per_page. It should get 4 blast objects
         response = requests.get(url + '?per_page=4',

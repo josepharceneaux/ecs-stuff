@@ -35,7 +35,7 @@ from candidate_service.modules.validators import (
 # JSON Schemas
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
-    resource_schema_photos_post, resource_schema_photos_patch, notes_schema, language_schema,
+    resource_schema_photos_post, resource_schema_photos_patch, language_schema,
 )
 from jsonschema import validate, FormatChecker, ValidationError
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
@@ -69,7 +69,7 @@ from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_email_if_exists_in_domain,
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
-    add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
+    add_or_update_candidate_subs_preference, add_photos, update_photo,
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
     add_languages, update_candidate_languages, CachedData
 )
@@ -1799,52 +1799,6 @@ class CandidatePhotosResource(Resource):
         # Update cloud search
         upload_candidate_documents([candidate_id])
         return '', 204
-
-
-class CandidateNotesResource(Resource):
-    decorators = [require_oauth()]
-
-    @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATE_NOTES)
-    def post(self, **kwargs):
-        """
-        Endpoint:  POST /v1/candidates/:candidate_id/notes
-        Function will add candidate's note(s) to database
-        """
-        # Get authenticated user & Candidate ID
-        authed_user, candidate_id = request.user, kwargs['id']
-
-        # Check if candidate exists & is web-hidden
-        get_candidate_if_validated(authed_user, candidate_id)
-
-        body_dict = get_json_if_exist(request)
-        try:
-            validate(instance=body_dict, schema=notes_schema)
-        except ValidationError as e:
-            raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
-
-        add_notes(candidate_id=candidate_id, data=body_dict.get('notes'))
-        db.session.commit()
-
-        # Update cloud search
-        upload_candidate_documents([candidate_id])
-        return '', 204
-
-    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATE_NOTES)
-    def get(self, **kwargs):
-        """
-        Endpoints:  GET /v1/candidates/:candidate_id/notes
-        Function will retrieve all of candidate's notes
-        """
-        # Get authenticated user & candidate ID
-        authed_user, candidate_id = request.user, kwargs['id']
-
-        # Check if candidate exists & is web-hidden
-        get_candidate_if_validated(authed_user, candidate_id)
-
-        return {'candidate_notes': [
-            {'id': note.id, 'candidate_id': note.candidate_id,
-             'comment': note.comment, 'added_time': str(note.added_time)
-        } for note in CandidateTextComment.get_by_candidate_id(candidate_id)]}
 
 
 class CandidateLanguageResource(Resource):
