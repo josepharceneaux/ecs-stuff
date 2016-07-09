@@ -4,7 +4,7 @@ import json
 import datetime
 import requests
 
-from email_campaign_service.common.models.user import Permission
+from email_campaign_service.common.models.db import db
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.email_campaign import (EmailTemplateFolder, UserEmailTemplate)
 from email_campaign_service.tests.modules.handy_functions import (request_to_email_template_resource, template_body,
@@ -24,6 +24,8 @@ def test_create_email_template_folder(user_first, access_token_first):
 
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(access_token_first)
+
+    db.session.commit()
 
     # Assert that folder is created with correct name
     folder_row = EmailTemplateFolder.get_by_id(template_folder_id)
@@ -46,6 +48,8 @@ def test_delete_email_template_folder(user_first, user_same_domain, access_token
 
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(access_token_first)
+
+    db.session.commit()
 
     # Assert that folder is created with correct name
     folder_row = EmailTemplateFolder.get_by_id(template_folder_id)
