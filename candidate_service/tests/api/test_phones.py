@@ -10,7 +10,6 @@ from candidate_service.common.tests.conftest import *
 from candidate_service.common.models.candidate import PhoneLabel
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.validators import get_phone_number_extension_if_exists
@@ -29,7 +28,6 @@ class TestAddCandidatePhones(object):
         Expect: 201
         """
         # Create Candidate
-        AddUserRoles.add_and_get(user_first)
         data = candidate_phones(talent_pool)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -53,7 +51,6 @@ class TestAddCandidatePhones(object):
         Expect: 201, phone number must be formatted before inserting into db
         """
         # Create candidate
-        AddUserRoles.add_and_get(user_first)
         data = GenerateCandidateData.phones([talent_pool.id], internationalize=True)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -73,7 +70,6 @@ class TestAddCandidatePhones(object):
         Expect: 201; phone's label must be 'Home'
         """
         # Create Candidate without label
-        AddUserRoles.add_and_get(user_first)
         data = {'candidates': [{'phones':
             [
                 {'label': None, 'is_default': None, 'value': '6504084069'},
@@ -97,7 +93,6 @@ class TestAddCandidatePhones(object):
         Expect: 201, phone label must be 'Other'
         """
         # Create Candidate without label
-        AddUserRoles.add_and_get(user_first)
         data = {'candidates': [{'phones':
             [
                 {'label': 'vork', 'is_default': None, 'value': '6504084069'},
@@ -120,7 +115,6 @@ class TestAddCandidatePhones(object):
         Test:  Add candidate phone without providing value
         Expect:  400; phone value is a required property
         """
-        AddUserRoles.add(user_first)
         data = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]}, 'phones': [
             {'label': 'Work', 'is_default': False, 'value': None}]}]}
 
@@ -134,7 +128,6 @@ class TestAddCandidatePhones(object):
         """
         Test: Add candidate using identical phone numbers
         """
-        AddUserRoles.add(user_first)
 
         # Create candidate with identical phone numbers
         phone_number = fake.phone_number()
@@ -150,7 +143,6 @@ class TestAddCandidatePhones(object):
         """
         Test: Add a candidate using a phone number that already exists in candidate's domain
         """
-        AddUserRoles.add(user_first)
 
         # Create candidate with phone number
         phone_number = fake.phone_number()
@@ -170,7 +162,6 @@ class TestUpdateCandidatePhones(object):
         Test:  Add invalid phone numbers to candidate's profile
         Expect: 400; phone numbers should not be added to candidate's profile
         """
-        AddUserRoles.edit(user_first)
 
         data_1 = {'candidates': [{'phones': [{'value': '+19-984abcde'}]}]}  # value contains letters + only 5 letters
         data_2 = {'candidates': [{'phones': [{'value': 'lettersonly'}]}]}  # value contains letters only
@@ -195,7 +186,6 @@ class TestUpdateCandidatePhones(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -227,7 +217,6 @@ class TestUpdateCandidatePhones(object):
         Expect: 200, but only one CandidatePhone must have is_current True, the rest must be False
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -249,7 +238,6 @@ class TestUpdateCandidatePhones(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -310,8 +298,6 @@ class TestDeleteCandidatePhone(object):
         Expect: 403
         """
         # Create candidate_1 & candidate_2 with sample_user & sample_user_2
-        AddUserRoles.add(user_first)
-        AddUserRoles.delete(user_second)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -330,7 +316,6 @@ class TestDeleteCandidatePhone(object):
         Expect: 403
         """
         # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
@@ -355,7 +340,6 @@ class TestDeleteCandidatePhone(object):
         Expect: 204, Candidate must not have any phones left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -376,7 +360,6 @@ class TestDeleteCandidatePhone(object):
         Expect: 204, Candidate's phones must be less 1
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
