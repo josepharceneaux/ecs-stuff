@@ -39,7 +39,7 @@ permissions_not_allowed_for_roles['USER'] = permissions_not_allowed_for_roles['A
     Permission.PermissionNames.CAN_DELETE_USERS, Permission.PermissionNames.CAN_ADD_USERS,
     Permission.PermissionNames.CAN_DELETE_CANDIDATES]
 
-role_names = permissions_not_allowed_for_roles.keys()
+role_names = ['USER', 'ADMIN', 'DOMAIN_ADMIN', 'TALENT_ADMIN']
 for role_name in role_names:
     role_id = Role.save(role_name)
     for permission_name in permission_names:
