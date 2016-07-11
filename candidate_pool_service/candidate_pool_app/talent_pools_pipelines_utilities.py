@@ -609,6 +609,9 @@ def top_most_engaged_pipelines_of_candidate(candidate_id, limit):
     talent_pool_ids_of_candidate = [talent_pool_id_of_candidate.talent_pool_id for
                                     talent_pool_id_of_candidate in talent_pool_ids_of_candidate]
 
+    if not talent_pool_ids_of_candidate:
+        talent_pool_ids_of_candidate = ['NULL']
+
     sql_query = """
       SELECT talent_pipeline.id, talent_pipeline.name, avg(engagement_score_of_all_campaigns.engagement_score) as average_engagement_score_of_pipeline
       FROM

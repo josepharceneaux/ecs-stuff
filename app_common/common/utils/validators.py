@@ -80,7 +80,7 @@ def parse_phone_number(phone_number, iso3166_country_code=None):
 
     phone_number = re.sub('\D', '', phone_number)  # Number must contain only digits
     if len(phone_number) < 7:
-        raise InvalidUsage("Invalid phone number: {}".format(number))
+        raise InvalidUsage("Phone number ({}) must be at least 7 digits".format(number))
 
     # If phone number is not prefixed with international code and country_code is not provided
     #    it will be saved as-is unless if phone number is invalid, e.g. "letter56"
