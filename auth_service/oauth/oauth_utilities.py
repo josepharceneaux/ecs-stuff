@@ -4,6 +4,7 @@ from dateutil.parser import parse
 from flask_oauthlib.provider import OAuth2RequestValidator
 from werkzeug.security import check_password_hash
 from auth_service.common.models.user import *
+from auth_service.common.redis_cache import redis_store
 from auth_service.oauth import logger, app
 from datetime import datetime, timedelta
 
@@ -36,6 +37,17 @@ def authenticate_user(username, password, *args, **kwargs):
         user_password = change_hashing_format(user.password)
         if check_password_hash(user_password, password):
             return user
+        else:
+            if not redis_store.exists(username):
+                redis_store.setex('email_{}'.format(username), 3600, 1)
+            else:
+                previous_wrong_password_count = redis_store.get('email_{}'.format(username))
+                if previous_wrong_password_count + 1 >= 5:
+                    redis_store.delete('email_{}'.format(username))
+                    user.is_disabled = 1
+                    db.session.commit()
+                redis_store.setex('email_{}'.format(username), 3600, previous_wrong_password_count + 1)
+
     logger.warn('There is no user with username: %s and password: %s', username, password)
     return None
 
