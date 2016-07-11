@@ -19,6 +19,9 @@ RUN npm install yargs
 RUN npm install
 RUN bower --allow-root install
 
+# CMD export GT_ENVIRONMENT=$GT_ENVIRONMENT && gulp build
+# CMD export GT_ENVIRONMENT=$GT_ENVIRONMENT && gulp serve-build
+
 # Build and start node server
 RUN gulp build
 CMD gulp serve-build

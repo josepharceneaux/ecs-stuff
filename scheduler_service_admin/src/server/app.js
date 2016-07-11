@@ -6,7 +6,7 @@ var cors = require('cors');
 var app = express();
 var bodyParser = require('body-parser');
 var favicon = require('serve-favicon');
-var port = process.env.PORT || 4000;
+var port = process.env.PORT;
 var four0four = require('./utils/404')();
 
 app.use(cors({origin: true}));
@@ -17,15 +17,15 @@ app.use(favicon(__dirname + '/icon.png'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-if(typeof(process.env.GT_NODE_ENV) == "undefined"){
-  process.env.GT_NODE_ENV = 'development';
+if(typeof(process.env.GT_ENVIRONMENT) == "undefined"){
+  process.env.GT_ENVIRONMENT = 'development';
 }
 
 app.use('/api', require('./routes'));
 
 console.log('About to crank up node');
 console.log('PORT=' + port);
-console.log('GT_NODE_ENV=' + process.env.GT_NODE_ENV);
+console.log('GT_ENVIRONMENT=' + process.env.GT_ENVIRONMENT);
 console.log('NODE_ENV=' + process.env.ENV);
 
 switch (environment) {

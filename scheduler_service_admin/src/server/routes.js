@@ -1,7 +1,7 @@
 var router = require('express').Router();
 var four0four = require('./utils/404')();
 var apiconfig = require('./config.json');
-var environment = process.env.GT_NODE_ENV;
+var environment = process.env.GT_ENVIRONMENT;
 
 router.get('/api-config', getconfig);
 router.get('/*', four0four.notFoundMiddleware);
