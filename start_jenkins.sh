@@ -7,11 +7,12 @@ pip install -r requirements.txt
 sudo service docker restart
 sudo usermod -aG docker jenkins
 
-# Sopping all containers and removing all dangling images from Jenkins container
+# Stopping all containers and removing all dangling images from Jenkins container
 docker stop $(docker ps -a -q)
 docker rm $(docker ps -a -q)
 docker images -qf "dangling=true" | xargs docker rmi
 
+# Build the micro service images
 cd base_service_container && tar -czh . | docker build -t gettalent/base-service-container:latest - && cd ../
 cd auth_service && tar -czh . | docker build -t gettalent/auth-service:latest - && cd ../
 cd resume_parsing_service && tar -czh . | docker build -t gettalent/resume-parsing-service:latest - && cd ../
@@ -25,6 +26,9 @@ cd scheduler_service && tar -czh . | docker build -t gettalent/scheduler-service
 cd sms_campaign_service && tar -czh . | docker build -t gettalent/sms-campaign-service:latest - && cd ../
 cd push_campaign_service && tar -czh . | docker build -t gettalent/push-campaign-service:latest - && cd ../
 cd email_campaign_service && tar -czh . | docker build -t gettalent/email-campaign-service:latest - && cd ../
+
+# Build the scheduler admin image, which is a nodejs web application
+cd scheduler_service_admin && tar -czh . | docker build -t gettalent/scheduler-service-admin:latest - && cd ../
 
 # Reset Database and Amazon Cloud Search
 export PYTHONPATH=.
