@@ -15,5 +15,7 @@ CMD apt-get install -y npm
 CMD npm install
 
 # Build and start node server
-CMD gulp build
-CMD gulp serve-build
+CMD\
+ export GT_ENVIRONMENT=$GT_ENVIRONMENT && gulp build
+CMD\
+ export GT_ENVIRONMENT=$GT_ENVIRONMENT && gulp serve-build

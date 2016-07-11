@@ -79,7 +79,7 @@ if args.build:
     }[env]
 
     print 'Building for %(env)s env' % locals()
-    command = 'GT_NODE_ENV=%(gt_node_env)s npm run build' % locals()
+    command = 'GT_ENVIRONMENT=%(gt_node_env)s npm run build' % locals()
     print ' > ', command
     check_call(command, shell=True, stdout=sys.stdout)
 
