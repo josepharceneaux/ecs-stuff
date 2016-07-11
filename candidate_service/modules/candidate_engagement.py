@@ -19,6 +19,9 @@ def calculate_candidate_engagement_score(candidate_id):
     talent_pool_ids_of_candidate = [talent_pool_id_of_candidate.talent_pool_id for
                                     talent_pool_id_of_candidate in talent_pool_ids_of_candidate]
 
+    if not talent_pool_ids_of_candidate:
+        talent_pool_ids_of_candidate = ['NULL']
+
     sql_query = """
     SELECT avg(average_engagement_score.average_engagement_score_of_pipeline) AS engagement_score
     FROM
@@ -62,6 +65,9 @@ def top_most_engaged_pipelines_of_candidate(candidate_id):
             TalentPoolCandidate.talent_pool_id).filter(TalentPoolCandidate.candidate_id == candidate_id).all()
     talent_pool_ids_of_candidate = [talent_pool_id_of_candidate.talent_pool_id for
                                     talent_pool_id_of_candidate in talent_pool_ids_of_candidate]
+
+    if not talent_pool_ids_of_candidate:
+        talent_pool_ids_of_candidate = ['NULL']
 
     sql_query = """
       SELECT talent_pipeline.id, avg(engagement_score_of_all_campaigns.engagement_score) as average_engagement_score_of_pipeline

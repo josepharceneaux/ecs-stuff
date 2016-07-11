@@ -17,8 +17,6 @@ from helpers import AddUserRoles
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info, get_response
 
-DATA = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
-
 
 class TestCreateCandidateTags(object):
     def test_add_without_necessary_permissions(self, access_token_first, candidate_first):
@@ -27,14 +25,15 @@ class TestCreateCandidateTags(object):
         Expect: 401
         """
         # Unauthorized user
-        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, None, DATA)
+        data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
+        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, None, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 401
+        assert create_resp.status_code == requests.codes.UNAUTHORIZED
 
         # Authorized but not permitted user
-        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, DATA)
+        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 401
+        assert create_resp.status_code == requests.codes.UNAUTHORIZED
 
     def test_add_tags(self, access_token_first, user_first, candidate_first):
         """
@@ -44,10 +43,11 @@ class TestCreateCandidateTags(object):
         AddUserRoles.edit(user_first)
 
         # Create candidate Tags
-        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, DATA)
+        data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
+        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 201
-        assert len(create_resp.json()['tags']) == len(DATA['tags'])
+        assert create_resp.status_code == requests.codes.CREATED
+        assert len(create_resp.json()['tags']) == len(data['tags'])
 
     def test_add_duplicate_tags(self, access_token_first, user_first, candidate_first):
         """
@@ -61,7 +61,7 @@ class TestCreateCandidateTags(object):
         data = {"tags": [{"name": name}]}
         create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 201
+        assert create_resp.status_code == requests.codes.CREATED
         assert len(create_resp.json()['tags']) == len(data['tags'])
 
         create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
@@ -77,13 +77,14 @@ class TestGetCandidateTags(object):
         AddUserRoles.all_roles(user_first)
 
         # Create candidate Tags
-        send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, DATA)
+        data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
+        send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
 
         # Retrieve all of candidate's tags
         get_resp = send_request('get', CandidateApiUrl.TAGS % candidate_first.id, access_token_first)
         print response_info(get_resp)
-        assert get_resp.status_code == 200
-        assert len(get_resp.json()['tags']) == len(DATA['tags'])
+        assert get_resp.status_code == requests.codes.OK
+        assert len(get_resp.json()['tags']) == len(data['tags'])
         assert 'id' in get_resp.json()['tags'][0]
 
     def test_get_candidate_tag(self, access_token_first, user_first, candidate_first):
@@ -94,15 +95,16 @@ class TestGetCandidateTags(object):
         AddUserRoles.all_roles(user_first)
 
         # Create candidate Tags
-        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, DATA)
+        data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
+        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
 
         # Retrieve all of candidate's tags
         tag_id = create_resp.json()['tags'][0]['id']
         url = CandidateApiUrl.TAG % (candidate_first.id, tag_id)
         get_resp = send_request('get', url, access_token_first)
         print response_info(get_resp)
-        assert get_resp.status_code == 200
-        assert get_resp.json()['name'] == DATA['tags'][0]['name']
+        assert get_resp.status_code == requests.codes.OK
+        assert get_resp.json()['name'] == data['tags'][0]['name']
 
 
 class TestUpdateCandidateTags(object):
@@ -115,7 +117,8 @@ class TestUpdateCandidateTags(object):
 
         # Create some tags for candidate_first
         url = CandidateApiUrl.TAGS % candidate_first.id
-        create_resp = send_request('post', url, access_token_first, DATA)
+        data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
+        create_resp = send_request('post', url, access_token_first, data)
         print response_info(create_resp)
 
         # Retrieve all of candidate's tags
@@ -136,7 +139,8 @@ class TestUpdateCandidateTags(object):
 
         # Create two tags for candidate
         url = CandidateApiUrl.TAGS % candidate_first.id
-        create_resp = send_request('post', url, access_token_first, DATA)
+        data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
+        create_resp = send_request('post', url, access_token_first, data)
         print response_info(create_resp)
 
         # Get tag IDs
@@ -148,7 +152,7 @@ class TestUpdateCandidateTags(object):
         ]}
         update_resp = send_request('patch', url, access_token_first, update_data)
         print response_info(update_resp)
-        assert update_resp.status_code == 200
+        assert update_resp.status_code == requests.codes.OK
         assert len(update_resp.json()['updated_tags']) == len(update_data['tags'])
         assert update_resp.json()['updated_tags'][0]['id'] != (tag_1_id or tag_2_id)
 
@@ -162,7 +166,8 @@ class TestDeleteCandidateTags(object):
         AddUserRoles.all_roles(user_first)
 
         # Create some tags for candidate_first
-        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, DATA)
+        data = {"tags": [{"name": str(uuid.uuid4())[:8]}, {"name": str(uuid.uuid4())[:8]}]}
+        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
 
         # Delete one tag
@@ -192,7 +197,8 @@ class TestDeleteCandidateTags(object):
         AddUserRoles.all_roles(user_first)
 
         # Create some tags for candidate_first
-        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, DATA)
+        data = {"tags": [{"name": str(uuid.uuid4())[:8]}, {"name": str(uuid.uuid4())[:8]}]}
+        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
 
         # Delete all of candidate's tags
