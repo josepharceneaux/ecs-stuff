@@ -3,9 +3,9 @@
     <node-options />
     <gulpfile>$PROJECT_DIR$/scheduler_service_admin/gulpfile.js</gulpfile>
     <tasks />
-    <arguments>serve-dev</arguments>
+    <arguments>serve-build</arguments>
     <envs>
-      <env name="GT_NODE_ENV" value="staging" />
+      <env name="GT_ENVIRONMENT" value="staging" />
     </envs>
     <method />
   </configuration>

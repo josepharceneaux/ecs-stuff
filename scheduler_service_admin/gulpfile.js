@@ -16,11 +16,11 @@ var colors = $.util.colors;
 var envenv = $.util.env;
 var port = process.env.PORT || config.defaultPort;
 
-if(typeof(process.env.GT_NODE_ENV) == 'undefined'){
+if(typeof(process.env.GT_ENVIRONMENT) == 'undefined'){
     process.env.ENV = 'development';
 }
 else{
-  process.env.ENV = process.env.GT_NODE_ENV;
+  process.env.ENV = process.env.GT_ENVIRONMENT;
 }
 
 /**
@@ -610,7 +610,7 @@ function startTests(singleRun, done) {
   var fork = require('child_process').fork;
   var Karma = require('karma').Server;
 
-  var env = process.env.GT_NODE_ENV;
+  var env = process.env.GT_ENVIRONMENT;
   if (env === 'development') {
     log('Starting servers');
     var savedEnv = process.env;

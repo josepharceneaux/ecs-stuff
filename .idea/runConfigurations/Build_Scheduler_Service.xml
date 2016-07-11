@@ -5,7 +5,7 @@
     <tasks />
     <arguments>serve-build</arguments>
     <envs>
-      <env name="GT_NODE_ENV" value="production" />
+      <env name="GT_ENVIRONMENT" value="production" />
     </envs>
     <method />
   </configuration>
