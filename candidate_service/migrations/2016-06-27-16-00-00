@@ -1,0 +1,11 @@
+"""
+This script adds the title-column to candidate text comment table
+"""
+
+from candidate_service.common.models.db import db
+from sqlalchemy import text
+from sqlalchemy.dialects.mysql import VARCHAR
+
+db.session.execute(
+    text("ALTER TABLE `candidate_text_comment` ADD `title` VARCHAR(255)")
+)

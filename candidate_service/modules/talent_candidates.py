@@ -5,6 +5,7 @@ Helper functions for candidate CRUD operations and tracking edits made to the Ca
 import re
 import datetime
 import urlparse
+import hashlib
 import dateutil.parser
 import simplejson as json
 import pycountry
@@ -14,7 +15,6 @@ from datetime import date
 from nameparser import HumanName
 
 # Database connection and logger
-from sqlalchemy.sql import text
 from candidate_service.common.models.db import db
 from candidate_service.common.models.smartlist import Smartlist
 from candidate_service.candidate_app import logger
@@ -25,13 +25,14 @@ from candidate_service.common.models.candidate import (
     CandidateAddress, CandidateExperience, CandidateEducation, CandidateEducationDegree,
     CandidateSkill, CandidateMilitaryService, CandidateCustomField, CandidateSocialNetwork,
     SocialNetwork, CandidateEducationDegreeBullet, CandidateExperienceBullet, ClassificationType,
-    CandidatePhoto, CandidateTextComment, PhoneLabel, EmailLabel, CandidateSubscriptionPreference
+    CandidatePhoto, PhoneLabel, EmailLabel, CandidateSubscriptionPreference
 )
 from candidate_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPoolGroup
 from candidate_service.common.models.candidate_edit import CandidateEdit, CandidateView
 from candidate_service.common.models.associations import CandidateAreaOfInterest
-from candidate_service.common.models.email_campaign import EmailCampaign
-from candidate_service.common.models.misc import AreaOfInterest
+from candidate_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend, \
+    EmailCampaignSendUrlConversion
+from candidate_service.common.models.misc import AreaOfInterest, UrlConversion
 from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.user import User
 
@@ -43,12 +44,12 @@ from candidate_service.common.error_handling import InvalidUsage, NotFoundError,
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 # Validations
-from candidate_service.common.utils.validators import sanitize_zip_code, is_number, format_phone_number, parse_phone_number
+from candidate_service.common.utils.validators import sanitize_zip_code, is_number, parse_phone_number
 from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
-    does_phone_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
-    get_education_degree_if_exists, does_military_service_exist
+    do_phones_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
+    get_education_degree_if_exists, does_military_service_exist, do_emails_exist
 )
 
 # Common utilities
@@ -59,6 +60,7 @@ from candidate_service.common.geo_services.geo_coordinates import get_coordinate
 
 # Handy functions
 from candidate_service.common.utils.handy_functions import purge_dict
+
 
 ##################################################
 # Helper Functions For Retrieving Candidate Info #
@@ -157,12 +159,13 @@ def fetch_candidate_info(candidate, fields=None):
     return {
         'id': candidate_id,
         'owner_id': candidate.user_id,
+        'status_id': candidate.candidate_status_id,
         'first_name': candidate.first_name,
         'middle_name': candidate.middle_name,
         'last_name': candidate.last_name,
         'full_name': full_name,
         'created_at_datetime': created_at_datetime,
-        'updated_at_datetime': created_at_datetime,
+        'updated_at_datetime': DatetimeUtils.utc_isoformat(candidate.updated_datetime),
         'emails': emails,
         'phones': phones,
         'addresses': addresses,
@@ -464,16 +467,47 @@ def candidate_contact_history(candidate):
     # Campaign sends & campaigns
     timeline = []
     for email_campaign_send in candidate.email_campaign_sends:
+
         if not email_campaign_send.campaign_id:
             logger.error("contact_history: email_campaign_send has no campaign_id: %s", email_campaign_send.id)
             continue
-        email_campaign = db.session.query(EmailCampaign).get(email_campaign_send.campaign_id)
-        timeline.insert(0, dict(id=email_campaign.id,
+
+        email_campaign = EmailCampaign.get(email_campaign_send.campaign_id)
+        event_datetime = email_campaign_send.sent_datetime
+        event_type = ContactHistoryEvent.EMAIL_SEND
+
+        timeline.insert(0, dict(id=hashlib.md5(str(event_datetime) + event_type + str(email_campaign.id)).hexdigest(),
+                                email_campaign_id=email_campaign.id,
                                 event_datetime=email_campaign_send.sent_datetime,
                                 event_type=ContactHistoryEvent.EMAIL_SEND,
                                 campaign_name=email_campaign.name))
 
-    # Sort events by datetime and convert all datetimes to isoformat
+        # Get email campaign sends if its url was clicked by the candidate
+        email_campaign_sends = EmailCampaignSend.query.join(EmailCampaignSendUrlConversion).join(UrlConversion). \
+            filter(EmailCampaignSend.candidate_id == candidate.id). \
+            filter((EmailCampaignSendUrlConversion.type == 0) | (EmailCampaignSendUrlConversion.type == 1)). \
+            filter(UrlConversion.hit_count > 0).all()
+
+        for email_campaign_send_ in email_campaign_sends:
+
+            # Get email campaign send's url conversion
+            url_conversion_id = EmailCampaignSendUrlConversion.query.filter(
+                EmailCampaignSendUrlConversion.email_campaign_send_id == email_campaign_send_.id
+            ).first().url_conversion_id
+            url_conversion = UrlConversion.get(url_conversion_id)
+
+            event_datetime = url_conversion.last_hit_time
+            event_type = ContactHistoryEvent.EMAIL_OPEN
+
+            timeline.append(dict(
+                id=hashlib.md5(str(event_datetime) + event_type + str(email_campaign.id)).hexdigest(),
+                email_campaign_id=email_campaign.id,
+                campaign_name=email_campaign.name,
+                event_type=event_type,
+                event_datetime=event_datetime
+            ))
+
+    # Sort events by datetime and convert all date-times to ISO format
     timeline = sorted(timeline, key=lambda entry: entry['event_datetime'], reverse=True)
     for event in timeline:
         event['event_datetime'] = event['event_datetime'].isoformat()
@@ -683,26 +717,6 @@ def update_photo(candidate_id, user_id, update_dict):
     return
 
 
-######################################
-# Helper Functions For Candidate Notes
-######################################
-def add_notes(candidate_id, data):
-    """
-    Function will insert candidate notes into the db
-    :type candidate_id:  int|long
-    :type data:  list[dict]
-    """
-    # Format inputs
-    for note in data:
-        notes_dict = dict(
-            candidate_id=candidate_id,
-            comment=note.get('comment'),
-            added_time=datetime.datetime.utcnow()
-        )
-        notes_dict = dict((k, v) for k, v in notes_dict.iteritems() if v is not None)
-        db.session.add(CandidateTextComment(**notes_dict))
-
-
 ##########################################
 # Helper Functions For Candidate Languages
 ##########################################
@@ -873,7 +887,6 @@ def create_or_update_candidate_from_params(
     """
     # Format inputs
     added_datetime = added_datetime or datetime.datetime.utcnow()
-    status_id = status_id or 1
     edit_datetime = datetime.datetime.utcnow()  # Timestamp for tracking edits
 
     # Get user's domain ID
@@ -910,7 +923,7 @@ def create_or_update_candidate_from_params(
 
     if is_updating:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
-                                         candidate_id, user_id, resume_url, source_id)
+                                         candidate_id, user_id, resume_url, source_id, status_id)
     else:  # Add Candidate
         candidate_id = _add_candidate(first_name, middle_name, last_name,
                                       formatted_name, added_datetime, status_id,
@@ -953,7 +966,7 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's email(s)
     if emails:
-        _add_or_update_emails(candidate_id, emails, user_id, is_updating)
+        _add_or_update_emails(candidate, emails, user_id, is_updating)
 
     # Add or update Candidate's phone(s)
     if phones:
@@ -1099,11 +1112,21 @@ def social_network_name_from_url(url):
             return "Unknown"
 
 
-def _update_candidate(first_name, middle_name, last_name, formatted_name, objective,
-                      summary, candidate_id, user_id, resume_url, source_id):
+def _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
+                      candidate_id, user_id, resume_url, source_id, candidate_status_id):
     """
-    Function will update Candidate
-    :return:    Candidate ID
+    Function will update Candidate's primary information.
+    Candidate's Primary information include:
+      - first name, middle name, last name, status ID, source ID, objective, summary, and resume url
+
+    Caveats:
+        - status_id, source_id, objective, summary, and resume_url will be deleted if their
+            respective values are NULL.
+        - candidate's full name, first name, middle name, and/or last name will be removed
+            if their respective values are an empty string. NULL values will be ignored.
+
+    :return:  Candidate ID
+    :rtype: int | long
     """
     # If formatted name is provided, must also update first name, middle name, and last name
     if formatted_name:
@@ -1112,7 +1135,8 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         middle_name = parsed_names_object.middle
         last_name = parsed_names_object.last
 
-    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url, 'source_id': source_id}
+    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url,
+                   'source_id': source_id, 'candidate_status_id': candidate_status_id}
 
     # Strip each key-value and remove keys with empty-string-values
     update_dict = purge_dict(update_dict, remove_empty_strings_only=True)
@@ -1133,10 +1157,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
     if not update_dict:
         return candidate_id
 
-    # Candidate ID must be recognized
     candidate_object = Candidate.get_by_id(candidate_id)
-    if not candidate_object:
-        raise NotFoundError('Candidate not found', custom_error.CANDIDATE_NOT_FOUND)
 
     # Track all edits
     track_edits(update_dict=update_dict, table_name='candidate', candidate_id=candidate_id,
@@ -1153,18 +1174,25 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
                    dice_profile_id, dice_social_profile_id, source_id,
                    objective, summary, resume_url):
     """
-    Function will create Candidate
-    :rtype:  Candidate.id
+    Function will add Candidate and its primary information to db
+    All empty values (None or empty strings) will be ignored
+    :rtype:  int | long
     """
-    candidate = Candidate(
+    add_dict = dict(
         first_name=first_name, middle_name=middle_name, last_name=last_name, formatted_name=formatted_name,
         added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
         dice_profile_id=dice_profile_id, dice_social_profile_id=dice_social_profile_id,
         source_id=source_id, objective=objective, summary=summary, filename=resume_url,
-        is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the field is successfully removed.
+        is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     )
+
+    # All empty values must be removed
+    add_dict = purge_dict(add_dict)
+
+    candidate = Candidate(**add_dict)
     db.session.add(candidate)
     db.session.flush()
+
     return candidate.id
 
 
@@ -1189,6 +1217,7 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
             address_line_1=address['address_line_1'].strip() if address.get('address_line_1') else None,
             address_line_2=address['address_line_2'].strip() if address.get('address_line_2') else None,
             city=city,
+            state=(address.get('state') or '').strip().lower(),
             iso3166_subdivision=subdivision_code,
             iso3166_country=country_code,
             zip_code=zip_code,
@@ -1319,6 +1348,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
             school_name=education['school_name'].strip() if education.get('school_name') else None,
             school_type=education['school_type'].strip() if education.get('school_type') else None,
             city=education['city'].strip() if education.get('city') else None,
+            state=(education.get('state') or '').strip().lower(),
             iso3166_subdivision=subdivision_code,
             iso3166_country=country_code,
             is_current=education.get('is_current')
@@ -1355,13 +1385,22 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
 
             # CandidateEducationDegree
             for education_degree in education_degrees:
+
+                # TODO: validate all date inputs. For example, start date must be before end date
+
+                # Start year must not be later than end year
+                start_year, end_year = education_degree.get('start_year'), education_degree.get('end_year')
+                if (start_year and end_year) and (start_year > end_year):
+                    raise InvalidUsage('Start year of education cannot be later than end year of education',
+                                       custom_error.INVALID_USAGE)
+
                 education_degree_dict = dict(
                     list_order=education_degree.get('list_order'),
                     degree_type=education_degree['type'].strip() if education_degree.get('type') else None,
                     degree_title=education_degree['title'].strip() if education_degree.get('title') else None,
-                    start_year=education_degree.get('start_year'),
+                    start_year=start_year,
                     start_month=education_degree.get('start_month'),
-                    end_year=education_degree.get('end_year'),
+                    end_year=end_year,
                     end_month=education_degree.get('end_month'),
                     gpa_num=education_degree.get('gpa'),
                     added_time=added_datetime,
@@ -1388,6 +1427,16 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     # CandidateEducationDegree must belong to Candidate
                     if can_edu_degree_obj.candidate_education.candidate_id != candidate_id:
                         raise ForbiddenError('Unauthorized candidate degree', custom_error.DEGREE_FORBIDDEN)
+
+                    # If start year needs to be updated, it cannot be greater than existing end year
+                    if start_year and not end_year and (start_year > can_edu_degree_obj.end_year):
+                        raise InvalidUsage('Start year ({}) cannot be greater than end year ({})'.format(
+                            start_year, can_edu_degree_obj.end_year))
+
+                    # If end year needs to be updated, it cannot be less than existing start year
+                    if end_year and not start_year and (end_year < can_edu_degree_obj.start_year):
+                        raise InvalidUsage('End year ({}) cannot be less than start year ({})'.format(
+                            end_year, can_edu_degree_obj.start_year))
 
                     # Track all changes made to CandidateEducationDegree
                     track_edits(update_dict=education_degree_dict, table_name='candidate_education_degree',
@@ -1500,15 +1549,22 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
 
             # CandidateEducationDegree
             for education_degree in education_degrees:
+
+                # Start year must not be later than end year
+                start_year, end_year = education_degree.get('start_year'), education_degree.get('end_year')
+                if (start_year and end_year) and (start_year > end_year):
+                    raise InvalidUsage('Start year of education cannot be later than end year of education',
+                                       custom_error.INVALID_USAGE)
+
                 degree_type=education_degree['type'].strip() if education_degree.get('type') else None
                 degree_title=education_degree['title'].strip() if education_degree.get('title') else None
                 education_degree_dict = dict(
                     list_order=education_degree.get('list_order'),
                     degree_type=degree_type,
                     degree_title=degree_title,
-                    start_year=education_degree.get('start_year') if degree_title or degree_type else None,
+                    start_year=start_year if degree_title or degree_type else None,
                     start_month=education_degree.get('start_month') if degree_title or degree_type else None,
-                    end_year=education_degree.get('end_year') if degree_title or degree_type else None,
+                    end_year=end_year if degree_title or degree_type else None,
                     end_month=education_degree.get('end_month') if degree_title or degree_type else None,
                     gpa_num=education_degree.get('gpa') if degree_title or degree_type else None,
                     classification_type_id=classification_type_id_from_degree_type(education_degree.get('type')),
@@ -1596,6 +1652,10 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             elif not end_year and (start_year != latest_start_date):
                 end_year = start_year + 1
 
+        # Start year cannot be greater than end year
+        if (start_year and end_year) and start_year > end_year:
+            raise InvalidUsage('Start year ({}) cannot be greater than end year ({})'.format(start_year, end_year))
+
         country_code = work_experience['country_code'].upper().strip() if work_experience.get('country_code') else None
         subdivision_code = work_experience['subdivision_code'].upper().strip() \
             if work_experience.get('subdivision_code') else None
@@ -1605,6 +1665,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             position=work_experience['position'].strip() if work_experience.get('position') else None,
             city=work_experience['city'].strip() if work_experience.get('city') else None,
             iso3166_subdivision=subdivision_code,
+            state=(work_experience.get('state') or '').strip().lower(),
             iso3166_country=country_code,
             end_month=work_experience.get('end_month') or 1,
             start_year=start_year,
@@ -1627,6 +1688,15 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             # CandidateExperience must belong to Candidate
             if can_exp_obj.candidate_id != candidate_id:
                 raise ForbiddenError('Unauthorized candidate experience', custom_error.EXPERIENCE_FORBIDDEN)
+
+            # If start year needs to be updated, it must not be greater than existing end year
+            if start_year and not end_year and (start_year > can_exp_obj.end_year):
+                raise InvalidUsage('Start year ({}) cannot be greater than end year ({})'.format(start_year,
+                                                                                                 can_exp_obj.end_year))
+            # If end year needs to be updated, it must not be less than existing start year
+            if end_year and not start_year and (end_year < can_exp_obj.start_year):
+                raise InvalidUsage('End year ({}) cannot be less than start year ({})'.format(end_year,
+                                                                                              can_exp_obj.start_year))
 
             # Add up candidate's total months of experience
             update_total_months_experience(candidate, experience_dict, can_exp_obj)
@@ -1774,16 +1844,29 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id):
         db.session.add(CandidateWorkPreference(**work_preference_dict))
 
 
-def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
+def _add_or_update_emails(candidate, emails, user_id, is_updating):
     """
     Function will update CandidateEmail or create new one(s).
     """
+    candidate_id = candidate.id
+
+    # Strip all values from emails
+    emails = [purge_dict(email) for email in emails]
+
     # If any of emails' is_default is True, set all of candidate's emails' is_default to False
     if any([email.get('is_default') for email in emails]):
         CandidateEmail.set_is_default_to_false(candidate_id=candidate_id)
 
     emails_has_label = any([email.get('label') for email in emails])
     emails_has_default = any([email.get('is_default') for email in emails])
+
+    # Prevent duplicate email addresses
+    email_addresses = [email.get('address') for email in emails]
+    if len(set(email_addresses)) < len(emails):
+        raise InvalidUsage(error_message='Identical email addresses provided',
+                           error_code=custom_error.INVALID_USAGE,
+                           additional_error_info={'Duplicates': email_addresses})
+
     for i, email in enumerate(emails):
 
         # If there's no is_default, the first email should be default
@@ -1812,6 +1895,12 @@ def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
             if candidate_email_obj.candidate_id != candidate_id:
                 raise ForbiddenError('Unauthorized candidate email', custom_error.EMAIL_FORBIDDEN)
 
+            # Email must not belong to another candidate in the same domain
+            matching_email = CandidateEmail.get_email_in_users_domain(request.user.domain_id, email_address)
+            if matching_email and matching_email.candidate_id != candidate_id:
+                raise ForbiddenError("Email (address = {}) belongs to someone else!".
+                                     format(matching_email.address), custom_error.EMAIL_FORBIDDEN)
+
             # Track all changes
             track_edits(update_dict=email_dict, table_name='candidate_email',
                         candidate_id=candidate_id, user_id=user_id, query_obj=candidate_email_obj)
@@ -1820,29 +1909,53 @@ def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
             candidate_email_obj.update(**email_dict)
 
         else:  # Add
-            email = CandidateEmail.query.filter(CandidateEmail.address == email_address,
-                                                CandidateEmail.candidate_id == candidate_id).first()
-            # Prevent duplicate entries
-            if not email:
+            if is_updating:  # append email to existing candidate's records
+
+                # Email must not belong to another candidate in the same domain
+                matching_email = CandidateEmail.get_email_in_users_domain(request.user.domain_id, email_address)
+                if matching_email:
+                    if matching_email.candidate_id != candidate_id:
+                        raise ForbiddenError("Email (address = {}) belongs to someone else!".
+                                             format(matching_email.address), custom_error.EMAIL_FORBIDDEN)
+                    else:  # prevent adding duplicate email address(s) to candidate's records
+                        continue
+                # prevent adding duplicate email address(s) to candidate's records
+                elif do_emails_exist(candidate.emails, email_dict):
+                    continue
+
                 email_dict.update(dict(candidate_id=candidate_id))
                 db.session.add(CandidateEmail(**email_dict))
 
-                if is_updating:  # Track all updates
-                    track_edits(update_dict=email_dict, table_name='candidate_email',
-                                candidate_id=candidate_id, user_id=user_id)
+                # Track all changes
+                track_edits(update_dict=email_dict, table_name='candidate_email',
+                            candidate_id=candidate_id, user_id=user_id)
+
+            else:  # add email to new candidate
+                email_dict.update(dict(candidate_id=candidate_id))
+                db.session.add(CandidateEmail(**email_dict))
 
 
 def _add_or_update_phones(candidate, phones, user_id, is_updating):
     """
     Function will update CandidatePhone or create new one(s).
     """
+    candidate_id = candidate.id
+
     # If any of phones' is_default is True, set all of candidate's phones' is_default to False
-    candidate_id, candidate_phones = candidate.id, candidate.phones
     if any([phone.get('is_default') for phone in phones]):
         CandidatePhone.set_is_default_to_false(candidate_id)
 
+    # Check if phone label and default have been provided
     phones_has_label = any([phone.get('label') for phone in phones])
     phones_has_default = any([phone.get('is_default') for phone in phones])
+
+    # Check for duplicate values
+    phone_numbers = [phone.get('value') for phone in phones]
+    if len(set(phone_numbers)) < len(phones):
+        raise InvalidUsage(error_message='Identical phone numbers provided',
+                           error_code=custom_error.INVALID_USAGE,
+                           additional_error_info={'Duplicates': phone_numbers})
+
     for i, phone in enumerate(phones):
 
         # If there's no is_default, the first phone should be default
@@ -1851,6 +1964,13 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         phone_label = 'Home' if (not phones_has_label and i == 0) else (phone.get('label') or '').strip().title()
         # Format phone number
         value = (phone.get('value') or '').strip()
+
+        # Phone number must contain at least 7 digits
+        # http://stackoverflow.com/questions/14894899/what-is-the-minimum-length-of-a-valid-international-phone-number
+        number = re.sub('\D', '', value)
+        if len(number) < 7:
+            raise InvalidUsage("Phone number ({}) must be at least 7 digits".format(value), custom_error.INVALID_PHONE)
+
         iso3166_country_code = CachedData.country_codes[0] if CachedData.country_codes else None
         phone_number_obj = parse_phone_number(value, iso3166_country_code=iso3166_country_code) if value else None
         """
@@ -1860,12 +1980,19 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         # phonenumbers.format() will append "+None" if phone_number_obj.country_code is None
         if phone_number_obj:
             if not phone_number_obj.country_code:
-                value = phone_number_obj.national_number
+                value = str(phone_number_obj.national_number)
             else:
-                value = phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164)
+                value = str(phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164))
+
+        # Phone number must not belong to any other candidate in the same domain
+        matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(value, request.user)
+        if matching_phone_values and matching_phone_values[0].candidate_id != candidate_id:
+            raise ForbiddenError(error_message="Phone number ({}) belongs to someone else.".format(value),
+                                 error_code=custom_error.PHONE_FORBIDDEN)
 
         # Clear CachedData's country_codes to prevent aggregating unnecessary data
         CachedData.country_codes = []
+
         # if value:
         phone_dict = dict(
             value=value,
@@ -1903,13 +2030,28 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         else:  # Add
             if value:  # Value is required for creating phone
                 phone_dict.update(dict(candidate_id=candidate_id))
-                # Prevent duplicate entries
-                if not does_phone_exist(candidate_phones, phone_dict):
+
+                if is_updating:  # append phone to existing candidate's records
+
+                    # Prevent adding duplicate phone number(s) to candidate's profile
+                    if matching_phone_values and matching_phone_values[0].candidate_id == candidate_id:
+                        continue
+                    elif do_phones_exist(candidate.phones, phone_dict):
+                        continue
+
                     db.session.add(CandidatePhone(**phone_dict))
 
-                    if is_updating:  # Track all updates
-                        track_edits(update_dict=phone_dict, table_name='candidate_phone',
-                                    candidate_id=candidate_id, user_id=user_id)
+                    # Track all changes
+                    track_edits(update_dict=phone_dict, table_name='candidate_phone',
+                                candidate_id=candidate_id, user_id=user_id)
+                else:  # add phone to new candidate
+                    # Prevent adding duplicate phone number(s) to candidate's profile
+                    if matching_phone_values and matching_phone_values[0].candidate_id == candidate_id:
+                        continue
+                    elif do_phones_exist(candidate.phones, phone_dict):
+                            continue
+
+                    db.session.add(CandidatePhone(**phone_dict))
 
 
 def _add_or_update_military_services(candidate, military_services, user_id, is_updating):
@@ -2261,6 +2403,7 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
 class CachedData(object):
     """
     This class will contain data that may be required by other functions.
-    Should be cleared when its data is no longer needed
+    Note: Should be cleared when its data is no longer needed
     """
     country_codes = []
+    candidate_emails = []

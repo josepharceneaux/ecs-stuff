@@ -18,7 +18,6 @@ import requests
 from datetime import datetime, timedelta
 
 # Application Specific
-import sys
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.tests.conftest import fake, uuid
@@ -26,8 +25,7 @@ from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.models.misc import (UrlConversion, Frequency)
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity,
                                                           ForbiddenError)
-from email_campaign_service.common.routes import (EmailCampaignUrl, EmailCampaignEndpoints,
-                                                  HEALTH_CHECK)
+from email_campaign_service.common.routes import (EmailCampaignApiUrl, HEALTH_CHECK)
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailClient)
@@ -49,7 +47,7 @@ class TestGetCampaigns(object):
         """
          User auth token is invalid. It should get Unauthorized error.
         """
-        CampaignsTestsHelpers.request_with_invalid_token('get', EmailCampaignUrl.CAMPAIGNS, None)
+        CampaignsTestsHelpers.request_with_invalid_token('get', EmailCampaignApiUrl.CAMPAIGNS, None)
 
     def test_get_campaign_of_other_domain(self, email_campaign_in_other_domain, access_token_first):
         """
@@ -57,7 +55,7 @@ class TestGetCampaigns(object):
          ForbiddenError.
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            'get', EmailCampaignUrl.CAMPAIGN % email_campaign_in_other_domain.id,
+            'get', EmailCampaignApiUrl.CAMPAIGN % email_campaign_in_other_domain.id,
             access_token_first)
 
     def test_get_by_campaign_id(self, campaign_with_candidate_having_no_email,
@@ -68,7 +66,7 @@ class TestGetCampaigns(object):
         """
         email_campaign = get_campaign_or_campaigns(
             access_token_first, campaign_id=campaign_with_candidate_having_no_email.id)
-        assert_valid_campaign_get(email_campaign, campaign_with_candidate_having_no_email)
+        assert_valid_campaign_get(email_campaign, [campaign_with_candidate_having_no_email])
 
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
@@ -80,13 +78,13 @@ class TestGetCampaigns(object):
         This is the test to GET the campaign by providing campaign_id & filters.
         It should get OK response
         """
-        fields = ['id', 'subject', 'body_html', 'is_hidden']
+        fields = ['id', 'subject', 'body_html', 'body_text', 'is_hidden']
 
         email_campaign = get_campaign_or_campaigns(
             access_token_first,
             campaign_id=campaign_with_candidate_having_no_email.id,
             fields=fields)
-        assert_valid_campaign_get(email_campaign, campaign_with_candidate_having_no_email,
+        assert_valid_campaign_get(email_campaign, [campaign_with_candidate_having_no_email],
                                   fields=fields)
 
         # Test GET api of talent-pipelines/:id/campaigns
@@ -106,8 +104,9 @@ class TestGetCampaigns(object):
         # Test GET api of email campaign
         email_campaigns = get_campaign_or_campaigns(access_token_first)
         assert len(email_campaigns) == 2
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
-        assert_valid_campaign_get(email_campaigns[1], email_campaign_of_user_second)
+        reference_campaigns = [email_campaign_of_user_first, email_campaign_of_user_second]
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
+        assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
 
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
@@ -126,7 +125,8 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?per_page=1')
         assert len(email_campaigns) == 1
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
+        reference_campaigns = [email_campaign_of_user_first, email_campaign_of_user_second]
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
 
@@ -135,14 +135,14 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?per_page=1&page=2')
         assert len(email_campaigns) == 1
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_second)
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
 
         # Test GET api of email campaign with 2 results per_page
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?per_page=2')
         assert len(email_campaigns) == 2
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
-        assert_valid_campaign_get(email_campaigns[1], email_campaign_of_user_second)
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
+        assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
 
@@ -151,8 +151,8 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?&page=1')
         assert len(email_campaigns) == 2
-        assert_valid_campaign_get(email_campaigns[0], email_campaign_of_user_first)
-        assert_valid_campaign_get(email_campaigns[1], email_campaign_of_user_second)
+        assert_valid_campaign_get(email_campaigns[0], reference_campaigns)
+        assert_valid_campaign_get(email_campaigns[1], reference_campaigns)
 
         # Test GET api of email campaign with page = 2. No campaign should be received in response
         # as we have created only two campaigns so far and default per_page is 10.
@@ -166,7 +166,7 @@ class TestCreateCampaign(object):
     Here are the tests for creating a campaign from endpoint /v1/email-campaigns
     """
     HTTP_METHOD = 'post'
-    URL = EmailCampaignUrl.CAMPAIGNS
+    URL = EmailCampaignApiUrl.CAMPAIGNS
 
     def test_create_campaign_with_invalid_token(self):
         """
@@ -353,7 +353,7 @@ class TestSendCampaign(object):
     Here are the tests for sending a campaign from endpoint /v1/email-campaigns/send
     """
     HTTP_METHOD = 'post'
-    URL = EmailCampaignUrl.SEND
+    URL = EmailCampaignApiUrl.SEND
 
     def test_campaign_send_with_invalid_token(self, email_campaign_of_user_first):
         """
@@ -380,13 +380,19 @@ class TestSendCampaign(object):
                                               assign_roles_to_user_first, talent_pipeline):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
-        no candidate associated with it. It should get invalid usage error.
-        Custom error should be NoCandidateAssociatedWithSmartlist .
+        no candidate associated with it. Campaign sending should fail and no blasts should be
+        created.
         """
         with app.app_context():
-            CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
+            response = CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
                 self.URL % email_campaign_of_user_first.id, access_token_first,
                 email_campaign_of_user_first, talent_pipeline.id)
+            CampaignsTestsHelpers.assert_campaign_failure(response, email_campaign_of_user_first,
+                                                          expected_status=200)
+            if not email_campaign_of_user_first.email_client_id:
+                json_resp = response.json()
+                assert str(email_campaign_of_user_first.id) in json_resp['message']
+
 
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
                                                      email_campaign_in_other_domain):
@@ -411,30 +417,38 @@ class TestSendCampaign(object):
             self, access_token_first, campaign_with_candidate_having_no_email):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has one
-        candidate having no email associated. So, Custom error should be raised.
+        candidate having no email associated. So, sending email campaign should fail.
         """
-        CampaignsTestsHelpers.campaign_test_with_no_valid_candidate(
+        response = requests.post(
             self.URL % campaign_with_candidate_having_no_email.id,
-            access_token_first, campaign_with_candidate_having_no_email.id)
+            headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_campaign_failure(response, campaign_with_candidate_having_no_email,
+                                                      requests.codes.OK)
+        if not campaign_with_candidate_having_no_email.email_client_id:
+            json_resp = response.json()
+            assert str(campaign_with_candidate_having_no_email.id) in json_resp['message']
+
 
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
             self, access_token_first, user_first, campaign_with_valid_candidate):
         """
-        User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates associated (with distinct email addresses). Email Campaign should be sent to
-        both candidates.
+        Tests sending a campaign with one smartlist. That smartlist has, in turn,
+        two candidates associated with it. Those candidates have unique email addresses.
+        Campaign emails should be sent to 2 candidates so number of sends should be 2.
         """
+
+        no_of_sends = 2
         campaign = campaign_with_valid_candidate
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_campaign_send(response, campaign, user_first, 2)
+        assert_campaign_send(response, campaign, user_first, no_of_sends)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
             self, access_token_first, user_first, campaign_with_valid_candidate):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates associated (with same email addresses). Email Campaign should not be sent to
-        any candidate. Response should get Invalid usage.
+        any candidate.
         """
         same_email = fake.email()
         for candidate in user_first.candidates:
@@ -442,7 +456,10 @@ class TestSendCampaign(object):
         response = requests.post(
             self.URL % campaign_with_valid_candidate.id,
             headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response.status_code == InvalidUsage.http_status_code()
+        assert_campaign_send(response, campaign_with_valid_candidate, user_first, 1)
+        if not campaign_with_valid_candidate.email_client_id:
+            json_resp = response.json()
+            assert str(campaign_with_valid_candidate.id) in json_resp['message']
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_diff_domain(
             self, access_token_first, user_first,
@@ -455,13 +472,13 @@ class TestSendCampaign(object):
         campaign = campaign_with_candidates_having_same_email_in_diff_domain
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_campaign_send(response, campaign, user_first, 2)
+        assert_campaign_send(response, campaign, user_first, 2, abort_time_for_sends=300)
 
     def test_campaign_send_with_email_client_id(
             self, send_email_campaign_by_client_id_response, user_first):
         """
         Email client can be Outlook Plugin, Browser etc.
-        User auth token is valid, campaign has one smart list associated. Smartlist has tow
+        User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates with email address. Email Campaign should be not be sent to candidate as
         we are providing client_id. Response should be something like
             {
@@ -514,7 +531,7 @@ class TestSendCampaign(object):
         opens_count_before = email_campaign_blast.opens
         hit_count_before = url_conversion.hit_count
         response = requests.get(redirect_url)
-        assert response.status_code == 200
+        assert response.status_code == requests.codes.OK
         db.session.commit()
         opens_count_after = email_campaign_blast.opens
         hit_count_after = url_conversion.hit_count
@@ -547,14 +564,27 @@ class TestSendCampaign(object):
                                          email_campaign_id=campaign.id)
         response = requests.post(
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_campaign_send(response, campaign, user_first, 40, abort_time_for_sends=40)
+        assert_campaign_send(response, campaign, user_first, 40, abort_time_for_sends=300)
+
+    def test_send_campaign_with_two_smartlists_having_same_candidate(
+            self, access_token_first, user_first, campaign_with_same_candidate_in_multiple_smartlists):
+        """
+        This function creates two smartlists with 1 candidate each, candidate is same in both smartlists and
+        associates them with a campaign. Sends that campaign and tests if email is sent to the candidate only once.
+        :param access_token_first: Access token of user_first
+        :param user_first: Valid user from fist domain
+        :param campaign_with_same_candidate_in_multiple_smartlists: Fixture to create required email-campaign
+        """
+        campaign = campaign_with_same_candidate_in_multiple_smartlists
+        response = requests.post(self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+        assert_campaign_send(response, campaign, user_first, expected_count=1)
 
 
 # Test for healthcheck
 def test_health_check():
-    response = requests.get(EmailCampaignEndpoints.HOST_NAME % HEALTH_CHECK)
-    assert response.status_code == 200
+    response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK)
+    assert response.status_code == requests.codes.OK
 
     # Testing Health Check URL with trailing slash
-    response = requests.get(EmailCampaignEndpoints.HOST_NAME % HEALTH_CHECK + '/')
-    assert response.status_code == 200
+    response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK + '/')
+    assert response.status_code == requests.codes.OK

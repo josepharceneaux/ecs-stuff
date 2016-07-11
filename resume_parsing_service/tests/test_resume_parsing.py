@@ -4,13 +4,9 @@ __author__ = 'erik@getTalent.com'
 # Standard library
 import json
 import os
-import random
 # Third party
 import requests
 # Module Specific.
-from resume_parsing_service.common.utils.handy_functions import random_word
-from resume_parsing_service.app import redis_store
-from resume_parsing_service.app.views.batch_lib import add_fp_keys_to_queue
 # Test fixtures, imports required even though not 'used'
 # TODO: Look into importing these once and use via namespacing.
 from resume_parsing_service.tests.test_fixtures import client_fixture
@@ -26,11 +22,10 @@ from resume_parsing_service.tests.test_fixtures import phone_label_fixture
 from resume_parsing_service.tests.test_fixtures import product_fixture
 from resume_parsing_service.tests.test_fixtures import talent_pool_fixture
 from resume_parsing_service.tests.test_fixtures import talent_pool_group_fixture
-from resume_parsing_service.common.routes import ResumeApiUrl, ResumeApi, SchedulerApiUrl
+from resume_parsing_service.common.routes import ResumeApiUrl
 
 from resume_parsing_service.common.models.user import DomainRole
 from resume_parsing_service.common.utils.handy_functions import add_role_to_test_user
-from resume_parsing_service.common.utils.test_utils import response_info
 
 DOC_FP_KEY = '0169173d35beaf1053e79fdf1b5db864.docx'
 PDF15_FP_KEY = 'e68b51ee1fd62db589d2669c4f63f381.pdf'
@@ -41,12 +36,6 @@ REDIS_EXPIRE_TIME = 10
 ####################################################################################################
 # Static URL tests
 ####################################################################################################
-def test_base_url():
-    """Test that the application root lists the endpoint."""
-    base_response = requests.get(ResumeApiUrl.API_URL % '')
-    assert ResumeApi.PARSE in base_response.content
-
-
 def test_health_check():
     """HealthCheck/PingDom test endpoint."""
     response = requests.get(ResumeApiUrl.HEALTH_CHECK)
@@ -79,14 +68,14 @@ def test_none_fp_key(token_fixture, user_fixture):
 def test_posting_no_file(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
     invalid_post = requests.post(ResumeApiUrl.PARSE,
-                                  headers={
-                                      'Authorization': 'Bearer {}'.format(
-                                          token_fixture.access_token),
-                                      'Content-Type': 'application/json'
-                                  },
-                                  data=json.dumps({'resume_file_name': 'foobarbaz',
-                                                   'create_candidate': True})
-                                 )
+                                 headers={
+                                     'Authorization': 'Bearer {}'.format(
+                                         token_fixture.access_token),
+                                     'Content-Type': 'application/json'
+                                 },
+                                 data=json.dumps({'resume_file_name': 'foobarbaz',
+                                                  'create_candidate': True})
+                                )
     content = json.loads(invalid_post.content)
     assert 'error' in content
     assert invalid_post.status_code == requests.codes.bad_request
@@ -95,14 +84,14 @@ def test_posting_no_file(token_fixture, user_fixture):
 def test_posting_None_file(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
     invalid_post = requests.post(ResumeApiUrl.PARSE,
-                                  headers={
-                                      'Authorization': 'Bearer {}'.format(
-                                          token_fixture.access_token),
-                                      'Content-Type': 'application/json'
-                                  },
-                                  data=json.dumps({'resume_file': None,
-                                                   'create_candidate': True})
-                                 )
+                                 headers={
+                                     'Authorization': 'Bearer {}'.format(
+                                         token_fixture.access_token),
+                                     'Content-Type': 'application/json'
+                                 },
+                                 data=json.dumps({'resume_file': None,
+                                                  'create_candidate': True})
+                                )
     content = json.loads(invalid_post.content)
     assert 'error' in content
     assert invalid_post.status_code == requests.codes.bad_request
@@ -110,14 +99,13 @@ def test_posting_None_file(token_fixture, user_fixture):
 
 def test_talent_pool_error(token_fixture):
     invalid_post = requests.post(ResumeApiUrl.PARSE,
-                                  headers={
-                                      'Authorization': 'Bearer {}'.format(
-                                          token_fixture.access_token),
-                                      'Content-Type': 'application/json'
-                                  },
-                                  data=json.dumps({'resume_file_name': 'foobarbaz',
-                                                   'create_candidate': True})
-                                 )
+                                 headers={
+                                     'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+                                     'Content-Type': 'application/json'
+                                 },
+                                 data=json.dumps({'resume_file_name': 'foobarbaz',
+                                                  'create_candidate': True})
+                                )
     content = json.loads(invalid_post.content)
     assert 'error' in content
     assert invalid_post.status_code == requests.codes.bad_request
@@ -145,17 +133,29 @@ def test_invalid_token_fails():
 def test_bad_header(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_GET_TALENT_POOLS])
     invalid_post = requests.post(ResumeApiUrl.PARSE,
-                                  headers={
-                                      'Authorization': 'Bearer {}'.format(
-                                          token_fixture.access_token),
-                                      'Content-Type': 'text/csv'
-                                  },
-                                  data=json.dumps({'resume_file_name': 'foobarbaz',
-                                                   'create_candidate': True})
-                                 )
+                                 headers={
+                                     'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+                                     'Content-Type': 'text/csv'
+                                 },
+                                 data=json.dumps({'resume_file_name': 'foobarbaz',
+                                                  'create_candidate': True})
+                                )
     content = json.loads(invalid_post.content)
     assert 'error' in content
     assert invalid_post.status_code == requests.codes.bad_request
+
+
+def test_blank_file(token_fixture, user_fixture):
+    content, status = fetch_resume_fp_key_response(token_fixture, 'blank.txt')
+    assert 'error' in content, "There should be an error if no text can be extracted."
+
+
+def test_picture_not_resume(token_fixture, user_fixture):
+    content, status = fetch_resume_post_response(token_fixture, 'notResume.jpg')
+    assert 'error' in content, "There should be an error Because it's a picture of a backyard."
+
+    content, status = fetch_resume_post_response(token_fixture, 'notResume2.jpg')
+    assert 'error' in content, "There should be an error Because it's a picture of food."
 
 
 ####################################################################################################
@@ -278,6 +278,14 @@ def test_no_multiple_skills(token_fixture, user_fixture):
         skills_set.add(skill['name'])
     assert len(skills) == len(skills_set)
 
+
+def test_encrypted_resume(token_fixture, user_fixture):
+    """Test that encrypted pdf files that are posted to the end point can be parsed."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'jDiMaria.pdf')
+    assert_non_create_content_and_status(content, status)
+
 ####################################################################################################
 # Test Candidate Creation
 ####################################################################################################
@@ -285,7 +293,8 @@ def test_v15_pdf_by_post_with_create(token_fixture, user_fixture):
     """Test that v1.5 pdf files can be posted."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS,
-                                         DomainRole.Roles.CAN_GET_CANDIDATES])
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES])
     content, status = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
@@ -293,7 +302,8 @@ def test_v15_pdf_by_post_with_create(token_fixture, user_fixture):
 def test_doc_FP_with_create(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES])
     content, status = fetch_resume_fp_key_response(token_fixture, DOC_890, create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
@@ -302,7 +312,8 @@ def test_985_from_fp_key(token_fixture, user_fixture):
     """Test that .doc files from S3 can be parsed."""
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS,
-                                         DomainRole.Roles.CAN_GET_CANDIDATES])
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES])
     content, status = fetch_resume_fp_key_response(token_fixture, "Bruncak.Daren.doc", create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
@@ -310,15 +321,26 @@ def test_985_from_fp_key(token_fixture, user_fixture):
 def test_create_candidate_from_resume_without_name(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES])
     content, status = fetch_resume_post_response(token_fixture, 'Adams.John.doc', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+
+
+def test_create_candidate_from_resume_ben_fred(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES])
+    content, status = fetch_resume_post_response(token_fixture, 'ben.fred.doc', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
 def test_create_candidate_from_no_email_resume(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES])
     content, status = fetch_resume_post_response(token_fixture, 'no_email_resume.doc', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
@@ -326,7 +348,8 @@ def test_create_candidate_from_no_email_resume(token_fixture, user_fixture):
 def test_create_candidate_from_no_address_resume(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES])
     content, status = fetch_resume_post_response(token_fixture, 'no_address.doc', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
@@ -337,6 +360,28 @@ def test_create_with_references(token_fixture, user_fixture):
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_post_response(token_fixture, 'GET_1210.doc', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+
+
+def test_create_with_long_punc_name(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'GET-1319.pdf', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+    assert content['candidate']['last_name'] == u'Weston'
+
+
+def test_create_from_image(token_fixture, user_fixture):
+    """
+    Test for GET-1351. POST'd JSON.
+    """
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'test_bin.jpg', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 
@@ -355,85 +400,6 @@ def test_already_exists_candidate(token_fixture, user_fixture):
     assert_create_or_update_content_and_status(update_content, status)
 
 
-#TODO: Commenting this for erik (basit)
-####################################################################################################
-# Batch Processing tests
-####################################################################################################
-# def test_batch_processing(user_fixture, token_fixture):
-#     # create a single file queue
-#     user_id = user_fixture.id
-#     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-#                                          DomainRole.Roles.CAN_GET_TALENT_POOLS,
-#                                          DomainRole.Roles.CAN_GET_CANDIDATES])
-#     queue_string = 'batch:{}:fp_keys'.format(user_id)
-#     unused_queue_status = add_fp_keys_to_queue([PDF15_FP_KEY], user_id, token_fixture.access_token)
-#     # mock hit from scheduler service.
-#     batch_response = requests.get('{}/{}'.format(ResumeApiUrl.BATCH_URL, user_id),
-#                                   headers={'Authorization': 'bearer {}'.format(
-#                                       token_fixture.access_token)})
-#     formatted_response = json.loads(batch_response.content)
-#     redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
-#     assert 'candidate' in formatted_response, "Candidate should be in response content"
-
-
-# Unittest Style - located here due to conversion to flask redis which requires app context.
-def test_add_single_queue_item(token_fixture):
-    """Test adding a single item to a users queue stored in Redis"""
-    user_id = random_word(6)
-    queue_string = 'batch:{}:fp_keys'.format(user_id)
-    response = add_fp_keys_to_queue(['file1a'], user_id, 'bearer {}'.format(
-        token_fixture.access_token))
-    redis_store.expire(queue_string, 1)
-    assert response['redis_key'] == queue_string, "Queue key format is not what was anticipated"
-    assert response['quantity'] == 1, "Single queue-add count is not 1"
-
-
-# Integration test of the above.
-def test_integration_add_single_item(user_fixture, token_fixture):
-    print "Single batch item integration test"
-    """Test adding a single item via end point."""
-    auth_headers = {'Authorization': 'bearer {}'.format(token_fixture.access_token),
-                    'Content-Type': 'application/json'}
-    queue_string = 'batch:{}:fp_keys'.format(user_fixture.id)
-    #TODO assert no queue
-    response = requests.post(ResumeApiUrl.BATCH_URL,
-                             headers=auth_headers,
-                             data=json.dumps({'filenames': ['file1b']})
-                            )
-    print response_info(response)
-    assert response.status_code == requests.codes.created
-    response_dict = json.loads(response.content)
-    job_id = response_dict['ids'][0]
-    assert response_dict['redis_key'] == queue_string, (
-        'Improperly Formatted redis post response for single item')
-    assert response_dict['quantity'] == 1, (
-        'Improperly count in redis post response for single item')
-    redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
-    unused_delete_request = requests.delete(SchedulerApiUrl.TASK % (job_id),
-                                            headers={'Authorization': 'bearer {}'.format(token_fixture.access_token)})
-
-def test_add_multiple_queue_items(token_fixture):
-    """Tests adding n-100 items to a users queue stored in Redis"""
-    user_id = random_word(6)
-    file_count = random.randrange(1, 15)
-    filenames = ['file{}c'.format(i) for i in xrange(file_count)]
-    queue_string = 'batch:{}:fp_keys'.format(user_id)
-    queue_status = add_fp_keys_to_queue(filenames, user_id,
-                                        'bearer {}'.format(token_fixture.access_token))
-    assert queue_status['redis_key'] == queue_string, (
-        'Improperly Formatted redis post response for multiple items')
-    assert queue_status['quantity'] == file_count, (
-        'Improperly count in redis post response for multiple item')
-    assert len(queue_status['ids']) == file_count, (
-        'Improperly id count in redis response for multiple items')
-    redis_store.expire(queue_string, REDIS_EXPIRE_TIME)
-    # Clean up the queue...
-    auth_headers = {'Authorization': 'bearer {}'.format(token_fixture.access_token)}
-    for id in queue_status['ids']:
-        unused_delete_request = requests.delete(SchedulerApiUrl.TASK % (id),
-                                         headers=auth_headers)
-
-
 ####################################################################################################
 # Test Helper/Utility Functions
 ####################################################################################################
@@ -445,7 +411,9 @@ def fetch_resume_post_response(token_fixture, file_name, create_mode=False):
                                  headers={'Authorization': 'Bearer {}'.format(
                                      token_fixture.access_token)},
                                  data={
-                                     'resume_file_name': file_name, 'create_candidate':create_mode},
+                                     # 'Local Test Upload' prefix.
+                                     'resume_file_name': 'LTU_{}'.format(file_name),
+                                     'create_candidate':create_mode},
                                  files=dict(resume_file=resume_file)
                                 )
     content = json.loads(response.content)
@@ -462,6 +430,8 @@ def fetch_resume_fp_key_response(token_fixture, fp_key, create_mode=False):
                                       'Content-Type': 'application/json'
                                   },
                                   data=json.dumps({'filepicker_key': fp_key,
+                                                   # 'Local Test Upload' prefix.
+                                                   'resume_file_name': 'LTU_{}'.format(fp_key),
                                                    'create_candidate': create_mode})
                                  )
     content = json.loads(test_response.content)

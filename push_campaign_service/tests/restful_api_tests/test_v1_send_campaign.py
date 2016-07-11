@@ -90,23 +90,55 @@ class TestSendCampaign(object):
         # is not allowed to send this campaign
         send_campaign(campaign_in_db['id'], token_second, expected_status=(codes.FORBIDDEN,))
 
-    def test_campaign_send_with_multiple_smartlists(self, token_first,
-                                                    campaign_in_db_multiple_smartlists):
+    # def test_campaign_send_with_multiple_smartlists(self, token_first,
+    #                                                 campaign_in_db_multiple_smartlists):
+    #     """
+    #     - This tests the endpoint /v1/push-campaigns/:id/send
+    #
+    #     User auth token_first is valid, campaign has one smart list associated. Smartlist has one
+    #     candidate.
+    #     """
+    #     campaign_id = campaign_in_db_multiple_smartlists['id']
+    #     send_campaign(campaign_id, token_first, expected_status=(codes.OK,))
+    #     response = retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
+    #                      args=(campaign_id, token_first), kwargs={'count': 1})
+    #     blasts = response['blasts']
+    #     blast_id = blasts[0]['id']
+    #     response = retry(get_blast_sends, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
+    #                      args=(blast_id, campaign_id, token_first), kwargs={'count': 2})
+    #     assert len(response['sends']) == 2
+
+    def test_campaign_send_to_smartlist_with_two_candidates_with_and_without_push_device(self, token_first,
+                                                    campaign_with_two_candidates_with_and_without_push_device):
         """
         - This tests the endpoint /v1/push-campaigns/:id/send
-
-        User auth token_first is valid, campaign has one smart list associated. Smartlist has one
-        candidate.
+        In this test I want to test the scenario that if a push campaign is being sent to multiple candidates and
+        there is one or more but not all candidates that do not have a push device associated with them,
+        then it should not raise an InvalidUsage error but sends should be equal to number of candidates
+        that have devices associated with them.
         """
-        campaign_id = campaign_in_db_multiple_smartlists['id']
+        campaign_id = campaign_with_two_candidates_with_and_without_push_device['id']
         send_campaign(campaign_id, token_first, expected_status=(codes.OK,))
         response = retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(campaign_id, token_first), kwargs={'count': 1})
         blasts = response['blasts']
         blast_id = blasts[0]['id']
+        
+        # There should be only one send because second candidate in smartlist does not have any push device associated
+        # with him.
         response = retry(get_blast_sends, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
-                         args=(blast_id, campaign_id, token_first), kwargs={'count': 2})
-        assert len(response['sends']) == 2
+                         args=(blast_id, campaign_id, token_first), kwargs={'count': 1})
+        assert len(response['sends']) == 1
+
+    def test_campaign_send_to_smartlist_with_two_candidates_with_no_push_device(self, token_first,
+                                                    campaign_with_two_candidates_with_no_push_device_associated):
+        """
+        - This tests the endpoint /v1/push-campaigns/:id/send
+        In this test I want to test the scenario that if a push campaign is being sent to multiple candidates
+        and there is no push device associated with any candidate, then API will raise InvalidUsage error
+        """
+        campaign_id = campaign_with_two_candidates_with_no_push_device_associated['id']
+        send_campaign(campaign_id, token_first, expected_status=(codes.BAD_REQUEST,))
 
     def test_campaign_send_to_candidate_with_no_device(self, token_first, campaign_in_db):
         """

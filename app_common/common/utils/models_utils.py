@@ -49,7 +49,6 @@ from types import MethodType
 # Third Party
 from flask import Flask
 from sqlalchemy import inspect
-from sqlalchemy.exc import InvalidRequestError
 from flask.ext.cors import CORS
 from healthcheck import HealthCheck
 from flask.ext.sqlalchemy import BaseQuery
@@ -242,7 +241,7 @@ def get_by_id(cls, _id):
 
 
 @classmethod
-def delete(cls, ref, app=None):
+def delete(cls, ref, app=None, commit_session=True):
     """
     This method deletes a record from database given by id and the calling Model class.
     :param cls: model class, some child class of db.Model
@@ -250,6 +249,8 @@ def delete(cls, ref, app=None):
     :type ref: int | model object
     :param app: flask app, if someone wants to run this method using app_context
     :type app: Flask obj
+    :param commit_session: True if we want to commit the session per deletion
+    :type commit_session: bool
     :return: Boolean
     :rtype: bool
 
@@ -272,7 +273,8 @@ def delete(cls, ref, app=None):
         else:
             obj = ref
         db.session.delete(obj)
-        db.session.commit()
+        if commit_session:
+            db.session.commit()
     except Exception as error:
         db.session.rollback()
         if isinstance(app, Flask):
@@ -281,6 +283,18 @@ def delete(cls, ref, app=None):
                     "Couldn't delete record from db. Error is: %s" % error.message)
         return False
     return True
+
+
+@classmethod
+def get_invalid_fields(cls, data_to_be_verified):
+    """
+    This takes some data in dict from and checks if there is any key which is not a ATTRIBUTE of given model.`
+    It then returns all such fields in a list format.
+    :param db.Model cls: Database model class
+    :param dict data_to_be_verified: Dictionary of data.
+    :rtype: list
+    """
+    return [key for key in data_to_be_verified if key not in cls.__table__.columns]
 
 
 def add_model_helpers(cls):
@@ -310,7 +324,8 @@ def add_model_helpers(cls):
     cls.get = get_by_id
     # This method deletes an instance
     cls.delete = delete
-
+    # Register get_unexpected_fields() on model instance
+    cls.get_invalid_fields = get_invalid_fields
     # Sometimes we have lazy relationship, that is actually just a query (AppenderQuery instance)
     # it contains all methods like filter, filter_by, first, all etc but not paginate, so we are patching `paginate`
     # method from BaseQuery class to AppenderQuery class to get pagination functionality

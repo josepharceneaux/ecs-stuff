@@ -15,4 +15,3 @@ app.register_blueprint(sms_campaign_blueprint)
 @app.route('/')
 def root():
     return 'Welcome to SMS Campaign Service'
-

@@ -5,6 +5,7 @@ pip install -r requirements.txt
 
 # Build Docker Images
 sudo service docker restart
+sudo service mysql restart
 sudo usermod -aG docker jenkins
 
 # Stopping all containers and removing all dangling images from Jenkins container
@@ -33,7 +34,8 @@ cd scheduler_service_admin && tar -czh . | docker build -t gettalent/scheduler-s
 # Reset Database and Amazon Cloud Search
 export PYTHONPATH=.
 python setup_environment/reset_database_and_cloud_search.py
-# Running Docker Containers for all apps before testing them
+
+# Start Docker Containers for all apps before testing them
 
 ENV_VARIABLES=("GT_ENVIRONMENT" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY")
 
@@ -64,7 +66,4 @@ done
 
 sleep 10
 
-py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_service/tests spreadsheet_import_service/tests email_campaign_service/tests sms_campaign_service/tests candidate_pool_service/tests resume_parsing_service/tests push_campaign_service/tests
-
-# Build and test the scheduler admin app
-
+py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests sms_campaign_service/tests resume_parsing_service/tests push_campaign_service/tests candidate_service/tests email_campaign_service/tests

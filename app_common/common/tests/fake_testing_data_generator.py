@@ -1,5 +1,6 @@
 import uuid, random
 from faker import Faker
+import phonenumbers
 from ..utils.handy_functions import sample_phone_number
 
 fake = Faker()
@@ -42,7 +43,8 @@ class FakeCandidatesData(object):
                 # 'added_time': {True: datetime.datetime.now(), False: None}.get(added_time, added_time),
                 'emails': {True: cls.create_emails_list(), False: None}.get(emails_list, emails_list),
                 'addresses': cls.create_address_list() if address_list is True else address_list,
-                'phones': [{"label": "mobile", "value": sample_phone_number(), "is_default": True}] if create_phone else []}
+                'phones': [
+                    {"label": "mobile", "value": sample_phone_number(), "is_default": True}] if create_phone else []}
             candidates.append(candidate)
         return {'candidates': candidates}
 
@@ -78,3 +80,23 @@ def college_majors():
         ]
     }
     return majors
+
+
+def generate_international_phone_number(extension=False):
+    """
+    Function will generate a valid international phone number
+    :param extension:  If True, phone number will have an extension
+    :rtype:  str
+    """
+    phone_number = '{}'.format(random.randint(1, 9))  # phone number must start with a non-zero value
+    while len(phone_number) < 10:  # phone number must have 10 digits
+        phone_number += str(random.randint(0, 9))
+
+    # Add country code to the beginning of the phone number
+    phone_number = '+' + str(phonenumbers.country_code_for_valid_region(region_code=fake.country_code())) + phone_number
+
+    # Generate and append random extension to phone number
+    if extension:
+        ext = ''.join(map(str, (random.randrange(9) for _ in range(random.randint(2, 3)))))
+        phone_number += ('x' + ext)
+    return phone_number

@@ -15,7 +15,7 @@ from flask.ext.restful import Resource
 # Application imports
 from scheduler_service import logger, SchedulerUtils
 from scheduler_service.api.scheduler_tests_api import raise_if_scheduler_not_running, check_job_state, \
-    dummy_request_method
+    dummy_request_method, test_dummy_endpoint_hits
 from scheduler_service.common.models.user import DomainRole, User
 from scheduler_service.common.routes import SchedulerApi
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse, get_pagination_params
@@ -24,7 +24,7 @@ from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFou
 from scheduler_service.common.utils.auth_utils import require_oauth, require_all_roles
 from scheduler_service.custom_exceptions import SchedulerServiceApiException
 from scheduler_service.modules.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, \
-    scheduler_remove_job
+    scheduler_remove_job, serialize_task_admin, get_user_job_ids, get_all_general_job_ids, get_general_job_id
 from scheduler_service.modules.scheduler_admin import filter_jobs_using_task_type, \
     filter_jobs_using_task_category, filter_paused_jobs
 
@@ -46,41 +46,26 @@ class Tasks(Resource):
         This action returns a list of user tasks and their count
         :return tasks_data: a dictionary containing list of tasks and their count
         :rtype json
-
-
         :Example (in case of pagination):
             By default, it will return 10 jobs (max)
-
             Case 1:
-
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/v1/tasks?page=3', headers=headers)
-
             # Returns 10 jobs ranging from 30-39
-
             Case 2:
-
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/v1/tasks?page=5&per_page=12', headers=headers)
-
             # Returns 12 jobs ranging from 48-59
-
         :Example:
         In case of authenticated user
-
             headers = {'Authorization': 'Bearer <access_token>'}
             response = requests.get(API_URL + '/v1/tasks/', headers=headers)
-
         In case of SECRET_KEY
-
             headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>'}
             response = requests.get(API_URL + '/v1/tasks/', headers=headers)
-
         .. Response::
-
             {
-                "count": 1,
                 "tasks": [
                     {
                         "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
@@ -100,11 +85,9 @@ class Tasks(Resource):
                     }
                ]
             }
-
         .. Status:: 200 (OK)
                     400 (Invalid Usage)
                     500 (Internal Server Error)
-
         """
         # In case of higher number of scheduled task running for a particular user and user want to get only
         # a limited number of jobs by specifying page and per_page parameter, then return only specified jobs
@@ -134,8 +117,12 @@ class Tasks(Resource):
         user_id = request.user.id if request.user else None
 
         raise_if_scheduler_not_running()
-        tasks = scheduler.get_jobs()
-        tasks = filter(lambda _task: _task.args[0] == user_id, tasks)
+        if user_id:
+            task_ids = get_user_job_ids(user_id=user_id)
+        else:
+            task_ids = get_all_general_job_ids()
+
+        tasks = [scheduler.get_job(task_id) for task_id in task_ids]
         tasks_count = len(tasks)
         # If page is 1, and per_page is 10 then task_indices will look like list of integers e.g [0-9]
         task_indices = range((page-1) * per_page, page * per_page)
@@ -155,7 +142,6 @@ class Tasks(Resource):
     def post(self):
         """
         This method takes data to create or schedule a task for scheduler.
-
         :Example:
             for interval or periodic schedule
             task = {
@@ -185,30 +171,23 @@ class Tasks(Resource):
                     "content": "content to be sent as email"
                 }
             }
-
             In case of authenticated user
-
             headers = {
                         'Authorization': 'Bearer <access_token>',
                         'Content-Type': 'application/json'
                        }
-
             In case of SECRET_KEY
-
             headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>',
                         'Content-Type': 'application/json'
                         }
-
             data = json.dumps(task)
             response = requests.post(
                                         API_URL + '/v1/tasks/',
                                         data=data,
                                         headers=headers,
                                     )
-
         .. Response::
-
             {
                 "id" : "5das76nbv950nghg8j8-33ddd3kfdw2"
             }
@@ -216,7 +195,6 @@ class Tasks(Resource):
                     400 (Bad Request)
                     401 (Unauthorized to access getTalent)
                     500 (Internal Server Error)
-
         :return: id of created task
         """
         # get JSON post request data
@@ -238,7 +216,6 @@ class Tasks(Resource):
         Deletes multiple tasks whose ids are given in list in request data.
         :param kwargs:
         :return:
-
         :Example:
             task_ids = {
                 'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
@@ -253,9 +230,7 @@ class Tasks(Resource):
                                         data=data,
                                         headers=headers,
                                     )
-
         .. Response::
-
             {
                 'message': '3 task have been removed successfully'
             }
@@ -263,7 +238,6 @@ class Tasks(Resource):
                     207 (Not all removed)
                     400 (Bad request)
                     500 (Internal Server Error)
-
         """
 
         user_id = request.user.id
@@ -427,15 +401,11 @@ class TaskByName(Resource):
         :type _name: str
         :return task: a dictionary containing a task data
         :rtype json
-
         :Example:
-
         In case of SECRET_KEY
-
             headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>'}
             response = requests.get(API_URL + '/v1/tasks/name/custom_task', headers=headers)
-
         .. Response::
             {
                for one time scheduled task
@@ -478,15 +448,15 @@ class TaskByName(Resource):
         .. Status:: 200 (OK)
                     404 (Task not found)
                     500 (Internal Server Error)
-
         """
         user_id = request.user.id if request.user else None
         raise_if_scheduler_not_running()
-        tasks = scheduler.get_jobs()
-        task = [task for task in tasks if task.name == _name and task.args[0] is None]
+        task_id = get_general_job_id(_name)
+        task = scheduler.get_job(task_id)
         # Make sure task is valid and belongs to non-logged-in user
-        if task and user_id is None:
-            task = serialize_task(task[0])
+        # task.arg[0] contains user_id and if it is none then it is a general job
+        if task and not user_id and not task.args[0]:
+            task = serialize_task(task)
             if task:
                 return dict(task=task)
         raise ResourceNotFound(error_message="Task with name %s not found" % _name)
@@ -495,35 +465,29 @@ class TaskByName(Resource):
     def delete(self, _name):
         """
         Deletes/removes a tasks from scheduler jobstore
-        :param kwargs:
         :param _name: name of general task
+        :type _name: str
         :return:
-
         :Example:
         In case of SECRET_KEY
-
             headers = {'Authorization': 'Bearer <access_token>',
                         'X-Talent-Server-Key-ID': '<secret_key>'}
             response = requests.delete(API_URL + '/v1/tasks/name/custom_task', headers=headers)
-
-
         .. Response::
-
             {
                 'message': 'Task has been removed successfully'
             }
         .. Status:: 200 (Resource deleted)
                     404 (Task Not found)
                     500 (Internal Server Error)
-
         """
         user_id = request.user.id if request.user else None
         raise_if_scheduler_not_running()
-        tasks = scheduler.get_jobs()
-        task = [task for task in tasks if task.name == _name and task.args[0] is None]
+        task_id = get_general_job_id(_name)
+        task = scheduler.get_job(task_id)
         # Check if task is valid and belongs to the logged-in user
-        if task and user_id is None:
-            scheduler_remove_job(task[0].id)
+        if task and user_id is None and user_id == task.args[0]:
+            scheduler_remove_job(task.id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task with name %s not found" % _name)
 
@@ -749,7 +713,7 @@ class AdminTasks(Resource):
     decorators = [require_oauth()]
     # a parent class and put all the core pagination functionality in its get() and then we can later override that
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_ALL_JOBS)
+    @require_all_roles(DomainRole.Roles.CAN_GET_ALL_SCHEDULER_JOBS)
     def get(self):
         """
         This action returns a list of apscheduler scheduled tasks.
@@ -811,14 +775,16 @@ class AdminTasks(Resource):
                         "id": "5das76nbv950nghg8j8-33ddd3kfdw2",
                         "user_email": "saad_lhr@hotmail.com",
                         "task_type": "user",
-                        "post_data": {
+                        "data":{
                             "url": "http://getTalent.com/sms/send/",
-                            "phone_number": "09230862348",
-                            "smart_list_id": 123456,
-                            "content": "text to be sent as sms"
-                            "some_other_kwarg": "abc",
-                            "campaign_name": "SMS Campaign"
-                        },
+                            "request_method": "post",
+                            "post_data": {
+                                "phone_number": "09230862348",
+                                "smart_list_id": 123456,
+                                "content": "text to be sent as sms"
+                                "some_other_kwarg": "abc",
+                                "campaign_name": "SMS Campaign"
+                            },
                         "frequency": 3601,      # in seconds
                         "start_datetime": "2015-11-05T08:00:00",
                         "end_datetime": "2015-12-05T08:00:00"
@@ -835,6 +801,7 @@ class AdminTasks(Resource):
                     500 (Internal Server Error)
 
         """
+
         # In case of higher number of scheduled task running for a particular user and user wants to get only
         # a limited number of jobs by specifying page and per_page parameter, then return only specified jobs
 
@@ -848,9 +815,10 @@ class AdminTasks(Resource):
         tasks = scheduler.get_jobs()
 
         # Get all param filters
-        user_id, paused, task_type, task_category = request.args.get('user_id'), request.args.get('paused'), \
-                                                       request.args.get('task_type'), \
-                                                       request.args.get('task_category')
+        user_id = request.args.get('user_id')
+        paused =  request.args.get('paused')
+        task_type = request.args.get('task_type')
+        task_category = request.args.get('task_category')
 
         # If user_id is given then only return jobs of that particular user
         if user_id:
@@ -868,7 +836,7 @@ class AdminTasks(Resource):
 
         # If task_category is given then return only specified `user` or `general` job
         if task_category:
-            filter_jobs_using_task_category(tasks, task_category=task_category)
+            tasks = filter_jobs_using_task_category(tasks, task_category=task_category)
 
         # The following case should never occur. As the general jobs are independent of user. So, if user use such
         # a filter then raise Invalid usage api exception.
@@ -881,7 +849,7 @@ class AdminTasks(Resource):
         # If page is 1, and per_page is 30 then task_indices will look like list of integers e.g [0-29]
         task_indices = range((page-1) * per_page, page * per_page)
 
-        tasks = [serialize_task(tasks[index], is_admin_api=True)
+        tasks = [serialize_task_admin(tasks[index])
                  for index in task_indices if index < tasks_count and tasks[index]]
 
         tasks = [task for task in tasks if task]
@@ -889,21 +857,45 @@ class AdminTasks(Resource):
         header = {
             'X-Total': tasks_count,
             'X-Per-Page': per_page,
-            'X-Page': page
+            'X-Page': page,
+            'Access-Control-Expose-Headers': 'X-Page, X-Total, X-Per-Page'
         }
         return ApiResponse(response=dict(tasks=tasks), headers=header)
+
+
+"""
+Section: Dummy Endpoints for testing APScheduler and celery
+"""
+
+
+@api.route(SchedulerApi.SCHEDULER_TASKS_TEST_POST)
+class SendPOSTRequestTest(Resource):
+    """
+    POST Method:
+        This resource is dummy endpoint which is used to call send_request method for testing
+        This dummy endpoint serves purpose mentioned below.
+        2. To check if authentication token is refreshed after expiry.
+        3. Test that scheduler sends POST request
+    """
+    @require_oauth()
+    def post(self):
+        dummy_request_method(_request=request)
+        test_dummy_endpoint_hits(_request=request)
+
+        return dict(message='Dummy POST Endpoint called')
 
 
 @api.route(SchedulerApi.SCHEDULER_TASKS_TEST)
 class SendRequestTest(Resource):
     """
-    POST Method:
+    Request Method:
         This resource is dummy endpoint which is used to call send_request method for testing
-        This dummy endpoint serve two purposes.
+        This dummy endpoint serves purpose mentioned below.
         1. To check if endpoint is working then send response 201 (run callback function directly)
         2. To check if authentication token is refreshed after expiry.
         3. Test that scheduler sends GET, POST, DELETE, PUT, PATCH request
     """
+
     @require_oauth()
     def post(self):
         dummy_request_method(_request=request)
@@ -913,23 +905,27 @@ class SendRequestTest(Resource):
     @require_oauth()
     def put(self):
         dummy_request_method(_request=request)
+        test_dummy_endpoint_hits(_request=request)
 
         return dict(message='Dummy PUT Endpoint called')
 
     @require_oauth()
     def patch(self):
         dummy_request_method(_request=request)
+        test_dummy_endpoint_hits(_request=request)
 
         return dict(message='Dummy PATCH Endpoint called')
 
     @require_oauth()
     def delete(self):
         dummy_request_method(_request=request)
+        test_dummy_endpoint_hits(_request=request)
 
         return dict(message='Dummy DELETE Endpoint called')
 
     @require_oauth()
     def get(self):
         dummy_request_method(_request=request)
+        test_dummy_endpoint_hits(_request=request)
 
         return dict(message='Dummy GET Endpoint called')

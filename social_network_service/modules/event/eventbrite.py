@@ -10,6 +10,7 @@ from datetime import datetime
 from datetime import timedelta
 
 # Application specific
+from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import logger
@@ -266,6 +267,8 @@ class Eventbrite(EventBase):
                 if organizer.has_key('description') else ''
 
             )
+            organizer_data['about'] = organizer_data['about'].get('html', '') if type(organizer_data['about']) == dict \
+                else ''
             organizer_in_db = EventOrganizer.get_by_user_id_and_name(
                 self.user.id,
                 organizer['name'] if organizer.has_key('name') else ''
@@ -279,6 +282,7 @@ class Eventbrite(EventBase):
                 organizer_id = organizer_instance.id
         if venue:
             venue_data = dict(
+                social_network_id=self.social_network.id,
                 social_network_venue_id=event['venue_id'],
                 user_id=self.user.id,
                 address_line_1=venue['address']['address_1'] if venue and venue.has_key('address') else '',

@@ -54,6 +54,8 @@ class CandidateCustomErrors(object):
     # Error codes for CandidatePhone
     PHONE_FORBIDDEN = 3090
     PHONE_NOT_FOUND = 3091
+    PHONE_EXISTS = 3092
+    INVALID_PHONE = 3093
 
     # Error codes for CandidatePreferredLocation
     PREFERRED_LOCATION_FORBIDDEN = 3100
@@ -97,3 +99,7 @@ class CandidateCustomErrors(object):
 
     # Error codes for Candidate Source
     INVALID_SOURCE_ID = 3180
+
+    # Error codes for Candidate Notes
+    NOTE_NOT_FOUND = 3290
+    NOTE_FORBIDDEN = 3291

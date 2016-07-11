@@ -35,7 +35,7 @@ from ..utils.handy_functions import (add_role_to_test_user,
 from ..utils.test_utils import get_fake_dict
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
-                              ResourceNotFound, UnprocessableEntity, InternalServerError)
+                              ResourceNotFound, UnprocessableEntity)
 from ..inter_service_calls.candidate_pool_service_calls import create_smartlist_from_api, \
     assert_smartlist_candidates
 from ..inter_service_calls.candidate_service_calls import create_candidates_from_candidate_api
@@ -315,8 +315,8 @@ class CampaignsTestsHelpers(object):
                                                   talent_pipeline_id):
         """
         User auth access_token is valid, campaign has one smart list associated. But smartlist has
-        no candidate associated with it. It should get invalid usage error.
-        Custom error should be NoCandidateAssociatedWithSmartlist.
+        no candidate associated with it. The function tries to send the email campaign and resturns the
+        response to calling function.
         :param (SmsCampaign | EmailCampaign | PushCampaign) campaign: Campaign object
         :param (str) url: URL to to make HTTP request
         :param (str) access_token: access access_token of user
@@ -336,10 +336,22 @@ class CampaignsTestsHelpers(object):
                                                           smartlist_id=smartlist_id)
         campaign_smartlist_model.save(campaign_smartlist_obj)
         response_post = send_request('post', url, access_token)
-        error_resp = cls.assert_api_response(response_post,
-                                             expected_status_code=InvalidUsage.http_status_code())
-        assert error_resp['code'] == CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
-        assert error_resp['message']
+        return response_post
+
+    @classmethod
+    def assert_campaign_failure(cls, response, campaign,
+                                expected_status=200):
+        """
+        If we try to send a campaign with invalid data, e.g. a campaign with no smartlist associated
+        or with 0 candidates, the campaign sending will fail. This method asserts that the specified
+        campaign sending failed and no blasts have been created.
+        """
+        assert response.status_code == expected_status
+        assert response.json()
+        db.session.commit()
+        blasts = campaign.blasts.all()
+        assert not blasts, 'Email campaign blasts found for campaign (id:%d)' % campaign.id
+        assert len(blasts) == 0
 
     @classmethod
     def campaign_test_with_no_valid_candidate(cls, url, access_token, campaign_id):
@@ -389,8 +401,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(count, int)
         raise_if_not_instance_of(entity, basestring)
         raise_if_not_instance_of(check_count, bool)
-        assert response.status_code == 200, 'Response should be "OK" (200)'
-        assert response.json()
+        assert response.status_code == requests.codes.OK, 'Response should be "OK" (200)'
         json_response = response.json()
         assert entity in json_response
         if check_count:
@@ -446,9 +457,9 @@ class CampaignsTestsHelpers(object):
         return blasts
 
     @staticmethod
-    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=20):
+    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=300):
         """
-        This polls the result of blasts of a campaign for given timeout (default 10s).
+        This polls the result of blasts of a campaign for given timeout (default 300s).
         """
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         raise_if_not_instance_of(access_token, basestring) if access_token else None
@@ -500,15 +511,14 @@ class CampaignsTestsHelpers(object):
     def verify_sends(campaign, expected_count, blast_index, blast_url=None, access_token=None):
         """
         This verifies that we get expected number of sends associated with given blast index of
-        given campaign. If count is verified, it returns True, otherwise it returns False.
-        :rtype: bool
+        given campaign.
         """
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         raise_if_not_instance_of(expected_count, int)
         raise_if_not_instance_of(blast_index, int)
+        db.session.commit()
         if not blast_url:
             raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
-            db.session.commit()
             assert campaign.blasts[blast_index].sends == expected_count
         else:
             raise_if_not_instance_of(access_token, basestring)
@@ -518,7 +528,7 @@ class CampaignsTestsHelpers(object):
                 assert response.json()['blast']['sends'] == expected_count
 
     @staticmethod
-    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=100,
+    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=300,
                            blast_url=None, access_token=None):
         """
         This function asserts that particular blast of given campaign has expected number of sends
@@ -530,9 +540,9 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring) if access_token else None
         raise_if_not_instance_of(blast_url, basestring) if blast_url else None
         attempts = abort_time_for_sends / 3 + 1
-        retry(CampaignsTestsHelpers.verify_sends, sleeptime=3, attempts=attempts, sleepscale=1,
+        retry(CampaignsTestsHelpers.verify_sends, sleeptime=5, attempts=attempts, sleepscale=1,
               args=(campaign, expected_count, blast_index, blast_url, access_token),
-              retry_exceptions=(AssertionError,))
+              retry_exceptions=(AssertionError, IndexError, ))
 
     @staticmethod
     def verify_blasts(campaign, access_token, blasts_url, expected_count):
@@ -571,7 +581,7 @@ class CampaignsTestsHelpers(object):
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1, data=None,
                                         emails_list=False, create_phone=False, assign_role=False,
                                         assert_candidates=True, smartlist_name=fake.word(),
-                                        candidate_ids=(), timeout=250):
+                                        candidate_ids=(), timeout=300):
         """
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
@@ -597,8 +607,8 @@ class CampaignsTestsHelpers(object):
         if not candidate_ids:
             candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                                  return_candidate_ids_only=True)
-        if assert_candidates:
-            time.sleep(10)  # TODO: Need to remove this and use polling instead
+            if assert_candidates:
+                time.sleep(30)  # TODO: Need to remove this and use polling instead
         smartlist_data = {'name': smartlist_name,
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}
@@ -611,6 +621,29 @@ class CampaignsTestsHelpers(object):
                   args=(smartlist_id, len(candidate_ids), access_token), retry_exceptions=(AssertionError,))
             print '%s candidate(s) found for smartlist(id:%s)' % (len(candidate_ids), smartlist_id)
         return smartlist_id, candidate_ids
+
+    @staticmethod
+    def get_two_smartlists_with_same_candidate(talent_pipeline, access_token, count=1, create_phone=False,
+                                               email_list=False, assign_role=False):
+        """
+        Create two smartlists with same candidate in both of them and returns smartlist ids in list format.
+        :param TalentPipeline talent_pipeline: Talent pipeline object of user
+        :param str access_token: Access token of user
+        :param int count: Number of candidates in first smartlist
+        :param bool create_phone: True if need to create candidate's phone
+        :param bool email_list: True if need to create candidate's email
+        :param bool assign_role: If True, assign required roles to user
+        :rtype: list[int|long]
+        """
+        smartlist_1_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
+            access_token, talent_pipeline, count=count, create_phone=create_phone, emails_list=email_list,
+            assign_role=assign_role)
+        # Going to assign candidate belonging to smartlist_1 to smartlist_2 so both will have same candidate
+        candidate_ids_for_smartlist_2 = [candidate_ids[0]]
+        smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
+            access_token, talent_pipeline, candidate_ids=candidate_ids_for_smartlist_2)
+        smartlist_ids = [smartlist_1_id, smartlist_2_id]
+        return smartlist_ids
 
     @staticmethod
     def assign_roles(user, roles=(DomainRole.Roles.CAN_ADD_CANDIDATES,
@@ -634,6 +667,25 @@ class CampaignsTestsHelpers(object):
         current_datetime = datetime.utcnow().replace(tzinfo=pytz.utc)
         assert DatetimeUtils.utc_isoformat_to_datetime(datetime_str) > current_datetime - timedelta(minutes=minutes)
         assert DatetimeUtils.utc_isoformat_to_datetime(datetime_str) < current_datetime + timedelta(minutes=minutes)
+
+    @staticmethod
+    def campaign_create_or_update_with_unexpected_fields(method, url, access_token, campaign_data):
+        """
+        This creates or updates a campaign with unexpected fields present in the data and
+        asserts that we get invalid usage error from respective API. Data passed should be a dictionary
+        here.
+        :param str method: Name of HTTP method
+        :param str url: URL on which we are supposed to make HTTP request
+        :param str access_token: Access token of user
+        :param dict campaign_data: Data to be passed in HTTP request
+        """
+        campaign_data['unexpected_key'] = fake.word()
+        campaign_data['frequency'] = 0
+        response = send_request(method, url, access_token, data=campaign_data)
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should result in bad request error because unexpected data was given.'
+        assert 'unexpected_key' in response.json()['error']['message']
+        assert 'frequency' in response.json()['error']['message']
 
 
 class FixtureHelpers(object):

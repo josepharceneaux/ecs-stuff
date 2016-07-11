@@ -10,16 +10,17 @@ import json
 import pytest
 from faker import Faker
 from werkzeug.security import gen_salt
+
 from ..models.candidate import Candidate
 from ..models.user import UserGroup, DomainRole
 from auth_utilities import get_access_token, get_or_create
+from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 
 # Application Specific
 from ..models.db import db
 from ..models.user import (Client, Domain, User, Token)
 from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline)
 from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField)
-
 
 fake = Faker()
 ISO_FORMAT = '%Y-%m-%d %H:%M'
@@ -34,8 +35,8 @@ CHANGED_PASSWORD = gen_salt(20)
 class UserAuthentication:
     def __init__(self, db):
         self.db = db
-        self.client_id = str(uuid.uuid4())[0:8]     # can be any arbitrary string
-        self.client_secret = str(uuid.uuid4())[0:8] # can be any arbitrary string
+        self.client_id = str(uuid.uuid4())[0:8]  # can be any arbitrary string
+        self.client_secret = str(uuid.uuid4())[0:8]  # can be any arbitrary string
         self.new_client = Client(client_id=self.client_id, client_secret=self.client_secret)
 
     def get_auth_token(self, user_row, get_bearer_token=False):
@@ -78,7 +79,7 @@ def get_token(user_login_credentials):
             'client_secret': user_login_credentials['client_secret'],
             'username': user_login_credentials['user_row'].email,
             'password': 'Talent15',
-            'grant_type':'password'}
+            'grant_type': 'password'}
     resp = requests.post('http://localhost:8001/v1/oauth2/token', data=data)
     assert resp.status_code == 200
     return resp.json()
@@ -96,87 +97,48 @@ def revoke_token(user_logout_credentials):
 
 
 @pytest.fixture()
-def user_from_diff_domain(test_domain_2, second_group, request):
+def user_from_diff_domain(test_domain_2, second_group):
+    """
+    Fixture creates a user in domain_2
+    """
     user = User.add_test_user(db.session, USER_PASSWORD, test_domain_2.id, second_group.id)
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return user
 
 
 @pytest.fixture(autouse=True)
-def test_domain(request):
-    domain = Domain.add_test_domain(session=db.session)
-
-    def tear_down():
-        try:
-            db.session.delete(domain)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
+def test_domain():
+    domain = Domain.add_test_domain(db.session)
     return domain
 
 
 @pytest.fixture()
-def test_domain_2(request):
+def test_domain_2():
     domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
     db.session.add(domain)
     db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(domain)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return domain
 
 
 @pytest.fixture()
-def test_culture(request):
-    culture_attrs = dict(description='Foo {}'.format(randomword(12)), code=randomword(5))
-    test_culture, created = get_or_create(db.session, Culture, defaults=None, **culture_attrs)
+def test_culture():
+    culture_attributes = dict(description='Foo {}'.format(randomword(12)), code=randomword(5))
+    culture, created = get_or_create(db.session, Culture, defaults=None, **culture_attributes)
     if created:
-        db.session.add(test_culture)
+        db.session.add(culture)
         db.session.commit()
 
-    def fin():
-        try:
-            db.session.delete(test_culture)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            pass
-
-    request.addfinalizer(fin)
-    return test_culture
+    return culture
 
 
 @pytest.fixture()
-def test_org(request):
-    org_attrs = dict(name='Rocket League All Stars - {}'.format(randomword(8)))
-    test_org, created = get_or_create(session=db.session, model=Organization, **org_attrs)
+def test_org():
+    organization_attributes = dict(name='Rocket League All Stars - {}'.format(randomword(8)))
+    organization, created = get_or_create(session=db.session, model=Organization, **organization_attributes)
     if created:
-        db.session.add(test_org)
+        db.session.add(organization)
         db.session.commit()
 
-    def fin():
-        try:
-            db.session.delete(test_org)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-            pass
-
-    request.addfinalizer(fin)
-    return test_org
+    return organization
 
 
 @pytest.fixture()
@@ -184,7 +146,7 @@ def domain_aoi(domain_first):
     """Will add two areas-of-interest to domain
     :rtype:  list[AreaOfInterest]
     """
-    areas_of_interest = [{'name': fake.job()}, {'name': fake.job()}]
+    areas_of_interest = [{'name': fake.job().lower()}, {'name': fake.job().lower()}]
     for area_of_interest in areas_of_interest:
         db.session.add(AreaOfInterest(domain_id=domain_first.id, name=area_of_interest['name']))
 
@@ -194,7 +156,8 @@ def domain_aoi(domain_first):
 
 @pytest.fixture()
 def domain_custom_fields(domain_first):
-    """Will add custom fields to domain
+    """
+    Will add custom fields to domain
     :rtype:  list[CustomField]
     """
     custom_fields = [{'name': fake.word(), 'type': 'string'}, {'name': fake.word(), 'type': 'string'}]
@@ -216,13 +179,6 @@ def sample_client(request):
     )
     db.session.add(test_client)
     db.session.commit()
-
-    def tear_down():
-        try:
-            test_client.delete()
-        except:
-            pass
-    request.addfinalizer(tear_down)
     return test_client
 
 
@@ -257,241 +213,157 @@ def access_token_other(user_from_diff_domain, sample_client):
 
 
 @pytest.fixture()
-def user_first(request, domain_first, first_group):
+def user_first(domain_first, first_group):
+    """
+    Fixture creates a user in domain_first
+    """
     user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
-    db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return user
 
 
 @pytest.fixture()
-def user_same_domain(request, domain_first, first_group):
+def user_same_domain(domain_first, first_group):
+    """
+    Fixture creates a user in domain_first
+    """
     user = User.add_test_user(db.session, PASSWORD, domain_first.id, first_group.id)
-    # UserGroup.add_users_to_group(first_group, [user.id])
-    db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return user
 
 
 @pytest.fixture()
-def user_second(request, domain_second, second_group):
+def user_second(domain_second, second_group):
+    """
+    Fixture creates a user in domain_second
+    """
     user = User.add_test_user(db.session, PASSWORD, domain_second.id, second_group.id)
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return user
 
 
 @pytest.fixture()
-def domain_first(request):
-    test_domain = Domain.add_test_domain(session=db.session)
-
-    def tear_down():
-        try:
-            db.session.delete(test_domain)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return test_domain
+def domain_first():
+    domain = Domain.add_test_domain(session=db.session)
+    return domain
 
 
 @pytest.fixture()
-def domain_second(request):
-    test_domain = Domain(
-        name=gen_salt(20),
-        expiration='0000-00-00 00:00:00'
-    )
-    db.session.add(test_domain)
+def domain_second():
+    domain = Domain(name=gen_salt(20), expiration='0000-00-00 00:00:00')
+    db.session.add(domain)
     db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(test_domain)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return test_domain
+    return domain
 
 
 @pytest.fixture()
-def domain_roles(request):
+def domain_roles():
     test_role_first = gen_salt(20)
-    test_role_first_id = DomainRole.save(test_role_first)
+    DomainRole.save(test_role_first)
     test_role_second = gen_salt(20)
-    test_role_second_id = DomainRole.save(test_role_second)
+    DomainRole.save(test_role_second)
 
-    def tear_down():
-        try:
-            db.session.delete(DomainRole.query.get(test_role_first_id))
-            db.session.delete(DomainRole.query.get(test_role_second_id))
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return {'test_roles': [test_role_first, test_role_second]}
 
 
 @pytest.fixture()
-def first_group(request, domain_first):
+def first_group(domain_first):
+    """
+    Fixture adds a group in domain_first
+    """
     user_group = UserGroup(name=gen_salt(20), domain_id=domain_first.id)
     db.session.add(user_group)
     db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(user_group)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return user_group
 
 
 @pytest.fixture()
-def second_group(request, domain_second):
+def second_group(domain_second):
+    """
+    Fixture adds a group in domain_second
+    """
     user_group = UserGroup(name=gen_salt(20), domain_id=domain_second.id)
     db.session.add(user_group)
     db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(user_group)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return user_group
 
 
 @pytest.fixture()
-def sample_user(domain_first, first_group, request):
+def sample_user(domain_first, first_group):
+    """
+    Fixture adds a user in domain_first
+    """
     user = User.add_test_user(db.session, USER_PASSWORD, domain_first.id, first_group.id)
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return user
 
 
 @pytest.fixture()
-def sample_user_2(domain_first, first_group, request):
+def sample_user_2(domain_first, first_group):
+    """
+    Fixture adds a user in domain_first
+    """
     user = User.add_test_user(db.session, USER_PASSWORD, domain_first.id, first_group.id)
-
-    def tear_down():
-        try:
-            db.session.delete(user)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return user
 
 
 @pytest.fixture()
-def talent_pool(request, domain_first, first_group, user_first):
-    talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, user_id=user_first.id)
-    db.session.add(talent_pool)
+def talent_pool(domain_first, first_group, user_first):
+    """
+    Fixture adds a talent pool in domain_first
+    """
+    tp = TalentPool(name=gen_salt(20), description='', domain_id=domain_first.id, user_id=user_first.id)
+    db.session.add(tp)
     db.session.commit()
 
-    db.session.add(TalentPoolGroup(talent_pool_id=talent_pool.id, user_group_id=first_group.id))
+    db.session.add(TalentPoolGroup(talent_pool_id=tp.id, user_group_id=first_group.id))
     db.session.commit()
 
-    def tear_down():
-        try:
-            db.session.delete(talent_pool)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return talent_pool
+    return tp
 
 
 @pytest.fixture()
-def talent_pool_second(request, domain_second, second_group, user_second):
-    talent_pool = TalentPool(name=gen_salt(20), description='', domain_id=domain_second.id,
-                             user_id=user_second.id)
-    db.session.add(talent_pool)
+def talent_pool_second(domain_second, second_group, user_second):
+    """
+    Fixture adds talent pool to domain_second
+    """
+    tp = TalentPool(name=gen_salt(20), description='', domain_id=domain_second.id, user_id=user_second.id)
+    db.session.add(tp)
     db.session.commit()
 
-    db.session.add(TalentPoolGroup(talent_pool_id=talent_pool.id, user_group_id=second_group.id))
+    db.session.add(TalentPoolGroup(talent_pool_id=tp.id, user_group_id=second_group.id))
     db.session.commit()
 
-    def tear_down():
-        try:
-            db.session.delete(talent_pool)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return talent_pool
+    return tp
 
 
 @pytest.fixture()
-def talent_pool_other(request, test_domain_2, second_group, user_from_diff_domain):
-    talent_pool = TalentPool(name=gen_salt(20),
-                             description='', domain_id=test_domain_2.id,
-                             user_id=user_from_diff_domain.id)
-    db.session.add(talent_pool)
+def talent_pool_other(test_domain_2, second_group, user_from_diff_domain):
+    """
+    Fixture adds talent pool to domain_2
+    """
+    tp = TalentPool(name=gen_salt(20), description='', domain_id=test_domain_2.id, user_id=user_from_diff_domain.id)
+    db.session.add(tp)
     db.session.commit()
 
-    db.session.add(TalentPoolGroup(talent_pool_id=talent_pool.id, user_group_id=second_group.id))
+    db.session.add(TalentPoolGroup(talent_pool_id=tp.id, user_group_id=second_group.id))
     db.session.commit()
 
-    def tear_down():
-        try:
-            db.session.delete(talent_pool)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
-    return talent_pool
+    return tp
 
 
 @pytest.fixture()
-def talent_pipeline(request, user_first, talent_pool):
+def talent_pipeline(user_first, talent_pool):
+    """
+    Fixture adds talent pipeline
+    """
     talent_pipeline = TalentPipeline(name=gen_salt(6), description=gen_salt(15), positions=2,
                                      date_needed=datetime.utcnow().isoformat(sep=' '), user_id=user_first.id,
                                      talent_pool_id=talent_pool.id)
     db.session.add(talent_pipeline)
     db.session.commit()
 
-    def tear_down():
-        try:
-            db.session.delete(talent_pipeline)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return talent_pipeline
 
 
 @pytest.fixture()
-def talent_pipeline_other(request, user_from_diff_domain, talent_pool_other):
+def talent_pipeline_other(user_from_diff_domain, talent_pool_other):
     search_params = {
         "skills": "Python",
         "minimum_years_experience": "4",
@@ -504,79 +376,63 @@ def talent_pipeline_other(request, user_from_diff_domain, talent_pool_other):
     db.session.add(talent_pipeline)
     db.session.commit()
 
-    def tear_down():
-        try:
-            db.session.delete(talent_pipeline)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return talent_pipeline
 
 
 @pytest.fixture()
-def candidate_first(request, user_first):
+def candidate_first(user_first):
+    """
+    Fixture will create a candidate in user_first's domain
+    :rtype: Candidate
+    """
     candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_first.id)
     db.session.add(candidate)
     db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(candidate)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return candidate
 
 
 @pytest.fixture()
-def candidate_first_2(request, user_first):
+def candidate_first_2(user_first):
+    """
+    Fixture adds candidate for user_first
+    """
     candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_first.id)
     db.session.add(candidate)
     db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(candidate)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return candidate
 
 
 @pytest.fixture()
-def candidate_second(request, user_first):
+def candidate_second(user_first):
+    """
+    Fixture adds candidate for user_first
+    """
     candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_first.id)
     db.session.add(candidate)
     db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(candidate)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return candidate
 
 
 @pytest.fixture()
-def user_second_candidate(request, user_second):
+def user_second_candidate(user_second):
+    """
+    Fixture adds candidate for user_second
+    """
     candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_second.id)
     db.session.add(candidate)
     db.session.commit()
-
-    def tear_down():
-        try:
-            db.session.delete(candidate)
-            db.session.commit()
-        except Exception:
-            db.session.rollback()
-    request.addfinalizer(tear_down)
     return candidate
 
 
 def randomword(length):
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
+
+
+def get_auth_header(access_token):
+    """
+    This returns auth header dict.
+    :param access_token: access token of user
+    """
+    auth_header = {'Authorization': 'Bearer %s' % access_token}
+    auth_header.update(JSON_CONTENT_TYPE_HEADER)
+    return auth_header

@@ -3,7 +3,7 @@ __author__ = 'basit'
 import re
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.models.misc import Frequency
-from email_campaign_service.common.routes import EmailCampaignUrl
+from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
                                                                  EmailTemplateFolder)
@@ -12,7 +12,17 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   delete_campaign,
                                                                   send_campaign_helper,
                                                                   create_smartlist_with_given_email_candidate)
+from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+
+
+@pytest.fixture()
+def headers(access_token_first):
+    """
+    Returns the header containing access token and content-type to make POST/DELETE requests.
+    :param access_token_first: fixture to get access token of user
+    """
+    return get_auth_header(access_token_first)
 
 
 @pytest.fixture()
@@ -168,6 +178,21 @@ def campaign_with_candidates_having_same_email_in_diff_domain(request,
 
 
 @pytest.fixture()
+def campaign_with_same_candidate_in_multiple_smartlists(email_campaign_of_user_first, talent_pipeline,
+                                                        access_token_first):
+    """
+    This fixture creates an email campaign with two smartlists.
+    Smartlist 1 will have two candidates and smartlist 2 will have one candidate (which will be
+    same as one of the two candidates of smartlist 1).
+    """
+    smartlist_ids = CampaignsTestsHelpers.get_two_smartlists_with_same_candidate(talent_pipeline, access_token_first,
+                                                                                 email_list=True, assign_role=True)
+    create_email_campaign_smartlists(smartlist_ids=smartlist_ids, email_campaign_id=email_campaign_of_user_first.id)
+
+    return email_campaign_of_user_first
+
+
+@pytest.fixture()
 def assign_roles_to_user_first(user_first):
     """
     This assign required roles to user_first
@@ -251,11 +276,11 @@ def send_email_campaign_by_client_id_response(access_token_first, campaign_with_
     for a particular campaign. It also ensures that response is in proper format. Used in
     multiple tests.
     :param access_token_first: Bearer token for authorization.
-    :param campaign_with_valid_candidate: Email campaign object with a valid candidate associated.
+    :param campaign_with_valid_candidate: EmailCampaign object with a valid candidate associated.
     """
     campaign = campaign_with_valid_candidate
     campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-    response = CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND,
+    response = CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND,
                                                    campaign_with_valid_candidate,
                                                    access_token_first)
     json_response = response.json()

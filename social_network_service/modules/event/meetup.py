@@ -283,6 +283,7 @@ class Meetup(EventBase):
                 organizer_id = organizer_instance.id
         if venue:
             venue_data = dict(
+                social_network_id=self.social_network.id,
                 social_network_venue_id=venue['id'],
                 user_id=self.user.id,
                 address_line_1=venue['address_1'] if venue else '',

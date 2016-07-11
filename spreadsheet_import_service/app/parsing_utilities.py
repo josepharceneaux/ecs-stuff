@@ -130,155 +130,160 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
         domain_areas_of_interest = get_or_create_areas_of_interest(user.domain_id, include_child_aois=True)
 
         candidate_ids, error_messages = [], []
-        for row in table:
-            first_name, middle_name, last_name, formatted_name, status_id,  = None, None, None, None, None
-            emails, phones, areas_of_interest, addresses, degrees = [], [], [], [], []
-            school_names, work_experiences, educations, custom_fields = [], [], [], []
-            talent_pool_dict = {'add': talent_pool_ids}
+        for i in xrange(0, len(table), 50):
+            candidates_list = []
+            for row in table[i: i + 50]:
+                first_name, middle_name, last_name, formatted_name, status_id,  = None, None, None, None, None
+                emails, phones, areas_of_interest, addresses, degrees = [], [], [], [], []
+                school_names, work_experiences, educations, custom_fields = [], [], [], []
+                talent_pool_dict = {'add': talent_pool_ids}
 
-            this_source_id = source_id
+                this_source_id = source_id
 
-            number_of_educations = 0
+                number_of_educations = 0
 
-            for column_index, column in enumerate(row):
-                if column_index >= len(header_row):
-                    continue
-                column_name = header_row[column_index]
-                if not column_name or not column:
-                    continue
-
-                if column_name == 'candidate.formattedName':
-                    formatted_name = column
-                elif column_name == 'candidate.statusId':
-                    status_id = column
-                elif column_name == 'candidate.firstName':
-                    first_name = column
-                elif column_name == 'candidate.middleName':
-                    middle_name = column
-                elif column_name == 'candidate.lastName':
-                    last_name = column
-                elif column_name == 'candidate_email.address':
-                    emails.append({'address': column})
-                elif column_name == 'candidate_phone.value':
-                        phones.append({'value': column})
-                elif column_name == 'candidate.source':
-                    source = CandidateSource.query.filter_by(description=column, domain_id=domain_id).all()
-                    if len(source):
-                        this_source_id = source[0].id
-                    else:
-                        source = CandidateSource(description=column, domain_id=domain_id)
-                        db.session.add(source)
-                        db.session.commit()
-                        this_source_id = source.id
-                elif column_name == 'area_of_interest.description':
-                    column = column.strip()
-                    matching_areas_of_interest = filter(lambda aoi_row: aoi_row.name.lower().
-                                                        replace(' ', '') == column.lower().replace(' ', ''),
-                                                        domain_areas_of_interest)
-                    if matching_areas_of_interest:
-                        areas_of_interest.append({'area_of_interest_id': matching_areas_of_interest[0].id})
-                    else:
-                        logger.warning("Unknown AOI when importing from CSV, user %s: %s", user_id, column)
-                elif column_name == 'candidate_experience.organization':
-                    prepare_candidate_data(work_experiences, 'organization', column)
-                elif column_name == 'candidate_experience.position':
-                    prepare_candidate_data(work_experiences, 'position', column)
-                elif column_name == 'candidate_education.schoolName':
-                    school_names.append(column)
-                elif column_name == "candidate_education_degree_bullet.concentrationType":
-                    prepare_candidate_data(degrees, 'bullets', [{'major': column}])
-                elif column_name == 'student_year':
-                    column = column.lower()
-                    current_year = datetime.datetime.now().year
-                    if 'freshman' in column:
-                        graduation_year = current_year + 3
-                        university_start_year = current_year - 1  # TODO this is a bug lol
-                        degree_title = 'Bachelors'
-                    elif 'sophomore' in column:
-                        graduation_year = current_year + 2
-                        university_start_year = current_year - 2
-                        degree_title = 'Bachelors'
-                    elif 'junior' in column:
-                        graduation_year = current_year + 1
-                        university_start_year = current_year - 3
-                        degree_title = 'Bachelors'
-                    elif 'senior' in column:
-                        graduation_year = current_year
-                        university_start_year = current_year - 4
-                        degree_title = 'Bachelors'
-                    elif 'ms' in column or 'mba' in column:
-                        graduation_year = current_year
-                        university_start_year = current_year - 2
-                        degree_title = 'Masters'
-                    else:
+                for column_index, column in enumerate(row):
+                    if column_index >= len(header_row):
+                        continue
+                    column_name = header_row[column_index]
+                    if not column_name or not column:
                         continue
 
-                    prepare_candidate_data(degrees, 'title', degree_title)
-                    prepare_candidate_data(degrees, 'start_year', university_start_year)
-                    prepare_candidate_data(degrees, 'end_year', graduation_year)
-                    prepare_candidate_data(degrees, 'start_month', 6)
-                    prepare_candidate_data(degrees, 'end_month', 6)
+                    if column_name == 'candidate.formattedName':
+                        formatted_name = column
+                    elif column_name == 'candidate.statusId':
+                        status_id = column
+                    elif column_name == 'candidate.firstName':
+                        first_name = column
+                    elif column_name == 'candidate.middleName':
+                        middle_name = column
+                    elif column_name == 'candidate.lastName':
+                        last_name = column
+                    elif column_name == 'candidate_email.address':
+                        emails.append({'address': column})
+                    elif column_name == 'candidate_phone.value':
+                            phones.append({'value': column})
+                    elif column_name == 'candidate.source':
+                        source = CandidateSource.query.filter_by(description=column, domain_id=domain_id).all()
+                        if len(source):
+                            this_source_id = source[0].id
+                        else:
+                            source = CandidateSource(description=column, domain_id=domain_id)
+                            db.session.add(source)
+                            db.session.commit()
+                            this_source_id = source.id
+                    elif column_name == 'area_of_interest.description':
+                        column = column.strip()
+                        matching_areas_of_interest = filter(lambda aoi_row: aoi_row.name.lower().
+                                                            replace(' ', '') == column.lower().replace(' ', ''),
+                                                            domain_areas_of_interest)
+                        if matching_areas_of_interest:
+                            areas_of_interest.append({'area_of_interest_id': matching_areas_of_interest[0].id})
+                        else:
+                            logger.warning("Unknown AOI when importing from CSV, user %s: %s", user_id, column)
+                    elif column_name == 'candidate_experience.organization':
+                        prepare_candidate_data(work_experiences, 'organization', column)
+                    elif column_name == 'candidate_experience.position':
+                        prepare_candidate_data(work_experiences, 'position', column)
+                    elif column_name == 'candidate_education.schoolName':
+                        school_names.append(column)
+                    elif column_name == "candidate_education_degree_bullet.concentrationType":
+                        prepare_candidate_data(degrees, 'bullets', [{'major': column}])
+                    elif column_name == 'student_year':
+                        column = column.lower()
+                        current_year = datetime.datetime.now().year
+                        if 'freshman' in column:
+                            graduation_year = current_year + 3
+                            university_start_year = current_year - 1  # TODO this is a bug lol
+                            degree_title = 'Bachelors'
+                        elif 'sophomore' in column:
+                            graduation_year = current_year + 2
+                            university_start_year = current_year - 2
+                            degree_title = 'Bachelors'
+                        elif 'junior' in column:
+                            graduation_year = current_year + 1
+                            university_start_year = current_year - 3
+                            degree_title = 'Bachelors'
+                        elif 'senior' in column:
+                            graduation_year = current_year
+                            university_start_year = current_year - 4
+                            degree_title = 'Bachelors'
+                        elif 'ms' in column or 'mba' in column:
+                            graduation_year = current_year
+                            university_start_year = current_year - 2
+                            degree_title = 'Masters'
+                        else:
+                            continue
 
-                elif column_name == 'candidate_address.address_line_1':
-                    prepare_candidate_data(addresses, 'address_line_1', column)
-                elif column_name == 'candidate_address.address_line_2':
-                    prepare_candidate_data(addresses, 'address_line_2', column)
-                elif column_name == 'candidate_address.city':
-                    prepare_candidate_data(addresses, 'city', column)
-                elif column_name == 'candidate_address.state':
-                    prepare_candidate_data(addresses, 'state', column)
-                elif column_name == 'candidate_address.subdivision_code':
-                    prepare_candidate_data(addresses, 'subdivision_code', column)
-                elif column_name == 'candidate_address.zipCode':
-                    prepare_candidate_data(addresses, 'zip_code', column)
-                elif column_name == 'candidate_address.country_code':
-                    prepare_candidate_data(addresses, 'country_code', column)
-                elif 'custom_field.' in column_name:
-                    custom_fields_dict = {}
-                    if isinstance(column, basestring):
-                        custom_fields_dict['custom_field_id'] = int(column_name.split('.')[1])
-                        custom_fields_dict['value'] = column.strip()
-                    if custom_fields_dict:
-                        custom_fields.append(custom_fields_dict)
-                elif 'talent_pool.' in column_name:
-                    if isinstance(column, basestring):
-                        talent_pool_dict['add'].append(int(column_name.split('.')[1]))
+                        prepare_candidate_data(degrees, 'title', degree_title)
+                        prepare_candidate_data(degrees, 'start_year', university_start_year)
+                        prepare_candidate_data(degrees, 'end_year', graduation_year)
+                        prepare_candidate_data(degrees, 'start_month', 6)
+                        prepare_candidate_data(degrees, 'end_month', 6)
 
-                number_of_educations = max(len(degrees), len(school_names))
+                    elif column_name == 'candidate_address.address_line_1':
+                        prepare_candidate_data(addresses, 'address_line_1', column)
+                    elif column_name == 'candidate_address.address_line_2':
+                        prepare_candidate_data(addresses, 'address_line_2', column)
+                    elif column_name == 'candidate_address.city':
+                        prepare_candidate_data(addresses, 'city', column)
+                    elif column_name == 'candidate_address.state':
+                        prepare_candidate_data(addresses, 'state', column)
+                    elif column_name == 'candidate_address.subdivision_code':
+                        prepare_candidate_data(addresses, 'subdivision_code', column)
+                    elif column_name == 'candidate_address.zipCode':
+                        prepare_candidate_data(addresses, 'zip_code', column)
+                    elif column_name == 'candidate_address.country_code':
+                        prepare_candidate_data(addresses, 'country_code', column)
+                    elif 'custom_field.' in column_name:
+                        custom_fields_dict = {}
+                        if isinstance(column, basestring):
+                            custom_fields_dict['custom_field_id'] = int(column_name.split('.')[1])
+                            custom_fields_dict['value'] = column.strip()
+                        if custom_fields_dict:
+                            custom_fields.append(custom_fields_dict)
+                    elif 'talent_pool.' in column_name:
+                        if isinstance(column, basestring):
+                            talent_pool_dict['add'].append(int(column_name.split('.')[1]))
 
-            # Prepare candidate educational data
-            for index in range(0, number_of_educations):
-                education = {}
-                if index < len(school_names):
-                    education['school_name'] = school_names[index]
+                    number_of_educations = max(len(degrees), len(school_names))
 
-                if index < len(degrees):
-                    education['degrees'] = [degrees[index]]
+                # Prepare candidate educational data
+                for index in range(0, number_of_educations):
+                    education = {}
+                    if index < len(school_names):
+                        education['school_name'] = school_names[index]
 
-                educations.append(education)
+                    if index < len(degrees):
+                        education['degrees'] = [degrees[index]]
 
-            status_code, response = create_candidates_from_parsed_spreadsheet(dict(full_name=formatted_name,
-                                                                                   status_id=status_id,
-                                                                                   first_name=first_name,
-                                                                                   middle_name=middle_name,
-                                                                                   last_name=last_name,
-                                                                                   emails=emails,
-                                                                                   phones=phones,
-                                                                                   work_experiences=work_experiences,
-                                                                                   educations=educations,
-                                                                                   addresses=addresses,
-                                                                                   source_id=this_source_id,
-                                                                                   talent_pool_ids=talent_pool_dict,
-                                                                                   areas_of_interest=areas_of_interest,
-                                                                                   custom_fields=custom_fields), oauth_token)
+                    educations.append(education)
+
+                candidates_list.append(dict(full_name=formatted_name,
+                                            status_id=status_id,
+                                            first_name=first_name,
+                                            middle_name=middle_name,
+                                            last_name=last_name,
+                                            emails=emails,
+                                            phones=phones,
+                                            work_experiences=work_experiences,
+                                            educations=educations,
+                                            addresses=addresses,
+                                            source_id=this_source_id,
+                                            talent_pool_ids=talent_pool_dict,
+                                            areas_of_interest=areas_of_interest,
+                                            custom_fields=custom_fields))
+
+            status_code, response = create_candidates_from_parsed_spreadsheet(candidates_list, oauth_token)
 
             if status_code == 201:
-                candidate_ids.append(response.get('candidates')[0].get('id'))
+                response_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
+                candidate_ids += response_candidate_ids
+                logger.info("Successfully imported %s candidates with ids: (%s)", len(response_candidate_ids), response_candidate_ids)
             else:  # continue with the rest of the spreadsheet imports despite errors returned from candidate-service
                 error_messages.append(response.get('error'))
+                logger.error(response.get('error'))
                 continue
-
-        # TODO: Upload candidate documents to cloud
 
         delete_from_s3(spreadsheet_filename, 'CSVResumes')
 
@@ -323,15 +328,15 @@ def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
     return areas
 
 
-def create_candidates_from_parsed_spreadsheet(candidate_dict, oauth_token):
+def create_candidates_from_parsed_spreadsheet(candidate_dicts, oauth_token):
     """
     Create a new candidate using candidate_service
-    :param candidate_dict: Dict containing information of new candidate
+    :param candidate_dicts: A list of dicts containing information for new candidates
     :param oauth_token: OAuth token of logged-in user
     :return: A dictionary containing IDs of newly created candidates
     :rtype: dict
     """
-    r = requests.post(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': [candidate_dict]}),
+    r = requests.post(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': candidate_dicts}),
                       headers={'Authorization': oauth_token, 'content-type': 'application/json'})
 
     try:
