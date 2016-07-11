@@ -1,5 +1,7 @@
 __author__ = 'ufarooqi'
 import re
+import random
+import string
 from flask import render_template
 from user_service.user_app import app
 from werkzeug.security import gen_salt
@@ -112,10 +114,21 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
     return sample_templates_folder.id
 
 
+def generate_temporary_password():
+    """
+    This method will generate random password which will have at least 2 letters, digits and special characters
+    :return: Password
+    """
+    password = [random.choice(string.ascii_letters) for _ in range(3)] + [
+        random.choice(string.digits) for _ in range(3)] + ['&', '#']
+    random.shuffle(password)
+    return ''.join(password)
+
+
 def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None,
                 thumbnail_url='', user_group_id=None, locale=None):
 
-    temp_password = gen_salt(8)
+    temp_password = generate_temporary_password()
     hashed_password = gettalent_generate_password_hash(temp_password)
 
     user_group = None
