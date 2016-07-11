@@ -28,6 +28,7 @@ from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.tests.helper_functions import send_request
 
+# TODO: IMO, move group_url_name and group_id to web.cfg so that we don't need to make changes in code.
 # This is common data for creating test events
 EVENT_DATA = {
     "organizer_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
@@ -519,22 +520,25 @@ def meetup_missing_data(request, meetup_event_data):
     :param meetup_event_data: dictionary for meetup event data
     :return:
     """
+    # TODO-- 'meet' should be 'Meetup' everywhere (note the title case)
     return request.param, meetup_event_data.copy()
 
 
 @pytest.fixture(scope="session")
 def delete_all_eventbrite_webhooks(request):
     """
-    This method gets all webhooks from eventbrite and delete them
+    This method gets all webhooks from Eventbrite and delete them
     :param request:
     :return:
     """
-
+    # TODO--kindly explain in comment as to why delete them
+    # TODO--kindly improve this method
     def fin():
         social_network = SocialNetwork.get_by_name('eventbrite')
         user_social_network_credentials = UserSocialNetworkCredential.get_all_credentials(social_network_id=social_network.id)
         for credentials in user_social_network_credentials:
             header = {'Authorization': 'Bearer %s' % credentials.access_token}
+            # TODO--make this "social_network.api_url % ('/webhooks/')" into a variable and use that variable
             response = http_request('GET', url=social_network.api_url + '/webhooks/',
                                     headers=header)
             web_hooks = response.json()['webhooks']
@@ -543,8 +547,10 @@ def delete_all_eventbrite_webhooks(request):
                     # Send delete request to delete web_hook
                     response = http_request('DELETE', url=social_network.api_url + '/webhooks/%s' % web_hook['id'],
                                             headers=header)
+                    # TODO--use request.codes
                     assert response.status_code == 200
                 except Exception:
+                    # TODO--kindly log
                     pass
 
     request.addfinalizer(fin)

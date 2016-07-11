@@ -152,9 +152,10 @@ class RSVPBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
+        # TODO: we should check isinstance here as we are getting object properties below
         if kwargs.get('user_credentials'):
             self.user_credentials = kwargs.get('user_credentials')
-
+            # TODO: Not sure whats session expire issue. (Basit)
             # To resolve session expire issue, save the fields in a dict
             self.user_credentials_dict = dict(id=self.user_credentials.id,
                                               access_token=self.user_credentials.access_token,
@@ -456,9 +457,13 @@ class RSVPBase(object):
         :return attendee:
         :rtype: object
         """
+        # TODO: Update rtype to be Attendee (import from utilities) here and every where else
+        # TODO: Now we have removed use of self. It should be static now.
 
+        # TODO--please ensure the comments of this method still reflect the reality
         token = Token.get_by_user_id(attendee.gt_user_id)
-
+        # TODO: Shouldn't we raise if token is not found? rather than requesting candidate_service with None token?(Basit)
+        # TODO--not sure but is not None a problem in the headers?
         headers = {'Authorization': 'Bearer {}'.format(token.access_token if token else None),
                    "Content-Type": "application/json"}
 
@@ -468,7 +473,7 @@ class RSVPBase(object):
                 "notes": attendee.event.title
             }
         }
-
+        # TODO: why not http_request here?
         response = requests.post(UserServiceApiUrl.DOMAIN_SOURCES,
                                  headers=headers,
                                  data=json.dumps(candidate_source))
@@ -511,6 +516,9 @@ class RSVPBase(object):
         :return attendee:
         :rtype: object
         """
+        # TODO: unused line (Basit)
+        # TODO--kindly ensure the above comments reflect the reality
+        #TODO--following isn't being used anywhere
         newly_added_candidate = 1  # 1 represents entity is new candidate
         candidate_in_db = \
             Candidate.get_by_first_last_name_owner_user_id_source_id_product(
@@ -520,9 +528,11 @@ class RSVPBase(object):
                 attendee.candidate_source_id,
                 attendee.source_product_id)
 
+        # TODO--kindly add comments why the need of talent pool id
         talent_pools = TalentPool.get_by_user_id(attendee.gt_user_id)
         talent_pool_ids = map(lambda talent_pool: talent_pool.id, talent_pools)
-
+        # TODO: Log useful data. e.g., user_id, sn_id etc (Basit)
+        # TODO--what if talent_pool_ids has [None, '', 0]. Please cater this scenario when you check for None. Yes, assume this may happen
         if not talent_pool_ids:
             raise InternalServerError("save_attendee_as_candidate: user doesn't have any talent_pool")
 
@@ -532,21 +542,22 @@ class RSVPBase(object):
                 'source_id': attendee.candidate_source_id,
                 'talent_pool_ids': dict(add=talent_pool_ids)
                 }
-
+        # TODO: pep8 violation
         social_network_data = {
-                         'name': attendee.event.social_network.name,
-                         'profile_url': attendee.social_profile_url
-                        }
+             'name': attendee.event.social_network.name,
+             'profile_url': attendee.social_profile_url
+        }
 
         # Update if already exist
         if candidate_in_db:
             candidate_id = candidate_in_db.id
             data = dict(candidates=[data])
 
-            # Get candidate social network if already exist
+            # Get candidate's social network if already exist
+            # TODO: pep8 violation (Basit)
             candidate_social_network_in_db = \
                 CandidateSocialNetwork.get_by_candidate_id_and_sn_id(
-                                    candidate_id, attendee.social_network_id)
+                    candidate_id, attendee.social_network_id)
             if candidate_social_network_in_db:
                 social_network_data.update({'id': candidate_social_network_in_db.id})
 
@@ -557,11 +568,14 @@ class RSVPBase(object):
 
         # Update social network data to be sent with candidate
         data.update({'social_networks': [social_network_data]})
+        # TODO: we are getting token again. I think make it property of Attendee object.
         token = Token.get_by_user_id(attendee.gt_user_id)
+        # TODO: Isn't this creating every time? How will it update if candidate exists? i.e. patch request.
         response = create_candidates_from_candidate_api(oauth_token=token.access_token if token else None,
                                                         data=dict(candidates=[data]),
                                                         return_candidate_ids_only=True)
-
+        # TODO: In case of update, we will already have id. (Basit)
+        # TODO --is the response being validated
         # Get created candidate id
         candidate_id = response[0]
         attendee.candidate_id = candidate_id
@@ -657,7 +671,8 @@ class RSVPBase(object):
                   'img': attendee.vendor_img_link,
                   'creator': '%s' % gt_user_first_name + ' %s'
                                                          % gt_user_last_name}
-
+        # TODO: why aren't we checking that activity has already been created? IMOit will create multiple activities
+        # TODO: for a particular event.
         add_activity(user_id=attendee.gt_user_id,
                      activity_type=Activity.MessageIds.RSVP_EVENT,
                      source_id=attendee.rsvp_id,

@@ -7,7 +7,8 @@ These methods are called by run_job method asynchronously
     celery -A social_network_service.run.celery  worker --concurrency=4 --loglevel=info
 
 """
-
+#TODO: Wrong module level docs
+#TODO: Unused import
 # Application imports
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
@@ -15,12 +16,12 @@ from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.modules.utilities import get_class
 from social_network_service.social_network_app import celery_app as celery, app
 
-
+#TODO: taks_name -> events_and_rsvps_importer
 @celery.task(name="rsvp_events_importer")
 def rsvp_events_importer(social_network_name, mode, user_credentials):
     """
-    Imports RSVPs or events of a user, create canidates store them in db and also upload them on Cloud search
-    :param social_network_name: facebook, eventbrite, meetup
+    Imports RSVPs or events of a user, create candidates store them in db and also upload them on Cloud search
+    :param social_network_name: Facebook, Eventbrite, Meetup
     :param mode: rsvp or event
     :param app: Flask app
     :return:
