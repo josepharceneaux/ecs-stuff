@@ -49,6 +49,7 @@ class TestATSAccounts(object):
         """
         POST /v1/ats-accounts Test creating an account
         GET  /v1/ats-accounts/id Test retrieving an account
+        GET  /v1/ats Test getting the ATS entry created by adding the account
 
         Create an account then test that all table entries have been correctly added.
         """
@@ -62,6 +63,5 @@ class TestATSAccounts(object):
         response = send_request('get', ATSServiceApiUrl.ATS, access_token_first, {}, verify=False)
         assert response.status_code == codes.OK
         values = json.loads(json.loads(response.text))
-        # print "RES: {}".format(values)
         assert len(values) == 1
         assert values[0]['login_url'] == account_post_data['ats_login']

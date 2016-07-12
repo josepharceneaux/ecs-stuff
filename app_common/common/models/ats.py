@@ -28,12 +28,17 @@ class ATS(db.Model):
 
     def to_dict(self):
         """
+        Return a dict representation of this object.
+        :rtype: dict
         """
         return { 'name' : self.name, 'homepage_url' : self.homepage_url, 'login_url' : self.login_url, 'auth_type' : self.auth_type }
 
     @classmethod
     def get_by_id(cls, ats_id):
         """
+        Find and return this object by its id.
+        :param int ats_id: id of the object.
+        :rtype: ATS.
         """
         assert isinstance(ats_id, (int, long)) and ats_id > 0, 'ATS Id should be a valid positive number'
         return cls.query.filter_by(id=ats_id).first()
@@ -41,6 +46,9 @@ class ATS(db.Model):
     @classmethod
     def get_by_name(cls, ats_name):
         """
+        Find and return this object by its name field.
+        :param int ats_name: name of the object.
+        :rtype: ATS
         """
         assert isinstance(ats_name, basestring), 'ATS Name should be a string'
         return cls.query.filter_by(name=ats_name).first()
@@ -48,6 +56,8 @@ class ATS(db.Model):
     @classmethod
     def get_all(cls):
         """
+        Retrieve all ATS entries.
+        :rtype: list[ATS]
         """
         ats_list = []
         found = cls.query.all()
@@ -60,6 +70,8 @@ class ATS(db.Model):
     @classmethod
     def get_all_as_json(cls):
         """
+        Retrieve all ATS entries and return as JSON.
+        :rtype: str
         """
         return_json = []
         ats_list = ATS.get_all()
@@ -72,6 +84,7 @@ class ATS(db.Model):
 
 class ATSAccount(db.Model):
     """
+    An ATS account belonging to a GT user.
     """
     __tablename__ = 'ats_account'
     id = db.Column(db.BigInteger, primary_key=True)
@@ -84,12 +97,17 @@ class ATSAccount(db.Model):
 
     def to_dict(self):
         """
+        Return a dict representation of this object.
+        :rtype: dict
         """
         return { 'active' : self.active, 'ats_id' : self.ats_id, 'user_id' : self.user_id, 'ats_credential_id' : self.ats_credential_id }
 
     @classmethod
     def get_by_id(cls, account_id):
         """
+        Find and return this object by its id.
+        :param int account_id: id of the object.
+        :rtype: ATSAccount
         """
         assert isinstance(account_id, (int, long)) and account_id > 0, 'Account Id should be a valid positive number'
         return cls.query.filter_by(id=account_id).first()
@@ -97,6 +115,10 @@ class ATSAccount(db.Model):
     @classmethod
     def get_account(cls, user_id, ats_name):
         """
+        Retrieve a specific ATS account of a user.
+        :param int user_id: id of the GT user.
+        :param str ats_name: name of the ATS.
+        :rtype: ATSAccount
         """
         accounts = cls.query.filter_by(user_id=user_id).all()
         if accounts:
@@ -108,6 +130,9 @@ class ATSAccount(db.Model):
     @classmethod
     def get_accounts_for_user(cls, user_id):
         """
+        Retrieve all ATS accounts belonging to a user.
+        :param int user_id: id of the GT user.
+        :rtype: list[ATSAccount]
         """
         accounts = cls.query.filter(ATSAccount.user_id == user_id)
         return accounts
@@ -115,6 +140,9 @@ class ATSAccount(db.Model):
     @classmethod
     def get_accounts_for_user_as_json(cls, user_id):
         """
+        Retrieve all ATS accounts belonging to a user and return as JSON.
+        :param int user_id: id of the GT user.
+        :rtype: str
         """
         return_json = []
         accounts = ATSAccount.get_accounts_for_user(user_id)
@@ -133,6 +161,7 @@ class ATSAccount(db.Model):
 
 class ATSCredential(db.Model):
     """
+    Credentials used to access an ATS account.
     """
     __tablename__ = 'ats_credential'
     id = db.Column(db.BigInteger, primary_key=True)
@@ -144,6 +173,9 @@ class ATSCredential(db.Model):
     @classmethod
     def get_by_id(cls, credentials_id):
         """
+        Find and return this object by its id.
+        :param int credentials_id: id of the object.
+        :rtype: ATSCredentials
         """
         assert isinstance(credentials_id, (int, long)) and credentials_id > 0, 'ATS Id {} should be a valid positive number'.format(credentials_id)
         return cls.query.filter_by(id=credentials_id).first()
@@ -154,6 +186,7 @@ class ATSCredential(db.Model):
 
 class ATSCandidate(db.Model):
     """
+    A candidate from an ATS. May or may not be linked to a GT candidate.
     """
     __tablename__ = 'ats_candidate'
     id = db.Column(db.BigInteger, primary_key=True)
@@ -166,12 +199,17 @@ class ATSCandidate(db.Model):
 
     def to_dict(self):
         """
+        Return a dict representation of this object.
+        :rtype: dict
         """
         return { 'id' : self.id, 'ats_account_id' : self.ats_account_id, 'ats_remote_id' : self.ats_remote_id, 'gt_candidate_id' : self.gt_candidate_id }
 
     @classmethod
     def get_by_id(cls, ats_candidate_id):
         """
+        Find and return this object by its id.
+        :param int candidate_id: id of the object.
+        :rtype: ATSCandidate
         """
         assert isinstance(ats_candidate_id, (int, long)) and ats_candidate_id > 0, 'ATS Candidate Id should be a valid positive number'
         return cls.query.filter_by(id=ats_candidate_id).first()
@@ -205,6 +243,7 @@ class ATSCandidate(db.Model):
 
 class ATSCandidateProfile(db.Model):
     """
+    Attributes of an ATS candidate.
     """
     __tablename__ = 'ats_candidate_profile'
     id = db.Column(db.BigInteger, primary_key=True)
@@ -216,12 +255,17 @@ class ATSCandidateProfile(db.Model):
 
     def to_dict(self):
         """
+        Return a dict representation of this object.
+        :rtype: dict
         """
         return { 'active' : self.active, 'profile_json' : self.profile_json }
 
     @classmethod
     def get_by_id(cls, profile_id):
         """
+        Find and return this object by its id.
+        :param int profile_id: id of the object.
+        :rtype: ATSCandidateProfile
         """
         assert isinstance(profile_id, (int, long)) and profile_id > 0, 'Candidate profile id should be a valid positive number'
         return cls.query.filter_by(id=profile_id).first()
