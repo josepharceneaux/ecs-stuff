@@ -7,6 +7,7 @@ import json
 
 from flask import request, Blueprint
 from flask_restful import Resource
+from requests import codes
 
 # Decorators
 from ats_service.common.utils.auth_utils import require_oauth
@@ -77,6 +78,12 @@ class ATSAccountService(Resource):
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
         account = ATSAccount.get_by_id(account_id)
+        if not account:
+            ats_service.app.logger.info("Attempt to fetch non-existant ATS account {}".format(account_id))
+            response = json.dumps(dict(id=account_id, message="ATS account (id = {}) does not exist.".format(account_id)))
+            headers = dict(Location=ATSServiceApiUrl.ACCOUNT % account_id)
+            return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
+
         account_dict = account.to_dict()
         credentials = ATSCredential.get_by_id(account.ats_credential_id)
         account_dict.update( { 'credentials' : credentials.credentials_json} )
@@ -144,7 +151,7 @@ class ATSAccountsService(Resource):
             ats_service.app.logger.info("Attempt to create already existing ATS account {}".format(account.id))
             response = json.dumps(dict(id=account.id, message="ATS account already exists."))
             headers = dict(Location=ATSServiceApiUrl.ACCOUNTS % account.id)
-            return ApiResponse(response, headers=headers, status=200)
+            return ApiResponse(response, headers=headers, status=codes.OK)
 
         # Search for ATS entry, create if absent
         ats = ATS.get_by_name(data['ats_name'])
@@ -157,8 +164,8 @@ class ATSAccountsService(Resource):
         ats_service.app.logger.info("Added new ATS account {}.".format(account.id))
 
         response = json.dumps(dict(id=account.id, message="ATS account successfully created."))
-        headers = dict(Location=ATSServiceApiUrl.ACCOUNTS % account.id)
-        return ApiResponse(response, headers=headers, status=201)
+        headers = dict(Location=ATSServiceApiUrl.ACCOUNT % account.id)
+        return ApiResponse(response, headers=headers, status=codes.CREATED)
 
 
 @api.route(ATSServiceApi.CANDIDATES)
@@ -186,7 +193,7 @@ class ATSCandidatesService(Resource):
             ats_service.app.logger.info("ATS account not found {}".format(account_id))
             response = json.dumps(dict(account_id=account_id, message="ATS account not found {}".format(account_id)))
             headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account)
-            return ApiResponse(response, headers=headers, status=404)
+            return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
 
         candidates = ATSCandidate.get_all_as_json(account_id)
         if candidates:
@@ -195,7 +202,7 @@ class ATSCandidatesService(Resource):
         ats_service.app.logger.info("No candidates in ATS account {}".format(account_id))
         response = json.dumps(dict(account_id=account_id, message="No candidates in ATS account {}".format(account_id)))
         headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account)
-        return ApiResponse(response, headers=headers, status=404)
+        return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
 
     def post(self, account_id):
         """
@@ -220,14 +227,14 @@ class ATSCandidatesService(Resource):
             ats_service.app.logger.info("Attempt to create ATS candidate in non-existant ATS {}".format(data['ats_name']))
             response = json.dumps(dict(ats=data['ats_name'], message="Create candidate: non-existant ATS {}".format(account_id)))
             headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account)
-            return ApiResponse(response, headers=headers, status=404)
+            return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
 
         # Create the candidate. No attempt to determine if duplicate.
         candidate = new_ats_candidate(account, data)
 
         response = json.dumps(dict(id=candidate.id, message="ATS candidate successfully created."))
         headers = dict(Location=ATSServiceApiUrl.CANDIDATES % candidate.id)
-        return ApiResponse(response, headers=headers, status=201)
+        return ApiResponse(response, headers=headers, status=codes.CREATED)
 
 
 @api.route(ATSServiceApi.CANDIDATE)

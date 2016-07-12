@@ -1,4 +1,5 @@
 """
+Fixtures particular to ATS testing.
 """
 
 import pytest
@@ -12,5 +13,10 @@ test_config = load_test_config()
 
 @pytest.fixture(scope="module")
 def account_post_data():
-    return { 'ats_name' : 'data', 'ats_homepage' : 'data', 'ats_login' : 'data',
-             'ats_auth_type' : 'data', 'ats_id' : 'data', 'ats_credentials' : 'data' }
+    """
+    Data used to create an ATS account.
+
+    :rtype dict
+    """
+    return { 'ats_name' : 'A New ATS', 'ats_homepage' : 'https://newats.com', 'ats_login' : 'https://newats.com',
+             'ats_auth_type' : 'Basic', 'ats_id' : 'id on ATS', 'ats_credentials' : 'My ATS Credentials' }
