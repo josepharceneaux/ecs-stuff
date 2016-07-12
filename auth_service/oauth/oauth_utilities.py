@@ -4,8 +4,11 @@ from dateutil.parser import parse
 from flask_oauthlib.provider import OAuth2RequestValidator
 from werkzeug.security import check_password_hash
 from auth_service.common.models.user import *
+from auth_service.common.redis_cache import redis_store
 from auth_service.oauth import logger, app
 from datetime import datetime, timedelta
+
+MAXIMUM_NUMBER_OF_INVALID_LOGIN_ATTEMPTS = 5
 
 
 # TODO Once our flask services would be up we'll migrate all existing passwords to flask PBKDF format
@@ -24,7 +27,10 @@ def change_hashing_format(password):
 
 def authenticate_user(username, password, *args, **kwargs):
     """
-    It's user getter method i.e it'll retrieve a User object from database given valid username/password
+    It's user getter method i.e it'll retrieve a User object from database given valid username/password.
+    If user provides a wrong password, his wrong login attempt counter in redis is incremented by 1.
+    If wrong login attempt counter reachers 5 we disable the user. Wrong login attempt counter for each user
+    is reset after every hour
     :param str username: username of a user
     :param str password:  password of a user
     :rtype: User
@@ -36,6 +42,22 @@ def authenticate_user(username, password, *args, **kwargs):
         user_password = change_hashing_format(user.password)
         if check_password_hash(user_password, password):
             return user
+        else:
+            if not redis_store.exists('invalid_login_attempt_counter_{}'.format(username)):
+                redis_store.setex('invalid_login_attempt_counter_{}'.format(username), 3600, 1)
+            else:
+                previous_wrong_password_count = redis_store.get('invalid_login_attempt_counter_{}'.format(username))
+                if previous_wrong_password_count + 1 >= MAXIMUM_NUMBER_OF_INVALID_LOGIN_ATTEMPTS:
+                    redis_store.delete('invalid_login_attempt_counter_{}'.format(username))
+                    user.is_disabled = 1
+                    db.session.commit()
+                    logger.info("User %s has been disabled because %s invalid login attempts have been made in "
+                                "last one hour", user.id, MAXIMUM_NUMBER_OF_INVALID_LOGIN_ATTEMPTS)
+                else:
+                    time_to_live = redis_store.ttl('invalid_login_attempt_counter_{}'.format(username))
+                    redis_store.setex('invalid_login_attempt_counter_{}'.format(username),
+                                      time_to_live, previous_wrong_password_count + 1)
+
     logger.warn('There is no user with username: %s and password: %s', username, password)
     return None
 
