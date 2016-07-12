@@ -38,7 +38,7 @@ def authenticate_user(username, password, *args, **kwargs):
         if check_password_hash(user_password, password):
             return user
         else:
-            if not redis_store.exists(username):
+            if not redis_store.exists('email_{}'.format(username)):
                 redis_store.setex('email_{}'.format(username), 3600, 1)
             else:
                 previous_wrong_password_count = redis_store.get('email_{}'.format(username))
@@ -46,7 +46,9 @@ def authenticate_user(username, password, *args, **kwargs):
                     redis_store.delete('email_{}'.format(username))
                     user.is_disabled = 1
                     db.session.commit()
-                redis_store.setex('email_{}'.format(username), 3600, previous_wrong_password_count + 1)
+                else:
+                    time_to_live = redis_store.ttl('email_{}'.format(username))
+                    redis_store.setex('email_{}'.format(username), time_to_live, previous_wrong_password_count + 1)
 
     logger.warn('There is no user with username: %s and password: %s', username, password)
     return None
