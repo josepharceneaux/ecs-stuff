@@ -128,7 +128,7 @@ def generate_temporary_password():
 def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None,
                 thumbnail_url='', user_group_id=None, locale=None):
 
-    temp_password = generate_temporary_password()
+    temp_password = gen_salt(8)
     hashed_password = gettalent_generate_password_hash(temp_password)
 
     user_group = None

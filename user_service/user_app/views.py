@@ -53,9 +53,6 @@ def update_password():
         raise NotFoundError(error_message="Either old or new password is missing")
 
     old_password_hashed = request.user.password
-    if not validate_password(new_password):
-        raise ForbiddenError("Password should contain at least 2 alphabets, numbers and "
-                             "special characters and should be 8 characters long")
 
     # If password is hashed in web2py (old framework) format, change it to werkzeug.security format
     if 'pbkdf2:sha512:1000' not in old_password_hashed and old_password_hashed.count('$') == 2:
@@ -147,10 +144,6 @@ def reset_password(token):
         password = posted_data.get('password', '')
         if not password:
             raise InvalidUsage(error_message="A valid password should be provided")
-
-        if not validate_password(password):
-            raise ForbiddenError("Password should contain at least 2 alphabets, numbers and "
-                                 "special characters and should be 8 characters long")
 
         # Remove key-value pair from redis-cache
         if six_digit_token_key:
