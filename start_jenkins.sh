@@ -62,8 +62,6 @@ do
     eval $command
 done
 
-# Note that we don't run the scheduler admin web app since there are no UI tests for it; we run build tests below
-
 sleep 10
 
 py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests sms_campaign_service/tests resume_parsing_service/tests push_campaign_service/tests candidate_service/tests email_campaign_service/tests
