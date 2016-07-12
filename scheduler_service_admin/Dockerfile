@@ -22,6 +22,5 @@ RUN bower --allow-root install
 # CMD export GT_ENVIRONMENT=$GT_ENVIRONMENT && gulp build
 # CMD export GT_ENVIRONMENT=$GT_ENVIRONMENT && gulp serve-build
 
-# Build and start node server
-RUN gulp build
+# Start node server
 CMD gulp serve-build
