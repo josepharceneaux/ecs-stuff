@@ -48,10 +48,10 @@ def test_forgot_password(user_first):
     assert reset_password(token, action='POST') == 400
 
     # Someone trying to reset his password using alphanumeric token
-    assert reset_password(token, password='temp123', action='POST') == 204
+    assert reset_password(token, password='029M&#Od', action='POST') == 204
 
     # Someone trying to reset his password again using same alphanumeric token
-    assert reset_password(token, password='temp123', action='POST') == 400
+    assert reset_password(token, password='029M&#Od', action='POST') == 400
 
     # Someone again trying to reset his password with valid email address
     assert forgot_password(user_first.email, 'POST') == 204
