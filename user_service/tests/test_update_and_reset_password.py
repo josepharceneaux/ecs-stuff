@@ -6,14 +6,16 @@ from common_functions import *
 
 def test_update_password(access_token_first):
 
+    new_password = '029M&#Od'
+
     # Logged-in user updating its password but providing empty values of old and new password
     assert update_password(access_token_first, '', '') == 404
 
     # Logged-in user updating its password but providing wrong value of old_password
-    assert update_password(access_token_first, PASSWORD + 'temp', CHANGED_PASSWORD) == 401
+    assert update_password(access_token_first, PASSWORD + 'temp', new_password) == 401
 
     # Logged-in user updating its password
-    assert update_password(access_token_first, PASSWORD, CHANGED_PASSWORD) == 200
+    assert update_password(access_token_first, PASSWORD, new_password) == 200
 
     # Logged-in user changing its own password but as its password has changed before so all of its tokens have been
     # revoked. So 401 status code should be returned
@@ -66,10 +68,10 @@ def test_forgot_password(user_first):
             break
 
     # Someone trying to reset his password using six_digit_token
-    assert reset_password(six_digit_token, password='temp125', action='POST') == 204
+    assert reset_password(six_digit_token, password='029M&#Od', action='POST') == 204
 
     # Someone trying to reset his password again using same six_digit_token
-    assert reset_password(six_digit_token, password='temp125', action='POST') == 400
+    assert reset_password(six_digit_token, password='029M&#Od', action='POST') == 400
 
     # Someone trying to reset his password again using alphanumeric token
-    assert reset_password(token, password='temp125', action='POST') == 400
+    assert reset_password(token, password='029M&#Od', action='POST') == 400
