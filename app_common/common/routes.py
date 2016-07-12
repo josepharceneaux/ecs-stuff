@@ -649,7 +649,7 @@ class SocialNetworkApiUrl(object):
     if env == TalentEnvs.DEV:
         UI_APP_URL = 'http://127.0.0.1:3000/%s'
     else:
-        UI_APP_URL = 'https://dev.gettalent.com/%s'
+        UI_APP_URL = 'https://staging.gettalent.com/%s'
 
     SUBSCRIBE = UI_APP_URL % 'events/subscribe?code=%s'
     EVENTS = HOST_NAME % ('/' + VERSION + '/events')

@@ -250,18 +250,13 @@ class Eventbrite(SocialNetworkBase):
         response = http_request('POST', url, params=payload,
                                 headers=self.headers,
                                 user_id=self.user.id)
+        json_resp = response.json()
         if response.ok:
             logger.info('|  Venue has been created  |')
-            venue_id = response.json().get('id')
+            venue_id = json_resp.get('id')
         else:
-            error_message = "Venue was not Created. There are some " \
-                            "errors: Details: %s " % response
-            message = '\nErrors from the Social Network:\n'
-            message += \
-                ''.join(response.json().get('error') + ',' + response.json().get('error_description'))
-            error_message += message
             raise InternalServerError('ApiError: Unable to create venue for Eventbrite',
-                                      additional_error_info=dict(venue_error=error_message))
+                                      additional_error_info=dict(venue_error=json_resp))
 
         venue_data['user_id'] = self.user.id
         venue_data['social_network_venue_id'] = venue_id

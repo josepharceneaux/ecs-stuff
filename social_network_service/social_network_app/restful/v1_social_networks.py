@@ -41,12 +41,10 @@ import json
 import types
 
 # 3rd party imports
-import requests
 from flask import Blueprint
 from flask.ext.restful import Resource
 
 # application specific imports
-from social_network_service.custom_exceptions import EventLocationNotCreated
 from social_network_service.modules import  custom_codes
 from social_network_service.modules.social_network.base import SocialNetworkBase
 from social_network_service.social_network_app import logger
@@ -63,7 +61,7 @@ from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.utils.api_utils import api_route, ApiResponse
 
-from social_network_service.common.utils.handy_functions import get_valid_json_data, http_request
+from social_network_service.common.utils.handy_functions import get_valid_json_data
 
 social_network_blueprint = Blueprint('social_network_api', __name__)
 api = TalentApi()

@@ -272,24 +272,18 @@ class Meetup(SocialNetworkBase):
         response = http_request('POST', url, params=payload,
                                 headers=self.headers,
                                 user_id=self.user.id)
+        json_resp = response.json()
         if response.ok:
-            venue_id = json.loads(response.text)['id']
+            venue_id = json_resp['id']
             logger.info('|  Venue has been Added  |')
         elif response.status_code == 409:
             # 409 is returned when our venue is matching existing
             # venue/venues.
-            response = response.json()
             raise InvalidUsage('Matching venue already exists.',
-                               additional_error_info=dict(venue_error=response['errors'][0]['potential_matches']))
+                               additional_error_info=dict(venue_error=json_resp['errors'][0]['potential_matches']))
         else:
-            error_message = 'Venue was not Added. There are some errors.'
-            errors = response.json().get('errors')
-            message = '\nErrors from the social network:\n'
-            message += '\n'.join(error['message'] + ', ' + error['code']
-                                 for error in errors) if errors else ''
-            error_message += message
             raise InternalServerError('ApiError: Unable to create venue for Meetup',
-                                      additional_error_info=dict(venue_error=error_message))
+                                      additional_error_info=dict(venue_error=json_resp))
 
         venue_data['user_id'] = self.user.id
         venue_data['social_network_venue_id'] = venue_id

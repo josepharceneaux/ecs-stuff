@@ -15,6 +15,7 @@ from restful.v1_data import data_blueprint
 from restful.v1_events import events_blueprint
 from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
+from social_network_service.modules.constants import MEETUP_CODE_LENGTH
 from social_network_service.modules.social_network.twitter import Twitter
 from social_network_service.social_network_app import app, logger
 from social_network_service.modules.utilities import get_class
@@ -51,8 +52,8 @@ def authorize():
     """
     code = request.args.get('code')
     url = SocialNetworkApiUrl.SUBSCRIBE % code
-    meetup_code_length = 32
-    if len(code) == meetup_code_length:
+
+    if len(code) == MEETUP_CODE_LENGTH:
         social_network = SocialNetwork.get_by_name('Meetup')
     else:
         social_network = SocialNetwork.get_by_name('Eventbrite')
