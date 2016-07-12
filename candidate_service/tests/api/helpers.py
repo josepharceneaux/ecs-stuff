@@ -1,24 +1,16 @@
 """
 Helper functions for tests written for the candidate_service
 """
-import requests, operator
-from time import sleep
+import time
 
 # Third party
 import pycountry as pc
-from redo import retrier
 
 # Models
 from candidate_service.common.models.user import DomainRole
 
 # User Roles
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
-
-# Error handling
-from candidate_service.common.error_handling import NotFoundError
-
-from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.common.utils.test_utils import response_info
 
 
 class AddUserRoles(object):
@@ -197,3 +189,46 @@ def get_int_version(x):
         pass
     except TypeError:
         pass
+
+
+def order_military_services(military_services_data):
+    """
+    Function will change the order of military services data based on its to_date value
+    """
+    to_date_1 = military_services_data[0]['to_date']
+    to_date_2 = military_services_data[1]['to_date']
+
+    if time.strptime(to_date_1, '%Y-%m-%d') < time.strptime(to_date_2, '%Y-%m-%d'):
+        military_services_data.insert(0, military_services_data.pop(1))
+    return military_services_data
+
+
+def order_work_experiences(work_experiences_data):
+    """
+    Function will change the order of the work experiences based on the following priorities:
+      1. is current
+      2. start year
+      3. start month
+    """
+    # Move experience to first position if it's a current position
+    start_year, start_month = work_experiences_data[0]['start_year'], work_experiences_data[0]['start_month']
+    position_taken = 0
+    for i, experience in enumerate(work_experiences_data):
+
+        if experience.get('is_current') is True:
+            work_experiences_data.insert(position_taken, work_experiences_data.pop(i))
+            position_taken += 1
+            continue  # Assume at most one of the experiences is current
+
+        if experience.get('start_year') < start_year and experience.get('start_month') < start_month:
+            start_year = experience.get('start_year')
+            start_month = experience.get('start_month')
+            work_experiences_data.insert(position_taken, work_experiences_data.pop(i))
+            position_taken += 1
+
+        elif experience.get('start_year') == start_year and experience.get('start_month') < start_month:
+            start_month = experience.get('start_month')
+            work_experiences_data.insert(position_taken, work_experiences_data.pop(i))
+            position_taken += 1
+
+    return work_experiences_data

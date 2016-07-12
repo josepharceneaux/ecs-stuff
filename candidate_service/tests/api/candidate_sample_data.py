@@ -185,7 +185,9 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                         'state': fake.state(),  # TODO: state should soon be deprecated in favor of subdivision code
                         'start_month': CURRENT_DATE.month,
                         'start_year': CURRENT_DATE.year - 10,
-                        'is_current': True,
+                        'end_month': CURRENT_DATE.month,
+                        'end_year': CURRENT_DATE.year - 5,
+                        'is_current': False,
                         'country_code': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
                         'bullets': [
                             {
@@ -204,9 +206,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                         'state': fake.state(),  # TODO: state should soon be deprecated in favor of subdivision code
                         'start_month': CURRENT_DATE.month,
                         'start_year': CURRENT_DATE.year - 5,
-                        'is_current': False,
-                        'end_month': CURRENT_DATE.month,
-                        'end_year': CURRENT_DATE.year - 3,
+                        'is_current': True,
                         'country_code': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
                         'bullets': [
                             {
@@ -220,7 +220,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                 ],
                 'military_services': [
                     {
-                        'country': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
+                        'country_code': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
                         'branch': fake.military_ship(),
                         'highest_rank': random.choice(['lieutenant', 'captain', 'colonel', 'general']),
                         'status': random.choice(['active', 'inactive', 'discharged']),
@@ -230,7 +230,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                         'to_date': CURRENT_DATE.strftime("{}-%m-%d".format(CURRENT_DATE.year - 16))
                     },
                     {
-                        'country': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
+                        'country_code': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
                         'branch': fake.military_ship(),
                         'highest_rank': random.choice(['lieutenant', 'captain', 'colonel', 'general']),
                         'status': random.choice(['active', 'inactive', 'discharged']),
@@ -244,13 +244,13 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                     {
                         'city': fake.city(),
                         'state': fake.state(), # TODO: state should soon be deprecated in favor of subdivision code
-                        'country': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
+                        'country_code': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
                         'subdivision_code': 'US-CA'
                     },
                     {
                         'city': fake.city(),
                         'state': fake.state(), # TODO: state should soon be deprecated in favor of subdivision code
-                        'country': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
+                        'country_code': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
                         'subdivision_code': 'US-CA'
                     }
                 ],
@@ -269,11 +269,11 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                 'social_networks': [
                     {
                         'profile_url': 'http://www.facebook.com/1024359318',
-                        'name': 'facebook'
+                        'name': 'Facebook'
                     },
                     {
                         'profile_url': 'https://twitter.com/dmcnulla',
-                        'name': 'twitter'
+                        'name': 'Twitter'
                     }
                 ],
                 'talent_pool_ids': {
@@ -293,7 +293,7 @@ class GenerateCandidateData(object):
         :type talent_pool_ids:  list[int]
         :param talent_pool_ids is required for creating candidate, but not for updating
         :type candidate_id: int | long
-        :rtype:  dict[list]
+        :rtype:  dict
         """
         data = {'candidates': [
             {

@@ -183,7 +183,9 @@ def fetch_candidate_info(candidate, fields=None):
         'dice_profile_id': dice_profile_id,
         'talent_pool_ids': talent_pool_ids,
         'resume_url': resume_url,
-        'source_id': candidate.source_id
+        'source_id': candidate.source_id,
+        'summary': candidate.summary,
+        'objective': candidate.objective
     }
 
 
@@ -1135,7 +1137,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         middle_name = parsed_names_object.middle
         last_name = parsed_names_object.last
 
-    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url,
+    update_dict = {'objective': objective, 'summary': summary, 'filename': (resume_url or '').lower(),
                    'source_id': source_id, 'candidate_status_id': candidate_status_id}
 
     # Strip each key-value and remove keys with empty-string-values
@@ -1182,7 +1184,7 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
         first_name=first_name, middle_name=middle_name, last_name=last_name, formatted_name=formatted_name,
         added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
         dice_profile_id=dice_profile_id, dice_social_profile_id=dice_social_profile_id,
-        source_id=source_id, objective=objective, summary=summary, filename=resume_url,
+        source_id=source_id, objective=objective, summary=summary, filename=(resume_url or '').lower(),
         is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     )
 
@@ -1962,6 +1964,7 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         phone_label = 'Home' if (not phones_has_label and i == 0) else (phone.get('label') or '').strip().title()
         # Format phone number
         value = (phone.get('value') or '').strip()
+        logger.info('Phone number before using parsing library: %s' % value)
 
         # Phone number must contain at least 7 digits
         # http://stackoverflow.com/questions/14894899/what-is-the-minimum-length-of-a-valid-international-phone-number
@@ -1982,6 +1985,8 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
             else:
                 value = str(phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164))
 
+        logger.info('Phone number after using parsing library: %s' % value)
+
         # Phone number must not belong to any other candidate in the same domain
         matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(value, request.user)
         if matching_phone_values and matching_phone_values[0].candidate_id != candidate_id:
@@ -2000,7 +2005,7 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         )
 
         # Remove keys with empty values
-        phone_dict = {k: v for k, v in phone_dict.items() if v}
+        phone_dict = {k: v for k, v in phone_dict.items() if (v is not None or v != '')}
 
         # Prevent adding empty records to db
         if not phone_dict:
