@@ -561,11 +561,12 @@ class TestCreateHiddenCandidate(object):
               user from the same domain
         Expect: 201, candidate should no longer be web-hidden
         """
+        AddUserRoles.all_roles(user_first)
+
         # Create candidate
-        AddUserRoles.all_roles(user=user_first)
         data = CommonData.data(talent_pool)
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
-        print response_info(response=create_resp)
+        print response_info(create_resp)
         candidate_id = create_resp.json()['candidates'][0]['id']
         db.session.commit()
 
@@ -579,7 +580,7 @@ class TestCreateHiddenCandidate(object):
         print response_info(hide_resp)
         candidate = Candidate.get_by_id(candidate_id)
         candidate_emails_count = len(candidate.emails)
-        assert hide_resp.status_code == requests.codes.CREATED
+        assert hide_resp.status_code == requests.codes.OK
         assert candidate.is_web_hidden
 
         # Create previously hidden candidate with a different user from the same domain
@@ -772,7 +773,7 @@ class TestCreateCandidateAddress(object):
 
 
 class TestCreateAOI(object):
-    def test_create_candidate_area_of_interest(self, access_token_first, user_first, talent_pool, domain_aoi):
+    def test_create_candidate_area_of_interest(self, access_token_first, user_first, talent_pool, domain_aois):
         """
         Test:   Create CandidateAreaOfInterest
         Expect: 201
@@ -780,7 +781,7 @@ class TestCreateAOI(object):
         AddUserRoles.add_and_get(user=user_first)
 
         # Create Candidate + CandidateAreaOfInterest
-        data = generate_single_candidate_data(talent_pool_ids=[talent_pool.id], areas_of_interest=domain_aoi)
+        data = generate_single_candidate_data(talent_pool_ids=[talent_pool.id], areas_of_interest=domain_aois)
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
         print response_info(create_resp)
 
@@ -795,13 +796,13 @@ class TestCreateAOI(object):
         assert candidate_aoi[1]['name'] == AreaOfInterest.query.get(candidate_aoi[1]['id']).name
 
     def test_create_candidate_area_of_interest_outside_of_domain(self, access_token_second, user_second,
-                                                                 domain_aoi, talent_pool):
+                                                                 domain_aois, talent_pool):
         """
         Test: Attempt to create candidate's area of interest outside of user's domain
         Expect: 403
         """
         AddUserRoles.add(user=user_second)
-        data = generate_single_candidate_data([talent_pool.id], domain_aoi)
+        data = generate_single_candidate_data([talent_pool.id], domain_aois)
         create_resp = send_request('post', CANDIDATES_URL, access_token_second, data)
         print response_info(create_resp)
         assert create_resp.status_code == 403

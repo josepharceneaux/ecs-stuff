@@ -312,11 +312,11 @@ class GenerateCandidateData(object):
         return data
 
     @staticmethod
-    def areas_of_interest(domain_aoi, talent_pool_ids=None, candidate_id=None):
+    def areas_of_interest(domain_aois, talent_pool_ids=None, candidate_id=None):
         data = {'candidates': [
             {
                 'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids},
-                'areas_of_interest': [{'area_of_interest_id': area_of_interest.id} for area_of_interest in domain_aoi]
+                'areas_of_interest': [{'area_of_interest_id': area_of_interest.id} for area_of_interest in domain_aois]
             }
         ]}
         # Recursively Remove keys with None values
@@ -478,7 +478,7 @@ class GenerateCandidateData(object):
         return data
 
 
-def candidate_areas_of_interest(domain_aoi, candidate_id=None, aoi_id=None):
+def candidate_areas_of_interest(domain_aois, candidate_id=None, aoi_id=None):
     """
     Sample data for creating Candidate + CandidateAreaOfInterest.
     Date for updating will be returned if candidate_id is provided.
@@ -487,14 +487,14 @@ def candidate_areas_of_interest(domain_aoi, candidate_id=None, aoi_id=None):
     # Data for adding CandidateAreaOfInterest to existing Candidate
     if candidate_id and not aoi_id:
         data = {'candidates': [{'id': candidate_id, 'areas_of_interest': [
-            {'area_of_interest_id': area_of_interest.id} for area_of_interest in domain_aoi]}]}
+            {'area_of_interest_id': area_of_interest.id} for area_of_interest in domain_aois]}]}
     elif candidate_id and aoi_id:
         data = {'candidates': [{'id': candidate_id, 'areas_of_interest': [
-            {'area_of_interest_id': area_of_interest.id} for area_of_interest in domain_aoi]}]}
+            {'area_of_interest_id': area_of_interest.id} for area_of_interest in domain_aois]}]}
     # Data for creating Candidate + CandidateAreaOfInterest
     else:
         data = {'candidates': [{'emails': [{'address': fake.email()}], 'areas_of_interest': [
-            {'area_of_interest_id': area_of_interest.id} for area_of_interest in domain_aoi]}]}
+            {'area_of_interest_id': area_of_interest.id} for area_of_interest in domain_aois]}]}
     return data
 
 

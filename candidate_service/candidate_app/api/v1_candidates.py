@@ -261,7 +261,7 @@ class CandidatesResource(Resource):
         # Add candidates to cloud search
         upload_candidate_documents.delay(created_candidate_ids)
         logger.info('BENCHMARK - candidate POST: {}'.format(time() - start_time))
-        return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
+        return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, requests.codes.CREATED
 
     @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
@@ -389,7 +389,7 @@ class CandidatesResource(Resource):
             db.session.commit()
             # Delete candidate from CS when set to hidden
             delete_candidate_documents(hidden_candidate_ids)
-            return {'hidden_candidate_ids': hidden_candidate_ids}, 200
+            return {'hidden_candidate_ids': hidden_candidate_ids}, requests.codes.OK
 
         # Custom fields must belong to user's domain
         if all_cf_ids:

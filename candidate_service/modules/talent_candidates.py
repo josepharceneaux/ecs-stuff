@@ -1347,9 +1347,9 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
         country_code = education['country_code'].upper() if education.get('country_code') else None
         subdivision_code = education['subdivision_code'].upper() if education.get('subdivision_code') else None
         education_dict = dict(
-            school_name=education['school_name'].strip() if education.get('school_name') else None,
-            school_type=education['school_type'].strip() if education.get('school_type') else None,
-            city=education['city'].strip() if education.get('city') else None,
+            school_name=(education.get('school_name') or '').strip(),
+            school_type=(education.get('school_type') or '').strip(),
+            city=(education.get('city') or '').strip(),
             state=(education.get('state') or '').strip(),
             iso3166_subdivision=subdivision_code,
             iso3166_country=country_code,
@@ -1357,7 +1357,8 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
         )
 
         # Remove keys with empty values
-        education_dict = {k: v for k, v in education_dict.items() if (v is not None or v != '')}
+        education_dict = purge_dict(education_dict)
+        # education_dict = {k: v for k, v in education_dict.items() if (v is not None or v != '')}
 
         # Prevent empty records from being added to the db
         education_degrees = education.get('degrees') or []

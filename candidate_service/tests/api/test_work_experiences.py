@@ -8,7 +8,7 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles, get_country_code_from_name
+from helpers import AddUserRoles, get_country_code_from_name, order_work_experiences
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 
@@ -401,7 +401,7 @@ class TestCreateWorkExperience(object):
         Test:   Create CandidateExperience for Candidate
         Expect: 201
         """
-        AddUserRoles.add_and_get(user=user_first)
+        AddUserRoles.add_and_get(user_first)
 
         # Create Candidate
         data = generate_single_candidate_data([talent_pool.id])
@@ -416,6 +416,8 @@ class TestCreateWorkExperience(object):
 
         # Assert data sent in = data retrieved
         can_experiences = candidate_dict['work_experiences']
+        # order of data returned depends on experience's is_current, start_year, and start_month values, respectively
+        order_work_experiences(data['candidates'][0]['work_experiences'])
         can_exp_data = data['candidates'][0]['work_experiences'][0]
         assert isinstance(can_experiences, list)
 
