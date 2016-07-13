@@ -2,10 +2,9 @@
 __author__ = 'erik@gettalent.com'
 # pylint: disable=wrong-import-position, fixme, import-error
 from resume_parsing_service.app import logger
-from resume_parsing_service.json_schemas.resumes_post_schema import create_candidate_schema
 from resume_parsing_service.common.error_handling import InvalidUsage
-from jsonschema import validate, ValidationError
 from resume_parsing_service.common.utils.validators import get_json_data_if_validated
+from resume_parsing_service.json_schemas.resumes_post_schema import create_candidate_schema
 
 
 
