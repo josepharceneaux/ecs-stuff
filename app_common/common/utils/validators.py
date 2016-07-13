@@ -250,6 +250,7 @@ def get_json_data_if_validated(request_body, json_schema, format_checker=True, c
     Function will compare requested json data with provided json schema
     :type request_body:  request
     :type json_schema:  dict
+    :type custom_msg:  str
     :param format_checker:  If True, specified formats will need to be validated, e.g. datetime
     :param custom_msg: If provided, will return a custom (possibly user facing) message.
     :return:  JSON data if validation passes

@@ -2,7 +2,7 @@
 __author__ = 'erik@gettalent.com'
 # pylint: disable=wrong-import-position, fixme, import-error
 from resume_parsing_service.app import logger
-from resume_parsing_service.app.json_schemas.resumes_post_schema import create_candidate_schema
+from resume_parsing_service.json_schemas.resumes_post_schema import create_candidate_schema
 from resume_parsing_service.common.error_handling import InvalidUsage
 from jsonschema import validate, ValidationError
 from resume_parsing_service.common.utils.validators import get_json_data_if_validated
@@ -13,8 +13,8 @@ def build_params_from_json(request):
     """
     Takes in flask request object with content-type of 'application/json' and returns params used
     in resume processing functions.
-    :param flask.request:
-    :return: dict
+    :param flask.request request:
+    :rtype: dict
     """
     custom_error = 'There has been a critical error parsing this resume, the development team has been notified'
     request_json = get_json_data_if_validated(request, create_candidate_schema, custom_msg=custom_error)
