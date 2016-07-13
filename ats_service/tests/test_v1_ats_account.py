@@ -7,7 +7,7 @@ import json
 from requests import codes
 
 from ats_service.common.utils.test_utils import send_request
-from ats_service.tests.test_utils import missing_field_test, empty_database
+from ats_service.tests.test_utils import missing_field_test, empty_database, create_and_validate_account, verify_nonexistant_account
 from ats_service.app.api.ats_utils import ATS_ACCOUNT_FIELDS
 from ats_service.common.routes import ATSServiceApiUrl
 from ats_service.common.tests.conftest import *
@@ -42,8 +42,7 @@ class TestATSAccounts(object):
         """
         GET /v1/ats-accounts
         """
-        response = send_request('get', ATSServiceApiUrl.ACCOUNT % 12, access_token_first, {}, verify=False)
-        assert response.status_code == codes.NOT_FOUND
+        verify_nonexistant_account(access_token_first, 12)
 
     def test_create_ats_account(self, access_token_first, account_post_data):
         """
@@ -53,15 +52,28 @@ class TestATSAccounts(object):
 
         Create an account then test that all table entries have been correctly added.
         """
-        response = send_request('post', ATSServiceApiUrl.ACCOUNTS, access_token_first, account_post_data)
-        assert response.status_code == codes.CREATED
-        account_id = response.headers['location'].split('/')[-1]
+        create_and_validate_account(access_token_first, account_post_data)
+
+    def test_delete_ats_account(self, access_token_first, account_post_data):
+        """
+        """
+        account_id = create_and_validate_account(access_token_first, account_post_data)
+        response = send_request('delete', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first)
+        assert response.status_code == codes.OK
+        values = json.loads(json.loads(response.text))
+        assert values['delete'] == 'success'
+        verify_nonexistant_account(access_token_first, account_id)
+
+    def test_update_ats_account(self, access_token_first, account_post_data):
+        """
+        """
+        account_id = create_and_validate_account(access_token_first, account_post_data)
+        key = 'ats_homepage'
+        value =  'https://someotherhost.com/loginpage'
+        new_data = { key : value }
+        response = send_request('put', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first, new_data)
+        assert response.status_code == codes.OK
         response = send_request('get', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first, {}, verify=False)
         assert response.status_code == codes.OK
         values = json.loads(json.loads(response.text))
-        assert values['credentials'] == account_post_data['ats_credentials']
-        response = send_request('get', ATSServiceApiUrl.ATS, access_token_first, {}, verify=False)
-        assert response.status_code == codes.OK
-        values = json.loads(json.loads(response.text))
-        assert len(values) == 1
-        assert values[0]['login_url'] == account_post_data['ats_login']
+        assert values[key] == value

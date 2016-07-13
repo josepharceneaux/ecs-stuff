@@ -2,6 +2,8 @@
 Utilities for ATS tests.
 """
 
+import json
+
 from requests import codes
 from contracts import contract
 
@@ -51,3 +53,26 @@ def empty_database():
         db.session.delete(profile)
 
     db.session.commit()
+
+def create_and_validate_account(token, post_data):
+    """
+    """
+    response = send_request('post', ATSServiceApiUrl.ACCOUNTS, token, post_data)
+    assert response.status_code == codes.CREATED
+    account_id = response.headers['location'].split('/')[-1]
+    response = send_request('get', ATSServiceApiUrl.ACCOUNT % account_id, token, {}, verify=False)
+    assert response.status_code == codes.OK
+    values = json.loads(json.loads(response.text))
+    assert values['credentials'] == post_data['ats_credentials']
+    response = send_request('get', ATSServiceApiUrl.ATS, token, {}, verify=False)
+    assert response.status_code == codes.OK
+    values = json.loads(json.loads(response.text))
+    assert len(values) == 1
+    assert values[0]['login_url'] == post_data['ats_login']
+    return account_id
+
+def verify_nonexistant_account(token, account_id):
+    """
+    """
+    response = send_request('get', ATSServiceApiUrl.ACCOUNT % account_id, token, {}, verify=False)
+    assert response.status_code == codes.NOT_FOUND

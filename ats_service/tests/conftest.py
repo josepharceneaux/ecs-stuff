@@ -18,5 +18,5 @@ def account_post_data():
 
     :rtype dict
     """
-    return { 'ats_name' : 'A New ATS', 'ats_homepage' : 'https://newats.com', 'ats_login' : 'https://newats.com',
+    return { 'ats_name' : 'A New ATS', 'ats_homepage' : 'https://newats.com', 'ats_login' : 'https://newats.com/login',
              'ats_auth_type' : 'Basic', 'ats_id' : 'id on ATS', 'ats_credentials' : 'My ATS Credentials' }
