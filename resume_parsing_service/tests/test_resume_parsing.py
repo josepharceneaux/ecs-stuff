@@ -27,6 +27,8 @@ from resume_parsing_service.common.routes import ResumeApiUrl
 from resume_parsing_service.common.models.user import DomainRole
 from resume_parsing_service.common.utils.handy_functions import add_role_to_test_user
 
+from resume_parsing_service.app.views.pdf_utils import ocr_with_google
+
 DOC_FP_KEY = '0169173d35beaf1053e79fdf1b5db864.docx'
 PDF15_FP_KEY = 'e68b51ee1fd62db589d2669c4f63f381.pdf'
 DOC_890 = "0382RHQRwSWq6jytZm1w_Patrick.David_11.doc"
@@ -264,6 +266,13 @@ def test_jpg_in_pdf(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
+def test_jpg_in_encrypted_pdf(token_fixture, user_fixture):
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'pic_in_encrypted.pdf')
+    assert_non_create_content_and_status(content, status)
+
+
 def test_no_multiple_skills(token_fixture, user_fixture):
     """
     Test for GET-1301 where multiple skills are being parsed out for a single new candidate.
@@ -450,3 +459,13 @@ def assert_create_or_update_content_and_status(content, status):
     assert 'id' in content['candidate'], "Candidate should contain id in response if create=True."
     assert content['candidate']['id'], "Candidate should contain non-None id to signal creation."
     assert status == requests.codes.ok
+
+
+def test_google():
+    from cStringIO import StringIO
+    current_dir = os.path.dirname(__file__)
+    with open(os.path.join(current_dir, 'test_resumes/{}'.format('pic_in_encrypted.pdf')), 'rb') as resume_file:
+        gString = StringIO(resume_file.read())
+    gString.seek(0)
+    test_data = ocr_with_google(gString)
+    assert test_data

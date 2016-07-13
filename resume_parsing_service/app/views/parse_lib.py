@@ -38,9 +38,9 @@ def parse_resume(file_obj, filename_str, cache_key):
 
     file_ext = basename(splitext(filename_str.lower())[-1]) if filename_str else ""
 
+    # PDFs must have attempted unencryption with the empty string password if applicable.
     if file_ext == '.pdf':
         file_obj = unencrypt_pdf(file_obj)
-
 
     if is_resume_image(file_ext, file_obj):
         # If file is an image, OCR it
@@ -85,18 +85,23 @@ def convert_pdf_to_text(pdf_file_obj):
     :param cStringIO.StringIO pdf_file_obj:
     :return str:
     """
-    text = ''
     pdf_file_obj.seek(0)
     pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
     page_count = pdf_reader.numPages
+    pdf_info = {
+        'pages': page_count,
+        'pages_with_text': 0,
+        'text': ''
+    }
 
     for i in xrange(page_count):
         new_text = pdf_reader.getPage(i).extractText()
 
         if new_text:
-            text += new_text
+            pdf_info['text'] += new_text
+            pdf_info['pages_with_text'] =+ 1
 
-    return text
+    return pdf_info['text']
 
 
 def unencrypt_pdf(pdf_file_obj):
