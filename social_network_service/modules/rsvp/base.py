@@ -516,10 +516,8 @@ class RSVPBase(object):
         :return attendee:
         :rtype: object
         """
-        # TODO: unused line (Basit)
         # TODO--kindly ensure the above comments reflect the reality
         #TODO--following isn't being used anywhere
-        newly_added_candidate = 1  # 1 represents entity is new candidate
         candidate_in_db = \
             Candidate.get_by_first_last_name_owner_user_id_source_id_product(
                 attendee.first_name,

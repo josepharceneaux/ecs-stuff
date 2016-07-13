@@ -9,6 +9,8 @@ import requests
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 
+# App specific imports
+from scheduler_service.validators import get_valid_datetime_from_dict
 from social_network_service.common.error_handling import InvalidUsage, InternalServerError
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential, User
@@ -72,19 +74,24 @@ class RsvpEventImporter(Resource):
             # TODO: Should raise not implemented
             raise InvalidUsage("No social network with name %s found." % social_network)
 
-        social_network_id = None
-        if social_network is not None: # TODO: We have validated this above I think
-            social_network_name = social_network.lower()
-            try:
-                # TODO--I think we should keep only the following statement within try/except and catch a more
-                # specific exception
-                social_network_obj = SocialNetwork.get_by_name(social_network_name)
-                # TODO: if not social_network_obj: raise ...
-                social_network_id = social_network_obj.id
-            except Exception:
-                raise NotImplementedError('Social Network "%s" is not allowed for now, '
-                                          'please implement code for this social network.'
-                                          % social_network_name)
+        social_network_name = social_network.lower()
+        try:
+            # TODO--I think we should keep only the following statement within try/except and catch a more
+            # specific exception
+            social_network_obj = SocialNetwork.get_by_name(social_network_name)
+            # TODO: if not social_network_obj: raise ...
+            social_network_id = social_network_obj.id
+        except Exception:
+            raise NotImplementedError('Social Network "%s" is not allowed for now, '
+                                      'please implement code for this social network.'
+                                      % social_network_name)
+
+        data = request.json()
+
+        datetime_range = {
+            'date_range_start': get_valid_datetime_from_dict(data=data, key='date_created_range_start'),
+            'date_range_end': get_valid_datetime_from_dict(data=data, key='date_created_range_end')
+        }
 
         all_user_credentials = UserSocialNetworkCredential.get_all_credentials(social_network_id)
 
@@ -92,10 +99,9 @@ class RsvpEventImporter(Resource):
         # TODO--please comment the code here
         if all_user_credentials:
             for user_credentials in all_user_credentials:
-                rsvp_events_importer.apply_async([social_network, mode, user_credentials])
+                rsvp_events_importer.apply_async([social_network, mode, user_credentials], kwds=datetime_range)
         else:
-            # TODO: IMO incorrect error message. We found no user_credentials for given user
-            logger.error('There is no User in db for social network %s'
+            logger.error('User Credentials not found for social network %s'
                          % social_network)
 
         return dict(message="%s are being imported." % mode.upper())
@@ -141,8 +147,7 @@ class RsvpImporterEventbrite(Resource):
             try:
                 data = json.loads(request.data)
                 action = data['config']['action']
-                # TODO -- strip and lower action
-                if action == 'order.placed':
+                if action.lower() == 'order.placed':
                     webhook_id = data['config']['webhook_id']
                     user_credentials = \
                         EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
