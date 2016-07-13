@@ -8,7 +8,7 @@ from flask import request, Blueprint
 from user_service.common.models.user import User
 from user_service.common.redis_cache import redis_store
 from user_service_utilties import send_reset_password_email, PASSWORD_RECOVERY_JWT_SALT, \
-    PASSWORD_RECOVERY_JWT_MAX_AGE_SECONDS
+    PASSWORD_RECOVERY_JWT_MAX_AGE_SECONDS, validate_password
 from user_service.common.error_handling import *
 from user_service.common.routes import UserServiceApi, get_web_app_url
 from user_service.common.utils.validators import is_valid_email
@@ -51,6 +51,7 @@ def update_password():
     new_password = posted_data.get('new_password', '')
     if not old_password or not new_password:
         raise NotFoundError(error_message="Either old or new password is missing")
+
     old_password_hashed = request.user.password
 
     # If password is hashed in web2py (old framework) format, change it to werkzeug.security format
