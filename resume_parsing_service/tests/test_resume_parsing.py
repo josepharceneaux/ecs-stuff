@@ -349,7 +349,7 @@ def test_jpg_in_pdf(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
-def test_jpg_in_encrypted_pdf(token_fixture, user_fixture):
+def test_txt_with_jpg_in_encrypted_pdf(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_post_response(token_fixture, 'pic_in_encrypted.pdf')
@@ -376,14 +376,6 @@ def test_encrypted_resume(token_fixture, user_fixture):
     add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_post_response(token_fixture, 'jDiMaria.pdf')
-    assert_non_create_content_and_status(content, status)
-
-
-def test_encrypted_text_and_pic_pdf(token_fixture, user_fixture):
-    """Test that encrypted pdf files that are posted to the end point can be parsed."""
-    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
-    content, status = fetch_resume_post_response(token_fixture, 'pic_in_encrypted.pdf')
     assert_non_create_content_and_status(content, status)
 
 ####################################################################################################
@@ -482,6 +474,18 @@ def test_create_from_image(token_fixture, user_fixture):
                                          DomainRole.Roles.CAN_GET_CANDIDATES,
                                          DomainRole.Roles.CAN_GET_TALENT_POOLS])
     content, status = fetch_resume_post_response(token_fixture, 'test_bin.jpg', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+
+
+def test_create_from_jpgTxtPdf(token_fixture, user_fixture):
+    """
+    Test for GET-1463. POST'd JSON.
+    """
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_EDIT_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'pic_in_encrypted.pdf', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 

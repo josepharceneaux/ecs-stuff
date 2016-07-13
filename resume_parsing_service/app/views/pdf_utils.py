@@ -32,8 +32,7 @@ def convert_pdf_to_text(pdf_file_obj):
     See GET-1463 for more info.
     """
     if pages_with_text < page_count:
-        pdf_file_obj.seek(0)
-        text = abbyy_ocr_image(pdf_file_obj)
+        return ''
 
     return text
 
