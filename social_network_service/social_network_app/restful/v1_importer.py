@@ -86,11 +86,11 @@ class RsvpEventImporter(Resource):
                                       'please implement code for this social network.'
                                       % social_network_name)
 
-        data = request.json()
+        data = request.get_json()
 
         datetime_range = {
-            'date_range_start': get_valid_datetime_from_dict(data=data, key='date_created_range_start'),
-            'date_range_end': get_valid_datetime_from_dict(data=data, key='date_created_range_end')
+            'date_range_start': get_valid_datetime_from_dict(data=data, key='date_created_range_start').strftime("%Y-%m-%dT%H:%M:%SZ"),
+            'date_range_end': get_valid_datetime_from_dict(data=data, key='date_created_range_end').strftime("%Y-%m-%dT%H:%M:%SZ")
         }
 
         all_user_credentials = UserSocialNetworkCredential.get_all_credentials(social_network_id)
@@ -99,7 +99,7 @@ class RsvpEventImporter(Resource):
         # TODO--please comment the code here
         if all_user_credentials:
             for user_credentials in all_user_credentials:
-                rsvp_events_importer.apply_async([social_network, mode, user_credentials], kwds=datetime_range)
+                rsvp_events_importer.apply_async([social_network, mode, user_credentials, datetime_range])
         else:
             logger.error('User Credentials not found for social network %s'
                          % social_network)

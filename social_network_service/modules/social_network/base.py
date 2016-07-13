@@ -172,7 +172,7 @@ class SocialNetworkBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self,  user_id, social_network_id=None, validate_credentials=True):
+    def __init__(self,  user_id, social_network_id=None, validate_credentials=True, **kwargs):
         """
         - This sets the user's credentials as base class property so that it can be used in other classes.
         - We also check the validity of access token and try to refresh it in case it has expired.
@@ -248,7 +248,7 @@ class SocialNetworkBase(object):
             social_network = SocialNetwork.get_by_name(self.__class__.__name__)
         return user, social_network
 
-    def process(self, mode, user_credentials=None, rsvp_data=None):
+    def process(self, mode, user_credentials=None, rsvp_data=None, **kwargs):
         """
         :param mode: mode is either 'event' or 'rsvp.
         :param user_credentials: are the credentials of user for
@@ -283,7 +283,7 @@ class SocialNetworkBase(object):
             # create object of selected event class
             sn_event_obj = event_class(user_credentials=user_credentials,
                                        social_network=self.social_network,
-                                       headers=self.headers)
+                                       headers=self.headers, **kwargs)
 
             if mode == 'event':
                 # gets events using respective API of Social Network

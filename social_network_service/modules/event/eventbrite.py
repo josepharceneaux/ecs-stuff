@@ -110,9 +110,13 @@ class Eventbrite(EventBase):
         self.ticket_payload = None
         self.venue_payload = None
         self.start_date_in_utc =\
-            kwargs.get('start_date') \
+            kwargs.get('date_range_start') \
             or (datetime.now() -
                 timedelta(days=60)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        self.end_date_in_utc =\
+            kwargs.get('date_range_end') \
+            or datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def process_events_rsvps(self, user_credentials, rsvp_data=None):
         """
@@ -146,7 +150,7 @@ class Eventbrite(EventBase):
         events_url = self.api_url + '/events/search/'
         params = {'user.id': self.member_id,
                   'date_created.range_start': self.start_date_in_utc,
-                  'date_created.range_end': self.start_date_end_in_utc
+                  'date_created.range_end': self.end_date_in_utc
                   }
         # initialize event list to empty
         all_events = []

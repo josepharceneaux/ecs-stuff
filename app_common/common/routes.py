@@ -589,7 +589,6 @@ class SchedulerApi(object):
     VERSION = 'v1'
     # URLs, in case of API
     SCHEDULER_MULTIPLE_TASKS = '/' + VERSION + '/tasks'
-    SCHEDULER_TASKS_TEST = '/' + VERSION + '/tasks/test'
     SCHEDULER_ONE_TASK = '/' + VERSION + '/tasks/id/<string:_id>'
     SCHEDULER_NAMED_TASK = '/' + VERSION + '/tasks/name/<string:_name>'
     SCHEDULER_ONE_TASK_NAME = '/' + VERSION + '/tasks/name/<string:_name>'
@@ -598,6 +597,10 @@ class SchedulerApi(object):
     SCHEDULER_SINGLE_TASK_RESUME = '/' + VERSION + '/tasks/<string:_id>/resume'
     SCHEDULER_SINGLE_TASK_PAUSE = '/' + VERSION + '/tasks/<string:_id>/pause'
     SCHEDULER_ADMIN_TASKS = '/' + VERSION + '/admin/tasks'
+
+    # Test endpoints for scheduler service
+    SCHEDULER_TASKS_TEST = '/' + VERSION + '/tasks/test'
+    SCHEDULER_TASKS_TEST_POST = '/' + VERSION + "/tasks/test-post"
 
 
 class SchedulerApiUrl(object):
@@ -615,13 +618,16 @@ class SchedulerApiUrl(object):
     RESUME_TASK = HOST_NAME % ('/' + VERSION + '/tasks/%s/resume')
     PAUSE_TASKS = HOST_NAME % ('/' + VERSION + '/tasks/pause')
     RESUME_TASKS = HOST_NAME % ('/' + VERSION + '/tasks/resume')
-    TEST_TASK = HOST_NAME % ('/' + VERSION + '/tasks/test')
 
     # Scheduler Admin API
     ADMIN_TASKS = HOST_NAME % ('/' + VERSION + '/admin/tasks')
 
     # Use different port of scheduler service URL
     FLOWER_MONITORING_PORT = '--port=5511'
+
+    # Test URLs for scheduler service
+    TEST_TASK = HOST_NAME % ('/' + VERSION + '/tasks/test')
+    TEST_TASK_POST = HOST_NAME % ('/' + VERSION + '/tasks/test-post')
 
 
 class SocialNetworkApi(object):

@@ -222,7 +222,7 @@ class Test_Event_Importer:
         response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('rsvp', 'meetup'), headers=headers)
         assert response.status_code == 200
 
-    def test_eventbrite_event_importer_endpoint(self, sample_user, talent_pool_sample, eventbrite_event, token):
+    def test_eventbrite_event_importer_endpoint(self, sample_user, talent_pool_sample, token):
         """
         Test eventbrite events importer.
         - Create an event on eventbrite using social network service endpoint
@@ -230,14 +230,14 @@ class Test_Event_Importer:
         - Then run event importer for eventbrite.
         - Then check if event event is imported correctly or not
         """
-        social_network_event_id = eventbrite_event.social_network_event_id
-        Event.delete(eventbrite_event.id)
+
+        social_network_event_id = None
         headers = dict(Authorization='Bearer %s' % token)
         headers['Content-Type'] = 'application/json'
 
         # Specify datetime to get already created event
-        start_datetime = "2016-07-13T06:00:00.0Z"
-        end_datetime = "2016-07-13T10:00:00.0Z"
+        start_datetime = "2016-07-01T10:00:00.0Z"
+        end_datetime = "2016-07-31T6:00:00.0Z"
 
         data = {
             'date_created_range_start': start_datetime,

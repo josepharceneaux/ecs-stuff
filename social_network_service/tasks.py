@@ -16,7 +16,7 @@ from social_network_service.social_network_app import celery_app as celery, app
 
 
 @celery.task(name="events_and_rsvps_importer")
-def rsvp_events_importer(social_network_name, mode, user_credentials, **kwargs):
+def rsvp_events_importer(social_network_name, mode, user_credentials, datetime_range):
     """
     Imports RSVPs or events of a user, create candidates store them in db and also upload them on Cloud search
     :param social_network_name: Facebook, Eventbrite, Meetup
@@ -33,13 +33,13 @@ def rsvp_events_importer(social_network_name, mode, user_credentials, **kwargs):
                                              user_credentials=user_credentials)
             # we call social network class here for auth purpose, If token is expired
             # access token is refreshed and we use fresh token
-            sn = social_network_class(user_id=user_credentials.user_id, **kwargs)
+            sn = social_network_class(user_credentials.user_id)
 
             logger.debug('%s Importer has started for %s(UserId: %s).'
                          ' Social Network is %s.'
                          % (mode.title(), sn.user.name, sn.user.id,
                             social_network.name))
-            sn.process(mode, user_credentials=user_credentials)
+            sn.process(mode, user_credentials=user_credentials, **datetime_range)
         except KeyError:
             logger.exception("Key error while running importer for user %s" % user_credentials.user_id)
         except Exception:
