@@ -4,8 +4,6 @@ Test cases for CandidateResource/post()
 # Candidate Service app instance
 from candidate_service.candidate_app import app
 
-import pycountry
-
 # Conftest
 from candidate_service.common.tests.conftest import *
 
@@ -230,15 +228,14 @@ class TestCreateCandidate(object):
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'label': None, 'address': email_1}]},
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'label': None, 'address': email_2}]},
-            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [{'label': None, 'address': 'bad_email_at_example.com'}]}
+            {'talent_pool_ids': {'add': [talent_pool.id]},
+             'emails': [{'label': None, 'address': 'bad_email_at_example.com'}]}
         ]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
         db.session.commit()
         assert create_resp.status_code == 400
         assert create_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
-        assert not CandidateEmail.get_by_address(email_address=email_1)
-        assert not CandidateEmail.get_by_address(email_address=email_2)
 
     def test_add_candidate_without_emails(self, access_token_first, user_first, talent_pool):
         """
@@ -352,7 +349,7 @@ class TestCreateHiddenCandidate(object):
         assert hide_resp.status_code == 200 and candidate.is_web_hidden == 1
 
         # Create previously deleted candidate
-        data = {'candidates': [{'emails': [{'address': candidate_email['address']}],'first_name': 'McLovin',
+        data = {'candidates': [{'emails': [{'address': candidate_email['address']}], 'first_name': 'McLovin',
                                 'talent_pool_ids': {'add': [talent_pool.id]}}]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         db.session.commit()
@@ -408,10 +405,11 @@ class TestCreateHiddenCandidate(object):
         print response_info(response=get_resp_2)
         assert get_resp_2.status_code == 200
 
-    def test_recreate_hidden_candidate_using_candidate_with_multiple_emails(
-            self, access_token_first, user_first, talent_pool):
+    def test_recreate_hidden_candidate_using_candidate_with_multiple_emails(self, access_token_first,
+                                                                            user_first, talent_pool):
         # Create candidate
-        AddUserRoles.all_roles(user=user_first)
+        AddUserRoles.all_roles(user_first)
+
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
                 {'address': fake.safe_email()}, {'address': fake.safe_email()}
@@ -419,9 +417,9 @@ class TestCreateHiddenCandidate(object):
         ]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        candidate_id = create_resp.json()['candidates'][0]['id']
 
         # Hide candidate
+        candidate_id = create_resp.json()['candidates'][0]['id']
         hide_data = {'candidates': [{'id': candidate_id, 'hide': True}]}
         hide_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, hide_data)
         db.session.commit()
@@ -499,7 +497,8 @@ class TestCreateCandidateAddress(object):
         candidate_addresses = get_resp.json()['candidate']['addresses']
         assert len(candidate_addresses) == 1, "Only 1 of the addresses should be inserted into db, because" \
                                               "the rest had empty/None values"
-        assert candidate_addresses[0]['address_line_1'] == data['candidates'][0]['addresses'][0]['address_line_1'].strip()
+        assert candidate_addresses[0]['address_line_1'] == data['candidates'][0]['addresses'][0][
+            'address_line_1'].strip()
         assert candidate_addresses[0]['city'] == data['candidates'][0]['addresses'][0]['city'].strip()
 
 
@@ -577,177 +576,6 @@ class TestCreateCandidateCustomField(object):
         assert create_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
 
 
-class TestCreateCandidateEducation(object):
-    def test_create_successfully(self, access_token_first, user_first, talent_pool):
-        """
-        Test: Create candidate + education
-        Expect: 201
-        """
-        # Create candidate + education
-        AddUserRoles.add_and_get(user_first)
-        data = GenerateCandidateData.educations([talent_pool.id])
-        country_code = data['candidates'][0]['educations'][0]['country_code']
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == 201
-
-        # Retrieve candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        print response_info(get_resp)
-        assert get_resp.status_code == 200
-        assert get_country_code_from_name(get_resp.json()['candidate']['educations'][0]['country']) == country_code
-
-    def test_create_education_with_empty_values(self, access_token_first, user_first, talent_pool):
-        """
-        Test:  Create candidate education with some or all empty values and some with whitespaces
-        Expect:  201; all-empty data should not be inserted into db & whitespaces must be stripped
-        """
-        AddUserRoles.add_and_get(user_first)
-        data = {'candidates': [
-            {'talent_pool_ids': {'add': [talent_pool.id]}, 'educations': [
-                {'school_name': ' ', 'school_type': ' ', 'city': None, 'subdivision_code': ''}
-            ]}
-        ]}
-        # Create candidate education with empty values
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        assert create_resp.status_code == 201
-
-        # Retrieve candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_educations = get_resp.json()['candidate']['educations']
-        assert not candidate_educations, "Candidate education record not added to db because data was empty"
-
-        # Create candidate education with some whitespaces and some empty values
-        data['candidates'][0]['educations'][0]['school_name'] = ' UC Davis      '
-        data['candidates'][0]['educations'][0]['school_type'] = 'University  '
-
-        # Create candidate education with updated data
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        assert create_resp.status_code == 201
-
-        # Retrieve candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_educations = get_resp.json()['candidate']['educations']
-        assert len(candidate_educations) == 1
-        assert candidate_educations[0]['school_name'] == data['candidates'][0]['educations'][0]['school_name'].strip()
-        assert candidate_educations[0]['school_type'] == data['candidates'][0]['educations'][0]['school_type'].strip()
-
-    # TODO Commenting out test case so builds can pass, failing most of the time.  -OM
-    # def test_create_candidate_educations(self, access_token_first, user_first, talent_pool):
-    #     """
-    #     Test:   Create CandidateEducation for Candidate
-    #     Expect: 201
-    #     """
-    #     # Create Candidate
-    #     AddUserRoles.add_and_get(user=user_first)
-    #     data = generate_single_candidate_data([talent_pool.id])
-    #     create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-    #     print response_info(create_resp)
-    #     assert create_resp.status_code == 201
-    #
-    #     # Retrieve Candidate
-    #     candidate_id = create_resp.json()['candidates'][0]['id']
-    #     candidate_dict = send_request(
-    #         'get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first).json()['candidate']
-    #     can_educations = candidate_dict['educations']
-    #     data_educations = data['candidates'][0]['educations'][0]
-    #     assert isinstance(can_educations, list)
-    #     assert can_educations[0]['country'] == 'United States'
-    #     assert can_educations[0]['subdivision'] == pycountry.subdivisions.get(code=data_educations['subdivision_code']).name
-    #     assert can_educations[0]['city'] == data_educations['city']
-    #     assert can_educations[0]['school_name'] == data_educations['school_name']
-    #     assert can_educations[0]['school_type'] == data_educations['school_type']
-    #     assert can_educations[0]['is_current'] == data_educations['is_current']
-    #
-    #     can_edu_degrees = can_educations[0]['degrees']
-    #     assert isinstance(can_edu_degrees, list)
-    #     assert can_edu_degrees[0]['gpa'] == '3.50'
-    #     assert can_edu_degrees[0]['start_year'] == str(data_educations['degrees'][0]['start_year'])
-    #
-    #     can_edu_degree_bullets = can_edu_degrees[0]['bullets']
-    #     assert isinstance(can_edu_degree_bullets, list)
-    #     assert can_edu_degree_bullets[0]['major'] == data_educations['degrees'][0]['bullets'][0]['major']
-
-    def test_create_candidate_educations_with_no_degrees(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Create CandidateEducation for Candidate
-        Expect: 201
-        """
-        # Create Candidate without degrees
-        AddUserRoles.add_and_get(user=user_first)
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == 201
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-
-        can_educations = candidate_dict['educations']
-        data_educations = data['candidates'][0]['educations'][0]
-        assert isinstance(can_educations, list)
-        assert can_educations[0]['city'] == data_educations['city']
-        assert can_educations[0]['school_name'] == data_educations['school_name']
-
-        can_edu_degrees = can_educations[0]['degrees']
-        assert isinstance(can_edu_degrees, list)
-
-
-class TestCreateCandidateEducationDegree(object):
-    def test_with_empty_values(self, access_token_first, user_first, talent_pool):
-        """
-        Test:  Create candidate education degree with some whitespaces and empty values
-        Expect: 201
-        """
-        AddUserRoles.add_and_get(user_first)
-        data = {'candidates': [
-            {'talent_pool_ids': {'add': [talent_pool.id]}, 'educations': [
-                {'school_name': ' ', 'school_type': ' ', 'city': None, 'subdivision_code': ''}
-            ]}
-        ]}
-        # Create candidate education with empty values
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        assert create_resp.status_code == 201
-
-        # Retrieve candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_educations = get_resp.json()['candidate']['educations']
-        assert not candidate_educations, "Candidate education record not added to db because data was empty"
-
-    def test_candidate_education_degree_with_no_degree_title_or_degree_type(self, access_token_first,
-                                                                            user_first, talent_pool):
-        """
-        Test:  Degree title or degree type must be provided for other fields to count. e.g.
-          If gpa & start year of education degree are provided but not the degree title or degree type
-          then nothing gets added to db.
-        Expect: 201, but education degree should not be added to db
-        """
-        AddUserRoles.add_and_get(user_first)
-        data = {'candidates': [
-            {'talent_pool_ids': {'add': [talent_pool.id]}, 'educations': [
-                {'school_name': 'uc berkeley', 'city': 'berkeley', 'degrees': [
-                {'title': ' ', 'gpa': 3.50, 'start_year': 2012, 'end_year': 2016}]}
-            ]}
-        ]}
-        # Create candidate education with empty values
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == 201
-
-        # Retrieve candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_educations = get_resp.json()['candidate']['educations']
-        assert get_resp.status_code == 200
-        assert len(candidate_educations[0]['degrees']) == 0
-
-
 class TestCreateWorkPreference(object):
     def test_create_candidate_work_preference(self, access_token_first, user_first, talent_pool):
         """
@@ -780,225 +608,6 @@ class TestCreateWorkPreference(object):
         assert can_work_preference['authorization'] == can_work_preference_data['authorization']
 
 
-class TestCreateCandidateEmail(object):
-    def test_create_candidate_without_email(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Attempt to create a Candidate with no email
-        Expect: 201
-        """
-        # Create Candidate with no email
-        AddUserRoles.add_and_get(user_first)
-        data = {'candidates': [{'first_name': 'john', 'last_name': 'stark',
-                                'talent_pool_ids': {'add': [talent_pool.id]}}]}
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == 201
-
-        # Create Candidate
-        data = {'candidates': [{'first_name': 'john', 'last_name': 'stark', 'emails': [{}],
-                                'talent_pool_ids': {'add': [talent_pool.id]}}]}
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == 400
-        assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
-
-    def test_create_candidate_with_bad_email(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Attempt to create a Candidate with invalid email format
-        Expect: 400
-        """
-        # Create Candidate
-        AddUserRoles.add(user_first)
-        data = {'candidates': [{'emails': [{'label': None, 'is_default': True, 'address': 'bad_email.com'}],
-                                'talent_pool_ids': {'add': [talent_pool.id]}}]}
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == 400
-        assert create_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
-
-    def test_create_candidate_without_email_label(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Create a Candidate without providing email's label
-        Expect: 201, email's label must be 'Primary'
-        """
-        AddUserRoles.add_and_get(user=user_first)
-
-        # Create Candidate without email-label
-        data = {'candidates': [
-            {'emails': [
-                {'label': None, 'is_default': None, 'address': fake.safe_email()},
-                {'label': None, 'is_default': None, 'address': fake.safe_email()}
-            ], 'talent_pool_ids': {'add': [talent_pool.id]}}
-        ]}
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        print response_info(get_resp)
-        candidate_dict = get_resp.json()['candidate']
-        assert create_resp.status_code == 201
-        assert candidate_dict['emails'][0]['label'] == 'Primary'
-        assert candidate_dict['emails'][-1]['label'] == 'Other'
-
-    def test_add_email_with_empty_values(self, access_token_first, user_first, talent_pool):
-        """
-        Test:  Add candidate email with all empty values
-        Expect: 400; email address is required
-        """
-        AddUserRoles.add_and_get(user_first)
-        data = {'candidates': [
-            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
-                {'label': None, 'address': '  '},
-            ]}
-        ]}
-
-        # Create candidate email
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == 400
-        assert create_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
-
-    def test_add_emails_with_whitespaced_values(self, access_token_first, user_first, talent_pool):
-        """
-        Test:  Add candidate emails with values containing whitespaces
-        Expect:  201; but whitespaces should be stripped
-        """
-        AddUserRoles.add_and_get(user_first)
-        data = {'candidates': [
-            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
-                {'label': ' work', 'address': fake.safe_email() + '   '},
-                {'label': 'Primary ', 'address': ' ' + fake.safe_email()}
-            ]}
-        ]}
-
-        # Create candidate email
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == 201
-
-        # Retrieve candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        print response_info(get_resp)
-        emails = get_resp.json()['candidate']['emails']
-        assert len(emails) == 2
-        assert emails[0]['address'] == data['candidates'][0]['emails'][0]['address'].strip()
-        assert emails[0]['label'] == data['candidates'][0]['emails'][0]['label'].strip().title()
-        assert emails[1]['address'] == data['candidates'][0]['emails'][1]['address'].strip()
-        assert emails[1]['label'] == data['candidates'][0]['emails'][1]['label'].strip()
-
-
-class TestCreatePhones(object):
-    def test_create_candidate_phones(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Create CandidatePhones for Candidate
-        Expect: 201
-        """
-        # Create Candidate
-        AddUserRoles.add_and_get(user_first)
-        data = candidate_phones(talent_pool)
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == 201
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-
-        # Assert data sent in = data retrieved
-        can_phones = candidate_dict['phones']
-        can_phones_data = data['candidates'][0]['phones']
-        assert isinstance(can_phones, list)
-        assert can_phones_data[0]['value'] == data['candidates'][0]['phones'][0]['value']
-        assert can_phones_data[0]['label'] == data['candidates'][0]['phones'][0]['label']
-
-    def test_create_international_phone_number(self, access_token_first, user_first, talent_pool):
-        """
-        Test:  Create CandidatePhone using international phone number
-        Expect: 201, phone number must be formatted before inserting into db
-        """
-        # Create candidate
-        AddUserRoles.add_and_get(user_first)
-        data = GenerateCandidateData.phones([talent_pool.id], internationalize=True)
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-
-        # Retrieve candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        print response_info(get_resp)
-        candidate_phones = get_resp.json()['candidate']['phones']
-        phone_number_from_data = data['candidates'][0]['phones'][0]['value']
-        # assert candidate_phones[0]['value'] in data['candidates'][0]['phones'][0]['value']
-        assert get_phone_number_extension_if_exists(phone_number_from_data)[-1] == candidate_phones[0]['extension']
-
-    def test_create_candidate_without_phone_label(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   Create a Candidate without providing phone's label
-        Expect: 201, phone's label must be 'Primary'
-        """
-        # Create Candidate without label
-        AddUserRoles.add_and_get(user_first)
-        data = {'candidates': [{'phones':
-            [
-                {'label': None, 'is_default': None, 'value': '6504084069'},
-                {'label': None, 'is_default': None, 'value': '6504084069'}
-            ], 'talent_pool_ids': {'add': [talent_pool.id]}}
-        ]}
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-        assert create_resp.status_code == 201
-        assert candidate_dict['phones'][0]['label'] == 'Home'
-        assert candidate_dict['phones'][-1]['label'] == 'Other'
-
-    def test_create_candidate_with_bad_phone_label(self, access_token_first, user_first, talent_pool):
-        """
-        Test:   e.g. Phone label = 'vork'
-        Expect: 201, phone label must be 'Other'
-        """
-        # Create Candidate without label
-        AddUserRoles.add_and_get(user_first)
-        data = {'candidates': [{'phones':
-            [
-                {'label': 'vork', 'is_default': None, 'value': '6504084069'},
-                {'label': '2564', 'is_default': None, 'value': '6504084069'}
-            ], 'talent_pool_ids': {'add': [talent_pool.id]}}
-        ]}
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-
-        # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        candidate_dict = get_resp.json()['candidate']
-        assert create_resp.status_code == 201
-        assert candidate_dict['phones'][0]['label'] == 'Other'
-        assert candidate_dict['phones'][-1]['label'] == 'Other'
-
-    def test_add_phone_without_value(self, access_token_first, user_first, talent_pool):
-        """
-        Test:  Add candidate phone without providing value
-        Expect:  400; phone value is a required property
-        """
-        AddUserRoles.add(user_first)
-        data = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]}, 'phones':[
-            {'label': 'Work', 'is_default': False, 'value': None}]}]}
-
-        # Create candidate phone without value
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == 400
-        assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
-
-
 class TestCreateMilitaryService(object):
     def test_create_military_service_successfully(self, access_token_first, user_first, talent_pool):
         """
@@ -1018,7 +627,8 @@ class TestCreateMilitaryService(object):
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first, data)
         print response_info(get_resp)
         assert get_resp.status_code == 200
-        assert get_country_code_from_name(get_resp.json()['candidate']['military_services'][0]['country']) == country_code
+        assert get_country_code_from_name(
+            get_resp.json()['candidate']['military_services'][0]['country']) == country_code
 
     def test_create_candidate_military_service(self, access_token_first, user_first, talent_pool):
         """
@@ -1106,7 +716,8 @@ class TestCreatePreferredLocation(object):
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == 200
-        assert get_country_code_from_name(get_resp.json()['candidate']['preferred_locations'][0]['country']) == country_code
+        assert get_country_code_from_name(
+            get_resp.json()['candidate']['preferred_locations'][0]['country']) == country_code
 
     def test_create_candidate_preferred_location(self, access_token_first, user_first, talent_pool):
         """
@@ -1221,7 +832,7 @@ class TestCreateSkills(object):
         # Create candidate + candidate's skill
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 201
+        assert create_resp.status_code == requests.codes.CREATED
 
         # Retrieve Candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -1229,9 +840,14 @@ class TestCreateSkills(object):
         candidate_skills = get_resp.json()['candidate']['skills']
         assert len(candidate_skills) == 3, "Of the six records provided, 3 of them should not be " \
                                            "inserted into db because they do not have a 'name' value"
-        assert candidate_skills[0]['name'] == data['candidates'][0]['skills'][0]['name'].strip()
-        assert candidate_skills[1]['name'] == data['candidates'][0]['skills'][1]['name'].strip()
-        assert candidate_skills[2]['name'] == data['candidates'][0]['skills'][2]['name'].strip()
+
+        print "\ncandidate_skills = {}".format(candidate_skills)
+        print "\ndata_skills = {}".format(data['candidates'])
+
+        candidate_skill_names = [skill['name'] for skill in candidate_skills]
+        data_skill_names = [skill['name'] for skill in data['candidates'][0]['skills']]
+        cleaned_data_skill_names = [skill.strip() for skill in data_skill_names if (skill or '').strip()]
+        assert set(candidate_skill_names).issubset(cleaned_data_skill_names)
 
     def test_add_with_empty_values(self, access_token_first, user_first, talent_pool):
         """
@@ -1306,4 +922,3 @@ class TestCreateSocialNetworks(object):
         print response_info(create_resp)
         assert create_resp.status_code == 400
         assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
-

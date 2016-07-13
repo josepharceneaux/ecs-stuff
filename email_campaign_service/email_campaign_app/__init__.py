@@ -8,4 +8,4 @@ app, logger = init_talent_app(__name__)
 
 # Celery app
 celery_app = init_celery_app(app, CampaignUtils.EMAIL,
-                             ['email_campaign_service.modules.email_marketing'])
+                             ['email_campaign_service.modules.email_marketing', 'email_campaign_service.modules.utils'])

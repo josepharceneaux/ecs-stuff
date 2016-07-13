@@ -29,9 +29,10 @@ def create_tags(candidate_id, tags):
         # Insert into CandidateTag table
         candidate_tag_object = CandidateTag.get_by(candidate_id=candidate_id, tag_id=tag_object.id)
         if candidate_tag_object:
-            raise InvalidUsage("Candidate ({}) is already associated with tag \"{}\"".format(candidate_id, tag_name),
-                               error_code=custom_error.TAG_EXISTS,
-                               additional_error_info={"tag": {"id": candidate_tag_object.tag_id}})
+            raise InvalidUsage(
+                "Candidate (id = {}) is already associated with tag \"{}\"".format(candidate_id, tag_name),
+                error_code=custom_error.TAG_EXISTS,
+                additional_error_info={"tag": {"id": candidate_tag_object.tag_id}})
 
         db.session.add(CandidateTag(candidate_id=candidate_id, tag_id=tag_object.id))
         db.session.commit()
@@ -54,7 +55,7 @@ def get_tags(candidate_id, tag_id=None):
 
         # Tag must belong to candidate
         if not CandidateTag.query.filter_by(tag_id=tag_id, candidate_id=candidate_id).first():
-            raise ForbiddenError('Tag ({}) does not belong to candidate ({})'.format(tag_id, candidate_id),
+            raise ForbiddenError('Tag (id = {}) does not belong to candidate (id = {})'.format(tag_id, candidate_id),
                                  custom_error.TAG_FORBIDDEN)
 
         return {'name': tag_object.name}
@@ -89,7 +90,7 @@ def update_candidate_tag(candidate_id, tag_id, tag_name):
     candidate_tag_query = CandidateTag.query.filter_by(candidate_id=candidate_id, tag_id=tag_id)
     candidate_tag_object = candidate_tag_query.first()
     if not candidate_tag_object:
-        raise InvalidUsage('Candidate ({}) is not associated with Tag ({})'.format(candidate_id, tag_id),
+        raise InvalidUsage('Candidate (id = {}) is not associated with Tag (id = {})'.format(candidate_id, tag_id),
                            custom_error.INVALID_USAGE)
 
     # If Tag is not found, create it
@@ -136,7 +137,7 @@ def update_candidate_tags(candidate_id, tags):
         # Candidate must already be associated with provided tag_id
         candidate_tag_query = CandidateTag.query.filter_by(candidate_id=candidate_id, tag_id=tag_id)
         if not candidate_tag_query.first():
-            raise InvalidUsage('Candidate ({}) is not associated with Tag ({})'.format(candidate_id, tag_id),
+            raise InvalidUsage('Candidate (id = {}) is not associated with Tag (id = {})'.format(candidate_id, tag_id),
                                custom_error.INVALID_USAGE)
         # Update
         candidate_tag_query.update(update_dict)
@@ -155,9 +156,11 @@ def delete_tag(candidate_id, tag_id):
     """
     candidate_tag_object = CandidateTag.get_one(candidate_id, tag_id)
     if not candidate_tag_object:
-        raise NotFoundError('Candidate ({}) is not associated with tag: {}'.format(candidate_id, tag_id),
+        raise NotFoundError('Candidate (id = {}) is not associated with tag: {}'.format(candidate_id, tag_id),
                             custom_error.INVALID_USAGE)
-    candidate_tag_object.delete()
+
+    db.session.delete(candidate_tag_object)
+    db.session.commit()
 
     return {'id': tag_id}
 
@@ -171,6 +174,7 @@ def delete_tags(candidate_id):
     deleted_tag_ids = []
     for candidate_tag in CandidateTag.get_all(candidate_id):
         deleted_tag_ids.append(candidate_tag.tag_id)
-        candidate_tag.delete()
+        db.session.delete(candidate_tag)
 
+    db.session.commit()
     return [{'id': tag_id} for tag_id in deleted_tag_ids]

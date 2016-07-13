@@ -28,7 +28,7 @@ from user_service.common.error_handling import (ForbiddenError, InvalidUsage)
 class DomainSourceResource(Resource):
     decorators = [require_oauth()]
 
-    def post(self, **kwargs):
+    def post(self, **kwargs):  # todo: CAN_EDIT_DOMAINS
         """
         Function will create a source for domain
         Note: "description" is a required field
@@ -103,6 +103,7 @@ class DomainSourceResource(Resource):
                 'domain_id': source.domain_id,
                 'added_datetime': str(source.added_datetime)
             }}
+
         # Get all of user's domain sources
         return {'sources': [
             {

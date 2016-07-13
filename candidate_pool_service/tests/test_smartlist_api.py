@@ -1,5 +1,4 @@
 from redo import retry
-from candidate_pool_service.candidate_pool_app import logger
 from candidate_pool_service.common.tests.conftest import *
 from common_functions import create_candidates_from_candidate_api
 from candidate_pool_service.modules.smartlists import save_smartlist
@@ -31,10 +30,9 @@ class TestSmartlistResource(object):
             """
             Creates and returns the id of a smartlist with candidate ids (dumb list).
             :param access_token: Token for authorization.
-            :param user_first: User of first domain.
-            :param talent_pool: Valid talent pool.
             :param talent_pipeline: valid talent pipeline.
             :param count: Number of candidates.
+            :param smartlist_name: Name for smartlist.
             :return: smartlist_id and candidate_ids.
             :rtype: tuple[(int|long, int|long)]
             """
@@ -72,14 +70,12 @@ class TestSmartlistResource(object):
             total_found = response.json()['total_found']
             assert total_found == 20
 
-        # TODO: Commenting this test for hani - (basit)
+        # TODO: commenting for Um-i-Hani (basit)
         # def test_create_smartlist_with_candidate_ids_using_pagination_params(self, access_token_first, talent_pipeline):
         #     """
         #     Test to create smartlist with candidate ids (dumb list) and get candidates from that
         #     smartlist using pagination params.
-        #     :param user_first: User from first domain
         #     :param access_token_first: Token for authentication.
-        #     :param talent_pool: valid talent pool object.
         #     :param talent_pipeline: valid talent pipeline
         #     """
         #     smartlist_id, candidate_ids = self.create_and_return_smartlist_with_candidates(
@@ -87,7 +83,7 @@ class TestSmartlistResource(object):
         #     # Get candidate_ids from SmartlistCandidates and assert with candidate ids used to create the smartlist
         #     smartlist_candidates_api = TestSmartlistCandidatesApi()
         #     response = smartlist_candidates_api.call_smartlist_candidates_get_api_with_pagination_params(
-        #         smartlist_id, {'fields': 'id'}, access_token_first, page=DEFAULT_PAGE, per_page=2)
+        #         smartlist_id, {'fields': 'id'}, access_token_first, page=1, per_page=2)
         #     response_body = response.json()
         #     no_of_pages = response_body['max_pages']
         #     assert no_of_pages == 10
@@ -111,7 +107,7 @@ class TestSmartlistResource(object):
         #     # and an empty candidates list.
         #     response = smartlist_candidates_api.call_smartlist_candidates_get_api_with_pagination_params(
         #                        smartlist_id, {'fields': 'id'}, access_token_first,
-        #                        page=no_of_pages + DEFAULT_PAGE, per_page=2)
+        #                        page=no_of_pages + 1, per_page=2)
         #     response_body = json.loads(response.content)
         #     candidates = response_body['candidates']
         #     assert candidates == []

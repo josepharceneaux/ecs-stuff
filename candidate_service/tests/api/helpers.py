@@ -1,8 +1,12 @@
 """
 Helper functions for tests written for the candidate_service
 """
+import requests, operator
+from time import sleep
+
 # Third party
 import pycountry as pc
+from redo import retrier
 
 # Models
 from candidate_service.common.models.user import DomainRole
@@ -10,11 +14,18 @@ from candidate_service.common.models.user import DomainRole
 # User Roles
 from candidate_service.common.utils.handy_functions import add_role_to_test_user
 
+# Error handling
+from candidate_service.common.error_handling import NotFoundError
+
+from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.utils.test_utils import response_info
+
 
 class AddUserRoles(object):
     """
     Class entails functions that will help add specific roles to test-user
     """
+
     @staticmethod
     def get(user):
         return add_role_to_test_user(user, [DomainRole.Roles.CAN_GET_CANDIDATES])

@@ -80,7 +80,7 @@ def parse_phone_number(phone_number, iso3166_country_code=None):
 
     phone_number = re.sub('\D', '', phone_number)  # Number must contain only digits
     if len(phone_number) < 7:
-        raise InvalidUsage("Invalid phone number: {}".format(number))
+        raise InvalidUsage("Phone number ({}) must be at least 7 digits".format(number))
 
     # If phone number is not prefixed with international code and country_code is not provided
     #    it will be saved as-is unless if phone number is invalid, e.g. "letter56"
@@ -260,3 +260,15 @@ def get_json_data_if_validated(request_body, json_schema, format_checker=True):
     except ValidationError as e:
         raise InvalidUsage('JSON schema validation error: {}'.format(e))
     return body_dict
+
+
+def raise_if_not_positive_int_or_long(value):
+    """
+    Validates if the given value is poitive integer or long. If not, it raises invalid usage exception.
+    :param value: Value to validate
+    :type value: int | long
+    :exception: Invalid Usage
+    """
+
+    if not isinstance(value, (int, long)) or value <= 0:
+        raise InvalidUsage('value must be positive int | long greater than 0')

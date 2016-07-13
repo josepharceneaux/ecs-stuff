@@ -7,15 +7,20 @@ WORKDIR /root/base_service_container/scheduler_service_admin
 EXPOSE 80
 
 # Install the tools we need to build
-CMD apt-get update
-CMD apt-get install -y nodejs
-CMD apt-get install -y build-essential
-CMD apt-get install -y npm
+RUN apt-get update
+RUN apt-get install -y nodejs
+RUN apt-get install -y npm
+RUN ln -s /usr/bin/nodejs /usr/bin/node
 
-CMD npm install
+RUN npm install -g bower
+RUN npm install -g gulp
+RUN npm install gulp
+RUN npm install yargs
+RUN npm install
+RUN bower --allow-root install
 
-# Build and start node server
-CMD\
- export GT_ENVIRONMENT=$GT_ENVIRONMENT && gulp build
-CMD\
- export GT_ENVIRONMENT=$GT_ENVIRONMENT && gulp serve-build
+# CMD export GT_ENVIRONMENT=$GT_ENVIRONMENT && gulp build
+# CMD export GT_ENVIRONMENT=$GT_ENVIRONMENT && gulp serve-build
+
+# Start node server
+CMD gulp serve-build

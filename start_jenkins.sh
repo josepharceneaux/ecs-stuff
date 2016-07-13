@@ -5,6 +5,7 @@ pip install -r requirements.txt
 
 # Build Docker Images
 sudo service docker restart
+sudo service mysql restart
 sudo usermod -aG docker jenkins
 
 # Stopping all containers and removing all dangling images from Jenkins container
@@ -33,13 +34,16 @@ cd scheduler_service_admin && tar -czh . | docker build -t gettalent/scheduler-s
 # Reset Database and Amazon Cloud Search
 export PYTHONPATH=.
 python setup_environment/reset_database_and_cloud_search.py
-# Running Docker Containers for all apps before testing them
+
+# Start Docker Containers for all apps before testing them
 
 ENV_VARIABLES=("GT_ENVIRONMENT" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY")
 
 FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "social-network-service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service" "sms-campaign-service" "push-campaign-service" "email-campaign-service")
 
 FLASK_APP_PORTS=("8001" "8002" "8003" "8004" "8005" "8007" "8008" "8009" "8011" "8012" "8013" "8014")
+
+# Note that port 8015 is reserved for ATS services, and port 8016 for scheduler admin web app
 
 output=""
 
@@ -60,4 +64,4 @@ done
 
 sleep 10
 
-py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_service/tests spreadsheet_import_service/tests email_campaign_service/tests sms_campaign_service/tests candidate_pool_service/tests resume_parsing_service/tests push_campaign_service/tests
+py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests sms_campaign_service/tests resume_parsing_service/tests push_campaign_service/tests candidate_service/tests email_campaign_service/tests

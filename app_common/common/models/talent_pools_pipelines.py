@@ -146,6 +146,7 @@ class TalentPipeline(db.Model):
         if include_stats and get_stats_function:
             # Include Last 30 days stats in response body
             to_date = datetime.utcnow() - timedelta(days=1)
+            to_date = to_date.replace(hour=23, minute=59, second=59)
             from_date = to_date - timedelta(days=29)
             talent_pipeline['stats'] = [] if self.added_time.date() == datetime.utcnow().date() else \
                 get_stats_function(self, 'TalentPipeline', None, from_date.isoformat(), to_date.isoformat(), offset=0)

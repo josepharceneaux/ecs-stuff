@@ -5,7 +5,10 @@ from sqlalchemy.orm import relationship
 
 from db import db
 from ..utils.datetime_utils import DatetimeUtils
-from ..error_handling import (ResourceNotFound, ForbiddenError)
+from ..utils.validators import (raise_if_not_instance_of,
+                                raise_if_not_positive_int_or_long)
+from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError)
+
 
 __author__ = 'jitesh'
 
@@ -84,6 +87,22 @@ class EmailCampaign(db.Model):
         from user import User  # This has to be here to avoid circular import
         return cls.query.join(User).filter(User.domain_id == domain_id)
 
+    @classmethod
+    def get_by_domain_id_and_filter_by_name(cls, domain_id, search_keyword, sort_by, sort_type):
+        assert domain_id, 'domain_id not given'
+        from user import User  # This has to be here to avoid circular import
+        if sort_by == 'name':
+            sort_by_object = EmailCampaign.name
+        else:
+            sort_by_object = EmailCampaign.added_datetime
+
+        if sort_by == 'ASC':
+            sort_by_object = sort_by_object.asc()
+        else:
+            sort_by_object = sort_by_object.desc()
+        return cls.query.join(User).filter(User.domain_id == domain_id and cls.name.ilike('%' + search_keyword + '%')).order_by(sort_by_object)
+
+
     def __repr__(self):
         return "<EmailCampaign(name=' %r')>" % self.name
 
@@ -99,6 +118,16 @@ class EmailCampaignSmartlist(db.Model):
 
     @classmethod
     def get_smartlists_of_campaign(cls, campaign_id, smartlist_ids_only=False):
+        """
+        Get smartlists associated with the given campaign.
+        :param campaign_id: Id of campaign for with smartlists are to be retrieved
+        :param smartlist_ids_only: True if only ids are to be returned
+        :type campaign_id: int | long
+        :type smartlist_ids_only: bool
+        :rtype list
+        """
+        raise_if_not_positive_int_or_long(campaign_id)
+        raise_if_not_instance_of(smartlist_ids_only, bool)
         records = cls.query.filter_by(campaign_id=campaign_id).all()
         if smartlist_ids_only:
             return [row.smartlist_id for row in records]
@@ -213,6 +242,21 @@ class EmailCampaignSend(db.Model):
         """
         assert isinstance(message_id, basestring) and message_id, 'message_id should have a valid value.'
         return cls.query.filter_by(ses_message_id=message_id).first()
+
+    @classmethod
+    def get_already_emailed_candidates(cls, campaign):
+        """
+        Get candidates to whom email for specified campaign has already been sent.
+        :param campaign: Valid campaign object.
+        :return: Ids of candidates to whom email for specified campaign has already being sent.
+        """
+        if not isinstance(campaign, EmailCampaign):
+            raise InternalServerError(error_message='Must provide valid EmailCampaign object.')
+
+        already_emailed_candidates = cls.query.with_entities(
+            cls.candidate_id).filter_by(campaign_id=campaign.id).all()
+        emailed_candidate_ids = [row.candidate_id for row in already_emailed_candidates]
+        return emailed_candidate_ids
 
 
 class EmailClient(db.Model):

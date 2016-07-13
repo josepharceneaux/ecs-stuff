@@ -5,59 +5,69 @@ Author: Zohaib Ijaz, QC-Technologies, <mzohaib.qc@gmail.com>
     then expecting bounce messages from Amazon SNS which will mark invalid email as bounced.
 """
 import time
+from redo import retry
 
-from email_campaign_service.common.campaign_services.custom_errors import CampaignException
-from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.tests.conftest import *
 
 from email_campaign_service.email_campaign_app import app
-from email_campaign_service.common.routes import EmailCampaignUrl
-from email_campaign_service.common.models.email_campaign import EmailCampaignSend, EmailCampaignBlast
+from email_campaign_service.common.routes import EmailCampaignApiUrl
+from email_campaign_service.common.models.email_campaign import EmailCampaignBlast
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
-from email_campaign_service.tests.modules.handy_functions import send_campaign_email_to_candidate
+from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.tests.modules.handy_functions import send_campaign_email_to_candidate, TEST_EMAIL_ID
 
 
-@pytest.mark.parametrize("blast_foreign_key", [True, False])
-def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles_to_user_first, email_campaign_of_user_first,
-                                                candidate_first, user_first, talent_pipeline, blast_foreign_key):
+# @pytest.mark.parametrize("blast_foreign_key", [True, False])
+# def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles_to_user_first, email_campaign_of_user_first,
+#                                                 candidate_first, user_first, talent_pipeline, blast_foreign_key):
+#     """
+#     In this test, we will send an email campaign to one candidate with invalid email address.
+#     After bounce, this email will be marked as bounced and when we will try to send this campaign
+#     through API, it will raise InvalidUsage because no valid candidate is associated with this campaign.
+#     """
+#     with app.app_context():
+#         campaign = email_campaign_of_user_first
+#         # create candidate
+#         email_campaign_blast, smartlist_id, candidate_ids = create_campaign_data(access_token_first, campaign.id,
+#                                                                                  talent_pipeline, candidate_count=1)
+#
+#         invalid_email = 'invalid_' + fake.uuid4() + '@gmail.com'
+#         email = CandidateEmail.get_email_by_candidate_id(candidate_ids[0])
+#         email.update(address=invalid_email)
+#         db.session.commit()
+#         sent_datetime = email_campaign_blast.sent_datetime
+#         if blast_foreign_key:
+#             time.sleep(10)
+#             send_campaign_email_to_candidate(campaign, email, candidate_ids[0],
+#                                              blast_id=email_campaign_blast.id)
+#         else:
+#             send_campaign_email_to_candidate(campaign, email, candidate_ids[0], sent_datetime, blast_id=None)
+#
+#         retry(assert_is_bounced, sleeptime=3, attempts=100, sleepscale=1,
+#               args=(email,), retry_exceptions=(AssertionError,))
+#         campaign_blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign, timeout=300)
+#
+#         campaign_blast = campaign_blasts[0]
+#         assert campaign_blast.bounces == 1
+#
+#         # Since there is no candidate associated with campaign with valid email, so no more blasts would be created
+#         response = requests.post(
+#             EmailCampaignApiUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+#         assert response.status_code == requests.codes.OK
+#         CampaignsTestsHelpers.assert_campaign_blasts(campaign, 1,
+#                                                      access_token=access_token_first, timeout=300)
+
+
+def assert_is_bounced(email):
     """
-    In this test, we will send an email campaign to one candidate with invalid email address.
-    After bounce, this email will be marked as bounced and when we will try to send this campaign
-    through API, it will raise InvalidUsage because no valid candidate is associated with this campaign.
+    Asserts if there is a candidate email that has already been marked as bounced.
+    :param email: candidate email
+    :return: value of is_bounced (0 or 1)
     """
-    with app.app_context():
-        campaign = email_campaign_of_user_first
-        # create candidate
-        email_campaign_blast, smartlist_id, candidate_ids = create_campaign_data(access_token_first, campaign.id,
-                                                                                 talent_pipeline, candidate_count=1)
-
-        invalid_email = 'invalid_' + fake.uuid4() + '@gmail.com'
-        email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
-        email.update(address=invalid_email)
-        db.session.commit()
-        if blast_foreign_key:
-            send_campaign_email_to_candidate(campaign, email, candidate_ids[0], blast_id=email_campaign_blast.id)
-        else:
-            send_campaign_email_to_candidate(campaign, email, candidate_ids[0], blast_id=None)
-
-        # TODO: Basit is working on removing sleep and using polling. Impliment polling when code is in develop.
-        time.sleep(30)
-        db.session.commit()
-        email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
-        assert email.is_bounced is True
-        campaign_blasts = campaign.blasts.all()
-        assert len(campaign_blasts) == 1
-        campaign_blast = campaign_blasts[0]
-        assert campaign_blast.bounces == 1
-
-        # Since there is no candidate associated with campaign with valid email, so we will get 400 status while
-        # sending this campaign
-        response = requests.post(
-            EmailCampaignUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response.status_code == 400
-        response = response.json()
-        assert response['error']['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
+    db.session.commit()
+    assert email.is_bounced
+    return email.is_bounced
 
 
 def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, assign_roles_to_user_first,
@@ -81,30 +91,22 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
                                                                                  talent_pipeline, candidate_count=count)
 
         # Update first candidate's email to a valid email, i.e. testing email.
-        valid_email = 'gettalentmailtest@gmail.com'
-        email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
-        email.update(address=valid_email)
+        email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_ids[0])
+        email.update(address=TEST_EMAIL_ID)
 
         # Update second candidate's email to an invalid email, so we can test email bounce
         invalid_email = 'invalid_' + fake.uuid4() + '@gmail.com'
-        email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[1]).first()
+        email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_ids[1])
         email.update(address=invalid_email)
         db.session.commit()
 
-        for index in range(count):
-            email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[index]).first()
-            send_campaign_email_to_candidate(campaign, email, candidate_ids[index], email_campaign_blast.id)
-
-        # TODO: Add polling when Basit's  code for polling is in develop
-        time.sleep(30)
-        db.session.commit()
-        email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[0]).first()
-        # first candidate has a valid email. So it is not bounced
-        assert email.is_bounced is False
-
-        email = CandidateEmail.query.filter_by(candidate_id=candidate_ids[1]).first()
-        # second candidate has an invalid email. So it is bounced
-        assert email.is_bounced is True
+        for candidate_id in candidate_ids:
+            email = CandidateEmail.get_email_by_candidate_id(candidate_id=candidate_id)
+            time.sleep(2)
+            send_campaign_email_to_candidate(campaign, email, candidate_id,
+                                             blast_id=email_campaign_blast.id)
+        retry(assert_is_bounced, sleeptime=3, attempts=100, sleepscale=1,
+              args=(email,), retry_exceptions=(AssertionError,))
 
         campaign_blasts = campaign.blasts.all()
         assert len(campaign_blasts) == 1
@@ -120,14 +122,14 @@ def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, as
         # Now send this campaign through API, and there should be two blasts and Only one send associated with
         # this campaign because email has been marked as bounced.
         response = requests.post(
-            EmailCampaignUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert response.status_code == 200
-        time.sleep(30)
+            EmailCampaignApiUrl.SEND % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+        assert response.status_code == requests.codes.OK
+        CampaignsTestsHelpers.assert_campaign_blasts(campaign, 2,
+                                                     access_token=access_token_first, timeout=300)
 
+        CampaignsTestsHelpers.assert_blast_sends(campaign, 1, blast_index=1, abort_time_for_sends=200)
         db.session.commit()
         campaign_blasts = campaign.blasts.all()
-        assert len(campaign_blasts) == 2
-
         # Get second blast
         campaign_blast = campaign_blasts[1]
 

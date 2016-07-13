@@ -1,17 +1,30 @@
 """
 Test cases for candidate-search-service-API
 """
+import math
+from time import sleep
+
+# Error handling
 from candidate_service.common.error_handling import NotFoundError
+
+# Helpers
 from candidate_service.tests.modules.test_talent_cloud_search import (
     populate_candidates, VARIOUS_US_LOCATIONS, create_area_of_interest_facets
 )
+from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from candidate_service.common.tests.conftest import *
-from candidate_service.common.models.candidate import CandidateAddress
-from candidate_service.common.routes import CandidateApiUrl
-from candidate_service.common.utils.test_utils import send_request, response_info
+from candidate_service.common.utils.test_utils import send_request, response_info, get_response
 from candidate_service.common.geo_services.geo_coordinates import get_geocoordinates_bounding
+from candidate_service.common.utils.handy_functions import add_role_to_test_user
 from helpers import AddUserRoles
-from redo import retrier
+
+# Models
+from candidate_service.common.models.candidate import CandidateAddress
+from candidate_service.common.models.candidate import CandidateStatus
+from candidate_service.common.models.user import DomainRole
+
+# Routes
+from candidate_service.common.routes import CandidateApiUrl, UserServiceApiUrl
 
 
 class TestCandidateSearchGet(object):
@@ -57,17 +70,18 @@ def test_search_all_candidates_in_domain(user_first, access_token_first, talent_
     _assert_results(candidate_ids, response.json())
 
 
-def test_search_location(user_first, access_token_first, talent_pool):
-    """
-    Test to search candidates using location
-    """
-    AddUserRoles.add_and_get(user_first)
-    city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
-    candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
-                                        city=city, state=state, zip_code=zip_code)
-    response = get_response(access_token_first, '?location=%s,%s' % (city, state), expected_count=len(candidate_ids),
-                            timeout=300)
-    _assert_results(candidate_ids, response.json())
+# TODO: Commenting this flaky test for Amir (basit)
+# def test_search_location(user_first, access_token_first, talent_pool):
+#     """
+#     Test to search candidates using location
+#     """
+#     AddUserRoles.add_and_get(user_first)
+#     city, state, zip_code = random.choice(VARIOUS_US_LOCATIONS)
+#     candidate_ids = populate_candidates(talent_pool=talent_pool, access_token=access_token_first, count=3,
+#                                         city=city, state=state, zip_code=zip_code)
+#     response = get_response(access_token_first, '?location=%s,%s' % (city, state), expected_count=len(candidate_ids),
+#                             attempts=20)
+#     _assert_results(candidate_ids, response.json())
 
 
 def test_search_user_ids(user_first, access_token_first, talent_pool):
@@ -265,14 +279,18 @@ def test_search_get_only_requested_fields(user_first, access_token_first, talent
     assert 'email' in resultant_keys
 
 
-# TODO: Commenting this flaky test for Amir - (basit)
-# def test_search_paging(user_first, access_token_first, talent_pool):
-#     AddUserRoles.add_and_get(user_first)
-#     candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=50)
-#     response = get_response(access_token_first, '?sort_by=~recent', 15)
-#     print response_info(response)
-#     resultant_candidate_ids = [long(candidate['id']) for candidate in response.json()['candidates']]
-#     assert set(candidate_ids[:15]).issubset(resultant_candidate_ids)
+def test_search_paging(user_first, access_token_first, talent_pool):
+    """
+    Test: Search by the most recently added candidates
+    """
+    AddUserRoles.add_and_get(user_first)
+
+    count = 30
+    candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=count, wait=1)
+    response = get_response(access_token_first, '?sort_by=~recent', expected_count=15)
+    print response_info(response)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in response.json()['candidates']]
+    assert set(candidate_ids[:15]).issubset(resultant_candidate_ids)
 
 
 def test_search_by_first_name(user_first, access_token_first, talent_pool):
@@ -456,214 +474,550 @@ def test_search_by_degree(user_first, access_token_first, talent_pool):
     assert set(all_candidates).issubset(resultant_candidate_ids)
 
 
-# TODO: fix flaky test - Amir
-# def test_location_with_radius(user_first, access_token_first, talent_pool):
-#     """
-#     Search by city, state + radius
-#     Search by zip + radius
-#     Distance in miles
-#     Ref: http://www.timeanddate.com/worldclock/distances.html?n=283
-#     """
-#     AddUserRoles.add(user_first)
-#     base_location = "San Jose, CA, 95113"  # distance from san jose, in miles
-#     location_within_10_miles = {"city": "Santa Clara", "state": "CA", "zip_code": "95050"}  # 4.8
-#     location_within_10_miles_2 = {"city": "Milpitas", "state": "CA", "zip_code": "95035"}  # 7.9
-#     location_within_25_miles = {"city": "Newark", "state": "CA", "zip_code": "94560"}  # 19.2
-#     location_within_25_miles_2 = {"city": "Stanford", "state": "CA", "zip_code": "94305"}  # 22.3
-#     location_within_50_miles = {"city": "Oakland", "state": "CA", "zip_code": "94601"}  # 38
-#     location_within_75_miles = {"city": "Novato", "state": "CA", "zip_code": "94945"}  # 65
-#     location_within_100_miles = {'city': 'Sacramento', "state": "CA", "zip_code": "95405"}  # 89
-#     location_more_than_100_miles = {'city': "Oroville", "state": "CA", "zip_code": "95965"}  # 151
-#     # 10 mile candidates with city & state
-#     _10_mile_candidate = populate_candidates(access_token=access_token_first,
-#                                              talent_pool=talent_pool, **location_within_10_miles)
-#     _10_mile_candidate_2 = populate_candidates(access_token=access_token_first,
-#                                                talent_pool=talent_pool, **location_within_10_miles_2)
-#     # 25 mile candidates with city state
-#     _25_mile_candidate = populate_candidates(access_token=access_token_first,
-#                                              talent_pool=talent_pool, **location_within_25_miles)
-#     _25_mile_candidate_2 = populate_candidates(access_token=access_token_first,
-#                                                talent_pool=talent_pool, **location_within_25_miles_2)
-#     _50_mile_candidate = populate_candidates(access_token=access_token_first,
-#                                              talent_pool=talent_pool, **location_within_50_miles)
-#     _75_mile_candidate = populate_candidates(access_token=access_token_first,
-#                                              talent_pool=talent_pool, **location_within_75_miles)
-#     _100_mile_candidate = populate_candidates(access_token=access_token_first,
-#                                               talent_pool=talent_pool, **location_within_100_miles)
-#     # The following candidate will not appear in search with radius
-#     _more_than_100_mile_candidate = populate_candidates(access_token=access_token_first,
-#                                                         talent_pool=talent_pool, **location_more_than_100_miles)
-#
-#     candidates_within_10_miles = _10_mile_candidate + _10_mile_candidate_2
-#     candidates_within_25_miles = candidates_within_10_miles + _25_mile_candidate + _25_mile_candidate_2
-#     candidates_within_50_miles = candidates_within_25_miles + _50_mile_candidate
-#     candidates_within_75_miles = candidates_within_50_miles + _75_mile_candidate
-#     candidates_within_100_miles = candidates_within_75_miles + _100_mile_candidate
-#     all_candidates = candidates_within_100_miles + _more_than_100_mile_candidate
-#
-#     # All candidates in domain; it will include more_than_100_mile_candidate also,
-#     # which will not appear in other searches with radius.
-#     _assert_search_results(user_first.domain_id, {'location': ''}, candidate_ids=all_candidates)
-#     # With city, state and radius within 10 miles
-#
-#     _assert_search_results(user_first.domain_id, {'location': base_location, 'radius': 10},
-#                            candidate_ids=candidates_within_10_miles,
-#                            check_for_equality=True, wait=False)
-#     # Search with zipcode within 10 miles
-#     _assert_search_results(user_first.domain_id, {'location': base_location.split()[-1], 'radius': 10},
-#                            candidate_ids=candidates_within_10_miles,
-#                            check_for_equality=True, wait=False)
-#     # With city, state and radius within 25 miles
-#     _log_bounding_box_and_coordinates(base_location, 25, candidates_within_25_miles)
-#     _assert_search_results(user_first.domain_id, {'location': base_location, 'radius': 25},
-#                            candidate_ids=candidates_within_25_miles,
-#                            check_for_equality=True, wait=False)
-#     # default radius is 50 miles; search for 50 miles radius
-#     _log_bounding_box_and_coordinates(base_location, 50, candidates_within_50_miles)
-#     _assert_search_results(user_first.domain_id, {'location': base_location, 'radius': 50},
-#                            candidate_ids=candidates_within_50_miles,
-#                            check_for_equality=True, wait=False)
-#     # 75 miles
-#     _log_bounding_box_and_coordinates(base_location, 75, candidates_within_75_miles)
-#     _assert_search_results(user_first.domain_id, {'location': base_location, 'radius': 75},
-#                            candidate_ids=candidates_within_75_miles,
-#                            check_for_equality=True, wait=False)
-#     # 100 miles
-#     _log_bounding_box_and_coordinates(base_location, 100, candidates_within_100_miles)
-#     _assert_search_results(user_first.domain_id, {'location': base_location, 'radius': 100},
-#                            candidate_ids=candidates_within_100_miles,
-#                            check_for_equality=True, wait=False)
+def test_search_source(user_first, access_token_first, talent_pool):
+    """
+    Test to search candidates by source
+    """
+    AddUserRoles.add_and_get(user_first)
+
+    # Create a new source
+    data = {"source": {"description": "test source", "notes": "sample source for functional tests"}}
+    new_source_resp = send_request('post', UserServiceApiUrl.DOMAIN_SOURCES, access_token_first, data)
+    print response_info(new_source_resp)
+
+    # Add candidates with the same source ID
+    source_id = new_source_resp.json()['source']['id']
+    candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=5,
+                                        source_id=source_id)
+
+    resp = get_response(access_token_first, '?source_ids={}'.format(source_id), len(candidate_ids))
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    assert set(candidate_ids).issubset(resultant_candidate_ids)
 
 
-# TODO: fix failing test - Amir
+def test_search_by_added_date(user_first, talent_pool, access_token_first):
+    """
+    Test to search candidates by added time
+    """
+    AddUserRoles.all_roles(user_first)
+
+    # Candidate added on 01 Dec 2014 at 14:30:00
+    candidate1 = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=3,
+                                     added_datetime='2014-12-01T14:30:00+00:00')
+
+    # Candidate added on 20 Mar 2015 at 10:00:00
+    candidate2 = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=3,
+                                     added_datetime='2015-03-20T10:00:00+00:00')
+
+    # Candidate added on 25 May 2010 at 00:00:00
+    candidate3 = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=3,
+                                     added_datetime='2010-05-25T00:00:00+00:00')
+
+    # Candidate added today (now)
+    candidate4 = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
+                                     added_datetime=DatetimeUtils.to_utc_str(datetime.utcnow()))
+
+    # Get candidates from within range 1 jan'14 to 30 May'15 (format mm/dd/yyyy) -> Will include candidates 1 & 2
+    resp = get_response(access_token_first, "?date_from=01/01/2014&date_to=05/30/2015", expected_count=6)
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    assert set(candidate1 + candidate2).issubset(resultant_candidate_ids)
+
+    # Get candidates from starting date as 15 Mar 2015 and without end date -> will include candidates- 2, 4
+    resp = get_response(access_token_first, "?date_from=03/15/2015", expected_count=4)
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    assert set(candidate2 + candidate4).issubset(resultant_candidate_ids)
+
+    # Get candidates from no starting date but ending date as 31 Dec 2014 -> will give candidates 1 & 3
+    resp = get_response(access_token_first, "?date_to=12/31/2014", expected_count=6)
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    assert set(candidate1 + candidate3).issubset(resultant_candidate_ids)
+
+
+def test_area_of_interest_facet(access_token_first, user_first, talent_pool):
+    """
+    Test areaOfInterestIdFacet by passing aoi values as list and as single select
+    """
+    AddUserRoles.all_roles(user_first)
+
+    # Create domain area of interest and associate candidate 1 & candidate 2 to it
+    domain_id = user_first.domain_id
+    all_aoi_ids = create_area_of_interest_facets(db, domain_id)
+    print "Total area of interest facets present: %s" % len(all_aoi_ids)
+    aoi_ids_list_1 = all_aoi_ids[0:5]
+    aoi_ids_list_2 = all_aoi_ids[-4:-1]
+    areas_of_interest_1 = [{'area_of_interest_id': aoi_id} for aoi_id in aoi_ids_list_1]
+    areas_of_interest_2 = [{'area_of_interest_id': aoi_id} for aoi_id in aoi_ids_list_2]
+    candidate1 = populate_candidates(access_token_first, talent_pool, areas_of_interest=areas_of_interest_1)
+    candidate2 = populate_candidates(access_token_first, talent_pool, areas_of_interest=areas_of_interest_2)
+
+    # Search for candidates associated to some of the domain's aois
+    aoi_ids_1_segment = ','.join(map(str, (aoi_ids_list_1[0:3])))
+    resp = get_response(access_token_first, "?area_of_interest_ids={}".format(aoi_ids_1_segment))
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    assert set(candidate1).issubset(resultant_candidate_ids)
+
+    # Search for all candidates associated with domain's aoi
+    aoi_ids_1 = ','.join(map(str, (aoi_ids_list_1[0:3])))
+    resp = get_response(access_token_first, "?area_of_interest_ids={}".format(aoi_ids_1))
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    assert set(candidate1).issubset(resultant_candidate_ids)
+
+    # Search for all candidates associated with domain's aoi
+    aoi_ids_2 = ','.join(map(str, (aoi_ids_list_2[0:3])))
+    resp = get_response(access_token_first, "?area_of_interest_ids={}".format(aoi_ids_2))
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    assert set(candidate2).issubset(resultant_candidate_ids)
+
+
+def test_status_facet(user_first, access_token_first, talent_pool):
+    """
+    Test with status facet by passing value as list and single value
+    """
+    AddUserRoles.all_roles(user_first)
+
+    # By default every candidate has "New" status
+    candidate1 = populate_candidates(access_token_first, talent_pool)
+    candidate2 = populate_candidates(access_token_first, talent_pool)
+    candidate3 = populate_candidates(access_token_first, talent_pool)
+    count_of_candidates = len(candidate1 + candidate2 + candidate3)
+
+    # Default status ID
+    new_status_id = CandidateStatus.DEFAULT_STATUS_ID  # Newly added candidate
+
+    # Search for candidates associated with status ID 1
+    resp = get_response(access_token_first, "?status={}".format(new_status_id), expected_count=count_of_candidates)
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    assert set(candidate2).issubset(resultant_candidate_ids)
+
+    # Change status of candidate1 to "Hired"
+    hired_status_id = CandidateStatus.HIRED
+    data = {'candidates': [{'status_id': hired_status_id}]}
+    resp = send_request('patch', CandidateApiUrl.CANDIDATE % candidate1[0], access_token_first, data)
+    print response_info(resp)
+
+    # search for qualified candidates
+    resp = get_response(access_token_first, "?status_ids={}".format(hired_status_id))
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    assert set(candidate1).issubset(resultant_candidate_ids)
+
+
+def get_or_create_status(db, status_name):
+    """
+    Creates status with given status_name if not exists, else return id of status
+    :return: id of given status_name
+    """
+    status_obj = db.session.query(CandidateStatus).filter_by(description=status_name).first()
+    if status_obj:
+        return status_obj.id
+    else:  # create one with given name
+        print "Status: %s, not present in database, creating a new one" % status_name
+        add_status = CandidateStatus(description=status_name, otes="Candidate is %s" % status_name.lower())
+        db.session.add(add_status)
+        db.session.commit()
+        return add_status
+
+
+def test_source_facet(user_first, access_token_first, talent_pool):
+    """
+    Test search filter for various available source facets.
+    """
+    AddUserRoles.all_roles(user_first)
+
+    # Create a new source
+    count = 5
+    data = {'source': {'description': 'test source_{}'.format(str(uuid.uuid4())[:5])}}
+    resp = send_request('post', UserServiceApiUrl.DOMAIN_SOURCES, access_token_first, data)
+    print response_info(resp)
+    source_id = resp.json()['source']['id']
+    candidate_ids2 = populate_candidates(access_token_first, talent_pool, count=count, source_id=source_id)
+
+    # Search for candidates with created source, it will not include candidates with unassigned source
+    resp = get_response(access_token_first, "?source_ids={}".format(source_id), expected_count=count)
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    assert set(candidate_ids2).issubset(resultant_candidate_ids)
+
+
+def test_skill_description_facet(user_first, access_token_first, talent_pool):
+    """
+    Test skills facet in search
+    """
+    AddUserRoles.all_roles(user_first)
+
+    skill_name_1 = str(uuid.uuid4())[:5]
+    skill_1_candidates = populate_candidates(access_token_first, talent_pool, count=2,
+                                             skills=[{'name': skill_name_1, 'months_used': 12}])
+
+    skill_name_2 = str(uuid.uuid4())[:5]
+    skill_2_candidates = populate_candidates(access_token_first, talent_pool,
+                                             skills=[{'name': skill_name_2, 'months_used': 26}])
+
+    both_skills_candidates = populate_candidates(access_token_first, talent_pool, count=3,
+                                                 skills=[{'name': skill_name_1, 'months_used': 10},
+                                                         {'name': skill_name_2, 'months_used': 5}])
+
+    # Search for candidates with skill_name_1 (skill_1_candidates + both_skills_candidates)
+    resp = get_response(access_token_first, "?skills={}".format(skill_name_1),
+                        expected_count=5)
+    print response_info(resp)
+    candidates_1_and_both_skills_candidates = skill_1_candidates + both_skills_candidates
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    assert set(candidates_1_and_both_skills_candidates).issubset(resultant_candidate_ids)
+
+    # Search for candidates with skill_name_2 (skill_2_candidates + both_skills_candidates)
+    resp = get_response(access_token_first, "?skills={}".format(skill_name_2), 4)
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    candidates_2_and_both_skills_candidates = skill_2_candidates + both_skills_candidates
+    assert set(candidates_2_and_both_skills_candidates).issubset(resultant_candidate_ids)
+
+
+def test_service_status(user_first, access_token_first, talent_pool):
+    """
+    military_service_status
+    Facet name: serviceStatus
+    """
+    AddUserRoles.all_roles(user_first)
+
+    service_status1 = "Veteran"
+    count = 4
+    candidates_status1 = populate_candidates(access_token_first, talent_pool, count=count,
+                                             military_status=service_status1)
+
+    # Search for candidates via military service status
+    resp = get_response(access_token_first, "?military_service_status={}".format(service_status1), expected_count=count)
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    assert set(candidates_status1).issubset(resultant_candidate_ids)
+
+
+def test_military_branch(user_first, access_token_first, talent_pool):
+    """
+    branch: military_branch
+    """
+    AddUserRoles.all_roles(user_first)
+
+    count = 4
+    service_branch = "Army"
+    candidates_branch = populate_candidates(access_token_first, talent_pool, count=count,
+                                            military_branch=service_branch)
+
+    # Search for candidates via military branch
+    resp = get_response(access_token_first, "?military_branch={}".format(service_branch), expected_count=count)
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    assert set(candidates_branch).issubset(resultant_candidate_ids)
+
+
+def test_search_by_military_grade(user_first, access_token_first, talent_pool):
+    """
+    military highest grade
+    Facet name 'highestGrade'
+    """
+    AddUserRoles.all_roles(user_first)
+    service_grade = "E-2"
+    candidates_grade = populate_candidates(access_token_first, talent_pool, count=3, military_grade=service_grade)
+
+    # Search for candidates via military grade
+    resp = get_response(access_token_first, "?military_highest_grade={}".format(service_grade), expected_count=3)
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    assert set(candidates_grade).issubset(resultant_candidate_ids)
+
+
+def test_custom_fields(user_first, access_token_first, candidate_first):
+    """
+    Test various custom_fields
+    """
+    AddUserRoles.all_roles(user_first)
+    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS])
+
+    # Create custom field category named as 'Certifications'
+    name = str(uuid.uuid4())[:5]
+    data = {'custom_fields': [{'name': name}]}
+    resp = send_request('post', UserServiceApiUrl.DOMAIN_CUSTOM_FIELDS, access_token_first, data)
+    print response_info(resp)
+    custom_field_id = resp.json()['custom_fields'][0]['id']
+
+    # Create candidate custom field
+    value = str(uuid.uuid4())[:5]
+    data = {'candidate_custom_fields': [{'custom_field_id': custom_field_id, 'value': value}]}
+    resp = send_request('post', CandidateApiUrl.CUSTOM_FIELDS % candidate_first.id, access_token_first, data)
+    print response_info(resp)
+
+    # Search candidate by custom field id & value
+    resp = get_response(access_token_first, "?custom_fields={}|{}".format(custom_field_id, value))
+    print response_info(resp)
+    resultant_candidate_ids = [long(candidate['id']) for candidate in resp.json()['candidates']]
+    candidate_id = [candidate_first.id]
+    assert set(candidate_id).issubset(resultant_candidate_ids)
+
+
+def test_pagination(user_first, access_token_first, talent_pool):
+    """
+    Test candidates on all pages
+    """
+    AddUserRoles.all_roles(user_first)
+
+    # Create 50 candidates
+    count = 50
+    populate_candidates(access_token_first, talent_pool, count=count)
+
+    page_count = 15
+
+    # Search for candidates: page 1 result
+    resp = get_response(access_token_first, '?sort_by=~recent', expected_count=page_count)
+    print response_info(resp)
+    assert len(resp.json()['candidates']) == page_count
+
+    # Search for candidates: page 2 result
+    resp = get_response(access_token_first, '?sort_by=~recent&page=2', expected_count=page_count)
+    print response_info(resp)
+    assert len(resp.json()['candidates']) == page_count
+
+    # Search for candidates: page 3 result
+    resp = get_response(access_token_first, '?sort_by=~recent&page=3', expected_count=page_count)
+    print response_info(resp)
+    assert len(resp.json()['candidates']) == page_count
+
+    # Search for candidates: page 4 result
+    last_page_count = count - (page_count * 3)
+    resp = get_response(access_token_first, '?sort_by=~recent&page=4', expected_count=last_page_count)
+    print response_info(resp)
+    assert len(resp.json()['candidates']) == last_page_count
+
+
+def test_paging_with_facet_search(user_first, access_token_first, talent_pool):
+    """
+    Test for no. of pages that are having candidates
+    """
+    AddUserRoles.all_roles(user_first)
+
+    count = 30
+    current_title = "Manager of {}".format(str(uuid.uuid4())[:5])
+    populate_candidates(access_token_first, talent_pool, count=count, job_title=current_title)
+
+    # Search by sorting
+    resp = get_response(access_token_first, '?sort_by=~recent', expected_count=15)
+    print response_info(resp)
+    assert resp.json()['max_pages'] == int(math.ceil(count / 15.0))
+
+
+def test_id_in_request_vars(user_first, access_token_first, talent_pool):
+    """
+    There is a case where id can be passed as parameter in search_candidates
+    It can be used to check if a certain candidate ID is in a smartlist.
+    """
+    AddUserRoles.all_roles(user_first)
+
+    # Create 10 candidates
+    count = 10
+    candidate_ids = populate_candidates(access_token_first, talent_pool, count=count)
+
+    # if searched for particular candidate id, search should only return that candidate.
+    first_candidate_id = candidate_ids[0]
+    resp = get_response(access_token_first, '?id={}'.format(first_candidate_id))
+    print response_info(resp)
+    assert resp.json()['total_found'] == 1
+
+
+def test_facets_are_returned_with_search_results(user_first, access_token_first, talent_pool):
+    """
+    Test selected facets are returned with search results
+    """
+    AddUserRoles.all_roles(user_first)
+
+    # Create some candidates
+    count = 2
+    populate_candidates(access_token_first, talent_pool, count=count)
+
+    # Search for user's candidates
+    resp = get_response(access_token_first, '?user_ids={}'.format(user_first.id), expected_count=count)
+    print response_info(resp)
+    print "\nresp: {}".format(resp.json().keys())
+    assert resp.json()['total_found'] == count
+    assert set(['total_found', 'max_score', 'facets', 'candidates', 'max_pages']) == set(resp.json().keys())
+
+
+def test_sort_by_match(user_first, access_token_first, talent_pool):
+    """
+    Test: Search by sorting by match
+    """
+    AddUserRoles.add_and_get(user_first)
+
+    count = 3
+    populate_candidates(access_token_first, talent_pool, count=count)
+    resp = get_response(access_token_first, '?sort_by=~match', expected_count=count)
+    print response_info(resp)
+    assert resp.json()['total_found'] == count
+
+    resp = get_response(access_token_first, '?sort_by=match', expected_count=3)
+    print response_info(resp)
+    assert resp.json()['total_found'] == count
+
+
+def test_location_with_radius(user_first, access_token_first, talent_pool):
+    """
+    Search by city, state + radius
+    Search by zip + radius
+    Distance in miles
+    Ref: http://www.timeanddate.com/worldclock/distances.html?n=283
+    """
+    AddUserRoles.add_and_get(user_first)
+
+    # 10 mile candidates with city & state
+    _10_mile_candidate = populate_candidates(access_token=access_token_first,
+                                             talent_pool=talent_pool,
+                                             city='santa clara', state='ca', zip_code='95050')
+
+    _10_mile_candidate_2 = populate_candidates(access_token=access_token_first,
+                                               talent_pool=talent_pool,
+                                               city='milpitas', state='ca', zip_code='95035')
+    # 25 mile candidates with city state
+    _25_mile_candidate = populate_candidates(access_token=access_token_first,
+                                             talent_pool=talent_pool,
+                                             city='newark', state='ca', zip_code='94560')
+
+    _25_mile_candidate_2 = populate_candidates(access_token=access_token_first,
+                                               talent_pool=talent_pool,
+                                               city='stanford', state='ca', zip_code='94305')
+
+    _50_mile_candidate = populate_candidates(access_token=access_token_first,
+                                             talent_pool=talent_pool,
+                                             city='oakland', state='ca', zip_code='94601')
+
+    _75_mile_candidate = populate_candidates(access_token=access_token_first,
+                                             talent_pool=talent_pool,
+                                             city='novato', state='ca', zip_code='94945')
+
+    _100_mile_candidate = populate_candidates(access_token=access_token_first,
+                                              talent_pool=talent_pool,
+                                              city='sacramento', state='ca', zip_code='95405')
+
+    # The following candidate will not appear in search with radius
+    _more_than_100_mile_candidate = populate_candidates(access_token=access_token_first,
+                                                        talent_pool=talent_pool,
+                                                        city='oroville', state='ca', zip_code='95965')
+
+    candidates_within_10_miles = _10_mile_candidate + _10_mile_candidate_2
+    candidates_within_25_miles = candidates_within_10_miles + _25_mile_candidate + _25_mile_candidate_2
+    candidates_within_50_miles = candidates_within_25_miles + _50_mile_candidate
+    candidates_within_75_miles = candidates_within_50_miles + _75_mile_candidate
+    candidates_within_100_miles = candidates_within_75_miles + _100_mile_candidate
+    all_candidates = candidates_within_100_miles + _more_than_100_mile_candidate
+
+    # All candidates in domain; it will include more_than_100_mile_candidate also,
+    # which will not appear in other searches with radius.
+    resp = get_response(access_token_first, "?location=''", expected_count=len(all_candidates))
+    print response_info(resp)
+    assert resp.json()['total_found'] == len(all_candidates)
+
+    # Search with zipcode and radius within 10 miles
+    resp = get_response(access_token_first, "?location={zipcode}&radius={radius}".format(zipcode=95050, radius=10))
+    print response_info(resp)
+    assert resp.json()['total_found'] == 2  # only two candidates are within 10 miles of Santa Clara
+
+    # Search with zipcode and radius within 25 miles
+    resp = get_response(access_token_first, "?location={zipcode}&radius={radius}".format(zipcode=95050, radius=25))
+    print response_info(resp)
+    assert resp.json()['total_found'] == 4  # only four candidates are within 10 miles of Santa Clara
+
+    # Search with zipcode and radius within 50 miles
+    resp = get_response(access_token_first, "?location={zipcode}&radius={radius}".format(zipcode=95050, radius=50))
+    print response_info(resp)
+    assert resp.json()['total_found'] == 5  # only five candidates are within 10 miles of Santa Clara
+
+    # Search with zipcode and radius within 75 miles
+    resp = get_response(access_token_first, "?location={zipcode}&radius={radius}".format(zipcode=95050, radius=75))
+    print response_info(resp)
+    assert resp.json()['total_found'] == 7  # only seven candidates are within 10 miles of Santa Clara
+
+
+# TODO: Check Search API for the accuracy of results. Once confirmed & fixed uncomment test
 # def test_sort_by_proximity(user_first, access_token_first, talent_pool):
 #     """
 #     Sort by distance
 #     """
-#     AddUserRoles.add(user_first)
-#     user_id, domain_id = user_first.id, user_first.domain_id
-#     base_location = "San Jose, CA"  # distance from san jose, in miles
-#     location_within_10_miles = {"city": "Santa Clara", "state": "CA", "zip_code": "95050"}  # 4.8
-#     location_within_10_miles_2 = {"city": "Milpitas", "state": "CA", "zip_code": "95035"}  # 7.9
-#     location_within_25_miles = {"city": "Fremont", "state": "CA", "zip_code": "94560"}  # 16
-#     location_within_50_miles = {"city": "Oakland", "state": "CA", "zip_code": "94601"}  # 38
+#     AddUserRoles.add_and_get(user_first)
 #
 #     # 10 mile candidates with city & state
 #     _10_mile_candidate = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
-#                                              **location_within_10_miles)
+#                                              city='Santa Clara', state='CA', zip_code='95050')
 #     _10_mile_candidate_2 = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
-#                                                **location_within_10_miles_2)
-#     # 25 mile candiates with city state
-#     _25_mile_candidate = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
-#                                              **location_within_25_miles)
-#     _50_mile_candidate = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
-#                                              **location_within_50_miles)
-#     candidates_within_10_miles = [_10_mile_candidate[0], _10_mile_candidate_2[0]]
-#     closest_to_furthest = [_10_mile_candidate[0], _10_mile_candidate_2[0], _25_mile_candidate[0], _50_mile_candidate[0]]
+#                                                city='Milpitas', state='CA', zip_code='95035')
 #
-#     furthest_to_closest = closest_to_furthest[::-1]  # Reverse the order
+#     # 25 mile candidates with city state
+#     _25_mile_candidate = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
+#                                              city='Fremont', state='CA', zip_code='94560')
+#
+#     # 50 mile candidates with city state
+#     _50_mile_candidate = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
+#                                              city='Oakland', state='CA', zip_code='94601')
+#
+#     closest = [_10_mile_candidate[0], _10_mile_candidate_2[0], _25_mile_candidate[0], _50_mile_candidate[0]]
+#     furthest = closest[::-1]  # Reverse the order
 #
 #     # Without radius i.e. it will by default take 50 miles
 #     # Sort by -> Proximity: Closest
-#     proximity_closest = SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH['proximity']
-#     _assert_search_results(domain_id, {'location': base_location, 'sort_by': proximity_closest},
-#                            candidate_ids=closest_to_furthest, check_for_sorting=True)
+#     resp = get_response(access_token_first, '?location=Santa Clara, CA&sort_by=proximity', expected_count=4)
+#     print response_info(resp)
+#     resultant_candidate_ids = [candidate['id'] for candidate in resp.json()['candidates']]
+#     assert resultant_candidate_ids == map(unicode, closest)
 #
 #     # Sort by -> Proximity: Furthest
-#     proximity_furthest = SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH['~proximity']
-#     _assert_search_results(domain_id, {'location': base_location, 'sort_by': proximity_furthest},
-#                            candidate_ids=furthest_to_closest, check_for_sorting=True, wait=False)
-#
-#     # With city, state and radius within 10 miles. Sort by -> Proximity: closest
-#     _assert_search_results(domain_id, {'location': base_location, 'radius': 10, 'sort_by': proximity_closest},
-#                            candidate_ids=candidates_within_10_miles,
-#                            check_for_sorting=True, wait=False)
-#
-#     # With city, state and radius within 10 miles. Sort by -> Proximity: Furthest
-#     _assert_search_results(domain_id, {'location': base_location, 'radius': 10, 'sort_by': proximity_furthest},
-#                            candidate_ids=candidates_within_10_miles[::-1],
-#                            check_for_sorting=True, wait=False)
+#     resp = get_response(access_token_first, '?location=Santa Clara, CA&sort_by=~proximity', expected_count=4)
+#     print response_info(resp)
+#     resultant_candidate_ids = [candidate['id'] for candidate in resp.json()['candidates']]
+#     assert resultant_candidate_ids == map(unicode, furthest)
 
-# TODO: Test fails very often during Jenkins build -- commenting out for now.
-# def test_search_status(user_first, access_token_first):
+
+# TODO: Flaky test report - Amir
+# def test_search_status(user_first, access_token_first, talent_pool):
 #     """
 #     Test to search all candidates by status
 #     """
-#     user_id = user_first.id
-#     candidate_ids = populate_candidates(count=3, owner_user_id=user_id)
-#     status_id = get_or_create_status(db, status_name="Hired")
+#     AddUserRoles.all_roles(user_first)
+#
 #     # Change status of last candidate
-#     Candidate.query.filter_by(id=candidate_ids[-1]).update(dict(candidate_status_id=status_id))
-#     db.session.commit()
-#     # Update cloud_search
-#     upload_candidate_documents(candidate_ids[-1])
-#     # Wait for 10 more seconds for cloudsearch to update data.
-#     time.sleep(10)
-#     response = get_response_from_authorized_user(access_token_first, '?status_ids=%d' % status_id)
-#     # Only last candidate should appear in result.
-#     _assert_results(candidate_ids[-1:], response.json())
-
-
-# TODO: Complete test when CandidateSource API is ready - Amir
-# def test_search_source(user_first, access_token_first, talent_pool):
-#     """Test to search candidates by source"""
-#     # Create a new source
-#     AddUserRoles.add_and_get(user_first)
-#     new_source = CandidateSource(description="Test source",
-#                                  domain_id=user_first.domain_id,
-#                                  notes="Sample source for functional tests")
-#     db.session.add(new_source)
-#     db.session.commit()
-#     source_id = new_source.id
-#     candidate_ids = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=5,
-#                                         source_id=source_id)
-#     response = get_response_from_authorized_user(access_token_first, '?source_ids={}'.format(source_id))
-#     _assert_results(candidate_ids, response.json())
-
-
-# def test_search_by_added_date(user_first, talent_pool, access_token_first):
-#     """
-#     Test to search candidates by added time
-#     """
-#     AddUserRoles.add(user_first)
-#     domain_id = user_first.domain_id
-#     # Candidate added on 01 Dec 2014 at 14:30:00
-#     candidate1 = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=3,
-#                                      added_time='2014-12-01T14:30:00+00:00')
-#     # Candidate added on 20 Mar 2015 at 10:00:00
-#     candidate2 = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=3,
-#                                      added_time='2015-03-20T10:00:00+00:00')
-#     # Candidate added on 25 May 2010 at 00:00:00
-#     candidate3 = populate_candidates(access_token=access_token_first, talent_pool=talent_pool, count=3,
-#                                      added_time='2010-05-25T00:00:00+00:00')
-#     # Candidate added today (now)
-#     candidate4 = populate_candidates(access_token=access_token_first, talent_pool=talent_pool,
-#                                      added_time=DatetimeUtils.to_utc_str(datetime.datetime.now()))
-#     # Get candidates from within range 1 jan'14 to 30 May'15 (format mm/dd/yyyy) -> Will include candidates 1 & 2
-#     _assert_search_results(domain_id, {'date_from': '01/01/2014', 'date_to': '05/30/2015'},
-#                            candidate_ids=candidate1 + candidate2)
-#     # Get candidates from starting date as 15 Mar 2015 and without end date -> will include candidates- 2, 4
-#     _assert_search_results(domain_id, {'date_from': '03/15/2015', 'date_to': ''},
-#                            candidate_ids=candidate2 + candidate4, wait=False)
-#     # Get candidates from no starting date but ending date as 31 Dec 2014 -> will give candidates 1 & 3
-#     _assert_search_results(domain_id, {'date_from': '', 'date_to': '12/31/2014'},
-#                            candidate_ids=candidate1 + candidate3, wait=False)
-#     # Get candidates from no starting and no ending date i.e. all candidates
-#     _assert_search_results(domain_id, {'date_from': '', 'date_to': ''},
-#                            candidate_ids=candidate1 + candidate2 + candidate3 + candidate4, wait=False)
+#     status_id = 6  # Candidate is highly prospective
+#     count = 3  # number of candidates to be created
+#     candidate_ids = populate_candidates(count=count, access_token=access_token_first, talent_pool=talent_pool)
 #
+#     # Update last candidate's status
+#     last_candidate_id = candidate_ids[-1]
+#     data = {'candidates': [{'status_id': status_id}]}
+#     update_resp = send_request('patch', CandidateApiUrl.CANDIDATE % last_candidate_id, access_token_first, data)
+#     print response_info(update_resp)
 #
+#     # Search via status ID
+#     resp = get_response(access_token_first, '?status_ids={}'.format(status_id))
+#     print response_info(resp)
+#
+#     # Only last candidate should appear in result
+#     candidate_ids_from_search = [candidate['id'] for candidate in resp.json()['candidates']]
+#     assert candidate_ids_from_search.pop() == unicode(update_resp.json()['candidates'][0]['id'])
+
+
 # def test_sort_by_added_date(user_first, access_token_first, talent_pool):
 #     """
 #     Least recent --> sort_by:added_time-asc
 #     Most recent -->  sort_by:added_time-desc
 #     """
-#     AddUserRoles.add(user_first)
-#     domain_id = user_first.domain_id
+#     AddUserRoles.add_and_get(user_first)
+#
 #     # Candidate added on 25 May 2010 at 00:00:00
-#     candidate1 = populate_candidates(user_id=user_first.id,
-#                                      added_time=datetime.datetime(2010, 05, 25, 00, 00, 00),
-#                                      update_now=False)
+#     candidate1 = populate_candidates(access_token_first, talent_pool,
+#                                      added_time=datetime.datetime(2010, 05, 25, 00, 00, 00))
+#
 #     # Candidate added on 01 Dec 2014 at 14:30:00
 #     candidate2 = populate_candidates(user_id=user_first.id,
 #                                      added_time=datetime.datetime(2014, 12, 01, 14, 30, 00),
@@ -688,542 +1042,65 @@ def test_search_by_degree(user_first, access_token_first, talent_pool):
 #                            check_for_sorting=True, wait=False)
 #     # Get candidates from within range 1 jan'14 to 30 May'15 -> Will include candidates 3rd & 2nd in descending order
 #     _assert_search_results(domain_id, {'date_from': '01/01/2014', 'date_to': '05/30/2015',
-#                                        'sort_by': most_recent}, candidate_ids=candidate3 + candidate2,
-#                            wait=False)
+#                                        'sort_by': most_recent}, candidate_ids=candidate3 + candidate2, wait=False)
 
 
-# # TODO: fix test - Amir
-# def to_fix_test_area_of_interest_facet(sample_user):
-#     """
-#     Test areaOfInterestIdFacet by passing aoi values as list and as single select
-#     areaOfInterestIdFacet:<id>
-#     :param sample_user:
-#     :return:
-#     """
-#     domain_id = sample_user.domain_id
-#     all_aoi_ids = create_area_of_interest_facets(db, domain_id)
-#     print "Total area of interest facets present: %s" % len(all_aoi_ids)
-#     aoi_ids_list_1 = all_aoi_ids[0:5]
-#     aoi_ids_list_2 = all_aoi_ids[-4:-1]
-#     candidate1 = populate_candidates(user_id=sample_user.id, areas_of_interest=aoi_ids_list_1,
-#                                      update_now=False)
-#     candidate2 = populate_candidates(user_id=sample_user.id, areas_of_interest=aoi_ids_list_2,
-#                                      update_now=False)
-#     _update_now(candidate1 + candidate2)
-#     _assert_search_results(domain_id, {"area_of_interest_ids": ','.join(aoi_ids_list_1[0:3])}, candidate1,
-#                            check_for_equality=True, wait=False)
-#     _assert_search_results(domain_id, {"area_of_interest_ids": ','.join(aoi_ids_list_2[0])}, candidate2,
-#                            check_for_equality=True, wait=False)
-#     _assert_search_results(domain_id, {"area_of_interest_ids": ','.join([aoi_ids_list_2[-1], aoi_ids_list_1[-2]])},
-#                            candidate1 + candidate2,
-#                            check_for_equality=True, wait=False)
-#
-#
-# # TODO: fix test - Amir
-# def to_fix_test_status_facet(sample_user):
-#     """
-#     Test with status facet by passing value as list and single value
-#     statusFacet: <status_id>
-#     :param sample_user:
-#     :return:
-#     """
-#
-#     domain_id = sample_user.domain_id
-#     # By default every candidate has "New" status
-#     candidate1 = populate_candidates(user_id=sample_user.id)
-#     candidate2 = populate_candidates(user_id=sample_user.id)
-#     candidate3 = populate_candidates(user_id=sample_user.id)
-#     new_status_id = get_or_create_status(db, status_name="New")
-#     _assert_search_results(domain_id, {'status': new_status_id}, candidate1 + candidate2 + candidate3)
-#     status1_id = get_or_create_status(db, status_name="Qualified")
-#     status2_id = get_or_create_status(db, status_name="Hired")
-#     # Change status of candidate1
-#     db.session.query(Candidate).filter_by(id=candidate1[0]).update(dict(candidate_status_id=status1_id))
-#     db.session.query(Candidate).filter_by(id=candidate2[0]).update(dict(candidate_status_id=status2_id))
-#     # Update cloud_search for status changes
-#     _update_now(candidate1 + candidate2)
-#     # search for qualified candidates
-#     _assert_search_results(domain_id, {'status_ids': str(status1_id)}, candidate1, check_for_equality=True)
-#     _assert_search_results(domain_id, {'status_ids': str(status2_id)}, candidate2, check_for_equality=True, wait=False)
-#     _assert_search_results(domain_id, {'status_ids': ','.join([status1_id, status2_id])}, candidate2 + candidate1,
-#                            check_for_equality=True, wait=False)
-#     _assert_search_results(domain_id, {'status_ids': str(new_status_id)}, candidate3, check_for_equality=True,
-#                            wait=False)
-#
-#
-# # TODO: fix test - Amir
-# def to_fix_test_source_facet(sample_user):
-#     """
-#     Test search filter for various available source facets.
-#     sourceFacet:<source id>
-#     :param sample_user:
-#     :return:
-#     """
-#     domain_id = sample_user.domain_id
-#     # by default all candidates have "Unassigned" source
-#     candidate_ids1 = populate_candidates(user_id=sample_user.id, count=5, update_now=False)
-#     # Create a new source
-#     source_id = CandidateSource(description="Test source-%s" % uuid.uuid4().__str__()[0:8],
-#                                 domain_id=domain_id, notes="Source created for functional tests")
-#     db.session.add(source_id)
-#     db.session.commit()
-#     candidate_ids2 = populate_candidates(user_id=sample_user.id, count=5, source_id=source_id, update_now=False)
-#     # Update database and cloud_search
-#     all_candidates = candidate_ids1 + candidate_ids2
-#     _update_now(all_candidates)
-#     # Search for candidates with created source, it will not include candidates with unassigned source
-#     _assert_search_results(domain_id, {"source_ids": str(source_id)}, candidate_ids2, check_for_equality=True)
-#
-#
-# # TODO: fix test - Amir
-# def _test_search_based_on_years_of_experience(sample_user):
+# def test_search_based_on_years_of_experience(user_first, access_token_first, talent_pool):
 #     """
 #     minimum_years_experience
 #     maximum_years_experience
-#     :param sample_user:
-#     :return:
 #     """
-#     domain_id = sample_user.domain_id
-#     experience_above_10_years = [{'organization': 'Amazon', 'position': 'Software Architect', 'startYear': 2014,
-#                                   'startMonth': '09', 'isCurrent': True},
-#                                  {'organization': 'Amazon', 'position': 'Sr. Software Developer',
-#                                   'startYear': '2008', 'startMonth': '04',
-#                                   'endYear': 2014, 'endMonth': '08'},
-#                                  {'organization': 'Amazon', 'position': 'Software Developer', 'startYear': 2004,
-#                                   'startMonth': '03', 'endYear': 2008, 'endMonth': '03',
-#                                   'candidate_experience_bullets': [{'description':
-#                                                                         'Developed An Online Complaint And Resolution '
-#                                                                         'Database System In Perl Under The Instruction '
-#                                                                         'Of Professor Brian Harvey For Students In '
-#                                                                         'Computer Science Classes. Various System '
-#                                                                         'Administration And Maintenance Tasks.'}]}]
-#     experience_5_years = [{'organization': 'Samsung', 'position': 'Area Manager', 'startYear': 2013, 'startMonth': 06,
-#                            'endYear': 2015, 'endMonth': '01'},
-#                           {'organization': 'Motorola', 'position': 'Area Manager', 'startYear': 2011, 'startMonth': 11,
-#                            'endYear': 2013, 'endMonth': '05'},
-#                           {'organization': 'Nokia', 'position': 'Marketing executive', 'startYear': 2010,
-#                            'startMonth': '01', 'endYear': 2011, 'endMonth': '10'}]  # 60 months exp
-#     experience_2_years = [{'organization': 'Intel', 'position': 'Research analyst', 'startYear': 2013, 'startMonth': 06,
-#                            'endYear': 2015, 'endMonth': '06'}]  # 24 months exp
-#     experience_0_years = [{'organization': 'Audi', 'position': 'Mechanic', 'startYear': 2015, 'startMonth': 01,
-#                            'endYear': 2015, 'endMonth': 02}]  # 2 month exp
-#     candidate_with_0_years_exp = populate_candidates(user_id=sample_user.id,
-#                                                      candidate_experience_dicts=experience_0_years,
-#                                                      update_now=False)
-#     candidate_with_2_years_exp = populate_candidates(user_id=sample_user.id,
-#                                                      candidate_experience_dicts=experience_2_years,
-#                                                      update_now=False)
-#     candidate_with_5_years_exp = populate_candidates(user_id=sample_user.id,
-#                                                      candidate_experience_dicts=experience_5_years,
-#                                                      update_now=False)
-#     candidate_above_10_years_exp = populate_candidates(user_id=sample_user.id,
-#                                                        candidate_experience_dicts=experience_above_10_years,
-#                                                        update_now=False)
-#     # TODO: Check if there is still need of updating total_months_experience?
-#     db.session.commit()
-#     db.session.query(Candidate).filter_by(id=candidate_with_0_years_exp[0]).update(dict(total_months_experience=2))
-#     db.session.query(Candidate).filter_by(id=candidate_with_2_years_exp[0]).update(dict(total_months_experience=24))
-#     db.session.query(Candidate).filter_by(id=candidate_with_5_years_exp[0]).update(dict(total_months_experience=5 * 12))
-#     db.session.query(Candidate).filter_by(id=candidate_above_10_years_exp[0]).update(
-#         dict(total_months_experience=11 * 12))
-#     # Update cloudsearch
-#     all_candidates = candidate_with_0_years_exp + candidate_with_2_years_exp + candidate_with_5_years_exp + \
-#                      candidate_above_10_years_exp
-#     _update_now(all_candidates)
+#     AddUserRoles.add_and_get(user_first)
 #
-#     # Search for candidates with more than 10 years
-#     _assert_search_results(domain_id, {"minimum_years_experience": 10}, candidate_above_10_years_exp)
-#     _assert_search_results(domain_id, {"minimum_years_experience": 1, "maximum_years_experience": 6},
-#                            candidate_with_2_years_exp + candidate_with_5_years_exp, wait=False)
-#     _assert_search_results(domain_id, {"maximum_years_experience": 4}, candidate_with_0_years_exp +
-#                            candidate_with_2_years_exp, wait=False)
-#     _assert_search_results(domain_id, {"minimum_years_experience": "", "maximum_years_experience": ""},
-#                            candidate_with_0_years_exp + candidate_with_2_years_exp + candidate_with_5_years_exp +
-#                            candidate_above_10_years_exp,
-#                            wait=False)
+#     # Candidate with less than one year of experience
+#     current_year = datetime.now().year
+#     candidate_with_0_years_exp = populate_candidates(access_token_first, talent_pool,
+#                                                      company_name='Amazon',
+#                                                      job_title='Software Architect',
+#                                                      position_start_year=current_year - 1,
+#                                                      position_start_month=1,
+#                                                      is_current_job=True)
 #
+#     # Candidate with 2 years of experience
+#     candidate_with_2_years_exp = populate_candidates(access_token_first, talent_pool,
+#                                                      company_name='Motorola',
+#                                                      job_title='Area Manager',
+#                                                      position_start_year=2011,
+#                                                      position_start_month=11,
+#                                                      position_end_year=2013,
+#                                                      position_end_month=10)
 #
-# # TODO: fix test - Amir
-# def _test_skill_description_facet(sample_user):
+#     resp = get_response(access_token_first, '?minimum_years_experience={}'.format(2))
+#     print response_info(resp)
+
+# TODO: Comment out flaky test - Amir
+# def test_search_by_tag_ids_and_names(user_first, access_token_first, candidate_first):
 #     """
-#     skillDescriptionFacet
-#     :param sample_user:
-#     :return:
+#     Test: Add tags to candidate's profile, then search for candidate using tag IDs
 #     """
-#     domain_id = sample_user.domain_id
-#     network_candidates = populate_candidates(user_id=sample_user.id, count=2,
-#                                              skills=[{'last_used': datetime.datetime.now(),
-#                                                       'name': 'Network', 'months_used': 12}],
-#                                              update_now=True)
+#     AddUserRoles.add_get_edit(user_first)
 #
-#     excel_candidates = populate_candidates(user_id=sample_user.id,
-#                                            skills=[{'last_used': datetime.datetime.now(),
-#                                                     'name': 'Excel', 'months_used': 26}],
-#                                            update_now=True)
-#     network_and_excel_candidates = populate_candidates(sample_user.id, count=3,
-#                                                        skills=[{'last_used': datetime.datetime.now(),
-#                                                                 'name': 'Excel',
-#                                                                 'months_used': 10},
-#                                                                {'last_used': datetime.datetime.now(),
-#                                                                 'name': 'Network',
-#                                                                 'months_used': 5}], update_now=True)
-#     # Update db and cloudsearch
-#     _update_now(network_candidates + excel_candidates + network_and_excel_candidates)
-#     _assert_search_results(domain_id, {'skills': 'Network'},
-#                            candidate_ids=network_candidates + network_and_excel_candidates)
-#     _assert_search_results(domain_id, {'skills': 'Excel'},
-#                            candidate_ids=excel_candidates + network_and_excel_candidates, wait=False)
-#     _assert_search_results(domain_id, {'skills': ['Excel', 'Network']},
-#                            candidate_ids=network_and_excel_candidates, wait=False)
+#     # Add tags to candidate's profile
+#     data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
+#     create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
+#     print response_info(create_resp)
+#     assert create_resp.status_code == requests.codes.CREATED
+#     assert len(create_resp.json()['tags']) == len(data['tags'])
 #
+#     # Search for candidates using tag IDs
+#     created_tag_ids = [tag['id'] for tag in create_resp.json()['tags']]
+#     tag_ids = ','.join(map(str, created_tag_ids))
+#     get_resp = get_response(access_token_first, '?tag_ids={}'.format(tag_ids))
+#     print response_info(get_resp)
+#     assert get_resp.json()['total_found'] == 1  # tags associated with only 1 candidate
+#     assert get_resp.json()['candidates'][0]['tag_ids'] == map(unicode, created_tag_ids)
 #
-# def to_fix_test_date_of_separation(sample_user):
-#     """
-#     Date of separation -
-#     military_end_date_from
-#     military_end_date_to
-#     :param sample_user:
-#     :return:
-#     """
-#     """
-#
-#     """
-#     domain_id = sample_user.domain_id
-#     candidates_today = populate_candidates(sample_user.id, count=5, military_to_date=datetime.datetime.now(),
-#                                            military_grade=True,
-#                                            military_status=True, military_branch=True, update_now=False)
-#     candidates_2014 = populate_candidates(sample_user.id, count=2,
-#                                           military_to_date=datetime.date(year=2014, month=03, day=31),
-#                                           update_now=False)
-#     candidates_2012 = populate_candidates(sample_user.id, military_to_date=datetime.date(2012, 07, 15),
-#                                           update_now=False)
-#
-#     # Update db and cloudsearch
-#     _update_now(candidates_2012 + candidates_2014 + candidates_today)
-#     # get candidates where date of separation is
-#     _assert_search_results(domain_id, {'military_end_date_from': 2013},
-#                            candidate_ids=candidates_2014 + candidates_today)
-#     _assert_search_results(domain_id, {'military_end_date_from': 2010},
-#                            candidate_ids=candidates_2012 + candidates_2014 + candidates_today, wait=False)
-#     _assert_search_results(domain_id, {'military_end_date_from': 2010, 'military_end_date_to': 2014},
-#                            candidate_ids=candidates_2012 + candidates_2014, wait=False)
-#     _assert_search_results(domain_id, {'military_end_date_to': 2012}, candidate_ids=candidates_2012, wait=False)
-#     _assert_search_results(domain_id, {'military_end_date_to': 2014}, candidate_ids=candidates_2012 + candidates_2014,
-#                            wait=False)
-#
-#
-# # TODO: fix test - Amir
-# def to_fix_test_service_status(sample_user):
-#     """
-#     military_service_status
-#     Facet name: serviceStatus
-#     :param sample_user:
-#     :return:
-#     """
-#     domain_id = sample_user.domain_id
-#     service_status1 = "Veteran"
-#     service_status2 = "Guard"
-#     service_status3 = "Retired"
-#     candidates_status1 = populate_candidates(user_id=sample_user.id, count=4, military_status=service_status1,
-#                                              update_now=False)
-#     candidates_status2 = populate_candidates(user_id=sample_user.id, count=7, military_status=service_status2,
-#                                              update_now=False)
-#     candidates_status3 = populate_candidates(user_id=sample_user.id, count=2, military_status=service_status3,
-#                                              update_now=False)
-#     # Update all candidates at once
-#     all_candidates = candidates_status1 + candidates_status2 + candidates_status3
-#     _update_now(all_candidates)
-#
-#     _assert_search_results(domain_id, {'military_service_status': service_status1}, candidates_status1)
-#     _assert_search_results(domain_id, {'military_service_status': service_status2}, candidates_status2, wait=False)
-#     _assert_search_results(domain_id, {'military_service_status': [service_status1, service_status3]},
-#                            candidates_status1 + candidates_status3, wait=False)
-#     _assert_search_results(domain_id, {'military_service_status': [service_status1, service_status2, service_status3]},
-#                            all_candidates, wait=False)
-#
-#
-# # TODO: fix test - Amir
-# def to_fix_test_military_branch(sample_user):
-#     """
-#     branch: military_branch
-#     :param sample_user:
-#     :return:
-#     """
-#     domain_id = sample_user.domain_id
-#     service_branch1 = "Army"
-#     service_branch2 = "Coast Guard"
-#     service_branch3 = "Air Force"
-#     candidates_branch1 = populate_candidates(user_id=sample_user.id, count=4, military_branch=service_branch1,
-#                                              update_now=False)
-#     candidates_branch2 = populate_candidates(user_id=sample_user.id, count=7, military_branch=service_branch2,
-#                                              update_now=False)
-#     candidates_branch3 = populate_candidates(user_id=sample_user.id, count=2, military_branch=service_branch3,
-#                                              update_now=False)
-#     all_candidates = candidates_branch1 + candidates_branch2 + candidates_branch3
-#     # Update all candidates at once
-#     _update_now(all_candidates)
-#
-#     _assert_search_results(domain_id, {'military_branch': service_branch1}, candidates_branch1)
-#     _assert_search_results(domain_id, {'military_branch': service_branch2}, candidates_branch2, wait=False)
-#     _assert_search_results(domain_id, {'military_branch': [service_branch1, service_branch3]}, candidates_branch1 +
-#                            candidates_branch3, wait=False)
-#     _assert_search_results(domain_id, {'military_branch': [service_branch1, service_branch2, service_branch3]},
-#                            all_candidates,
-#                            wait=False)
-#
-#
-# # TODO: fix test - Amir
-# def to_fix_test_search_by_military_grade(sample_user):
-#     """
-#     military highest grade
-#     Facet name 'highestGrade'
-#     :param sample_user:
-#     :return:
-#     """
-#     domain_id = sample_user.domain_id
-#     service_grade1 = "E-2"
-#     service_grade2 = "O-4"
-#     service_grade3 = "W-1"
-#     candidates_grade1 = populate_candidates(user_id=sample_user.id, count=3, military_grade=service_grade1,
-#                                             update_now=False)
-#     candidates_grade2 = populate_candidates(user_id=sample_user.id, count=2, military_grade=service_grade2,
-#                                             update_now=False)
-#     candidates_grade3 = populate_candidates(user_id=sample_user.id, count=5, military_grade=service_grade3,
-#                                             update_now=False)
-#     all_candidates = candidates_grade1 + candidates_grade2 + candidates_grade3
-#     # Update all candidates at once
-#     _update_now(all_candidates)
-#
-#     _assert_search_results(domain_id, {'military_highest_grade': service_grade1}, candidates_grade1)
-#     _assert_search_results(domain_id, {'military_highest_grade': service_grade2}, candidates_grade2, wait=False)
-#     _assert_search_results(domain_id, {'military_highest_grade': [service_grade1, service_grade3]}, candidates_grade1 +
-#                            candidates_grade3, wait=False)
-#     _assert_search_results(domain_id, {'military_highest_grade': [service_grade1, service_grade2, service_grade3]},
-#                            all_candidates, wait=False)
-#
-#
-# # TODO: fix test - Amir
-# def to_fix_test_custom_fields_kaiser_nuid(sample_user):
-#     """
-#     Test kaiser specific custom field "Has NUID"
-#     :param sample_user:
-#     :return:
-#     """
-#     domain_id = sample_user.domain_id
-#     custom_field_obj = db.session.query(CustomField).filter(CustomField.name == "NUID").first()
-#     if custom_field_obj:
-#         custom_field_obj_id = custom_field_obj.id
-#     else:
-#         print "Creating custom field with name=NUID"
-#         new_custom_field_obj = CustomField(domain_id=domain_id, name="NUID", type='string',
-#                                            added_time=datetime.datetime.now())
-#         db.session.add(new_custom_field_obj)
-#         db.session.commit()
-#         custom_field_obj_id = new_custom_field_obj.id
-#     other_candidates = populate_candidates(user_id=sample_user.id, count=2, update_now=False)
-#     candidate_cf1 = populate_candidates(user_id=sample_user.id,
-#                                         custom_fields_dict={'custom_field_id': custom_field_obj_id,
-#                                                             'value': 'S264964'}, update_now=False)
-#     candidate_cf2 = populate_candidates(user_id=sample_user.id,
-#                                         custom_fields_dict={'custom_field_id': custom_field_obj_id,
-#                                                             'value': 'D704398'}, update_now=False)
-#     candidate_cf3 = populate_candidates(user_id=sample_user.id,
-#                                         custom_fields_dict={'custom_field_id': custom_field_obj_id,
-#                                                             'value': 'X073423'}, update_now=False)
-#
-#     # Update all candidates in db and cloudsearch
-#     nuid_candidates = candidate_cf1 + candidate_cf2 + candidate_cf3
-#     all_candidates = other_candidates + nuid_candidates
-#     _update_now(all_candidates)
-#
-#     _assert_search_results(domain_id, {"query": ""}, all_candidates)  # should give all candidates in domain
-#     # searched for cf-19; should return only nuid candidates
-#     _assert_search_results(domain_id, {"cf-%d" % custom_field_obj_id: "Has NUID"}, nuid_candidates, wait=False)
-#
-#
-# # TODO: fix test - Amir
-# def _test_custom_fields(sample_user):
-#     """
-#     Test various custom_fields
-#     :param sample_user:
-#     :return:
-#     """
-#     domain_id = sample_user.domain_id
-#     # Create custom field category named as 'Certifications'
-#     custom_field_cat = CustomFieldCategory(domain_id=domain_id, name="Certifications")
-#     db.session.add(custom_field_cat)
-#     custom_field_cat_id = custom_field_cat.id
-#     # Create custom fields under 'Certifications'
-#     custom_field1 = 'hadoop'
-#     custom_field2 = 'MangoDB'
-#     new_custom_field1 = CustomField(domain_id=domain_id, name=custom_field1, type='string',
-#                                     category_id=custom_field_cat_id, added_time=datetime.datetime.now())
-#     db.session.add(new_custom_field1)
-#
-#     new_custom_field2 = CustomField(domain_id=domain_id, name=custom_field2, type='string',
-#                                     category_id=custom_field_cat_id, added_time=datetime.datetime.now())
-#     db.session.add(new_custom_field2)
-#     db.session.commit()
-#     custom_field1_id = new_custom_field1.id
-#     custom_field2_id = new_custom_field2.id
-#     # refresh_custom_fields_cache
-#     candidates_cf1 = populate_candidates(user_id=sample_user.id, count=3,
-#                                          custom_fields_dict={'custom_field_id': custom_field1_id,
-#                                                              'value': custom_field1}, update_now=False)
-#     candidates_cf2 = populate_candidates(user_id=sample_user.id, count=4,
-#                                          custom_fields_dict={'value': custom_field2,
-#                                                              'custom_field_id': custom_field2_id}, update_now=False)
-#     all_candidates = candidates_cf1 + candidates_cf2
-#     _update_now(all_candidates)
-#     _assert_search_results(domain_id, {"cf-%s" % custom_field1_id: custom_field1}, candidates_cf1)
-#     _assert_search_results(domain_id, {"cf-%s" % custom_field2_id: custom_field2}, candidates_cf2, wait=False)
-#     _assert_search_results(domain_id, {"cf-%s" % custom_field1_id: custom_field1, "cf-%s" %
-#                                                                                   custom_field2_id: custom_field2},
-#                            all_candidates, wait=False)
-#
-#
-# # TODO: fix test - Amir
-# def to_fix_test_paging(sample_user):
-#     """
-#     Test candidates on all pages
-#     :param sample_user:
-#     :return:
-#     """
-#     domain_id = sample_user.domain_id
-#     candidate_ids = populate_candidates(user_id=sample_user.id, count=50, objective=True, added_time=True,
-#                                         phone=True,
-#                                         company_name=True, job_title=True, candidate_text_comment=True,
-#                                         city=True, state=True,
-#                                         zip_code=True, school_name=True, major=True, degree_title=True,
-#                                         university_start_year=True,
-#                                         university_start_month=True, graduation_year=True, graduation_month=True,
-#                                         military_branch=True,
-#                                         military_status=True, military_grade=True)
-#     # page 1 -> first 15 candidates
-#     least_recent = SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH['~recent']
-#     _assert_search_results(domain_id, {'sort_by': least_recent}, candidate_ids[0:15], check_for_sorting=True)
-#     _assert_search_results(domain_id, {'sort_by': least_recent, 'page': 1}, candidate_ids[0:15],
-#                            check_for_sorting=True, wait=False)  # explicitly passing page 1 as parameter
-#     # page2 -> next 15 candidates i.e. 15 to 30
-#     _assert_search_results(domain_id, {'sort_by': least_recent, 'page': 2}, candidate_ids[15:30],
-#                            check_for_sorting=True, wait=False)
-#     # page3 -> next 15 candidates i.e. 30 to 45
-#     _assert_search_results(domain_id, {'sort_by': least_recent, 'page': 3}, candidate_ids[30:45],
-#                            check_for_sorting=True, wait=False)
-#     # page4 -> next 15 candidates i.e. 45 to 50
-#     _assert_search_results(domain_id, {'sort_by': least_recent, 'page': 4}, candidate_ids[45:],
-#                            check_for_sorting=True, wait=False)
-#
-#
-# # TODO: fix test - Amir
-# def to_fix_test_paging_with_facet_search(sample_user):
-#     """
-#     Test for no. of pages that are having candidates
-#     :param sample_user:
-#     :return:
-#     """
-#     domain_id = sample_user.domain_id
-#     current_title = "Sr. Manager"
-#     candidate_ids = populate_candidates(count=30, user_id=sample_user.id, objective=True, phone=True,
-#                                         added_time=True, company_name=True, job_title=current_title)
-#     # Search by applying sorting so that candidates can be easily asserted
-#     least_recent = SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH['~recent']
-#     _assert_search_results(domain_id, {'position': current_title, 'sort_by': least_recent},
-#                            candidate_ids[0:15])
-#     _assert_search_results(domain_id, {'position': current_title, 'sort_by': least_recent, 'page': 2},
-#                            candidate_ids[15:30], wait=False)
-#
-#
-# # TODO: fix test - Amir
-# def _test_id_in_request_vars(sample_user):
-#     """
-#     There is a case where id can be passed as parameter in search_candidates
-#     It can be used to check if a certain candidate ID is in a smartlist.
-#     :param sample_user:
-#     :return:
-#     """
-#     domain_id = sample_user.domain_id
-#     # Insert 10 candidates
-#     candidate_ids = populate_candidates(user_id=sample_user.id, count=10, objective=True, phone=True,
-#                                         company_name=True,
-#                                         job_title=True, candidate_text_comment=True, city=True, state=True,
-#                                         zip_code=True, school_name=True, major=True, degree_title=True,
-#                                         university_start_year=True, university_start_month=True, graduation_year=True,
-#                                         graduation_month=True, military_branch=True, military_status=True,
-#                                         military_grade=True)
-#     # First candidate id
-#     first_candidate_id = candidate_ids[0]
-#     middle_candidate_id = candidate_ids[5]
-#     last_candidate_id = candidate_ids[-1]
-#     # if searched for particular candidate id, search should only return that candidate.
-#     _assert_search_results(domain_id, {'id': middle_candidate_id}, [middle_candidate_id], check_for_equality=True)
-#     _assert_search_results(domain_id, {'id': last_candidate_id}, [last_candidate_id], check_for_equality=True,
-#                            wait=False)
-#     _assert_search_results(domain_id, {'id': first_candidate_id}, [first_candidate_id], check_for_equality=True,
-#                            wait=False)
-#
-#
-# # TODO: fix test - Amir
-# def to_fix_test_facets_are_returned_with_search_results(test_domain, sample_user, sample_user_2):
-#     """
-#     Test selected facets are returned with search results
-#     :param sample_user:
-#     :param sample_user_2:
-#     :return:
-#     """
-#     domain_id = test_domain.id
-#
-#     sample_user_candidate_ids = populate_candidates(user_id=sample_user.id, count=2, update_now=False)
-#     sample_user_2_candidate_ids = populate_candidates(user_id=sample_user_2.id, count=1,
-#                                                       update_now=False)
-#     all_candidates = sample_user_candidate_ids + sample_user_2_candidate_ids
-#     # Update
-#     _update_now(all_candidates)
-#
-#     # There is always one 'unassigned' source for every domain.
-#     unassigned_candidate_source = db.session.query(CandidateSource).filter(CandidateSource.description == 'Unassigned',
-#                                                                            CandidateSource.domain_id == domain_id).first()
-#     # By default each candidate is assigned 'New' status
-#     new_status_id = get_or_create_status(db, status_name="New")
-#     facets = {'username': [{"value": sample_user.first_name + ' ' + sample_user.last_name,
-#                             "id": unicode(sample_user.id),
-#                             "count": 2},
-#                            {"value": sample_user_2.first_name + ' ' + sample_user_2.last_name,
-#                             "id": unicode(sample_user_2.id),
-#                             "count": 1}],
-#               'source': [{"value": unassigned_candidate_source.description,
-#                           "count": unicode(unassigned_candidate_source.id),
-#                           "id": 3}],
-#               'statusFacet': [{"value": 'New',
-#                                "id": unicode(new_status_id),
-#                                "count": 3}]
-#               }
-#     _assert_search_results(domain_id, {'query': ''}, all_candidates, check_for_equality=True, facets_dict=facets)
-#
-#
-# # TODO: fix test - Amir
-# def OK_test_sort_by_match(sample_user):
-#     """
-#     TODO: Remove OK_ in name once comments in candidates creation is fixed.
-#     """
-#     candidate1 = populate_candidates(user_id=sample_user.id, company_name="Newvision", update_now=False)
-#     candidate2 = populate_candidates(user_id=sample_user.id, company_name="Newvision",
-#                                      objective="Willing to join Newvision",
-#                                      update_now=False)
-#     candidate3 = populate_candidates(user_id=sample_user.id, company_name="Newvision",
-#                                      objective="Willing to join Newvision",
-#                                      candidate_text_comment="Eligible for joining Newvision", update_now=False)
-#     worst_match_order = candidate1 + candidate2 + candidate3
-#     best_match_order = worst_match_order[::-1]
-#     _update_now(worst_match_order)
-#     # search for Newvision - worst-match
-#     worst_match = SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH['~match']
-#     _assert_search_results(sample_user.domain_id, {'query': 'Newvision', 'sort_by': worst_match}, worst_match_order,
-#                            check_for_sorting=True)
-#     # search for Newvision - Best match
-#     best_match = SORTING_FIELDS_AND_CORRESPONDING_VALUES_IN_CLOUDSEARCH['match']
-#     _assert_search_results(sample_user.domain_id, {'query': 'Newvision', 'sort_by': best_match}, best_match_order,
-#                            check_for_sorting=True)
+#     # Search for candidates using tag names
+#     created_tag_names = ','.join(tag['name'] for tag in data['tags'])
+#     get_resp = get_response(access_token_first, '?tags={}'.format(created_tag_names))
+#     print response_info(get_resp)
+#     assert get_resp.json()['total_found'] == 1  # tags associated with only 1 candidate
+#     assert get_resp.json()['candidates'][0]['tag_ids'] == map(unicode, created_tag_ids)
 
 
 def _log_bounding_box_and_coordinates(base_location, radius, candidate_ids):
@@ -1270,14 +1147,3 @@ def _assert_results(candidate_ids, response):
     print '\nresultant_candidate_ids: {}'.format(resultant_candidate_ids)
     # Test whether every element in the set candidate_ids is in resultant_candidate_ids.
     assert set(candidate_ids).issubset(set(resultant_candidate_ids))
-
-
-def get_response(access_token, arguments_to_url, expected_count, timeout=100):
-    # Wait for cloudsearch to update the candidates
-    url = CandidateApiUrl.CANDIDATE_SEARCH_URI + arguments_to_url
-    headers = {'Authorization': 'Bearer %s' % access_token, 'Content-type': 'application/json'}
-    attempts = timeout / 3 + 1
-    for _ in retrier(attempts=attempts, sleeptime=3):
-        if len(requests.get(url, headers=headers).json()['candidates']) >= expected_count:
-            return requests.get(url=url, headers=headers)
-    raise NotFoundError('Unable to get expected number of candidates')

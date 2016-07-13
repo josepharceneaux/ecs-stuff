@@ -3,7 +3,7 @@ import os
 import time
 import uuid
 
-from flask import request
+from flask import request, current_app
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
@@ -74,11 +74,18 @@ class User(db.Model):
         secret_key = os.urandom(24)
         redis_store.setex(secret_key_id, secret_key, expiration)
         s = Serializer(secret_key, expires_in=expiration)
+        if current_app:
+            current_app.logger.info('Creating jw token. secret_key_id %s, secret_key: %s', secret_key_id, secret_key)
         return secret_key_id, 'Bearer %s' % s.dumps({'user_id': user_id})
 
     @staticmethod
     def verify_jw_token(secret_key_id, token, allow_null_user=False):
-        s = Serializer(redis_store.get(secret_key_id))
+        secret_key = redis_store.get(secret_key_id)
+        if not secret_key:
+            raise UnauthorizedError(
+                error_message='Error retrieving secret key from redis. \
+                secret_key_id: {}, token: {}'.format(secret_key_id, token))
+        s = Serializer(secret_key)
         try:
             data = s.loads(token)
         except SignatureExpired:
@@ -461,9 +468,10 @@ class DomainRole(db.Model):
         CAN_CREATE_EMAIL_TEMPLATE_FOLDER = "CAN_CREATE_EMAIL_TEMPLATE_FOLDER"
         CAN_DELETE_EMAIL_TEMPLATE_FOLDER = "CAN_DELETE_EMAIL_TEMPLATE_FOLDER"
 
+        CAN_IMPERSONATE_USERS = "CAN_IMPERSONATE_USERS"
+
         # Scheduler Admin Role
-        # TODO--w: It should say 'CAN_GET_ALL_SCHEDULER_JOBS' to clearly indicate it belongs to Scheduler
-        CAN_GET_ALL_JOBS = "CAN_GET_ALL_JOBS"
+        CAN_GET_ALL_SCHEDULER_JOBS = "CAN_GET_ALL_SCHEDULER_JOBS"
 
     def delete(self):
         db.session.delete(self)

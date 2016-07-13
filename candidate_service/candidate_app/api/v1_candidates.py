@@ -5,9 +5,7 @@ Notes:
     other specified inputs or no inputs (if not specified)
 """
 # Standard libraries
-import logging
-import datetime
-import os
+import logging, datetime, os, requests, json
 from time import time
 from datetime import date
 
@@ -31,13 +29,13 @@ from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
     get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid,
-    does_candidate_cf_exist, get_json_data_if_validated
+    get_json_data_if_validated, get_email_if_validated
 )
 
 # JSON Schemas
 from candidate_service.modules.json_schema import (
     candidates_resource_schema_post, candidates_resource_schema_patch, resource_schema_preferences,
-    resource_schema_photos_post, resource_schema_photos_patch, notes_schema, language_schema, ccf_schema,
+    resource_schema_photos_post, resource_schema_photos_patch, language_schema,
 )
 from jsonschema import validate, FormatChecker, ValidationError
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
@@ -56,9 +54,9 @@ from candidate_service.common.models.candidate import (
     Candidate, CandidateAddress, CandidateEducation, CandidateEducationDegree,
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
-    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateCustomField,
-    CandidateDevice, CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment,
-    CandidateReference, CandidateSource
+    CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateDevice,
+    CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment, CandidateSource,
+    CandidateStatus
 )
 from candidate_service.common.models.language import CandidateLanguage
 from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
@@ -71,18 +69,13 @@ from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_email_if_exists_in_domain,
     create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
-    add_or_update_candidate_subs_preference, add_photos, update_photo, add_notes,
+    add_or_update_candidate_subs_preference, add_photos, update_photo,
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
-    add_languages, update_candidate_languages
+    add_languages, update_candidate_languages, CachedData
 )
 from candidate_service.modules.candidate_engagement import calculate_candidate_engagement_score
-from candidate_service.modules.references import (
-    get_references, create_or_update_references, delete_reference, delete_all_references
-)
 from candidate_service.modules.api_calls import create_smartlist, create_campaign, create_campaign_send
-from candidate_service.modules.talent_cloud_search import (
-    upload_candidate_documents, delete_candidate_documents
-)
+from candidate_service.modules.talent_cloud_search import upload_candidate_documents, delete_candidate_documents
 from candidate_service.modules.talent_openweb import (
     match_candidate_from_openweb, convert_dice_candidate_dict_to_gt_candidate_dict,
     find_in_openweb_by_email
@@ -123,48 +116,52 @@ class CandidatesResource(Resource):
         candidates = body_dict.get('candidates')
 
         # Input validations
-        candidate_ids_from_candidate_email_obj = []
         is_creating, is_updating, candidate_id = True, False, None
         all_cf_ids, all_aoi_ids = [], []
         for _candidate_dict in candidates:
 
-            # Email addresses must be properly formatted
+            candidate_ids_from_candidate_email_obj = []
             for email in _candidate_dict.get('emails') or []:
-                email_address = email['address'].strip()  # email address is required within the email dict
-                if not email_address:  # in case just a whitespace is provided, e.g. "  "
-                    raise InvalidUsage('No email address provided', custom_error.INVALID_EMAIL)
 
-                if not is_valid_email(email_address):
-                    raise InvalidUsage('Invalid email address/format: {}'.format(email_address),
-                                       error_code=custom_error.INVALID_EMAIL)
-
-                # Check for candidate's email in authed_user's domain
-                candidate_email_obj = CandidateEmail.query.join(Candidate).join(User) \
-                    .filter(User.domain_id == domain_id) \
-                    .filter(CandidateEmail.address == email_address).first()
+                # email address is required within the email dict
+                email_address = email['address'].strip()
 
                 # If candidate's email is found, check if it's web-hidden
+                candidate_email_obj = get_email_if_validated(email_address, domain_id)
                 if candidate_email_obj:
+
+                    # Cache candidate's email
+                    CachedData.candidate_emails.append(candidate_email_obj)
+
                     candidate_id = candidate_email_obj.candidate_id
+
                     # We need to prevent duplicate creation in case candidate has multiple email addresses in db
                     candidate_ids_from_candidate_email_obj.append(candidate_id)
                     candidate = Candidate.get_by_id(candidate_id)
-                    if candidate.is_web_hidden:  # Un-hide candidate from web, if found
-                        candidate.is_web_hidden = 0
-                        # If candidate's web-hidden is set to false, it will be treated as an update
-                        is_creating, is_updating = False, True
-                    elif candidate_id in candidate_ids_from_candidate_email_obj:
-                        continue
-                    else:
+
+                    # Raise error if candidate is not hidden and its email matches another candidate's email
+                    if not candidate.is_web_hidden and (candidate_email_obj not in CachedData.candidate_emails):
+                        # Clear cached data
+                        CachedData.candidate_emails = []
+
                         raise InvalidUsage('Candidate with email: {}, already exists'.format(email_address),
                                            error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
                                            additional_error_info={'id': candidate_id})
 
+                    # Un-hide candidate from web, if found
+                    if candidate.is_web_hidden:
+                        candidate.is_web_hidden = 0
+
+                        # If candidate's web-hidden is set to false, it will be treated as an update
+                        is_creating, is_updating = False, True
+
+                    elif candidate_id in candidate_ids_from_candidate_email_obj:
+                        continue
+
             # Provided source ID must belong to candidate's domain
             source_id = _candidate_dict.get('source_id')
             if source_id:
-                source = CandidateSource.get_by(id=source_id, domain_id=domain_id)
-                if not source:
+                if not CandidateSource.get_domain_source(source_id=source_id, domain_id=domain_id):
                     raise InvalidUsage("Provided source ID ({source_id}) not "
                                        "recognized for candidate's domain (id = {domain_id})"
                                        .format(source_id=source_id, domain_id=domain_id),
@@ -232,7 +229,7 @@ class CandidatesResource(Resource):
                 middle_name=candidate_dict.get('middle_name'),
                 last_name=candidate_dict.get('last_name'),
                 formatted_name=candidate_dict.get('full_name'),
-                status_id=candidate_dict.get('status_id'),
+                status_id=candidate_dict.get('status_id') or CandidateStatus.DEFAULT_STATUS_ID,
                 emails=emails,
                 phones=candidate_dict.get('phones'),
                 addresses=candidate_dict.get('addresses'),
@@ -267,16 +264,30 @@ class CandidatesResource(Resource):
         Endpoints:
              i. PATCH /v1/candidates
             ii. PATCH /v1/candidates/:id
-        Input: {'candidates': [CandidateObject, CandidateObject, ...]}
 
         Function can update any of candidate(s)'s information.
 
         Caveats:
-              i. Requires a JSON dict containing a 'candidates'-key
-                 and a-list-of-candidate-dict(s) as values
+              i. Requires a JSON dict containing a 'candidates'-key and a-list-of-candidate-dict(s) as values
              ii. Each JSON dict must contain candidate's ID
             iii. To update any of candidate's fields, the field ID must be provided,
                  otherwise a new record will be added to the specified candidate
+        Usage:
+            >>> url = 'host/v1/candidates'
+            >>> headers = {'Authorization': 'Bearer {access_token}', 'content-type': 'application/json'}
+            >>> data =
+                        {
+                            'candidates': [
+                                {
+                                    'id': 4, 'objective': 'looking for new opportunity',
+                                    'emails': [
+                                        {'id': 546, 'address': 'updated.address@example.com'}
+                                    ]
+                                }
+                            ]
+                        }
+            >>> requests.patch(url=url, headers=headers, data=json.dumps(data))
+            <Response [200]>
 
         :return: {'candidates': [{'id': candidate_id}, {'id': candidate_id}, ...]}
         """
@@ -357,11 +368,13 @@ class CandidatesResource(Resource):
                             raise InvalidUsage("Military service's date must be in a date format",
                                                error_code=custom_error.MILITARY_INVALID_DATE)
 
+            # If source_id key is not provided, its value must default to empty string
+            # this is because this API will treat NULL values as "delete the record"
+            source_id = _candidate_dict.get('source_id', '')
+
             # Provided source ID must belong to candidate's domain
-            source_id = _candidate_dict.get('source_id')
             if source_id:
-                source = CandidateSource.get_by(id=source_id, domain_id=domain_id)
-                if not source:
+                if not CandidateSource.get_domain_source(source_id=source_id, domain_id=domain_id):
                     raise InvalidUsage("Provided source ID ({source_id}) not "
                                        "recognized for candidate's domain (id = {domain_id})"
                                        .format(source_id=source_id, domain_id=domain_id),
@@ -369,8 +382,8 @@ class CandidatesResource(Resource):
 
         if skip:
             db.session.commit()
-            # Update candidates in cloud search
-            upload_candidate_documents.delay(hidden_candidate_ids)
+            # Delete candidate from CS when set to hidden
+            delete_candidate_documents(hidden_candidate_ids)
             return {'hidden_candidate_ids': hidden_candidate_ids}, 200
 
         # Custom fields must belong to user's domain
@@ -401,6 +414,11 @@ class CandidatesResource(Resource):
             added_datetime = DatetimeUtils.isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
                 if candidate_dict.get('added_datetime') else None
 
+            """
+            status_id, source_id, objective, summary, and resume_url will default to an empty-string
+            if the keys are not provided in the request body. This is because NULL values for the
+            aforementioned fields will be treated as "delete the record"
+            """
             resp_dict = create_or_update_candidate_from_params(
                 user_id=authed_user.id,
                 is_updating=True,
@@ -409,7 +427,7 @@ class CandidatesResource(Resource):
                 middle_name=candidate_dict.get('middle_name'),
                 last_name=candidate_dict.get('last_name'),
                 formatted_name=candidate_dict.get('full_name'),
-                status_id=candidate_dict.get('status_id'),
+                status_id=candidate_dict.get('status_id', ''),
                 emails=emails,
                 phones=candidate_dict.get('phones'),
                 addresses=candidate_dict.get('addresses'),
@@ -425,11 +443,11 @@ class CandidatesResource(Resource):
                 dice_social_profile_id=candidate_dict.get('openweb_id'),
                 dice_profile_id=candidate_dict.get('dice_profile_id'),
                 added_datetime=added_datetime,
-                source_id=candidate_dict.get('source_id'),
-                objective=candidate_dict.get('objective'),
-                summary=candidate_dict.get('summary'),
+                source_id=candidate_dict.get('source_id', ''),
+                objective=candidate_dict.get('objective', ''),
+                summary=candidate_dict.get('summary', ''),
                 talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []}),
-                resume_url=candidate_dict.get('resume_url')
+                resume_url=candidate_dict.get('resume_url', '')
             )
             updated_candidate_ids.append(resp_dict['candidate_id'])
 
@@ -523,7 +541,7 @@ class CandidateResource(Resource):
 class CandidateAddressResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)  # todo: change to CAN_EDIT_CANDIDATE
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -611,157 +629,6 @@ class CandidateAreaOfInterestResource(Resource):
                 candidate_aoi = CandidateAreaOfInterest.get_aoi(candidate_id, aoi_id)
                 if candidate_aoi:
                     db.session.delete(candidate_aoi)
-
-        db.session.commit()
-
-        # Update cloud search
-        upload_candidate_documents([candidate_id])
-        return '', 204
-
-
-class CandidateCustomFieldResource(Resource):
-    decorators = [require_oauth()]
-
-    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
-    def post(self, **kwargs):
-        """
-        Endpoints:  POST /v1/candidates/:candidate_id/custom_fields
-        :return  {'candidate_custom_fields': [{'id': int}, {'id': int}, ...]}
-        """
-        # Get authenticated user and candidate ID
-        authed_user, candidate_id = request.user, kwargs['candidate_id']
-
-        # Check for candidate's existence and web-hidden status
-        candidate = get_candidate_if_exists(candidate_id)
-
-        # Validate request body
-        body_dict = get_json_if_exist(request)
-        try:
-            validate(instance=body_dict, schema=ccf_schema)
-        except ValidationError as e:
-            raise InvalidUsage(error_message=e.message, error_code=custom_error.INVALID_INPUT)
-
-        created_ccf_ids = []  # aggregate created CandidateCustomField IDs
-        candidate_custom_fields = body_dict.get('candidate_custom_fields')
-        for ccf_dict in candidate_custom_fields:
-            # Custom Field must be recognized
-            custom_field_id = ccf_dict['custom_field_id']
-            custom_field = CustomField.get_by_id(custom_field_id)
-            if not custom_field:
-                raise NotFoundError("Custom field ID ({}) not recognized".format(custom_field_id),
-                                    custom_error.CUSTOM_FIELD_NOT_FOUND)
-
-            # Custom Field must belong to user's domain
-            if custom_field.domain_id != authed_user.domain_id:
-                raise ForbiddenError("Custom field ID ({}) does not belong to user ({})".format(
-                    custom_field_id, authed_user.id), custom_error.CUSTOM_FIELD_FORBIDDEN)
-
-            # Prevent duplicate entries
-            if not does_candidate_cf_exist(candidate=candidate, custom_field_dict=ccf_dict):
-                # Add candidate_id, added_time to ccf_dict; and strip value
-                ccf_dict.update(candidate_id=candidate_id, added_time=datetime.datetime.utcnow(),
-                                value=ccf_dict['value'].strip() if ccf_dict.get('value') else None)
-                candidate_custom_field = CandidateCustomField(**ccf_dict)
-                db.session.add(candidate_custom_field)
-                db.session.commit()
-                created_ccf_ids.append(candidate_custom_field.id)
-
-        return {'candidate_custom_fields': [{'id': custom_field_id} for custom_field_id in created_ccf_ids]}, 201
-
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
-    def get(self, **kwargs):
-        """
-        Endpoints:
-             i. GET /v1/candidates/:candidate_id/custom_fields
-            ii. GET /v1/candidates/:candidate_id/custom_fields/:id
-        Depending on the endpoint requested, function will return all of Candidate's
-        custom fields or just a single one.
-        """
-        # Get authenticated user, candidate_id, and can_cf_id
-        authed_user, candidate_id, can_cf_id = request.user, kwargs['candidate_id'], kwargs.get('id')
-
-        # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
-
-        if can_cf_id:  # Retrieve specified custom field
-            candidate_custom_field = CandidateCustomField.get_by_id(can_cf_id)
-            if not candidate_custom_field:
-                raise NotFoundError('Candidate custom field not found: {}'.format(can_cf_id),
-                                    custom_error.CUSTOM_FIELD_NOT_FOUND)
-
-            # Custom field must belong to user's domain
-            custom_field_id = candidate_custom_field.custom_field_id
-            if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
-                raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN)
-
-            # Custom Field must belong to candidate
-            if candidate_custom_field.candidate_id != candidate_id:
-                raise ForbiddenError("Candidate custom field ({}) does not belong to candidate ({})".format(
-                    can_cf_id, candidate_id), custom_error.CUSTOM_FIELD_FORBIDDEN)
-
-            return {
-                'candidate_custom_field': {
-                    'id': can_cf_id,
-                    'custom_field_id': custom_field_id,
-                    'value': candidate_custom_field.value,
-                    'created_at_datetime': candidate_custom_field.added_time.isoformat()
-                }
-            }
-
-        else:
-            # Custom fields must belong user's domain
-            return {'candidate_custom_fields': [
-                {
-                    'id': ccf.id,
-                    'custom_field_id': ccf.custom_field_id,
-                    'value': ccf.value,
-                    'created_at_datetime': ccf.added_time.isoformat()
-                } for ccf in CandidateCustomField.get_candidate_custom_fields(candidate_id)]}
-
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
-    def delete(self, **kwargs):
-        """
-        Endpoints:
-             i. DELETE /v1/candidates/:candidate_id/custom_fields
-            ii. DELETE /v1/candidates/:candidate_id/custom_fields/:id
-        Depending on the endpoint requested, function will delete all of Candidate's
-        custom fields or just a single one.
-        """
-        # Get authenticated user, candidate_id, and can_cf_id (CandidateCustomField.id)
-        authed_user, candidate_id, can_cf_id = request.user, kwargs['candidate_id'], kwargs.get('id')
-
-        # Check for candidate's existence and web-hidden status
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user and its domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
-
-        if can_cf_id:  # Delete specified custom field
-            candidate_custom_field = CandidateCustomField.get_by_id(can_cf_id)
-            if not candidate_custom_field:
-                raise NotFoundError('Candidate custom field not found: {}'.format(can_cf_id),
-                                    custom_error.CUSTOM_FIELD_NOT_FOUND)
-
-            # Custom fields must belong to user's domain
-            custom_field_id = candidate_custom_field.custom_field_id
-            if not is_custom_field_authorized(authed_user.domain_id, [custom_field_id]):
-                raise ForbiddenError('Not authorized', custom_error.CUSTOM_FIELD_FORBIDDEN)
-
-            # Custom Field must belong to candidate
-            if candidate_custom_field.candidate_id != candidate_id:
-                raise ForbiddenError("Candidate custom field ({}) does not belong to candidate ({})".format(
-                    can_cf_id, candidate_id), custom_error.CUSTOM_FIELD_FORBIDDEN)
-
-            db.session.delete(candidate_custom_field)
-
-        else:  # Delete all of Candidate's custom fields
-            for ccf in CandidateCustomField.get_candidate_custom_fields(candidate_id):
-                db.session.delete(ccf)
 
         db.session.commit()
 
@@ -1052,7 +919,7 @@ class CandidateWorkExperienceBulletResource(Resource):
 class CandidateEmailResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_CANDIDATES)
+    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -2051,60 +1918,6 @@ class CandidatePhotosResource(Resource):
         # Update cloud search
         upload_candidate_documents([candidate_id])
         return '', 204
-
-
-class CandidateNotesResource(Resource):
-    decorators = [require_oauth()]
-
-    @require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
-    def post(self, **kwargs):
-        """
-        Endpoint:  POST /v1/candidates/:candidate_id/notes
-        Function will add candidate's note(s) to database
-        """
-        # Get authenticated user & Candidate ID
-        authed_user, candidate_id = request.user, kwargs['id']
-
-        # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
-
-        body_dict = get_json_if_exist(request)
-        try:
-            validate(instance=body_dict, schema=notes_schema)
-        except ValidationError as e:
-            raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
-
-        add_notes(candidate_id=candidate_id, data=body_dict.get('notes'))
-        db.session.commit()
-
-        # Update cloud search
-        upload_candidate_documents([candidate_id])
-        return '', 204
-
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
-    def get(self, **kwargs):
-        """
-        Endpoints:  GET /v1/candidates/:candidate_id/notes
-        Function will retrieve all of candidate's notes
-        """
-        # Get authenticated user & candidate ID
-        authed_user, candidate_id = request.user, kwargs['id']
-
-        # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
-
-        return {'candidate_notes': [
-            {'id': note.id, 'candidate_id': note.candidate_id,
-             'comment': note.comment, 'added_time': str(note.added_time)
-        } for note in CandidateTextComment.get_by_candidate_id(candidate_id)]}
 
 
 class CandidateLanguageResource(Resource):

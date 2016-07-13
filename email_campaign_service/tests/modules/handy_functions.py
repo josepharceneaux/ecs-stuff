@@ -6,6 +6,7 @@ import datetime
 
 # Third Party
 import requests
+from redo import retry
 
 # Application Specific
 from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
@@ -16,7 +17,7 @@ from email_campaign_service.common.models.user import DomainRole
 from email_campaign_service.common.models.misc import (Activity,
                                                        UrlConversion,
                                                        Frequency)
-from email_campaign_service.common.routes import (EmailCampaignUrl,
+from email_campaign_service.common.routes import (EmailCampaignApiUrl,
                                                   CandidatePoolApiUrl)
 from email_campaign_service.common.utils.amazon_ses import (send_email,
                                                             get_default_email_info)
@@ -30,7 +31,7 @@ from email_campaign_service.common.tests.fake_testing_data_generator import Fake
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 __author__ = 'basit'
-
+TEST_EMAIL_ID = 'test.gettalent@gmail.com'
 
 def create_email_campaign(user):
     """
@@ -40,8 +41,8 @@ def create_email_campaign(user):
                                    user_id=user.id,
                                    is_hidden=0,
                                    subject=uuid.uuid4().__str__()[0:8] + ' It is a test campaign',
-                                   _from=fake.safe_email(),
-                                   reply_to=fake.safe_email(),
+                                   _from=TEST_EMAIL_ID,
+                                   reply_to=TEST_EMAIL_ID,
                                    body_html="<html><body>Email campaign test</body></html>",
                                    body_text="Email campaign test"
                                    )
@@ -92,7 +93,7 @@ def create_smartlist_with_given_email_candidate(access_token, campaign,
 def delete_campaign(campaign):
     """
     This deletes the campaign created during tests from database
-    :param campaign: Email campaign object
+    :param campaign: EmailCampaign object
     """
     try:
         with app.app_context():
@@ -104,12 +105,12 @@ def delete_campaign(campaign):
         pass
 
 
-def assert_valid_campaign_get(email_campaign_dict, referenced_campaign, fields=None):
+def assert_valid_campaign_get(email_campaign_dict, referenced_campaigns, fields=None):
     """
     This asserts that the campaign we get from GET call has valid values as we have for
     referenced email-campaign.
     :param dict email_campaign_dict: EmailCampaign object as received by GET call
-    :param referenced_campaign: EmailCampaign object by which we compare the campaign
+    :param referenced_campaigns: EmailCampaign objects with which we compare the campaign
             we GET in response
     :param list[str] fields: List of fields that the campaign should have, or all of them if None
     """
@@ -121,10 +122,13 @@ def assert_valid_campaign_get(email_campaign_dict, referenced_campaign, fields=N
         "Response's email campaign fields (%s) should match the expected email campaign fields (%s)" % (
             actual_email_campaign_fields_set, expected_email_campaign_fields_set
         )
-
+    found = False
     # Assert id is correct, if returned by API
     if 'id' in expected_email_campaign_fields_set:
-        assert email_campaign_dict['id'] == referenced_campaign.id
+        for referenced_campaign in referenced_campaigns:
+            if email_campaign_dict['id'] == referenced_campaign.id:
+                found = True
+        assert found
 
 
 def get_campaign_or_campaigns(access_token, campaign_id=None, fields=None, pagination_query=None):
@@ -135,10 +139,10 @@ def get_campaign_or_campaigns(access_token, campaign_id=None, fields=None, pagin
     :param list[str] fields: List of EmailCampaign fields to retrieve
     """
     if campaign_id:
-        url = EmailCampaignUrl.CAMPAIGN % campaign_id
+        url = EmailCampaignApiUrl.CAMPAIGN % campaign_id
         entity = 'email_campaign'
     else:
-        url = EmailCampaignUrl.CAMPAIGNS
+        url = EmailCampaignApiUrl.CAMPAIGNS
         entity = 'email_campaigns'
     if pagination_query:
         url = url + pagination_query
@@ -204,11 +208,12 @@ def assert_and_delete_email(subject):
         print "Email(s) deleted with subject: %s" % subject
         mail_connection.close()
         mail_connection.logout()
+    assert msg_ids
     return msg_ids
 
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False,
-                         expected_status=200, abort_time_for_sends=20):
+                         expected_status=200, abort_time_for_sends=300):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
@@ -220,10 +225,8 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         json_resp = response.json()
         assert str(campaign.id) in json_resp['message']
     # Need to add this as processing of POST request runs on Celery
-    blasts = CampaignsTestsHelpers.get_blasts_with_polling(campaign)
+    CampaignsTestsHelpers.assert_campaign_blasts(campaign, 1, timeout=abort_time_for_sends)
 
-    assert blasts, 'Email campaign blasts not found'
-    assert len(blasts) == 1
     # assert on sends
     CampaignsTestsHelpers.assert_blast_sends(campaign, expected_count,
                                              abort_time_for_sends=abort_time_for_sends)
@@ -242,10 +245,11 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         # assert on activity for whole campaign send
         CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_SEND,
                                                   campaign.id)
-        # TODO: commented after discussing with osman -- basit
-        # if not email_client:
-        #     assert poll(assert_and_delete_email, step=3, args=(campaign.subject,), timeout=60), \
-        #         "Email with subject %s was not found." % campaign.subject
+        if not email_client:
+            assert retry(assert_and_delete_email, sleeptime=3, attempts=130, sleepscale=1,
+                         args=(campaign.subject,), retry_exceptions=(AssertionError,)),\
+                   "Email with subject %s was not found at time: %s." % (campaign.subject,
+                                                                         str(datetime.datetime.utcnow()))
 
     # For each url_conversion record we assert that source_url is saved correctly
     for send_url_conversion in sends_url_conversions:
@@ -261,7 +265,7 @@ def post_to_email_template_resource(access_token, data):
     Function sends a post request to email-templates,
     i.e. EmailTemplate/post()
     """
-    response = requests.post(url=EmailCampaignUrl.TEMPLATES,
+    response = requests.post(url=EmailCampaignApiUrl.TEMPLATES,
                              data=json.dumps(data),
                              headers={'Authorization': 'Bearer %s' % access_token,
                                       'Content-type': 'application/json'}
@@ -277,7 +281,7 @@ def request_to_email_template_resource(access_token, request, email_template_id,
     :param email_template_id: Id of email template
     :param data: data in form of dictionary
     """
-    url = EmailCampaignUrl.TEMPLATES + '/' + str(email_template_id)
+    url = EmailCampaignApiUrl.TEMPLATES + '/' + str(email_template_id)
     return define_and_send_request(access_token, request, url, data)
 
 
@@ -290,7 +294,7 @@ def get_template_folder(token):
     template_folder_name = 'test_template_folder_%i' % datetime.datetime.now().microsecond
 
     data = {'name': template_folder_name}
-    response = requests.post(url=EmailCampaignUrl.TEMPLATES_FOLDER, data=json.dumps(data),
+    response = requests.post(url=EmailCampaignApiUrl.TEMPLATES_FOLDER, data=json.dumps(data),
                              headers={'Authorization': 'Bearer %s' % token,
                                       'Content-type': 'application/json'})
     assert response.status_code == requests.codes.CREATED
@@ -405,7 +409,7 @@ def create_email_campaign_via_api(access_token, data, is_json=True):
     if is_json:
         data = json.dumps(data)
     response = requests.post(
-        url=EmailCampaignUrl.CAMPAIGNS,
+        url=EmailCampaignApiUrl.CAMPAIGNS,
         data=data,
         headers={'Authorization': 'Bearer %s' % access_token,
                  'content-type': 'application/json'}
@@ -442,18 +446,20 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
             }
 
 
-def send_campaign_email_to_candidate(campaign, email, candidate_id, blast_id=None):
+def send_campaign_email_to_candidate(campaign, email, candidate_id, sent_datetime=None, blast_id=None):
     """
     This function will create a campaign send object and then it will send the email to given email address.
     :param EmailCampaign campaign: EmailCampaign object
     :param CandidateEmail email: CandidateEmail object
     :param (int | long) candidate_id: candidate unique id
+    :param (datetime.datetime | None) sent_datetime: Campaign send time to be set in campaign send object.
     :param (None| int | long) blast_id: campaign blast id
     """
     # Create an campaign send object
     email_campaign_send = EmailCampaignSend(campaign_id=campaign.id,
                                             candidate_id=candidate_id,
-                                            sent_datetime=datetime.datetime.now(),
+                                            sent_datetime=sent_datetime if sent_datetime
+                                            else datetime.datetime.utcnow(),
                                             blast_id=blast_id)
     EmailCampaignSend.save(email_campaign_send)
     default_email = get_default_email_info()['email']
@@ -482,6 +488,6 @@ def send_campaign_helper(request, email_campaign, access_token):
     if request.param == 'with_client':
         email_campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
     # send campaign
-    CampaignsTestsHelpers.send_campaign(EmailCampaignUrl.SEND,
+    CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND,
                                         email_campaign, access_token)
     return email_campaign

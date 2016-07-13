@@ -334,8 +334,8 @@ class SmsCampaignBase(CampaignBase):
         form_data and calls super constructor to save the campaign in database.
         :param form_data: data from UI
         :type form_data: dict
-        :return: id of sms_campaign in db, invalid_smartlist_ids and not_found_smartlist_ids
-        :rtype: tuple
+        :return: id of created sms-campaign in db
+        :rtype: int | long
         """
         if not form_data:
             raise InvalidUsage('save: No data received from UI. (User(id:%s))' % self.user.id)
@@ -438,12 +438,11 @@ class SmsCampaignBase(CampaignBase):
             return candidate, get_formatted_phone_number(phone_number)
         elif len(candidate_mobile_phone) > 1:
             logger.error('filter_candidates_for_valid_phone: SMS cannot be sent as '
-                         'candidate(id:%s) has multiple mobile phone numbers. '
-                         'Campaign(id:%s). (User(id:%s))'
-                         % (candidate.id, self.campaign.id, self.user.id))
+                         'Candidate(id:%s) has multiple mobile numbers. '
+                         'Campaign(id:%s). (User(id:%s))' % (candidate.id, self.campaign.id, self.user.id))
         else:
             logger.error('filter_candidates_for_valid_phone: SMS cannot be sent as '
-                         'candidate(id:%s) has no phone number associated. Campaign(id:%s). '
+                         'Candidate(id:%s) has no mobile number associated. Campaign(id:%s). '
                          '(User(id:%s))' % (candidate.id, self.campaign.id, self.user.id))
 
     def pre_process_celery_task(self, candidates):
