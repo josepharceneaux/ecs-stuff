@@ -17,11 +17,11 @@ from flask import session, redirect
 # Application Specific
 from base import SocialNetworkBase
 from social_network_service.social_network_app import app, logger
-from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.constants import APPLICATION_BASED_AUTH_URL
 from social_network_service.common.models.user import UserSocialNetworkCredential
+from social_network_service.common.routes import SocialNetworkApiUrl, get_web_app_url
 
 
 class Twitter(SocialNetworkBase):
@@ -104,8 +104,9 @@ class Twitter(SocialNetworkBase):
                                                                member_id=twitter_user.id, access_token=access_token)
             UserSocialNetworkCredential.save(user_credentials_obj)
 
-        return 'User(id:%s) is now connected with Twitter. Member id on twitter is %s' % (self.user.id,
-                                                                                          twitter_user.id)
+        logger.info('User(id:%s) is now connected with Twitter. Member id on twitter is %s' % (self.user.id,
+                                                                                               twitter_user.id))
+        return redirect(get_web_app_url())
 
     def application_based_auth(self):
         """
