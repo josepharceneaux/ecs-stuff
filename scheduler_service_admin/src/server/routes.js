@@ -12,13 +12,13 @@ module.exports = router;
 
 function getconfig(req, res, next) {
 
-  if (environment === 'development') {
+  if (environment === 'dev') {
     res.status(200).send(apiconfig.local);
   }
-  else if (environment === 'staging') {
+  else if (environment === 'qa') {
     res.status(200).send(apiconfig.development);
   }
-  else if (environment === 'production') {
+  else if (environment === 'prod') {
 
     res.status(200).send(apiconfig.production);
   }

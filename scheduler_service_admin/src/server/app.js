@@ -18,7 +18,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 if(typeof(process.env.GT_ENVIRONMENT) == "undefined"){
-  process.env.GT_ENVIRONMENT = 'development';
+  process.env.GT_ENVIRONMENT = 'dev';
 }
 
 app.use('/api', require('./routes'));
