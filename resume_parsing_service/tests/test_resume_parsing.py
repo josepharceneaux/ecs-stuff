@@ -9,25 +9,23 @@ import requests
 # Module Specific.
 # Test fixtures, imports required even though not 'used'
 # TODO: Look into importing these once and use via namespacing.
+from resume_parsing_service.common.models.user import DomainRole
+from resume_parsing_service.common.routes import ResumeApiUrl
+from resume_parsing_service.common.utils.handy_functions import add_role_to_test_user
 from resume_parsing_service.tests.test_fixtures import client_fixture
 from resume_parsing_service.tests.test_fixtures import country_fixture
 from resume_parsing_service.tests.test_fixtures import culture_fixture
 from resume_parsing_service.tests.test_fixtures import domain_fixture
 from resume_parsing_service.tests.test_fixtures import email_label_fixture
 from resume_parsing_service.tests.test_fixtures import org_fixture
-from resume_parsing_service.tests.test_fixtures import token_fixture
-from resume_parsing_service.tests.test_fixtures import user_fixture
-from resume_parsing_service.tests.test_fixtures import user_group_fixture
 from resume_parsing_service.tests.test_fixtures import phone_label_fixture
 from resume_parsing_service.tests.test_fixtures import product_fixture
 from resume_parsing_service.tests.test_fixtures import talent_pool_fixture
 from resume_parsing_service.tests.test_fixtures import talent_pool_group_fixture
-from resume_parsing_service.common.routes import ResumeApiUrl
+from resume_parsing_service.tests.test_fixtures import token_fixture
+from resume_parsing_service.tests.test_fixtures import user_fixture
+from resume_parsing_service.tests.test_fixtures import user_group_fixture
 
-from resume_parsing_service.common.models.user import DomainRole
-from resume_parsing_service.common.utils.handy_functions import add_role_to_test_user
-
-from resume_parsing_service.app.views.pdf_utils import ocr_with_google
 
 DOC_FP_KEY = '0169173d35beaf1053e79fdf1b5db864.docx'
 PDF15_FP_KEY = 'e68b51ee1fd62db589d2669c4f63f381.pdf'
@@ -380,6 +378,14 @@ def test_encrypted_resume(token_fixture, user_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'jDiMaria.pdf')
     assert_non_create_content_and_status(content, status)
 
+
+def test_encrypted_text_and_pic_pdf(token_fixture, user_fixture):
+    """Test that encrypted pdf files that are posted to the end point can be parsed."""
+    add_role_to_test_user(user_fixture, [DomainRole.Roles.CAN_ADD_CANDIDATES,
+                                         DomainRole.Roles.CAN_GET_TALENT_POOLS])
+    content, status = fetch_resume_post_response(token_fixture, 'pic_in_encrypted.pdf')
+    assert_non_create_content_and_status(content, status)
+
 ####################################################################################################
 # Test Candidate Creation
 ####################################################################################################
@@ -544,13 +550,3 @@ def assert_create_or_update_content_and_status(content, status):
     assert 'id' in content['candidate'], "Candidate should contain id in response if create=True."
     assert content['candidate']['id'], "Candidate should contain non-None id to signal creation."
     assert status == requests.codes.ok
-
-
-def test_google():
-    from cStringIO import StringIO
-    current_dir = os.path.dirname(__file__)
-    with open(os.path.join(current_dir, 'test_resumes/{}'.format('pic_in_encrypted.pdf')), 'rb') as resume_file:
-        gString = StringIO(resume_file.read())
-    gString.seek(0)
-    test_data = ocr_with_google(gString)
-    assert test_data

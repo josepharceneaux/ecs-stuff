@@ -79,32 +79,6 @@ def parse_resume(file_obj, filename_str, cache_key):
         raise InvalidUsage('No XML text received from Optic Response for {}'.format(filename_str))
 
 
-def get_or_store_parsed_resume(resume_file, filename_str):
-    """
-    Tries to retrieve processed resume data from redis or parses it and stores it.
-    :param resume_file:
-    :param filename_str:
-    :return:
-    """
-    hashed_file_name = 'parsedResume_{}'.format(gen_hash_from_file(resume_file))
-    cached_resume = redis_store.get(hashed_file_name)
-
-    if cached_resume:
-        parsed_resume = json.loads(cached_resume)
-        logger.info('Resume {} has been loaded from cache and its hashed_key is {}'.format(
-            filename_str, hashed_file_name))
-
-    else:
-        # Parse the resume if not hashed.
-        logger.info('Couldn\'t find Resume {} in cache with hashed_key: {}'.format(filename_str,
-                                                                                   hashed_file_name))
-        parsed_resume = parse_resume(file_obj=resume_file, filename_str=filename_str)
-        redis_store.set(hashed_file_name, json.dumps(parsed_resume))
-        redis_store.expire(hashed_file_name, RESUME_EXPIRE_TIME)
-
-    return parsed_resume
-
-
 def is_resume_image(file_ext, file_obj):
     resume_is_image = False
 
