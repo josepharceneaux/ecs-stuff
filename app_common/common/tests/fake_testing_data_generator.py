@@ -64,7 +64,7 @@ def college_majors():
     """
     Function will return some popular college majors
     Note: dict-keys represent discipline and its key is a list of majors within that discipline.
-    Testing example:
+    Usage:
         >>> discipline = random.choice(college_majors().keys())     # => 'engineering'
         >>> random.choice(college_majors()[discipline])             # => 'Nuclear Engineering'
     :rtype:  dict

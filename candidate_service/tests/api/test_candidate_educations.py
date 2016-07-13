@@ -45,6 +45,7 @@ class TestCreateCandidateEducation(object):
         Expect:  201; all-empty data should not be inserted into db & whitespaces must be stripped
         """
         AddUserRoles.add_and_get(user_first)
+
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'educations': [
                 {'school_name': ' ', 'school_type': ' ', 'city': None, 'subdivision_code': ''}
@@ -52,7 +53,7 @@ class TestCreateCandidateEducation(object):
         ]}
         # Create candidate education with empty values
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        assert create_resp.status_code == 201
+        assert create_resp.status_code == requests.codes.CREATED
 
         # Retrieve candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -66,7 +67,7 @@ class TestCreateCandidateEducation(object):
 
         # Create candidate education with updated data
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        assert create_resp.status_code == 201
+        assert create_resp.status_code == requests.codes.CREATED
 
         # Retrieve candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -342,6 +343,7 @@ class TestCreateCandidateEducationDegree(object):
         Expect: 201
         """
         AddUserRoles.add_and_get(user_first)
+
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'educations': [
                 {'school_name': ' ', 'school_type': ' ', 'city': None, 'subdivision_code': ''}
@@ -349,11 +351,15 @@ class TestCreateCandidateEducationDegree(object):
         ]}
         # Create candidate education with empty values
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        assert create_resp.status_code == 201
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.CREATED
 
         # Retrieve candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
+        print "\ncandidate_id: {}".format(candidate_id)
+        print "\ndomain_id: {}".format(user_first.domain_id)
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_resp)
         candidate_educations = get_resp.json()['candidate']['educations']
         assert not candidate_educations, "Candidate education record not added to db because data was empty"
 
