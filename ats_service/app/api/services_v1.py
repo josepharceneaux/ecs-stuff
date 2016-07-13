@@ -18,7 +18,16 @@ from ats_service.common.utils.api_utils import ApiResponse, api_route
 from ats_service.common.talent_api import TalentApi
 from ats_service.common.utils.handy_functions import get_valid_json_data
 
-from ats_utils import validate_ats_account_data, validate_ats_candidate_data, new_ats, new_ats_account, new_ats_candidate, link_ats_candidate,  unlink_ats_candidate, delete_ats_account
+from ats_utils import (validate_ats_account_data,
+                       validate_ats_candidate_data,
+                       invalid_account_fields_check,
+                       new_ats,
+                       new_ats_account,
+                       update_ats_account,
+                       delete_ats_account,
+                       new_ats_candidate,
+                       link_ats_candidate,
+                       unlink_ats_candidate)
 
 # Why doesn't this work?
 # from ats_service.app import logger
@@ -86,7 +95,10 @@ class ATSAccountService(Resource):
 
         account_dict = account.to_dict()
         credentials = ATSCredential.get_by_id(account.ats_credential_id)
-        account_dict.update( { 'credentials' : credentials.credentials_json} )
+        ats = ATS.get_by_id(account.ats_id)
+        account_dict.update( { 'credentials' : credentials.credentials_json,
+                               'ats_name' : ats.name, 'ats_homepage' : ats.homepage_url,
+                               'ats_login' : ats.login_url} )
 
         return json.dumps(account_dict)
 
@@ -103,7 +115,31 @@ class ATSAccountService(Resource):
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         delete_ats_account(request.user.id, account_id)
 
-        return "{{ delete : success }}"
+        return '{ "delete" : "success" }'
+
+    def put(self, account_id):
+        """
+        PUT /v1/ats-accounts/:account_id
+
+        Modify an existing ATS account.
+
+        :param account_id: int, id of the ATS account.
+        :rtype string, JSON indicating success.
+        """
+
+        # Validate data fields
+        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        authenticated_user = request.user
+        data = get_valid_json_data(request)
+        invalid_account_fields_check(data)
+
+        # Update the account
+        update_ats_account(account_id, data)
+        ats_service.app.logger.info("ATS account updated {}".format(account_id))
+
+        response = json.dumps(dict(id=account_id, message="ATS account updated."))
+        headers = dict(Location=ATSServiceApiUrl.ACCOUNT % account_id)
+        return ApiResponse(response, headers=headers, status=codes.OK)
 
 
 @api.route(ATSServiceApi.ACCOUNTS)
@@ -140,6 +176,7 @@ class ATSAccountsService(Resource):
 
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
+        # data['active'] = True
         data = get_valid_json_data(request)
 
         # Validate data fields
@@ -150,7 +187,7 @@ class ATSAccountsService(Resource):
         if account:
             ats_service.app.logger.info("Attempt to create already existing ATS account {}".format(account.id))
             response = json.dumps(dict(id=account.id, message="ATS account already exists."))
-            headers = dict(Location=ATSServiceApiUrl.ACCOUNTS % account.id)
+            headers = dict(Location=ATSServiceApiUrl.ACCOUNT % account.id)
             return ApiResponse(response, headers=headers, status=codes.OK)
 
         # Search for ATS entry, create if absent
@@ -236,6 +273,30 @@ class ATSCandidatesService(Resource):
         headers = dict(Location=ATSServiceApiUrl.CANDIDATES % candidate.id)
         return ApiResponse(response, headers=headers, status=codes.CREATED)
 
+    def put(self, account_id):
+        """
+        PUT /v1/ats-candidates/:account_id
+
+        Update an ATS candidate.
+
+        :param account_id: int, id of the ATS account.
+        :rtype string, JSON indicating success.
+        """
+
+        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        authenticated_user = request.user
+        data = get_valid_json_data(request)
+
+        # Validate data fields
+        validate_ats_candidate_data(data)
+
+        # Update the candidate.
+        candidate = update_ats_candidate(account_id, data)
+
+        response = json.dumps(dict(id=candidate.id, message="ATS candidate successfully updated."))
+        headers = dict(Location=ATSServiceApiUrl.CANDIDATES % candidate.id)
+        return ApiResponse(response, headers=headers, status=codes.CREATED)
+
 
 @api.route(ATSServiceApi.CANDIDATE)
 class ATSCandidateService(Resource):
@@ -259,7 +320,7 @@ class ATSCandidateService(Resource):
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         link_ats_candidate(candidate_id, ats_candidate_id)
 
-        return  "{ link : success }"
+        return  '{ "link" : "success" }'
 
     def delete(self, candidate_id, ats_candidate_id):
         """
@@ -275,7 +336,7 @@ class ATSCandidateService(Resource):
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
         unlink_ats_candidate(candidate_id, ats_candidate_id)
 
-        return "{ unlink : success }"
+        return '{ "unlink" : "success" }'
 
 
 @api.route(ATSServiceApi.CANDIDATES_REFRESH)
@@ -301,4 +362,4 @@ class ATSCandidateRefreshService(Resource):
 
         # Magic happens here
 
-        return "{{ account_id : {},  refresh : success }}".format(account_id)
+        return '{{ "account_id" : {},  "refresh" : "success" }}'.format(account_id)

@@ -28,6 +28,19 @@ def validate_ats_account_data(data):
         raise MissingRequiredField('Some required fields are missing', additional_error_info=dict(missing_fields=missing_fields))
 
 
+def invalid_account_fields_check(data):
+    """
+    Verify that data contains only valid ATS account fields.
+
+    :param data: dict, keys and their values
+    :return: bool
+    """
+    field_names = data.keys()
+    invalid_fields = [name for name in field_names if name not in ATS_ACCOUNT_FIELDS]
+    if invalid_fields:
+        raise UnprocessableEntity("Invalid data", additional_error_info=dict(missing_fields=invalid_fields))
+
+
 def validate_ats_candidate_data(data):
     """
     Verify that POST data contains all required fields for dealing with an ATS candidate.
@@ -79,6 +92,48 @@ def new_ats_account(user_id, ats_id, data):
     db.session.commit()
 
     return account
+
+
+def update_ats_account(account_id, new_data):
+    """
+    """
+    # Search for the account, complain if it doesn't exist
+    account = ATSAccount.get_by_id(account_id)
+    if not account:
+        raise UnprocessableEntity("Invalid ats account id", additional_error_info=dict(id=account_id))
+    ats = ATS.get_by_id(account.ats_id)
+    if not ats:
+        raise UnprocessableEntity("Invalid ats id", additional_error_info=dict(id=account.ats_id))
+
+    # Update the ATS info
+    update_dict = {}
+    if 'ats_name' in new_data:
+        update_dict['name'] = new_data['ats_name']
+    if 'ats_homepage' in new_data:
+        update_dict['homepage_url'] = new_data['ats_homepage']
+    if 'ats_login' in new_data:
+        update_dict['login_url'] = new_data['ats_login']
+    if 'ats_auth_type' in new_data:
+        update_dict['auth_type'] = new_data['ats_auth_type']
+    if len(update_dict) > 0:
+        ATS.query.filter(ATS.id == ats.id).update(update_dict)
+
+    update_dict = {}
+    if 'active' in new_data:
+        if new_data['active'] == "False":
+            update_dict['active'] = False
+        else:
+            update_dict['active'] = True
+
+        ATSAccount.query.filter(ATSAccount.id == account.id).update(update_dict)
+
+    # If they're changing credentials, find those. Presumably auth_type won't change.
+    if 'ats_credentials' in new_data:
+        credentials = ATSCredential.get_by_id(account.ats_credential_id)
+        update_dict = { 'credentials_json' : new_data['ats_credentials'] }
+        ATSCredential.query.filter(ATSCredential.id == credentials.id).update(update_dict)
+
+    db.session.commit()
 
 
 def delete_ats_account(user_id, ats_account_id):
@@ -138,6 +193,34 @@ def new_ats_candidate(account, data):
 
     return candidate
  
+
+def update_ats_candidate(account_id, new_data):
+    """
+    Update the profile of an ATS candidate.
+    """
+    if 'profile_json' not in new_data:
+        raise MissingRequiredField("profile_json {} not found.")
+
+    # Validate ATS Account
+    account = ATSAccount.get_by_id(account_id)
+    if not account:
+        raise MissingRequiredField("ATS account {} not found.".format(account_id))
+
+    # Validate candidate id
+    candidate_id = new_data['candidate_id']
+    candidate = ATSCandidate.get_by_id(candidate_id)
+    if not candidate:
+        raise UnprocessableEntity("Invalid candidate id", additional_error_info=dict(id=account.candidate_id))
+
+    # Validate profile id
+    profile = ATSCandidateProfile.get_by_id(candidate.profile_id)
+    if not profile:
+        raise UnprocessableEntity("Invalid candidate profile id", additional_error_info=dict(id=candidate.profile_id))
+
+    update_dict = { 'profile_json' : data['profile_json'] }
+    ATSCandidateProfile.query.filter(ATSCandidateProfile.id == profile.id).update(update_dict)
+    db.session.commit()
+
 
 def link_ats_candidate(candidate_id, ats_candidate_id):
     """
