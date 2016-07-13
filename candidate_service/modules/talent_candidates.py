@@ -1149,6 +1149,8 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         first_name=first_name, middle_name=middle_name, last_name=last_name,
         formatted_name=formatted_name or format_full_name(first_name, middle_name, last_name)
     )
+    # Only remove keys with None values; keys with empty strings will be used for deleting
+    # For example, if first_name = '', candidate's first name will be removed from db
     names_dict = {k: v for k, v in names_dict.items() if v is not None}
 
     # Add names' data to update_dict if at least one of name is provided
@@ -1229,7 +1231,7 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
         )
 
         # Remove keys that have None values
-        address_dict = {k: v for k, v in address_dict.items() if v}
+        address_dict = purge_dict(address_dict)
 
         # Prevent adding empty records to db
         if not address_dict:
@@ -1301,7 +1303,7 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
         if candidate_custom_field_id:   # Update
 
             # Remove keys with None values
-            custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems() if v is not None)
+            custom_field_dict = purge_dict(custom_field_dict)
 
             # CandidateCustomField must be recognized
             can_custom_field_obj = CandidateCustomField.get_by_id(candidate_custom_field_id)
@@ -1358,7 +1360,6 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
 
         # Remove keys with empty values
         education_dict = purge_dict(education_dict)
-        # education_dict = {k: v for k, v in education_dict.items() if (v is not None or v != '')}
 
         # Prevent empty records from being added to the db
         education_degrees = education.get('degrees') or []
@@ -1412,7 +1413,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     end_time=education_degree.get('end_time')
                 )
                 # Remove keys with None values
-                education_degree_dict = {k: v for k, v in education_degree_dict.items() if v}
+                education_degree_dict = purge_dict(education_degree_dict)
 
                 # Prevent empty records from being inserted into db
                 education_degree_bullets = education_degree.get('bullets') or []
@@ -1459,7 +1460,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                         )
 
                         # Remove keys with None values
-                        education_degree_bullet_dict = {k: v for k, v in education_degree_bullet_dict.items() if v}
+                        education_degree_bullet_dict = purge_dict(education_degree_bullet_dict)
 
                         # Prevent empty records from being inserted into db
                         if not education_degree_bullet_dict:
@@ -1523,7 +1524,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                             if education_degree_bullet.get('comments') else None
                         )
                         # Remove keys with None values
-                        education_degree_bullet_dict = {k: v for k, v in education_degree_bullet_dict.items() if v}
+                        education_degree_bullet_dict = purge_dict(education_degree_bullet_dict)
 
                         # Prevent empty records from being inserted into db
                         if not education_degree_bullet_dict:
@@ -1575,7 +1576,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     end_time=education_degree.get('end_time') if degree_title or degree_type else None
                 )
                 # Remove keys with None values
-                education_degree_dict = {k: v for k, v in education_degree_dict.items() if v}
+                education_degree_dict = purge_dict(education_degree_dict)
 
                 # Prevent empty records from being inserted into db
                 education_degree_bullets = education_degree.get('bullets') or []
@@ -1681,7 +1682,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
         if experience_id:  # Update
 
             # Remove keys with empty values
-            experience_dict = {k: v for k, v in experience_dict.items() if v}
+            experience_dict = purge_dict(experience_dict)
 
             # CandidateExperience must be recognized
             can_exp_obj = CandidateExperience.get(experience_id)
@@ -1721,7 +1722,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                 )
 
                 # Remove keys with None values
-                experience_bullet_dict = {k: v for k, v in experience_bullet_dict.items() if v}
+                experience_bullet_dict = purge_dict(experience_bullet_dict)
 
                 # Prevent empty data from being inserted into db
                 if not experience_bullet_dict:
@@ -1782,7 +1783,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                         'description') else None
                 )
                 # Remove keys with None values
-                experience_bullet_dict = {k: v for k, v in experience_bullet_dict.items() if v}
+                experience_bullet_dict = purge_dict(experience_bullet_dict)
 
                 # Prevent empty data from being inserted into db
                 if not experience_bullet_dict:
@@ -1817,7 +1818,7 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id):
     )
 
     # Remove empty values from update_dict
-    work_preference_dict = {k: v for k, v in work_preference_dict.items() if (v is not None or v != '')}
+    work_preference_dict = purge_dict(work_preference_dict)
 
     work_preference_id = work_preference.get('id')
     if work_preference_id:  # Update
@@ -1883,7 +1884,7 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
         )
 
         # Remove empty values from email_dict
-        email_dict = {k: v for k, v in email_dict.items() if (v is not None or v != '')}
+        email_dict = purge_dict(email_dict)
 
         email_id = email.get('id')
         if email_id:  # Update
@@ -2006,7 +2007,7 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         )
 
         # Remove keys with empty values
-        phone_dict = {k: v for k, v in phone_dict.items() if (v is not None or v != '')}
+        phone_dict = purge_dict(phone_dict)
 
         # Prevent adding empty records to db
         if not phone_dict:
@@ -2086,7 +2087,7 @@ def _add_or_update_military_services(candidate, military_services, user_id, is_u
         )
 
         # Remove keys with empty values
-        military_service_dict = {k: v for k, v in military_service_dict.items() if v}
+        military_service_dict = purge_dict(military_service_dict)
 
         # Prevent adding empty data to db
         if not military_service_dict:
@@ -2142,7 +2143,7 @@ def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, 
         )
 
         # Remove keys with empty values
-        preferred_location_dict = {k: v for k, v in preferred_location_dict.items() if v}
+        preferred_location_dict = purge_dict(preferred_location_dict)
 
         # Prevent inserting empty records into db
         if not preferred_location_dict:
@@ -2202,7 +2203,7 @@ def _add_or_update_skills(candidate, skills, added_time, user_id, is_updating):
         )
 
         # Remove keys with empty values
-        skill_dict = {k: v for k, v in skill_dict.items() if v}
+        skill_dict = purge_dict(skill_dict)
 
         # Prevent adding records if empty dict
         if not skill_dict:
@@ -2398,7 +2399,8 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
         else:  # An existing CandidateExperience's dates have been updated
             if start_year and end_year:
                 total_months_experience = ((end_year - start_year) * 12 + (end_month - start_month) -
-                    (previous_end_year - previous_start_year) * 12 + (previous_end_month - previous_start_month))
+                                           (previous_end_year - previous_start_year) * 12 + (
+                                           previous_end_month - previous_start_month))
 
     candidate.total_months_experience += total_months_experience
     return

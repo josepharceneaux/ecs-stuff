@@ -133,7 +133,6 @@ def sanitize_zip_code(zip_code):
                 return (zip_code[:5] + '-' + zip_code[5:]).strip()
             else:
                 return (zip_code[:5] + ' ' + zip_code[5:]).strip()
-    # logger.info("[%s] is not a valid US Zip Code", zip_code)
     return None
 
 

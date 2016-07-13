@@ -32,6 +32,7 @@ from auth_service.custom_error_codes import AuthServiceCustomErrorCodes as auth_
 CANDIDATES_URL = CandidateApiUrl.CANDIDATES
 CANDIDATE_URL = CandidateApiUrl.CANDIDATE
 
+
 class CommonData(object):
     @staticmethod
     def data(talent_pool_):
