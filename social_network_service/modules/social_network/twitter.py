@@ -72,8 +72,9 @@ class Twitter(SocialNetworkBase):
             redis_store.set('twitter_request_token_%s' % self.user.id, json.dumps(self.auth.request_token))
             # redirect the user to Twitter website for authorization.
             return redirect_url
-        except tweepy.TweepError:
-            logger.exception('Error! Failed to get request token from Twitter for User(id:%s).' % self.user.id)
+        except tweepy.TweepError as error:
+            logger.exception('Error! Failed to get request token from Twitter for User(id:%s).\nError:%s'
+                             % (self.user.id, error.message))
             raise InternalServerError("Couldn't connect to Twitter account.")
 
     @contract
@@ -90,10 +91,11 @@ class Twitter(SocialNetworkBase):
         :param string oauth_verifier: Token received from Twitter when user successfully connected to its account.
         """
         self.auth.request_token = json.loads(redis_store.get('twitter_request_token_%s' % self.user.id))
+        redis_store.delete('twitter_request_token_%s' % self.user.id)
         try:
             self.auth.get_access_token(oauth_verifier)
         except tweepy.TweepError as error:
-            logger.exception('Failed to get access token from Twitter for User(id:%s).Error: %s'
+            logger.exception('Failed to get access token from Twitter for User(id:%s). \nError: %s'
                              % (self.user.id, error.message))
             raise InternalServerError('Failed to get access token from Twitter')
 

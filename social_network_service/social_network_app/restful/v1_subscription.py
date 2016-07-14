@@ -1,5 +1,5 @@
 """
-This file contains endpoint(s) for getTalent users to connect with their social networks accounts.
+This file contains endpoint(s) for getTalent users to connect/authenticate with their social networks accounts.
 Currently it contains only endpoint for Twitter.
 """
 
@@ -38,10 +38,9 @@ class TwitterSubscription(Resource):
         This endpoint is hit when user clicks on profile page to connect with Twitter account.
         Here we create object of Twitter class defined in social_network/twitter.py and call its method authenticate().
         This redirects the user to Twitter website to enter credentials and grant access to getTalent app.
-        :param int | long user_id: Id of logged-in user
 
         **See Also**
-            .. seealso:: authentication() method defined in Twitter class inside social_network/twitter.py.
+            .. seealso:: authenticate() method defined in Twitter class inside social_network/twitter.py.
 
         """
         user_id = request.user.id
