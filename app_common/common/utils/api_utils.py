@@ -16,6 +16,7 @@ import json
 
 # Third Part
 from flask import Response
+from contracts import contract
 
 # Application Specific
 from sqlalchemy.orm import Query
@@ -102,8 +103,9 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
     JSON serializable list of objects by applying pagination on query using given
     constraints (page, per_page) as response body.
     Response object has extra pagination headers like
-        X-Total    :  Total number of results found
-        X-Page-Count :  Number of total pages for given page size
+        X-Total: Total number of results.
+        X-Per-Page: Number of results per page.
+        X-Page: Current page number.
 
     List of object is packed in a dictionary where key is specified by user/developer.
     :param key: final dictionary will contain this key where value will be list if items.
@@ -146,11 +148,25 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
     results = query.paginate(page, per_page, error_out=False)
     # convert model objects to serializable dictionaries
     items = [parser(item, include_fields) for item in results.items]
-    headers = {
-        'X-Total': results.total,
-        'X-Page-Count': results.pages
-    }
+    headers = generate_response_headers(results.total, per_page, page)
     response = {
         key: items
     }
     return ApiResponse(response, headers=headers, status=200)
+
+
+@contract
+def generate_response_headers(results_count, results_per_page, current_page):
+    """
+    This function generates API response headers containing following parameters.
+    :param int|long results_count: Total number of results
+    :param int results_per_page: Number of results per page
+    :param int|long current_page: Current page number
+    :rtype: dict
+    """
+    return {
+        'X-Total': results_count,
+        'X-Per-Page': results_per_page,
+        'X-Page': current_page,
+        'Access-Control-Expose-Headers': 'X-Total, X-Per-Page, X-Page'
+    }

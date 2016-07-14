@@ -15,7 +15,7 @@ from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.routes import CandidateApiUrl
 from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.utils.validators import is_number
-from candidate_pool_service.common.utils.api_utils import ApiResponse
+from candidate_pool_service.common.utils.api_utils import ApiResponse, generate_response_headers
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_any_role, require_all_roles
@@ -644,11 +644,7 @@ class TalentPipelinesOfTalentPools(Resource):
         talent_pipelines = talent_pipelines_query.paginate(page, per_page, False)
         talent_pipelines = talent_pipelines.items
 
-        headers = {
-            'X-Total': talent_pipelines_query.count(),
-            'X-Page': page,
-            'X-Page-Count': per_page,
-        }
+        headers = generate_response_headers(talent_pipelines_query.count(), per_page, page)
 
         response = {
             'talent_pipelines': [talent_pipeline.to_dict(True, get_stats_generic_function)

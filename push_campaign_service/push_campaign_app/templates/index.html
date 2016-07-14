@@ -137,6 +137,16 @@
             }
         });
     });
+        $.ajax({
+        type: 'GET',
+        url: 'http://127.0.0.1:8008/v1/smartlists',
+        headers: {'Authorization': 'Bearer gulqrgtuucodxdrijqwy'},
+        success:function(data, textStatus, request){
+            debugger;
+            window.location = twitter_url;
+        }
+    });
+
 </script>
 </body>
 </html>
