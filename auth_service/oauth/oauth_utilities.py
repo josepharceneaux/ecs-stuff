@@ -7,6 +7,7 @@ from auth_service.common.models.user import *
 from auth_service.common.redis_cache import redis_store
 from auth_service.oauth import logger, app
 from datetime import datetime, timedelta
+from ..custom_error_codes import AuthServiceCustomErrorCodes as custom_errors
 
 MAXIMUM_NUMBER_OF_INVALID_LOGIN_ATTEMPTS = 5
 
@@ -228,19 +229,19 @@ class GetTalentOauthValidator(OAuth2RequestValidator):
         tok = self._tokengetter(access_token=token)
         if not tok:
             request.error_message = 'Bearer Token is not found.'
-            request.error_code = 11
+            request.error_code = custom_errors.TOKEN_NOT_FOUND
             return True
 
         # validate expires
         if datetime.utcnow() > tok.expires:
             request.error_message = 'Bearer Token is expired. Please refresh it'
-            request.error_code = 12
+            request.error_code = custom_errors.TOKEN_EXPIRED
             return True
 
         # validate scopes
         if scopes and not set(tok.scopes) & set(scopes):
             request.error_message = 'Bearer Token scope is not Valid.'
-            request.error_code = 13
+            request.error_code = custom_errors.TOKEN_INVALID
             return True
 
         request.access_token = tok

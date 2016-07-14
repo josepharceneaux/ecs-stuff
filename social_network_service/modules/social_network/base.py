@@ -11,6 +11,8 @@ from abc import ABCMeta
 import requests
 
 # Application Specific
+from social_network_service.common.error_handling import InvalidUsage
+from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.utils.validators import raise_if_not_positive_int_or_long
 from social_network_service.modules.utilities import get_class
@@ -568,10 +570,27 @@ class SocialNetworkBase(object):
             if user_credentials_in_db:
                 user_credentials_in_db.update(**user_credentials)
             else:
-                user_credentials = UserSocialNetworkCredential(**user_credentials)
-                UserSocialNetworkCredential.save(user_credentials)
+                user_credentials_in_db = UserSocialNetworkCredential(**user_credentials)
+                UserSocialNetworkCredential.save(user_credentials_in_db)
             return user_credentials_in_db
         except:
             logger.exception('save_user_credentials_in_db: user_id: %s',
                              user_credentials['user_id'])
             raise SNServerException('APIError: Unable to create user credentials')
+
+    @staticmethod
+    def save_venue(venue_data):
+        """
+        This function will take dictionary data and will save it in database as Venue reccord.
+        :param dict venue_data: venue data
+        """
+        valid_fields = ['address_line_1', 'address_line_2', 'city', 'country', 'latitude', 'longitude',
+                        'zip_code', 'user_id', 'social_network_id', 'social_network_venue_id']
+        venue_data = {key: venue_data[key] for key in venue_data if key in valid_fields}
+        required_fields = ['social_network_id', 'user_id']
+        for key in required_fields:
+            if key not in venue_data:
+                raise InvalidUsage('Required field missing in venue data. Field: %s' % key)
+        venue = Venue(**venue_data)
+        Venue.save(venue)
+        return venue
