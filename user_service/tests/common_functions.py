@@ -2,35 +2,20 @@ __author__ = 'ufarooqi'
 import requests
 import json
 from user_service.user_app import db
-from user_service.common.models.user import DomainRole
+from user_service.common.models.user import Permission
 from user_service.common.routes import UserServiceApiUrl
 
 
-def user_scoped_roles(access_token, user_id, test_roles=None, action="GET", false_case=False, role_id_only=None):
-    if test_roles:
-        test_role_first = test_roles[0]
-        test_role_second = test_roles[1]
+def user_scoped_roles(access_token, user_id, action="GET", data=''):
+
     headers = {'Authorization': 'Bearer %s' % access_token}
     if action == "GET":
         url = UserServiceApiUrl.USER_ROLES_API % user_id
-        if role_id_only:
-           url = str.format('{0}?role_id_only={1}',
-                            url, role_id_only)
         response = requests.get(url=url, headers=headers)
         return response.json(), response.status_code
-    elif action == "POST":
+    elif action == "PUT":
         headers['content-type'] = 'application/json'
-        test_role_second = DomainRole.get_by_name(test_role_second)
-        if false_case:
-            data = {'roles': [int(test_role_second.id) + 1000]}
-        else:
-            data = {'roles': [test_role_first, test_role_second.id]}
-        response = requests.post(UserServiceApiUrl.USER_ROLES_API % user_id, headers=headers, data=json.dumps(data))
-        return response.json(), response.status_code
-    elif action == "DELETE":
-        headers['content-type'] = 'application/json'
-        data = {'roles': [test_role_first, DomainRole.get_by_name(test_role_second).id]}
-        response = requests.delete(UserServiceApiUrl.USER_ROLES_API % user_id, headers=headers, data=json.dumps(data))
+        response = requests.put(UserServiceApiUrl.USER_ROLES_API % user_id, headers=headers, data=json.dumps(data))
         return response.json(), response.status_code
 
 
@@ -61,7 +46,7 @@ def domain_groups(access_token, domain_id=None, data=None, group_id=None, action
         return response.json(), response.status_code
 
 
-def user_groups(access_token, group_id, user_ids=[], action='GET'):
+def user_groups(access_token, group_id, user_ids=None, action='GET'):
     headers = {'Authorization': 'Bearer %s' % access_token}
     if action == "GET":
         response = requests.get(UserServiceApiUrl.USER_GROUPS_API % group_id, headers=headers)

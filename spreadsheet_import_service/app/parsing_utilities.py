@@ -342,7 +342,7 @@ def create_candidates_from_parsed_spreadsheet(candidate_dicts, oauth_token):
     try:
         return r.status_code, r.json()
     except:
-        return r.status_code, {"error": "Couldn't create candidate from candidate dict %s" % candidate_dict}
+        return r.status_code, {"error": "Couldn't create candidate from candidate dict %s" % candidate_dicts}
 
 
 def prepare_candidate_data(data_array, key, value):

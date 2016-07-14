@@ -16,13 +16,13 @@ from flask.ext.restful import Resource
 from scheduler_service import logger, SchedulerUtils
 from scheduler_service.api.scheduler_tests_api import raise_if_scheduler_not_running, check_job_state, \
     dummy_request_method, test_dummy_endpoint_hits
-from scheduler_service.common.models.user import DomainRole, User
+from scheduler_service.common.models.user import Permission, User
 from scheduler_service.common.routes import SchedulerApi
 from scheduler_service.common.utils.api_utils import api_route, ApiResponse, get_pagination_params, \
     generate_pagination_headers
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound
-from scheduler_service.common.utils.auth_utils import require_oauth, require_all_roles
+from scheduler_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from scheduler_service.custom_exceptions import SchedulerServiceApiException
 from scheduler_service.modules.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, \
     scheduler_remove_job, serialize_task_admin, get_user_job_ids, get_all_general_job_ids, get_general_job_id
@@ -710,7 +710,6 @@ class AdminTasks(Resource):
     decorators = [require_oauth()]
     # a parent class and put all the core pagination functionality in its get() and then we can later override that
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_ALL_SCHEDULER_JOBS)
     def get(self):
         """
         This action returns a list of apscheduler scheduled tasks.

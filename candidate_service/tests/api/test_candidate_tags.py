@@ -13,34 +13,17 @@ import uuid
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_errors
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info, get_response
 
 
 class TestCreateCandidateTags(object):
-    def test_add_without_necessary_permissions(self, access_token_first, candidate_first):
-        """
-        Test:  Add tags to candidate without giving user permissions such as authentication & role
-        Expect: 401
-        """
-        # Unauthorized user
-        data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
-        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, None, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == requests.codes.UNAUTHORIZED
-
-        # Authorized but not permitted user
-        create_resp = send_request('post', CandidateApiUrl.TAGS % candidate_first.id, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == requests.codes.UNAUTHORIZED
 
     def test_add_tags(self, access_token_first, user_first, candidate_first):
         """
         Test:  Add tags to candidate
         Expect: 201
         """
-        AddUserRoles.edit(user_first)
 
         # Create candidate Tags
         data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
@@ -54,7 +37,6 @@ class TestCreateCandidateTags(object):
         Test:  Add duplicate tags
         Expect: 201, but no duplicate tags should be in db
         """
-        AddUserRoles.all_roles(user_first)
 
         # Create candidate tags
         name = str(uuid.uuid4())[:5]
@@ -74,7 +56,6 @@ class TestGetCandidateTags(object):
         Test:  Add & retrieve candidate tags
         Expect: 200
         """
-        AddUserRoles.all_roles(user_first)
 
         # Create candidate Tags
         data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
@@ -92,7 +73,6 @@ class TestGetCandidateTags(object):
         Test:  Retrieve a single tag
         Expect: 200
         """
-        AddUserRoles.all_roles(user_first)
 
         # Create candidate Tags
         data = {"tags": [{"name": str(uuid.uuid4())[:5]}, {"name": str(uuid.uuid4())[:5]}]}
@@ -113,7 +93,6 @@ class TestUpdateCandidateTags(object):
         Test:  Update a single candidate's tag
         Expect: 200
         """
-        AddUserRoles.all_roles(user_first)
 
         # Create some tags for candidate_first
         url = CandidateApiUrl.TAGS % candidate_first.id
@@ -135,7 +114,6 @@ class TestUpdateCandidateTags(object):
         """
         Test:  Update multiple candidate tags
         """
-        AddUserRoles.all_roles(user_first)
 
         # Create two tags for candidate
         url = CandidateApiUrl.TAGS % candidate_first.id
@@ -163,7 +141,6 @@ class TestDeleteCandidateTags(object):
         Test:  Delete one of candidate's tags
         Expect: 403, tag is not permitted for candidate (since it was not created or it was deleted)
         """
-        AddUserRoles.all_roles(user_first)
 
         # Create some tags for candidate_first
         data = {"tags": [{"name": str(uuid.uuid4())[:8]}, {"name": str(uuid.uuid4())[:8]}]}
@@ -194,7 +171,6 @@ class TestDeleteCandidateTags(object):
         Test:  Delete all of candidate's tags
         Expect: 404, candidate does not have any tags
         """
-        AddUserRoles.all_roles(user_first)
 
         # Create some tags for candidate_first
         data = {"tags": [{"name": str(uuid.uuid4())[:8]}, {"name": str(uuid.uuid4())[:8]}]}

@@ -1,0 +1,57 @@
+from user_service.common.models.user import Permission, Role, db, PermissionsOfRole
+from sqlalchemy import text
+
+try:
+    db.session.execute(
+        text("DROP TABLE `user_scoped_roles`;")
+    )
+
+    # Drop domain_role and user_scoped_roles table
+    db.session.execute(
+        text("DROP TABLE `domain_role`;")
+    )
+except:
+    pass
+
+db.create_all()
+
+permission_names = [key for key in Permission.PermissionNames.__dict__.keys() if not key.startswith('__')]
+
+for permission_name in permission_names:
+    db.session.add(Permission(name=permission_name))
+db.session.commit()
+
+
+permissions_not_allowed_for_roles = dict()
+permissions_not_allowed_for_roles['TALENT_ADMIN'] = []
+permissions_not_allowed_for_roles['DOMAIN_ADMIN'] = [Permission.PermissionNames.CAN_IMPERSONATE_USERS,
+                                                     Permission.PermissionNames.CAN_DELETE_DOMAINS,
+                                                     Permission.PermissionNames.CAN_ADD_DOMAINS]
+permissions_not_allowed_for_roles['ADMIN'] = permissions_not_allowed_for_roles['DOMAIN_ADMIN'] + [
+    Permission.PermissionNames.CAN_EDIT_DOMAINS, Permission.PermissionNames.CAN_ADD_TALENT_POOLS,
+    Permission.PermissionNames.CAN_ADD_DOMAIN_GROUPS, Permission.PermissionNames.CAN_DELETE_DOMAIN_GROUPS,
+    Permission.PermissionNames.CAN_EDIT_DOMAIN_GROUPS, Permission.PermissionNames.CAN_GET_DOMAIN_GROUPS,
+    Permission.PermissionNames.CAN_DELETE_TALENT_POOLS, Permission.PermissionNames.CAN_EDIT_USER_ROLE]
+
+permissions_not_allowed_for_roles['USER'] = permissions_not_allowed_for_roles['ADMIN'] + [
+    Permission.PermissionNames.CAN_EDIT_TALENT_POOLS, Permission.PermissionNames.CAN_ADD_WIDGETS,
+    Permission.PermissionNames.CAN_EDIT_WIDGETS, Permission.PermissionNames.CAN_DELETE_WIDGETS,
+    Permission.PermissionNames.CAN_DELETE_USERS, Permission.PermissionNames.CAN_ADD_USERS,
+    Permission.PermissionNames.CAN_DELETE_CANDIDATES]
+
+role_names = ['USER', 'ADMIN', 'DOMAIN_ADMIN', 'TALENT_ADMIN']
+for role_name in role_names:
+    role_id = Role.save(role_name)
+    for permission_name in permission_names:
+        if permission_name not in permissions_not_allowed_for_roles[role_name]:
+            db.session.add(PermissionsOfRole(role_id=role_id, permission_id=Permission.get_by_name(permission_name).id))
+
+    if role_name == 'USER':
+        db.session.execute(
+            text("ALTER TABLE `user` ADD roleId INTEGER NOT NULL DEFAULT %s;" % role_id)
+        )
+        db.session.execute(
+            text("ALTER TABLE user ADD CONSTRAINT fk_grade_id FOREIGN KEY (roleId) REFERENCES role(id);")
+        )
+
+db.session.commit()
