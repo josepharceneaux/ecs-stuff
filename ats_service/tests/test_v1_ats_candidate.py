@@ -7,7 +7,12 @@ import json
 from requests import codes
 
 from ats_service.common.utils.test_utils import send_request
-from ats_service.tests.test_utils import missing_field_test, empty_database
+from ats_service.tests.test_utils import (missing_field_test,
+                                          empty_database,
+                                          create_and_validate_candidate,
+                                          create_and_validate_account,
+                                          verify_nonexistant_candidate,
+                                          link_candidates)
 from ats_service.app.api.ats_utils import ATS_ACCOUNT_FIELDS
 from ats_service.common.routes import ATSServiceApiUrl
 from ats_service.common.tests.conftest import *
@@ -23,20 +28,51 @@ class TestATSCandidates(object):
         """
         empty_database()
 
-    def test_create_ats_candidate(self, access_token_first, account_post_data):
+    def test_create_ats_candidate(self, access_token_first, account_post_data, candidate_post_data):
         """
-        """
-        pass
+        POST /v1/ats-candidates/:account_id
+        GET /v1/ats-candidates/:candidate_id
 
-    def test_delete_ats_candidate(self, access_token_first, account_post_data):
+        Create a candidate entry and validate that all table entries are correctly made.
         """
-        """
-        pass
+        account_id = create_and_validate_account(access_token_first, account_post_data)
+        create_and_validate_candidate(access_token_first, account_id, candidate_post_data)
 
-    def test_link_ats_candidate(self, access_token_first, account_post_data):
+    def test_delete_ats_candidate(self, access_token_first, account_post_data, candidate_post_data):
         """
+        POST /v1/ats-candidates/:account_id
+        GET /v1/ats-candidates/:account_id/:candidate_id
+        DELETE /v1/ats-candidates/:account_id/:candidate_id
+
+        Create an account, insert a candidate, then delete it and verify that it's gone.
         """
-        pass
+        account_id = create_and_validate_account(access_token_first, account_post_data)
+        candidate_id = create_and_validate_candidate(access_token_first, account_id, candidate_post_data)
+        response = send_request('delete', ATSServiceApiUrl.CANDIDATE % (account_id, candidate_id), access_token_first)
+        assert response.status_code == codes.OK
+        verify_nonexistant_candidate(access_token_first, account_id, candidate_id)
+
+    def test_link_ats_candidate(self, access_token_first, account_post_data, candidate_post_data):
+        """
+        POST /v1/ats-candidates/:account_id
+        POST /v1/ats-candidates/link/:candidate_id/:ats_candidate_id
+        GET /v1/ats-candidates/:account_id/:candidate_id
+        """
+        link_candidates(access_token_first, account_post_data, candidate_post_data)
+
+    def test_unlink_ats_candidate(self, access_token_first, account_post_data, candidate_post_data):
+        """
+        POST /v1/ats-candidates/:account_id
+        DELETE /v1/ats-candidates/link/:candidate_id/:ats_candidate_id
+        GET /v1/ats-candidates/:account_id/:candidate_id
+        """
+        account_id, gt_candidate_id, ats_candidate_id = link_candidates(access_token_first, account_post_data, candidate_post_data)
+        response = send_request('delete', ATSServiceApiUrl.CANDIDATE_LINK % (gt_candidate_id, ats_candidate_id), access_token_first)
+        assert response.status_code == codes.OK
+        response = send_request('get', ATSServiceApiUrl.CANDIDATE % (account_id, ats_candidate_id), access_token_first, {}, verify=False)
+        assert response.status_code == codes.OK
+        values = json.loads(response.text)
+        assert values['gt_candidate_id'] == None
 
     def test_update_ats_candidate(self, access_token_first, account_post_data):
         """

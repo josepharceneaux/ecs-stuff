@@ -56,6 +56,8 @@ class TestATSAccounts(object):
 
     def test_delete_ats_account(self, access_token_first, account_post_data):
         """
+        POST /v1/ats-accounts Test creating an account
+        DELETE /v1/ats-accounts/:account_id
         """
         account_id = create_and_validate_account(access_token_first, account_post_data)
         response = send_request('delete', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first)
@@ -66,6 +68,9 @@ class TestATSAccounts(object):
 
     def test_update_ats_account(self, access_token_first, account_post_data):
         """
+        POST /v1/ats-accounts Test creating an account
+        PUT /v1/ats-accounts/:account_id Test updating an account
+        GET /v1/ats-accounts/:account_id Test fetching an account
         """
         account_id = create_and_validate_account(access_token_first, account_post_data)
         key = 'ats_homepage'

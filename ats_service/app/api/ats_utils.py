@@ -194,7 +194,25 @@ def new_ats_candidate(account, data):
     return candidate
  
 
-def update_ats_candidate(account_id, new_data):
+def delete_ats_candidate(candidate_id):
+    """
+    Remove an ATS candidate from the database.
+
+    :param candiate_id: int The id of the candidate.
+    """
+    candidate = ATSCandidate.get_by_id(candidate_id)
+    if not candidate:
+        raise MissingRequiredField('delete_ats_candidate: No such candidate {}'.format(candidate_id))
+
+    profile = ATSCandidateProfile.get_by_id(candidate.profile_id)
+    if profile:
+        db.session.delete(profile)
+
+    db.session.delete(candidate)
+    db.session.commit()
+
+
+def update_ats_candidate(account_id, candidate_id, new_data):
     """
     Update the profile of an ATS candidate.
     """
@@ -207,7 +225,6 @@ def update_ats_candidate(account_id, new_data):
         raise MissingRequiredField("ATS account {} not found.".format(account_id))
 
     # Validate candidate id
-    candidate_id = new_data['candidate_id']
     candidate = ATSCandidate.get_by_id(candidate_id)
     if not candidate:
         raise UnprocessableEntity("Invalid candidate id", additional_error_info=dict(id=account.candidate_id))
@@ -222,38 +239,38 @@ def update_ats_candidate(account_id, new_data):
     db.session.commit()
 
 
-def link_ats_candidate(candidate_id, ats_candidate_id):
+def link_ats_candidate(gt_candidate_id, ats_candidate_id):
     """
     Mark an ATS candidate as being the same as a getTalent candidate.
 
-    :param candidate_id: int, id of the GT candidate.
+    :param gt_candidate_id: int, id of the GT candidate.
     :param ats_candidate_id: int, id of the ATS candidate.
     :rtype None
     """
-    gt_candidate = Candidate.get_by_id(candidate_id)
+    gt_candidate = Candidate.get_by_id(gt_candidate_id)
     if not gt_candidate:
-        raise MissingRequiredField("getTalent candidate id {} not found".format(candidate_id))
+        raise MissingRequiredField("getTalent candidate id {} not found".format(gt_candidate_id))
 
     ats_candidate = ATSCandidate.get_by_id(ats_candidate_id)
     if not ats_candidate:
         raise MissingRequiredField("ATS candidate id {} not found.".format(ats_candidate_id))
 
-    update_dict = { 'gt_candidate_id': candidate_id }
+    update_dict = { 'gt_candidate_id': gt_candidate_id }
     ATSCandidate.query.filter(ATSCandidate.id == ats_candidate_id).update(update_dict)
     db.session.commit()
 
 
-def unlink_ats_candidate(candidate_id, ats_candidate_id):
+def unlink_ats_candidate(gt_candidate_id, ats_candidate_id):
     """
     Remove the association of a GT candidate with an ATS candidate.
 
-    :param candidate_id: int, id of the GT candidate.
+    :param gt_candidate_id: int, id of the GT candidate.
     :param ats_candidate_id: int, id of the ATS candidate.
     :rtype None
     """
-    gt_candidate = Candidate.get_by_id(candidate_id)
+    gt_candidate = Candidate.get_by_id(gt_candidate_id)
     if not gt_candidate:
-        raise MissingRequiredField("Candidate id {} not found".format(candidate_id))
+        raise MissingRequiredField("Candidate id {} not found".format(gt_candidate_id))
 
     ats_candidate = ATSCandidate.get_by_id(ats_candidate_id)
     if not ats_candidate:

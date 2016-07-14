@@ -20,3 +20,12 @@ def account_post_data():
     """
     return { 'ats_name' : 'A New ATS', 'ats_homepage' : 'https://newats.com', 'ats_login' : 'https://newats.com/login',
              'ats_auth_type' : 'Basic', 'ats_id' : 'id on ATS', 'ats_credentials' : 'My ATS Credentials' }
+
+@pytest.fixture(scope="module")
+def candidate_post_data():
+    """
+    Data used to create an ATS candidate.
+
+    :rtype dict:
+    """
+    return { 'ats_remote_id' : 'some_id', 'ats_account_id' : 'another_id', 'ats_remote_id' : 'yaid', 'active' : 'True', 'profile_json' : '{ "some" : "json" } ' }

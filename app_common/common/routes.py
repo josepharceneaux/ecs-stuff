@@ -836,9 +836,10 @@ class ATSServiceApi(object):
     ATS = '/' + VERSION + '/ats'
     ACCOUNT = '/' + VERSION + '/ats-accounts/<int:account_id>'
     ACCOUNTS = '/' + VERSION + '/ats-accounts'
-    CANDIDATE = '/' + VERSION + '/ats-candidates/<int:candidate_id>/<int:ats_candidate_id>'
+    CANDIDATE = '/' + VERSION + '/ats-candidates/<int:account_id>/<int:candidate_id>'
     CANDIDATES = '/' + VERSION + '/ats-candidates/<int:account_id>'
     CANDIDATES_REFRESH = '/' + VERSION + '/ats-candidates/refresh/<int:account_id>'
+    CANDIDATE_LINK = '/' + VERSION + '/ats-candidates/link/<int:candidate_id>/<int:ats_candidate_id>'
 
 
 class ATSServiceApiUrl(object):
@@ -851,3 +852,7 @@ class ATSServiceApiUrl(object):
     ATS = HOST_NAME % ('/' + VERSION + '/ats')
     ACCOUNT = HOST_NAME % ('/' + VERSION  + '/ats-accounts/%s')
     ACCOUNTS = HOST_NAME % ('/' + VERSION  + '/ats-accounts')
+    CANDIDATE = HOST_NAME % ('/' + VERSION  + '/ats-candidates/%s/%s')
+    CANDIDATES = HOST_NAME % ('/' + VERSION  + '/ats-candidates/%s')
+    CANDIDATE_REFRESH = HOST_NAME % ('/' + VERSION  + '/ats-candidates/refresh/%s')
+    CANDIDATE_LINK = HOST_NAME % ('/' + VERSION  + '/ats-candidates/link/%s/%s')

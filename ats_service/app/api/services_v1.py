@@ -26,6 +26,7 @@ from ats_utils import (validate_ats_account_data,
                        update_ats_account,
                        delete_ats_account,
                        new_ats_candidate,
+                       delete_ats_candidate,
                        link_ats_candidate,
                        unlink_ats_candidate)
 
@@ -34,7 +35,7 @@ from ats_utils import (validate_ats_account_data,
 import ats_service.app
 
 # Database
-from ats_service.common.models.ats import ATS, ATSAccount, ATSCredential, ATSCandidate
+from ats_service.common.models.ats import ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
 
 
 api = TalentApi()
@@ -134,6 +135,7 @@ class ATSAccountService(Resource):
         invalid_account_fields_check(data)
 
         # Update the account
+        # TODO: Handle the 'active' field
         update_ats_account(account_id, data)
         ats_service.app.logger.info("ATS account updated {}".format(account_id))
 
@@ -229,7 +231,7 @@ class ATSCandidatesService(Resource):
         if not account:
             ats_service.app.logger.info("ATS account not found {}".format(account_id))
             response = json.dumps(dict(account_id=account_id, message="ATS account not found {}".format(account_id)))
-            headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account)
+            headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account_id)
             return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
 
         candidates = ATSCandidate.get_all_as_json(account_id)
@@ -273,13 +275,55 @@ class ATSCandidatesService(Resource):
         headers = dict(Location=ATSServiceApiUrl.CANDIDATES % candidate.id)
         return ApiResponse(response, headers=headers, status=codes.CREATED)
 
-    def put(self, account_id):
+
+@api.route(ATSServiceApi.CANDIDATE)
+class ATSCandidateService(Resource):
+    """
+    Controller for /v1/ats-candidates/:account_id/:candidate_id
+    """
+
+    decorators = [require_oauth()]
+
+    def get(self, account_id, candidate_id):
         """
-        PUT /v1/ats-candidates/:account_id
+        GET /v1/ats-candidates/:account_id/:candidate_id
+
+        Retrieve an ATS candidate stored locally associated with an ATS account
+
+        :param account_id: int, id of the ATS account.
+        :param candidate_id: int, id of the ATS account.
+        :rtype string, JSON with all candidates.
+        """
+        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+
+        candidate = ATSCandidate.get_by_id(candidate_id)
+        if not candidate:
+            ats_service.app.logger.info("ATS candidate not found {}".format(candidate_id))
+            response = json.dumps(dict(account_id=candidate_id, message="ATS account not found {}".format(candidate_id)))
+            headers = dict(Location=ATSServiceApiUrl.CANDIDATE % (account_id, candidate_id))
+            return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
+
+        profile = ATSCandidateProfile.get_by_id(candidate.profile_id)
+        if not profile:
+            ats_service.app.logger.info("ATS candidate profile not found {}".format(candidate.profile_id))
+            response = json.dumps(dict(account_id=candidate.profile_id, message="ATS account not found {}".format(candidate.profile_id)))
+            headers = dict(Location=ATSServiceApiUrl.CANDIDATE % (account_id, candidate_id))
+            return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
+
+        candidate_dict = dict(id=candidate_id, ats_account_id=candidate.ats_account_id, ats_remote_id=candidate.ats_remote_id,
+                              gt_candidate_id=candidate.gt_candidate_id, profile=profile.profile_json)
+        response = json.dumps(candidate_dict)
+        headers = dict(Location=ATSServiceApiUrl.CANDIDATE % (account_id, candidate_id))
+        return ApiResponse(response, headers=headers, status=codes.OK)
+
+    def put(self, account_id, candidate_id):
+        """
+        PUT /v1/ats-candidates/:account_id/:candidate_id
 
         Update an ATS candidate.
 
         :param account_id: int, id of the ATS account.
+        :param candidate_id: int, id of the ATS candidate.
         :rtype string, JSON indicating success.
         """
 
@@ -291,24 +335,38 @@ class ATSCandidatesService(Resource):
         validate_ats_candidate_data(data)
 
         # Update the candidate.
-        candidate = update_ats_candidate(account_id, data)
+        candidate = update_ats_candidate(account_id, candidate_id, data)
 
         response = json.dumps(dict(id=candidate.id, message="ATS candidate successfully updated."))
         headers = dict(Location=ATSServiceApiUrl.CANDIDATES % candidate.id)
         return ApiResponse(response, headers=headers, status=codes.CREATED)
 
+    def delete(self, account_id, candidate_id):
+        """
+        DELETE /v1/ats-candidates/:account_id/:candidate_id
 
-@api.route(ATSServiceApi.CANDIDATE)
-class ATSCandidateService(Resource):
+        Delete an ATS candidate.
+
+        :param account_id: int, id of the ATS account.
+        :param candidate_id: int, id of the ATS candidate.
+        :rtype string, JSON indicating success.
+        """
+
+        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        delete_ats_candidate(candidate_id)
+        return '{ "delete" : "success" }'
+
+@api.route(ATSServiceApi.CANDIDATE_LINK)
+class ATSCandidateLinkService(Resource):
     """
-    Controller for /v1/ats-candidates/:candidate_id/:ats_candidate_id
+    Controller for /v1/ats-candidates/link/:candidate_id/:ats_candidate_id
     """
 
     decorators = [require_oauth()]
 
     def post(self, candidate_id, ats_candidate_id):
         """
-        POST /v1/ats-candidates/:candidate_id/:ats_candidate_id
+        POST /v1/ats-candidates/link/:candidate_id/:ats_candidate_id
 
         Link a getTalent candidate to an ATS candidate.
 
@@ -318,13 +376,16 @@ class ATSCandidateService(Resource):
         """
 
         ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        ats_service.app.logger.info("LINK GT {} to ATS {}\n".format(candidate_id, ats_candidate_id))
         link_ats_candidate(candidate_id, ats_candidate_id)
 
-        return  '{ "link" : "success" }'
+        response = json.dumps(dict(id=candidate_id, message="ATS candidate successfully linked."))
+        headers = dict(Location=ATSServiceApiUrl.CANDIDATE_LINK % (candidate_id, ats_candidate_id))
+        return ApiResponse(response, headers=headers, status=codes.CREATED)
 
     def delete(self, candidate_id, ats_candidate_id):
         """
-        DELETE /v1/ats-candidates/:candidate_id/:ats_candidate_id
+        DELETE /v1/ats-candidates/link/:candidate_id/:ats_candidate_id
 
         Unlink a getTalent candidate from an ATS candidate.
 
