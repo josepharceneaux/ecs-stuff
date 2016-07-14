@@ -1,0 +1,28 @@
+<nav class="navbar navbar-fixed-top navbar-inverse">
+  <div class="navbar-header">
+    <a href="/" class="navbar-brand"><span class="brand-title">{{vm.navline.title}}</span></a>
+    <a class="btn navbar-btn navbar-toggle" ng-click="isCollapsed = !isCollapsed">
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </a>
+  </div>
+  <div class="navbar-collapse collapse" uib-collapse="isCollapsed">
+    <div class="pull-right navbar-logo">
+      <ul class="nav navbar-nav pull-right">
+        <li>
+          <a ng-href="{{vm.navline.link}}" target="_blank">
+                        {{vm.navline.text}}
+                    </a>
+        </li>
+        <li class="nav navbar-nav pull-right">
+          <a href="#" ng-show="vm.loggedIn" ng-click="vm.logoutUser()" style="display: inline-block">
+            <label>
+              <!--<i class="material-icons">exit_to_app</i>-->
+              Logout</label>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>

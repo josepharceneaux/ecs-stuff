@@ -1,0 +1,12 @@
+(function() {
+  'use strict';
+
+  angular.module('app.login', [
+    'app.core',
+    'app.widgets',
+    'app.components',
+    'ui.bootstrap',
+    'ngMaterial'
+  ]);
+
+})();
