@@ -206,7 +206,6 @@ class TestUpdateDomainCustomFields(object):
         assert get_resp.json()['custom_field']['name'] != domain_custom_fields[0].name
         assert get_resp.json()['custom_field']['name'] == data['custom_field']['name']
 
-
     def test_update_custom_field_of_another_domain(self, user_second, access_token_second, domain_custom_fields):
         """
         Test: Update custom fields of another domain
