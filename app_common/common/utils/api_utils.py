@@ -23,7 +23,10 @@ from sqlalchemy.orm import Query
 from models_utils import to_json
 from ..error_handling import InvalidUsage
 from .handy_functions import JSON_CONTENT_TYPE_HEADER
+from ..custom_contracts import define_custom_contracts
 from ..utils.validators import raise_if_not_instance_of
+
+define_custom_contracts()
 
 DEFAULT_PAGE = 1
 DEFAULT_PAGE_SIZE = 10
@@ -159,9 +162,9 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
 def generate_pagination_headers(results_count, results_per_page, current_page):
     """
     This function generates pagination response headers containing following parameters.
-    :param int|long results_count: Total number of results
+    :param (int|long) results_count: Total number of results
     :param int results_per_page: Number of results per page
-    :param int|long current_page: Current page number
+    :param (int|long) current_page: Current page number
     :rtype: dict
     """
     return {
