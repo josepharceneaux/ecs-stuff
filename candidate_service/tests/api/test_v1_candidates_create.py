@@ -333,6 +333,7 @@ class TestCreateInvalidCandidates(object):
         """
 
         # Set access_token_first's expiration to 10 seconds ago
+        db.session.commit()
         token = Token.get_token(access_token_first)
         token.expires = datetime.fromtimestamp(time.time() - 10)
         db.session.commit()
@@ -559,6 +560,10 @@ class TestCreateHiddenCandidate(object):
         candidate = Candidate.get_by_id(candidate_id)
         candidate_emails_count = len(candidate.emails)
         assert hide_resp.status_code == requests.codes.OK
+
+        db.session.refresh(candidate)
+        db.session.commit()
+
         assert candidate.is_web_hidden
 
         # Create previously hidden candidate with a different user from the same domain
@@ -566,6 +571,10 @@ class TestCreateHiddenCandidate(object):
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
         print response_info(create_resp)
         assert create_resp.status_code == requests.codes.CREATED
+
+        db.session.refresh(candidate)
+        db.session.commit()
+
         assert not candidate.is_web_hidden
         assert CandidateEmail.get_by_address(first_can_email['address'])[0].id == first_can_email['id']
         assert len(candidate.emails) == candidate_emails_count
