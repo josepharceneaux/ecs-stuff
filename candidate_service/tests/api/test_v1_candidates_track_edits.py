@@ -167,13 +167,14 @@ class TestTrackCandidateEducationEdits(object):
         assert old_education_dict['school_name'] in old_values
         assert new_education_dict['school_name'] in new_values
 
-    def test_edit_candidate_education_degree(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_education_degree_goo(self, access_token_first, user_first, talent_pool):
         """
         Test:   Change Candidate's education degree records
         Expect: 200
         """
-        # Create Candidate
         AddUserRoles.all_roles(user_first)
+
+        # Create Candidate
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -182,11 +183,18 @@ class TestTrackCandidateEducationEdits(object):
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         old_education_dict = get_resp.json()['candidate']['educations'][0]
 
+        # Change degree type to something different
+        current_degree = get_resp.json()['candidate']['educations'][0]['degrees'][0]['type']
+        degree_type = ['BS', 'MS', 'BA', 'PhD']
+        if current_degree in degree_type:
+            degree_type.remove(current_degree)
+
         # Update Candidate's education degree
         data = {'candidates': [
             {'id': candidate_id, 'educations': [
                 {'id': old_education_dict['id'], 'degrees': [
-                    {'id': old_education_dict['degrees'][0]['id'], 'type': 'MS', 'title': 'Biomedical Engineering'}
+                    {'id': old_education_dict['degrees'][0]['id'],
+                     'type': random.choice(degree_type), 'title': 'Biomedical Engineering'}
                 ]}
             ]}
         ]}
@@ -201,7 +209,7 @@ class TestTrackCandidateEducationEdits(object):
         print response_info(edit_resp)
 
         candidate_edits = edit_resp.json()['candidate']['edits']
-        assert edit_resp.status_code == 200
+        assert edit_resp.status_code == requests.codes.OK
         assert new_education_dict['degrees'][0]['type'] != old_education_dict['degrees'][0]['type']
         assert new_education_dict['degrees'][0]['title'] != old_education_dict['degrees'][0]['title']
 

@@ -9,7 +9,8 @@ from candidate_pool_service.common.routes import CandidatePoolApi
 from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.utils.auth_utils import require_oauth
-from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
+from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, ApiResponse, \
+    generate_pagination_headers
 from candidate_pool_service.modules.validators import validate_and_format_smartlist_post_data
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_smartlist_candidates
@@ -100,9 +101,15 @@ class SmartlistResource(Resource):
             page = int(page)
             per_page = int(per_page)
 
-            return {'smartlists': get_all_smartlists(auth_user, request.oauth_token, int(page), int(per_page)),
-                    'page_number': page, 'smartlists_per_page': per_page,
-                    'total_number_of_smartlists': total_number_of_smartlists}
+            headers = generate_pagination_headers(total_number_of_smartlists, per_page, page)
+
+            response = {
+                'smartlists': get_all_smartlists(auth_user, request.oauth_token, int(page), int(per_page)),
+                'page_number': page,
+                'smartlists_per_page': per_page,
+                'total_number_of_smartlists': total_number_of_smartlists
+            }
+            return ApiResponse(response=response, headers=headers, status=200)
 
     def post(self):
         """

@@ -1,4 +1,7 @@
 __author__ = 'ufarooqi'
+import re
+import random
+import string
 from flask import render_template
 from user_service.user_app import app
 from werkzeug.security import gen_salt
@@ -111,6 +114,17 @@ def get_or_create_default_email_templates(domain_id, admin_user_id):
     return sample_templates_folder.id
 
 
+def generate_temporary_password():
+    """
+    This method will generate random password which will have at least 2 letters, digits and special characters
+    :return: Password
+    """
+    password = [random.choice(string.ascii_letters) for _ in range(3)] + [
+        random.choice(string.digits) for _ in range(3)] + ['&', '#']
+    random.shuffle(password)
+    return ''.join(password)
+
+
 def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None,
                 thumbnail_url='', user_group_id=None, locale=None):
 
@@ -148,10 +162,24 @@ def create_user(email, domain_id, first_name, last_name, expiration, phone="", d
     return user
 
 
+def validate_password(password):
+    """
+    This method will ensure that password has following characters:
+    --> At least 2 alphabetical characters
+    --> At least 2 Numeric characters
+    --> At least 2 Special characters
+    --> Length of password should be between 8 and 20
+    :param password:
+    :return: Boolean Value
+    """
+    pattern = re.compile('((?=.*\d.*\d)(?=.*[A-Za-z].*[A-Za-z])(?=.*[^a-zA-Z0-9].*[^a-zA-Z0-9]).{8,})')
+    return pattern.match(password)
+
+
 def send_new_account_email(account_email, temp_password, to_email):
     if app.config[TalentConfigKeys.ENV_KEY] in ('prod', 'qa'):
         new_user_email = render_template('new_user.html', email=account_email, password=temp_password)
-        send_email(source='"getTalent Registration" <registration@gettalent.com>',
+        send_email(source='"getTalent Registration" <support@gettalent.com>',
                    subject='Setup Your New Account',
                    body=new_user_email, to_addresses=[to_email], email_format='html')
 
@@ -159,6 +187,6 @@ def send_new_account_email(account_email, temp_password, to_email):
 def send_reset_password_email(email, name, reset_password_url, six_digit_token):
     new_user_email = render_template('reset_password.html', email=email, name=name, six_digit_token=six_digit_token,
                                      reset_password_url=reset_password_url)
-    send_email(source='"getTalent Registration" <registration@gettalent.com>',
+    send_email(source='"getTalent Registration" <support@gettalent.com>',
                subject='getTalent password reset',
                body=new_user_email, to_addresses=[email], email_format='html')

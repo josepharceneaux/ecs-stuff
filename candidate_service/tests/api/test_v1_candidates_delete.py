@@ -300,14 +300,14 @@ class TestDeleteCandidateAOI(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_delete_all_of_candidates_areas_of_interest(self, access_token_first, user_first, talent_pool, domain_aoi):
+    def test_delete_all_of_candidates_areas_of_interest(self, access_token_first, user_first, talent_pool, domain_aois):
         """
         Test:   Remove all of candidate's aois from db
         Expect: 204, Candidate should not have any aois left
         """
         # Create Candidate
         AddUserRoles.all_roles(user_first)
-        data = generate_single_candidate_data([talent_pool.id], domain_aoi)
+        data = generate_single_candidate_data([talent_pool.id], domain_aois)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
         # Retrieve Candidate's aois
@@ -328,14 +328,14 @@ class TestDeleteCandidateAOI(object):
         assert AreaOfInterest.query.get(can_aois[0]['id']) # AreaOfInterest should still be in db
         assert AreaOfInterest.query.get(can_aois[1]['id']) # AreaOfInterest should still be in db
 
-    def test_delete_can_area_of_interest(self, access_token_first, user_first, talent_pool, domain_aoi):
+    def test_delete_can_area_of_interest(self, access_token_first, user_first, talent_pool, domain_aois):
         """
         Test:   Remove Candidate's area of interest from db
         Expect: 204, Candidate's aois must be less 1 AND no AreaOfInterest should be deleted
         """
         # Create Candidate
         AddUserRoles.all_roles(user_first)
-        data = generate_single_candidate_data([talent_pool.id], domain_aoi)
+        data = generate_single_candidate_data([talent_pool.id], domain_aois)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
         # Retrieve Candidate areas of interest

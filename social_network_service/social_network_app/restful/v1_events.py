@@ -5,7 +5,7 @@ This file contains list of all API endpoints related to events.
 import types
 
 # 3rd party imports
-from flask import Blueprint, request
+from flask import Blueprint
 from flask.ext.restful import Resource
 
 # Application specific imports
@@ -16,8 +16,8 @@ from social_network_service.common.routes import SocialNetworkApi
 from social_network_service.modules.utilities import add_organizer_venue_data
 from social_network_service.common.utils.auth_utils import require_oauth
 from social_network_service.modules.utilities import process_event, delete_events
-from social_network_service.common.utils.api_utils import api_route, ApiResponse
 from social_network_service.common.utils.handy_functions import get_valid_json_data
+from social_network_service.common.utils.api_utils import api_route, ApiResponse, generate_pagination_headers
 
 
 events_blueprint = Blueprint('events_api', __name__)
@@ -85,11 +85,7 @@ class Events(Resource):
         events = events.paginate(per_page=per_page,
                                  page=page).items
         events = map(add_organizer_venue_data, events)
-        headers = {
-            'X-Total': len(events),
-            'X-Per-Page': per_page,
-            'X-Page': page
-        }
+        headers = generate_pagination_headers(len(events), per_page, page)
         if events:
             return ApiResponse(response=dict(events=events),
                                headers=headers)

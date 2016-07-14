@@ -344,7 +344,7 @@ class TestUpdateCandidateAddress(object):
 
 
 class TestUpdateCandidateAOI(object):
-    def test_add_new_area_of_interest(self, access_token_first, user_first, talent_pool, domain_aoi):
+    def test_add_new_area_of_interest(self, access_token_first, user_first, talent_pool, domain_aois):
         """
         Test:   Add a new CandidateAreaOfInterest to existing Candidate.
                 Number of CandidateAreaOfInterest should increase by 1.
@@ -363,7 +363,7 @@ class TestUpdateCandidateAOI(object):
         candidate_area_of_interest_count = len(candidate_dict['areas_of_interest'])
 
         # Add new CandidateAreaOfInterest
-        data = GenerateCandidateData.areas_of_interest(domain_aoi, [talent_pool.id], candidate_id)
+        data = GenerateCandidateData.areas_of_interest(domain_aois, [talent_pool.id], candidate_id)
         resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(resp)
 
