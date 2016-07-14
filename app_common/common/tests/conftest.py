@@ -142,7 +142,7 @@ def test_org():
 
 
 @pytest.fixture()
-def domain_aoi(domain_first):
+def domain_aois(domain_first):
     """Will add two areas-of-interest to domain
     :rtype:  list[AreaOfInterest]
     """

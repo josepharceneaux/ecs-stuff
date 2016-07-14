@@ -124,7 +124,7 @@ class CandidatesResource(Resource):
             for email in _candidate_dict.get('emails') or []:
 
                 # email address is required within the email dict
-                email_address = email['address'].strip()
+                email_address = email['address'].strip().lower()
 
                 # If candidate's email is found, check if it's web-hidden
                 candidate_email_obj = get_email_if_validated(email_address, domain_id)
@@ -214,8 +214,13 @@ class CandidatesResource(Resource):
         for candidate_dict in candidates:
 
             user_id = authed_user.id
-            emails = [{'label': (email.get('label') or '').strip(), 'address': email['address'].strip(),
-                       'is_default': email.get('is_default')} for email in candidate_dict.get('emails') or []]
+            emails = [
+                {
+                    'label': (email.get('label') or '').strip(),
+                    'address': email['address'].strip(),
+                    'is_default': email.get('is_default')
+                } for email in candidate_dict.get('emails') or []
+            ]
 
             added_datetime = DatetimeUtils.isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
                 if candidate_dict.get('added_datetime') else None
@@ -256,7 +261,7 @@ class CandidatesResource(Resource):
         # Add candidates to cloud search
         upload_candidate_documents.delay(created_candidate_ids)
         logger.info('BENCHMARK - candidate POST: {}'.format(time() - start_time))
-        return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, 201
+        return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, requests.codes.CREATED
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
@@ -384,7 +389,7 @@ class CandidatesResource(Resource):
             db.session.commit()
             # Delete candidate from CS when set to hidden
             delete_candidate_documents(hidden_candidate_ids)
-            return {'hidden_candidate_ids': hidden_candidate_ids}, 200
+            return {'hidden_candidate_ids': hidden_candidate_ids}, requests.codes.OK
 
         # Custom fields must belong to user's domain
         if all_cf_ids:

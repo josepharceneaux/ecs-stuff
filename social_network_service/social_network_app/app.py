@@ -14,7 +14,9 @@ from flask import request, redirect
 from restful.v1_data import data_blueprint
 from restful.v1_events import events_blueprint
 from social_network_service.common.redis_cache import redis_store
+from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
+from social_network_service.modules.constants import MEETUP_CODE_LENGTH
 from social_network_service.modules.social_network.twitter import Twitter
 from social_network_service.social_network_app import app, logger
 from social_network_service.modules.utilities import get_class
@@ -50,8 +52,9 @@ def authorize():
     and in case of eventbrite the querystring args does not contain 'state' parameter
     """
     code = request.args.get('code')
-    url = SocialNetworkApiUrl.UI_APP_URL + '/campaigns/events/subscribe?code=%s' % code
-    if 'state' in request.args:
+    url = SocialNetworkApiUrl.SUBSCRIBE % code
+
+    if len(code) == MEETUP_CODE_LENGTH:
         social_network = SocialNetwork.get_by_name('Meetup')
     else:
         social_network = SocialNetwork.get_by_name('Eventbrite')
@@ -141,5 +144,7 @@ def callback(user_id):
     **See Also**
         .. seealso:: callback() method defined in Twitter class inside social_network/twitter.py.
     """
-    twitter_obj = Twitter(user_id=user_id, validate_credentials=False)
-    return twitter_obj.callback(request.args['oauth_verifier'])
+    if 'oauth_verifier' in request.args:
+        twitter_obj = Twitter(user_id=user_id, validate_credentials=False)
+        return twitter_obj.callback(request.args['oauth_verifier'])
+    raise InternalServerError('You did not provide valid credentials. Unable to connect! Please try again.')

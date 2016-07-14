@@ -412,13 +412,15 @@ def define_and_send_request(access_token, request, url, data=None):
                       data=json.dumps(data))
 
 
-def purge_dict(dictionary, strip=True, remove_empty_strings_only=False):
+def purge_dict(dictionary, strip=True, keep_false=True, remove_empty_strings_only=False):
     """
     Function will "remove" dict's keys with empty values
     :param strip: if True, it will strip each value
     :type strip: bool
-    :type remove_empty_strings_only: bool
+    :param keep_false: if keep_false is True, keys with values equaling 0 or False will not be removed
+    :type keep_false: bool
     :param remove_empty_strings_only: if True, keys with None values will not be removed
+    :type remove_empty_strings_only: bool
     :type dictionary:  dict
     :rtype:  dict
     """
@@ -428,11 +430,25 @@ def purge_dict(dictionary, strip=True, remove_empty_strings_only=False):
 
     # strip all values & return all keys except keys with empty-string values
     if remove_empty_strings_only:
-        return {k: clean(v) for k, v in dictionary.items() if (clean(v) or v is None)}
+        return {k: clean(v) for k, v in dictionary.items() if clean(v) != ''}
+
     # strip all values & return keys with values that aren't None
-    elif strip and not remove_empty_strings_only:
+    elif strip and not remove_empty_strings_only and not keep_false:
+        return {k: clean(v) for k, v in dictionary.items() if v is not None}
+
+    # removes keys with None and empty string values
+    elif strip and keep_false:
+        for k, v in dictionary.items():
+            cleaned_value = clean(v)
+            if cleaned_value is None or cleaned_value == '':
+                del dictionary[k]
+        return dictionary
+
+    # strip key-values and keep keys with truthy values
+    elif strip and not keep_false:
         return {k: clean(v) for k, v in dictionary.items() if (v or clean(v))}
-    # return keys with values that aren't None
+
+    # keep keys with truthy values, but doesn't strip values
     else:
         return {k: v for k, v in dictionary.items() if (v or clean(v))}
 

@@ -150,6 +150,91 @@ def test_picture_not_resume(token_fixture, user_fixture):
     assert 'error' in content, "There should be an error Because it's a picture of food."
 
 
+def test_bad_create_candidate_inputs(token_fixture):
+    error_message = 'There has been a critical error parsing this resume, the development team has been notified'
+    for invalid_type in [1, 'string', {}, []]:
+        test_response = requests.post(
+            ResumeApiUrl.PARSE,
+            headers={
+                'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+                'Content-Type': 'application/json'
+            },
+            data=json.dumps({
+                'filepicker_key': 'hey',
+                'create_candidate': invalid_type
+            })
+        )
+        content = json.loads(test_response.content)
+        status_code = test_response.status_code
+
+        assert 'error' in content
+        assert content.get('error', {}).get('message') == error_message
+        assert status_code == requests.codes.bad
+
+def test_bad_filename_inputs(token_fixture):
+    error_message = 'There has been a critical error parsing this resume, the development team has been notified'
+    for invalid_type in [1, True, {}, []]:
+        test_response = requests.post(
+            ResumeApiUrl.PARSE,
+            headers={
+                'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+                'Content-Type': 'application/json'
+            },
+            data=json.dumps({
+                'filepicker_key': 'hey',
+                'filename': invalid_type
+            })
+        )
+        content = json.loads(test_response.content)
+        status_code = test_response.status_code
+
+        assert 'error' in content
+        assert content.get('error', {}).get('message') == error_message
+        assert status_code == requests.codes.bad
+
+def test_bad_fpkey_inputs(token_fixture):
+    error_message = 'There has been a critical error parsing this resume, the development team has been notified'
+    for invalid_type in [1, True, {}, [], None]:
+        test_response = requests.post(
+            ResumeApiUrl.PARSE,
+            headers={
+                'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+                'Content-Type': 'application/json'
+            },
+            data=json.dumps({
+                'filepicker_key': invalid_type
+            })
+        )
+        content = json.loads(test_response.content)
+        status_code = test_response.status_code
+
+        assert 'error' in content
+        assert content.get('error', {}).get('message') == error_message
+        assert status_code == requests.codes.bad
+
+
+def test_bad_tpool_inputs(token_fixture):
+    error_message = 'There has been a critical error parsing this resume, the development team has been notified'
+    for invalid_type in [1, True, {}, 'string']:
+        test_response = requests.post(
+            ResumeApiUrl.PARSE,
+            headers={
+                'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+                'Content-Type': 'application/json'
+            },
+            data=json.dumps({
+                'filepicker_key': 'unused_key',
+                'talent_pools': invalid_type
+            })
+        )
+        content = json.loads(test_response.content)
+        status_code = test_response.status_code
+
+        assert 'error' in content
+        assert content.get('error', {}).get('message') == error_message
+        assert status_code == requests.codes.bad
+
+
 ####################################################################################################
 # Test FilePicker Key Parsing without create option
 ####################################################################################################

@@ -10,7 +10,7 @@ from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistC
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.user import Permission
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_permissions
-from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
+from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE, ApiResponse
 from candidate_pool_service.modules.validators import validate_and_format_smartlist_post_data
 from candidate_pool_service.common.error_handling import ForbiddenError, NotFoundError, InvalidUsage
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import get_smartlist_candidates
@@ -103,9 +103,19 @@ class SmartlistResource(Resource):
             page = int(page)
             per_page = int(per_page)
 
-            return {'smartlists': get_all_smartlists(auth_user, request.oauth_token, int(page), int(per_page)),
-                    'page_number': page, 'smartlists_per_page': per_page,
-                    'total_number_of_smartlists': total_number_of_smartlists}
+            headers = {
+                'X-Total': total_number_of_smartlists,
+                'X-Page': page,
+                'X-Page-Count': per_page,
+            }
+
+            response = {
+                'smartlists': get_all_smartlists(auth_user, request.oauth_token, int(page), int(per_page)),
+                'page_number': page,
+                'smartlists_per_page': per_page,
+                'total_number_of_smartlists': total_number_of_smartlists
+            }
+            return ApiResponse(response=response, headers=headers, status=200)
 
     @require_all_permissions(Permission.PermissionNames.CAN_ADD_SMART_LISTS)
     def post(self):

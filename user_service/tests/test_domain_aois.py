@@ -74,7 +74,7 @@ class TestCreateDomainAOIS(object):
         assert len(create_resp.json()['areas_of_interest']) == len(DATA['areas_of_interest'])
         assert all([aoi.get('id') for aoi in create_resp.json()['areas_of_interest']])
 
-    def test_add_existing_aoi_to_domain(self, access_token_first, domain_aoi, user_first):
+    def test_add_existing_aoi_to_domain(self, access_token_first, domain_aois, user_first):
         """
         Test: Attempt to an aoi to domain that already exists
         Expect: 400
@@ -83,7 +83,7 @@ class TestCreateDomainAOIS(object):
         db.session.commit()
 
         # Necessary data for test case
-        existing_aoi_description = domain_aoi[0].name
+        existing_aoi_description = domain_aois[0].name
         data = dict(areas_of_interest=[dict(description=existing_aoi_description)])
 
         create_resp = send_request(self.METHOD, AOIS_URL, access_token_first, data)
@@ -94,13 +94,13 @@ class TestCreateDomainAOIS(object):
         # AOI ID must be provided in error response
         assert 'id' in json_resp['error']
         existing_aoi_id = json_resp['error']['id']
-        assert existing_aoi_id == domain_aoi[0].id
+        assert existing_aoi_id == domain_aois[0].id
 
         # Retrieving AOI using the provided ID from the error response should work
         get_resp = send_request('get', AOI_URL % existing_aoi_id, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.OK
-        assert get_resp.json()['area_of_interest']['domain_id'] == domain_aoi[0].domain_id
+        assert get_resp.json()['area_of_interest']['domain_id'] == domain_aois[0].domain_id
         assert get_resp.json()['area_of_interest']['description'] == existing_aoi_description
 
 
@@ -111,36 +111,30 @@ class TestRetrieveDomainAOIS(object):
         """
         Test: Get all of domain's areas of interest
         """
-        user_first.role_id = Role.get_by_name('USER').id
-        db.session.commit()
         number_of_aois_in_domain = len(domain_aoi)
         get_resp = send_request(self.METHOD, AOIS_URL, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.OK
         assert len(get_resp.json()['areas_of_interest']) == number_of_aois_in_domain
 
-    def test_get_a_specified_aoi(self, user_first, access_token_first, domain_aoi):
+    def test_get_a_specified_aoi(self, access_token_first, domain_aois):
         """
         Test: Get area of interest by providing its ID
         """
-        user_first.role_id = Role.get_by_name('USER').id
-        db.session.commit()
-        aoi_id = domain_aoi[0].id
+        aoi_id = domain_aois[0].id
         get_resp = send_request(self.METHOD, AOI_URL % aoi_id, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.OK
-        assert get_resp.json()['area_of_interest']['domain_id'] == domain_aoi[0].domain_id
+        assert get_resp.json()['area_of_interest']['domain_id'] == domain_aois[0].domain_id
         assert get_resp.json()['area_of_interest']['id'] == aoi_id
-        assert get_resp.json()['area_of_interest']['description'] == domain_aoi[0].name
+        assert get_resp.json()['area_of_interest']['description'] == domain_aois[0].name
 
-    def test_get_an_aoi_belonging_to_a_diff_domain(self, user_first, access_token_second, domain_aoi):
+    def test_get_an_aoi_belonging_to_a_diff_domain(self, access_token_second, domain_aois):
         """
         Test: Get area of interest of a different domain
         Expect: 403
         """
-        user_first.role_id = Role.get_by_name('USER').id
-        db.session.commit()
-        aoi_id = domain_aoi[0].id
+        aoi_id = domain_aois[0].id
         get_resp = send_request(self.METHOD, AOI_URL % aoi_id, access_token_second)
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.FORBIDDEN
@@ -149,14 +143,14 @@ class TestRetrieveDomainAOIS(object):
 class TestUpdateDomainAOIS(object):
     METHOD = "PUT"
 
-    def test_update_domain_aoi(self, access_token_first, user_first, domain_aoi):
+    def test_update_domain_aoi(self, access_token_first, user_first, domain_aois):
         """
         Test: Update domain's area of interest's description by providing aoi ID via the url
         """
         user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
         db.session.commit()
 
-        aoi_id = domain_aoi[0].id
+        aoi_id = domain_aois[0].id
         update_data = {"areas_of_interest": [{"description": str(uuid.uuid4())[:5]}]}
 
         # Update area of interest's description
@@ -171,14 +165,14 @@ class TestUpdateDomainAOIS(object):
         assert get_resp.status_code == requests.codes.OK
         assert get_resp.json()['area_of_interest']['description'] == update_data['areas_of_interest'][0]['description']
 
-    def test_update_domain_aois(self, access_token_first, user_first, domain_aoi):
+    def test_update_domain_aois(self, access_token_first, user_first, domain_aois):
         """
         Test: Update domain's areas of interest in bulk
         """
         user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
         db.session.commit()
 
-        aoi_1_id, aoi_2_id = domain_aoi[0].id, domain_aoi[1].id
+        aoi_1_id, aoi_2_id = domain_aois[0].id, domain_aois[1].id
         update_data = {'areas_of_interest': [
             {"id": aoi_1_id, "description": str(uuid.uuid4())[:5]},
             {"id": aoi_2_id, "description": str(uuid.uuid4())[:5]}
@@ -190,7 +184,7 @@ class TestUpdateDomainAOIS(object):
         for data in update_resp.json()['areas_of_interest']:
             assert data['id'] in [aoi_1_id, aoi_2_id]
 
-    def test_update_another_domains_aoi(self, access_token_second, user_second, domain_aoi):
+    def test_update_another_domains_aoi(self, access_token_second, user_second, domain_aois):
         """
         Test: Attempt to update the aoi of a different domain
         Expect: 403
@@ -198,13 +192,13 @@ class TestUpdateDomainAOIS(object):
         user_second.role_id = Role.get_by_name('DOMAIN_ADMIN').id
         db.session.commit()
 
-        aoi_id = domain_aoi[0].id
+        aoi_id = domain_aois[0].id
         update_data = {"areas_of_interest": [{"description": str(uuid.uuid4())[:5]}]}
         update_resp = send_request(self.METHOD, AOI_URL % aoi_id, access_token_second, update_data)
         print response_info(update_resp)
         assert update_resp.status_code == requests.codes.FORBIDDEN
 
-    def test_update_domain_aoi_with_empty_description_field(self, access_token_first, user_first, domain_aoi):
+    def test_update_domain_aoi_with_empty_description_field(self, access_token_first, user_first, domain_aois):
         """
         Test: Update domain aoi without providing the description field
         Expect: 400; description is required
@@ -212,7 +206,7 @@ class TestUpdateDomainAOIS(object):
         user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
         db.session.commit()
 
-        aoi_id = domain_aoi[0].id
+        aoi_id = domain_aois[0].id
 
         # Update with description field set to None
         update_data_1 = {"areas_of_interest": [{"description": None}]}
@@ -248,20 +242,20 @@ class TestUpdateDomainAOIS(object):
 class TestDeleteDomainAOIS(object):
     METHOD = "DELETE"
 
-    def test_delete_domain_aois(self, access_token_first, user_first, domain_aoi):
+    def test_delete_domain_aois(self, access_token_first, user_first, domain_aois):
         """
         Test: Delete all of domain's AOIS
         """
         user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
         db.session.commit()
 
-        domain_aoi_ids = [aoi.id for aoi in domain_aoi]
+        domain_aoi_ids = [aoi.id for aoi in domain_aois]
 
         # Delete all of domain's AOIS
         del_resp = send_request(self.METHOD, AOIS_URL, access_token_first)
         print response_info(del_resp)
         assert del_resp.status_code == requests.codes.OK
-        assert len(del_resp.json()['areas_of_interest']) == len(domain_aoi)
+        assert len(del_resp.json()['areas_of_interest']) == len(domain_aois)
         assert set([aoi['id'] for aoi in del_resp.json()['areas_of_interest']]) == set(domain_aoi_ids)
 
         # Domain AOIS should not exists in db anymore
@@ -269,7 +263,7 @@ class TestDeleteDomainAOIS(object):
         print response_info(get_resp)
         assert get_resp.json()['areas_of_interest'] == []
 
-    def test_delete_another_domains_aoi(self, access_token_second, user_second, domain_aoi):
+    def test_delete_another_domains_aoi(self, access_token_second, user_second, domain_aois):
         """
         Test: Attempt to delete area of interest of another domain
         Expect: 403; no aoi should be deleted
@@ -277,7 +271,7 @@ class TestDeleteDomainAOIS(object):
         user_second.role_id = Role.get_by_name('DOMAIN_ADMIN').id
         db.session.commit()
 
-        aoi_id = domain_aoi[0].id
+        aoi_id = domain_aois[0].id
         del_resp = send_request(self.METHOD, AOI_URL % aoi_id, access_token_second)
         print response_info(del_resp)
         assert del_resp.status_code == requests.codes.FORBIDDEN

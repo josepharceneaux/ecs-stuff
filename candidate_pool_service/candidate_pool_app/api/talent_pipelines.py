@@ -13,6 +13,7 @@ from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.models.user import Permission
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_permissions
+from candidate_pool_service.common.utils.api_utils import ApiResponse
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
     get_pipeline_growth, TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, engagement_score_of_pipeline,
     get_stats_generic_function, top_most_engaged_candidates_of_pipeline, top_most_engaged_pipelines_of_candidate)
@@ -97,9 +98,21 @@ class TalentPipelineApi(Resource):
                 for talent_pipeline_data in talent_pipelines_data:
                     talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_data['id'])
 
-            return dict(talent_pipelines=talent_pipelines_data,
-                        page_number=page, talent_pipelines_per_page=per_page,
-                        total_number_of_talent_pipelines=total_number_of_talent_pipelines)
+            headers = {
+                'X-Total': total_number_of_talent_pipelines,
+                'X-Page': page,
+                'X-Page-Count': per_page,
+            }
+
+            response = dict(
+                    talent_pipelines=talent_pipelines_data,
+                    page_number=page, talent_pipelines_per_page=per_page,
+                    total_number_of_talent_pipelines=total_number_of_talent_pipelines
+            )
+
+            return ApiResponse(response=response, headers=headers, status=200)
+
+
 
     @require_all_permissions(Permission.PermissionNames.CAN_DELETE_TALENT_PIPELINES)
     def delete(self, **kwargs):
@@ -354,11 +367,19 @@ class TalentPipelineSmartListApi(Resource):
         smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).paginate(page, per_page, False)
         smartlists = smartlists.items
 
-        return {
+        headers = {
+            'X-Total': total_number_of_smartlists,
+            'X-Page': page,
+            'X-Page-Count': per_page,
+        }
+
+        response = {
             'page_number': page, 'smartlists_per_page': per_page,
             'total_number_of_smartlists': total_number_of_smartlists,
             'smartlists': [smartlist.to_dict(True, get_stats_generic_function) for smartlist in smartlists]
         }
+
+        return ApiResponse(response=response, headers=headers, status=200)
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_TALENT_PIPELINES)
     def post(self, **kwargs):
@@ -615,11 +636,19 @@ class TalentPipelineCampaigns(Resource):
         include_fields = request.values['fields'].split(',') if request.values.get('fields') else None
         email_campaigns = talent_pipeline.get_email_campaigns(page=page, per_page=per_page)
 
-        return {
+        headers = {
+            'X-Total': talent_pipeline.get_email_campaigns_count(),
+            'X-Page': page,
+            'X-Page-Count': per_page,
+        }
+
+        response = {
             'page_number': page, 'email_campaigns_per_page': per_page,
             'total_number_of_email_campaigns': talent_pipeline.get_email_campaigns_count(),
             'email_campaigns': [email_campaign.to_dict(include_fields) for email_campaign in email_campaigns]
         }
+
+        return ApiResponse(response=response, headers=headers, status=200)
 
 
 @talent_pipeline_blueprint.route(CandidatePoolApi.TALENT_PIPELINE_GET_STATS, methods=['GET'])

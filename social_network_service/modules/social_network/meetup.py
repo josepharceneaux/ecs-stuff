@@ -7,9 +7,9 @@ class. Meetup contains methods like refresh_access_token(), get_member_id() etc.
 import json
 
 # Application Specific
-from urllib import urlencode
-
 from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.common.error_handling import InternalServerError, InvalidUsage
+from social_network_service.modules import custom_codes
 from social_network_service.modules.utilities import logger
 from base import SocialNetworkBase
 from social_network_service.social_network_app import app
@@ -251,4 +251,41 @@ class Meetup(SocialNetworkBase):
         return super(Meetup, cls).get_access_and_refresh_token(
             user_id, social_network, method_type=method_type, payload=payload_data,
             api_relative_url=api_relative_url)
+
+    def add_venue_to_sn(self, venue_data):
+        """
+        This function sends a POST request to Meetup api to create a venue for event.
+        :param dict venue_data: a dictionary containing data required to create a venue
+        """
+        if not venue_data.get('group_url_name'):
+            raise InvalidUsage("Mandatory Input Missing: group_url_name",
+                               error_code=custom_codes.MISSING_REQUIRED_FIELDS)
+        url = 'https://api.meetup.com/%s/venues' % venue_data['group_url_name']
+        payload = {
+            'address_1': venue_data['address_line_1'],
+            'address_2': venue_data.get('address_line_2'),
+            'city': venue_data['city'],
+            'country': venue_data['country'],
+            'state': venue_data['state'],
+            'name': venue_data['address_line_1']
+        }
+        response = http_request('POST', url, params=payload,
+                                headers=self.headers,
+                                user_id=self.user.id)
+        json_resp = response.json()
+        if response.ok:
+            venue_id = json_resp['id']
+            logger.info('|  Venue has been Added  |')
+        elif response.status_code == 409:
+            # 409 is returned when our venue is matching existing
+            # venue/venues.
+            raise InvalidUsage('Matching venue already exists.',
+                               additional_error_info=dict(venue_error=json_resp['errors'][0]['potential_matches']))
+        else:
+            raise InternalServerError('ApiError: Unable to create venue for Meetup',
+                                      additional_error_info=dict(venue_error=json_resp))
+
+        venue_data['user_id'] = self.user.id
+        venue_data['social_network_venue_id'] = venue_id
+        return SocialNetworkBase.save_venue(venue_data)
 
