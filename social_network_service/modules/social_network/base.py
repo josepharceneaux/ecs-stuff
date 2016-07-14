@@ -466,7 +466,7 @@ class SocialNetworkBase(object):
         """
         status = False
         url = self.api_url + self.api_relative_url
-        logger.info("Token validation url: %s" % url)
+        logger.info("%s access_token validation url: %s", self.social_network.name, url)
         try:
             response = requests.get(url, headers=self.headers, params=payload)
             if response.ok:
