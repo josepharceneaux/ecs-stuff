@@ -8,6 +8,8 @@ Run:
 python setup_environment/reset_database_and_cloud_search.py
 
 """
+from sqlalchemy import text
+
 from common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from common.talent_flask import TalentFlask
 # Flush redis-cache
@@ -80,6 +82,9 @@ print 'DB reset is successful'
 print 'Generating initial test data'
 
 create_dummy_users()
+q = '''INSERT INTO `user_social_network_credential` (`Id`, `UserId`, `SocialNetworkId`, `RefreshToken`, `webhook`, `MemberId`, `AccessToken`) VALUES (NULL, '1', '18', NULL, '217041', '164351364314', 'YZASRSWZO5CWKSEXMELQ');'''
+sql = text(q)
+result = db.engine.execute(sql)
 
 from candidate_service.candidate_app import app
 
