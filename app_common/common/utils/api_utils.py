@@ -158,7 +158,7 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
 @contract
 def generate_pagination_headers(results_count, results_per_page, current_page):
     """
-    This function generates pagination response headers headers containing following parameters.
+    This function generates pagination response headers containing following parameters.
     :param int|long results_count: Total number of results
     :param int results_per_page: Number of results per page
     :param int|long current_page: Current page number
