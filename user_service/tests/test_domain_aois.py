@@ -107,11 +107,11 @@ class TestCreateDomainAOIS(object):
 class TestRetrieveDomainAOIS(object):
     METHOD = 'GET'
 
-    def test_get_domain_aois(self, user_first, access_token_first, domain_aoi):
+    def test_get_domain_aois(self, user_first, access_token_first, domain_aois):
         """
         Test: Get all of domain's areas of interest
         """
-        number_of_aois_in_domain = len(domain_aoi)
+        number_of_aois_in_domain = len(domain_aois)
         get_resp = send_request(self.METHOD, AOIS_URL, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.OK
