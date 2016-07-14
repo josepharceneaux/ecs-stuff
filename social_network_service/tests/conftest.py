@@ -40,8 +40,8 @@ EVENT_DATA = {
     "title": "Test Event",
     "description": "Test Event Description",
     "registration_instruction": "Just Come",
-    "start_datetime": (datetime.now() + timedelta(days=20)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    "end_datetime": (datetime.now() + timedelta(days=22)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "start_datetime": (datetime.now() + timedelta(days=20)).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+    "end_datetime": (datetime.now() + timedelta(days=22)).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
     "group_url_name": "QC-Python-Learning",
     "social_network_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
     "timezone": "Asia/Karachi",

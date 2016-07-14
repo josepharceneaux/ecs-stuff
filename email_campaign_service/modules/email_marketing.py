@@ -12,6 +12,7 @@ import itertools
 
 # Third Party
 from celery import chord
+from redo import retrier
 from sqlalchemy import desc
 from datetime import datetime, timedelta
 
@@ -863,8 +864,13 @@ def handle_email_bounce(message_id, bounce, emails):
     assert isinstance(emails, list) and all(emails), "emails param should be a non empty list of email addresses"
     logger.info('Bounce Detected: %s', bounce)
 
+    send_obj = None
     # get the corresponding EmailCampaignSend object that is associated with given AWS message id
-    send_obj = EmailCampaignSend.get_by_amazon_ses_message_id(message_id)
+    for _ in retrier(sleeptime=2, sleepscale=1, attempts=15):
+        EmailCampaignSend.session.commit()
+        send_obj = EmailCampaignSend.get_by_amazon_ses_message_id(message_id)
+        if send_obj:  # found email campaign send, no need to retry
+            break
 
     if not send_obj:
         logger.error('Unable to find email campaign send for this email bounce.'

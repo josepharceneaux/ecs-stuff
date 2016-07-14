@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run Scheduler Service" type="js.build_tools.gulp" factoryName="Gulp.js" folderName="Scheduler Service">
+    <node-options />
+    <gulpfile>$PROJECT_DIR$/scheduler_service_admin/gulpfile.js</gulpfile>
+    <tasks />
+    <arguments>serve-dev</arguments>
+    <envs />
+    <method />
+  </configuration>
+</component>
