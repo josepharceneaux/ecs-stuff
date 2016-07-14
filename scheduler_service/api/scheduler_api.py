@@ -18,7 +18,8 @@ from scheduler_service.api.scheduler_tests_api import raise_if_scheduler_not_run
     dummy_request_method, test_dummy_endpoint_hits
 from scheduler_service.common.models.user import DomainRole, User
 from scheduler_service.common.routes import SchedulerApi
-from scheduler_service.common.utils.api_utils import api_route, ApiResponse, get_pagination_params
+from scheduler_service.common.utils.api_utils import api_route, ApiResponse, get_pagination_params, \
+    generate_pagination_headers
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound
 from scheduler_service.common.utils.auth_utils import require_oauth, require_all_roles
@@ -131,11 +132,7 @@ class Tasks(Resource):
                  for index in task_indices if index < tasks_count and tasks[index]]
 
         tasks = [task for task in tasks if task]
-        header = {
-            'X-Total': tasks_count,
-            'X-Per-Page': per_page,
-            'X-Page': page
-        }
+        header = generate_pagination_headers(tasks_count, per_page, page)
         return ApiResponse(response=dict(tasks=tasks), headers=header)
 
     @require_oauth(allow_null_user=True)
@@ -854,12 +851,7 @@ class AdminTasks(Resource):
 
         tasks = [task for task in tasks if task]
 
-        header = {
-            'X-Total': tasks_count,
-            'X-Per-Page': per_page,
-            'X-Page': page,
-            'Access-Control-Expose-Headers': 'X-Page, X-Total, X-Per-Page'
-        }
+        header = generate_pagination_headers(tasks_count, per_page, page)
         return ApiResponse(response=dict(tasks=tasks), headers=header)
 
 
