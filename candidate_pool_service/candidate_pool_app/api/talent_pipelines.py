@@ -13,7 +13,7 @@ from candidate_pool_service.common.models.smartlist import Smartlist
 from candidate_pool_service.common.models.user import Permission
 from candidate_pool_service.common.models.talent_pools_pipelines import *
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_permissions
-from candidate_pool_service.common.utils.api_utils import ApiResponse
+from candidate_pool_service.common.utils.api_utils import ApiResponse, generate_pagination_headers
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
     get_pipeline_growth, TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, engagement_score_of_pipeline,
     get_stats_generic_function, top_most_engaged_candidates_of_pipeline, top_most_engaged_pipelines_of_candidate)
@@ -98,11 +98,7 @@ class TalentPipelineApi(Resource):
                 for talent_pipeline_data in talent_pipelines_data:
                     talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_data['id'])
 
-            headers = {
-                'X-Total': total_number_of_talent_pipelines,
-                'X-Page': page,
-                'X-Page-Count': per_page,
-            }
+            headers = generate_pagination_headers(total_number_of_talent_pipelines ,per_page, page)
 
             response = dict(
                     talent_pipelines=talent_pipelines_data,
@@ -367,11 +363,7 @@ class TalentPipelineSmartListApi(Resource):
         smartlists = Smartlist.query.filter_by(talent_pipeline_id=talent_pipeline_id).paginate(page, per_page, False)
         smartlists = smartlists.items
 
-        headers = {
-            'X-Total': total_number_of_smartlists,
-            'X-Page': page,
-            'X-Page-Count': per_page,
-        }
+        headers = generate_pagination_headers(total_number_of_smartlists, per_page, page)
 
         response = {
             'page_number': page, 'smartlists_per_page': per_page,
@@ -636,11 +628,7 @@ class TalentPipelineCampaigns(Resource):
         include_fields = request.values['fields'].split(',') if request.values.get('fields') else None
         email_campaigns = talent_pipeline.get_email_campaigns(page=page, per_page=per_page)
 
-        headers = {
-            'X-Total': talent_pipeline.get_email_campaigns_count(),
-            'X-Page': page,
-            'X-Page-Count': per_page,
-        }
+        headers = generate_pagination_headers(talent_pipeline.get_email_campaigns_count(), per_page, page)
 
         response = {
             'page_number': page, 'email_campaigns_per_page': per_page,

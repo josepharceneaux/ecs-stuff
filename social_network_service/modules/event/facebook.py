@@ -163,15 +163,14 @@ class Facebook(EventBase):
         :rtype event: common.models.event.Event
         """
         venue = None
-        owner = None
         location = None
         venue_id = None
         organizer = None
         organizer_id = None
         assert event is not None
+        owner = event.get('owner')
         if event.get('place'):
             venue = event.get('place')
-            owner = event.get('owner')
             location = venue['location']
             try:
                 organizer = self.graph.get_object('v2.4/' + owner['id'])
