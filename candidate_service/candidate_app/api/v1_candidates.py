@@ -119,11 +119,11 @@ class CandidatesResource(Resource):
         is_creating, is_updating, candidate_id = True, False, None
         all_cf_ids, all_aoi_ids = [], []
         email_addresses = []
-        for _candidate_dict in candidates:
+        for candidate_dict_ in candidates:
 
             candidate_ids_from_candidate_email_obj = []
 
-            email_addresses = [email.get('address') for email in _candidate_dict.get('emails') or []]
+            email_addresses.extend(email.get('address') for email in candidate_dict_.get('emails') or [])
 
             # Strip, lower, and remove empty email addresses
             email_addresses = filter(None, map(clean_email, email_addresses))
@@ -168,7 +168,7 @@ class CandidatesResource(Resource):
                     continue
 
             # Provided source ID must belong to candidate's domain
-            source_id = _candidate_dict.get('source_id')
+            source_id = candidate_dict_.get('source_id')
             if source_id:
                 if not CandidateSource.get_domain_source(source_id=source_id, domain_id=domain_id):
                     raise InvalidUsage("Provided source ID ({source_id}) not "
@@ -176,7 +176,7 @@ class CandidatesResource(Resource):
                                        .format(source_id=source_id, domain_id=domain_id),
                                        error_code=custom_error.INVALID_SOURCE_ID)
 
-            for custom_field in _candidate_dict.get('custom_fields') or []:
+            for custom_field in candidate_dict_.get('custom_fields') or []:
                 custom_field_id = custom_field.get('custom_field_id')
                 if custom_field_id:
                     if not CustomField.get_by_id(_id=custom_field_id):
@@ -184,7 +184,7 @@ class CandidatesResource(Resource):
                                             custom_error.CUSTOM_FIELD_NOT_FOUND)
                 all_cf_ids.append(custom_field_id)
 
-            for aoi in _candidate_dict.get('areas_of_interest') or []:
+            for aoi in candidate_dict_.get('areas_of_interest') or []:
                 aoi_id = aoi.get('area_of_interest_id')
                 if aoi_id:
                     if not AreaOfInterest.get_by_id(_id=aoi_id):
@@ -193,7 +193,7 @@ class CandidatesResource(Resource):
                 all_aoi_ids.append(aoi_id)
 
             # to_date & from_date in military_service dict must be formatted properly
-            for military_service in _candidate_dict.get('military_services') or []:
+            for military_service in candidate_dict_.get('military_services') or []:
                 from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
                 if from_date:
                     if not is_date_valid(date=from_date):
