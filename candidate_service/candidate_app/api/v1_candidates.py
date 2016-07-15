@@ -28,8 +28,8 @@ from candidate_service.common.utils.validators import is_valid_email, is_country
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
-    get_candidate_if_exists, is_valid_email_client, get_json_if_exist, is_date_valid,
-    get_json_data_if_validated, get_email_if_validated, get_candidate_if_validated
+    is_valid_email_client, get_json_if_exist, is_date_valid,
+    get_json_data_if_validated, get_candidate_if_validated, clean_email
 )
 
 # JSON Schemas
@@ -55,7 +55,7 @@ from candidate_service.common.models.candidate import (
     CandidateEducationDegreeBullet, CandidateExperience, CandidateExperienceBullet,
     CandidateWorkPreference, CandidateEmail, CandidatePhone, CandidateMilitaryService,
     CandidatePreferredLocation, CandidateSkill, CandidateSocialNetwork, CandidateDevice,
-    CandidateSubscriptionPreference, CandidatePhoto, CandidateTextComment, CandidateSource,
+    CandidateSubscriptionPreference, CandidatePhoto, CandidateSource,
     CandidateStatus
 )
 from candidate_service.common.models.language import CandidateLanguage
@@ -118,49 +118,54 @@ class CandidatesResource(Resource):
         # Input validations
         is_creating, is_updating, candidate_id = True, False, None
         all_cf_ids, all_aoi_ids = [], []
+        email_addresses = []
         for _candidate_dict in candidates:
 
             candidate_ids_from_candidate_email_obj = []
-            for email in _candidate_dict.get('emails') or []:
 
-                # email address is required within the email dict
-                email_address = email['address'].strip().lower()
+            email_addresses = [email.get('address') for email in _candidate_dict.get('emails') or []]
 
-                # If candidate's email is found, check if it's web-hidden
-                candidate_email_obj = get_email_if_validated(email_address, domain_id)
-                logger.info("AFTER EMAIL QUERY BENCHMARK - {}".format(time() - start_time))
+            # Strip, lower, and remove empty email addresses
+            email_addresses = filter(None, map(clean_email, email_addresses))
 
-                if candidate_email_obj:
+            # All email addresses must be valid emails
+            if not all(map(is_valid_email, email_addresses)):
+                raise InvalidUsage('Invalid email address/format: {}'.format(email_addresses),
+                                   error_code=custom_error.INVALID_EMAIL)
 
-                    # Cache candidate's email
-                    CachedData.candidate_emails.append(candidate_email_obj)
+            # If candidate's email is found, check if it's web-hidden
+            candidate_email_objects = CandidateEmail.get_emails_in_domain(domain_id, email_addresses)
+            logger.info("AFTER EMAIL QUERY BENCHMARK: domain_id: {}, time: {}".format(authed_user.domain_id,
+                                                                                      time() - start_time))
+            for candidate_email_obj in candidate_email_objects:
 
-                    candidate_id = candidate_email_obj.candidate_id
+                # Cache candidate's email
+                CachedData.candidate_emails.append(candidate_email_obj)
 
-                    # We need to prevent duplicate creation in case candidate has multiple email addresses in db
-                    candidate_ids_from_candidate_email_obj.append(candidate_id)
-                    candidate = Candidate.get_by_id(candidate_id)
+                candidate_id = candidate_email_obj.candidate_id
 
-                    # Raise error if candidate is not hidden and its email matches another candidate's email
-                    if not candidate.is_web_hidden and (candidate_email_obj not in CachedData.candidate_emails):
-                        # Clear cached data
-                        CachedData.candidate_emails = []
+                # We need to prevent duplicate creation in case candidate has multiple email addresses in db
+                candidate_ids_from_candidate_email_obj.append(candidate_id)
+                candidate = Candidate.get_by_id(candidate_id)
 
-                        raise InvalidUsage('Candidate with email: {}, already exists'.format(email_address),
-                                           error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
-                                           additional_error_info={'id': candidate_id})
+                # Raise error if candidate is not hidden and its email matches another candidate's email
+                if not candidate.is_web_hidden and (candidate_email_obj not in CachedData.candidate_emails):
+                    # Clear cached data
+                    CachedData.candidate_emails = []
 
-                    # Un-hide candidate from web, if found
-                    if candidate.is_web_hidden:
-                        candidate.is_web_hidden = 0
+                    raise InvalidUsage('Candidate with email: {}, already exists'.format(candidate_email_obj.address),
+                                       error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
+                                       additional_error_info={'id': candidate_id})
 
-                        # If candidate's web-hidden is set to false, it will be treated as an update
-                        is_creating, is_updating = False, True
+                # Un-hide candidate from web, if found
+                if candidate.is_web_hidden:
+                    candidate.is_web_hidden = 0
 
-                    elif candidate_id in candidate_ids_from_candidate_email_obj:
-                        continue
+                    # If candidate's web-hidden is set to false, it will be treated as an update
+                    is_creating, is_updating = False, True
 
-            logger.info("AFTER EMAIL VALIDATION BENCHMARK - {}".format(time() - start_time))
+                elif candidate_id in candidate_ids_from_candidate_email_obj:
+                    continue
 
             # Provided source ID must belong to candidate's domain
             source_id = _candidate_dict.get('source_id')
@@ -224,7 +229,7 @@ class CandidatesResource(Resource):
                     'address': email['address'].strip(),
                     'is_default': email.get('is_default')
                 } for email in candidate_dict.get('emails') or []
-            ]
+            ] if email_addresses else None  # CandidateEmail object must only be created if email has an address
 
             added_datetime = DatetimeUtils.isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
                 if candidate_dict.get('added_datetime') else None
@@ -264,7 +269,8 @@ class CandidatesResource(Resource):
 
         # Add candidates to cloud search
         upload_candidate_documents.delay(created_candidate_ids)
-        logger.info('BENCHMARK - candidate POST: {}'.format(time() - start_time))
+        logger.info('BENCHMARK - candidate POST: domain_id: {}, time: {}'.format(authed_user.domain_id,
+                                                                                 time() - start_time))
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, requests.codes.CREATED
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)

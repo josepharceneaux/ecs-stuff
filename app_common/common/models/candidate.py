@@ -441,6 +441,13 @@ class CandidateEmail(db.Model):
             filter(User.domain_id == domain_id). \
             filter(cls.address == email_address).first()
 
+    @classmethod
+    def get_emails_in_domain(cls, domain_id, email_addresses):
+        from user import User
+        return cls.query.join(Candidate).join(User).\
+            filter(User.domain_id == domain_id).\
+            filter(cls.address.in_(email_addresses)).all()
+
 
 class CandidatePhoto(db.Model):
     __tablename__ = 'candidate_photo'
