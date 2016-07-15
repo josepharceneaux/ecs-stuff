@@ -1,4 +1,9 @@
-import datetime
+"""
+This file contains helpers functions for
+  - adding custom field categories to db
+  - retrieving custom field categories from db, and
+  - updating custom field categories
+"""
 
 # Models
 from user_service.common.models.db import db
@@ -47,38 +52,26 @@ def get_custom_field_categories(domain_id, custom_field_category_id=None):
     otherwise it will return all of domain's custom field categories
     :type domain_id:  int
     :type custom_field_category_id:  int | None
-    :return:
+    :rtype:  dict[dict] | dict[list]
     """
     if custom_field_category_id:
 
-        ccf_category_object = CustomFieldCategory.get(custom_field_category_id)
+        cf_category_object = CustomFieldCategory.get(custom_field_category_id)
 
         # Custom field category ID must be recognized
-        if not ccf_category_object:
+        if not cf_category_object:
             raise NotFoundError("Custom field category ID ({}) is not recognized.".format(custom_field_category_id))
 
         # Custom field category must belong to user's domain
-        if ccf_category_object.domain_id != domain_id:
+        if cf_category_object.domain_id != domain_id:
             raise ForbiddenError("Unauthorized custom field category")
 
-        return {
-            'custom_field_category': {
-                'id': ccf_category_object.id,
-                'name': ccf_category_object.name,
-                'domain_id': ccf_category_object.domain_id,
-                'updated_datetime': str(ccf_category_object.updated_time)
-            }
-        }
+        return {'custom_field_category': cf_category_object.to_json()}
     else:  # return all of user's domain custom field categories
         return {
             'custom_field_categories': [
-                {
-                    'id': ccf_category.id,
-                    'name': ccf_category.name,
-                    'domain_id': ccf_category.domain_id,
-                    'updated_datetime': str(ccf_category.updated_time)
-                } for ccf_category in CustomFieldCategory.get_all_in_domain(domain_id)
-                ]
+                ccf_category.to_json() for ccf_category in CustomFieldCategory.get_all_in_domain(domain_id)
+            ]
         }
 
 
@@ -90,7 +83,6 @@ def update_custom_field_categories(domain_id, update_data, custom_field_category
     :type domain_id:  int | long
     :param update_data: a list of dicts for multiple updates or a single dict for a single cf-category update
     :type custom_field_category_id: int | long
-    :return:
     """
 
     if custom_field_category_id:

@@ -1,3 +1,8 @@
+"""
+This file contains helpers functions for
+  - retrieving custom fields from db
+  - adding custom fields to db
+"""
 import datetime
 
 from flask import request

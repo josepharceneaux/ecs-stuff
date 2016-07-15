@@ -119,8 +119,8 @@ class DomainCustomFieldsResource(Resource):
             # Custom field ID must be recognized & belong to user's domain
             get_custom_field_if_validated(custom_field_id, request.user)
 
-            # Normalize custom field name
-            custom_field_name = normalize_value(body_dict['custom_field']['name'])
+            # Remove whitespace(s) from custom field name
+            custom_field_name = body_dict['custom_field']['name'].strip()
             if not custom_field_name:  # In case name is just a whitespace
                 raise InvalidUsage("Name is required for creating custom field.")
 
@@ -138,8 +138,10 @@ class DomainCustomFieldsResource(Resource):
             if not custom_field_id:
                 raise InvalidUsage("Custom field ID is required for updating.")
 
-            # Normalize custom field name
-            custom_field_name = normalize_value(custom_field['name'])
+            # Remove whitespace(s) from custom field name
+            custom_field_name = custom_field['name'].strip()
+            if not custom_field_name:  # In case name is just a whitespace
+                raise InvalidUsage("Name is required for creating custom field.")
 
             custom_field_query = CustomField.query.filter_by(id=custom_field_id)
 

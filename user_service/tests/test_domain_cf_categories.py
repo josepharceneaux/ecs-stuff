@@ -36,9 +36,11 @@ class TestCreateDomainCustomFieldCategories(object):
         get_resp = send_request('get', CFC_URL % custom_field_category_id, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.OK
-        assert get_resp.json()['custom_field_category']['id'] == custom_field_category_id
-        assert get_resp.json()['custom_field_category']['domain_id'] == user_first.domain_id
-        assert get_resp.json()['custom_field_category']['name'] == data['custom_field_categories'][0]['name']
+
+        retrieved_data = get_resp.json()['custom_field_category']
+        assert retrieved_data['id'] == custom_field_category_id
+        assert retrieved_data['domain_id'] == user_first.domain_id
+        assert retrieved_data['name'] == data['custom_field_categories'][0]['name']
 
     def test_create_domain_ccf_categories(self, user_first, access_token_first):
         """
@@ -165,9 +167,11 @@ class TestGetDomainCustomFieldCategories(object):
         get_resp = send_request('get', CFC_URL % cfc_id, access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == requests.codes.OK
-        assert get_resp.json()['custom_field_category']['id'] == cfc_id
-        assert get_resp.json()['custom_field_category']['domain_id'] == user_first.domain_id
-        assert get_resp.json()['custom_field_category']['name'] == domain_custom_field_categories[0].name
+
+        retrieved_data = get_resp.json()['custom_field_category']
+        assert retrieved_data['id'] == cfc_id
+        assert retrieved_data['domain_id'] == user_first.domain_id
+        assert retrieved_data['name'] == domain_custom_field_categories[0].name
 
 
 class TestGetInvalidDomainCustomFieldCategories(object):
