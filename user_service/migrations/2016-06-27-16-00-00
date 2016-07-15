@@ -30,14 +30,14 @@ permissions_not_allowed_for_roles['DOMAIN_ADMIN'] = [Permission.PermissionNames.
 permissions_not_allowed_for_roles['ADMIN'] = permissions_not_allowed_for_roles['DOMAIN_ADMIN'] + [
     Permission.PermissionNames.CAN_EDIT_DOMAINS, Permission.PermissionNames.CAN_ADD_TALENT_POOLS,
     Permission.PermissionNames.CAN_ADD_DOMAIN_GROUPS, Permission.PermissionNames.CAN_DELETE_DOMAIN_GROUPS,
-    Permission.PermissionNames.CAN_EDIT_DOMAIN_GROUPS, Permission.PermissionNames.CAN_DELETE_TALENT_POOLS,
-    Permission.PermissionNames.CAN_EDIT_USER_ROLE]
+    Permission.PermissionNames.CAN_EDIT_DOMAIN_GROUPS, Permission.PermissionNames.CAN_DELETE_TALENT_POOLS]
 
 permissions_not_allowed_for_roles['USER'] = permissions_not_allowed_for_roles['ADMIN'] + [
     Permission.PermissionNames.CAN_EDIT_TALENT_POOLS, Permission.PermissionNames.CAN_ADD_WIDGETS,
     Permission.PermissionNames.CAN_EDIT_WIDGETS, Permission.PermissionNames.CAN_DELETE_WIDGETS,
     Permission.PermissionNames.CAN_DELETE_USERS, Permission.PermissionNames.CAN_ADD_USERS,
-    Permission.PermissionNames.CAN_DELETE_CANDIDATES]
+    Permission.PermissionNames.CAN_DELETE_CANDIDATES, Permission.PermissionNames.CAN_GET_USER_ROLE,
+    Permission.PermissionNames.CAN_EDIT_USER_ROLE]
 
 role_names = ['USER', 'ADMIN', 'DOMAIN_ADMIN', 'TALENT_ADMIN']
 for role_name in role_names:
