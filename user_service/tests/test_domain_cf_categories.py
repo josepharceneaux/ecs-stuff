@@ -6,13 +6,12 @@ import time
 # Conftest
 from user_service.common.tests.conftest import *
 
+from user_service.common.models.user import Role
+from user_service.common.models.db import db
+
 # Helper functions
 from user_service.common.routes import UserServiceApiUrl
 from user_service.common.utils.test_utils import send_request, response_info
-from user_service.common.utils.handy_functions import add_role_to_test_user
-
-# Models
-from user_service.common.models.user import DomainRole
 
 CFCS_URL = UserServiceApiUrl.DOMAIN_CUSTOM_FIELD_CATEGORIES
 CFC_URL = UserServiceApiUrl.DOMAIN_CUSTOM_FIELD_CATEGORY
@@ -23,8 +22,8 @@ class TestCreateDomainCustomFieldCategories(object):
         """
         Test: Create a single custom field category for user's domain
         """
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS,
-                                           DomainRole.Roles.CAN_GET_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         data = {'custom_field_categories': [{'name': str(uuid.uuid4())[:8]}]}
         create_resp = send_request('post', CFCS_URL, access_token_first, data)
@@ -46,7 +45,8 @@ class TestCreateDomainCustomFieldCategories(object):
         """
         Test: Create multiple custom field categories for user's domain
         """
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         data = {'custom_field_categories': [
             {'name': str(uuid.uuid4())[:8]}, {'name': str(uuid.uuid4())[:8]}, {'name': str(uuid.uuid4())[:8]}
@@ -87,7 +87,8 @@ class TestCreateInvalidDomainCustomFieldCategories(object):
             3. no token
         Expect: 401; unauthorized error
         """
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # Set access_token_first's expiration to 10 seconds ago
         token = Token.get_token(access_token_first)
@@ -118,7 +119,8 @@ class TestCreateInvalidDomainCustomFieldCategories(object):
             4. set name value to a bunch of whitespace
         Expect: 400; name is a required field
         """
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         name = [None, '', '         ']  # name values considered "empty" by the API
 
@@ -138,7 +140,8 @@ class TestGetDomainCustomFieldCategories(object):
         """
         Test: Retrieve all custom field categories belonging to user's domain
         """
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         get_resp = send_request('get', CFCS_URL, access_token_first)
         print response_info(get_resp)
@@ -161,7 +164,8 @@ class TestGetDomainCustomFieldCategories(object):
         """
         Test: Retrieve a custom field category by providing its ID
         """
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         cfc_id = domain_custom_field_categories[0].id
         get_resp = send_request('get', CFC_URL % cfc_id, access_token_first)
@@ -182,18 +186,6 @@ class TestGetInvalidDomainCustomFieldCategories(object):
         - non existing data (404)
     """
 
-    def test_get_cfc_without_setting_users_permission(self, access_token_first):
-        """
-        Test: Attempt to access endpoint without setting user's permissions (can get domain)
-        Expect: 401; unauthorized error
-        """
-        # GET /v1/custom_field_categories/:id
-        cfc_id = '5'  # ID is irrelevant since we expect an unauthorized error to be raised early on
-        resp = send_request('get', CFC_URL % cfc_id, access_token_first)
-        assert resp.status_code == requests.codes.UNAUTHORIZED
-        resp = send_request('get', CFCS_URL, access_token_first)
-        assert resp.status_code == requests.codes.UNAUTHORIZED
-
     def test_get_cfc_with_bad_token(self, user_first, access_token_first):
         """
         Test: Attempt to access endpoint using:
@@ -202,7 +194,8 @@ class TestGetInvalidDomainCustomFieldCategories(object):
             3. no token
         Expect: 401; unauthorized error
         """
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # Set access_token_first's expiration to 10 seconds ago
         token = Token.get_token(access_token_first)
@@ -230,11 +223,12 @@ class TestGetInvalidDomainCustomFieldCategories(object):
         get_resp = send_request('get', CFC_URL % cfc_id, None)
         assert get_resp.status_code == requests.codes.UNAUTHORIZED
 
-    def test_get_cfc_from_forbidden_domain(self, user_second, access_token_second, domain_custom_field_categories):
+    def test_get_cfc_from_forbidden_domain(self, access_token_second, domain_custom_field_categories):
         """
         Test: Attempt to retrieve custom field categories of a domain not belonging to user
         """
-        add_role_to_test_user(user_second, [DomainRole.Roles.CAN_GET_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         get_resp = send_request('get', CFC_URL % domain_custom_field_categories[0].id, access_token_second)
         print response_info(get_resp)
@@ -246,7 +240,8 @@ class TestUpdateDomainCustomFieldCategories(object):
         """
         Test: Update a single custom field category
         """
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS, DomainRole.Roles.CAN_GET_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # cf-category id & domain ID before update
         cf_category_id = domain_custom_field_categories[0].id
@@ -272,7 +267,8 @@ class TestUpdateDomainCustomFieldCategories(object):
         """
         Test: Update multiple custom field categories
         """
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS, DomainRole.Roles.CAN_GET_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # cf-categories IDs & domain IDs
         cf_category_ids = [cf_category.id for cf_category in domain_custom_field_categories]
@@ -333,7 +329,8 @@ class TestUpdateInvalidDomainCustomFieldCategories(object):
             3. no token
         Expect: 401; unauthorized error
         """
-        add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS])
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # Set access_token_first's expiration to 10 seconds ago
         token = Token.get_token(access_token_first)
@@ -366,7 +363,8 @@ class TestUpdateInvalidDomainCustomFieldCategories(object):
         """
         Test: Attempt to update custom field categories of a domain not belonging to user
         """
-        add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_DOMAINS])
+        user_second.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         update_data = {'custom_field_category': {'name': 'virus'}}
 

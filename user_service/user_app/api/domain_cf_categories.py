@@ -10,10 +10,10 @@ from flask import request
 from flask_restful import Resource
 
 # Models
-from user_service.common.models.user import DomainRole
+from user_service.common.models.user import Permission
 
 # Decorators
-from user_service.common.utils.auth_utils import require_oauth, require_all_roles
+from user_service.common.utils.auth_utils import require_oauth, require_all_permissions
 
 # Validators
 from user_service.common.utils.validators import get_json_data_if_validated
@@ -29,7 +29,7 @@ from user_service.modules.domain_custom_field_categories import \
 class DomainCustomFieldCategoriesResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_DOMAINS)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
     def post(self):
         """
         Function will create custom field categories for user's domain
@@ -50,7 +50,7 @@ class DomainCustomFieldCategoriesResource(Resource):
                                                                              request.user.domain_id)
                }, requests.codes.CREATED
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_DOMAINS)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_DOMAINS)
     def get(self, **kwargs):
         """
         Function will return domain's custom field category(ies)
@@ -67,7 +67,7 @@ class DomainCustomFieldCategoriesResource(Resource):
         return get_custom_field_categories(domain_id=request.user.domain_id,
                                            custom_field_category_id=kwargs.get('id'))
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_DOMAINS)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
     def put(self, **kwargs):
         """
         Function will update domain's custom field category(ies)

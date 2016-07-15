@@ -24,7 +24,6 @@ from user_service.modules.json_schema import custom_fields_schema, custom_field_
 from user_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 
 # Helpers
-from user_service.common.utils.handy_functions import normalize_value
 from user_service.modules.domain_custom_fields import get_custom_field_if_validated, create_custom_fields
 
 
@@ -160,6 +159,7 @@ class DomainCustomFieldsResource(Resource):
         db.session.commit()
         return {'custom_fields': [{'id': custom_field_id} for custom_field_id in updated_custom_field_ids]}
 
+    # TODO: this endpoint should not be used since it will cause further complexity - Amir
     # @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
     # def delete(self, **kwargs):
     #     """

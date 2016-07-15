@@ -245,8 +245,8 @@ class UserServiceApi(object):
     DOMAIN_CUSTOM_FIELDS = '/' + VERSION + '/custom_fields'
     DOMAIN_CUSTOM_FIELD = DOMAIN_CUSTOM_FIELDS + '/<int:id>'
 
-    DOMAIN_CUSTOM_FIELD_CATEGORIES = '/' + VERSION + '/custom_field_categories'
-    DOMAIN_CUSTOM_FIELD_CATEGORY = DOMAIN_CUSTOM_FIELD_CATEGORIES + '<int:id>'
+    DOMAIN_CUSTOM_FIELD_CATEGORIES = URL_PREFIX + 'custom_field_categories'
+    DOMAIN_CUSTOM_FIELD_CATEGORY = DOMAIN_CUSTOM_FIELD_CATEGORIES + '/<int:id>'
 
     DOMAIN_AOIS = '/' + VERSION + '/areas_of_interest'
     DOMAIN_AOI = '/' + VERSION + '/areas_of_interest/<int:id>'
@@ -281,7 +281,7 @@ class UserServiceApiUrl(object):
     DOMAIN_CUSTOM_FIELD = DOMAIN_CUSTOM_FIELDS + '/%s'
 
     DOMAIN_CUSTOM_FIELD_CATEGORIES = HOST_NAME % ('/' + VERSION + '/custom_field_categories')
-    DOMAIN_CUSTOM_FIELD_CATEGORY = DOMAIN_CUSTOM_FIELD_CATEGORIES + '%s'
+    DOMAIN_CUSTOM_FIELD_CATEGORY = DOMAIN_CUSTOM_FIELD_CATEGORIES + '/%s'
 
     DOMAIN_AOIS = HOST_NAME % ('/' + VERSION + '/areas_of_interest')
     DOMAIN_AOI = HOST_NAME % ('/' + VERSION + '/areas_of_interest/%s')

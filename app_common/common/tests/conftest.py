@@ -186,7 +186,7 @@ def domain_custom_field_categories(domain_first):
 
 
 @pytest.fixture()
-def sample_client(request):
+def sample_client():
     # Adding sample client credentials to Database
     client_id = gen_salt(40)
     client_secret = gen_salt(50)
