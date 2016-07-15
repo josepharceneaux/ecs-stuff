@@ -21,7 +21,7 @@ def validate_ats_account_data(data):
     Verify that POST data contains all required fields for dealing with an ATS account.
 
     :param data: dict, keys and their values
-    :return: None, or throws an exception.
+    :rtype: None
     """
     missing_fields = [field for field in ATS_ACCOUNT_FIELDS if field not in data or not data[field]]
     if missing_fields:
@@ -33,7 +33,7 @@ def invalid_account_fields_check(data):
     Verify that data contains only valid ATS account fields.
 
     :param data: dict, keys and their values
-    :return: bool
+    :rtype: bool
     """
     field_names = data.keys()
     invalid_fields = [name for name in field_names if name not in ATS_ACCOUNT_FIELDS]
@@ -96,6 +96,11 @@ def new_ats_account(user_id, ats_id, data):
 
 def update_ats_account(account_id, new_data):
     """
+    Update the values of an ATS account.
+
+    :param account_id: int, primary key of the account.
+    :param new_data: dict, New values for the account.
+    :rtype None
     """
     # Search for the account, complain if it doesn't exist
     account = ATSAccount.get_by_id(account_id)
@@ -199,6 +204,7 @@ def delete_ats_candidate(candidate_id):
     Remove an ATS candidate from the database.
 
     :param candiate_id: int The id of the candidate.
+    :rtype None
     """
     candidate = ATSCandidate.get_by_id(candidate_id)
     if not candidate:
@@ -215,6 +221,11 @@ def delete_ats_candidate(candidate_id):
 def update_ats_candidate(account_id, candidate_id, new_data):
     """
     Update the profile of an ATS candidate.
+
+    :param account_id: int, primary key of the account the candidate belongs to.
+    :param candidate_id: int, primary key of the candidate.
+    :param new_data: values to update for the candidate.
+    :rtype None
     """
     if 'profile_json' not in new_data:
         raise MissingRequiredField("profile_json {} not found.")
@@ -234,9 +245,10 @@ def update_ats_candidate(account_id, candidate_id, new_data):
     if not profile:
         raise UnprocessableEntity("Invalid candidate profile id", additional_error_info=dict(id=candidate.profile_id))
 
-    update_dict = { 'profile_json' : data['profile_json'] }
+    update_dict = { 'profile_json' : new_data['profile_json'] }
     ATSCandidateProfile.query.filter(ATSCandidateProfile.id == profile.id).update(update_dict)
     db.session.commit()
+    return candidate
 
 
 def link_ats_candidate(gt_candidate_id, ats_candidate_id):

@@ -2,6 +2,8 @@
 Classes implementing the ATS services endpoints.
 """
 
+__author__ = 'Joseph Arceneaux'
+
 import types
 import json
 
@@ -27,6 +29,7 @@ from ats_utils import (validate_ats_account_data,
                        delete_ats_account,
                        new_ats_candidate,
                        delete_ats_candidate,
+                       update_ats_candidate,
                        link_ats_candidate,
                        unlink_ats_candidate)
 
@@ -61,7 +64,7 @@ class ATSService(Resource):
         :rtype string, JSON describing all ATS in our system.
         """
 
-        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
 
         return ATS.get_all_as_json()
@@ -85,7 +88,7 @@ class ATSAccountService(Resource):
         :rtype string, JSON describing the account.
         """
 
-        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
         account = ATSAccount.get_by_id(account_id)
         if not account:
@@ -113,7 +116,7 @@ class ATSAccountService(Resource):
         :rtype string, JSON indicating success.
         """
 
-        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         delete_ats_account(request.user.id, account_id)
 
         return '{ "delete" : "success" }'
@@ -129,7 +132,7 @@ class ATSAccountService(Resource):
         """
 
         # Validate data fields
-        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
         data = get_valid_json_data(request)
         invalid_account_fields_check(data)
@@ -161,7 +164,7 @@ class ATSAccountsService(Resource):
         :rtype string, JSON describing account.
         """
 
-        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
         return_json = ATSAccount.get_accounts_for_user_as_json(authenticated_user.id)
 
@@ -176,7 +179,7 @@ class ATSAccountsService(Resource):
         :rtype string, JSON indicating success.
         """
 
-        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
         # data['active'] = True
         data = get_valid_json_data(request)
@@ -225,7 +228,7 @@ class ATSCandidatesService(Resource):
         :rtype string, JSON with all candidates.
         """
 
-        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
         account = ATSAccount.get_by_id(account_id)
         if not account:
@@ -253,7 +256,7 @@ class ATSCandidatesService(Resource):
         :rtype string, JSON indicating success.
         """
 
-        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
         data = get_valid_json_data(request)
 
@@ -294,7 +297,7 @@ class ATSCandidateService(Resource):
         :param candidate_id: int, id of the ATS account.
         :rtype string, JSON with all candidates.
         """
-        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
 
         candidate = ATSCandidate.get_by_id(candidate_id)
         if not candidate:
@@ -311,7 +314,7 @@ class ATSCandidateService(Resource):
             return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
 
         candidate_dict = dict(id=candidate_id, ats_account_id=candidate.ats_account_id, ats_remote_id=candidate.ats_remote_id,
-                              gt_candidate_id=candidate.gt_candidate_id, profile=profile.profile_json)
+                              gt_candidate_id=candidate.gt_candidate_id, profile_json=profile.profile_json)
         response = json.dumps(candidate_dict)
         headers = dict(Location=ATSServiceApiUrl.CANDIDATE % (account_id, candidate_id))
         return ApiResponse(response, headers=headers, status=codes.OK)
@@ -327,7 +330,7 @@ class ATSCandidateService(Resource):
         :rtype string, JSON indicating success.
         """
 
-        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
         data = get_valid_json_data(request)
 
@@ -352,7 +355,7 @@ class ATSCandidateService(Resource):
         :rtype string, JSON indicating success.
         """
 
-        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         delete_ats_candidate(candidate_id)
         return '{ "delete" : "success" }'
 
@@ -375,8 +378,7 @@ class ATSCandidateLinkService(Resource):
         :rtype string, JSON indicating success.
         """
 
-        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
-        ats_service.app.logger.info("LINK GT {} to ATS {}\n".format(candidate_id, ats_candidate_id))
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         link_ats_candidate(candidate_id, ats_candidate_id)
 
         response = json.dumps(dict(id=candidate_id, message="ATS candidate successfully linked."))
@@ -394,7 +396,7 @@ class ATSCandidateLinkService(Resource):
         :rtype string, JSON indicating success.
         """
 
-        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         unlink_ats_candidate(candidate_id, ats_candidate_id)
 
         return '{ "unlink" : "success" }'
@@ -418,7 +420,7 @@ class ATSCandidateRefreshService(Resource):
         :rtype string, JSON indicating success.
         """
 
-        ats_service.app.logger.info("{} {} {} {}\n".format(request.method, request.path, request.user.email, request.user.id))
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
 
         # Magic happens here

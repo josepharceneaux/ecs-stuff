@@ -28,4 +28,5 @@ def candidate_post_data():
 
     :rtype dict:
     """
-    return { 'ats_remote_id' : 'some_id', 'ats_account_id' : 'another_id', 'ats_remote_id' : 'yaid', 'active' : 'True', 'profile_json' : '{ "some" : "json" } ' }
+    return { 'ats_remote_id' : 'some_id', 'ats_account_id' : 'another_id', 'ats_remote_id' : 'yaid',
+             'active' : 'True', 'profile_json' : '{ "some" : "json" } ' }

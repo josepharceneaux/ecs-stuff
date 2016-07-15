@@ -34,6 +34,10 @@ class TestATSCandidates(object):
         GET /v1/ats-candidates/:candidate_id
 
         Create a candidate entry and validate that all table entries are correctly made.
+
+        :param str access_token_first: authentication token
+        :param dict account_post_data: values for creating an ATS account
+        :param dict candidate_post_data: values for creating an ATS account
         """
         account_id = create_and_validate_account(access_token_first, account_post_data)
         create_and_validate_candidate(access_token_first, account_id, candidate_post_data)
@@ -45,6 +49,10 @@ class TestATSCandidates(object):
         DELETE /v1/ats-candidates/:account_id/:candidate_id
 
         Create an account, insert a candidate, then delete it and verify that it's gone.
+
+        :param str access_token_first: authentication token
+        :param dict account_post_data: values for creating an ATS account
+        :param dict candidate_post_data: values for creating an ATS account
         """
         account_id = create_and_validate_account(access_token_first, account_post_data)
         candidate_id = create_and_validate_candidate(access_token_first, account_id, candidate_post_data)
@@ -57,6 +65,10 @@ class TestATSCandidates(object):
         POST /v1/ats-candidates/:account_id
         POST /v1/ats-candidates/link/:candidate_id/:ats_candidate_id
         GET /v1/ats-candidates/:account_id/:candidate_id
+
+        :param str access_token_first: authentication token
+        :param dict account_post_data: values for creating an ATS account
+        :param dict candidate_post_data: values for creating an ATS account
         """
         link_candidates(access_token_first, account_post_data, candidate_post_data)
 
@@ -65,6 +77,10 @@ class TestATSCandidates(object):
         POST /v1/ats-candidates/:account_id
         DELETE /v1/ats-candidates/link/:candidate_id/:ats_candidate_id
         GET /v1/ats-candidates/:account_id/:candidate_id
+
+        :param str access_token_first: authentication token
+        :param dict account_post_data: values for creating an ATS account
+        :param dict candidate_post_data: values for creating an ATS account
         """
         account_id, gt_candidate_id, ats_candidate_id = link_candidates(access_token_first, account_post_data, candidate_post_data)
         response = send_request('delete', ATSServiceApiUrl.CANDIDATE_LINK % (gt_candidate_id, ats_candidate_id), access_token_first)
@@ -74,7 +90,27 @@ class TestATSCandidates(object):
         values = json.loads(response.text)
         assert values['gt_candidate_id'] == None
 
-    def test_update_ats_candidate(self, access_token_first, account_post_data):
+    def test_update_ats_candidate(self, access_token_first, account_post_data, candidate_post_data):
         """
+        POST /v1/ats-candidates/:account_id
+        PUT /v1/ats-candidates/:account_id/:candidate_id
+        GET /v1/ats-candidates/:account_id/:candidate_id
+
+        Test updating an existing candidate's profile.
+
+        :param str access_token_first: authentication token
+        :param dict account_post_data: values for creating an ATS account
+        :param dict candidate_post_data: values for creating an ATS account
         """
-        pass
+        account_id = create_and_validate_account(access_token_first, account_post_data)
+        candidate_id = create_and_validate_candidate(access_token_first, account_id, candidate_post_data)
+        response = send_request('get', ATSServiceApiUrl.CANDIDATE % (account_id, candidate_id), access_token_first, {}, verify=False)
+        assert response.status_code == codes.OK
+        values = json.loads(response.text)
+        new_value = '{ "some_other" : "json" }'
+        values['profile_json'] = new_value
+        response = send_request('put', ATSServiceApiUrl.CANDIDATE % (account_id, candidate_id), access_token_first, values)
+        assert response.status_code == codes.CREATED
+        response = send_request('get', ATSServiceApiUrl.CANDIDATE % (account_id, candidate_id), access_token_first, {}, verify=False)
+        values = json.loads(response.text)
+        assert values['profile_json'] == new_value

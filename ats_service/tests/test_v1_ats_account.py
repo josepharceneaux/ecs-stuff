@@ -26,6 +26,10 @@ class TestATSAccounts(object):
     def test_post_account_without_auth(self, account_post_data):
         """
         POST /v1/ats-accounts
+
+        Test authentication failure.
+        
+        :param dict account_post_data: values for creating an ATS account
         """
         response = send_request('post', ATSServiceApiUrl.ACCOUNTS, 'bad_bad_token', account_post_data)
         assert response.status_code == codes.UNAUTHORIZED
@@ -33,6 +37,11 @@ class TestATSAccounts(object):
     def test_post_account_with_missing_fields(self, account_post_data, access_token_first):
         """
         POST /v1/ats-accounts
+
+        Test creating account with missing data.
+        
+        :param str access_token_first: authentication token
+        :param dict account_post_data: values for creating an ATS account
         """
         for field in ATS_ACCOUNT_FIELDS:
             data = account_post_data.copy()
@@ -41,6 +50,10 @@ class TestATSAccounts(object):
     def test_get_nonexistant_account(self, access_token_first):
         """
         GET /v1/ats-accounts
+
+        Test error from retrieving non-existant account.
+        
+        :param str access_token_first: authentication token
         """
         verify_nonexistant_account(access_token_first, 12)
 
@@ -51,6 +64,9 @@ class TestATSAccounts(object):
         GET  /v1/ats Test getting the ATS entry created by adding the account
 
         Create an account then test that all table entries have been correctly added.
+        
+        :param str access_token_first: authentication token
+        :param dict account_post_data: values for creating an ATS account
         """
         create_and_validate_account(access_token_first, account_post_data)
 
@@ -58,6 +74,11 @@ class TestATSAccounts(object):
         """
         POST /v1/ats-accounts Test creating an account
         DELETE /v1/ats-accounts/:account_id
+
+        Verify deletion of account.
+        
+        :param str access_token_first: authentication token
+        :param dict account_post_data: values for creating an ATS account
         """
         account_id = create_and_validate_account(access_token_first, account_post_data)
         response = send_request('delete', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first)
@@ -71,6 +92,11 @@ class TestATSAccounts(object):
         POST /v1/ats-accounts Test creating an account
         PUT /v1/ats-accounts/:account_id Test updating an account
         GET /v1/ats-accounts/:account_id Test fetching an account
+
+        Update and verify new data of account.
+
+        :param str access_token_first: authentication token
+        :param dict account_post_data: values for creating an ATS account
         """
         account_id = create_and_validate_account(access_token_first, account_post_data)
         key = 'ats_homepage'
