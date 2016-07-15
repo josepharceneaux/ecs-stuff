@@ -59,13 +59,6 @@ def test_user_scoped_roles_put(access_token_first, user_first, user_second):
 
 def test_user_groups_get(access_token_first, user_first, user_second, first_group, second_group):
 
-    # Logged-in user getting all users of a user_group
-    response, status_code = user_groups(access_token_first, first_group.id)
-    assert status_code == 401
-
-    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
-    db.session.commit()
-
     # Logged-in user getting all users of a non-existing user_group
     response, status_code = user_groups(access_token_first, first_group.id + 1000)
     assert status_code == 404
@@ -133,13 +126,6 @@ def test_user_groups_post(access_token_first, user_first, user_second, first_gro
 
 def test_domain_groups_api_get(access_token_first, first_group, user_first, user_second):
 
-    # Logged in user trying to get groups of a given domain
-    response, status_code = domain_groups(access_token_first, user_first.domain_id)
-    assert status_code == 401
-
-    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
-    db.session.commit()
-
     # Logged in user trying to get groups of a non-existing domain
     response, status_code = domain_groups(access_token_first, user_first.domain_id + 1000)
     assert status_code == 404
@@ -151,6 +137,7 @@ def test_domain_groups_api_get(access_token_first, first_group, user_first, user
     # Logged in user trying to get groups of a domain
     response, status_code = domain_groups(access_token_first, user_first.domain_id)
     assert status_code == 200
+
     assert len(response['user_groups']) == 1
     assert response['user_groups'][0].get('id') == first_group.id
 
