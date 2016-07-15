@@ -7,7 +7,7 @@ from candidate_service.common.tests.conftest import *
 import pycountry
 
 # Helper functions
-from helpers import AddUserRoles, get_country_code_from_name
+from helpers import get_country_code_from_name
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 
@@ -25,7 +25,6 @@ class TestCreateCandidateEducation(object):
         Expect: 201
         """
         # Create candidate + education
-        AddUserRoles.add_and_get(user_first)
         data = GenerateCandidateData.educations([talent_pool.id])
         country_code = data['candidates'][0]['educations'][0]['country_code']
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
@@ -44,8 +43,6 @@ class TestCreateCandidateEducation(object):
         Test:  Create candidate education with some or all empty values and some with whitespaces
         Expect:  201; all-empty data should not be inserted into db & whitespaces must be stripped
         """
-        AddUserRoles.add_and_get(user_first)
-
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'educations': [
                 {'school_name': ' ', 'school_type': ' ', 'city': None, 'subdivision_code': ''}
@@ -81,7 +78,6 @@ class TestCreateCandidateEducation(object):
         """
         Test:  Start date must be a valid date and must not be later than end date of education
         """
-        AddUserRoles.add(user_first)
 
         end_year = 1990
         data = {'candidates': [
@@ -106,7 +102,6 @@ class TestCreateCandidateEducation(object):
         Expect: 201
         """
         # Create Candidate without degrees
-        AddUserRoles.add_and_get(user=user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -135,7 +130,6 @@ class TestUpdateCandidateEducation(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -176,7 +170,6 @@ class TestUpdateCandidateEducation(object):
         Test:   Update education information of a different Candidate
         Expect: 403
         """
-        AddUserRoles.all_roles(user_first)
 
         # Create Candidate
         data_1 = generate_single_candidate_data([talent_pool.id])
@@ -206,7 +199,6 @@ class TestUpdateCandidateEducation(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -242,7 +234,6 @@ class TestUpdateCandidateEducation(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -279,7 +270,6 @@ class TestUpdateCandidateEducation(object):
         """
         Test: Update candidate's education start year to a year that is greater than its end year
         """
-        AddUserRoles.add_get_edit(user_first)
 
         # Create candidate + education
         data = GenerateCandidateData.educations([talent_pool.id])
@@ -309,7 +299,6 @@ class TestUpdateCandidateEducation(object):
         """
         Test: Update candidate's education end year to a year that is less than its start year
         """
-        AddUserRoles.add_get_edit(user_first)
 
         # Create candidate + education
         data = GenerateCandidateData.educations([talent_pool.id])
@@ -342,8 +331,6 @@ class TestCreateCandidateEducationDegree(object):
         Test:  Create candidate education degree with some whitespaces and empty values
         Expect: 201
         """
-        AddUserRoles.add_and_get(user_first)
-
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'educations': [
                 {'school_name': ' ', 'school_type': ' ', 'city': None, 'subdivision_code': ''}
@@ -371,7 +358,6 @@ class TestCreateCandidateEducationDegree(object):
           then nothing gets added to db.
         Expect: 201, but education degree should not be added to db
         """
-        AddUserRoles.add_and_get(user_first)
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'educations': [
                 {'school_name': 'uc berkeley', 'city': 'berkeley', 'degrees': [
@@ -423,8 +409,6 @@ class TestDeleteCandidateEducation(object):
         Test:   Attempt to delete the education of a Candidate that belongs to a user in a different domain
         Expect: 204, deletion must be prevented
         """
-        AddUserRoles.all_roles(user_first)
-        AddUserRoles.all_roles(user_second)
 
         # Create candidate_1 & candidate_2 with user_first & user_first_2
         data = generate_single_candidate_data([talent_pool.id])
@@ -445,7 +429,6 @@ class TestDeleteCandidateEducation(object):
         Expect: 403
         """
         # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
@@ -470,7 +453,6 @@ class TestDeleteCandidateEducation(object):
         Expect: 204, Candidate should not have any educations left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -491,7 +473,6 @@ class TestDeleteCandidateEducation(object):
         Expect: 204, Candidate's education must be less 1
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -550,8 +531,6 @@ class TestDeleteCandidateEducationDegree(object):
         Test:   Attempt to delete the education-degrees of a Candidate that belongs to user from a diff domain
         Expect: 403, deletion must be prevented
         """
-        AddUserRoles.add_and_get(user_first)
-        AddUserRoles.delete(user_second)
 
         # Create candidate_1 & candidate_2 with user_first & user_first_2
         data = generate_single_candidate_data([talent_pool.id])
@@ -575,7 +554,6 @@ class TestDeleteCandidateEducationDegree(object):
         Expect: 403
         """
         # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
@@ -600,7 +578,6 @@ class TestDeleteCandidateEducationDegree(object):
         Expect: 204; Candidate should not have any degrees left; Candidate's Education should not be removed
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -630,7 +607,6 @@ class TestDeleteCandidateEducationDegree(object):
         Expect: 204, Candidate's education must be less 1
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -690,8 +666,6 @@ class TestDeleteCandidateEducationDegreeBullet(object):
         Test:   Attempt to delete degree-bullets of a Candidate that belongs to a user from a diff domain
         Expect: 204
         """
-        AddUserRoles.add_and_get(user_first)
-        AddUserRoles.delete(user_second)
 
         # Create candidate_1 & candidate_2 with user_first & user_first_2
         data = generate_single_candidate_data([talent_pool.id])
@@ -716,7 +690,6 @@ class TestDeleteCandidateEducationDegreeBullet(object):
         Expect: 403
         """
         # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
@@ -745,7 +718,6 @@ class TestDeleteCandidateEducationDegreeBullet(object):
         Education and degrees should not be removed
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -779,7 +751,6 @@ class TestDeleteCandidateEducationDegreeBullet(object):
                 should not be removed
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 

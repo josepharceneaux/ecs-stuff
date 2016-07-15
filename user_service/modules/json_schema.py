@@ -100,3 +100,7 @@ aoi_schema = {
         "areas_of_interest"
     ]
 }
+
+"""
+This script adds the simple hash column which is used by the emailed resume to candidate code.
+"""

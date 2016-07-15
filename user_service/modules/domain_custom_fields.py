@@ -1,4 +1,5 @@
 # Models
+from flask import request
 from user_service.common.models.misc import CustomField
 from user_service.common.models.user import User
 
@@ -19,7 +20,7 @@ def get_custom_field_if_validated(custom_field_id, user):
         raise NotFoundError("Custom field ID ({}) not recognized.".format(custom_field_id))
 
     # Custom field must belong to user's domain
-    if custom_field.domain_id != user.domain_id:
+    if request.user.role.name != 'TALENT_ADMIN' and custom_field.domain_id != user.domain_id:
         raise ForbiddenError("Not authorized")
 
     return custom_field

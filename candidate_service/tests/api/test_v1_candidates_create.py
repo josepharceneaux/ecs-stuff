@@ -10,7 +10,7 @@ import time
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles, get_country_code_from_name, order_military_services, order_work_experiences
+from helpers import get_country_code_from_name, order_military_services, order_work_experiences
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.utils.validators import get_phone_number_extension_if_exists
@@ -53,7 +53,6 @@ class TestCreateCandidateSuccessfully(object):
         """
         Test:  Create candidate with all fields populated and assert on every data retrieved
         """
-        AddUserRoles.add_and_get(user_first)
 
         # Generate candidate's data
         data = generate_single_candidate_data([talent_pool.id], areas_of_interest=domain_aois,
@@ -290,8 +289,6 @@ class TestCreateCandidateSuccessfully(object):
         """
         Test: Create a new candidate with only talent pool ID + candidate's names provided
         """
-        AddUserRoles.add(user_first)
-
         # Create Candidate
         data = {'candidates': [
             {
@@ -308,9 +305,6 @@ class TestCreateCandidateSuccessfully(object):
         """
         Test: Create a new candidate with talent pool ID, candidate's names and resume url
         """
-        AddUserRoles.add(user_first)
-
-        # Create Candidate
         data = {'candidates': [
             {
                 'first_name': fake.first_name(), 'last_name': fake.last_name(),
@@ -337,9 +331,9 @@ class TestCreateInvalidCandidates(object):
         Test: Attempt to create a candidate using an expired bearer token
         Expect: 401; failed authentication
         """
-        AddUserRoles.add(user_first)
 
         # Set access_token_first's expiration to 10 seconds ago
+        db.session.commit()
         token = Token.get_token(access_token_first)
         token.expires = datetime.fromtimestamp(time.time() - 10)
         db.session.commit()
@@ -356,7 +350,6 @@ class TestCreateInvalidCandidates(object):
         Test: Attempt to create a candidate using an invalid access token
         Expect: 401; failed authentication
         """
-        AddUserRoles.add(user_first)
 
         # Create candidate with invalid access token
         data = {}  # since an error should be raised early on, the content of data is irrelevant
@@ -370,7 +363,6 @@ class TestCreateInvalidCandidates(object):
         Test: Attempt to create a candidate without providing any content in data
         Expect: 400
         """
-        AddUserRoles.add(user_first)
 
         # Create candidate with empty data
         data = {}
@@ -389,7 +381,6 @@ class TestCreateInvalidCandidates(object):
         Test: Attempt to create a candidate without providing talent pool IDs
         Expect: 400
         """
-        AddUserRoles.add(user_first)
 
         # Create Candidate without providing talent pool ID
         data = {'candidates': [{'first_name': fake.first_name()}]}
@@ -403,7 +394,6 @@ class TestCreateInvalidCandidates(object):
         Test: Attempt to Create candidate by providing a string value for source ID
         Expect: 400
         """
-        AddUserRoles.add(user_first)
 
         # Create candidate using non integer data type for source ID
         incorrect_data_types = ['2', 'string', [], {}, 5.3]
@@ -421,7 +411,6 @@ class TestCreateInvalidCandidates(object):
         Test: Attempt to create a candidate by using incorrect data type for candidate's names
         Expect: 400
         """
-        AddUserRoles.add(user_first)
 
         # Create candidate using a non string value for candidate's names
         incorrect_data_types = [2, False, [], {}, 4.3]
@@ -439,7 +428,6 @@ class TestCreateInvalidCandidates(object):
         Test:   Attempt to recreate an existing Candidate
         Expect: 400
         """
-        AddUserRoles.add(user_first)
 
         # Create same Candidate twice
         data = {'candidates': [{'emails': [{'address': fake.safe_email()}],
@@ -457,9 +445,6 @@ class TestCreateInvalidCandidates(object):
         """
         Test:   Create a Candidate without talent pool ID
         """
-        AddUserRoles.add(user_first)
-
-        # Data only has candidate's first name
         data = {'first_name': fake.first_name()}
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
         print response_info(create_resp)
@@ -470,7 +455,6 @@ class TestCreateInvalidCandidates(object):
         """
         Test:   Attempt to update a Candidate via post()
         """
-        AddUserRoles.add(user_first)
 
         # Send Candidate object with candidate_id to post
         # candidate's ID is arbitrary since the API should raise an error early on
@@ -485,8 +469,6 @@ class TestCreateInvalidCandidates(object):
         """
         Test:   Attempt to create a Candidate with bad fields/keys
         """
-        AddUserRoles.add(user_first)
-
         # Create Candidate with invalid keys/fields
         data = {'candidates': [{'emails': [{'address': 'someone@nice.io'}], 'invalid_key': 'whatever',
                                 'talent_pool_ids': {'add': [talent_pool.id]}}]}
@@ -500,7 +482,6 @@ class TestCreateInvalidCandidates(object):
         Test: Attempt to create few candidates, one of which will have bad data
         Expect: 400, no record should be added to the db
         """
-        AddUserRoles.add(user_first)
 
         # Candidate data with one erroneous email address
         email_1, email_2 = fake.safe_email(), fake.safe_email()
@@ -524,8 +505,6 @@ class TestCreateHiddenCandidate(object):
         Expect: 201, candidate should no longer be web hidden.
                 No duplicate records should be in the database
         """
-        AddUserRoles.all_roles(user_first)
-
         # Create candidate
         data = CommonData.data(talent_pool)
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
@@ -562,7 +541,6 @@ class TestCreateHiddenCandidate(object):
               user from the same domain
         Expect: 201, candidate should no longer be web-hidden
         """
-        AddUserRoles.all_roles(user_first)
 
         # Create candidate
         data = CommonData.data(talent_pool)
@@ -582,13 +560,21 @@ class TestCreateHiddenCandidate(object):
         candidate = Candidate.get_by_id(candidate_id)
         candidate_emails_count = len(candidate.emails)
         assert hide_resp.status_code == requests.codes.OK
+
+        db.session.refresh(candidate)
+        db.session.commit()
+
         assert candidate.is_web_hidden
 
         # Create previously hidden candidate with a different user from the same domain
-        AddUserRoles.add(user_same_domain)
+
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
         print response_info(create_resp)
         assert create_resp.status_code == requests.codes.CREATED
+
+        db.session.refresh(candidate)
+        db.session.commit()
+
         assert not candidate.is_web_hidden
         assert CandidateEmail.get_by_address(first_can_email['address'])[0].id == first_can_email['id']
         assert len(candidate.emails) == candidate_emails_count
@@ -600,7 +586,6 @@ class TestCreateHiddenCandidate(object):
         Expect: 200; candidate's full name must be updated
         """
         # Create candidate
-        AddUserRoles.all_roles(user_first)
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, CommonData.data(talent_pool))
         candidate_id = create_resp.json()['candidates'][0]['id']
         db.session.commit()
@@ -644,8 +629,6 @@ class TestCreateHiddenCandidate(object):
         3. Assert the other candidate is not web-hidden
         """
         # Create candidates
-        AddUserRoles.all_roles(user_first)
-        AddUserRoles.all_roles(user_second)
         data_1 = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]},
                                   'emails': [{'address': 'amir@example.com'}]}]}
         data_2 = {'candidates': [{'talent_pool_ids': {'add': [talent_pool_second.id]},
@@ -679,7 +662,6 @@ class TestCreateHiddenCandidate(object):
     def test_recreate_hidden_candidate_using_candidate_with_multiple_emails(self, access_token_first,
                                                                             user_first, talent_pool):
         # Create candidate
-        AddUserRoles.all_roles(user_first)
 
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
@@ -712,7 +694,6 @@ class TestCreateCandidateAddress(object):
         Expect: 201
         """
         # Create Candidate with address
-        AddUserRoles.add_and_get(user_first)
         data = GenerateCandidateData.addresses([talent_pool.id])
         country_code = data['candidates'][0]['addresses'][0]['country_code']
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
@@ -732,7 +713,6 @@ class TestCreateCandidateAddress(object):
         Expect: 201, but zip_code must be Null
         """
         # Create Candidate
-        AddUserRoles.add_and_get(user=user_first)
         data = generate_single_candidate_data(talent_pool_ids=[talent_pool.id])
         data['candidates'][0]['addresses'][0]['zip_code'] = 'ABCDEFG'
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
@@ -750,7 +730,6 @@ class TestCreateCandidateAddress(object):
         Test:  Create candidate address with whitespaces, None values, etc.
         Expect: 201; server should clean up data before adding to db
         """
-        AddUserRoles.add_and_get(user_first)
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'addresses': [
                 {'address_line_1': ' 255 west santa clara st.   ', 'address_line_2': '  ', 'city': ' San Jose '},
@@ -779,7 +758,6 @@ class TestCreateAOI(object):
         Test:   Create CandidateAreaOfInterest
         Expect: 201
         """
-        AddUserRoles.add_and_get(user=user_first)
 
         # Create Candidate + CandidateAreaOfInterest
         data = generate_single_candidate_data(talent_pool_ids=[talent_pool.id], areas_of_interest=domain_aois)
@@ -802,7 +780,6 @@ class TestCreateAOI(object):
         Test: Attempt to create candidate's area of interest outside of user's domain
         Expect: 403
         """
-        AddUserRoles.add(user=user_second)
         data = generate_single_candidate_data([talent_pool.id], domain_aois)
         create_resp = send_request('post', CANDIDATES_URL, access_token_second, data)
         print response_info(create_resp)
@@ -816,7 +793,6 @@ class TestCreateCandidateCustomField(object):
         Test:   Create CandidateCustomField
         Expect: 201
         """
-        AddUserRoles.add_and_get(user=user_first)
 
         # Create Candidate + CandidateCustomField
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
@@ -839,7 +815,6 @@ class TestCreateCandidateCustomField(object):
         Test: Attempt to create candidate's custom fields outside of user's domain
         Expect: 403
         """
-        AddUserRoles.add(user=user_second)
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
         create_resp = send_request('post', CANDIDATES_URL, access_token_second, data)
         print response_info(create_resp)
@@ -853,7 +828,6 @@ class TestCreateWorkPreference(object):
         Test:   Create CandidateWorkPreference for Candidate
         Expect: 201
         """
-        AddUserRoles.add_and_get(user=user_first)
 
         # Create Candidate
         data = generate_single_candidate_data([talent_pool.id])
@@ -886,7 +860,6 @@ class TestCreateMilitaryService(object):
         Expect: 201
         """
         # Create candidate +  military service
-        AddUserRoles.add_and_get(user_first)
         data = GenerateCandidateData.military_services([talent_pool.id])
         country_code = data['candidates'][0]['military_services'][0]['country_code']
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
@@ -907,7 +880,6 @@ class TestCreateMilitaryService(object):
         Expect: 201
         """
         # Create Candidate
-        AddUserRoles.add_and_get(user=user_first)
         data = candidate_military_service(talent_pool)
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
         print response_info(create_resp)
@@ -930,7 +902,6 @@ class TestCreateMilitaryService(object):
         Test:  Add candidate military service with all-empty-values and another one with some empty values
         Expect:  201; but military service should not be added to db if all its data is empty
         """
-        AddUserRoles.add_and_get(user_first)
         # Data with all empty records
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'military_services': [
@@ -975,7 +946,6 @@ class TestCreatePreferredLocation(object):
         Expect: 201
         """
         # Create candidate +  preferred locations
-        AddUserRoles.add_and_get(user_first)
         data = GenerateCandidateData.preferred_locations([talent_pool.id])
         country_code = data['candidates'][0]['preferred_locations'][0]['country_code']
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
@@ -996,7 +966,6 @@ class TestCreatePreferredLocation(object):
         Expect: 201
         """
         # Create Candidate
-        AddUserRoles.add_and_get(user=user_first)
         data = candidate_preferred_locations(talent_pool)
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
         print response_info(create_resp)
@@ -1020,7 +989,6 @@ class TestCreatePreferredLocation(object):
         Test:  Add candidate preferred location with all-empty-values and another one with some empty values
         Expect: 201; empty values should not be inserted into db
         """
-        AddUserRoles.add_and_get(user_first)
         # Data with None, missing, empty string, and whitespace values
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'preferred_locations': [
@@ -1067,7 +1035,6 @@ class TestCreateSkills(object):
         Expect: 201
         """
         # Create Candidate
-        AddUserRoles.add_and_get(user_first)
         data = candidate_skills(talent_pool)
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
         print response_info(create_resp)
@@ -1092,7 +1059,6 @@ class TestCreateSkills(object):
         Test:  Create CandidateSkill with poorly formatted values
         Expect: 201, server should clean up data automatically
         """
-        AddUserRoles.add_and_get(user_first)
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'skills': [
                 {'name': 'Payroll ', 'months_used': 80}, {'name': ' NoSQL', 'months_used': 060},
@@ -1125,7 +1091,6 @@ class TestCreateSkills(object):
         Test:  Add candidate skill with empty values
         Expect: 201; no empty values should be added to db
         """
-        AddUserRoles.add_and_get(user_first)
 
         # Data with no skill name, missing values, empty values, and whitespaced values
         data = {'candidates': [
@@ -1155,7 +1120,6 @@ class TestCreateSocialNetworks(object):
         Expect: 201
         """
         # Create Candidate
-        AddUserRoles.add_and_get(user_first)
         data = candidate_social_network(talent_pool)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -1178,7 +1142,6 @@ class TestCreateSocialNetworks(object):
         Test:  Add candidate social network with all-empty values and one with some empty values
         Expect:  400; social name & profile url are required properties
         """
-        AddUserRoles.add_and_get(user_first)
 
         # Data with empty values, missing values, whitespaced values, and None values
         data = {'candidates': [{

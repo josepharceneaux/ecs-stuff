@@ -10,9 +10,9 @@ from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.common.models.smartlist import Smartlist
-from candidate_pool_service.common.models.user import DomainRole
+from candidate_pool_service.common.models.user import Permission
 from candidate_pool_service.common.models.talent_pools_pipelines import *
-from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_roles
+from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from candidate_pool_service.common.utils.api_utils import ApiResponse, generate_pagination_headers
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
     get_pipeline_growth, TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, engagement_score_of_pipeline,
@@ -26,7 +26,7 @@ class TalentPipelineApi(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_TALENT_PIPELINES)
     def get(self, **kwargs):
         """
         GET /talent-pipelines/<id>      Fetch talent-pipeline object
@@ -48,11 +48,10 @@ class TalentPipelineApi(Resource):
             talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
 
             if not talent_pipeline:
-                raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
-                                                  talent_pipeline_id)
+                raise NotFoundError("Talent pipeline with id {} doesn't exist in database".format(talent_pipeline_id))
 
-            if talent_pipeline.user.domain_id != request.user.domain_id:
-                raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
+            if request.user.role.name != 'TALENT_ADMIN' and talent_pipeline.user.domain_id != request.user.domain_id:
+                raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
             return {
                 'talent_pipeline': talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
@@ -111,7 +110,7 @@ class TalentPipelineApi(Resource):
 
 
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_PIPELINES)
+    @require_all_permissions(Permission.PermissionNames.CAN_DELETE_TALENT_PIPELINES)
     def delete(self, **kwargs):
         """
         DELETE /talent-pipelines/<id>  Remove talent-pipeline from Database
@@ -124,15 +123,17 @@ class TalentPipelineApi(Resource):
         talent_pipeline_id = kwargs.get('id')
 
         if not talent_pipeline_id:
-            raise InvalidUsage(error_message="A valid talent_pipeline_id should be provided")
+            raise InvalidUsage("A valid talent_pipeline_id should be provided")
 
         talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
         if not talent_pipeline:
-            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
-                                              talent_pipeline_id)
+            raise NotFoundError("Talent pipeline with id {} doesn't exist in database".format(talent_pipeline_id))
 
-        if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
+        if request.user.role.name == 'USER' and talent_pipeline.user.id != request.user.id:
+            raise ForbiddenError("Logged-in user doesn't have appropriate permissions to delete this talent-pipeline")
+
+        if request.user.role.name != 'TALENT_ADMIN' and talent_pipeline.user.domain_id != request.user.domain_id:
+            raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
         talent_pipeline.delete()
 
@@ -140,7 +141,7 @@ class TalentPipelineApi(Resource):
             'talent_pipeline': {'id': talent_pipeline_id}
         }
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_TALENT_PIPELINES)
+    @require_all_permissions(Permission.PermissionNames.CAN_ADD_TALENT_PIPELINES)
     def post(self, **kwargs):
         """
         POST /talent-pipelines  Add new talent-pipelines to Database
@@ -156,14 +157,14 @@ class TalentPipelineApi(Resource):
 
         posted_data = request.get_json(silent=True)
         if not posted_data or 'talent_pipelines' not in posted_data:
-            raise InvalidUsage(error_message="Request body is empty or not provided")
+            raise InvalidUsage("Request body is empty or not provided")
 
         # Save user object(s)
         talent_pipelines = posted_data['talent_pipelines']
 
         # TalentPipeline object(s) must be in a list
         if not isinstance(talent_pipelines, list):
-            raise InvalidUsage(error_message="Request body is not properly formatted")
+            raise InvalidUsage("Request body is not properly formatted")
 
         talent_pipeline_objects = []
         for talent_pipeline in talent_pipelines:
@@ -176,44 +177,40 @@ class TalentPipelineApi(Resource):
             search_params = talent_pipeline.get('search_params', dict())
 
             if not name or not date_needed or not talent_pool_id:
-                raise InvalidUsage(error_message="A valid name, date_needed, talent_pool_id should be provided to "
-                                                 "create a new talent-pipeline")
+                raise InvalidUsage("A valid name, date_needed, talent_pool_id should be provided to "
+                                   "create a new talent-pipeline")
 
-            if TalentPipeline.query.join(TalentPipeline.user).filter(and_(TalentPipeline.name == name, User.
-                    domain_id == request.user.domain_id)).first():
-                raise InvalidUsage(error_message="Talent pipeline with name %s already exists in domain %s" %
-                                                 (name, request.user.domain_id))
+            if TalentPipeline.query.join(TalentPipeline.user).filter(and_(
+                            TalentPipeline.name == name, User.domain_id == request.user.domain_id)).first():
+                raise InvalidUsage("Talent pipeline with name {} already exists in domain {}".format(name, request.user.domain_id))
 
             try:
                 date_needed = parser.parse(date_needed)
             except Exception as e:
-                raise InvalidUsage(error_message="Date_needed is not valid as: %s" % e.message)
-
-            # if parser.parse(date_needed) < datetime.utcnow():
-            #     raise InvalidUsage(error_message="Date_needed %s cannot be before current date" % date_needed)
+                raise InvalidUsage("Date_needed is not valid as: {}".format(e.message))
 
             if not is_number(positions) or not int(positions) > 0:
-                raise InvalidUsage(error_message="Number of positions should be integer and greater than zero")
+                raise InvalidUsage("Number of positions should be integer and greater than zero")
 
             if not is_number(talent_pool_id):
-                raise InvalidUsage(error_message="talent_pool_id should be an integer")
+                raise InvalidUsage("talent_pool_id should be an integer")
 
             talent_pool_id = int(talent_pool_id)
             talent_pool = TalentPool.query.get(talent_pool_id)
             if not talent_pool:
-                raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
+                raise NotFoundError("Talent pool with id {} doesn't exist in database".format(talent_pool_id))
 
             if talent_pool.domain_id != request.user.domain_id:
-                raise ForbiddenError(error_message="Logged-in user and given talent-pool belong to different domain")
+                raise ForbiddenError("Logged-in user and given talent-pool belong to different domain")
 
             if search_params:
                 if not isinstance(search_params, dict):
-                    raise InvalidUsage(error_message="search_params is not provided in valid format")
+                    raise InvalidUsage("search_params is not provided in valid format")
 
                 # Put into params dict
                 for key in search_params:
                     if key not in TALENT_PIPELINE_SEARCH_PARAMS and not key.startswith('cf-'):
-                        raise NotFoundError(error_message="Key[%s] is invalid" % key)
+                        raise NotFoundError("Key[{}] is invalid".format(key))
 
             search_params = json.dumps(search_params) if search_params else None
 
@@ -230,7 +227,7 @@ class TalentPipelineApi(Resource):
             'talent_pipelines': [talent_pipeline_object.id for talent_pipeline_object in talent_pipeline_objects]
         }
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_TALENT_PIPELINES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_TALENT_PIPELINES)
     def put(self, **kwargs):
         """
         PUT /talent-pipelines/<id>  Edit existing talent-pipeline
@@ -245,19 +242,21 @@ class TalentPipelineApi(Resource):
         talent_pipeline_id = kwargs.get('id')
 
         if not talent_pipeline_id:
-            raise InvalidUsage(error_message="A valid talent_pipeline_id should be provided")
+            raise InvalidUsage("A valid talent_pipeline_id should be provided")
 
         talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
         if not talent_pipeline:
-            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
-                                              talent_pipeline_id)
+            raise NotFoundError("Talent pipeline with id {} doesn't exist in database".format(talent_pipeline_id))
 
-        if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
+        if request.user.role.name == 'USER' and talent_pipeline.user.id != request.user.id:
+            raise ForbiddenError("Logged-in user doesn't have appropriate permissions to edit this talent-pipeline")
+
+        if request.user.role.name != 'TALENT_ADMIN' and talent_pipeline.user.domain_id != request.user.domain_id:
+            raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
         posted_data = request.get_json(silent=True)
         if not posted_data or 'talent_pipeline' not in posted_data:
-            raise InvalidUsage(error_message="Request body is empty or not provided")
+            raise InvalidUsage("Request body is empty or not provided")
         posted_data = posted_data['talent_pipeline']
 
         name = posted_data.get('name', '')
@@ -270,24 +269,24 @@ class TalentPipelineApi(Resource):
         if name:
             if TalentPipeline.query.join(TalentPipeline.user).filter(
                     and_(TalentPipeline.name == name, User.domain_id == request.user.domain_id)).first():
-                raise InvalidUsage(error_message="Talent pipeline with name %s already exists in domain %s" %
-                                                 (name, request.user.domain_id))
+                raise InvalidUsage("Talent pipeline with name {} already exists in domain {}".format(
+                        name, request.user.domain_id))
             talent_pipeline.name = name
 
         if date_needed:
             try:
                 parser.parse(date_needed)
             except Exception as e:
-                raise InvalidUsage(error_message="Date_needed is not valid as: %s" % e.message)
+                raise InvalidUsage("Date_needed is not valid as: {}".format(e.message))
 
             if parser.parse(date_needed) < datetime.utcnow():
-                raise InvalidUsage(error_message="Date_needed %s cannot be before current date" % date_needed)
+                raise InvalidUsage("Date_needed {} cannot be before current date".format(date_needed))
 
             talent_pipeline.date_needed = date_needed
 
         if positions:
             if not is_number(positions) or not int(positions) > 0:
-                raise InvalidUsage(error_message="Number of positions should be integer and greater than zero")
+                raise InvalidUsage("Number of positions should be integer and greater than zero")
 
             talent_pipeline.positions = positions
 
@@ -297,26 +296,26 @@ class TalentPipelineApi(Resource):
         if talent_pool_id:
 
             if not is_number(talent_pool_id):
-                raise InvalidUsage(error_message="talent_pool_id should be an integer")
+                raise InvalidUsage("talent_pool_id should be an integer")
 
             talent_pool_id = int(talent_pool_id)
             talent_pool = TalentPool.query.get(talent_pool_id)
             if not talent_pool:
-                raise NotFoundError(error_message="Talent pool with id %s doesn't exist in database" % talent_pool_id)
+                raise NotFoundError("Talent pool with id {} doesn't exist in database".format(talent_pool_id))
 
             if talent_pool.domain_id != request.user.domain_id:
-                raise ForbiddenError(error_message="Logged-in user and given talent-pool belong to different domain")
+                raise ForbiddenError("Logged-in user and given talent-pool belong to different domain")
 
             talent_pipeline.talent_pool_id = talent_pool_id
 
         if search_params:
             if not isinstance(search_params, dict):
-                raise InvalidUsage(error_message="search_params is not provided in valid format")
+                raise InvalidUsage("search_params is not provided in valid format")
 
             # Put into params dict
             for key in search_params:
                 if key not in TALENT_PIPELINE_SEARCH_PARAMS and not key.startswith('cf-'):
-                    raise NotFoundError(error_message="Key[%s] is invalid" % key)
+                    raise NotFoundError("Key[{}] is invalid".format(key))
 
             talent_pipeline.search_params = json.dumps(search_params)
 
@@ -331,7 +330,7 @@ class TalentPipelineSmartListApi(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_SMART_LISTS)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_TALENT_PIPELINES)
     def get(self, **kwargs):
         """
         GET /talent-pipeline/<id>/smart_lists   Fetch all smartlists of a talent_pipeline
@@ -346,11 +345,10 @@ class TalentPipelineSmartListApi(Resource):
         talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
 
         if not talent_pipeline:
-            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
-                                              talent_pipeline_id)
+            raise NotFoundError("Talent pipeline with id {} doesn't exist in database".format(talent_pipeline_id))
 
-        if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
+        if request.user.role.name != 'TALENT_ADMIN' and talent_pipeline.user.domain_id != request.user.domain_id:
+            raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
         page = request.args.get('page', DEFAULT_PAGE)
         per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
@@ -375,7 +373,7 @@ class TalentPipelineSmartListApi(Resource):
 
         return ApiResponse(response=response, headers=headers, status=200)
 
-    @require_all_roles(DomainRole.Roles.CAN_ADD_TALENT_PIPELINE_SMART_LISTS)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_TALENT_PIPELINES)
     def post(self, **kwargs):
         """
         POST /talent-pipeline/<id>/smartlists   Add smartlists to a talent_pipeline
@@ -392,43 +390,45 @@ class TalentPipelineSmartListApi(Resource):
         talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
 
         if not talent_pipeline:
-            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
-                                              talent_pipeline_id)
+            raise NotFoundError("Talent pipeline with id {} doesn't exist in database".format(talent_pipeline_id))
 
         posted_data = request.get_json(silent=True)
         if not posted_data or 'smartlist_ids' not in posted_data:
-            raise InvalidUsage(error_message="Request body is empty or not provided")
+            raise InvalidUsage("Request body is empty or not provided")
 
         # Save user object(s)
         smartlist_ids = posted_data['smartlist_ids']
 
         # Talent_pool object(s) must be in a list
         if not isinstance(smartlist_ids, list):
-            raise InvalidUsage(error_message="Request body is not properly formatted")
+            raise InvalidUsage("Request body is not properly formatted")
 
-        if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
+        if request.user.role.name == 'USER' and talent_pipeline.user.id != request.user.id:
+            raise ForbiddenError("Logged-in user doesn't have appropriate permissions to edit this talent-pipeline")
+
+        if request.user.role.name != 'TALENT_ADMIN' and talent_pipeline.user.domain_id != request.user.domain_id:
+            raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
         for smartlist_id in smartlist_ids:
 
             if not is_number(smartlist_id):
-                raise InvalidUsage('Smartlist id %s should be an integer' % smartlist_id)
+                raise InvalidUsage('Smartlist id %s should be an integer'.format(smartlist_id))
             else:
                 smartlist_id = int(smartlist_id)
 
             smartlist = Smartlist.query.get(smartlist_id)
 
             if smartlist.user.domain_id != talent_pipeline.user.domain_id:
-                raise ForbiddenError(error_message="Smartlist %s and Talent pipeline %s belong to different domain"
-                                                   % (smartlist_id, talent_pipeline_id))
+                raise ForbiddenError("Smartlist {} and Talent pipeline {} belong to different domain".format(
+                        smartlist_id, talent_pipeline_id))
 
             if smartlist.talent_pipeline_id == talent_pipeline_id:
-                raise InvalidUsage(error_message="Smartlist %s already belongs to Talent Pipeline %s"
-                                                 % (smartlist.name, talent_pipeline_id))
+                raise InvalidUsage("Smartlist {} already belongs to Talent Pipeline {}".format(
+                        smartlist.name, talent_pipeline_id))
 
             if smartlist.talent_pipeline_id:
-                raise ForbiddenError(error_message="smartlist %s is already assigned to talent_pipeline %s" %
-                                                   (smartlist.name, smartlist.talent_pipeline_id))
+                raise ForbiddenError("smartlist {} is already assigned to talent_pipeline {}".format(
+                        smartlist.name, smartlist.talent_pipeline_id))
 
             smartlist.talent_pipeline_id = talent_pipeline_id
 
@@ -438,7 +438,7 @@ class TalentPipelineSmartListApi(Resource):
             'smartlist_ids': [int(smartlist_id) for smartlist_id in smartlist_ids]
         }
 
-    @require_all_roles(DomainRole.Roles.CAN_DELETE_TALENT_PIPELINE_SMART_LISTS)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_TALENT_PIPELINES)
     def delete(self, **kwargs):
         """
         DELETE /talent-pipeline/<id>/smartlists   Remove smartlists from a talent_pipeline
@@ -455,35 +455,37 @@ class TalentPipelineSmartListApi(Resource):
         talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
 
         if not talent_pipeline:
-            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
-                                              talent_pipeline_id)
+            raise NotFoundError("Talent pipeline with id {} doesn't exist in database".format(talent_pipeline_id))
 
         posted_data = request.get_json(silent=True)
         if not posted_data or 'smartlist_ids' not in posted_data:
-            raise InvalidUsage(error_message="Request body is empty or not provided")
+            raise InvalidUsage("Request body is empty or not provided")
 
         # Save user object(s)
         smartlist_ids = posted_data['smartlist_ids']
 
         # Talent_pool object(s) must be in a list
         if not isinstance(smartlist_ids, list):
-            raise InvalidUsage(error_message="Request body is not properly formatted")
+            raise InvalidUsage("Request body is not properly formatted")
 
-        if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
+        if request.user.role.name == 'USER' and talent_pipeline.user.id != request.user.id:
+            raise ForbiddenError("Logged-in user doesn't have appropriate permissions to edit this talent-pipeline")
+
+        if request.user.role.name != 'TALENT_ADMIN' and talent_pipeline.user.domain_id != request.user.domain_id:
+            raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
         for smartlist_id in smartlist_ids:
 
             if not is_number(smartlist_id):
-                raise InvalidUsage('Smart List id %s should be an integer' % smartlist_id)
+                raise InvalidUsage('Smart List id {} should be an integer'.format(smartlist_id))
             else:
                 smartlist_id = int(smartlist_id)
 
             smartlist = Smartlist.query.get(smartlist_id)
 
             if smartlist.talent_pipeline_id != talent_pipeline_id:
-                raise ForbiddenError(error_message="smartlist %s doesn't belong to talent_pipeline %s" %
-                                                   (smartlist.name, talent_pipeline_id))
+                raise ForbiddenError("smartlist {} doesn't belong to talent_pipeline {}".format(
+                        smartlist.name, talent_pipeline_id))
 
             smartlist.talent_pipeline_id = None
 
@@ -498,7 +500,7 @@ class TalentPipelineCandidates(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         GET /talent-pipeline/<id>/candidates  Fetch all candidates of a talent-pipeline
@@ -513,11 +515,10 @@ class TalentPipelineCandidates(Resource):
         talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
 
         if not talent_pipeline:
-            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
-                                              talent_pipeline_id)
+            raise NotFoundError("Talent pipeline with id {} doesn't exist in database".format(talent_pipeline_id))
 
-        if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
+        if request.user.role.name != 'TALENT_ADMIN' and talent_pipeline.user.domain_id != request.user.domain_id:
+            raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
         request_params = dict()
         request_params['fields'] = request.args.get('fields', '')
@@ -532,7 +533,7 @@ class TalentPipelineMostEngagedCandidates(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         GET /talent-pipelines/<id>/candidates/engagement?limit=5  Fetch candidates of a talent-pipeline
@@ -550,11 +551,10 @@ class TalentPipelineMostEngagedCandidates(Resource):
         talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
 
         if not talent_pipeline:
-            raise NotFoundError(error_message="Talent pipeline with id %s doesn't exist in database" %
-                                              talent_pipeline_id)
+            raise NotFoundError("Talent pipeline with id {} doesn't exist in database".format(talent_pipeline_id))
 
-        if talent_pipeline.user.domain_id != request.user.domain_id:
-            raise ForbiddenError(error_message="Logged-in user and talent_pipeline belong to different domain")
+        if request.user.role.name != 'TALENT_ADMIN' and talent_pipeline.user.domain_id != request.user.domain_id:
+            raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
         return {'candidates': top_most_engaged_candidates_of_pipeline(talent_pipeline_id, int(limit))}
 
@@ -564,7 +564,7 @@ class CandidateMostEngagedPipelines(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         GET /candidates/<candidate_id>/talent-pipelines?limit=5  Fetch Engagement score of a
@@ -583,10 +583,10 @@ class CandidateMostEngagedPipelines(Resource):
         candidate = Candidate.query.get(candidate_id)
 
         if not candidate:
-            raise NotFoundError(error_message="Candidate with id %s doesn't exist in database" % candidate_id)
+            raise NotFoundError(error_message="Candidate with id {} doesn't exist in database".format(candidate_id))
 
-        if candidate.user.domain_id != request.user.domain_id:
-            raise ForbiddenError(error_message="Logged-in user and candidate belong to different domain")
+        if request.user.role.name != 'TALENT_ADMIN' and candidate.user.domain_id != request.user.domain_id:
+            raise ForbiddenError("Logged-in user and candidate belong to different domain")
 
         return {'talent_pipelines': top_most_engaged_pipelines_of_candidate(candidate_id, int(limit))}
 
@@ -595,8 +595,7 @@ class TalentPipelineCampaigns(Resource):
     # Access token decorator
     decorators = [require_oauth()]
 
-    # TODO: Add Role here for CAN_GET_EMAIL_CAMPAIGNS once it becomes available, and CAN_GET_TALENT_PIPELINE_SMART_LISTS.
-    # @require_all_roles(DomainRole.Roles.CAN_GET_TALENT_PIPELINE_SMART_LISTS)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CAMPAIGNS)
     def get(self, **kwargs):
         """
         GET /talent-pipelines/<id>/campaigns?fields=id,subject&page=1&per_page=20
@@ -611,8 +610,9 @@ class TalentPipelineCampaigns(Resource):
         talent_pipeline_id = kwargs.get('id')
         talent_pipeline = TalentPipeline.query.get(talent_pipeline_id)
         if not talent_pipeline:
-            raise NotFoundError("Talent pipeline with id %s doesn't exist in database" % talent_pipeline_id)
-        if talent_pipeline.user.domain_id != request.user.domain_id:
+            raise NotFoundError("Talent pipeline with id {} doesn't exist in database".format(talent_pipeline_id))
+
+        if request.user.role.name != 'TALENT_ADMIN' and talent_pipeline.user.domain_id != request.user.domain_id:
             raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
         page = request.args.get('page', DEFAULT_PAGE)

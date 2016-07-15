@@ -3,6 +3,7 @@ from user_service.user_app import app
 
 # Conftest
 from user_service.common.tests.conftest import *
+from user_service.common.models.user import Role
 
 # Helper functions
 from user_service.common.routes import UserServiceApiUrl
@@ -18,21 +19,25 @@ class TestCreateDomainSource(object):
     UNAUTHORIZED = 401
     URL = UserServiceApiUrl.DOMAIN_SOURCES
 
-    def test_add_source_to_domain(self, access_token_first):
+    def test_add_source_to_domain(self, user_first, access_token_first):
         """
         Test: Add a source to domain
         """
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
         data = dict(source=dict(description='job fair', notes='recruited initials: ahb'))
         create_resp = send_request('post', self.URL, access_token_first, data)
         print response_info(create_resp)
         assert create_resp.status_code == self.CREATED
         assert 'id' in create_resp.json()['source']
 
-    def test_add_duplicate_source_in_same_domain(self, access_token_first):
+    def test_add_duplicate_source_in_same_domain(self, user_first, access_token_first):
         """
         Test:  Add same source in the same domain
         """
         # Create source
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
         data = dict(source=dict(description='job fair', notes='recruited initials: ahb'))
         send_request('post', self.URL, access_token_first, data)
 
@@ -59,16 +64,20 @@ class TestGetDomainSource(object):
     URL = UserServiceApiUrl.DOMAIN_SOURCES
     URL_PLUS_ID = UserServiceApiUrl.DOMAIN_SOURCE
 
-    def test_get_domain_sources(self, access_token_first):
+    def test_get_domain_sources(self, user_first, access_token_first):
         """
         Test: Get all domain's sources
         """
         # Create some sources
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
         number_of_sources_created = random.randrange(2, 8)
         for _ in range(number_of_sources_created):
             send_request(method='post', url=self.URL, access_token=access_token_first,
                          data=dict(source=dict(description=str(uuid.uuid4())[:5])))
 
+        user_first.role_id = Role.get_by_name('USER').id
+        db.session.commit()
         # Retrieve all sources in user's domain
         get_resp = send_request('get', self.URL, access_token_first)
         print response_info(get_resp)
@@ -76,11 +85,13 @@ class TestGetDomainSource(object):
         assert isinstance(get_resp.json()['sources'], list)
         assert len(get_resp.json()['sources']) == number_of_sources_created
 
-    def test_get_source(self, access_token_first):
+    def test_get_source(self, user_first, access_token_first):
         """
         Test: Get a source from user's domain by providing source's ID
         """
         # Create source
+        user_first.role_id = Role.get_by_name('TALENT_ADMIN').id
+        db.session.commit()
         data = dict(source=dict(description='job fair', notes='recruited initials: ahb'))
         create_resp = send_request('post', self.URL, access_token_first, data)
 

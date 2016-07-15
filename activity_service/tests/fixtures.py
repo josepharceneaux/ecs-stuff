@@ -120,7 +120,7 @@ def domain_fixture(org_fixture, culture_fixture, request):
     domain_attrs = dict(
         name=random_word(10).format(), usage_limitation=-1, added_time=datetime.today(),
         organization_id=org_fixture.id, is_fair_check_on=0, is_active=1,
-        default_culture_id=culture_fixture.id, expiration=datetime(2050, 4, 26)
+        default_culture_id=culture_fixture.id, expiration=datetime.utcnow().replace(year=2015)
     )
     domain, created = get_or_create(db.session, Domain, defaults=None, **domain_attrs)
     if created:

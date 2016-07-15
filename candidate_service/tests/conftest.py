@@ -3,7 +3,6 @@ from candidate_service.candidate_app import app
 from candidate_service.candidate_app import db
 from candidate_service.common.tests.conftest import candidate_first, fake
 
-from candidate_service.tests.api.helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
 
@@ -72,7 +71,6 @@ def notes_first(user_first, candidate_first, access_token_first):
     """
     Fixture will create 3 notes for candidate first
     """
-    AddUserRoles.edit(user_first)
     data = {'notes': [
         {'title': fake.word(), 'comment': fake.bs()},
         {'title': fake.word(), 'comment': fake.bs()}

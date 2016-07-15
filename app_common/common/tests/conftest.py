@@ -12,7 +12,7 @@ from faker import Faker
 from werkzeug.security import gen_salt
 
 from ..models.candidate import Candidate
-from ..models.user import UserGroup, DomainRole
+from ..models.user import UserGroup
 from auth_utilities import get_access_token, get_or_create
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 
@@ -254,20 +254,8 @@ def domain_second():
 
 
 @pytest.fixture()
-def domain_roles():
-    test_role_first = gen_salt(20)
-    DomainRole.save(test_role_first)
-    test_role_second = gen_salt(20)
-    DomainRole.save(test_role_second)
+def first_group(request, domain_first):
 
-    return {'test_roles': [test_role_first, test_role_second]}
-
-
-@pytest.fixture()
-def first_group(domain_first):
-    """
-    Fixture adds a group in domain_first
-    """
     user_group = UserGroup(name=gen_salt(20), domain_id=domain_first.id)
     db.session.add(user_group)
     db.session.commit()

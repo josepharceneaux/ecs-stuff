@@ -637,7 +637,7 @@ class SocialNetworkApi(object):
     RSVP = '/' + VERSION + '/rsvp'
     CODE = '/' + VERSION + '/code'
     # URL for Twitter authentication
-    TWITTER_AUTH = '/' + VERSION + '/twitter-auth/<int:user_id>'
+    TWITTER_AUTH = '/' + VERSION + '/twitter-auth'
     TWITTER_CALLBACK = '/' + VERSION + '/twitter-callback/<int:user_id>'
 
 
