@@ -133,10 +133,7 @@ class CandidatesResource(Resource):
                 raise InvalidUsage('Invalid email address/format: {}'.format(email_addresses),
                                    error_code=custom_error.INVALID_EMAIL)
 
-            # If candidate's email is found, check if it's web-hidden
             candidate_email_objects = CandidateEmail.get_emails_in_domain(domain_id, email_addresses)
-            logger.info("AFTER EMAIL QUERY BENCHMARK: domain_id: {}, time: {}".format(authed_user.domain_id,
-                                                                                      time() - start_time))
             for candidate_email_obj in candidate_email_objects:
 
                 # Cache candidate's email
@@ -269,8 +266,10 @@ class CandidatesResource(Resource):
 
         # Add candidates to cloud search
         upload_candidate_documents.delay(created_candidate_ids)
-        logger.info('BENCHMARK - candidate POST: domain_id: {}, time: {}'.format(authed_user.domain_id,
-                                                                                 time() - start_time))
+
+        logger.info('BENCHMARK - candidate POST: \nuser_id: {user_id}\ndomain_id: {domain_id}\ntime: {t}'.
+                    format(user_id=authed_user.id, domain_id=authed_user.domain_id, t=time() - start_time))
+
         return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, requests.codes.CREATED
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)

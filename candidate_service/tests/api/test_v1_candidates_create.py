@@ -1156,3 +1156,29 @@ class TestCreateSocialNetworks(object):
         print response_info(create_resp)
         assert create_resp.status_code == 400
         assert create_resp.json()['error']['code'] == candidate_errors.INVALID_INPUT
+
+
+def test_foo():
+    data = {'candidates': []}
+
+    for i in range(50):
+        data['candidates'].append(
+            {
+                'talent_pool_ids': {'add': [1696]},
+                'emails': [
+                    {'address': fake.safe_email()},
+                    {'address': fake.safe_email()},
+                    {'address': fake.safe_email()}
+                ],
+                'phones': [
+                    {'value': fake.phone_number()},
+                    {'value': fake.phone_number()},
+                    {'value': fake.phone_number()}
+                ],
+                'skills': [{'name': 'payroll'}, {'name': 'sql'}]
+            }
+        )
+    t = time.time()
+    resp = send_request('post', CANDIDATES_URL, 'frSmmHj4JPV75wBtx2HQ8ZsiNfpbZC', data)
+    print response_info(resp)
+    print "\ntime: {}".format(time.time() - t)
