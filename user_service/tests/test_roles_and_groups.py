@@ -6,6 +6,9 @@ from common_functions import *
 
 def test_user_scoped_roles_get(access_token_first, user_first, user_second):
 
+    user_first.role_id = Role.get_by_name('ADMIN').id
+    db.session.commit()
+
     # Logged-in user getting roles of a non-existing user
     response, status_code = user_scoped_roles(access_token_first, user_id=user_first.id + 1000)
     assert status_code == 404
@@ -17,7 +20,7 @@ def test_user_scoped_roles_get(access_token_first, user_first, user_second):
     # Logged-in user getting roles of itself
     response, status_code = user_scoped_roles(access_token_first, user_id=user_first.id)
     assert status_code == 200
-    assert response.get('role_name') == 'USER'
+    assert response.get('role_name') == 'ADMIN'
 
     user_first.role_id = Role.get_by_name('TALENT_ADMIN').id
     db.session.commit()
