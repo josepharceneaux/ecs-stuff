@@ -8,9 +8,6 @@ Functions in this file are
     - validate_blast_candidate_url_conversion_in_db()
     - raise_if_dict_values_are_not_int_or_long etc.
 """
-# Third Party
-from flask import current_app
-
 # Database Models
 from ..models.user import User
 from ..models.candidate import Candidate
@@ -22,8 +19,7 @@ from ..models.email_campaign import EmailCampaignBlast
 # Common utils
 from ..utils.datetime_utils import DatetimeUtils
 from ..error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
-from ..utils.handy_functions import (find_missing_items,
-                                     validate_required_fields, get_valid_json_data)
+from ..utils.handy_functions import (find_missing_items, get_valid_json_data)
 
 
 def validation_of_data_to_schedule_campaign(campaign_obj, request):
