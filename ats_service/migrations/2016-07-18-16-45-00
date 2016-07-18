@@ -1,0 +1,99 @@
+"""
+Add ATS tables, modify User table.
+"""
+
+from sqlalchemy import text
+
+from ats_service.app import db
+from ats_service.common.models.ats import ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
+from ats_service.common.models.user import User
+
+table_name = ATS.__tablename__
+query = "select * from information_schema.tables where table_name = '{}'".format(table_name)
+result = db.session.execute(query)
+tables = list(result)
+if len(tables) == 0:
+    db.session.execute(
+        text("create table `{}` ( \
+                                   `id` int auto_increment key, \
+                                   `name` varchar(255) not null, \
+                                   `homepage_url` varchar(255) not null, \
+                                   `login_url` varchar(255), \
+                                   `auth_type` varchar(45) not null, \
+                                   `added_at` timestamp not null, \
+                                   `updated_at` timestamp not null \
+                                 )".format(table_name))
+        )
+
+table_name = ATSAccount.__tablename__
+query = "select * from information_schema.tables where table_name = '{}'".format(table_name)
+result = db.session.execute(query)
+tables = list(result)
+if len(tables) == 0:
+    db.session.execute(
+        text("create table `{}` ( \
+                                  `id` int auto_increment key, \
+                                  `active` BOOLEAN, \
+                                  `ats_id` int, \
+                                  `user_id` int, \
+                                  `ats_credential_id` int, \
+                                  `added_at` timestamp not null, \
+                                  `updated_at` timestamp not null \
+                                 )".format(table_name))
+        )
+
+table_name = ATSCredential.__tablename__
+query = "select * from information_schema.tables where table_name = '{}'".format(table_name)
+result = db.session.execute(query)
+tables = list(result)
+if len(tables) == 0:
+    db.session.execute(
+        text("create table `{}` ( \
+                                  `id` int auto_increment key, \
+                                  `ats_account_id` int, \
+                                  `auth_type` varchar(45) not null, \
+                                  `credentials_json` text not null, \
+                                  `updated_at` timestamp not null \
+                                 )".format(table_name))
+        )
+
+table_name = ATSCandidate.__tablename__
+query = "select * from information_schema.tables where table_name = '{}'".format(table_name)
+result = db.session.execute(query)
+tables = list(result)
+if len(tables) == 0:
+    db.session.execute(
+        text("create table `{}` ( \
+                                  `id` int auto_increment key, \
+                                  `ats_remote_id` varchar(100), \
+                                  `gt_candidate_id` int, \
+                                  `profile_id` int, \
+                                  `added_at` timestamp not null, \
+                                  `updated_at` timestamp not null \
+                                 )".format(table_name))
+        )
+
+table_name = ATSCandidateProfile.__tablename__
+query = "select * from information_schema.tables where table_name = '{}'".format(table_name)
+result = db.session.execute(query)
+tables = list(result)
+if len(tables) == 0:
+    db.session.execute(
+        text("create table `{}` ( \
+                                  `id` int auto_increment key, \
+                                  `active` BOOLEAN, \
+                                  `profile_json` text not null, \
+                                  `ats_id` int, \
+                                  `added_at` timestamp not null, \
+                                  `updated_at` timestamp not null \
+                                 )".format(table_name))
+        )
+
+
+
+# Check for missing column before trying to add it
+result = db.session.execute(text("show columns from user"))
+columns = list(result)
+present = [col for col in columns if 'ats_enabled' in col.values()]
+if len(present) == 0:
+    db.session.execute(text("alter table user add column ats_enabled boolean"))
