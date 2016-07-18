@@ -559,9 +559,8 @@ def do_phones_exist(phones, phone_dict):
     """
     for phone in phones:
         value = phone_dict.get('value')
-        if value:
-            if phone.value == format_phone_number(value)['formatted_number']:
-                return True
+        if value and phone.value == format_phone_number(value)['formatted_number']:
+            return True
     return False
 
 
@@ -648,31 +647,3 @@ def get_json_data_if_validated(request_body, json_schema, format_checker=True):
     except ValidationError as e:
         raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
     return body_dict
-
-
-def clean_email(value):
-    """
-    :type value: str
-    :rtype: str
-    """
-    return value.strip().lower()
-
-
-# def get_validated_emails(email_addresses, domain_id):
-#     """
-#     Function will retrieve CandidateEmail from db after validating email_address
-#     :type email_addresses: list[str]
-#     :type domain_id: int | long
-#     :rtype: list[CandidateEmail]
-#     """
-#     # In case just a whitespace is provided, e.g. "  "
-#     if not email_addresses:
-#         raise InvalidUsage('No email address provided', custom_error.INVALID_EMAIL)
-#
-#     # Email addresses must be properly formatted
-#     if not is_valid_email(email_addresses):
-#         raise InvalidUsage('Invalid email address/format: {}'.format(email_addresses),
-#                            error_code=custom_error.INVALID_EMAIL)
-#
-#     # Get candidate's email in user's domain if exists
-#     return CandidateEmail.get_emails_in_domain(domain_id, email_addresses)

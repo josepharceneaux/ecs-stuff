@@ -29,7 +29,7 @@ from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
     is_valid_email_client, get_json_if_exist, is_date_valid,
-    get_json_data_if_validated, get_candidate_if_validated, clean_email
+    get_json_data_if_validated, get_candidate_if_validated
 )
 
 # JSON Schemas
@@ -82,6 +82,7 @@ from candidate_service.modules.talent_openweb import (
 )
 from candidate_service.modules.contsants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 from onesignalsdk.one_signal_sdk import OneSignalSdk
+from candidate_service.common.utils.handy_functions import normalize_value
 
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
 
@@ -126,7 +127,7 @@ class CandidatesResource(Resource):
             email_addresses.extend(email.get('address') for email in candidate_dict_.get('emails') or [])
 
             # Strip, lower, and remove empty email addresses
-            email_addresses = filter(None, map(clean_email, email_addresses))
+            email_addresses = filter(None, map(normalize_value, email_addresses))
 
             # All email addresses must be valid emails
             if not all(map(is_valid_email, email_addresses)):
