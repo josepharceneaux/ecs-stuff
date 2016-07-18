@@ -1864,8 +1864,13 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
     """
     candidate_id = candidate.id
 
+    # Raise an error if more than one email is set as "default"
+    is_default_values = [email.get('is_default') for email in emails]
+    if len(filter(None, is_default_values)) > 1:
+        raise InvalidUsage('Only one email should be set as default', custom_error.INVALID_USAGE)
+
     # If any of emails' is_default is True, set all of candidate's emails' is_default to False
-    if any([email.get('is_default') for email in emails]):
+    if any(is_default_values):
         CandidateEmail.set_is_default_to_false(candidate_id)
 
     emails_has_label = any([email.get('label') for email in emails])
@@ -1954,8 +1959,13 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
     """
     candidate_id = candidate.id
 
+    # Raise an error if more than one email is set as "default"
+    is_default_values = [phone.get('is_default') for phone in phones]
+    if len(filter(None, is_default_values)) > 1:
+        raise InvalidUsage('Only one phone should be set as default', custom_error.INVALID_USAGE)
+
     # If any of phones' is_default is True, set all of candidate's phones' is_default to False
-    if any([phone.get('is_default') for phone in phones]):
+    if any(is_default_values):
         CandidatePhone.set_is_default_to_false(candidate_id)
 
     # Check if phone label and default have been provided
