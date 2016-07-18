@@ -79,23 +79,6 @@ class TestCreateCandidateEmail(object):
         assert candidate_dict['emails'][0]['label'] == EmailLabel.PRIMARY_DESCRIPTION
         assert candidate_dict['emails'][-1]['label'] == EmailLabel.OTHER_DESCRIPTION
 
-    def test_add_email_with_empty_values(self, access_token_first, user_first, talent_pool):
-        """
-        Test:  Add candidate email with all empty values
-        Expect: 400; email address is required
-        """
-        data = {'candidates': [
-            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
-                {'label': None, 'address': '  '},
-            ]}
-        ]}
-
-        # Create candidate email
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == requests.codes.BAD
-        assert create_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
-
     def test_add_emails_with_whitespaced_values(self, access_token_first, user_first, talent_pool):
         """
         Test:  Add candidate emails with values containing whitespaces
