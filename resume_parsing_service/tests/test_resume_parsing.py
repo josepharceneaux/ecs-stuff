@@ -8,7 +8,7 @@ import os
 import requests
 # Module Specific.
 # Test fixtures, imports required even though not 'used'
-# TODO: Look into importing these once and use via namespacing.
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.common.routes import ResumeApiUrl
 from resume_parsing_service.tests.test_fixtures import client_fixture
 from resume_parsing_service.tests.test_fixtures import country_fixture
@@ -54,7 +54,7 @@ def test_invalid_fp_key(token_fixture, user_fixture):
 
 def test_none_fp_key(token_fixture, user_fixture):
     content, status = fetch_resume_fp_key_response(token_fixture, None)
-    assert 'error' in content
+    assert content['error']['message'] == error_constants.GT_ISSUE_MSG
     assert status == requests.codes.bad_request
 
 
@@ -69,7 +69,7 @@ def test_posting_no_file(token_fixture, user_fixture):
                                                   'create_candidate': True})
                                 )
     content = json.loads(invalid_post.content)
-    assert 'error' in content
+    assert content['error']['message'] == error_constants.GT_ISSUE_MSG
     assert invalid_post.status_code == requests.codes.bad_request
 
 
@@ -84,7 +84,7 @@ def test_posting_None_file(token_fixture, user_fixture):
                                                   'create_candidate': True})
                                 )
     content = json.loads(invalid_post.content)
-    assert 'error' in content
+    assert content['error']['message'] == error_constants.GT_ISSUE_MSG
     assert invalid_post.status_code == requests.codes.bad_request
 
 
@@ -98,7 +98,7 @@ def test_talent_pool_error(token_fixture):
                                                   'create_candidate': True})
                                 )
     content = json.loads(invalid_post.content)
-    assert 'error' in content
+    assert content['error']['message'] == error_constants.GT_ISSUE_MSG
     assert invalid_post.status_code == requests.codes.bad_request
 
 def test_no_token_fails():
@@ -131,25 +131,24 @@ def test_bad_header(token_fixture, user_fixture):
                                                   'create_candidate': True})
                                 )
     content = json.loads(invalid_post.content)
-    assert 'error' in content
+    assert content['error']['message'] == error_constants.GT_ISSUE_MSG
     assert invalid_post.status_code == requests.codes.bad_request
 
 
 def test_blank_file(token_fixture, user_fixture):
     content, status = fetch_resume_fp_key_response(token_fixture, 'blank.txt')
-    assert 'error' in content, "There should be an error if no text can be extracted."
+    assert content['error']['message'] == error_constants.FILE_TYPE_MSG, "There should be an error if no text can be extracted."
 
 
 def test_picture_not_resume(token_fixture, user_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'notResume.jpg')
-    assert 'error' in content, "There should be an error Because it's a picture of a backyard."
+    assert content['error']['message'] == error_constants.GENERIC_ERROR_MSG, "There should be an error Because it's a picture of a backyard."
 
     content, status = fetch_resume_post_response(token_fixture, 'notResume2.jpg')
-    assert 'error' in content, "There should be an error Because it's a picture of food."
+    assert content['error']['message'] == error_constants.FILE_TYPE_MSG, "There should be an error Because it's a picture of food."
 
 
 def test_bad_create_candidate_inputs(token_fixture):
-    error_message = 'There has been a critical error parsing this resume, the development team has been notified'
     for invalid_type in [1, 'string', {}, []]:
         test_response = requests.post(
             ResumeApiUrl.PARSE,
@@ -165,12 +164,10 @@ def test_bad_create_candidate_inputs(token_fixture):
         content = json.loads(test_response.content)
         status_code = test_response.status_code
 
-        assert 'error' in content
-        assert content.get('error', {}).get('message') == error_message
+        assert content['error']['message'] == error_constants.GT_ISSUE_MSG
         assert status_code == requests.codes.bad
 
 def test_bad_filename_inputs(token_fixture):
-    error_message = 'There has been a critical error parsing this resume, the development team has been notified'
     for invalid_type in [1, True, {}, []]:
         test_response = requests.post(
             ResumeApiUrl.PARSE,
@@ -186,12 +183,10 @@ def test_bad_filename_inputs(token_fixture):
         content = json.loads(test_response.content)
         status_code = test_response.status_code
 
-        assert 'error' in content
-        assert content.get('error', {}).get('message') == error_message
+        assert content['error']['message'] == error_constants.GT_ISSUE_MSG
         assert status_code == requests.codes.bad
 
 def test_bad_fpkey_inputs(token_fixture):
-    error_message = 'There has been a critical error parsing this resume, the development team has been notified'
     for invalid_type in [1, True, {}, [], None]:
         test_response = requests.post(
             ResumeApiUrl.PARSE,
@@ -206,13 +201,11 @@ def test_bad_fpkey_inputs(token_fixture):
         content = json.loads(test_response.content)
         status_code = test_response.status_code
 
-        assert 'error' in content
-        assert content.get('error', {}).get('message') == error_message
+        assert content['error']['message'] == error_constants.GT_ISSUE_MSG
         assert status_code == requests.codes.bad
 
 
 def test_bad_tpool_inputs(token_fixture):
-    error_message = 'There has been a critical error parsing this resume, the development team has been notified'
     for invalid_type in [1, True, {}, 'string']:
         test_response = requests.post(
             ResumeApiUrl.PARSE,
@@ -228,8 +221,7 @@ def test_bad_tpool_inputs(token_fixture):
         content = json.loads(test_response.content)
         status_code = test_response.status_code
 
-        assert 'error' in content
-        assert content.get('error', {}).get('message') == error_message
+        assert content['error']['message'] == error_constants.GT_ISSUE_MSG
         assert status_code == requests.codes.bad
 
 
