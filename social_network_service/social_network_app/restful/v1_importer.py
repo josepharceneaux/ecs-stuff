@@ -67,10 +67,7 @@ class RsvpEventImporter(Resource):
         if mode.lower() not in ["event", "rsvp"]:
             raise InvalidUsage("No mode of value %s found" % mode)
 
-        # TODO: Pep8 issue (Basit)
-        # TODO--I think we need to break after 'or' and raise exceptions seperately
-        if not (social_network.lower() in ["meetup", "facebook"] or
-                    (mode.lower() == 'event' and social_network.lower() == 'eventbrite')):
+        if not (social_network.lower() in ["meetup", "facebook", "eventbrite"]):
             # TODO: Should raise not implemented
             raise InvalidUsage("No social network with name %s found." % social_network)
 

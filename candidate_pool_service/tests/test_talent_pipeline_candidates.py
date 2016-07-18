@@ -3,7 +3,6 @@ __author__ = 'ufarooqi'
 from time import sleep
 from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.tests.conftest import *
-from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
 from candidate_pool_service.common.tests.cloud_search_common_functions import *
 from common_functions import *
 
@@ -19,15 +18,6 @@ def test_talent_pipeline_candidate_get(access_token_first, access_token_second, 
     :param user_first: Test User object
     :return:
     """
-
-    # Logged-in user trying to get all candidates of given talent-pipeline
-    response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id, 0)
-    assert status_code == 401
-
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES,
-                                       DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
-    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_GET_TALENT_PIPELINE_CANDIDATES,
-                                        DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_GET_CANDIDATES])
 
     # Logged-in user trying to get all candidates of non-existing talent-pipeline
     response, status_code = talent_pipeline_candidate_api(access_token_first, talent_pipeline.id + 1000, 0)

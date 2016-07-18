@@ -161,6 +161,7 @@ class RSVPBase(object):
                                               access_token=self.user_credentials.access_token,
                                               refresh_token=self.user_credentials.refresh_token,
                                               social_network_id=self.user_credentials.social_network_id,
+                                              member_id=self.user_credentials.member_id,
                                               user_id=self.user_credentials.user_id)
             self.user = User.get_by_id(self.user_credentials_dict['user_id'])
         else:

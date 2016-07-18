@@ -18,7 +18,7 @@ from candidate_service.candidate_app import app, logger
 from candidate_service.common.test_config_manager import load_test_config
 from candidate_service.common.tests.conftest import *
 from candidate_service.common.routes import CandidateApiUrl
-from helpers import AddUserRoles
+from candidate_service.common.models.user import Role
 from candidate_service.common.utils.test_utils import send_request
 
 test_config = load_test_config()
@@ -73,7 +73,10 @@ def test_associate_device_to_deleted_candidate(access_token_first, user_first, c
     :param candidate_first:
     :return:
     """
-    AddUserRoles.delete(user_first)
+
+    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+    db.session.commit()
+
     response = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_first)
     logger.info(response.content)
     assert response.status_code == requests.codes.NO_CONTENT

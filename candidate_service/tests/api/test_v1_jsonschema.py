@@ -8,7 +8,6 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
 
@@ -24,7 +23,6 @@ class TestSchemaValidationPost(object):
                 one talent_pool.id
         """
         # Create Candidate
-        AddUserRoles.add(user_first)
         data = {}
         resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(resp)
@@ -55,7 +53,6 @@ class TestSchemaValidationPatch(object):
         Test:   Validate json data
         Expect: 400
         """
-        AddUserRoles.edit(user_first)
         data = {'candidate': [{}]}
         resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(resp)

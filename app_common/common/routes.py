@@ -651,13 +651,16 @@ class SocialNetworkApi(object):
     # TODO: you be so kind to explain this?
     TIMEZONES = '/' + VERSION + '/data/timezones'
     RSVP = '/' + VERSION + '/rsvp'
-    CODE = '/' + VERSION + '/coe'
     # TODO: Why second '+' here?
     # TODO: Is this restful? We need to discuss this. IMO, /v1/importer?social_network=meetup&mode=rsvp is clearer.
     # TODO: (http://rest.elkstein.org/2008/02/more-complex-rest-requests.html)
     IMPORTER = '/' + VERSION + '/importer' + '/<string:mode>/<string:social_network>'
     # TODO: same as above
     EVENTBRITE_IMPORTER = '/' + VERSION + '/importer/eventbrite'
+    CODE = '/' + VERSION + '/code'
+    # URL for Twitter authentication
+    TWITTER_AUTH = '/' + VERSION + '/twitter-auth'
+    TWITTER_CALLBACK = '/' + VERSION + '/twitter-callback/<int:user_id>'
 
 
 class SocialNetworkApiUrl(object):
@@ -667,8 +670,13 @@ class SocialNetworkApiUrl(object):
     VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.SOCIAL_NETWORK_SERVICE_NAME, GTApis.SOCIAL_NETWORK_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    # TODO: Make this URL dynamic i.e different for staging, dev or prod
-    UI_APP_URL = 'http://localhost:3000'
+    env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
+    if env == TalentEnvs.DEV:
+        UI_APP_URL = 'http://127.0.0.1:3000/%s'
+    else:
+        UI_APP_URL = 'https://staging.gettalent.com/%s'
+
+    SUBSCRIBE = UI_APP_URL % 'events/subscribe?code=%s'
     EVENTS = HOST_NAME % ('/' + VERSION + '/events')
     EVENT = HOST_NAME % ('/' + VERSION + '/events/%s')
     SOCIAL_NETWORKS = HOST_NAME % ('/' + VERSION + '/social-networks')

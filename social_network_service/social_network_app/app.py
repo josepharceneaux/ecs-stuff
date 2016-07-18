@@ -9,7 +9,6 @@
 import json
 
 # 3rd party imports
-import flask
 from flask import request, redirect
 
 # Application specific imports
@@ -17,13 +16,12 @@ from flask import request, redirect
 from restful.v1_data import data_blueprint
 from restful.v1_events import events_blueprint
 from social_network_service.common.redis_cache import redis_store
-from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi, get_webhook_app_url
-from social_network_service.social_network_app import app, logger
-from social_network_service.modules.utilities import get_class
+from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi, \
+    get_webhook_app_url
+from social_network_service.social_network_app import app
 from restful.v1_social_networks import social_network_blueprint
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.models.candidate import SocialNetwork
-from social_network_service.modules.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 
 # Register Blueprints for different APIs
 from social_network_service.social_network_app.restful.v1_importer import rsvp_blueprint

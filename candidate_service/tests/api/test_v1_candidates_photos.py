@@ -5,7 +5,6 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
 
@@ -20,7 +19,6 @@ class TestCandidatePhoto(object):
         Expect: 201
         """
         # Create Candidate
-        AddUserRoles.add_and_get(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -48,7 +46,6 @@ class TestCandidatePhoto(object):
         Expect: 204, but duplicate image_url should not be inserted into the db
         """
         # Create candidate
-        AddUserRoles.add_and_get(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -71,7 +68,6 @@ class TestCandidatePhoto(object):
 class TestCandidatePhotoEdit(object):
     def test_update_candidate_photo(self, access_token_first, user_first, talent_pool):
         # Create candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -106,7 +102,6 @@ class TestCandidatePhotoEdit(object):
 class TestCandidatePhotoDelete(object):
     def test_delete_candidate_photos(self, access_token_first, user_first, talent_pool):
         # Create candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)

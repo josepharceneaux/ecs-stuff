@@ -206,8 +206,15 @@ class Eventbrite(RSVPBase):
 
         - This overrides the base class method process_rsvps().
         """
-        raise NotImplementedError("RSVPs for social network %s are handled via"
-                                  " webhook." % self.social_network.name)
+        
+
+    def get_all_rsvps(self, events):
+        """
+        - This method is used to get all attendees from each eventbrite events of a user
+        :param events: Eventbrite events object
+        :return: list of rsvps
+        """
+        http_request('GET', self.api_url + '/')
 
     def get_rsvps(self, event):
         pass

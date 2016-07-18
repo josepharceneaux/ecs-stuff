@@ -20,7 +20,7 @@ from setup_environment.create_dummy_users import create_dummy_users
 
 static_tables = ['candidate_status', 'classification_type', 'country', 'culture', 'email_label', 'phone_label',
                  'frequency', 'organization', 'product', 'rating_tag', 'social_network', 'web_auth_group',
-                 'email_client', 'migration']
+                 'email_client', 'migration', 'permission', 'permissions_of_role', 'role']
 
 flush_redis_entries = ['apscheduler.jobs', 'apscheduler.run_times', 'count_*_request', 'apscheduler_job_ids:user_*',
                        'apscheduler_job_ids:general_*']
@@ -80,6 +80,7 @@ db.session.connection().execute('SET FOREIGN_KEY_CHECKS = 1;')
 print 'DB reset is successful'
 
 print 'Generating initial test data'
+
 
 create_dummy_users()
 q = '''INSERT INTO `user_social_network_credential` (`Id`, `UserId`, `SocialNetworkId`, `RefreshToken`, `webhook`, `MemberId`, `AccessToken`) VALUES (NULL, '1', '18', NULL, '217041', '164351364314', 'YZASRSWZO5CWKSEXMELQ');'''

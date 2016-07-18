@@ -12,14 +12,14 @@ from flask_restful import Resource
 from user_service.common.utils.validators import get_json_data_if_validated
 
 # Models
-from user_service.common.models.db import db
+from user_service.common.models.user import db, Permission
 from user_service.common.models.candidate import CandidateSource
 
 # JSON Schemas
 from user_service.modules.json_schema import source_schema
 
 # Decorators
-from user_service.common.utils.auth_utils import require_oauth
+from user_service.common.utils.auth_utils import require_oauth, require_all_permissions
 
 # Error handling
 from user_service.common.error_handling import (ForbiddenError, InvalidUsage)
@@ -28,7 +28,8 @@ from user_service.common.error_handling import (ForbiddenError, InvalidUsage)
 class DomainSourceResource(Resource):
     decorators = [require_oauth()]
 
-    def post(self, **kwargs):  # todo: CAN_EDIT_DOMAINS
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
+    def post(self, **kwargs):
         """
         Function will create a source for domain
         Note: "description" is a required field
@@ -66,6 +67,7 @@ class DomainSourceResource(Resource):
         db.session.commit()
         return {'source': {'id': new_source.id}}, 201
 
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_DOMAINS)
     def get(self, **kwargs):
         """
         Function will return domain source(s)
