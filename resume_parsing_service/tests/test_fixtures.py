@@ -8,7 +8,6 @@ import pytest
 from resume_parsing_service.app import db
 from resume_parsing_service.common.models.candidate import EmailLabel
 from resume_parsing_service.common.models.candidate import PhoneLabel
-# from resume_parsing_service.common.models.candidate_edit import CandidateView
 from resume_parsing_service.common.models.misc import Country
 from resume_parsing_service.common.models.misc import Culture
 from resume_parsing_service.common.models.misc import Organization
