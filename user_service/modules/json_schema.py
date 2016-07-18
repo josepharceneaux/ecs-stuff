@@ -41,6 +41,9 @@ custom_fields_schema = {
                     },
                     "name": {
                         "type": "string"
+                    },
+                    "category_id": {
+                        "type": "integer"
                     }
                 },
                 "required": [
@@ -72,6 +75,76 @@ custom_field_schema = {
     },
     "required": [
         "custom_field"
+    ]
+}
+
+cf_categories_schema_post = {
+    "type": "object",
+    "properties": {
+        "custom_field_categories": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            }
+        }
+    },
+    "required": [
+        "custom_field_categories"
+    ]
+}
+
+cf_categories_schema_put = {
+    "type": "object",
+    "properties": {
+        "custom_field_categories": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "name",
+                    "id"
+                ]
+            }
+        }
+    },
+    "required": [
+        "custom_field_categories"
+    ]
+}
+
+cf_category_schema_put = {
+    "type": "object",
+    "properties": {
+        "custom_field_category": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ]
+        }
+    },
+    "required": [
+        "custom_field_category"
     ]
 }
 
