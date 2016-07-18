@@ -18,7 +18,6 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 from email_campaign_service.tests.modules.handy_functions import send_campaign_email_to_candidate, TEST_EMAIL_ID
 
 
-# @pytest.mark.parametrize("blast_foreign_key", [True, False])
 def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles_to_user_first, email_campaign_of_user_first,
                                                 candidate_first, user_first, talent_pipeline):
     """
@@ -36,14 +35,8 @@ def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles
         invalid_email = 'invalid_' + fake.uuid4() + '@gmail.com'
         email = CandidateEmail.get_email_by_candidate_id(candidate_ids[0])
         email.update(address=invalid_email)
-        # db.session.commit()
-        # sent_datetime = email_campaign_blast.sent_datetime
-        # if blast_foreign_key:
         send_campaign_email_to_candidate(campaign, email, candidate_ids[0],
                                          blast_id=email_campaign_blast.id)
-        # else:
-        #     send_campaign_email_to_candidate(campaign, email, candidate_ids[0], sent_datetime, blast_id=None)
-
         retry(assert_is_bounced, sleeptime=3, attempts=100, sleepscale=1,
               args=(email,), retry_exceptions=(AssertionError,))
         blast_url = EmailCampaignApiUrl.BLASTS % campaign.id
