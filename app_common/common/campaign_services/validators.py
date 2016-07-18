@@ -148,9 +148,7 @@ def validate_form_data(form_data, current_user, required_fields=('name', 'body_t
         raise InvalidUsage('form_data should be a dictionary.')
     if not isinstance(required_fields, (tuple, list)):
         raise InvalidUsage('required_fields should be tuple|list')
-    # find if any required key is missing from data
-    validate_required_fields(form_data, required_fields)
-    # find if any required key has no value
+    # find if any required key has no valid value
     missing_field_values = find_missing_items(form_data, required_fields)
     if missing_field_values:
         raise InvalidUsage('Required fields not provided to save campaign. Empty fields are %s' % missing_field_values)

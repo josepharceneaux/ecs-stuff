@@ -255,13 +255,13 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(self.URL, headers=headers, data=json.dumps(data))
         assert response.status_code == InvalidUsage.http_status_code()
 
-    def test_campaign_create_with_invalid_campaign_name(self, headers, campaign_valid_data, invalid_campaign_name):
+    def test_campaign_create_with_invalid_campaign_name(self, headers, campaign_valid_data, invalid_string):
         """
         This is a test to create SMS campaign with invalid campaign name. Status code should be 400 and
         campaign should not be created.
         """
         data = campaign_valid_data.copy()
-        data['name'] = invalid_campaign_name
+        data['name'] = invalid_string
         response = requests.post(self.URL, headers=headers, data=json.dumps(data))
         assert response.status_code == InvalidUsage.http_status_code()
 

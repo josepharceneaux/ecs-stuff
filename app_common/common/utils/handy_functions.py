@@ -298,13 +298,13 @@ def find_missing_items(data_dict, required_fields=None, verify_all=False):
     elif verify_all:
         # verify that all keys in the data_dict have valid values
         missing_items = [{key: value} for key, value in data_dict.iteritems()
-                         if not value and not value == 0]
+                         if not str(value).strip() and not value == 0]
     else:
         # verify if required fields are present as keys in data_dict
         validate_required_fields(data_dict, required_fields)
         # verify that keys of data_dict present in required_field have valid values
         missing_items = [{key: value} for key, value in data_dict.iteritems()
-                         if key in required_fields and not value and not value == 0]
+                         if key in required_fields and not str(value).strip() and not value == 0]
     return [missing_item for missing_item in missing_items]
 
 
