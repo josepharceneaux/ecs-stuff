@@ -10,19 +10,11 @@ python push_campaign_service/init_test_data.py
 import os
 from datetime import datetime, timedelta
 
-from common.error_handling import InvalidUsage
 from common.utils.models_utils import init_talent_app
 app, logger = init_talent_app('test_app')
 
 from common.talent_config_manager import TalentConfigKeys, TalentEnvs
-from common.models.user import Domain, Permission, User, UserGroup, Token, Client
-
-Roles = Permission.PermissionNames
-roles = (Roles.CAN_ADD_USER_ROLES, Roles.CAN_DELETE_USER_ROLES, Roles.CAN_ADD_USERS,
-         Roles.CAN_GET_USERS, Roles.CAN_DELETE_USERS, Roles.CAN_ADD_TALENT_POOLS, Roles.CAN_GET_TALENT_POOLS,
-         Roles.CAN_DELETE_TALENT_POOLS, Roles.CAN_ADD_TALENT_POOLS_TO_GROUP, Roles.CAN_ADD_CANDIDATES,
-         Roles.CAN_GET_CANDIDATES, Roles.CAN_DELETE_CANDIDATES, Roles.CAN_ADD_TALENT_PIPELINE_SMART_LISTS,
-         Roles.CAN_DELETE_TALENT_PIPELINE_SMART_LISTS, Roles.CAN_ADD_TALENT_PIPELINES)
+from common.models.user import Domain, User, UserGroup, Token, Client
 
 CLIENT_ID = 'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z'
 CLIENT_SECRET = 'DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj1Z'
@@ -62,29 +54,10 @@ def create_user_groups(group_names, domain_ids):
 def create_test_user(email, domain_id, group_id):
     user = User.get_by_email(email)
     if not user:
-        user = User(email=email, domain_id=domain_id, user_group_id=group_id, password=TEST_PASSWORD)
+        user = User(email=email, domain_id=domain_id, user_group_id=group_id, password=TEST_PASSWORD, role_id=3)
         User.save(user)
     logger.debug('User: %s', user.name)
     return user
-
-
-def add_domain_roles(roles):
-    ids = []
-    for role_name in roles:
-        domain_role = Permission.get_by_name(role_name)
-        if not domain_role:
-            domain_role = Permission.save(role_name)
-        logger.debug('User: %s', domain_role.role_name)
-        ids.append(domain_role.id)
-    return ids
-
-
-def add_scoped_roles(users, roles_ids):
-    for user in users:
-        try:
-            UserScopedRoles.add_roles(user, roles_ids)
-        except InvalidUsage:
-            pass
 
 
 def create_test_client(client_id, client_secret):
@@ -124,12 +97,6 @@ for emails, domain_id, group_id in user_data:
     for email in emails:
         users.append(create_test_user(email, domain_id, group_id))
 user_ids = [user.id for user in users]
-
-# Add domain roles in db
-domain_roles = add_domain_roles(roles)
-
-# Add user scoped roles
-add_scoped_roles(users, domain_roles)
 
 # Create client
 create_test_client(CLIENT_ID, CLIENT_SECRET)
