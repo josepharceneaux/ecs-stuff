@@ -197,6 +197,18 @@ class TestSmsCampaignWithIdHTTPPUT(object):
             'put', self.URL % sms_campaign_of_user_first['id'],
             access_token_first, campaign_valid_data)
 
+    def test_campaign_create_with_invalid_campaign_name(self, headers, campaign_valid_data,
+                                                        invalid_campaign_name, sms_campaign_of_user_first):
+        """
+        This is a test to update SMS campaign with invalid campaign name. Status code should be 400 and
+        campaign should not be created.
+        """
+        campaign_data = campaign_valid_data.copy()
+        campaign_data['name'] = invalid_campaign_name
+        response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers,
+                                data=json.dumps(campaign_data))
+        assert response.status_code == InvalidUsage.http_status_code(), 'It should get bad request error'
+
     def test_campaign_update_with_invalid_url_in_body_text(self, campaign_valid_data, headers,
                                                            sms_campaign_of_user_first):
         """

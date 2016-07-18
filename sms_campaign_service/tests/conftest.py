@@ -213,6 +213,14 @@ def invalid_id(request):
     return [request.param]
 
 
+@pytest.fixture(params=[123, 'a', True, None, dict(), list()])
+def invalid_campaign_name(request):
+    """
+    This function returns invalid campaign name to create/update an sms-campaign.
+    """
+    return [request.param]
+
+
 @pytest.fixture()
 def smartlist_with_two_candidates(access_token_first, talent_pipeline):
     """

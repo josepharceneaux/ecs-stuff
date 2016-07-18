@@ -9,22 +9,18 @@ from operator import itemgetter
 
 # Third Party Imports
 import requests
-from werkzeug.security import gen_salt
-
 
 # Service Specific
+from sms_campaign_service.tests.conftest import db
 from sms_campaign_service.common.tests.sample_data import fake
-from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
-from sms_campaign_service.tests.modules.common_functions import (assert_for_activity,
-                                                                 assert_campaign_delete,
+from sms_campaign_service.tests.modules.common_functions import (assert_campaign_delete,
                                                                  assert_campaign_creation,
                                                                  assert_valid_campaign_get)
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 # Models
-from sms_campaign_service.common.models.misc import Activity
 from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.models.smartlist import Smartlist
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
@@ -257,6 +253,16 @@ class TestSmsCampaignHTTPPost(object):
         """
         data = campaign_valid_data.copy()
         data['smartlist_ids'].extend(invalid_id)
+        response = requests.post(self.URL, headers=headers, data=json.dumps(data))
+        assert response.status_code == InvalidUsage.http_status_code()
+
+    def test_campaign_create_with_invalid_campaign_name(self, headers, campaign_valid_data, invalid_campaign_name):
+        """
+        This is a test to create SMS campaign with invalid campaign name. Status code should be 400 and
+        campaign should not be created.
+        """
+        data = campaign_valid_data.copy()
+        data['name'] = invalid_campaign_name
         response = requests.post(self.URL, headers=headers, data=json.dumps(data))
         assert response.status_code == InvalidUsage.http_status_code()
 
