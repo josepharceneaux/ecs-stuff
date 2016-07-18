@@ -15,7 +15,7 @@ def create_dummy_users():
     Create three dummy users in db
     :return:
     """
-    # Assigned `Talent_Admin` (2) role to test users that will be used to run api based tests.
+    # Assigned `Talent_Admin` (3) role to test users that will be used to run api based tests.
     q = '''INSERT INTO domain (name,organizationId, is_disabled) VALUES ("test_domain_first",1, 0);
     INSERT INTO domain (name,organizationId, is_disabled) VALUES ("test_domain_second",1,0);
     INSERT INTO user_group (name, DomainId) VALUES ("test_group_first", 1), ("test_group_second", 2);
