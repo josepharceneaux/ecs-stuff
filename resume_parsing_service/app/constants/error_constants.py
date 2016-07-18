@@ -2,8 +2,10 @@
 
 
 # Multi Purpose Messages
-GENERIC_ERROR_MSG = 'There seems to have been an error in parsing your file, please try again. If it continues to happen please contact customer support.'
+CANDIDATE_CREATE_MSG = 'An error has occurred in creating the candidate you requested. Please try again.'
+CANDIDATE_UPDATE_MSG = 'An error has occurred in updating the candidate you requested. Please try again.'
 FILE_TYPE_MSG = 'It looks like you have uploaded an invalid file. Please check to make sure your file type is correct and re-upload.'
+GENERIC_ERROR_MSG = 'There seems to have been an error in parsing your file, please try again. If it continues to happen please contact customer support.'
 GT_ISSUE_MSG = 'There seems to have been an error on our side, please try again. If it continues to happen please contact customer support.'
 
 
@@ -104,22 +106,22 @@ BG_NO_PARSED_TEXT = {
 # Issues with internal services
 CANDIDATE_POST_CONNECTION = {
     'code': 3200,
-    'message': 'An error has occurred in creating the candidate you requested. Please try again.'
+    'message': CANDIDATE_CREATE_MSG
 }
 
 CANDIDATE_POST_ERROR = {
     'code': 3201,
-    'message': 'An error has occurred in creating the candidate you requested. Please try again.'
+    'message': CANDIDATE_CREATE_MSG
 }
 
 CANDIDATE_PATCH_CONNECTION = {
     'code': 3202,
-    'message': 'An error has occurred in updating the candidate you requested. Please try again.'
+    'message': CANDIDATE_UPDATE_MSG
 }
 
 CANDIDATE_PATCH_GENERIC = {
     'code': 3203,
-    'message': 'An error has occurred in updating the candidate you requested. Please try again.'
+    'message': CANDIDATE_UPDATE_MSG
 }
 
 CANDIDATE_GET = {
