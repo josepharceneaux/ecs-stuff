@@ -1,7 +1,7 @@
 __author__ = 'ufarooqi'
 from user_service.user_app import app
 from user_service.common.tests.conftest import *
-from user_service.common.utils.handy_functions import add_role_to_test_user
+from user_service.common.models.user import Role
 from common_functions import *
 
 
@@ -21,13 +21,13 @@ def test_domain_service_get(access_token_first, user_first, user_second, domain_
     assert status_code == 401
 
     # Logged-in user getting info of a domain
-    response, status_code = domain_api(access_token_first, user_first.domain_id )
+    response, status_code = domain_api(access_token_first, user_first.domain_id)
     assert status_code == 200
     assert response['domain']['id'] == domain_first.id
     assert response['domain']['name'] == domain_first.name
 
-    # Adding 'CAN_GET_DOMAINS' role to user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_DOMAINS])
+    user_first.role_id = Role.get_by_name('TALENT_ADMIN').id
+    db.session.commit()
 
     # Logged-in user trying to get info of domain which different than its own domain
     response, status_code = domain_api(access_token_first, domain_second.id)
@@ -48,7 +48,8 @@ def test_domain_service_delete(access_token_first, user_first, domain_first, dom
     response, status_code = domain_api(access_token_first, domain_first.id, action='DELETE')
     assert status_code == 401
 
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_DELETE_DOMAINS])
+    user_first.role_id = Role.get_by_name('TALENT_ADMIN').id
+    db.session.commit()
 
     # Logged-in user trying to delete a domain where domain is not provided
     response, status_code = domain_api(access_token_first, action='DELETE')
@@ -85,8 +86,8 @@ def test_domain_service_put(access_token_first, user_first, domain_first, domain
     response, status_code = domain_api(access_token_first, domain_first.id, data=data, action='PUT')
     assert status_code == 401
 
-    # Adding 'CAN_EDIT_DOMAINS' to user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_DOMAINS])
+    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+    db.session.commit()
 
     # Logged-in user trying to update a non-existing domain
     response, status_code = domain_api(access_token_first, domain_first.id + 1000, data=data, action='PUT')
@@ -116,7 +117,10 @@ def test_domain_service_put(access_token_first, user_first, domain_first, domain
 
     # Logged-in user trying to update a domain
     response, status_code = domain_api(access_token_first, domain_second.id, data=data, action='PUT')
-    assert status_code == 400
+    assert status_code == 401
+
+    user_first.role_id = Role.get_by_name('TALENT_ADMIN').id
+    db.session.commit()
 
     data['name'] = gen_salt(6)
 
@@ -154,8 +158,8 @@ def test_domain_service_post(access_token_first, user_first, domain_first):
     response, status_code = domain_api(access_token_first, data=data, action='POST')
     assert status_code == 401
 
-    # Adding 'CAN_ADD_DOMAINS' to user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_DOMAINS])
+    user_first.role_id = Role.get_by_name('TALENT_ADMIN').id
+    db.session.commit()
 
     # Logged-in user trying to add new domains with empty request body
     response, status_code = domain_api(access_token_first, action='POST')

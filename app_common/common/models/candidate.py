@@ -528,8 +528,8 @@ class CandidateTextComment(db.Model):
     list_order = db.Column('ListOrder', db.Integer)
     title = db.Column(db.String(255))
     comment = db.Column('Comment', db.Text)
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<CandidateTextComment (id = {})>".format(self.id)
@@ -549,8 +549,8 @@ class VoiceComment(db.Model):
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     list_order = db.Column('ListOrder', db.Integer)
     filename = db.Column('Filename', db.String(260))
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<VoiceComment (id = {})>".format(self.id)
@@ -561,8 +561,8 @@ class CandidateDocument(db.Model):
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     filename = db.Column('Filename', db.String(260))
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<CandidateDocument (id = {})>".format(self.id)

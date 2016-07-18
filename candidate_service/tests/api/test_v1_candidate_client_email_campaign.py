@@ -15,7 +15,6 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
 
@@ -31,7 +30,6 @@ class TestClientEmailCampaign(object):
         the email campaign is created each time regardless of subject input
         """
         # give the test user roles to perform all needed actions
-        AddUserRoles.all_roles(user_first)
 
         # Create a Candidate
         data = generate_single_candidate_data([talent_pipeline.talent_pool.id])

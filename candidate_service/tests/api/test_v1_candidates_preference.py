@@ -8,7 +8,6 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
 
@@ -29,22 +28,12 @@ class TestCreateSubscriptionPreference(object):
         print response_info(resp)
         assert resp.status_code == 401 and resp.json()['error']['code'] == 11
 
-    def test_access_endpoint_without_role(self, access_token_first):
-        """
-        Test: Access endpoint without required user role
-        Expect: 401
-        """
-        resp = send_request('post', CandidateApiUrl.CANDIDATE_PREFERENCE % 5, access_token_first)
-        print response_info(resp)
-        assert resp.status_code == 401
-
     def test_add_candidate_subscription_preference(self, access_token_first, user_first, talent_pool):
         """
         Test: Add subscription preference for the candidate
         Expect: 204
         """
         # Create candidate and candidate subscription preference
-        AddUserRoles.add_and_get(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -65,7 +54,6 @@ class TestCreateSubscriptionPreference(object):
         Expect: 400, only one subscription preference per candidate is permitted
         """
         # Create candidate and its subscription preference
-        AddUserRoles.add(user_first)
         data = dict(frequency_id=1)
         resp = send_request('post', CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_first.id, access_token_first, data)
         print response_info(resp)
@@ -80,7 +68,6 @@ class TestCreateSubscriptionPreference(object):
         Test: Attempt to send non json data
         Expect: 400
         """
-        AddUserRoles.add(user_first)
         resp = requests.post(
             url=CandidateApiUrl.CANDIDATE_PREFERENCE % candidate_first.id,
             headers={'Authorization': 'Bearer {}'.format(access_token_first), 'content-type': 'application/json'},
@@ -99,14 +86,6 @@ class TestGetSubscriptionPreference(object):
         print response_info(resp)
         assert resp.status_code == 401 and resp.json()['error']['code'] == 11
 
-    def test_access_endpoint_without_role(self, access_token_first):
-        """
-        Test: Access endpoint without required user role
-        Expect: 401
-        """
-        resp = send_request('get', CandidateApiUrl.CANDIDATE_PREFERENCE % 5, access_token_first)
-        print response_info(resp)
-        assert resp.status_code == 401
 
     def test_get_non_existing_candidate_preference(self, access_token_first, user_first, talent_pool):
         """
@@ -114,7 +93,6 @@ class TestGetSubscriptionPreference(object):
         Expect:  200, should just get an empty dict for subscription_preference
         """
         # Create candidate
-        AddUserRoles.add_and_get(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -136,22 +114,12 @@ class TestUpdateSubscriptionPreference(object):
         print response_info(resp)
         assert resp.status_code == 401 and resp.json()['error']['code'] == 11
 
-    def test_access_endpoint_without_role(self, access_token_first, user_first):
-        """
-        Test: Access endpoint without required user role
-        Expect: 401
-        """
-        resp = send_request('put', CandidateApiUrl.CANDIDATE_PREFERENCE % 5, access_token_first)
-        print response_info(resp)
-        assert resp.status_code == 401
-
     def test_update_non_existing_candidate_preference(self, access_token_first, user_first, talent_pool):
         """
         Test: Attempt to update a non existing candidate subs preference
         Expect: 400, although it's "not found" it is however a misuse of the resource
         """
         # Create candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -169,7 +137,6 @@ class TestUpdateSubscriptionPreference(object):
         Expect: 400
         """
         # Create candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -192,7 +159,6 @@ class TestUpdateSubscriptionPreference(object):
         Expect: 404
         """
         # Update candidate's subs preference
-        AddUserRoles.edit(user_first)
         last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
         non_existing_candidate_id = last_candidate.id * 100
         data = {'frequency_id': 1}
@@ -208,7 +174,6 @@ class TestUpdateSubscriptionPreference(object):
         Expect: 200
         """
         # Create candidate and candidate's subscription preference
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -238,22 +203,12 @@ class TestDeleteSubscriptionPreference(object):
         print response_info(resp)
         assert resp.status_code == 401 and resp.json()['error']['code'] == 11
 
-    def test_access_endpoint_without_role(self, access_token_first):
-        """
-        Test: Access endpoint without required user role
-        Expect: 401
-        """
-        resp = send_request('delete', CandidateApiUrl.CANDIDATE_PREFERENCE % 5, access_token_first)
-        print response_info(resp)
-        assert resp.status_code == 401
-
     def test_delete_candidate_preference(self, access_token_first, user_first, talent_pool):
         """
         Test: Delete candidate's subscription preference
         Expect: 200, should just get an empty dict for subscription_preference
         """
         # Create candidate and candidate's subscription preference
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         candidate_id = create_resp.json()['candidates'][0]['id']
