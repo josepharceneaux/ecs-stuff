@@ -40,7 +40,13 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename
 
     # Handle bad responses from Candidate Service.
     if create_response.status_code in xrange(500, 511):
-        raise InternalServerError('Error in response from candidate service during creation')
+        logger.error('Error in response from candidate service during creation: {}'.format(
+            create_response)
+        )
+        raise InternalServerError(
+            error_message=error_constants.CANDIDATE_5XX['message'],
+            error_code=error_constants.CANDIDATE_5XX['code']
+        )
 
     response_dict = json.loads(create_response.content)
 
@@ -57,14 +63,12 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename
         # the error code supplied by Candidate Service.
         else:
             candidate_service_error = response_dict.get('error', {}).get('message')
+            logger.error(candidate_service_error)
 
-            if candidate_service_error:
-                error_text = candidate_service_error + ' Filename: {}'.format(filename)
-
-            else:
-                error_text = 'Error in candidate creating from resume service. Filename {}'.format(filename)
-
-            raise InvalidUsage(error_message=error_text)
+            raise InvalidUsage(
+                error_message=error_constants.CANDIDATE_POST_ERROR['message'],
+                error_code=error_constants.CANDIDATE_POST_ERROR['code']
+            )
 
 
 

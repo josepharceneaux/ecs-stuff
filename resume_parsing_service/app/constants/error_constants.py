@@ -107,32 +107,42 @@ CANDIDATE_POST_CONNECTION = {
     'message': 'An error has occurred in creating the candidate you requested. Please try again.'
 }
 
-CANDIDATE_PATCH_CONNECTION = {
+CANDIDATE_POST_ERROR = {
     'code': 3201,
-    'message': 'An error has occurred in updating the candidate you requested. Please try again.'
+    'message': 'An error has occurred in creating the candidate you requested. Please try again.'
 }
 
-CANDIDATE_PATCH_GENERIC = {
+CANDIDATE_PATCH_CONNECTION = {
     'code': 3202,
     'message': 'An error has occurred in updating the candidate you requested. Please try again.'
 }
 
-CANDIDATE_GET = {
+CANDIDATE_PATCH_GENERIC = {
     'code': 3203,
+    'message': 'An error has occurred in updating the candidate you requested. Please try again.'
+}
+
+CANDIDATE_GET = {
+    'code': 3204,
     'message': 'An error has occurred in retreiving the candidate you created. Please try again.'
 }
 
 RESUME_UNCAUGHT_EXCEPTION = {
-    'code': 3204,
+    'code': 3205,
     'message': GT_ISSUE_MSG
 }
 
 TALENT_POOLS_GET = {
-    'code': 3205,
+    'code': 3206,
     'message': GENERIC_ERROR_MSG
 }
 
 TALENT_POOLS_ERROR = {
-    'code': 3206,
+    'code': 3207,
     'message': GENERIC_ERROR_MSG
+}
+
+CANDIDATE_5XX = {
+    'code': 3208,
+    'message': GT_ISSUE_MSG
 }
