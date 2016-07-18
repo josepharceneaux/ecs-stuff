@@ -201,7 +201,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
                                                         invalid_campaign_name, sms_campaign_of_user_first):
         """
         This is a test to update SMS campaign with invalid campaign name. Status code should be 400 and
-        campaign should not be created.
+        campaign should not be updated.
         """
         campaign_data = campaign_valid_data.copy()
         campaign_data['name'] = invalid_campaign_name
