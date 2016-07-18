@@ -15,7 +15,7 @@ class ATS(db.Model):
     Class representing table holding list of ATS we have integrated with.
     """
     __tablename__ = 'ats'
-    id = db.Column(db.BigInteger, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255))
     homepage_url = db.Column(db.String(255))
     login_url = db.Column(db.String(255))
@@ -87,7 +87,7 @@ class ATSAccount(db.Model):
     An ATS account belonging to a GT user.
     """
     __tablename__ = 'ats_account'
-    id = db.Column(db.BigInteger, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     active = db.Column(db.Boolean, default=False)
     ats_id = db.Column(db.BigInteger)
     user_id = db.Column(db.BigInteger)
@@ -164,7 +164,7 @@ class ATSCredential(db.Model):
     Credentials used to access an ATS account.
     """
     __tablename__ = 'ats_credential'
-    id = db.Column(db.BigInteger, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     ats_account_id = db.Column(db.BigInteger)
     auth_type = db.Column(db.String(45))
     credentials_json = db.Column(db.Text)
@@ -189,7 +189,7 @@ class ATSCandidate(db.Model):
     A candidate from an ATS. May or may not be linked to a GT candidate.
     """
     __tablename__ = 'ats_candidate'
-    id = db.Column(db.BigInteger, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     ats_account_id = db.Column(db.BigInteger)
     ats_remote_id = db.Column(db.String(100))
     gt_candidate_id = db.Column(db.BigInteger)
@@ -246,7 +246,7 @@ class ATSCandidateProfile(db.Model):
     Attributes of an ATS candidate.
     """
     __tablename__ = 'ats_candidate_profile'
-    id = db.Column(db.BigInteger, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
     active = db.Column(db.Boolean, default=False)
     profile_json = db.Column(db.Text)
     ats_id  = db.Column(db.BigInteger)
