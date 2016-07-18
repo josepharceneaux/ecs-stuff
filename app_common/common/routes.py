@@ -241,8 +241,13 @@ class UserServiceApi(object):
 
     DOMAIN_SOURCES = '/' + VERSION + '/sources'
     DOMAIN_SOURCE = '/' + VERSION + '/sources/<int:id>'
+
     DOMAIN_CUSTOM_FIELDS = '/' + VERSION + '/custom_fields'
     DOMAIN_CUSTOM_FIELD = DOMAIN_CUSTOM_FIELDS + '/<int:id>'
+
+    DOMAIN_CUSTOM_FIELD_CATEGORIES = URL_PREFIX + 'custom_field_categories'
+    DOMAIN_CUSTOM_FIELD_CATEGORY = DOMAIN_CUSTOM_FIELD_CATEGORIES + '/<int:id>'
+
     DOMAIN_AOIS = '/' + VERSION + '/areas_of_interest'
     DOMAIN_AOI = '/' + VERSION + '/areas_of_interest/<int:id>'
 
@@ -271,8 +276,13 @@ class UserServiceApiUrl(object):
     UPDATE_PASSWORD_API = HOST_NAME % ('/' + VERSION + '/users/update-password')
     FORGOT_PASSWORD_API = HOST_NAME % ('/' + VERSION + '/users/forgot-password')
     RESET_PASSWORD_API = HOST_NAME % ('/' + VERSION + '/users/reset-password/%s')
+
     DOMAIN_CUSTOM_FIELDS = HOST_NAME % ('/' + VERSION + '/custom_fields')
     DOMAIN_CUSTOM_FIELD = DOMAIN_CUSTOM_FIELDS + '/%s'
+
+    DOMAIN_CUSTOM_FIELD_CATEGORIES = HOST_NAME % ('/' + VERSION + '/custom_field_categories')
+    DOMAIN_CUSTOM_FIELD_CATEGORY = DOMAIN_CUSTOM_FIELD_CATEGORIES + '/%s'
+
     DOMAIN_AOIS = HOST_NAME % ('/' + VERSION + '/areas_of_interest')
     DOMAIN_AOI = HOST_NAME % ('/' + VERSION + '/areas_of_interest/%s')
 
@@ -634,7 +644,7 @@ class SocialNetworkApi(object):
     RSVP = '/' + VERSION + '/rsvp'
     CODE = '/' + VERSION + '/code'
     # URL for Twitter authentication
-    TWITTER_AUTH = '/' + VERSION + '/twitter-auth/<int:user_id>'
+    TWITTER_AUTH = '/' + VERSION + '/twitter-auth'
     TWITTER_CALLBACK = '/' + VERSION + '/twitter-callback/<int:user_id>'
 
 

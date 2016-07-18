@@ -246,8 +246,7 @@ class Meetup(EventBase):
                     # Organizer data looks like
                     # { u'name': u'Waqas Younas', u'member_id': 183366764}
                     group_organizer = group['results'][0]['organizer']
-                    url = self.api_url + '/member/' + \
-                          str(group_organizer['member_id']) + '?sign=true'
+                    url = '{}/member/{}'.format(self.api_url, str(group_organizer['member_id']) + '?sign=true')
                     response = http_request('GET', url, headers=self.headers,
                                             user_id=self.user.id)
                     if response.ok:

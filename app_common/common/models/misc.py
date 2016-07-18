@@ -422,6 +422,18 @@ class CustomFieldCategory(db.Model):
     name = db.Column('Name', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
+    def __repr__(self):
+        return "<CustomFieldCategory (id = {})>".format(self.id)
+
+    @classmethod
+    def get_all_in_domain(cls, domain_id):
+        """
+        Function will get all of domain's custom field categories
+        :type domain_id:  int | long
+        :rtype:  list[CustomFieldCategory]
+        """
+        return cls.query.filter_by(domain_id=domain_id).all()
+
 
 # class PatentDetail(db.Model):
 #     __tablename__ = 'patent_detail'
@@ -441,7 +453,7 @@ class UrlConversion(db.Model):
     source_url = db.Column('SourceUrl', db.String(512))  # Ours
     destination_url = db.Column('DestinationUrl', db.String(512))  # Theirs
     hit_count = db.Column('HitCount', db.Integer, default=0)
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
     last_hit_time = db.Column('LastHitTime', db.DateTime)
 
     def __repr__(self):

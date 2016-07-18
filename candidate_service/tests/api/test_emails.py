@@ -10,7 +10,6 @@ from candidate_service.common.tests.conftest import *
 from candidate_service.common.models.candidate import EmailLabel
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
 
@@ -28,7 +27,6 @@ class TestCreateCandidateEmail(object):
         Expect: 201
         """
         # Create Candidate with no email
-        AddUserRoles.add_and_get(user_first)
         data = {'candidates': [{'first_name': 'john', 'last_name': 'stark',
                                 'talent_pool_ids': {'add': [talent_pool.id]}}]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
@@ -49,7 +47,6 @@ class TestCreateCandidateEmail(object):
         Expect: 400
         """
         # Create Candidate
-        AddUserRoles.add(user_first)
         data = {'candidates': [{'emails': [{'label': None, 'is_default': True, 'address': 'bad_email.com'}],
                                 'talent_pool_ids': {'add': [talent_pool.id]}}]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
@@ -62,7 +59,6 @@ class TestCreateCandidateEmail(object):
         Test:   Create a Candidate without providing email's label
         Expect: 201, email's label must be 'Primary'
         """
-        AddUserRoles.add_and_get(user=user_first)
 
         # Create Candidate without email-label
         data = {'candidates': [
@@ -88,7 +84,6 @@ class TestCreateCandidateEmail(object):
         Test:  Add candidate email with all empty values
         Expect: 400; email address is required
         """
-        AddUserRoles.add_and_get(user_first)
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
                 {'label': None, 'address': '  '},
@@ -106,7 +101,6 @@ class TestCreateCandidateEmail(object):
         Test:  Add candidate emails with values containing whitespaces
         Expect:  201; but whitespaces should be stripped
         """
-        AddUserRoles.add_and_get(user_first)
         data = {'candidates': [
             {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
                 {'label': ' work', 'address': fake.safe_email() + '   '},
@@ -135,7 +129,6 @@ class TestCreateCandidateEmail(object):
         Test: Add candidate with two identical emails
         Expect: 201, but only one email should be added to db
         """
-        AddUserRoles.add_and_get(user_first)
 
         # Create candidate with two identical emails
         email_address = fake.safe_email()
@@ -154,7 +147,6 @@ class TestCreateCandidateEmail(object):
         """
         Test: Add candidate with an email that is associated with another candidate in the same domain
         """
-        AddUserRoles.add_and_get(user_first)
 
         email_address = fake.safe_email()
         data = {'candidates': [
@@ -176,7 +168,6 @@ class TestUpdateCandidateEmails(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -209,7 +200,6 @@ class TestUpdateCandidateEmails(object):
         Expect: 200, but only one CandidateEmail must have is_current True, the rest must be False
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -231,7 +221,6 @@ class TestUpdateCandidateEmails(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -264,7 +253,6 @@ class TestUpdateCandidateEmails(object):
         Expect: 400
         """
         # Create Candidate
-        AddUserRoles.add_get_edit(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -295,8 +283,6 @@ class TestUpdateCandidateEmails(object):
         """
         Test: Add two candidates. Then add another email to candidate 2 using candidate's 1 email
         """
-        AddUserRoles.add_get_edit(user_first)
-
         # Define email address
         first_candidates_email = fake.safe_email()
 
@@ -352,8 +338,6 @@ class TestDeleteCandidateEmail(object):
         Expect: 403
         """
         # Create candidate_1 & candidate_2 with sample_user & sample_user_2
-        AddUserRoles.add(user_first)
-        AddUserRoles.edit(user_second)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         candidate_1_id = create_resp_1.json()['candidates'][0]['id']
@@ -370,7 +354,6 @@ class TestDeleteCandidateEmail(object):
         Expect: 403
         """
         # Create candidate_1 and candidate_2
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data_1)
@@ -395,7 +378,6 @@ class TestDeleteCandidateEmail(object):
         Expect: 204, Candidate must not have any emails left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -416,7 +398,6 @@ class TestDeleteCandidateEmail(object):
         Expect: 204, Candidate's emails must be less 1
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -447,7 +428,6 @@ class TestTrackCandidateEmailEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 

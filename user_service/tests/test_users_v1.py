@@ -1,6 +1,6 @@
 from user_service.user_app import app
 from user_service.common.tests.conftest import *
-from user_service.common.utils.handy_functions import add_role_to_test_user
+from user_service.common.models.user import Role
 from common_functions import *
 
 
@@ -15,30 +15,21 @@ def test_user_service_get(access_token_first, user_first, user_second):
     response, status_code = user_api(access_token_first, user_second.id)
     assert status_code == 401
 
-    # Logged-in user trying to get info of user of different domain
-    response, status_code = user_api(access_token_first, user_second.id)
-    assert status_code == 401
-
     # Logged-in user trying to get info of user
     response, status_code = user_api(access_token_first, user_first.id)
     assert status_code == 200
     assert response['user'].get('id') == user_first.id
     assert response['user'].get('locale') == 'en-US'
 
-    # Logged-in user trying to get all users of a domain
-    response, status_code = user_api(access_token_first)
-    assert status_code == 401
-
-    # Adding 'CAN_GET_USERS' to user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_GET_USERS])
-
     # Logged-in user trying to get info of user
     response, status_code = user_api(access_token_first, user_first.id)
     assert status_code == 200
     assert response['user'].get('id') == user_first.id
 
     # Logged-in user trying to get info of user of different domain
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    user_first.role_id = Role.get_by_name('TALENT_ADMIN').id
+    db.session.commit()
+
     response, status_code = user_api(access_token_first, user_second.id)
     assert status_code == 200
     assert response['user'].get('id') == user_second.id
@@ -95,9 +86,11 @@ def test_user_service_put(access_token_first, access_token_second, user_first, u
     response, status_code = user_api(access_token_first, user_first.id, data=data, action='PUT')
     assert status_code == 400
 
+    user_second.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+    db.session.commit()
+
     # Logged-in user trying to update user
     data['email'] = 'sample_%s@gettalent.com' % gen_salt(15)
-    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
     response, status_code = user_api(access_token_second, user_first.id, data=data, action='PUT')
     assert status_code == 200
 
@@ -112,8 +105,8 @@ def test_user_service_put(access_token_first, access_token_second, user_first, u
     assert user_first.phone == data['phone']
     assert user_first.last_read_datetime.isoformat() == data['last_read_datetime']
 
-    # Adding 'CAN_EDIT_USERS' in user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_EDIT_USERS])
+    user_first.role_id = Role.get_by_name('ADMIN').id
+    db.session.commit()
 
     # Logged-in user trying to update a different user without providing email address
     del data['email']
@@ -143,8 +136,8 @@ def test_user_service_post(access_token_first, access_token_second, user_first, 
     response, status_code = user_api(access_token_first, data=data, action='POST')
     assert status_code == 401
 
-    # Adding 'CAN_ADD_USERS' role to user_first
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_ADD_USERS])
+    user_first.role_id = Role.get_by_name('ADMIN').id
+    db.session.commit()
 
     # Logged-in user trying to add new users with empty request body
     response, status_code = user_api(access_token_first, action='POST')
@@ -179,7 +172,8 @@ def test_user_service_post(access_token_first, access_token_second, user_first, 
     data['users'][0]['locale'] = 'en-GB'
 
     # Logged-in user trying to add new users into different domain
-    add_role_to_test_user(user_second, [DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO])
+    user_second.role_id = Role.get_by_name('TALENT_ADMIN').id
+    db.session.commit()
     response, status_code = user_api(access_token_second, data=data, action='POST')
     assert status_code == 200
 

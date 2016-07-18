@@ -8,7 +8,6 @@ from candidate_service.common.tests.conftest import *
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_errors
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 
@@ -37,7 +36,6 @@ class TestCreateCandidateReference(object):
         Expect: 201
         """
         # Create references for candidate
-        AddUserRoles.all_roles(user_first)
         create_resp = send_request('post', self.URL % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
         assert create_resp.status_code == 201
@@ -57,7 +55,6 @@ class TestCreateCandidateReference(object):
         Expect: 201, but ReferenceEmail, ReferencePhone, and ReferenceWebAddress should not be added to db
         """
         # Create references for candidate
-        AddUserRoles.all_roles(user_first)
         data = {'candidate_references': [
             {
                 'name': fake.name(), 'position_title': fake.job(), 'comments': 'red chili pepper!',
@@ -89,7 +86,6 @@ class TestUpdateCandidateReference(object):
         """
         """
         # Create references for candidate
-        AddUserRoles.all_roles(user_first)
         create_resp = send_request('post', self.URL % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
         assert create_resp.status_code == 201
@@ -120,7 +116,6 @@ class TestDeleteCandidateReference(object):
         Expect: 200
         """
         # Create references for candidate
-        AddUserRoles.all_roles(user_first)
         create_resp = send_request('post', self.URL % candidate_first.id, access_token_first, data)
         assert len(create_resp.json()['candidate_references']) == len(data['candidate_references'])
 
@@ -158,7 +153,6 @@ class TestDeleteCandidateReference(object):
         Expect: 403, no records should be deleted
         """
         # Create references for candidate
-        AddUserRoles.all_roles(user_first)
         send_request('post', self.URL % candidate_first.id, access_token_first, data)
 
         # Retrieve candidate's references
@@ -181,7 +175,6 @@ class TestGetCandidateReference(object):
         Test: Retrieve a single candidate reference by providing its ID
         """
         # Create references for candidate
-        AddUserRoles.all_roles(user_first)
         create_resp = send_request('post', self.URL % candidate_first.id, access_token_first, data)
         print response_info(create_resp)
         assert create_resp.status_code == 201

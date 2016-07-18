@@ -34,7 +34,7 @@ from candidate_service.common.models.email_campaign import EmailCampaign, EmailC
     EmailCampaignSendUrlConversion
 from candidate_service.common.models.misc import AreaOfInterest, UrlConversion
 from candidate_service.common.models.language import CandidateLanguage
-from candidate_service.common.models.user import User
+from candidate_service.common.models.user import User, Permission
 
 # Modules
 from track_changes import track_edits, track_areas_of_interest_edits
@@ -133,11 +133,17 @@ def fetch_candidate_info(candidate, fields=None):
 
     social_networks = None
     if get_all_fields or 'social_networks' in fields:
-        social_networks = candidate_social_networks(candidate=candidate)
+        if Permission.PermissionNames.CAN_GET_CANDIDATE_SOCIAL_PROFILE in request.user_permissions:
+            social_networks = candidate_social_networks(candidate=candidate)
+        else:
+            raise ForbiddenError("You are not authorized to get social networks of this candidate")
 
     history = None
     if get_all_fields or 'contact_history' in fields:
-        history = candidate_contact_history(candidate=candidate)
+        if Permission.PermissionNames.CAN_GET_CANDIDATE_CONTACT_HISTORY in request.user_permissions:
+            history = candidate_contact_history(candidate=candidate)
+        else:
+            raise ForbiddenError("You are not authorized to get contact history of this candidate")
 
     openweb_id = None
     if get_all_fields or 'openweb_id' in fields:
@@ -988,7 +994,11 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's social_network(s)
     if social_networks:
-        _add_or_update_social_networks(candidate, social_networks, user_id, is_updating)
+        if (is_creating and Permission.PermissionNames.CAN_ADD_CANDIDATE_SOCIAL_PROFILE in request.user_permissions) or (
+                    is_updating and Permission.PermissionNames.CAN_EDIT_CANDIDATE_SOCIAL_PROFILE in request.user_permissions):
+            _add_or_update_social_networks(candidate, social_networks, user_id, is_updating)
+        else:
+            raise ForbiddenError("You are not authorized to add/modify social networks of this candidate")
 
     # Commit to database after all insertions/updates are executed successfully
     db.session.commit()

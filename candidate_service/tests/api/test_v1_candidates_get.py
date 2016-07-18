@@ -8,7 +8,6 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
 
@@ -22,7 +21,6 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 class TestGetCandidate(object):
     @staticmethod
     def create_candidate(access_token_first, user_first, talent_pool, data=None):
-        AddUserRoles.add(user_first)
         if data is None:
             data = generate_single_candidate_data([talent_pool.id])
         return send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
@@ -33,7 +31,6 @@ class TestGetCandidate(object):
         Expect: 400
         """
         # Create candidate
-        AddUserRoles.add(user_first)
         resp = requests.post(url=CandidateApiUrl.CANDIDATES,
                              headers={'Authorization': 'Bearer {}'.format(access_token_first),
                                       'content-type': 'application/json'})
@@ -47,7 +44,6 @@ class TestGetCandidate(object):
         Expect: 400
         """
         # Create candidate
-        AddUserRoles.add(user_first)
         resp = requests.post(
             url=CandidateApiUrl.CANDIDATES,
             headers={'Authorization': 'Bearer {}'.format(access_token_first),
@@ -64,7 +60,6 @@ class TestGetCandidate(object):
         Expect: 401
         """
         # Create Candidate
-        AddUserRoles.add_and_get(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         resp_dict = create_resp.json()
@@ -84,7 +79,6 @@ class TestGetCandidate(object):
         Expect: 400
         """
         # Create Candidate
-        AddUserRoles.add_and_get(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -102,8 +96,6 @@ class TestGetCandidate(object):
         Test:   Attempt to retrieve a candidate outside of logged-in-user's domain
         Expect: 403 status_code
         """
-        AddUserRoles.add(user_first)
-        AddUserRoles.get(user_second)
 
         # Create Candidate
         data = generate_single_candidate_data([talent_pool.id])
@@ -124,7 +116,6 @@ class TestGetCandidate(object):
         Expect: 400
         """
         # Retrieve Candidate via candidate's email
-        AddUserRoles.get(user_first)
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % 'bad_email.com', access_token_first)
         print response_info(get_resp)
         assert get_resp.status_code == 400
@@ -136,7 +127,6 @@ class TestGetCandidate(object):
         Expect: 200 in both cases
         """
         # Create candidate
-        AddUserRoles.add_and_get(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -168,7 +158,6 @@ class TestGetCandidate(object):
         Test: Attempt to retrieve a candidate that doesn't exists or is web-hidden
         """
         # Retrieve non existing candidate
-        AddUserRoles.all_roles(user_first)
         last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
         non_existing_candidate_id = last_candidate.id * 100
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % non_existing_candidate_id, access_token_first)

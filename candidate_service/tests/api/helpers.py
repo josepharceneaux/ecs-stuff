@@ -7,55 +7,8 @@ import time
 import pycountry as pc
 
 # Models
-from candidate_service.common.models.user import DomainRole
+from candidate_service.common.models.user import Permission
 
-# User Roles
-from candidate_service.common.utils.handy_functions import add_role_to_test_user
-
-
-class AddUserRoles(object):
-    """
-    Class entails functions that will help add specific roles to test-user
-    """
-
-    @staticmethod
-    def get(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_GET_CANDIDATES])
-
-    @staticmethod
-    def add(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES])
-
-    @staticmethod
-    def edit(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_EDIT_CANDIDATES])
-
-    @staticmethod
-    def delete(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_DELETE_CANDIDATES])
-
-    @staticmethod
-    def add_and_get(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                            DomainRole.Roles.CAN_GET_CANDIDATES])
-
-    @staticmethod
-    def add_and_delete(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                            DomainRole.Roles.CAN_DELETE_CANDIDATES])
-
-    @staticmethod
-    def add_get_edit(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                            DomainRole.Roles.CAN_GET_CANDIDATES,
-                                            DomainRole.Roles.CAN_EDIT_CANDIDATES])
-
-    @staticmethod
-    def all_roles(user):
-        return add_role_to_test_user(user, [DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                            DomainRole.Roles.CAN_GET_CANDIDATES,
-                                            DomainRole.Roles.CAN_EDIT_CANDIDATES,
-                                            DomainRole.Roles.CAN_DELETE_CANDIDATES])
 
 
 def check_for_id(_dict):

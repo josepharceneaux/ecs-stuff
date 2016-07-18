@@ -3,7 +3,6 @@ from time import sleep
 from auth_service.oauth import app
 from auth_service.common.tests.conftest import *
 from auth_service.common.models.user import *
-from auth_service.common.utils.handy_functions import add_role_to_test_user
 from auth_service.common.routes import AuthApiUrl, AuthApiUrlV2
 from auth_service.common.utils.auth_utils import gettalent_generate_password_hash
 
@@ -241,8 +240,8 @@ def test_get_token_of_any_user_endpoint_v1(sample_client, access_token_first, us
     response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER_URL % user_second.id, headers=headers)
     assert response.status_code == 401
 
-    # Adding appropriate roles to logged-in user
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_IMPERSONATE_USERS])
+    user_first.role_id = Role.get_by_name('TALENT_ADMIN').id
+    db.session.commit()
 
     # Logged-in user trying to get access_token of a non-existing user
     response = requests.get(AuthApiUrl.TOKEN_OF_ANY_USER_URL % 119946, headers=headers)
@@ -293,7 +292,8 @@ def test_get_token_of_any_user_endpoint_v2(user_first, user_second):
     assert response.status_code == 401
 
     # Adding appropriate roles to logged-in user
-    add_role_to_test_user(user_first, [DomainRole.Roles.CAN_IMPERSONATE_USERS])
+    user_first.role_id = Role.get_by_name('TALENT_ADMIN').id
+    db.session.commit()
 
     # Logged-in user trying to get access_token of a non-existing user
     response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER_URL % 119946, headers=headers)

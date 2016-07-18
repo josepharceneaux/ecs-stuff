@@ -29,13 +29,6 @@ def create_dummy_users():
     INSERT INTO token VALUES (1,'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z',1,'Bearer','uTl6zNUdoNATwwUg0GOuSFvyrtyCCW','N1tLeTlP7LZUt3QILZyQw957s38AKB','2017-03-11 08:44:18',''),
     (2,'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z',2,'Bearer','9ery8pVOxTOvQU0oJsENRek4lj6ZT6','oRojE4Gu4KY29TXO11yh1AcZLGjOhM','2017-03-25 12:29:49',''),
     (3,'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z',3,'Bearer','iM0WU5y76laIJph5LS1jidKcdjWk4a','JdRrBdcm9N7cfhjjcUUIRWGU7UVBuy','2017-03-27 00:40:30','');
-    INSERT INTO domain_role (role_name) VALUES ("CAN_ADD_USER_ROLES"),("CAN_DELETE_USER_ROLES"), ("CAN_ADD_USERS"),
-    ("CAN_GET_USERS"),("CAN_DELETE_USERS"),("CAN_ADD_TALENT_POOLS"),("CAN_GET_TALENT_POOLS"),("CAN_DELETE_TALENT_POOLS"),("CAN_ADD_TALENT_POOLS_TO_GROUP"),("CAN_ADD_CANDIDATES"),("CAN_GET_CANDIDATES"),
-    ("CAN_DELETE_CANDIDATES"),("CAN_ADD_TALENT_PIPELINE_SMART_LISTS"), ("CAN_DELETE_TALENT_PIPELINE_SMART_LISTS"), ("CAN_ADD_TALENT_PIPELINES"),
-    ("CAN_GET_ALL_SCHEDULER_JOBS");
-    INSERT INTO user_scoped_roles (UserId, RoleId) select 1, id from domain_role;
-    INSERT INTO user_scoped_roles (UserId, RoleId) select 2, id from domain_role;
-    INSERT INTO user_scoped_roles (UserId, RoleId) select 3, id from domain_role;
     '''
 
     sql = text(q)

@@ -265,7 +265,6 @@ class Eventbrite(EventBase):
                 email=organizer_email if organizer_email else '',
                 about=organizer['description']
                 if organizer.has_key('description') else ''
-
             )
             organizer_data['about'] = organizer_data['about'].get('html', '') if type(organizer_data['about']) == dict \
                 else ''
