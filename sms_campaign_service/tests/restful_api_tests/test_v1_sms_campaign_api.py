@@ -167,7 +167,6 @@ class TestSmsCampaignHTTPPost(object):
         """
         response = requests.post(self.URL, headers={'Authorization': 'Bearer %s' % access_token_first})
         assert response.status_code == InvalidUsage.http_status_code(), 'It should be a bad request (400)'
-        assert 'header' in response.json()['error']['message']
 
     def test_campaign_creation_with_no_user_phone_and_valid_data(self, user_first, campaign_valid_data, headers):
         """

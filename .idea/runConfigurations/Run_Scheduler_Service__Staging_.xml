@@ -4,6 +4,7 @@
     <gulpfile>$PROJECT_DIR$/scheduler_service_admin/gulpfile.js</gulpfile>
     <tasks />
     <arguments>serve-build</arguments>
+    <pass-parent-envs>true</pass-parent-envs>
     <envs>
       <env name="GT_ENVIRONMENT" value="staging" />
     </envs>

@@ -218,7 +218,7 @@ def invalid_campaign_name(request):
     """
     This function returns invalid campaign name to create/update an sms-campaign.
     """
-    return [request.param]
+    return request.param
 
 
 @pytest.fixture()
