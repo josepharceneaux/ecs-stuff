@@ -9,6 +9,7 @@ from flask.ext.cors import CORS
 # Module Specific
 from resume_parsing_service.app import logger
 from resume_parsing_service.common.error_handling import InvalidUsage
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.param_builders import build_params_from_form
 from resume_parsing_service.app.views.param_builders import build_params_from_json
 from resume_parsing_service.app.views.resume_processor import process_resume
@@ -48,7 +49,8 @@ def resume_post_receiver():
         logger.debug("Invalid Header set. Form: {}. Files: {}. JSON: {}".format(
             request.form, request.files, request.json
         ))
-        raise InvalidUsage("Invalid Request. Bad Headers set.")
+        raise InvalidUsage(error_message=error_constants.INVALID_HEADERS['message'],
+                           error_code=error_constants.INVALID_HEADERS['code'])
 
     parse_params['oauth'] = oauth
     # If the value is not set retrieve the first ID given by candidate_pool_service.

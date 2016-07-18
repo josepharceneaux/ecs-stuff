@@ -11,6 +11,7 @@ import boto3
 import requests
 # Module Specific
 from resume_parsing_service.app import logger
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.routes import CandidateApiUrl, CandidatePoolApiUrl
 from resume_parsing_service.common.utils.talent_s3 import boto3_get_file
@@ -32,7 +33,10 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename
 
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.exception("create_parsed_resume_candidate. Could not reach CandidateService POST")
-        raise InternalServerError("Unable to reach Candidates API during candidate creation")
+        raise InternalServerError(
+            error_message=error_constants.CANDIDATE_POST_CONNECTION['message'],
+            error_code=error_constants.CANDIDATE_POST_CONNECTION['code']
+        )
 
     # Handle bad responses from Candidate Service.
     if create_response.status_code in xrange(500, 511):
@@ -87,15 +91,22 @@ def update_candidate_from_resume(candidate_dict, formatted_token_str, filename_s
                                                   'Content-Type': 'application/json'})
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.exception("update_candidate_from_resume. Could not reach CandidateService PATCH")
-        raise InternalServerError("Unable to reach Candidates API in during candidate update")
+        raise InternalServerError(
+            error_message=error_constants.CANDIDATE_PATCH_CONNECTION['message'],
+            error_code=error_constants.CANDIDATE_PATCH_CONNECTION['code']
+        )
 
     if update_response.status_code is not requests.codes.ok:
         logger.info(
-            "ResumetoCandidateError. {} received from CandidateService (update)".format(
-                update_response.status_code))
+            "ResumetoCandidateError. {} received from CandidateService (update). File: {}".format(
+                update_response.status_code, filename_str
+            )
+        )
 
         raise InternalServerError(
-            'Candidate from {} exists, error updating info'.format(filename_str))
+            error_message=error_constants.CANDIDATE_PATCH_GENERIC['message'],
+            error_code=error_constants.CANDIDATE_PATCH_GENERIC['code']
+        )
 
     response_dict = json.loads(update_response.content)
     candidate_id = response_dict.get('candidates')[0]['id']
@@ -145,13 +156,23 @@ def get_users_talent_pools(formatted_token_str):
         talent_pool_response = requests.get(CandidatePoolApiUrl.TALENT_POOLS,
                                             headers={'Authorization': formatted_token_str})
     except requests.exceptions.ConnectionError:
-        raise InvalidUsage("ResumeParsingService could not reach CandidatePool API in get_users_talent_pools")
+        logger.exception("ResumeParsingService could not reach CandidatePool API in get_users_talent_pools")
+        raise InvalidUsage(
+            error_message=error_constants.TALENT_POOLS_GET['message'],
+            error_code=error_constants.TALENT_POOLS_GET['code']
+        )
 
     talent_pools_response = json.loads(talent_pool_response.content)
 
     if 'error' in talent_pools_response:
-        raise InvalidUsage(error_message=talent_pools_response['error'].get(
-            'message', 'Error in getting user talent pools.'))
+        logger.error(
+            talent_pools_response['error'].get('message', 'Error in getting user talent pools.')
+        )
+
+        raise InvalidUsage(
+            error_message=error_constants.TALENT_POOLS_ERROR['message'],
+            error_code=error_constants.TALENT_POOLS_ERROR['code']
+        )
 
     try:
         return [talent_pools_response['talent_pools'][0]['id']]
@@ -212,6 +233,9 @@ def resume_file_from_params(parse_params):
         resume_file = StringIO(resume_bin.read())
 
     else:
-        raise InvalidUsage('Invalid query params for /parse_resume')
+        raise InvalidUsage(
+            error_message=error_constants.INVALID_ARGS['message'],
+            error_code=error_constants.INVALID_ARGS['code']
+        )
 
     return resume_file

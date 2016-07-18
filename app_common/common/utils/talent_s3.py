@@ -237,7 +237,7 @@ def boto3_get_file(bucket, filename):
         s3_file = client.get_object(Bucket=bucket, Key=filename)
     except Exception as e:
         app.logger.exception("S3 error. Error retrieving {} from {}. Exception: {}".format(filename, bucket, e.message))
-        raise InvalidUsage(error_message="Error retrieving uploaded file.")
+        raise InvalidUsage(error_message="There has been an error retrieving the uploaded file. Please try again")
     from cStringIO import StringIO
     return StringIO(s3_file['Body'].read())
 
