@@ -294,8 +294,8 @@ class CandidatePhone(db.Model):
         from user import User  # This has to be here to avoid circular import
         if not isinstance(current_user, User):
             raise InternalServerError('Invalid User object given')
-        return cls.query.join(Candidate).\
-            join(User, User.domain_id == current_user.domain_id).\
+        return cls.query.join(Candidate). \
+            join(User, User.domain_id == current_user.domain_id). \
             filter(Candidate.user_id == User.id, cls.value == phone_value.strip()).all()
 
 
@@ -444,8 +444,8 @@ class CandidateEmail(db.Model):
     @classmethod
     def get_emails_in_domain(cls, domain_id, email_addresses):
         from user import User
-        return cls.query.join(Candidate).join(User).\
-            filter(User.domain_id == domain_id).\
+        return cls.query.join(Candidate).join(User). \
+            filter(User.domain_id == domain_id). \
             filter(cls.address.in_(email_addresses)).all()
 
 
