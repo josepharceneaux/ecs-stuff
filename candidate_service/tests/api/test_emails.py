@@ -21,7 +21,7 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 
 
 class TestCreateCandidateEmail(object):
-    def test_create_candidate_without_email(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_without_email(self, access_token_first, talent_pool):
         """
         Test:   Attempt to create a Candidate with no email
         Expect: 201
@@ -41,7 +41,7 @@ class TestCreateCandidateEmail(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
-    def test_create_candidate_with_bad_email(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_with_bad_email(self, access_token_first, talent_pool):
         """
         Test:   Attempt to create a Candidate with invalid email format
         Expect: 400
@@ -54,7 +54,7 @@ class TestCreateCandidateEmail(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
 
-    def test_create_candidate_without_email_label(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_without_email_label(self, access_token_first, talent_pool):
         """
         Test:   Create a Candidate without providing email's label
         Expect: 201, email's label must be 'Primary'
@@ -79,7 +79,7 @@ class TestCreateCandidateEmail(object):
         assert candidate_dict['emails'][0]['label'] == EmailLabel.PRIMARY_DESCRIPTION
         assert candidate_dict['emails'][-1]['label'] == EmailLabel.OTHER_DESCRIPTION
 
-    def test_add_emails_with_whitespaced_values(self, access_token_first, user_first, talent_pool):
+    def test_add_emails_with_whitespaced_values(self, access_token_first, talent_pool):
         """
         Test:  Add candidate emails with values containing whitespaces
         Expect:  201; but whitespaces should be stripped
@@ -107,7 +107,7 @@ class TestCreateCandidateEmail(object):
         assert emails[1]['address'] == data['candidates'][0]['emails'][1]['address'].strip()
         assert emails[1]['label'] == data['candidates'][0]['emails'][1]['label'].strip()
 
-    def test_add_candidate_with_duplicate_emails(self, access_token_first, user_first, talent_pool):
+    def test_add_candidate_with_duplicate_emails(self, access_token_first, talent_pool):
         """
         Test: Add candidate with two identical emails
         Expect: 201, but only one email should be added to db
@@ -126,7 +126,7 @@ class TestCreateCandidateEmail(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.INVALID_USAGE
 
-    def test_add_duplicate_candidate_with_same_email(self, access_token_first, user_first, talent_pool):
+    def test_add_duplicate_candidate_with_same_email(self, access_token_first, talent_pool):
         """
         Test: Add candidate with an email that is associated with another candidate in the same domain
         """
@@ -143,9 +143,25 @@ class TestCreateCandidateEmail(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.CANDIDATE_ALREADY_EXISTS
 
+    def test_add_multiple_default_emails(self, access_token_first, talent_pool):
+        """
+        Test: Add multiple emails with "is default" set to true
+        """
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
+                {'address': fake.safe_email(), 'is_default': True},
+                {'address': fake.safe_email(), 'is_default': True},
+                {'address': fake.safe_email(), 'is_default': True}
+            ]}
+        ]}
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.BAD
+        assert create_resp.json()['error']['code'] == custom_error.INVALID_USAGE
+
 
 class TestUpdateCandidateEmails(object):
-    def test_add_emails(self, access_token_first, user_first, talent_pool):
+    def test_add_emails(self, access_token_first, talent_pool):
         """
         Test:   Add an email to an existing Candidate. Number of candidate's emails must increase by 1.
         Expect: 200
@@ -177,7 +193,7 @@ class TestUpdateCandidateEmails(object):
         assert emails[-1]['address'] == email_from_data['address']
         assert len(emails) == emails_count + 1
 
-    def test_multiple_is_default_emails(self, access_token_first, user_first, talent_pool):
+    def test_multiple_is_default_emails(self, access_token_first, talent_pool):
         """
         Test:   Add more than one CandidateEmail with is_default set to True
         Expect: 200, but only one CandidateEmail must have is_current True, the rest must be False
@@ -198,7 +214,7 @@ class TestUpdateCandidateEmails(object):
         # Only one of the emails must be default!
         assert sum([1 for email in updated_can_emails if email['is_default']]) == 1
 
-    def test_update_existing_email(self, access_token_first, user_first, talent_pool):
+    def test_update_existing_email(self, access_token_first, talent_pool):
         """
         Test:   Update an existing CandidateEmail. Number of candidate's emails must remain unchanged
         Expect: 200
@@ -230,7 +246,7 @@ class TestUpdateCandidateEmails(object):
         assert emails_after_update[0]['address'] == data['candidates'][0]['emails'][0]['address']
         assert emails_count_before_update == len(emails_after_update)
 
-    def test_update_existing_email_with_bad_email_address(self, access_token_first, user_first, talent_pool):
+    def test_update_existing_email_with_bad_email_address(self, access_token_first, talent_pool):
         """
         Test:   Use a bad email address to update and existing CandidateEmail
         Expect: 400
@@ -262,7 +278,7 @@ class TestUpdateCandidateEmails(object):
         assert emails_count_before_update == len(emails_after_update)
         assert emails_before_update[0]['address'] == emails_after_update[0]['address']
 
-    def test_add_forbidden_email_to_candidate(self, access_token_first, user_first, talent_pool):
+    def test_add_forbidden_email_to_candidate(self, access_token_first, talent_pool):
         """
         Test: Add two candidates. Then add another email to candidate 2 using candidate's 1 email
         """
@@ -313,7 +329,7 @@ class TestDeleteCandidateEmail(object):
         print response_info(resp)
         assert resp.status_code == requests.codes.NOT_FOUND
 
-    def test_delete_email_of_a_candidate_belonging_to_a_diff_user(self, user_first, access_token_first, talent_pool,
+    def test_delete_email_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, talent_pool,
                                                                   user_second, access_token_second):
         """
         Test:   Attempt to delete the email of a Candidate that belongs
@@ -331,7 +347,7 @@ class TestDeleteCandidateEmail(object):
         assert updated_resp.status_code == requests.codes.FORBIDDEN
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_delete_email_of_a_different_candidate(self, user_first, access_token_first, talent_pool):
+    def test_delete_email_of_a_different_candidate(self, access_token_first, talent_pool):
         """
         Test:   Attempt to delete the email of a different Candidate
         Expect: 403
@@ -355,7 +371,7 @@ class TestDeleteCandidateEmail(object):
         assert updated_resp.status_code == requests.codes.FORBIDDEN
         assert updated_resp.json()['error']['code'] == custom_error.EMAIL_FORBIDDEN
 
-    def test_delete_candidate_emails(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_emails(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's emails from db
         Expect: 204, Candidate must not have any emails left
@@ -375,7 +391,7 @@ class TestDeleteCandidateEmail(object):
         assert updated_resp.status_code == requests.codes.NO_CONTENT
         assert len(can_dict_after_update['emails']) == 0
 
-    def test_delete_candidate_email(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_email(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's email from db
         Expect: 204, Candidate's emails must be less 1
@@ -405,7 +421,7 @@ class TestDeleteCandidateEmail(object):
 
 
 class TestTrackCandidateEmailEdits(object):
-    def test_edit_candidate_email(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_email(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's email record
         Expect: 200
