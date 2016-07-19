@@ -63,8 +63,8 @@ class TalentPipelineApi(Resource):
             search_keyword = request.args.get('search', '').strip()
 
             talent_pipelines = TalentPipeline.query.join(TalentPipeline.user).filter(
-                    User.domain_id == request.user.domain_id and (TalentPipeline.name.ilike(
-                            '%' + search_keyword + '%') or TalentPipeline.description.ilike('%' + search_keyword + '%'))).all()
+                    User.domain_id == request.user.domain_id & (TalentPipeline.name.ilike(
+                            '%' + search_keyword + '%') | TalentPipeline.description.ilike('%' + search_keyword + '%'))).all()
 
             page = request.args.get('page', DEFAULT_PAGE)
             per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)

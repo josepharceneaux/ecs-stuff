@@ -102,8 +102,8 @@ class EmailCampaign(db.Model):
             sort_by_object = sort_by_object.desc()
 
         is_hidden = True if is_hidden else False
-        return cls.query.join(User).filter(User.domain_id == domain_id and cls.name.ilike(
-                '%' + search_keyword + '%') and cls.is_hidden == is_hidden).order_by(sort_by_object)
+        return cls.query.join(User).filter(User.domain_id == domain_id, cls.name.ilike(
+                '%' + search_keyword + '%'), cls.is_hidden == is_hidden).order_by(sort_by_object)
 
 
     def __repr__(self):
