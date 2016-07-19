@@ -174,7 +174,7 @@ class TestHideCandidate(object):
         # Retrieve Candidate
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         print response_info(get_resp)
-        assert resp.status_code == requests.codes.NOT_FOUND
+        assert get_resp.status_code == requests.codes.NOT_FOUND
         assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_HIDDEN
 
     def test_hide_candidate_via_email(self, access_token_first, talent_pool):
