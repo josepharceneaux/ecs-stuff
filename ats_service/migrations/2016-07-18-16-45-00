@@ -97,3 +97,5 @@ columns = list(result)
 present = [col for col in columns if 'ats_enabled' in col.values()]
 if len(present) == 0:
     db.session.execute(text("alter table user add column ats_enabled boolean"))
+
+db.session.commit()
