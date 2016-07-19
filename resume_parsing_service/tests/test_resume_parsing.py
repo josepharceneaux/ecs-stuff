@@ -9,22 +9,20 @@ import requests
 # Module Specific.
 # Test fixtures, imports required even though not 'used'
 # TODO: Look into importing these once and use via namespacing.
+from resume_parsing_service.common.routes import ResumeApiUrl
 from resume_parsing_service.tests.test_fixtures import client_fixture
 from resume_parsing_service.tests.test_fixtures import country_fixture
 from resume_parsing_service.tests.test_fixtures import culture_fixture
 from resume_parsing_service.tests.test_fixtures import domain_fixture
 from resume_parsing_service.tests.test_fixtures import email_label_fixture
 from resume_parsing_service.tests.test_fixtures import org_fixture
-from resume_parsing_service.tests.test_fixtures import token_fixture
-from resume_parsing_service.tests.test_fixtures import user_fixture
-from resume_parsing_service.tests.test_fixtures import user_group_fixture
 from resume_parsing_service.tests.test_fixtures import phone_label_fixture
 from resume_parsing_service.tests.test_fixtures import product_fixture
 from resume_parsing_service.tests.test_fixtures import talent_pool_fixture
 from resume_parsing_service.tests.test_fixtures import talent_pool_group_fixture
-from resume_parsing_service.common.routes import ResumeApiUrl
-
-from resume_parsing_service.common.models.user import Permission
+from resume_parsing_service.tests.test_fixtures import token_fixture
+from resume_parsing_service.tests.test_fixtures import user_fixture
+from resume_parsing_service.tests.test_fixtures import user_group_fixture
 
 DOC_FP_KEY = '0169173d35beaf1053e79fdf1b5db864.docx'
 PDF15_FP_KEY = 'e68b51ee1fd62db589d2669c4f63f381.pdf'
@@ -321,6 +319,11 @@ def test_jpg_in_pdf(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
+def test_txt_with_jpg_in_encrypted_pdf(token_fixture, user_fixture):
+    content, status = fetch_resume_post_response(token_fixture, 'pic_in_encrypted.pdf')
+    assert_non_create_content_and_status(content, status)
+
+
 def test_no_multiple_skills(token_fixture, user_fixture):
     """
     Test for GET-1301 where multiple skills are being parsed out for a single new candidate.
@@ -402,6 +405,14 @@ def test_create_from_image(token_fixture, user_fixture):
     Test for GET-1351. POST'd JSON.
     """
     content, status = fetch_resume_post_response(token_fixture, 'test_bin.jpg', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+
+
+def test_create_from_jpgTxtPdf(token_fixture, user_fixture):
+    """
+    Test for GET-1463. POST'd JSON.
+    """
+    content, status = fetch_resume_post_response(token_fixture, 'pic_in_encrypted.pdf', create_mode=True)
     assert_create_or_update_content_and_status(content, status)
 
 

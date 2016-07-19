@@ -20,7 +20,7 @@ from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..models.db import db
 from ..models.user import (Client, Domain, User, Token)
 from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline)
-from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField)
+from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField, CustomFieldCategory)
 
 fake = Faker()
 ISO_FORMAT = '%Y-%m-%d %H:%M'
@@ -169,7 +169,24 @@ def domain_custom_fields(domain_first):
 
 
 @pytest.fixture()
-def sample_client(request):
+def domain_custom_field_categories(domain_first):
+    """
+    Will add three custom field categories to domain_first
+    :rtype:  list[CustomFieldCategory]
+    """
+    custom_field_categories = [{'name': fake.word()}, {'name': fake.word()}, {'name': fake.word()}]
+
+    for custom_field_category in custom_field_categories:
+        db.session.add(CustomFieldCategory(
+            domain_id=domain_first.id,
+            name=custom_field_category['name']
+        ))
+    db.session.commit()
+    return CustomFieldCategory.get_all_in_domain(domain_first.id)
+
+
+@pytest.fixture()
+def sample_client():
     # Adding sample client credentials to Database
     client_id = gen_salt(40)
     client_secret = gen_salt(50)
