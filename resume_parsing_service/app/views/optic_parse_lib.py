@@ -466,7 +466,7 @@ def get_date_from_date_tag(parent_tag, date_tag_name):
                 return datetime.date.isoformat()
             return date_tag['iso8601']
         except Exception:
-            logger.info('Exception during date parse with datetag: {}'.format(date_tag))
+            logger.exception('Exception during date parse with datetag: {}'.format(date_tag))
     return None
 
 
