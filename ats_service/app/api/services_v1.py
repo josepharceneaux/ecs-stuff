@@ -166,9 +166,8 @@ class ATSAccountsService(Resource):
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         authenticated_user = request.user
-        return_json = ATSAccount.get_accounts_for_user_as_json(authenticated_user.id)
 
-        return return_json
+        return authenticated_user.to_json()
 
     def post(self):
         """

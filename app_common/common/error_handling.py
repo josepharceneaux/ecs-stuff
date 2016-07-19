@@ -83,12 +83,6 @@ class ResourceNotFound(TalentError):
         return 404
 
 
-class MissingRequiredField(TalentError):
-    @classmethod
-    def http_status_code(cls):
-        return 400
-
-
 def register_error_handlers(app, logger):
     """
     :type app: flask.app.Flask
@@ -119,10 +113,6 @@ def register_error_handlers(app, logger):
     @app.errorhandler(UnprocessableEntity)
     def handle_unprocessable(error):
         return handle_error(error, 'Unprocessable data for this resource.')
-
-    @app.errorhandler(MissingRequiredField)
-    def handle_missing(error):
-        return handle_error(error, 'Missing required field for this resource.')
 
     @app.errorhandler(500)
     def handle_internal_server_errors(exc):

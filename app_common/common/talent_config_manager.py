@@ -135,7 +135,7 @@ def missing_config_key_definition(app_config):
     """
     If a TalentConfigKey is not defined, return it.
 
-    :rtype: string or none
+    :rtype: str | None
     """
 
     # Filter out all private methods/fields of the object class

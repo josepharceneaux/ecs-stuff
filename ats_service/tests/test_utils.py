@@ -7,7 +7,7 @@ import json
 from requests import codes
 from contracts import contract
 
-from ats_service.common.error_handling import MissingRequiredField
+from ats_service.common.error_handling import InvalidUsage
 from ats_service.common.utils.test_utils import send_request
 from ats_service.common.routes import ATSServiceApi, ATSServiceApiUrl
 from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
@@ -18,7 +18,7 @@ from ats_service.common.models.candidate import db, Candidate
 def missing_field_test(data, key, token):
     """
     This function sends a POST request to the ATS account api with data which has one required field
-    missing and checks that it MissingRequiredField 400
+    missing and checks that it raises InvalidUsage 400
     :param dict data: ATS data
     :param string key: field key
     :param string token: auth token
