@@ -115,13 +115,10 @@ from flask.ext.restful import Resource
 
 # Application Specific
 from push_campaign_service.push_campaign_app import logger
-from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-from push_campaign_service.common.campaign_services.custom_errors import CampaignException
 from push_campaign_service.common.campaign_services.validators import get_valid_json_data
-from push_campaign_service.common.error_handling import (InternalServerError, ResourceNotFound,
-                                                         ForbiddenError, InvalidUsage)
+from push_campaign_service.common.error_handling import ( ResourceNotFound, ForbiddenError, InvalidUsage)
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.talent_api import TalentApi
 from push_campaign_service.common.routes import PushCampaignApi, PushCampaignApiUrl

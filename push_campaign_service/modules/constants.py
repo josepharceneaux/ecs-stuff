@@ -10,7 +10,6 @@ from push_campaign_service.common.campaign_services.campaign_utils import Campai
 
 
 CELERY_QUEUE = CampaignUtils.PUSH
-CAMPAIGN_REQUIRED_FIELDS = ('name', 'body_text', 'url', 'smartlist_ids')
 GET_TALENT_ICON_URL = "http://cdn.designcrowd.com.s3.amazonaws.com/blog/Oct2012/" \
                       "52-Startup-Logos-2012/SLR_0040_gettalent.jpg"
 

@@ -342,7 +342,8 @@ class CampaignBase(object):
         # if frequency_id not provided or is 0, set to id of ONCE
         if not campaign_data.get('frequency_id'):
             campaign_data.update({'frequency_id': Frequency.ONCE})
-        self.validate_form_data(campaign_data)
+        required_fields = self.__class__.REQUIRED_FIELDS
+        validate_form_data(campaign_data, self.user, required_fields=required_fields)
         logger.info('Campaign data has been validated.')
         validated_data = campaign_data.copy()
         # get respective campaign model. e.g. sms_campaign or push_campaign etc
@@ -355,15 +356,6 @@ class CampaignBase(object):
         if unexpected_fields:
             raise InvalidUsage('Unexpected field(s) `%s` found in data.' % unexpected_fields)
         return campaign_model, validated_data
-
-    def validate_form_data(self, campaign_data):
-        """
-        This method calls a utility function validate_form_data with form data and a collection of required fields
-        for a campaign. It raises InvalidUsage if some fields are missing in data.
-        If a campaign has different required fields, override tis method.
-        :param dict campaign_data: dictionary containing campaign data
-        """
-        validate_form_data(campaign_data, self.user, required_fields=('name', 'body_text', 'smartlist_ids'))
 
     def save(self, form_data):
         """
