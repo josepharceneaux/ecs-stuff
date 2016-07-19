@@ -89,9 +89,9 @@ class ATSAccount(db.Model):
     __tablename__ = 'ats_account'
     id = db.Column(db.Integer, primary_key=True)
     active = db.Column(db.Boolean, default=False)
-    ats_id = db.Column(db.BigInteger)
-    user_id = db.Column(db.BigInteger)
-    ats_credential_id = db.Column(db.BigInteger)
+    ats_id = db.Column(db.Integer)
+    user_id = db.Column(db.Integer)
+    ats_credential_id = db.Column(db.Integer)
     added_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
@@ -165,7 +165,7 @@ class ATSCredential(db.Model):
     """
     __tablename__ = 'ats_credential'
     id = db.Column(db.Integer, primary_key=True)
-    ats_account_id = db.Column(db.BigInteger)
+    ats_account_id = db.Column(db.Integer)
     auth_type = db.Column(db.String(45))
     credentials_json = db.Column(db.Text)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
@@ -190,10 +190,10 @@ class ATSCandidate(db.Model):
     """
     __tablename__ = 'ats_candidate'
     id = db.Column(db.Integer, primary_key=True)
-    ats_account_id = db.Column(db.BigInteger)
+    ats_account_id = db.Column(db.Integer)
     ats_remote_id = db.Column(db.String(100))
-    gt_candidate_id = db.Column(db.BigInteger)
-    profile_id = db.Column(db.BigInteger)
+    gt_candidate_id = db.Column(db.Integer)
+    profile_id = db.Column(db.Integer)
     added_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
@@ -249,7 +249,7 @@ class ATSCandidateProfile(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     active = db.Column(db.Boolean, default=False)
     profile_json = db.Column(db.Text)
-    ats_id  = db.Column(db.BigInteger)
+    ats_id  = db.Column(db.Integer)
     added_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 

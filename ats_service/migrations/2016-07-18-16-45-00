@@ -65,6 +65,7 @@ if len(tables) == 0:
     db.session.execute(
         text("create table `{}` ( \
                                   `id` int auto_increment key, \
+                                  `ats_account_id` int, \
                                   `ats_remote_id` varchar(100), \
                                   `gt_candidate_id` int, \
                                   `profile_id` int, \
