@@ -41,7 +41,7 @@ def process_resume(parse_params):
     filename_str = parse_params['filename'] # This is always set by param_builders.py
 
     # Checks to see if we already have BG contents in Redis.
-    parsed_resume = get_or_store_parsed_resume(resume_file, filename_str)
+    parsed_resume = get_or_store_bgxml(resume_file, filename_str)
 
     if not create_candidate:
         return parsed_resume
@@ -90,7 +90,7 @@ def process_resume(parse_params):
 
 
 @upload_failed_IO
-def get_or_store_parsed_resume(resume_file, filename_str):
+def get_or_store_bgxml(resume_file, filename_str):
     """
     Tries to retrieve processed resume data from redis or parses it and stores it.
     :param resume_file:
