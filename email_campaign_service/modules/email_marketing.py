@@ -8,10 +8,12 @@ This file contains function used by email-campaign-api.
 import re
 import os
 import json
+import getpass
 import itertools
 
 # Third Party
 from celery import chord
+from redo import retrier
 from sqlalchemy import desc
 from datetime import datetime, timedelta
 
@@ -529,14 +531,15 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
         return False
 
     environment = os.getenv(TalentConfigKeys.ENV_KEY) or 'local'
-
+    username = getpass.getuser()
     # Save SES message ID & request ID
     logger.info('''Marketing email sent successfully.
                    Recipients    : %s,
                    UserId        : %s,
+                   System User Name: %s,
                    Environment   : %s,
                    Email Response: %s
-                ''', to_addresses, user_id, environment, email_response)
+                ''', to_addresses, user_id, username, environment, email_response)
     request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
     message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
     email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
@@ -863,8 +866,13 @@ def handle_email_bounce(message_id, bounce, emails):
     assert isinstance(emails, list) and all(emails), "emails param should be a non empty list of email addresses"
     logger.info('Bounce Detected: %s', bounce)
 
+    send_obj = None
     # get the corresponding EmailCampaignSend object that is associated with given AWS message id
-    send_obj = EmailCampaignSend.get_by_amazon_ses_message_id(message_id)
+    for _ in retrier(sleeptime=2, sleepscale=1, attempts=15):
+        EmailCampaignSend.session.commit()
+        send_obj = EmailCampaignSend.get_by_amazon_ses_message_id(message_id)
+        if send_obj:  # found email campaign send, no need to retry
+            break
 
     if not send_obj:
         logger.error('Unable to find email campaign send for this email bounce.'

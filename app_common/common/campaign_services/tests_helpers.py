@@ -21,7 +21,7 @@ from ..models.db import db
 from ..tests.conftest import fake
 from ..routes import CandidatePoolApiUrl
 from custom_errors import CampaignException
-from ..models.user import (DomainRole, User)
+from ..models.user import (Permission, User)
 from ..models.sms_campaign import SmsCampaign
 from ..models.misc import (Frequency, Activity)
 from ..models.push_campaign import PushCampaign
@@ -30,8 +30,7 @@ from ..models.email_campaign import EmailCampaign
 from campaign_utils import get_model, CampaignUtils
 from ..utils.validators import raise_if_not_instance_of
 from ..models.talent_pools_pipelines import TalentPipeline
-from ..utils.handy_functions import (add_role_to_test_user,
-                                     JSON_CONTENT_TYPE_HEADER)
+from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..utils.test_utils import get_fake_dict
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
@@ -401,7 +400,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(count, int)
         raise_if_not_instance_of(entity, basestring)
         raise_if_not_instance_of(check_count, bool)
-        assert response.status_code == 200, 'Response should be "OK" (200)'
+        assert response.status_code == requests.codes.OK, 'Response should be "OK" (200)'
         json_response = response.json()
         assert entity in json_response
         if check_count:
@@ -457,9 +456,9 @@ class CampaignsTestsHelpers(object):
         return blasts
 
     @staticmethod
-    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=20):
+    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=300):
         """
-        This polls the result of blasts of a campaign for given timeout (default 10s).
+        This polls the result of blasts of a campaign for given timeout (default 300s).
         """
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         raise_if_not_instance_of(access_token, basestring) if access_token else None
@@ -528,7 +527,7 @@ class CampaignsTestsHelpers(object):
                 assert response.json()['blast']['sends'] == expected_count
 
     @staticmethod
-    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=200,
+    def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=300,
                            blast_url=None, access_token=None):
         """
         This function asserts that particular blast of given campaign has expected number of sends
@@ -646,15 +645,14 @@ class CampaignsTestsHelpers(object):
         return smartlist_ids
 
     @staticmethod
-    def assign_roles(user, roles=(DomainRole.Roles.CAN_ADD_CANDIDATES,
-                                  DomainRole.Roles.CAN_GET_CANDIDATES)):
+    def assign_roles(user, roles=(Permission.PermissionNames.CAN_ADD_CANDIDATES,
+                                  Permission.PermissionNames.CAN_GET_CANDIDATES)):
         """
         This assign required permission to given user.
         Default roles are CAN_ADD_CANDIDATES and CAN_GET_CANDIDATES.
         """
         raise_if_not_instance_of(user, User)
         raise_if_not_instance_of(roles, (list, tuple))
-        add_role_to_test_user(user, roles)
 
     @staticmethod
     def assert_valid_datetime_range(datetime_str, minutes=2):

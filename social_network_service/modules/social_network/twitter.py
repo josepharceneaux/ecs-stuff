@@ -7,21 +7,23 @@ Twitter accounts.
 __author__ = 'basit'
 
 # Standard Library
+import json
 import base64
 
 # Third Party
 import tweepy
+from flask import redirect
 from contracts import contract
-from flask import session, redirect
 
 # Application Specific
 from base import SocialNetworkBase
+from social_network_service.common.redis_cache import redis_store
 from social_network_service.social_network_app import app, logger
-from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.constants import APPLICATION_BASED_AUTH_URL
 from social_network_service.common.models.user import UserSocialNetworkCredential
+from social_network_service.common.routes import SocialNetworkApiUrl, get_web_app_url
 
 
 class Twitter(SocialNetworkBase):
@@ -54,28 +56,32 @@ class Twitter(SocialNetworkBase):
         Here we use OAuthHandler of tweepy to give us request token. We use that request token and
         redirect the user to Twitter website where user can add its credentials.
         Once user is successfully logged-in, user is again redirected to URL as specified by callback URL of
-        OAuthHandler which is http://127.0.0.1:8007/v1/twitter_callback (for local environment) in this case.
+        OAuthHandler which is http://127.0.0.1:8007/v1/twitter-callback/<int:user_id> (for local environment)
+        in this case.
         In case of failure, we log the error and raises InternalServerError.
 
-        This method is called from endpoint http://127.0.0.1:8007/v1/twitter-auth defined in app.py
+        This method is called from endpoint http://127.0.0.1:8007/v1/twitter-auth.
         """
         try:
+
             # redirect_url takes the user to login-page of Twitter to authorize getTalent app.
             redirect_url = self.auth.get_authorization_url()
             # Once user is successfully logged-in to Twitter account, it is redirected to callback URL where
             # we need to exchange request token with access token. This access token is used to access Twitter API.
-            # So, we save request_token in the session and retrieve this in callback() method.
-            session['request_token'] = self.auth.request_token
+            # So, we save request_token in the redis and retrieve this in callback() method.
+            redis_store.set('twitter_request_token_%s' % self.user.id, json.dumps(self.auth.request_token))
             # redirect the user to Twitter website for authorization.
-            return redirect(redirect_url)
-        except tweepy.TweepError:
-            logger.exception('Error! Failed to get request token from Twitter for User(id:%s).' % self.user.id)
+            return redirect_url
+        except tweepy.TweepError as error:
+            logger.exception('Error! Failed to get request token from Twitter for User(id:%s).\nError:%s'
+                             % (self.user.id, error.message))
             raise InternalServerError("Couldn't connect to Twitter account.")
 
     @contract
     def callback(self, oauth_verifier):
         """
-        This method is called from endpoint http://127.0.0.1:8007/v1/twitter-callback defined in app.py
+        This method is called from endpoint http://127.0.0.1:8007/v1/twitter-callback/<int:user_id>
+        defined in app.py.
         Here we use "oauth_verifier" to get access token for the user.
         If we get any error in getting access token, we log the error and raise InternalServerError.
 
@@ -84,11 +90,13 @@ class Twitter(SocialNetworkBase):
 
         :param string oauth_verifier: Token received from Twitter when user successfully connected to its account.
         """
-        self.auth.request_token = session['request_token']
+        self.auth.request_token = json.loads(redis_store.get('twitter_request_token_%s' % self.user.id))
+        redis_store.delete('twitter_request_token_%s' % self.user.id)
         try:
             self.auth.get_access_token(oauth_verifier)
-        except tweepy.TweepError:
-            logger.exception('Failed to get access token from Twitter for User(id:%s).' % self.user.id)
+        except tweepy.TweepError as error:
+            logger.exception('Failed to get access token from Twitter for User(id:%s). \nError: %s'
+                             % (self.user.id, error.message))
             raise InternalServerError('Failed to get access token from Twitter')
 
         access_token = self.auth.access_token
@@ -104,8 +112,9 @@ class Twitter(SocialNetworkBase):
                                                                member_id=twitter_user.id, access_token=access_token)
             UserSocialNetworkCredential.save(user_credentials_obj)
 
-        return 'User(id:%s) is now connected with Twitter. Member id on twitter is %s' % (self.user.id,
-                                                                                          twitter_user.id)
+        logger.info('User(id:%s) is now connected with Twitter. Member id on twitter is %s' % (self.user.id,
+                                                                                               twitter_user.id))
+        return redirect(get_web_app_url())
 
     def application_based_auth(self):
         """

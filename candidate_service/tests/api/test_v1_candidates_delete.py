@@ -6,12 +6,12 @@ from candidate_service.candidate_app import app
 
 # Models
 from candidate_service.common.models.candidate import CandidateCustomField, CandidateEmail
+from candidate_service.common.models.user import Role
 
 # Conftest
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
 from candidate_service.common.utils.test_utils import send_request, response_info
 
@@ -28,7 +28,10 @@ class TestDeleteCandidate(object):
         Test: Attempt to delete a candidate that isn't recognized via ID or Email
         Expect: 404
         """
-        AddUserRoles.delete(user_first)
+
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
+
         last_candidate = Candidate.query.order_by(Candidate.id.desc()).first()
         non_existing_candidate_id = last_candidate.id * 100
 
@@ -53,7 +56,6 @@ class TestDeleteCandidate(object):
         Expect: 404, Not Found error
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -75,7 +77,6 @@ class TestDeleteCandidate(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -95,7 +96,10 @@ class TestDeleteCandidate(object):
         Expect: 404
         """
         # Delete Candidate
-        AddUserRoles.delete(user_first)
+
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
+
         candidate_email='email_not_found_45623@simple.com'
         resp = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_email, access_token_first)
         print response_info(resp)
@@ -108,8 +112,9 @@ class TestDeleteCandidate(object):
         Test:   Delete a Candidate via candidate's email
         Expect: 200
         """
-        AddUserRoles.all_roles(user_first)
-        AddUserRoles.all_roles(user_second)
+
+        user_second.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
 
         # Create Candidate with user_first
         data = generate_single_candidate_data([talent_pool.id])
@@ -160,9 +165,6 @@ class TestDeleteCandidateAddress(object):
         Test:   Delete the address of a Candidate that belongs to a different user in the same domain
         Expect: 204
         """
-        AddUserRoles.add(user_first)
-        AddUserRoles.add_and_delete(user_same_domain)
-
         # Create candidate_1 & candidate_2 with user_first & user_first_2
         data = generate_single_candidate_data([talent_pool.id])
         create_resp_1 = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
@@ -180,7 +182,6 @@ class TestDeleteCandidateAddress(object):
         Test:   Attempt to delete the address of a different Candidate
         Expect: 403
         """
-        AddUserRoles.all_roles(user_first)
         data_1 = generate_single_candidate_data([talent_pool.id])
         data_2 = generate_single_candidate_data([talent_pool.id])
 
@@ -207,7 +208,6 @@ class TestDeleteCandidateAddress(object):
         Expect: 204, Candidate's addresses must be less 1
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -237,7 +237,6 @@ class TestDeleteCandidateAddress(object):
         Expect: 204, Candidate should not have any addresses left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -255,15 +254,6 @@ class TestDeleteCandidateAddress(object):
 
 
 class TestDeleteCandidateAOI(object):
-    def test_non_logged_in_user_delete_can_aoi(self, access_token_first):
-        """
-        Test:   Delete candidate's aoi without logging in
-        Expect: 401
-        """
-        # Delete Candidate's areas of interest
-        resp = send_request('delete', CandidateApiUrl.AOIS % 5, access_token_first)
-        print response_info(resp)
-        assert resp.status_code == 401
 
     def test_delete_candidate_aoi_with_bad_input(self):
         """
@@ -286,8 +276,6 @@ class TestDeleteCandidateAOI(object):
         Test:   Attempt to delete the aois of a Candidate that belongs to a user in a diff domain
         Expect: 204
         """
-        AddUserRoles.add(user_first)
-        AddUserRoles.delete(user_second)
 
         # Create candidate_1 & candidate_2 with user_first & user_first_2
         data = generate_single_candidate_data([talent_pool.id])
@@ -300,14 +288,14 @@ class TestDeleteCandidateAOI(object):
         assert updated_resp.status_code == 403
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_delete_all_of_candidates_areas_of_interest(self, access_token_first, user_first, talent_pool, domain_aoi):
+    def test_delete_all_of_candidates_areas_of_interest(self, access_token_first, user_first, talent_pool, domain_aois):
         """
         Test:   Remove all of candidate's aois from db
         Expect: 204, Candidate should not have any aois left
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
-        data = generate_single_candidate_data([talent_pool.id], domain_aoi)
+        data = generate_single_candidate_data([talent_pool.id], domain_aois)
+
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
         # Retrieve Candidate's aois
@@ -328,14 +316,13 @@ class TestDeleteCandidateAOI(object):
         assert AreaOfInterest.query.get(can_aois[0]['id']) # AreaOfInterest should still be in db
         assert AreaOfInterest.query.get(can_aois[1]['id']) # AreaOfInterest should still be in db
 
-    def test_delete_can_area_of_interest(self, access_token_first, user_first, talent_pool, domain_aoi):
+    def test_delete_can_area_of_interest(self, access_token_first, user_first, talent_pool, domain_aois):
         """
         Test:   Remove Candidate's area of interest from db
         Expect: 204, Candidate's aois must be less 1 AND no AreaOfInterest should be deleted
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
-        data = generate_single_candidate_data([talent_pool.id], domain_aoi)
+        data = generate_single_candidate_data([talent_pool.id], domain_aois)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
         # Retrieve Candidate areas of interest
@@ -362,16 +349,6 @@ class TestDeleteCandidateAOI(object):
 
 
 class TestDeleteCandidateCustomField(object):
-    def test_non_logged_in_user_delete_can_custom_field(self, access_token_first):
-        """
-        Test:   Delete candidate's custom fields without logging in
-        Expect: 401
-        """
-        # Delete Candidate's custom fields
-        resp = send_request('delete', CandidateApiUrl.CUSTOM_FIELDS % 5, access_token_first)
-        print response_info(resp)
-        assert resp.status_code == 401
-
 
     def test_delete_candidate_custom_field_with_bad_input(self):
         """
@@ -395,8 +372,6 @@ class TestDeleteCandidateCustomField(object):
         Test:   Delete custom fields of a Candidate that belongs to a user in a different domain
         Expect: 204
         """
-        AddUserRoles.all_roles(user_first)
-        AddUserRoles.all_roles(user_second)
 
         # Create candidate_1 & candidate_2 with user_first & user_first_2
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
@@ -418,7 +393,6 @@ class TestDeleteCandidateCustomField(object):
         Expect: 204, Candidate should not have any custom fields left AND no CustomField should be deleted
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -449,7 +423,6 @@ class TestDeleteCandidateCustomField(object):
         Expect: 204, Candidate's custom fields must be less 1 AND no CustomField should be deleted
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 

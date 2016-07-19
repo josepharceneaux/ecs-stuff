@@ -8,10 +8,10 @@ from flask import request, Blueprint
 from user_service.common.routes import UserServiceApi
 from user_service.common.error_handling import *
 from user_service.common.talent_api import TalentApi
-from user_service.common.models.user import User, db, DomainRole, Token
+from user_service.common.models.user import User, db, Permission, Token
 from user_service.common.utils.validators import is_valid_email, is_number
 from user_service.common.utils.auth_utils import gettalent_generate_password_hash
-from user_service.common.utils.auth_utils import require_oauth, require_any_role
+from user_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from user_service.user_app.user_service_utilties import check_if_user_exists, create_user_for_company, send_new_account_email
 
 
@@ -20,7 +20,7 @@ class UserInviteApi(Resource):
     # Access token and role authentication decorators
     decorators = [require_oauth()]
 
-    @require_any_role(DomainRole.Roles.CAN_ADD_USERS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
+    @require_all_permissions(Permission.PermissionNames.CAN_ADD_USERS)
     def post(self, **kwargs):
         """
         POST /users/<id>/invite This endpoint will send invitation email to an already existing user
@@ -49,7 +49,7 @@ class UserApi(Resource):
     decorators = [require_oauth()]
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
-    @require_any_role('SELF', DomainRole.Roles.CAN_GET_USERS)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_USERS)
     def get(self, **kwargs):
         """
         GET /users/<id> Fetch user object with user's basic info
@@ -66,44 +66,38 @@ class UserApi(Resource):
             if not requested_user or requested_user.is_disabled == 1:
                 raise NotFoundError(error_message="User with user id %s not found" % requested_user_id)
 
-            if requested_user.domain_id != request.user.domain_id and not request.user_can_edit_other_domains:
-                raise UnauthorizedError(error_message="User %s doesn't have appropriate permission to get user %s" %
-                                                      (request.user.id, requested_user_id))
+            if request.user.role.name != 'TALENT_ADMIN' and requested_user.domain_id != request.user.domain_id:
+                raise UnauthorizedError("User %s doesn't have appropriate permission to get user %s" % (
+                    request.user.id, requested_user_id))
 
-            if requested_user_id == request.user.id or 'CAN_GET_USERS' in request.valid_domain_roles or request.user_can_edit_other_domains:
-
-                return {
-                    'user':
-                        {
-                            'id': requested_user.id,
-                            'domain_id': requested_user.domain_id,
-                            'email': requested_user.email,
-                            'first_name': requested_user.first_name,
-                            'last_name': requested_user.last_name,
-                            'phone': requested_user.phone,
-                            'registration_id': requested_user.registration_id,
-                            'dice_user_id': requested_user.dice_user_id,
-                            'user_group_id': requested_user.user_group_id,
-                            'added_time': requested_user.added_time.replace(
-                                    tzinfo=pytz.UTC).isoformat() if requested_user.added_time else None,
-                            'updated_time': requested_user.updated_time.replace(
-                                    tzinfo=pytz.UTC).isoformat() if requested_user.updated_time else None,
-                            'last_read_datetime': requested_user.last_read_datetime.replace(
-                                    tzinfo=pytz.UTC).isoformat() if requested_user.last_read_datetime else None,
-                            'thumbnail_url': requested_user.thumbnail_url,
-                            'locale': requested_user.locale
-                        }
-                }
+            return {
+                'user':
+                    {
+                        'id': requested_user.id,
+                        'domain_id': requested_user.domain_id,
+                        'email': requested_user.email,
+                        'first_name': requested_user.first_name,
+                        'last_name': requested_user.last_name,
+                        'phone': requested_user.phone,
+                        'registration_id': requested_user.registration_id,
+                        'dice_user_id': requested_user.dice_user_id,
+                        'user_group_id': requested_user.user_group_id,
+                        'added_time': requested_user.added_time.replace(
+                                tzinfo=pytz.UTC).isoformat() if requested_user.added_time else None,
+                        'updated_time': requested_user.updated_time.replace(
+                                tzinfo=pytz.UTC).isoformat() if requested_user.updated_time else None,
+                        'last_read_datetime': requested_user.last_read_datetime.replace(
+                                tzinfo=pytz.UTC).isoformat() if requested_user.last_read_datetime else None,
+                        'thumbnail_url': requested_user.thumbnail_url,
+                        'locale': requested_user.locale
+                    }
+            }
 
         # User id is not provided so logged-in user wants to get all users of its domain
-        elif 'CAN_GET_USERS' in request.valid_domain_roles or request.user_can_edit_other_domains:
-                return {'users': [user.id for user in User.all_users_of_domain(request.user.domain_id) if not
-                user.is_disabled]}
+        else:
+            return {'users': [user.id for user in User.all_users_of_domain(request.user.domain_id) if not user.is_disabled]}
 
-        # If nothing is returned above then simply raise the custom exception
-        raise UnauthorizedError(error_message="Logged-in user doesn't have appropriate permissions to get user's info.")
-
-    @require_any_role(DomainRole.Roles.CAN_ADD_USERS, DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO)
+    @require_all_permissions(Permission.PermissionNames.CAN_ADD_USERS)
     def post(self):
         """
         POST /users  Create a new user
@@ -118,14 +112,14 @@ class UserApi(Resource):
 
         posted_data = request.get_json(silent=True)
         if not posted_data or 'users' not in posted_data:
-            raise InvalidUsage(error_message="Request body is empty or not provided")
+            raise InvalidUsage("Request body is empty or not provided")
 
         # Save user object(s)
         users = posted_data['users']
 
         # User object(s) must be in a list
         if not isinstance(users, list):
-            raise InvalidUsage(error_message="Request body is not properly formatted")
+            raise InvalidUsage("Request body is not properly formatted")
 
         for user_dict in users:
 
@@ -134,18 +128,18 @@ class UserApi(Resource):
             email = user_dict.get('email', "").strip()
 
             if not first_name or not last_name or not email:
-                raise InvalidUsage(error_message="first name, last name or email is missing in request body")
+                raise InvalidUsage("first name, last name or email is missing in request body")
 
             if not is_valid_email(email=email):
-                raise InvalidUsage(error_message="Email Address %s is not properly formatted" % email)
+                raise InvalidUsage("Email Address %s is not properly formatted" % email)
 
             # Check if user already exist
             already_existing_user = check_if_user_exists(email)
             if already_existing_user:
                 if already_existing_user.is_disabled:
-                    raise InvalidUsage(error_message="User with email=%s already exists in Database but is disabled" % email)
+                    raise InvalidUsage("User with email=%s already exists in Database but is disabled" % email)
                 else:
-                    raise InvalidUsage(error_message="User with email=%s already exists in Database" % email)
+                    raise InvalidUsage("User with email=%s already exists in Database" % email)
 
         user_ids = []  # Newly created user object's id(s) are appended to this list
         for user_dict in users:
@@ -157,7 +151,7 @@ class UserApi(Resource):
             thumbnail_url = user_dict.get('thumbnail_url', '').strip()
             user_group_id = user_dict.get('user_group_id')
             locale = user_dict.get('locale', 'en-US')
-            if request.user_can_edit_other_domains:
+            if request.user.role.name == 'TALENT_ADMIN':
                 domain_id = user_dict.get('domain_id', request.user.domain_id)
             else:
                 domain_id = request.user.domain_id
@@ -175,7 +169,7 @@ class UserApi(Resource):
         return {'users': user_ids}
 
     # 'SELF' is for readability. It means this endpoint will be accessible to any user
-    @require_any_role('SELF', DomainRole.Roles.CAN_EDIT_USERS)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_USERS)
     def put(self, **kwargs):
         """
         PUT /users/<id>
@@ -190,18 +184,17 @@ class UserApi(Resource):
         requested_user_id = kwargs.get('id')
         requested_user = User.query.get(requested_user_id) if requested_user_id else None
         if not requested_user:
-            raise NotFoundError(error_message="Either user_id is not provided or user doesn't exist")
+            raise NotFoundError("Either user_id is not provided or user doesn't exist")
 
         posted_data = request.get_json(silent=True)
         if not posted_data:
-            raise InvalidUsage(error_message="Request body is empty or not provided")
+            raise InvalidUsage("Request body is empty or not provided")
 
-        if not request.user_can_edit_other_domains:
-            if requested_user.domain_id != request.user.domain_id:
-                raise UnauthorizedError("User to be edited belongs to different domain than logged-in user")
+        if request.user.role.name != 'TALENT_ADMIN' and requested_user.domain_id != request.user.domain_id:
+            raise UnauthorizedError("Logged-in user doesn't have appropriate permissions to edit a user")
 
-            if requested_user_id != request.user.id and 'CAN_EDIT_USERS' not in request.valid_domain_roles:
-                raise UnauthorizedError(error_message="Logged-in user doesn't have appropriate permissions to edit a user")
+        if request.user.role.name == 'USER' and requested_user_id != request.user.id:
+            raise UnauthorizedError("Logged-in user doesn't have appropriate permissions to edit a user")
 
         first_name = posted_data.get('first_name', '').strip()
         last_name = posted_data.get('last_name', '').strip()
@@ -218,10 +211,10 @@ class UserApi(Resource):
             raise InvalidUsage("Last read datetime %s is invalid because: %s" % (last_read_datetime, e.message))
 
         if email and not is_valid_email(email=email):
-            raise InvalidUsage(error_message="Email Address %s is not properly formatted" % email)
+            raise InvalidUsage("Email Address %s is not properly formatted" % email)
 
         if email and check_if_user_exists(email) and requested_user.email != email:
-            raise InvalidUsage(error_message="Email Address %s already exists" % email)
+            raise InvalidUsage("Email Address %s already exists" % email)
 
         if not is_number(is_disabled) or (int(is_disabled) != 0 and int(is_disabled) != 1):
             raise InvalidUsage("Possible vaues of `is_disabled` are 0 and 1")
@@ -251,6 +244,7 @@ class UserApi(Resource):
 
         if is_disabled:
             # Delete all tokens of deleted user
+            request.user.password_reset_time = datetime.utcnow()
             tokens = Token.query.filter_by(user_id=requested_user_id).all()
             for token in tokens:
                 token.delete()

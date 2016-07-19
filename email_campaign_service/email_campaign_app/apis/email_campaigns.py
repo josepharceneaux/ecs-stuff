@@ -66,6 +66,7 @@ from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.routes import EmailCampaignApi
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.models.email_campaign import EmailCampaign
+from email_campaign_service.common.utils.validators import is_number
 from email_campaign_service.common.error_handling import (InvalidUsage, NotFoundError,
                                                           ForbiddenError)
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
@@ -113,13 +114,17 @@ class EmailCampaigns(Resource):
             sort_type = request.args.get('sort_type', 'DESC')
             search_keyword = request.args.get('search', '')
             sort_by = request.args.get('sort_by', 'added_datetime')
+            is_hidden = request.args.get('is_hidden', 0)
+
+            if not is_number(is_hidden) or int(is_hidden) not in (0, 1):
+                raise InvalidUsage('`is_hidden` can be either 0 or 1')
 
             if sort_by not in ('added_datetime', 'name'):
                 raise InvalidUsage('Value of sort parameter is not valid')
 
             # Get all email campaigns from logged in user's domain
             query = EmailCampaign.get_by_domain_id_and_filter_by_name(
-                    user.domain_id, search_keyword, sort_by, sort_type)
+                    user.domain_id, search_keyword, sort_by, sort_type, is_hidden)
 
             return get_paginated_response('email_campaigns', query, page, per_page, parser=EmailCampaign.to_dict)
 

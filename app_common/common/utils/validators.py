@@ -80,7 +80,7 @@ def parse_phone_number(phone_number, iso3166_country_code=None):
 
     phone_number = re.sub('\D', '', phone_number)  # Number must contain only digits
     if len(phone_number) < 7:
-        raise InvalidUsage("Invalid phone number: {}".format(number))
+        raise InvalidUsage("Phone number ({}) must be at least 7 digits".format(number))
 
     # If phone number is not prefixed with international code and country_code is not provided
     #    it will be saved as-is unless if phone number is invalid, e.g. "letter56"
@@ -129,8 +129,10 @@ def sanitize_zip_code(zip_code):
     if zip_code and not ''.join([char for char in zip_code if not char.isdigit()]):
         zip_code = zip_code.zfill(5) if len(zip_code) <= 5 else zip_code.zfill(9) if len(zip_code) <= 9 else ''
         if zip_code:
-            return (zip_code[:5] + ' ' + zip_code[5:]).strip()
-    # logger.info("[%s] is not a valid US Zip Code", zip_code)
+            if len(zip_code) > 5:
+                return (zip_code[:5] + '-' + zip_code[5:]).strip()
+            else:
+                return (zip_code[:5] + ' ' + zip_code[5:]).strip()
     return None
 
 
@@ -243,12 +245,14 @@ def get_json_if_exist(_request):
     return _request.get_json()
 
 
-def get_json_data_if_validated(request_body, json_schema, format_checker=True):
+def get_json_data_if_validated(request_body, json_schema, format_checker=True, custom_msg=None):
     """
     Function will compare requested json data with provided json schema
     :type request_body:  request
     :type json_schema:  dict
+    :type custom_msg:  str
     :param format_checker:  If True, specified formats will need to be validated, e.g. datetime
+    :param custom_msg: If provided, will return a custom (possibly user facing) message.
     :return:  JSON data if validation passes
     """
     try:
@@ -258,7 +262,8 @@ def get_json_data_if_validated(request_body, json_schema, format_checker=True):
         else:
             validate(instance=body_dict, schema=json_schema)
     except ValidationError as e:
-        raise InvalidUsage('JSON schema validation error: {}'.format(e))
+        default_message = 'JSON schema validation error: {}'.format(e)
+        raise InvalidUsage(custom_msg if custom_msg else default_message)
     return body_dict
 
 

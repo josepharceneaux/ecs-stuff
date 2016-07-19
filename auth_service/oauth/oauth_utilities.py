@@ -4,8 +4,12 @@ from dateutil.parser import parse
 from flask_oauthlib.provider import OAuth2RequestValidator
 from werkzeug.security import check_password_hash
 from auth_service.common.models.user import *
+from auth_service.common.redis_cache import redis_store
 from auth_service.oauth import logger, app
 from datetime import datetime, timedelta
+from ..custom_error_codes import AuthServiceCustomErrorCodes as custom_errors
+
+MAXIMUM_NUMBER_OF_INVALID_LOGIN_ATTEMPTS = 5
 
 
 # TODO Once our flask services would be up we'll migrate all existing passwords to flask PBKDF format
@@ -24,7 +28,10 @@ def change_hashing_format(password):
 
 def authenticate_user(username, password, *args, **kwargs):
     """
-    It's user getter method i.e it'll retrieve a User object from database given valid username/password
+    It's user getter method i.e it'll retrieve a User object from database given valid username/password.
+    If user provides a wrong password, his wrong login attempt counter in redis is incremented by 1.
+    If wrong login attempt counter reachers 5 we disable the user. Wrong login attempt counter for each user
+    is reset after every hour
     :param str username: username of a user
     :param str password:  password of a user
     :rtype: User
@@ -36,6 +43,22 @@ def authenticate_user(username, password, *args, **kwargs):
         user_password = change_hashing_format(user.password)
         if check_password_hash(user_password, password):
             return user
+        else:
+            if not redis_store.exists('invalid_login_attempt_counter_{}'.format(username)):
+                redis_store.setex('invalid_login_attempt_counter_{}'.format(username), 3600, 1)
+            else:
+                previous_wrong_password_count = redis_store.get('invalid_login_attempt_counter_{}'.format(username))
+                if previous_wrong_password_count + 1 >= MAXIMUM_NUMBER_OF_INVALID_LOGIN_ATTEMPTS:
+                    redis_store.delete('invalid_login_attempt_counter_{}'.format(username))
+                    user.is_disabled = 1
+                    db.session.commit()
+                    logger.info("User %s has been disabled because %s invalid login attempts have been made in "
+                                "last one hour", user.id, MAXIMUM_NUMBER_OF_INVALID_LOGIN_ATTEMPTS)
+                else:
+                    time_to_live = redis_store.ttl('invalid_login_attempt_counter_{}'.format(username))
+                    redis_store.setex('invalid_login_attempt_counter_{}'.format(username),
+                                      time_to_live, previous_wrong_password_count + 1)
+
     logger.warn('There is no user with username: %s and password: %s', username, password)
     return None
 
@@ -156,32 +179,35 @@ def save_token_v1(token, request, *args, **kwargs):
     db.session.commit()
 
     token['user_id'] = request.user.id
-    if latest_token and datetime.utcnow() < latest_token.expires:
-        token['expires_at'] = latest_token.expires.strftime("%d/%m/%Y %H:%M:%S")
-        token['access_token'] = latest_token.access_token
-        token['refresh_token'] = latest_token.refresh_token
-        return latest_token
-    else:
-        if latest_token:
-            db.session.delete(latest_token)
-            db.session.flush()
+    if latest_token:
+        try:
+            if datetime.utcnow() < latest_token.expires:
+                token['expires_at'] = latest_token.expires.strftime("%d/%m/%Y %H:%M:%S")
+                token['access_token'] = latest_token.access_token
+                token['refresh_token'] = latest_token.refresh_token
+                return latest_token
+            else:
+                db.session.delete(latest_token)
+                db.session.flush()
+        except Exception:
+            pass
 
-        expires = datetime.utcnow() + timedelta(seconds=token.get('expires_in'))
-        token['expires_at'] = expires.strftime("%d/%m/%Y %H:%M:%S")
+    expires = datetime.utcnow() + timedelta(seconds=token.get('expires_in'))
+    token['expires_at'] = expires.strftime("%d/%m/%Y %H:%M:%S")
 
-        tok = Token(
-            access_token=token['access_token'],
-            refresh_token=token['refresh_token'],
-            token_type=token['token_type'],
-            _scopes=token['scope'],
-            expires=expires,
-            client_id=request.client.client_id,
-            user_id=request.user.id,
-        )
-        db.session.add(tok)
-        db.session.commit()
-        logger.info('Bearer token has been created for user %s', request.user.id)
-        return tok
+    tok = Token(
+        access_token=token['access_token'],
+        refresh_token=token['refresh_token'],
+        token_type=token['token_type'],
+        _scopes=token['scope'],
+        expires=expires,
+        client_id=request.client.client_id,
+        user_id=request.user.id,
+    )
+    db.session.add(tok)
+    db.session.commit()
+    logger.info('Bearer token has been created for user %s', request.user.id)
+    return tok
 
 
 class GetTalentOauthValidator(OAuth2RequestValidator):
@@ -206,19 +232,19 @@ class GetTalentOauthValidator(OAuth2RequestValidator):
         tok = self._tokengetter(access_token=token)
         if not tok:
             request.error_message = 'Bearer Token is not found.'
-            request.error_code = 11
+            request.error_code = custom_errors.TOKEN_NOT_FOUND
             return True
 
         # validate expires
         if datetime.utcnow() > tok.expires:
             request.error_message = 'Bearer Token is expired. Please refresh it'
-            request.error_code = 12
+            request.error_code = custom_errors.TOKEN_EXPIRED
             return True
 
         # validate scopes
         if scopes and not set(tok.scopes) & set(scopes):
             request.error_message = 'Bearer Token scope is not Valid.'
-            request.error_code = 13
+            request.error_code = custom_errors.TOKEN_INVALID
             return True
 
         request.access_token = tok

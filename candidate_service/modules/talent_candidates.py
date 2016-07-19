@@ -34,7 +34,7 @@ from candidate_service.common.models.email_campaign import EmailCampaign, EmailC
     EmailCampaignSendUrlConversion
 from candidate_service.common.models.misc import AreaOfInterest, UrlConversion
 from candidate_service.common.models.language import CandidateLanguage
-from candidate_service.common.models.user import User
+from candidate_service.common.models.user import User, Permission
 
 # Modules
 from track_changes import track_edits, track_areas_of_interest_edits
@@ -49,7 +49,7 @@ from candidate_service.modules.validators import (
     does_address_exist, does_candidate_cf_exist, does_education_degree_bullet_exist,
     get_education_if_exists, get_work_experience_if_exists, does_experience_bullet_exist,
     do_phones_exist, does_preferred_location_exist, does_skill_exist, does_social_network_exist,
-    get_education_degree_if_exists, does_military_service_exist
+    get_education_degree_if_exists, does_military_service_exist, do_emails_exist
 )
 
 # Common utilities
@@ -133,11 +133,17 @@ def fetch_candidate_info(candidate, fields=None):
 
     social_networks = None
     if get_all_fields or 'social_networks' in fields:
-        social_networks = candidate_social_networks(candidate=candidate)
+        if Permission.PermissionNames.CAN_GET_CANDIDATE_SOCIAL_PROFILE in request.user_permissions:
+            social_networks = candidate_social_networks(candidate=candidate)
+        else:
+            raise ForbiddenError("You are not authorized to get social networks of this candidate")
 
     history = None
     if get_all_fields or 'contact_history' in fields:
-        history = candidate_contact_history(candidate=candidate)
+        if Permission.PermissionNames.CAN_GET_CANDIDATE_CONTACT_HISTORY in request.user_permissions:
+            history = candidate_contact_history(candidate=candidate)
+        else:
+            raise ForbiddenError("You are not authorized to get contact history of this candidate")
 
     openweb_id = None
     if get_all_fields or 'openweb_id' in fields:
@@ -183,7 +189,9 @@ def fetch_candidate_info(candidate, fields=None):
         'dice_profile_id': dice_profile_id,
         'talent_pool_ids': talent_pool_ids,
         'resume_url': resume_url,
-        'source_id': candidate.source_id
+        'source_id': candidate.source_id,
+        'summary': candidate.summary,
+        'objective': candidate.objective
     }
 
 
@@ -966,7 +974,7 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's email(s)
     if emails:
-        _add_or_update_emails(candidate_id, emails, user_id, is_updating)
+        _add_or_update_emails(candidate, emails, user_id, is_updating)
 
     # Add or update Candidate's phone(s)
     if phones:
@@ -986,7 +994,11 @@ def create_or_update_candidate_from_params(
 
     # Add or update Candidate's social_network(s)
     if social_networks:
-        _add_or_update_social_networks(candidate, social_networks, user_id, is_updating)
+        if (is_creating and Permission.PermissionNames.CAN_ADD_CANDIDATE_SOCIAL_PROFILE in request.user_permissions) or (
+                    is_updating and Permission.PermissionNames.CAN_EDIT_CANDIDATE_SOCIAL_PROFILE in request.user_permissions):
+            _add_or_update_social_networks(candidate, social_networks, user_id, is_updating)
+        else:
+            raise ForbiddenError("You are not authorized to add/modify social networks of this candidate")
 
     # Commit to database after all insertions/updates are executed successfully
     db.session.commit()
@@ -1135,7 +1147,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         middle_name = parsed_names_object.middle
         last_name = parsed_names_object.last
 
-    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url,
+    update_dict = {'objective': objective, 'summary': summary, 'filename': (resume_url or '').lower(),
                    'source_id': source_id, 'candidate_status_id': candidate_status_id}
 
     # Strip each key-value and remove keys with empty-string-values
@@ -1147,6 +1159,8 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         first_name=first_name, middle_name=middle_name, last_name=last_name,
         formatted_name=formatted_name or format_full_name(first_name, middle_name, last_name)
     )
+    # Only remove keys with None values; keys with empty strings will be used for deleting
+    # For example, if first_name = '', candidate's first name will be removed from db
     names_dict = {k: v for k, v in names_dict.items() if v is not None}
 
     # Add names' data to update_dict if at least one of name is provided
@@ -1182,7 +1196,7 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
         first_name=first_name, middle_name=middle_name, last_name=last_name, formatted_name=formatted_name,
         added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
         dice_profile_id=dice_profile_id, dice_social_profile_id=dice_social_profile_id,
-        source_id=source_id, objective=objective, summary=summary, filename=resume_url,
+        source_id=source_id, objective=objective, summary=summary, filename=(resume_url or '').lower(),
         is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     )
 
@@ -1217,7 +1231,7 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
             address_line_1=address['address_line_1'].strip() if address.get('address_line_1') else None,
             address_line_2=address['address_line_2'].strip() if address.get('address_line_2') else None,
             city=city,
-            state=(address.get('state') or '').strip().lower(),
+            state=(address.get('state') or '').strip(),
             iso3166_subdivision=subdivision_code,
             iso3166_country=country_code,
             zip_code=zip_code,
@@ -1227,7 +1241,7 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
         )
 
         # Remove keys that have None values
-        address_dict = {k: v for k, v in address_dict.items() if v}
+        address_dict = purge_dict(address_dict)
 
         # Prevent adding empty records to db
         if not address_dict:
@@ -1299,7 +1313,7 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
         if candidate_custom_field_id:   # Update
 
             # Remove keys with None values
-            custom_field_dict = dict((k, v) for k, v in custom_field_dict.iteritems() if v is not None)
+            custom_field_dict = purge_dict(custom_field_dict)
 
             # CandidateCustomField must be recognized
             can_custom_field_obj = CandidateCustomField.get_by_id(candidate_custom_field_id)
@@ -1337,7 +1351,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
     """
     # If any of educations is_current, set all of Candidate's educations' is_current to False
     candidate_id, candidate_educations = candidate.id, candidate.educations
-    if any([education.get('is_current') for education in educations]):
+    if any([education.get('is_current') for education in educations]):  # TODO: this is to be done when updating only
         CandidateEducation.set_is_current_to_false(candidate_id=candidate_id)
 
     for education in educations:
@@ -1345,17 +1359,17 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
         country_code = education['country_code'].upper() if education.get('country_code') else None
         subdivision_code = education['subdivision_code'].upper() if education.get('subdivision_code') else None
         education_dict = dict(
-            school_name=education['school_name'].strip() if education.get('school_name') else None,
-            school_type=education['school_type'].strip() if education.get('school_type') else None,
-            city=education['city'].strip() if education.get('city') else None,
-            state=(education.get('state') or '').strip().lower(),
+            school_name=(education.get('school_name') or '').strip(),
+            school_type=(education.get('school_type') or '').strip(),
+            city=(education.get('city') or '').strip(),
+            state=(education.get('state') or '').strip(),
             iso3166_subdivision=subdivision_code,
             iso3166_country=country_code,
             is_current=education.get('is_current')
         )
 
         # Remove keys with empty values
-        education_dict = {k: v for k, v in education_dict.items() if v}
+        education_dict = purge_dict(education_dict)
 
         # Prevent empty records from being added to the db
         education_degrees = education.get('degrees') or []
@@ -1409,7 +1423,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     end_time=education_degree.get('end_time')
                 )
                 # Remove keys with None values
-                education_degree_dict = {k: v for k, v in education_degree_dict.items() if v}
+                education_degree_dict = purge_dict(education_degree_dict)
 
                 # Prevent empty records from being inserted into db
                 education_degree_bullets = education_degree.get('bullets') or []
@@ -1456,7 +1470,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                         )
 
                         # Remove keys with None values
-                        education_degree_bullet_dict = {k: v for k, v in education_degree_bullet_dict.items() if v}
+                        education_degree_bullet_dict = purge_dict(education_degree_bullet_dict)
 
                         # Prevent empty records from being inserted into db
                         if not education_degree_bullet_dict:
@@ -1520,7 +1534,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                             if education_degree_bullet.get('comments') else None
                         )
                         # Remove keys with None values
-                        education_degree_bullet_dict = {k: v for k, v in education_degree_bullet_dict.items() if v}
+                        education_degree_bullet_dict = purge_dict(education_degree_bullet_dict)
 
                         # Prevent empty records from being inserted into db
                         if not education_degree_bullet_dict:
@@ -1572,7 +1586,7 @@ def _add_or_update_educations(candidate, educations, added_datetime, user_id, is
                     end_time=education_degree.get('end_time') if degree_title or degree_type else None
                 )
                 # Remove keys with None values
-                education_degree_dict = {k: v for k, v in education_degree_dict.items() if v}
+                education_degree_dict = purge_dict(education_degree_dict)
 
                 # Prevent empty records from being inserted into db
                 education_degree_bullets = education_degree.get('bullets') or []
@@ -1665,7 +1679,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             position=work_experience['position'].strip() if work_experience.get('position') else None,
             city=work_experience['city'].strip() if work_experience.get('city') else None,
             iso3166_subdivision=subdivision_code,
-            state=(work_experience.get('state') or '').strip().lower(),
+            state=(work_experience.get('state') or '').strip(),
             iso3166_country=country_code,
             end_month=work_experience.get('end_month') or 1,
             start_year=start_year,
@@ -1678,7 +1692,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
         if experience_id:  # Update
 
             # Remove keys with empty values
-            experience_dict = {k: v for k, v in experience_dict.items() if v}
+            experience_dict = purge_dict(experience_dict)
 
             # CandidateExperience must be recognized
             can_exp_obj = CandidateExperience.get(experience_id)
@@ -1718,7 +1732,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                 )
 
                 # Remove keys with None values
-                experience_bullet_dict = {k: v for k, v in experience_bullet_dict.items() if v}
+                experience_bullet_dict = purge_dict(experience_bullet_dict)
 
                 # Prevent empty data from being inserted into db
                 if not experience_bullet_dict:
@@ -1779,7 +1793,7 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                         'description') else None
                 )
                 # Remove keys with None values
-                experience_bullet_dict = {k: v for k, v in experience_bullet_dict.items() if v}
+                experience_bullet_dict = purge_dict(experience_bullet_dict)
 
                 # Prevent empty data from being inserted into db
                 if not experience_bullet_dict:
@@ -1814,7 +1828,7 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id):
     )
 
     # Remove empty values from update_dict
-    work_preference_dict = {k: v for k, v in work_preference_dict.items() if v}
+    work_preference_dict = purge_dict(work_preference_dict)
 
     work_preference_id = work_preference.get('id')
     if work_preference_id:  # Update
@@ -1844,19 +1858,18 @@ def _add_or_update_work_preference(candidate_id, work_preference, user_id):
         db.session.add(CandidateWorkPreference(**work_preference_dict))
 
 
-def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
+def _add_or_update_emails(candidate, emails, user_id, is_updating):
     """
     Function will update CandidateEmail or create new one(s).
     """
-    # Strip all values from emails
-    emails = [purge_dict(email) for email in emails]
+    candidate_id = candidate.id
 
     # If any of emails' is_default is True, set all of candidate's emails' is_default to False
     if any([email.get('is_default') for email in emails]):
         CandidateEmail.set_is_default_to_false(candidate_id=candidate_id)
 
     emails_has_label = any([email.get('label') for email in emails])
-    emails_has_default = any([email.get('is_default') for email in emails])
+    emails_has_default = any([isinstance(email.get('is_default'), bool) for email in emails])
 
     # Prevent duplicate email addresses
     email_addresses = [email.get('address') for email in emails]
@@ -1870,7 +1883,8 @@ def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
         # If there's no is_default, the first email should be default
         is_default = i == 0 if not emails_has_default else email.get('is_default')
         # If there's no label, the first email's label will be 'Primary', rest will be 'Other'
-        email_label = 'Primary' if (not emails_has_label and i == 0) else (email.get('label') or '').title()
+        email_label = EmailLabel.PRIMARY_DESCRIPTION if (not emails_has_label and i == 0) \
+            else (email.get('label') or '').strip().title()
         email_address = email.get('address')
 
         email_dict = dict(
@@ -1880,7 +1894,7 @@ def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
         )
 
         # Remove empty values from email_dict
-        email_dict = {k: v for k, v in email_dict.items() if v}
+        email_dict = purge_dict(email_dict)
 
         email_id = email.get('id')
         if email_id:  # Update
@@ -1894,10 +1908,10 @@ def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
                 raise ForbiddenError('Unauthorized candidate email', custom_error.EMAIL_FORBIDDEN)
 
             # Email must not belong to another candidate in the same domain
-            unauthorized_email = CandidateEmail.get_email_in_users_domain(request.user.domain_id, email_address)
-            if unauthorized_email and unauthorized_email.candidate_id != candidate_id:
+            matching_email = CandidateEmail.get_email_in_users_domain(request.user.domain_id, email_address)
+            if matching_email and matching_email.candidate_id != candidate_id:
                 raise ForbiddenError("Email (address = {}) belongs to someone else!".
-                                     format(unauthorized_email.address), custom_error.EMAIL_FORBIDDEN)
+                                     format(matching_email.address), custom_error.EMAIL_FORBIDDEN)
 
             # Track all changes
             track_edits(update_dict=email_dict, table_name='candidate_email',
@@ -1907,44 +1921,48 @@ def _add_or_update_emails(candidate_id, emails, user_id, is_updating):
             candidate_email_obj.update(**email_dict)
 
         else:  # Add
-            email = CandidateEmail.query.filter(CandidateEmail.address == email_address,
-                                                CandidateEmail.candidate_id == candidate_id).first()
-            # Prevent duplicate entries
-            if not email:
+            if is_updating:  # append email to existing candidate's records
 
                 # Email must not belong to another candidate in the same domain
-                unauthorized_email = CandidateEmail.get_email_in_users_domain(request.user.domain_id, email_address)
-                if unauthorized_email and unauthorized_email.candidate_id != candidate_id:
-                    raise ForbiddenError("Email (address = {}) belongs to someone else!".
-                                         format(unauthorized_email.address), custom_error.EMAIL_FORBIDDEN)
-
-                # Prevent adding duplicate email(s) to candidate's profile
-                elif unauthorized_email and unauthorized_email.candidate_id == candidate_id:
+                matching_email = CandidateEmail.get_email_in_users_domain(request.user.domain_id, email_address)
+                if matching_email:
+                    if matching_email.candidate_id != candidate_id:
+                        raise ForbiddenError("Email (address = {}) belongs to someone else!".
+                                             format(matching_email.address), custom_error.EMAIL_FORBIDDEN)
+                    else:  # prevent adding duplicate email address(s) to candidate's records
+                        continue
+                # prevent adding duplicate email address(s) to candidate's records
+                elif do_emails_exist(candidate.emails, email_dict):
                     continue
 
                 email_dict.update(dict(candidate_id=candidate_id))
                 db.session.add(CandidateEmail(**email_dict))
 
-                if is_updating:  # Track all updates
-                    track_edits(update_dict=email_dict, table_name='candidate_email',
-                                candidate_id=candidate_id, user_id=user_id)
+                # Track all changes
+                track_edits(update_dict=email_dict, table_name='candidate_email',
+                            candidate_id=candidate_id, user_id=user_id)
+
+            else:  # add email to new candidate
+                email_dict.update(dict(candidate_id=candidate_id))
+                db.session.add(CandidateEmail(**email_dict))
 
 
 def _add_or_update_phones(candidate, phones, user_id, is_updating):
     """
     Function will update CandidatePhone or create new one(s).
     """
+    candidate_id = candidate.id
+
     # If any of phones' is_default is True, set all of candidate's phones' is_default to False
-    candidate_id, candidate_phones = candidate.id, candidate.phones
     if any([phone.get('is_default') for phone in phones]):
         CandidatePhone.set_is_default_to_false(candidate_id)
 
     # Check if phone label and default have been provided
     phones_has_label = any([phone.get('label') for phone in phones])
-    phones_has_default = any([phone.get('is_default') for phone in phones])
+    phones_has_default = any([isinstance(phone.get('is_default'), bool) for phone in phones])
 
     # Check for duplicate values
-    phone_numbers = [phone.get('value') for phone in phones]
+    phone_numbers = [(phone.get('value') or '').strip() for phone in phones]
     if len(set(phone_numbers)) < len(phones):
         raise InvalidUsage(error_message='Identical phone numbers provided',
                            error_code=custom_error.INVALID_USAGE,
@@ -1954,10 +1972,20 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
 
         # If there's no is_default, the first phone should be default
         is_default = i == 0 if not phones_has_default else phone.get('is_default')
+
         # If there's no label, the first phone's label will be 'Home', rest will be 'Other'
-        phone_label = 'Home' if (not phones_has_label and i == 0) else (phone.get('label') or '').strip().title()
+        phone_label = PhoneLabel.DEFAULT_LABEL if (not phones_has_label and i == 0) \
+            else (phone.get('label') or '').strip().title()
+
         # Format phone number
         value = (phone.get('value') or '').strip()
+
+        # Phone number must contain at least 7 digits
+        # http://stackoverflow.com/questions/14894899/what-is-the-minimum-length-of-a-valid-international-phone-number
+        number = re.sub('\D', '', value)
+        if len(number) < 7:
+            raise InvalidUsage("Phone number ({}) must be at least 7 digits".format(value), custom_error.INVALID_PHONE)
+
         iso3166_country_code = CachedData.country_codes[0] if CachedData.country_codes else None
         phone_number_obj = parse_phone_number(value, iso3166_country_code=iso3166_country_code) if value else None
         """
@@ -1967,9 +1995,15 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         # phonenumbers.format() will append "+None" if phone_number_obj.country_code is None
         if phone_number_obj:
             if not phone_number_obj.country_code:
-                value = phone_number_obj.national_number
+                value = str(phone_number_obj.national_number)
             else:
-                value = phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164)
+                value = str(phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164))
+
+        # Phone number must not belong to any other candidate in the same domain
+        matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(value, request.user)
+        if matching_phone_values and matching_phone_values[0].candidate_id != candidate_id:
+            raise ForbiddenError(error_message="Phone number ({}) belongs to someone else.".format(value),
+                                 error_code=custom_error.PHONE_FORBIDDEN)
 
         # Clear CachedData's country_codes to prevent aggregating unnecessary data
         CachedData.country_codes = []
@@ -1983,7 +2017,7 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         )
 
         # Remove keys with empty values
-        phone_dict = {k: v for k, v in phone_dict.items() if v}
+        phone_dict = purge_dict(phone_dict)
 
         # Prevent adding empty records to db
         if not phone_dict:
@@ -1995,7 +2029,9 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
             # CandidatePhone must be recognized
             can_phone_obj = CandidatePhone.get(candidate_phone_id)
             if not can_phone_obj:
-                raise NotFoundError('Candidate phone not found', custom_error.PHONE_NOT_FOUND)
+                raise NotFoundError(error_message='Candidate phone not found',
+                                    error_code=custom_error.PHONE_NOT_FOUND,
+                                    additional_error_info={'id': candidate_phone_id})
 
             # CandidatePhone must belong to Candidate
             if can_phone_obj.candidate_id != candidate_id:
@@ -2012,28 +2048,24 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
             if value:  # Value is required for creating phone
                 phone_dict.update(dict(candidate_id=candidate_id))
 
-                if is_updating:
+                if is_updating:  # append phone to existing candidate's records
 
-                    # Phone must not belong to any other candidate in the same domain
-                    matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(str(value), request.user)
-                    if matching_phone_values and matching_phone_values[0].candidate_id != candidate_id:
-                        raise ForbiddenError(error_message="Phone number ({}) belongs to someone else.".format(value),
-                                             error_code=custom_error.PHONE_FORBIDDEN)
+                    # Prevent adding duplicate phone number(s) to candidate's profile
+                    if matching_phone_values and matching_phone_values[0].candidate_id == candidate_id:
+                        continue
+                    elif do_phones_exist(candidate.phones, phone_dict):
+                        continue
 
                     db.session.add(CandidatePhone(**phone_dict))
 
                     # Track all changes
                     track_edits(update_dict=phone_dict, table_name='candidate_phone',
                                 candidate_id=candidate_id, user_id=user_id)
-                else:
-                    # Phone must not belong to any other candidate in the same domain
-                    matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(str(value), request.user)
-                    if matching_phone_values and matching_phone_values[0].candidate_id != candidate_id:
-                        raise ForbiddenError(error_message="Phone number ({}) belongs to someone else.".format(value),
-                                             error_code=custom_error.PHONE_FORBIDDEN)
-
+                else:  # add phone to new candidate
                     # Prevent adding duplicate phone number(s) to candidate's profile
-                    elif matching_phone_values and matching_phone_values[0].candidate_id == candidate_id:
+                    if matching_phone_values and matching_phone_values[0].candidate_id == candidate_id:
+                        continue
+                    elif do_phones_exist(candidate.phones, phone_dict):
                         continue
 
                     db.session.add(CandidatePhone(**phone_dict))
@@ -2067,7 +2099,7 @@ def _add_or_update_military_services(candidate, military_services, user_id, is_u
         )
 
         # Remove keys with empty values
-        military_service_dict = {k: v for k, v in military_service_dict.items() if v}
+        military_service_dict = purge_dict(military_service_dict)
 
         # Prevent adding empty data to db
         if not military_service_dict:
@@ -2123,7 +2155,7 @@ def _add_or_update_preferred_locations(candidate, preferred_locations, user_id, 
         )
 
         # Remove keys with empty values
-        preferred_location_dict = {k: v for k, v in preferred_location_dict.items() if v}
+        preferred_location_dict = purge_dict(preferred_location_dict)
 
         # Prevent inserting empty records into db
         if not preferred_location_dict:
@@ -2183,7 +2215,7 @@ def _add_or_update_skills(candidate, skills, added_time, user_id, is_updating):
         )
 
         # Remove keys with empty values
-        skill_dict = {k: v for k, v in skill_dict.items() if v}
+        skill_dict = purge_dict(skill_dict)
 
         # Prevent adding records if empty dict
         if not skill_dict:
@@ -2379,7 +2411,8 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
         else:  # An existing CandidateExperience's dates have been updated
             if start_year and end_year:
                 total_months_experience = ((end_year - start_year) * 12 + (end_month - start_month) -
-                    (previous_end_year - previous_start_year) * 12 + (previous_end_month - previous_start_month))
+                                           (previous_end_year - previous_start_year) * 12 + (
+                                           previous_end_month - previous_start_month))
 
     candidate.total_months_experience += total_months_experience
     return

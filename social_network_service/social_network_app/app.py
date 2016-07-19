@@ -14,11 +14,14 @@ from flask import request, redirect
 from restful.v1_data import data_blueprint
 from restful.v1_events import events_blueprint
 from social_network_service.common.redis_cache import redis_store
+from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
+from social_network_service.modules.constants import MEETUP_CODE_LENGTH
 from social_network_service.modules.social_network.twitter import Twitter
 from social_network_service.social_network_app import app, logger
 from social_network_service.modules.utilities import get_class
 from restful.v1_social_networks import social_network_blueprint
+from restful.v1_subscription import subscription_blueprint
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.modules.rsvp.eventbrite import Eventbrite as EventbriteRsvp
@@ -27,6 +30,8 @@ from social_network_service.modules.rsvp.eventbrite import Eventbrite as Eventbr
 app.register_blueprint(data_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(social_network_blueprint)
+app.register_blueprint(subscription_blueprint)
+
 
 api = TalentApi(app)
 
@@ -50,8 +55,9 @@ def authorize():
     and in case of eventbrite the querystring args does not contain 'state' parameter
     """
     code = request.args.get('code')
-    url = SocialNetworkApiUrl.UI_APP_URL + '/campaigns/events/subscribe?code=%s' % code
-    if 'state' in request.args:
+    url = SocialNetworkApiUrl.SUBSCRIBE % code
+
+    if len(code) == MEETUP_CODE_LENGTH:
         social_network = SocialNetwork.get_by_name('Meetup')
     else:
         social_network = SocialNetwork.get_by_name('Eventbrite')
@@ -115,22 +121,6 @@ def handle_rsvp():
         return flask.jsonify(**data)
 
 
-@app.route(SocialNetworkApi.TWITTER_AUTH)
-def twitter_auth(user_id):
-    """
-    This endpoint is hit when user clicks on profile page to connect with Twitter account.
-    Here we create object of Twitter class defined in social_network/twitter.py and call its method authenticate().
-    This redirects the user to Twitter website to enter credentials and grant access to getTalent app.
-    :param int | long user_id: Id of logged-in user
-
-    **See Also**
-        .. seealso:: authentication() method defined in Twitter class inside social_network/twitter.py.
-
-    """
-    twitter_obj = Twitter(user_id=user_id, validate_credentials=False)
-    return twitter_obj.authenticate()
-
-
 @app.route(SocialNetworkApi.TWITTER_CALLBACK)
 def callback(user_id):
     """
@@ -141,5 +131,7 @@ def callback(user_id):
     **See Also**
         .. seealso:: callback() method defined in Twitter class inside social_network/twitter.py.
     """
-    twitter_obj = Twitter(user_id=user_id, validate_credentials=False)
-    return twitter_obj.callback(request.args['oauth_verifier'])
+    if 'oauth_verifier' in request.args:
+        twitter_obj = Twitter(user_id=user_id, validate_credentials=False)
+        return twitter_obj.callback(request.args['oauth_verifier'])
+    raise InternalServerError('You did not provide valid credentials. Unable to connect! Please try again.')

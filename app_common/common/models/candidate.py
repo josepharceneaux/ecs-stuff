@@ -153,6 +153,11 @@ class PhoneLabel(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     DEFAULT_LABEL = 'Home'
+    MOBILE_LABEL = 'Mobile'
+    WORK_LABEL = 'Work'
+    HOME_FAX = 'Home Fax'
+    OFFICE_FAX = 'Office Fax'
+    OTHER_LABEL = 'Other'
 
     # Relationships
     candidate_phones = relationship('CandidatePhone', backref='phone_label')
@@ -305,6 +310,9 @@ class EmailLabel(db.Model):
     reference_emails = relationship('ReferenceEmail', backref='email_label')
 
     PRIMARY_DESCRIPTION = "Primary"
+    HOME_DESCRIPTION = 'Home'
+    WORK_DESCRIPTION = 'Work'
+    OTHER_DESCRIPTION = "Other"
 
     def __repr__(self):
         return "<EmailLabel (description=' %r')>" % self.description
@@ -433,6 +441,13 @@ class CandidateEmail(db.Model):
             filter(User.domain_id == domain_id). \
             filter(cls.address == email_address).first()
 
+    @classmethod
+    def get_emails_in_domain(cls, domain_id, email_addresses):
+        from user import User
+        return cls.query.join(Candidate).join(User).\
+            filter(User.domain_id == domain_id).\
+            filter(cls.address.in_(email_addresses)).all()
+
 
 class CandidatePhoto(db.Model):
     __tablename__ = 'candidate_photo'
@@ -520,8 +535,8 @@ class CandidateTextComment(db.Model):
     list_order = db.Column('ListOrder', db.Integer)
     title = db.Column(db.String(255))
     comment = db.Column('Comment', db.Text)
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<CandidateTextComment (id = {})>".format(self.id)
@@ -541,8 +556,8 @@ class VoiceComment(db.Model):
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     list_order = db.Column('ListOrder', db.Integer)
     filename = db.Column('Filename', db.String(260))
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<VoiceComment (id = {})>".format(self.id)
@@ -553,8 +568,8 @@ class CandidateDocument(db.Model):
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     filename = db.Column('Filename', db.String(260))
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<CandidateDocument (id = {})>".format(self.id)
@@ -603,7 +618,7 @@ class SocialNetwork(db.Model):
         else:
             # Didn't input 'ids' it means we we need list of all, the following
             # probably help us avoid the expensive in_ with empty sequence
-            SocialNetwork.get_all()
+            return SocialNetwork.get_all()
 
     @classmethod
     def get_by_ids(cls, ids):

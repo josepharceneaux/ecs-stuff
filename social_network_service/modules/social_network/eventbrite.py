@@ -5,6 +5,7 @@ class. Eventbrite contains methods like create_webhook(), get_member_id() etc.
 
 # Application Specific
 from base import SocialNetworkBase
+from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.custom_exceptions import *
 from social_network_service.social_network_app import logger
@@ -227,4 +228,37 @@ class Eventbrite(SocialNetworkBase):
         except Exception:
             logger.exception('create_webhook: user_id: %s' % user_credentials.user.id)
             raise SNServerException("Eventbrite Webhook wasn't created successfully")
+
+    def add_venue_to_sn(self, venue_data):
+        """
+        This function sends a POST request to Eventbrite api to create a venue for event.
+        :param dict venue_data: a dictionary containing data required to create a venue
+        """
+
+        payload = {
+            'venue.name': venue_data['address_line_1'],
+            'venue.address.address_1': venue_data['address_line_1'],
+            'venue.address.address_2': venue_data.get('address_line_2'),
+            'venue.address.region': venue_data['state'],
+            'venue.address.city': venue_data['city'],
+            'venue.address.postal_code': venue_data.get('zip_code'),
+            'venue.address.latitude': venue_data.get('latitude'),
+            'venue.address.longitude': venue_data.get('longitude')
+        }
+        # create url to send post request to create venue
+        url = self.api_url + "/venues/"
+        response = http_request('POST', url, params=payload,
+                                headers=self.headers,
+                                user_id=self.user.id)
+        json_resp = response.json()
+        if response.ok:
+            logger.info('|  Venue has been created  |')
+            venue_id = json_resp.get('id')
+        else:
+            raise InternalServerError('ApiError: Unable to create venue for Eventbrite',
+                                      additional_error_info=dict(venue_error=json_resp))
+
+        venue_data['user_id'] = self.user.id
+        venue_data['social_network_venue_id'] = venue_id
+        return SocialNetworkBase.save_venue(venue_data)
 

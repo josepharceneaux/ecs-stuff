@@ -41,6 +41,9 @@ custom_fields_schema = {
                     },
                     "name": {
                         "type": "string"
+                    },
+                    "category_id": {
+                        "type": "integer"
                     }
                 },
                 "required": [
@@ -75,6 +78,76 @@ custom_field_schema = {
     ]
 }
 
+cf_categories_schema_post = {
+    "type": "object",
+    "properties": {
+        "custom_field_categories": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "name"
+                ]
+            }
+        }
+    },
+    "required": [
+        "custom_field_categories"
+    ]
+}
+
+cf_categories_schema_put = {
+    "type": "object",
+    "properties": {
+        "custom_field_categories": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "integer"
+                    }
+                },
+                "required": [
+                    "name",
+                    "id"
+                ]
+            }
+        }
+    },
+    "required": [
+        "custom_field_categories"
+    ]
+}
+
+cf_category_schema_put = {
+    "type": "object",
+    "properties": {
+        "custom_field_category": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name"
+            ]
+        }
+    },
+    "required": [
+        "custom_field_category"
+    ]
+}
+
 aoi_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
@@ -100,3 +173,7 @@ aoi_schema = {
         "areas_of_interest"
     ]
 }
+
+"""
+This script adds the simple hash column which is used by the emailed resume to candidate code.
+"""

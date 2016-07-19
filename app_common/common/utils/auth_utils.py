@@ -66,71 +66,67 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
     return auth_wrapper
 
 
-def require_all_roles(*role_names):
-    """ This method ensures that user should have all roles given in roles list"""
+def require_all_permissions(*permission_names):
+    """ This method ensures that user should have all permissions given in permission list"""
 
-    def domain_roles(func):
+    def permissions(func):
         @wraps(func)
-        def authenticate_roles(*args, **kwargs):
+        def authenticate_permission(*args, **kwargs):
             # For server-to-server Auth roles check should be skipped
             if not request.oauth_token:
                 return func(*args, **kwargs)
-            if not role_names:
-                # Roles list is empty so it means func is not roles protected
+            if not permission_names:
+                # Permission list is empty so it means func is not permission protected
                 return func(*args, **kwargs)
-            user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
-                          UserScopedRoles.get_all_roles_of_user(request.user.id)]
-            for role_name in role_names:
-                if role_name not in user_roles:
+            if request.user.role:
+                user_permissions = [permission.name for permission in request.user.role.get_all_permissions_of_role()]
+            else:
+                user_permissions = []
+            for permission_name in permission_names:
+                if permission_name not in user_permissions:
                     raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
                                                           "perform this operation")
-            request.user_can_edit_other_domains = False
-            if DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO in user_roles:
-                request.user_can_edit_other_domains = True
+
+            request.user_permissions = user_permissions
             return func(*args, **kwargs)
 
-        return authenticate_roles
+        return authenticate_permission
 
-    return domain_roles
+    return permissions
 
 
-def require_any_role(*role_names):
-    """
-    This method ensures that user should have at least one role from given roles list and set
-    request.domain_independent_role to true if user has some domain independent (ADMIN) role
-    """
+def require_any_permission(*permission_names):
+    """ This method ensures that user should have at least one permission given in permission list"""
 
-    def domain_roles(func):
+    def permissions(func):
         @wraps(func)
-        def authenticate_roles(*args, **kwargs):
-
+        def authenticate_permission(*args, **kwargs):
             # For server-to-server Auth roles check should be skipped
             if not request.oauth_token:
                 return func(*args, **kwargs)
-            user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
-                          UserScopedRoles.get_all_roles_of_user(request.user.id)]
-            user_roles.append('SELF')
-            if not role_names:
-                # Roles list is empty so it means func is not roles protected
+            if not permission_names:
+                # Permission list is empty so it means func is not permission protected
                 return func(*args, **kwargs)
+            if request.user.role:
+                user_permissions = [permission.name for permission in request.user.role.get_all_permissions_of_role()]
             else:
-                valid_domain_roles = []
-                # Roles which a logged-in user possess
-                for role_name in role_names:
-                    if role_name in user_roles:
-                        valid_domain_roles.append(role_name)
-                if valid_domain_roles:
-                    request.user_can_edit_other_domains = False
-                    if DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO in user_roles:
-                        request.user_can_edit_other_domains = True
-                    request.valid_domain_roles = valid_domain_roles
-                    return func(*args, **kwargs)
-                raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
-                                                      "perform this operation")
+                user_permissions = []
 
-        return authenticate_roles
+            authenticated_permissions = []
+            for permission_name in permission_names:
+                if permission_name in user_permissions:
+                    authenticated_permissions.append(permission_name)
 
-    return domain_roles
+            if authenticated_permissions:
+                request.user_permissions = user_permissions
+                return func(*args, **kwargs)
+
+            raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
+                                                  "perform this operation")
+
+        return authenticate_permission
+
+    return permissions
 
 
 def get_token_by_client_and_user(client_id, user_id, db):
