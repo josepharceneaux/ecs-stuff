@@ -17,46 +17,31 @@ from ..models.misc import (Frequency, UrlConversion)
 from ..models.email_campaign import EmailCampaignBlast
 
 # Common utils
-from ..utils.datetime_utils import DatetimeUtils
 from ..error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
 from ..utils.handy_functions import (find_missing_items, get_valid_json_data)
 
 
-def validation_of_data_to_schedule_campaign(campaign_obj, request):
+def validation_of_data_to_schedule_campaign(request):
     """
     This validates the data provided to schedule a campaign.
     1- Get JSON data from request and raise Invalid Usage exception if no data is found or
             data is not JSON serializable.
-    2- If start datetime is not provide/given in valid format, we raise Invalid usage
-        error as start_datetime is required field for both 'periodic' and 'one_time' schedule.
-    3- Get number of seconds by validating given frequency_id
-    4- If end_datetime is not given and frequency is for periodic task, we raise Invalid usage.
-    5- Removes the frequency_id from given dict of data and put frequency (number of seconds) in it.
-    6- Returns data_to_schedule
+    2- Get number of seconds by validating given frequency_id
+    3- If end_datetime is not given and frequency is for periodic task, we raise Invalid usage.
+    4- Returns data_to_schedule
 
     This function is used in data_validation_for_campaign_schedule() of CampaignBase class.
 
-    :param campaign_obj: campaign obj
-    :param request: request received on API
+    :param flask.request request: request received on API
     :return: data_to_schedule
     :rtype: dict
     """
     data_to_schedule_campaign = get_valid_json_data(request)
-    if not data_to_schedule_campaign:
-        raise InvalidUsage('No data provided to schedule %s(id:%s)' % (campaign_obj.__tablename__, campaign_obj.id))
-    # check if data has start_datetime
-    if not data_to_schedule_campaign.get('start_datetime'):
-        raise InvalidUsage('start_datetime is required field.')
-    # validate format of start_datetime
-    DatetimeUtils.validate_datetime_format(data_to_schedule_campaign['start_datetime'])
     # get number of seconds from frequency id
     frequency = Frequency.get_seconds_from_id(data_to_schedule_campaign.get('frequency_id'))
     # check if task to be schedule is periodic
     if frequency and not data_to_schedule_campaign.get('end_datetime'):
         raise InvalidUsage("end_datetime is required to schedule a periodic task")
-    if frequency:
-        # validate format of end_datetime
-        DatetimeUtils.validate_datetime_format(data_to_schedule_campaign['end_datetime'])
     data_to_schedule_campaign['frequency'] = frequency
     # convert end_datetime_str in datetime obj
     return data_to_schedule_campaign

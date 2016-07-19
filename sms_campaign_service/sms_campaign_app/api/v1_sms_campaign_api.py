@@ -100,6 +100,8 @@ from sms_campaign_service.common.campaign_services.campaign_base import Campaign
 from sms_campaign_service.common.campaign_services.json_schema.campaign_fields import get_campaign_schema
 from sms_campaign_service.common.campaign_services.campaign_utils import (CampaignUtils,
                                                                           raise_if_dict_values_are_not_int_or_long)
+from sms_campaign_service.common.campaign_services.json_schema.campaign_schedule import campaign_schedule_schema
+
 
 
 # creating blueprint
@@ -309,6 +311,8 @@ class ScheduleSmsCampaign(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
+        # Schema validation
+        get_json_data_if_validated(request, campaign_schedule_schema)
         # validate data to schedule
         pre_processed_data = SmsCampaignBase.data_validation_for_campaign_schedule(request,
                                                                                    campaign_id,
@@ -380,6 +384,8 @@ class ScheduleSmsCampaign(Resource):
                     404 (Campaign not found)
                     500 (Internal Server Error)
         """
+        # Schema validation
+        get_json_data_if_validated(request, campaign_schedule_schema)
         # create object of class SmsCampaignBase
         sms_camp_obj = SmsCampaignBase(request.user.id, campaign_id)
         # call method reschedule() to re-schedule the campaign and get the task_id

@@ -729,7 +729,7 @@ class CampaignBase(object):
         if not scheduled_task and request.method == 'PUT':
             raise ForbiddenError('Use POST method instead to schedule campaign first time')
         # get JSON data from request
-        data_to_schedule_campaign = validation_of_data_to_schedule_campaign(campaign_obj, request)
+        data_to_schedule_campaign = validation_of_data_to_schedule_campaign(request)
         return {'campaign': campaign_obj,
                 'data_to_schedule': data_to_schedule_campaign,
                 'scheduled_task': scheduled_task,
