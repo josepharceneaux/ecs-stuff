@@ -9,7 +9,8 @@ from associations import ReferenceEmail
 from venue import Venue
 from event import Event
 from sms_campaign import SmsCampaignReply
-from email_campaign import (EmailCampaign, EmailCampaignSend)
+from tag import CandidateTag
+from email_campaign import EmailCampaign, EmailCampaignSend
 
 
 class Candidate(db.Model):
@@ -64,6 +65,7 @@ class Candidate(db.Model):
     skills = relationship('CandidateSkill', cascade='all, delete-orphan', passive_deletes=True)
     social_networks = relationship('CandidateSocialNetwork', cascade='all, delete-orphan', passive_deletes=True)
     text_comments = relationship('CandidateTextComment', cascade='all, delete-orphan', passive_deletes=True)
+    tags = relationship('CandidateTag', cascade='all, delete-orphan', passive_deletes=True)
     work_preferences = relationship('CandidateWorkPreference', cascade='all, delete-orphan', passive_deletes=True)
     unidentifieds = relationship('CandidateUnidentified', cascade='all, delete-orphan', passive_deletes=True)
     email_campaign_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan', passive_deletes=True)
@@ -71,7 +73,6 @@ class Candidate(db.Model):
                                       backref='candidate')
     push_campaign_sends = relationship('PushCampaignSend', cascade='all, delete-orphan', passive_deletes=True,
                                        backref='candidate')
-
     voice_comments = relationship('VoiceComment', cascade='all, delete-orphan', passive_deletes=True)
     devices = relationship('CandidateDevice', cascade='all, delete-orphan', passive_deletes=True,
                            backref='candidate', lazy='dynamic')
