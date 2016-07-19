@@ -150,4 +150,4 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
         return status_response.content
 
     else:
-        return 0
+        raise InternalServerError(error_message='Could not obtain text from uploaded file.')

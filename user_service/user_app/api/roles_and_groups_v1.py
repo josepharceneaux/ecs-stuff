@@ -42,7 +42,6 @@ class UserRolesApi(Resource):
         permissions = [permission.name for permission in requested_user.role.get_all_permissions_of_role()]
         return {"role_name": requested_user.role.name, "permissions": permissions}
 
-
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_USER_ROLE)
     def put(self, **kwargs):
         """

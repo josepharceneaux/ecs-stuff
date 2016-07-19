@@ -1,13 +1,15 @@
 """
 Functions related to candidate_service/candidate_app/api validations
 """
-# Flask Specific
-from flask import request
-from dateutil.parser import parse
 # Standard library
 import json
 import re
 from datetime import datetime
+
+# Flask Specific
+from flask import request
+from dateutil.parser import parse
+
 # Models
 from candidate_service.common.models.db import db
 from candidate_service.common.models.candidate import (
@@ -24,6 +26,7 @@ from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPON
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from ..custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.validators import is_number, is_valid_email, format_phone_number
+
 # Json schema validation
 from jsonschema import validate, ValidationError, FormatChecker
 
@@ -556,9 +559,8 @@ def do_phones_exist(phones, phone_dict):
     """
     for phone in phones:
         value = phone_dict.get('value')
-        if value:
-            if phone.value == format_phone_number(value)['formatted_number']:
-                return True
+        if value and phone.value == format_phone_number(value)['formatted_number']:
+            return True
     return False
 
 
@@ -645,23 +647,3 @@ def get_json_data_if_validated(request_body, json_schema, format_checker=True):
     except ValidationError as e:
         raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
     return body_dict
-
-
-def get_email_if_validated(email_address, domain_id):
-    """
-    Function will retrieve CandidateEmail from db after validating email_address
-    :type email_address:  str
-    :type domain_id:      int | long
-    :rtype:               CandidateEmail | None
-    """
-    # In case just a whitespace is provided, e.g. "  "
-    if not email_address:
-        raise InvalidUsage('No email address provided', custom_error.INVALID_EMAIL)
-
-    # Email addresses must be properly formatted
-    if not is_valid_email(email_address):
-        raise InvalidUsage('Invalid email address/format: {}'.format(email_address),
-                           error_code=custom_error.INVALID_EMAIL)
-
-    # Get candidate's email in user's domain if exists
-    return CandidateEmail.get_email_in_users_domain(domain_id, email_address)

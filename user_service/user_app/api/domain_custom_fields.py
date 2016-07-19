@@ -24,8 +24,7 @@ from user_service.modules.json_schema import custom_fields_schema, custom_field_
 from user_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 
 # Helpers
-from user_service.common.utils.handy_functions import normalize_value
-from user_service.modules.domain_custom_fields import get_custom_field_if_validated
+from user_service.modules.domain_custom_fields import get_custom_field_if_validated, create_custom_fields
 
 
 class DomainCustomFieldsResource(Resource):
@@ -44,35 +43,12 @@ class DomainCustomFieldsResource(Resource):
             >>> requests.post(url="host/v1/custom_fields", data=json.dumps(data), headers=headers)
             <Response [201]>
         """
-        # Authenticated user
-        authed_user = request.user
-        domain_id = authed_user.domain_id
-
         # Validate and obtain json data from request body
         body_dict = get_json_data_if_validated(request, custom_fields_schema, False)
 
-        created_custom_field_ids = []
-        for custom_field in body_dict['custom_fields']:
-
-            # Normalize custom field name
-            cf_name = normalize_value(custom_field['name'])
-            if not cf_name:  # In case name is just a whitespace
-                raise InvalidUsage("Name is required for creating custom field.")
-
-            # Prevent duplicate entries for the same domain
-            custom_field_obj = CustomField.query.filter_by(domain_id=domain_id, name=cf_name).first()
-            if custom_field_obj:
-                raise InvalidUsage(error_message='Domain Custom Field already exists',
-                                   additional_error_info={'id': custom_field_obj.id})
-
-            cf = CustomField(domain_id=domain_id, name=cf_name, type="string",
-                             added_time=datetime.datetime.utcnow())
-            db.session.add(cf)
-            db.session.flush()
-            created_custom_field_ids.append(cf.id)
-
-        db.session.commit()
-        return {"custom_fields": [{"id": cf_id} for cf_id in created_custom_field_ids]}, 201
+        return {
+                   "custom_fields": create_custom_fields(body_dict['custom_fields'], request.user.domain_id)
+               }, requests.codes.CREATED
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_DOMAINS)
     def get(self, **kwargs):
@@ -95,18 +71,22 @@ class DomainCustomFieldsResource(Resource):
             # Custom field ID must be recognized & belong to user's domain
             custom_field = get_custom_field_if_validated(custom_field_id, request.user)
 
-            return {'custom_field': {
-                'id': custom_field.id,
-                'domain_id': custom_field.domain_id,
-                'name': custom_field.name,
-                'added_datetime': str(custom_field.added_time)
-            }}
+            return {
+                'custom_field': {
+                    'id': custom_field.id,
+                    'domain_id': custom_field.domain_id,
+                    'category_id': custom_field.category_id,
+                    'name': custom_field.name,
+                    'added_datetime': str(custom_field.added_time)
+                }
+            }
 
         # Return all of domain's custom fields
         return {"custom_fields": [
             {
                 "id": custom_field.id,
                 "domain_id": custom_field.domain_id,
+                'category_id': custom_field.category_id,
                 "name": custom_field.name,
                 "added_datetime": str(custom_field.added_time)
             } for custom_field in CustomField.get_domain_custom_fields(request.user.domain_id)]}
@@ -138,8 +118,8 @@ class DomainCustomFieldsResource(Resource):
             # Custom field ID must be recognized & belong to user's domain
             get_custom_field_if_validated(custom_field_id, request.user)
 
-            # Normalize custom field name
-            custom_field_name = normalize_value(body_dict['custom_field']['name'])
+            # Remove whitespace(s) from custom field name
+            custom_field_name = body_dict['custom_field']['name'].strip()
             if not custom_field_name:  # In case name is just a whitespace
                 raise InvalidUsage("Name is required for creating custom field.")
 
@@ -157,8 +137,10 @@ class DomainCustomFieldsResource(Resource):
             if not custom_field_id:
                 raise InvalidUsage("Custom field ID is required for updating.")
 
-            # Normalize custom field name
-            custom_field_name = normalize_value(custom_field['name'])
+            # Remove whitespace(s) from custom field name
+            custom_field_name = custom_field['name'].strip()
+            if not custom_field_name:  # In case name is just a whitespace
+                raise InvalidUsage("Name is required for creating custom field.")
 
             custom_field_query = CustomField.query.filter_by(id=custom_field_id)
 
@@ -177,34 +159,35 @@ class DomainCustomFieldsResource(Resource):
         db.session.commit()
         return {'custom_fields': [{'id': custom_field_id} for custom_field_id in updated_custom_field_ids]}
 
-    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
-    def delete(self, **kwargs):
-        """
-        Function will delete domain's custom field(s)
-        resource url:
-            i. DELETE /v1/custom_fields/:id
-        :return: {"custom_field": {"id": int}}
-        :rtype: dict[dict]
-        Usage:
-            >>> headers = {"Authorization": "Bearer {access_token}"}
-            >>> requests.delete(url="host/v1/custom_fields/4", headers=headers)
-            <Response [200]>
-        """
-        custom_field_id = kwargs.get('id')
-
-        # Delete specified custom field
-        if custom_field_id:
-
-            # Custom field ID must be recognized
-            custom_field = CustomField.get(custom_field_id)
-            if not custom_field:
-                raise NotFoundError("Custom field ID ({}) not recognized.".format(custom_field_id))
-
-            # Custom field must belong to user's domain
-            if request.user.role.name != 'TALENT_ADMIN' and custom_field.domain_id != request.user.domain_id:
-                raise ForbiddenError("Not authorized")
-
-            db.session.delete(custom_field)
-            db.session.commit()
-
-            return {'custom_field': {'id': custom_field_id}}
+    # TODO: this endpoint should not be used since it will cause further complexity - Amir
+    # @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
+    # def delete(self, **kwargs):
+    #     """
+    #     Function will delete domain's custom field(s)
+    #     resource url:
+    #         i. DELETE /v1/custom_fields/:id
+    #     :return: {"custom_field": {"id": int}}
+    #     :rtype: dict[dict]
+    #     Usage:
+    #         >>> headers = {"Authorization": "Bearer {access_token}"}
+    #         >>> requests.delete(url="host/v1/custom_fields/4", headers=headers)
+    #         <Response [200]>
+    #     """
+    #     custom_field_id = kwargs.get('id')
+    #
+    #     # Delete specified custom field
+    #     if custom_field_id:
+    #
+    #         # Custom field ID must be recognized
+    #         custom_field = CustomField.get(custom_field_id)
+    #         if not custom_field:
+    #             raise NotFoundError("Custom field ID ({}) not recognized.".format(custom_field_id))
+    #
+    #         # Custom field must belong to user's domain
+    #         if request.user.role.name != 'TALENT_ADMIN' and custom_field.domain_id != request.user.domain_id:
+    #             raise ForbiddenError("Not authorized")
+    #
+    #         db.session.delete(custom_field)
+    #         db.session.commit()
+    #
+    #         return {'custom_field': {'id': custom_field_id}}

@@ -1959,10 +1959,10 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
 
     # Check if phone label and default have been provided
     phones_has_label = any([phone.get('label') for phone in phones])
-    phones_has_default = any([phone.get('is_default') for phone in phones])
+    phones_has_default = any([isinstance(phone.get('is_default'), bool) for phone in phones])
 
     # Check for duplicate values
-    phone_numbers = [phone.get('value') for phone in phones]
+    phone_numbers = [(phone.get('value') or '').strip() for phone in phones]
     if len(set(phone_numbers)) < len(phones):
         raise InvalidUsage(error_message='Identical phone numbers provided',
                            error_code=custom_error.INVALID_USAGE,
@@ -1972,11 +1972,13 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
 
         # If there's no is_default, the first phone should be default
         is_default = i == 0 if not phones_has_default else phone.get('is_default')
+
         # If there's no label, the first phone's label will be 'Home', rest will be 'Other'
-        phone_label = 'Home' if (not phones_has_label and i == 0) else (phone.get('label') or '').strip().title()
+        phone_label = PhoneLabel.DEFAULT_LABEL if (not phones_has_label and i == 0) \
+            else (phone.get('label') or '').strip().title()
+
         # Format phone number
         value = (phone.get('value') or '').strip()
-        logger.info('Phone number before using parsing library: %s' % value)
 
         # Phone number must contain at least 7 digits
         # http://stackoverflow.com/questions/14894899/what-is-the-minimum-length-of-a-valid-international-phone-number
@@ -1996,8 +1998,6 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
                 value = str(phone_number_obj.national_number)
             else:
                 value = str(phonenumbers.format_number(phone_number_obj, phonenumbers.PhoneNumberFormat.E164))
-
-        logger.info('Phone number after using parsing library: %s' % value)
 
         # Phone number must not belong to any other candidate in the same domain
         matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(value, request.user)
@@ -2029,7 +2029,9 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
             # CandidatePhone must be recognized
             can_phone_obj = CandidatePhone.get(candidate_phone_id)
             if not can_phone_obj:
-                raise NotFoundError('Candidate phone not found', custom_error.PHONE_NOT_FOUND)
+                raise NotFoundError(error_message='Candidate phone not found',
+                                    error_code=custom_error.PHONE_NOT_FOUND,
+                                    additional_error_info={'id': candidate_phone_id})
 
             # CandidatePhone must belong to Candidate
             if can_phone_obj.candidate_id != candidate_id:
@@ -2064,7 +2066,7 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
                     if matching_phone_values and matching_phone_values[0].candidate_id == candidate_id:
                         continue
                     elif do_phones_exist(candidate.phones, phone_dict):
-                            continue
+                        continue
 
                     db.session.add(CandidatePhone(**phone_dict))
 
