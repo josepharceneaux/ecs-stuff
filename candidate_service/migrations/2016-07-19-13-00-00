@@ -1,5 +1,5 @@
 """
-This script updates candidate_reference & candidate_tag foreign keys to ensure that candidate's references & tags
+This script updates specified-tables' foreign keys to ensure that all of candidate's records
 will be removed if their parent (candidate) is deleted.
 
 Script is taking the following steps:
@@ -17,7 +17,13 @@ from sqlalchemy import text
 
 db.session.execute(text("set foreign_key_checks=0;"))
 
-tables = ["candidate_tag", "candidate_reference"]
+tables = [
+    "candidate_tag",
+    "candidate_reference",
+    "candidate_education",
+    "candidate_experience",
+    "candidate_military_service"
+]
 for table in tables:
 
     column_descriptions = db.session.execute(text("show columns from `%s`" % table)).fetchall()
