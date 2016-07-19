@@ -8,6 +8,7 @@ import base64
 import json
 # Third Party/Framework Specific.
 from bs4 import BeautifulSoup
+from contracts import contract
 from flask import current_app
 import requests
 # Module Specific
@@ -21,6 +22,7 @@ ABBY_OCR_API_AUTH_TUPLE = ('gettalent', 'lfnJdQNWyevJtg7diX7ot0je')
 ABBY_URL = 'http://cloud.ocrsdk.com/processImage'
 
 
+@contract
 def google_vision_ocr(file_string_io):
     """
     Utilizes Google Vision API to OCR image with Abbyy as a fallback.
@@ -28,8 +30,9 @@ def google_vision_ocr(file_string_io):
     Specific JSON responses:
         https://cloud.google.com/vision/reference/rest/v1/images/annotate#annotateimageresponse
         https://cloud.google.com/vision/reference/rest/v1/images/annotate#entityannotation
-    :param cStringIO.StringIO file_string_io:
-    :return unicode:
+    :param cStringIO_StringIO file_string_io: Resume file in memory.
+    :return: The first `description` key from the first `textAnnotations` item in the OCR results.
+    :rtype: str | unicode
     """
     file_string_io.seek(0)
     b64_string = base64.b64encode(file_string_io.getvalue())
@@ -77,18 +80,19 @@ def google_vision_ocr(file_string_io):
     text_annotations = ocr_results['responses'][0].get('textAnnotations')
 
     if text_annotations:
-        return text_annotations[0].get('description', '')
+        return text_annotations[0].get('description', u'')
     else:
-        return ''
+        return u''
 
 
+@contract
 def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
     """
     Posts the image to Abby OCR API, then keeps pinging to check if it's done. Quits if not done in
     certain number of tries.
-    :param cStringIO.StringIO img_file_obj: File initially posted to the resume parsing service.
+    :param cStringIO_StringIO img_file_obj: (Image) File posted to the resume parsing service.
     :param string export_format: Abby OCR param.
-    :return Image file OCR'd in desired format.:
+    :return: Image file OCR text parsed from Abbyy.
     :rtype str:
     """
 

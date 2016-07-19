@@ -47,7 +47,7 @@ GET_626a_ADDRESS = {'city': u'Portland', 'state': u'Oregon', 'country': 'US', 'z
                     'address_line_1': u'1602 NE Junior St.'}
 GET_626b_ADDRESS = {'city': u'Portland', 'state': u'OR', 'country': 'US', 'zip_code': '97212',
                     'address_line_1': u'4014 NE Failing Street'}
-PDF_ADDRESS = {'city': u'St. Petersburg', 'state': u'FL', 'country': 'US', 'zip_code': '33713 5855',
+PDF_ADDRESS = {'city': u'St. Petersburg', 'state': u'FL', 'country': 'US', 'zip_code': '33713-5855',
                'address_line_1': u'2462 13 th Avenue North #6-101'}
 
 XML_MAPS = [

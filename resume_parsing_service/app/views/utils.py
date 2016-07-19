@@ -6,6 +6,7 @@ import hashlib
 import json
 from cStringIO import StringIO
 # Third Party
+from contracts import contract
 from flask import current_app
 import boto3
 import requests
@@ -16,12 +17,14 @@ from resume_parsing_service.common.routes import CandidateApiUrl, CandidatePoolA
 from resume_parsing_service.common.utils.talent_s3 import boto3_get_file
 
 
+@contract
 def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename):
     """
     Sends candidate dict to candidate service POST and returns response.
     :param dict candidate_dict: dict containing candidate info in candidate format.
-    :param str formatted_token_str: string in format 'Bearer foo'.
-    :return tuple (bool, int):
+    :param unicode formatted_token_str: string in format 'Bearer foo'.
+    :return: Tuple stating if candidate was created and the corresponding id.
+    :rtype: tuple(bool, int)
     """
     try:
         create_response = requests.post(CandidateApiUrl.CANDIDATES,
@@ -71,13 +74,15 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename
         return True, candidate_id
 
 
+@contract
 def update_candidate_from_resume(candidate_dict, formatted_token_str, filename_str):
     """
     Sends candidate dict to candidate service PATCH and returns response. If the update is not
     successfull it will raise an error.
     :param dict candidate_dict: dict containing candidate info in candidate format.
-    :param str formatted_token_str: string in format 'Bearer foo'.
-    :return bool:
+    :param unicode formatted_token_str: string in format 'Bearer foo'.
+    :return: Returns True if candidate is updated, else exception is raised.
+    :rtype: bool
     """
     try:
         update_response = requests.patch(CandidateApiUrl.CANDIDATES,
@@ -104,6 +109,7 @@ def update_candidate_from_resume(candidate_dict, formatted_token_str, filename_s
     return True
 
 
+@contract
 def send_candidate_references(candidate_references, candidate_id, oauth_string):
     """
     Makes an attempt to create references for a candidate using their id. Failure does not raise an
@@ -134,12 +140,13 @@ def send_candidate_references(candidate_references, candidate_id, oauth_string):
             candidate_id, references_response.content))
 
 
+@contract
 def get_users_talent_pools(formatted_token_str):
     """
     Uses the candidate pool service to get talent pools of a user's domain via their token.
-    :param str formatted_token_str: "bearer foo" formatted string; as it appears in header.
+    :param unicode formatted_token_str: "bearer foo" formatted string; as it appears in header.
     :return: List of talent pools ids
-    :rtype: list
+    :rtype: list(int)
     """
     try:
         talent_pool_response = requests.get(CandidatePoolApiUrl.TALENT_POOLS,

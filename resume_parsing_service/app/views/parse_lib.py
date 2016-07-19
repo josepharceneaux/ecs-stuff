@@ -9,6 +9,7 @@ from time import time
 import base64
 import json
 # Third Party/Framework Specific.
+from contracts import contract
 from flask import current_app
 import PyPDF2
 # Module Specific
@@ -28,12 +29,15 @@ DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
 RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 
 
+@contract
 def parse_resume(file_obj, filename_str, cache_key):
     """Primary resume parsing function.
 
-    :param cStringIO.StringI file_obj: a StringIO representation of the raw binary.
-    :param str filename_str: The file_obj file name.
-    :return: A dictionary of processed candidate data or an appropriate error message.
+    :param cStringIO_StringIO file_obj: a StringIO representation of the raw binary.
+    :param unicode filename_str: The file_obj file name.
+    :param str cache_key: A key used to get/store BG data.
+    :return: Processed candidate data.
+    :rtype: dict
     """
     logger.info("Beginning parse_resume(%s)", filename_str)
 
