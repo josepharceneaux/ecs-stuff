@@ -5,7 +5,9 @@ Test cases for CandidateResource/delete()
 from candidate_service.candidate_app import app
 
 # Models
-from candidate_service.common.models.candidate import CandidateCustomField, CandidateEmail
+from candidate_service.common.models.candidate import CandidateCustomField, CandidateEmail, \
+    CandidateTextComment, CandidateReference
+from candidate_service.common.models.tag import CandidateTag
 from candidate_service.common.models.user import Role
 
 # Conftest
@@ -67,6 +69,23 @@ class TestDeleteCandidate(object):
         del_resp = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         print response_info(del_resp)
         assert del_resp.status_code == requests.codes.NO_CONTENT
+
+        # Retrieve candidate. Expect NOT FOUND error
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_resp)
+        assert get_resp.status_code == requests.codes.NOT_FOUND
+
+        # Candidate should no longer have any notes in db
+        candidate_notes = CandidateTextComment.get_by_candidate_id(candidate_id)
+        assert candidate_notes == []
+
+        # Candidate should no longer have any tags in db
+        candidate_tags = CandidateTag.get_all(candidate_id)
+        assert candidate_tags == []
+
+        # Candidate should no longer have any references in db
+        candidate_references = CandidateReference.get_all(candidate_id)
+        assert candidate_references == []
 
     def test_delete_non_existing_candidate(self, access_token_first, user_first):
         """

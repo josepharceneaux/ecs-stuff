@@ -796,6 +796,15 @@ class CandidateReference(db.Model):
     def __repr__(self):
         return "<CandidateReference (candidate_id=' %r')>" % self.candidate_id
 
+    @classmethod
+    def get_all(cls, candidate_id):
+        """
+        Will return a list of candidate references
+        :type candidate_id:  int | long
+        :rtype:  list[CandidateReference]
+        """
+        return cls.query.filter_by(candidate_id=candidate_id).all()
+
 
 class ReferenceWebAddress(db.Model):
     __tablename__ = 'reference_web_address'
