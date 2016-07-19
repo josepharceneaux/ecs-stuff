@@ -265,6 +265,16 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(self.URL, headers=headers, data=json.dumps(data))
         assert response.status_code == InvalidUsage.http_status_code()
 
+    def test_campaign_create_with_invalid_body_text(self, headers, campaign_valid_data, invalid_string):
+        """
+        This is a test to create SMS campaign with invalid body_text. Status code should be 400 and
+        campaign should not be created.
+        """
+        data = campaign_valid_data.copy()
+        data['body_text'] = invalid_string
+        response = requests.post(self.URL, headers=headers, data=json.dumps(data))
+        assert response.status_code == InvalidUsage.http_status_code()
+
     def test_campaign_creation_with_invalid_url_in_body_text(self, campaign_valid_data, headers, user_phone_1):
         """
         User has one mobile number, valid header and invalid URL in body text(random word).

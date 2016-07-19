@@ -197,7 +197,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
             'put', self.URL % sms_campaign_of_user_first['id'],
             access_token_first, campaign_valid_data)
 
-    def test_campaign_create_with_invalid_campaign_name(self, headers, campaign_valid_data,
+    def test_campaign_update_with_invalid_campaign_name(self, headers, campaign_valid_data,
                                                         invalid_string, sms_campaign_of_user_first):
         """
         This is a test to update SMS campaign with invalid campaign name. Status code should be 400 and
@@ -209,17 +209,17 @@ class TestSmsCampaignWithIdHTTPPUT(object):
                                 data=json.dumps(campaign_data))
         assert response.status_code == InvalidUsage.http_status_code(), 'It should get bad request error'
 
-    def test_campaign_update_with_invalid_url_in_body_text(self, campaign_valid_data, headers,
-                                                           sms_campaign_of_user_first):
+    def test_campaign_update_with_invalid_body_text(self, headers, campaign_valid_data,
+                                                    invalid_string, sms_campaign_of_user_first):
         """
-        User has one mobile number, valid header and invalid URL in body text(random word).
-        It should get invalid usage error, Custom error should be INVALID_URL_FORMAT.
+        This is a test to update SMS campaign with invalid body_text. Status code should be 400 and
+        campaign should not be updated.
         """
-        campaign_valid_data['body_text'] += 'http://' + fake.word()
+        campaign_data = campaign_valid_data.copy()
+        campaign_data['body_text'] = invalid_string
         response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers,
-                                data=json.dumps(campaign_valid_data))
-        assert response.status_code == InvalidUsage.http_status_code()
-        assert response.json()['error']['code'] == SmsCampaignApiException.INVALID_URL_FORMAT
+                                data=json.dumps(campaign_data))
+        assert response.status_code == InvalidUsage.http_status_code(), 'It should get bad request error'
 
     def test_campaign_update_with_valid_and_invalid_smartlist_ids(self, headers, campaign_valid_data,
                                                                   sms_campaign_of_user_first, invalid_id):
@@ -254,6 +254,18 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         data['smartlist_ids'].extend([non_existing_id])
         response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers, data=json.dumps(data))
         assert response.status_code == ResourceNotFound.http_status_code()
+
+    def test_campaign_update_with_invalid_url_in_body_text(self, campaign_valid_data, headers,
+                                                           sms_campaign_of_user_first):
+        """
+        User has one mobile number, valid header and invalid URL in body text(random word).
+        It should get invalid usage error, Custom error should be INVALID_URL_FORMAT.
+        """
+        campaign_valid_data['body_text'] += 'http://' + fake.word()
+        response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers,
+                                data=json.dumps(campaign_valid_data))
+        assert response.status_code == InvalidUsage.http_status_code()
+        assert response.json()['error']['code'] == SmsCampaignApiException.INVALID_URL_FORMAT
 
     def test_campaign_update_with_invalid_campaign_id(self, access_token_first, campaign_valid_data):
         """
