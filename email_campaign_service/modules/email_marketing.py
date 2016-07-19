@@ -8,6 +8,7 @@ This file contains function used by email-campaign-api.
 import re
 import os
 import json
+import getpass
 import itertools
 
 # Third Party
@@ -530,14 +531,15 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
         return False
 
     environment = os.getenv(TalentConfigKeys.ENV_KEY) or 'local'
-
+    username = getpass.getuser()
     # Save SES message ID & request ID
     logger.info('''Marketing email sent successfully.
                    Recipients    : %s,
                    UserId        : %s,
+                   System User Name: %s,
                    Environment   : %s,
                    Email Response: %s
-                ''', to_addresses, user_id, environment, email_response)
+                ''', to_addresses, user_id, username, environment, email_response)
     request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
     message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
     email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
