@@ -124,7 +124,7 @@ class EmailCampaigns(Resource):
 
             # Get all email campaigns from logged in user's domain
             query = EmailCampaign.get_by_domain_id_and_filter_by_name(
-                    user.domain_id, search_keyword, sort_by, sort_type, is_hidden)
+                    user.domain_id, search_keyword, sort_by, sort_type, int(is_hidden))
 
             return get_paginated_response('email_campaigns', query, page, per_page, parser=EmailCampaign.to_dict)
 
