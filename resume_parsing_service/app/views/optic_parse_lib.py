@@ -340,14 +340,14 @@ def parse_candidate_educations(bg_educations_xml_list):
                 city=school_city,
                 state=school_state,
                 country=country,
-                start_year=start_year,
-                start_month=start_month,
-                end_year=end_year,
-                end_month=end_month,
                 degrees=[
                     {
                         'type': _tag_text(school, 'degree'),
                         'title': _tag_text(school, 'major'),
+                        'start_year': start_year,
+                        'start_month': start_month,
+                        'end_year': end_year,
+                        'end_month': end_month,
                         'bullets': []
                     }
                 ],
