@@ -14,7 +14,7 @@ from common.utils.models_utils import init_talent_app
 app, logger = init_talent_app('test_app')
 
 from common.talent_config_manager import TalentConfigKeys, TalentEnvs
-from common.models.user import Domain, User, UserGroup, Token, Client
+from common.models.user import Domain, User, UserGroup, Token, Client, Role
 
 CLIENT_ID = 'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z'
 CLIENT_SECRET = 'DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj1Z'
@@ -53,8 +53,9 @@ def create_user_groups(group_names, domain_ids):
 
 def create_test_user(email, domain_id, group_id):
     user = User.get_by_email(email)
+    role = Role.get_by_name('DOMAIN_ADMIN')
     if not user:
-        user = User(email=email, domain_id=domain_id, user_group_id=group_id, password=TEST_PASSWORD, role_id=3)
+        user = User(email=email, domain_id=domain_id, user_group_id=group_id, password=TEST_PASSWORD, role_id=role.id)
         User.save(user)
     logger.debug('User: %s', user.name)
     return user
@@ -80,49 +81,56 @@ def create_test_token(user_id):
             token.expires += timedelta(days=30)
 
 
-# Create two domains
-domain_names = ["test_domain_first", "test_domain_second"]
-domain_ids = create_test_domain(domain_names)
+def create_test_date():
+    """
+    To create test data (Domains, Users, Groups etc.) call this method before running test
+    """
+    # Create two domains
+    domain_names = ["test_domain_first", "test_domain_second"]
+    domain_ids = create_test_domain(domain_names)
 
-# # Create user groups
-group_names = ["test_group_first", "test_group_second"]
-group_ids = create_user_groups(group_names, domain_ids)
+    # # Create user groups
+    group_names = ["test_group_first", "test_group_second"]
+    group_ids = create_user_groups(group_names, domain_ids)
 
-# Create 3 users
-user_emails = [("test_email@test.com", "test_email_same_domain@test.com"), ("test_email_second@test.com",)]
-user_data = zip(user_emails, domain_ids, group_ids)
+    # Create 3 users
+    user_emails = [("test_email@test.com", "test_email_same_domain@test.com"), ("test_email_second@test.com",)]
+    user_data = zip(user_emails, domain_ids, group_ids)
 
-users = []
-for emails, domain_id, group_id in user_data:
-    for email in emails:
-        users.append(create_test_user(email, domain_id, group_id))
-user_ids = [user.id for user in users]
+    users = []
+    for emails, domain_id, group_id in user_data:
+        for email in emails:
+            users.append(create_test_user(email, domain_id, group_id))
+    user_ids = [user.id for user in users]
 
-# Create client
-create_test_client(CLIENT_ID, CLIENT_SECRET)
+    # Create client
+    create_test_client(CLIENT_ID, CLIENT_SECRET)
 
-# Create token for all test users
-for user_id in user_ids:
-    create_test_token(user_id)
+    # Create token for all test users
+    for user_id in user_ids:
+        create_test_token(user_id)
 
-# # Now write test config file
-CONFIG_FILE_NAME = "common_test.cfg"
-LOCAL_CONFIG_PATH = os.path.expanduser('~') + "/.talent/%s" % CONFIG_FILE_NAME
-user_emails = [email for emails in user_emails for email in emails]
-with open(LOCAL_CONFIG_PATH, mode='w+') as cfg:
-    for user_id, email, order in zip(user_ids, user_emails, ['FIRST', 'SAME_DOMAIN', 'SECOND']):
-        cfg.write('[USER_%s]\n' % order)
-        cfg.write('USER_ID=%s\n' % user_id)
-        cfg.write('USER_NAME=%s\n' % email)
-        cfg.write('PASSWORD=test_user\n')
-        cfg.write('TOKEN=%s\n\n' % (TEST_ACCESS_TOKEN + str(user_id)))
+    # # Now write test config file
+    local_config_path = os.path.expanduser('~') + "/.talent/common_test.cfg"
+    user_emails = [email for emails in user_emails for email in emails]
+    with open(local_config_path, mode='w+') as cfg:
+        for user_id, email, order in zip(user_ids, user_emails, ['FIRST', 'SAME_DOMAIN', 'SECOND']):
+            cfg.write('[USER_%s]\n' % order)
+            cfg.write('USER_ID=%s\n' % user_id)
+            cfg.write('USER_NAME=%s\n' % email)
+            cfg.write('PASSWORD=test_user\n')
+            cfg.write('TOKEN=%s\n\n' % (TEST_ACCESS_TOKEN + str(user_id)))
 
-    cfg.write('[CLIENT]\n')
-    cfg.write('CLIENT_ID=%s\n' % CLIENT_ID)
-    cfg.write('CLIENT_SECRET=%s\n\n' % CLIENT_SECRET)
+        cfg.write('[CLIENT]\n')
+        cfg.write('CLIENT_ID=%s\n' % CLIENT_ID)
+        cfg.write('CLIENT_SECRET=%s\n\n' % CLIENT_SECRET)
 
-    cfg.write('[PUSH_CONFIG]\n')
-    cfg.write('DEVICE_ID_1=56c1d574-237e-4a41-992e-c0094b6f2ded\n')
-    cfg.write('DEVICE_ID_2=6a81ab5d-9e71-44f7-99dc-eb72eeaff311\n\n')
+        cfg.write('[PUSH_CONFIG]\n')
+        cfg.write('DEVICE_ID_1=56c1d574-237e-4a41-992e-c0094b6f2ded\n')
+        cfg.write('DEVICE_ID_2=6a81ab5d-9e71-44f7-99dc-eb72eeaff311\n\n')
 
-    cfg.flush()
+        cfg.flush()
+
+# Create data
+create_test_date()
+

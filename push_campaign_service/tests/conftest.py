@@ -31,6 +31,7 @@ from push_campaign_service.common.tests.api_conftest import (token_first, token_
                                                              talent_pool, talent_pool_second, talent_pipeline,
                                                              talent_pipeline_second)
 from push_campaign_service.common.routes import PushCampaignApiUrl
+from push_campaign_service.init_test_data import create_test_date
 from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
                                                         generate_campaign_schedule_data,
                                                         get_campaigns, create_campaign,
@@ -40,6 +41,8 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_data, 
                                                         delete_campaigns, delete_candidate_device, get_campaign_sends)
 
 fake = Faker()
+# initialize test users and domains etc.
+create_test_date()
 test_config = load_test_config()
 
 
