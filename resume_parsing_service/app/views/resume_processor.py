@@ -4,6 +4,7 @@
 import json
 # Third Party/Framework Specific.
 import requests
+from contracts import contract
 from flask import current_app
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
@@ -27,11 +28,14 @@ DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
 RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 
 
+@contract
 def process_resume(parse_params):
     """
     Parses a resume based on a provided: filepicker key or binary, filename
     :param dict parse_params:
-    :return: dict: {'candidate': {...}, 'raw': {...}}
+    :return: Processed candidate data and BG info in form:
+                {'candidate': {...}, 'raw': {...}}
+    :rtype: dict
     """
 
     # None may be explicitly passed so the normal .get('attr', default) doesn't apply here.
@@ -97,12 +101,13 @@ def process_resume(parse_params):
 
 
 @upload_failed_IO
+@contract
 def get_or_store_bgxml(resume_file, filename_str):
     """
     Tries to retrieve processed resume data from redis or parses it and stores it.
-    :param resume_file:
-    :param filename_str:
-    :return:
+    :param cStringIO_StringIO resume_file:
+    :param str filename_str:
+    :rtype: dict
     """
     cache_key_from_file = 'parsedResume_{}'.format(gen_hash_from_file(resume_file))
     cached_bg_xml = redis_store.get(cache_key_from_file)

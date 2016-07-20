@@ -33,7 +33,8 @@ CORS(PARSE_MOD, resources={
 def resume_post_receiver():
     """
     Builds a kwargs dict for used in abstracted process_resume.
-    :return: dict: {'candidate': {}}
+    :param int kwargs: Dict containing the flask request.
+    :rtype: dict
     """
     oauth = request.oauth_token
     content_type = request.headers.get('content-type')
