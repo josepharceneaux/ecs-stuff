@@ -59,7 +59,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
         response = send_request(method, url, access_token, data=data)
-        cls.assert_api_response(response, expected_status_code=ForbiddenError.http_status_code())
+        cls.assert_non_ok_response(response, expected_status_code=ForbiddenError.http_status_code())
 
     @classmethod
     def request_for_resource_not_found_error(cls, method, url, access_token, data=None):
@@ -75,7 +75,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(data, dict) if data else None
         response = send_request(method, url, access_token, data=data)
-        cls.assert_api_response(response, expected_status_code=ResourceNotFound.http_status_code())
+        cls.assert_non_ok_response(response, expected_status_code=ResourceNotFound.http_status_code())
 
     @classmethod
     def request_after_deleting_campaign(cls, campaign, url_to_delete_campaign, url_after_delete,
@@ -275,10 +275,10 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(data, dict)
         response = send_request('post', url, access_token, data)
-        cls.assert_api_response(response, expected_status_code=ForbiddenError.http_status_code())
+        cls.assert_non_ok_response(response, expected_status_code=ForbiddenError.http_status_code())
 
     @staticmethod
-    def assert_api_response(response, expected_status_code=InvalidUsage.http_status_code()):
+    def assert_non_ok_response(response, expected_status_code=InvalidUsage.http_status_code()):
         """
         This method is used to assert Invalid usage error in given response
         :param (Response) response: HTTP response
@@ -286,7 +286,7 @@ class CampaignsTestsHelpers(object):
         """
         raise_if_not_instance_of(response, Response)
         raise_if_not_instance_of(expected_status_code, int)
-        assert response.status_code == expected_status_code
+        assert response.status_code == expected_status_code, 'Expected status code is %s' % expected_status_code
         error = response.json()['error']
         assert error, 'error key is missing from response'
         assert error['message']
@@ -368,7 +368,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(campaign_id, (int, long))
         response_post = send_request('post', url,  access_token)
-        error_resp = cls.assert_api_response(response_post,
+        error_resp = cls.assert_non_ok_response(response_post,
                                              expected_status_code=InvalidUsage.http_status_code())
         assert error_resp['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
         assert str(campaign_id) in error_resp['message']
@@ -765,7 +765,7 @@ def _assert_api_response_for_missing_field(method, url, access_token, data, fiel
     removed_value = data[field_to_remove]
     del data[field_to_remove]
     response = send_request(method, url, access_token, data)
-    error = CampaignsTestsHelpers.assert_api_response(response)
+    error = CampaignsTestsHelpers.assert_non_ok_response(response)
     assert field_to_remove in error['message'], '%s should be in error_message' % field_to_remove
     # assign removed field again
     data[field_to_remove] = removed_value
@@ -790,7 +790,7 @@ def _assert_invalid_datetime_format(method, url, access_token, data, key):
     old_value = data[key]
     data[key] = str_datetime  # Invalid datetime format
     response = send_request(method, url, access_token, data)
-    CampaignsTestsHelpers.assert_api_response(response)
+    CampaignsTestsHelpers.assert_non_ok_response(response)
     data[key] = old_value
 
 
@@ -812,7 +812,7 @@ def _assert_invalid_datetime(method, url, access_token, data, key):
     old_value = data[key]
     data[key] = DatetimeUtils.to_utc_str(datetime.utcnow() - timedelta(hours=10))  # Past datetime
     response = send_request(method, url, access_token, data)
-    CampaignsTestsHelpers.assert_api_response(response)
+    CampaignsTestsHelpers.assert_non_ok_response(response)
     data[key] = old_value
 
 
@@ -847,20 +847,20 @@ def _invalid_data_test(method, url, access_token):
     # test with None Data
     data = None
     response = send_request(method, url, access_token, data)
-    CampaignsTestsHelpers.assert_api_response(response)
+    CampaignsTestsHelpers.assert_non_ok_response(response)
     # Test with empty dict
     data = {}
-    CampaignsTestsHelpers.assert_api_response(response)
+    CampaignsTestsHelpers.assert_non_ok_response(response)
     response = send_request(method, url, access_token, data)
-    CampaignsTestsHelpers.assert_api_response(response)
+    CampaignsTestsHelpers.assert_non_ok_response(response)
     # Test with valid data and invalid header
     data = get_fake_dict()
     response = send_request(method, url, access_token, data, is_json=False)
-    CampaignsTestsHelpers.assert_api_response(response)
+    CampaignsTestsHelpers.assert_non_ok_response(response)
     # Test with Non JSON data and valid header
     data = get_invalid_fake_dict()
     response = send_request(method, url, access_token, data, data_dumps=False)
-    CampaignsTestsHelpers.assert_api_response(response)
+    CampaignsTestsHelpers.assert_non_ok_response(response)
 
 
 def get_invalid_ids(non_existing_id):

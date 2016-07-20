@@ -10,10 +10,10 @@ import json
 import requests
 
 # Service Specific
-from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import assert_campaign_delete, \
     assert_valid_campaign_get
+from sms_campaign_service.tests.conftest import generate_campaign_schedule_data, INVALID_STRING
 
 # Common Utils
 from sms_campaign_service.common.models.misc import Frequency
@@ -149,7 +149,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         campaign_valid_data.update({'name': modified_name})
         response_post = requests.put(self.URL % sms_campaign_in_other_domain['id'], headers=headers,
                                      data=json.dumps(campaign_valid_data))
-        assert response_post.status_code == ForbiddenError.http_status_code(), 'It should get forbidden error (403)'
+        CampaignsTestsHelpers.assert_non_ok_response(response_post, ForbiddenError.http_status_code())
 
     def test_updating_deleted_record(self, sms_campaign_of_user_first, campaign_valid_data, access_token_first):
         """
@@ -165,7 +165,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         User auth token is valid but no data is provided. It should get bad request error.
         """
         response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers)
-        assert response.status_code == InvalidUsage.http_status_code(), 'It should get bad request error (400)'
+        CampaignsTestsHelpers.assert_non_ok_response(response)
 
     def test_with_non_json_data(self, headers, campaign_valid_data, sms_campaign_of_user_first):
         """
@@ -173,7 +173,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         format rather than JSON. It should get bad request error.
         """
         response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers, data=campaign_valid_data)
-        assert response.status_code == InvalidUsage.http_status_code(), 'Should be a bad request (400)'
+        CampaignsTestsHelpers.assert_non_ok_response(response)
 
     def test_with_missing_required_fields(self, headers, sms_campaign_of_user_first,
                                           invalid_data_for_campaign_creation):
@@ -198,28 +198,30 @@ class TestSmsCampaignWithIdHTTPPUT(object):
             access_token_first, campaign_valid_data)
 
     def test_campaign_update_with_invalid_campaign_name(self, headers, campaign_valid_data,
-                                                        invalid_string, sms_campaign_of_user_first):
+                                                        sms_campaign_of_user_first):
         """
         This is a test to update SMS campaign with invalid campaign name. Status code should be 400 and
         campaign should not be updated.
         """
-        campaign_data = campaign_valid_data.copy()
-        campaign_data['name'] = invalid_string
-        response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers,
-                                data=json.dumps(campaign_data))
-        assert response.status_code == InvalidUsage.http_status_code(), 'It should get bad request error'
+        for invalid_campaign_name in INVALID_STRING:
+            campaign_data = campaign_valid_data.copy()
+            campaign_data['name'] = invalid_campaign_name
+            response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers,
+                                    data=json.dumps(campaign_data))
+            CampaignsTestsHelpers.assert_non_ok_response(response)
 
     def test_campaign_update_with_invalid_body_text(self, headers, campaign_valid_data,
-                                                    invalid_string, sms_campaign_of_user_first):
+                                                    sms_campaign_of_user_first):
         """
         This is a test to update SMS campaign with invalid body_text. Status code should be 400 and
         campaign should not be updated.
         """
-        campaign_data = campaign_valid_data.copy()
-        campaign_data['body_text'] = invalid_string
-        response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers,
-                                data=json.dumps(campaign_data))
-        assert response.status_code == InvalidUsage.http_status_code(), 'It should get bad request error'
+        for invalid_body_text in INVALID_STRING:
+            campaign_data = campaign_valid_data.copy()
+            campaign_data['body_text'] = invalid_body_text
+            response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers,
+                                    data=json.dumps(campaign_data))
+            CampaignsTestsHelpers.assert_non_ok_response(response)
 
     def test_campaign_update_with_valid_and_invalid_smartlist_ids(self, headers, campaign_valid_data,
                                                                   sms_campaign_of_user_first, invalid_id):
@@ -229,7 +231,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         data = campaign_valid_data.copy()
         data['smartlist_ids'].extend(invalid_id)
         response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers, data=json.dumps(data))
-        assert response.status_code == InvalidUsage.http_status_code()
+        CampaignsTestsHelpers.assert_non_ok_response(response)
 
     def test_campaign_update_with_valid_and_not_owned_smartlist_ids(self, headers, campaign_valid_data,
                                                                     smartlist_with_two_candidates_in_other_domain,
@@ -241,7 +243,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         data = campaign_valid_data.copy()
         data['smartlist_ids'].extend([smartlist_with_two_candidates_in_other_domain[0]])
         response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers, data=json.dumps(data))
-        assert response.status_code == ForbiddenError.http_status_code()
+        CampaignsTestsHelpers.assert_non_ok_response(response)
 
     def test_campaign_update_with_valid_and_non_existing_smartlist_ids(self, headers, campaign_valid_data,
                                                                        sms_campaign_of_user_first):
@@ -253,7 +255,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         non_existing_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
         data['smartlist_ids'].extend([non_existing_id])
         response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers, data=json.dumps(data))
-        assert response.status_code == ResourceNotFound.http_status_code()
+        CampaignsTestsHelpers.assert_non_ok_response(response, ResourceNotFound.http_status_code())
 
     def test_campaign_update_with_invalid_url_in_body_text(self, campaign_valid_data, headers,
                                                            sms_campaign_of_user_first):
@@ -313,7 +315,7 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         from database. It should get forbidden error.
         """
         response = requests.delete(self.URL % sms_campaign_in_other_domain['id'], headers=headers)
-        assert response.status_code == ForbiddenError.http_status_code(), 'it should get forbidden error (403)'
+        CampaignsTestsHelpers.assert_non_ok_response(response, ForbiddenError.http_status_code())
 
     def test_with_deleted_campaign(self, headers, user_first, sms_campaign_of_user_first):
         """
@@ -323,7 +325,7 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         response = requests.delete(self.URL % campaign_id, headers=headers)
         assert_campaign_delete(response, user_first.id, campaign_id)
         response_after_delete = requests.delete(self.URL % campaign_id, headers=headers)
-        assert response_after_delete.status_code == ResourceNotFound.http_status_code()
+        CampaignsTestsHelpers.assert_non_ok_response(response, ResourceNotFound.http_status_code())
 
     def test_campaign_delete_with_invalid_campaign_id(self, access_token_first):
         """

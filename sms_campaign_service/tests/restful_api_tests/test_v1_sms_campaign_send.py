@@ -77,8 +77,7 @@ class TestSendSmsCampaign(object):
             response_post = CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
                 self.URL % campaign.id, access_token_first,
                 campaign, talent_pipeline.id)
-            error_resp = CampaignsTestsHelpers.assert_api_response(response_post,
-                                                                   expected_status_code=InvalidUsage.http_status_code())
+            error_resp = CampaignsTestsHelpers.assert_non_ok_response(response_post)
             assert error_resp['code'] == CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
             assert error_resp['message']
 

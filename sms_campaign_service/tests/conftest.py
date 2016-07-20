@@ -53,6 +53,8 @@ CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
                         "body_text": "Hi all, we have few openings at https://www.gettalent.com",
                         "smartlist_ids": ""
                         }
+INVALID_FREQUENCY_IDS = [fake.numerify(), 'string', True, None, dict(), list(), '', '      ']
+INVALID_STRING = [123, True, None, dict(), list(), '', '      ']
 
 
 # This is data to schedule an SMS campaign
