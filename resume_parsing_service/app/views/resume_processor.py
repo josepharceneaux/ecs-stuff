@@ -8,6 +8,7 @@ from contracts import contract
 from flask import current_app
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.decorators import upload_failed_IO
 from resume_parsing_service.app.views.parse_lib import parse_resume
@@ -53,7 +54,10 @@ def process_resume(parse_params):
     talent_pools = parse_params.get('talent_pools')
     # Talent pools are the ONLY thing required to create a candidate.
     if create_candidate and not talent_pools:
-        raise InvalidUsage('Talent Pools required for candidate creation')
+        raise InvalidUsage(
+            error_message=error_constants.NO_TP_ARG['message'],
+            error_code=error_constants.NO_TP_ARG['code']
+        )
 
     oauth_string = parse_params.get('oauth')
     parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
@@ -86,7 +90,10 @@ def process_resume(parse_params):
                                           headers={'Authorization': oauth_string})
 
     if candidate_get_response.status_code is not requests.codes.ok:
-        raise InvalidUsage(error_message='Error retrieving created candidate')
+        raise InvalidUsage(
+            error_message=error_constants.CANDIDATE_GET['message'],
+            error_code=error_constants.CANDIDATE_GET['code']
+        )
 
     candidate = json.loads(candidate_get_response.content)
 

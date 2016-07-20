@@ -1,8 +1,8 @@
 # Standard Lib
 from cStringIO import StringIO
 # Third Party/Common
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.common.error_handling import InternalServerError
-from resume_parsing_service.app.views.ocr_lib import abbyy_ocr_image
 import PyPDF2
 
 
@@ -50,7 +50,9 @@ def decrypt_pdf(pdf_file_obj):
         decrypted = pdf_reader.decrypt('')
         if not decrypted:
             raise InternalServerError(
-                'The PDF appears to be encrypted and could not be read. Please try using an un-encrypted PDF')
+                error_message=error_constants.ENCRYPTED_PDF['message'],
+                error_code=error_constants.ENCRYPTED_PDF['code']
+            )
 
         unencrypted_pdf_io = StringIO()
         pdf_writer = PyPDF2.PdfFileWriter()

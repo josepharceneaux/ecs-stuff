@@ -2,7 +2,6 @@ import datetime
 from sqlalchemy import Column, ForeignKey
 from sqlalchemy.dialects.mysql import INTEGER, VARCHAR, TIMESTAMP, BIGINT
 from db import db
-from ..models.candidate import Candidate
 
 
 class Tag(db.Model):

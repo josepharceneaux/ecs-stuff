@@ -18,6 +18,7 @@ import phonenumbers
 # Module Specific
 from flask import current_app
 from resume_parsing_service.app import logger
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.OauthClient import OAuthClient
 from resume_parsing_service.common.error_handling import ForbiddenError, InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
@@ -58,10 +59,10 @@ def fetch_optic_response(resume, filename_str):
     bg_response = requests.post(bg_url, headers=headers, json=data)
 
     if bg_response.status_code != requests.codes.ok:
-        # Since this error is displayed to the user we may want to obfuscate it a bit and log more
-        # developer friendly messages. "Error processing this resume. The development team has been
-        # notified of this issue" type of message.
-        raise ForbiddenError('Error connecting to BG instance.')
+        raise ForbiddenError(
+            error_message=error_constants.BG_UNAVAILABLE['message'],
+            error_code=error_constants.BG_UNAVAILABLE['code']
+        )
 
     try:
         html_parser = HTMLParser.HTMLParser()
@@ -70,7 +71,10 @@ def fetch_optic_response(resume, filename_str):
 
     except Exception:
         logger.exception('Error translating BG response.')
-        raise InternalServerError('Error decoding parsed resume text.')
+        raise InternalServerError(
+            error_message=error_constants.ERROR_DECODING_TEXT['message'],
+            error_code=error_constants.ERROR_DECODING_TEXT['code']
+        )
 
     logger.info(
         "Benchmark: fetch_optic_response({}) took {}s".format(filename_str,
@@ -321,6 +325,8 @@ def parse_candidate_educations(bg_educations_xml_list):
     :return: List of dicts containing education data.
     :rtype: list(dict)
     """
+    EDU_DATE_FORMAT = '%Y-%m-%d'
+    start_month, start_year, end_month, end_year = None, None, None, None
     output = []
     for education in bg_educations_xml_list:
         for school in education.findAll('school'):
@@ -330,19 +336,23 @@ def parse_candidate_educations(bg_educations_xml_list):
             school_state = _tag_text(school_address, 'state')
             country = 'United States'
 
-            # education_start_date = get_date_from_date_tag(school, 'start')
-            # education_end_date = None
-            # end_date = get_date_from_date_tag(school, 'end')
-            # completion_date = get_date_from_date_tag(school, 'completiondate')
-            #
-            # if completion_date:
-            #     education_end_date = completion_date
-            # elif end_date:
-            #     education_end_date = end_date
+            start_date = get_date_from_date_tag(school, 'start')
+            end_date = get_date_from_date_tag(school, 'end')
+            completion_date = get_date_from_date_tag(school, 'completiondate')
 
-            # GPA data no longer used in educations dict.
-            # Save for later or elimate this and gpa_num_and_denom?
-            # gpa_num, gpa_denom = gpa_num_and_denom(school, 'gpa')
+            if completion_date:
+                end_date = completion_date
+
+            if start_date:
+                start_dt = datetime.datetime.strptime(start_date, EDU_DATE_FORMAT)
+                start_month = start_dt.month
+                start_year = start_dt.year
+
+            if end_date:
+                end_dt = datetime.datetime.strptime(end_date, EDU_DATE_FORMAT)
+                end_month = end_dt.month
+                end_year = end_dt.year
+
             output.append(dict(
                 school_name=school_name,
                 city=school_city,
@@ -352,6 +362,10 @@ def parse_candidate_educations(bg_educations_xml_list):
                     {
                         'type': _tag_text(school, 'degree'),
                         'title': _tag_text(school, 'major'),
+                        'start_year': start_year,
+                        'start_month': start_month,
+                        'end_year': end_year,
+                        'end_month': end_month,
                         'bullets': []
                     }
                 ],
@@ -475,7 +489,7 @@ def get_date_from_date_tag(parent_tag, date_tag_name):
                 return datetime.date.isoformat()
             return date_tag['iso8601']
         except Exception:
-            return None
+            logger.exception('Exception during date parse with datetag: {}'.format(date_tag))
     return None
 
 
