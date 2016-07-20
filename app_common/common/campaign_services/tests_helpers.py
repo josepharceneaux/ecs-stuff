@@ -46,18 +46,19 @@ class CampaignsTestsHelpers(object):
     push_campaign_service etc.
     """
     @classmethod
-    def request_for_forbidden_error(cls, method, url, access_token):
+    def request_for_forbidden_error(cls, method, url, access_token, data=None):
         """
         This should get forbidden error because requested campaign does not belong to
         logged-in user's domain.
-        :param (str) method: Name of HTTP method
-        :param (str) url: URL to to make HTTP request
-        :param (str) access_token: access access_token of user
+        :param str method: Name of HTTP method
+        :param str url: URL to to make HTTP request
+        :param str access_token: access access_token of user
+        :param dict|None data: Data to be passed in request
         """
         raise_if_not_instance_of(method, basestring)
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
-        response = send_request(method, url, access_token, None)
+        response = send_request(method, url, access_token, data=data)
         cls.assert_api_response(response, expected_status_code=ForbiddenError.http_status_code())
 
     @classmethod

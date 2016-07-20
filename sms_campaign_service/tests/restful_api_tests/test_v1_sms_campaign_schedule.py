@@ -104,7 +104,8 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         CampaignsTestsHelpers.request_for_forbidden_error(self.HTTP_METHOD,
                                                           self.URL % sms_campaign_in_other_domain[
                                                               'id'],
-                                                          access_token_first)
+                                                          access_token_first,
+                                                          data=generate_campaign_schedule_data())
 
     def test_campaign_schedule_with_non_json_data_type(self, headers,
                                                        sms_campaign_of_user_first):
@@ -131,14 +132,12 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         should result in ResourceNotFound error.
         """
         CampaignsTestsHelpers.request_after_deleting_campaign(sms_campaign_of_user_first,
-                                                              SmsCampaignApiUrl.CAMPAIGN,
-                                                              self.URL,
-                                                              self.HTTP_METHOD,
-                                                              access_token_first)
+                                                              SmsCampaignApiUrl.CAMPAIGN, self.URL, self.HTTP_METHOD,
+                                                              access_token_first,
+                                                              data=generate_campaign_schedule_data())
 
-    def test_campaign_one_time_schedule_with_past_datetimes(self, sms_campaign_of_user_first,
-                                                            access_token_first,
-                                                            one_time_and_periodic):
+    def test_campaign_schedule_with_past_datetimes(self, sms_campaign_of_user_first,
+                                                   access_token_first, one_time_and_periodic):
         """
         This is test to schedule SMS campaign with past start_datetime and end_datetime.
         It should get invalid usage error.
@@ -167,13 +166,14 @@ class TestSmsCampaignScheduleHTTPPOST(object):
             self.HTTP_METHOD, self.URL % sms_campaign_of_user_first['id'],
             access_token_first, one_time_and_periodic)
 
-    def test_schedule_campaign_with_put_method(self, access_token_first,
+    def test_campaign_schedule_with_put_method(self, access_token_first,
                                                sms_campaign_of_user_first):
         """
         This test tries to schedule a campaign with PUT method. It should get forbidden error
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
-            'put', self.URL % sms_campaign_of_user_first['id'], access_token_first)
+            'put', self.URL % sms_campaign_of_user_first['id'], access_token_first,
+            data=generate_campaign_schedule_data())
 
     def test_schedule_campaign_with_invalid_campaign_id(self, access_token_first):
         """
@@ -285,20 +285,17 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         """
         CampaignsTestsHelpers.request_for_forbidden_error(
             self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_other_domain['id'],
-            access_token_first)
+            access_token_first, data=generate_campaign_schedule_data())
 
-    def test_rescheduling_deleted_campaign(self, access_token_first,
-                                           scheduled_sms_campaign_of_user_first):
+    def test_reschedule_deleted_campaign(self, access_token_first, scheduled_sms_campaign_of_user_first):
         """
         Here we first delete the campaign from database. Then we try to re-schedule it. It
         should get ResourceNotFound error.
         """
-        CampaignsTestsHelpers.request_after_deleting_campaign(
-            scheduled_sms_campaign_of_user_first,
-            SmsCampaignApiUrl.CAMPAIGN,
-            self.URL,
-            self.HTTP_METHOD,
-            access_token_first)
+        CampaignsTestsHelpers.request_after_deleting_campaign(scheduled_sms_campaign_of_user_first,
+                                                              SmsCampaignApiUrl.CAMPAIGN,  self.URL, self.HTTP_METHOD,
+                                                              access_token_first,
+                                                              data=generate_campaign_schedule_data())
 
 
 class TestSmsCampaignScheduleHTTPDELETE(object):
