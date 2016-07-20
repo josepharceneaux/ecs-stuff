@@ -259,7 +259,7 @@ class CampaignBase(object):
         self.oauth_header = self.get_authorization_header(user_id)
         # It will be instance of model e.g. SmsCampaign or PushNotification etc.
         self.campaign = None
-        self.campaign_smartlists = None
+        self.smartlist_ids = None
         self.campaign_blast_id = None  # Campaign's blast id in database
         self.campaign_type = self.get_campaign_type()
         CampaignUtils.raise_if_not_valid_campaign_type(self.campaign_type)
@@ -1209,7 +1209,7 @@ class CampaignBase(object):
         """
         # Register function to be called after all candidates are fetched from smartlists
         callback = self.process_campaign_send.subtask((self,))
-        # self.campaign_smartlists = campaign_smartlists
+        self.smartlist_ids = [campaign_smartlist.smartlist_id for campaign_smartlist in campaign_smartlists]
         # Get candidates present in each smartlist
         tasks = [self.get_smartlist_candidates.subtask((self, smartlist)) for smartlist in campaign_smartlists]
 
@@ -1222,11 +1222,11 @@ class CampaignBase(object):
         """
         """
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        smartlist_ids = []
+        # smartlist_ids = []
         all_candidate_ids = []
         if not celery_result:
             logger.error('No candidate(s) found for smartlist_ids %s, campaign_id: %s'
-                         'user_id: %s.' % (smartlist_ids, self.campaign.id, self.user.id))
+                         'user_id: %s.' % (self.smartlist_ids, self.campaign.id, self.user.id))
             return
 
         # gather all candidates from various smartlists
