@@ -21,7 +21,7 @@ INVALID_FILE_TYPE = {
 }
 
 JSON_SCHEMA_ERROR = {
-    'code': 3002, # unused currently. Would require updates to get_json_data_if_validated
+    'code': 3002,
     'message': GT_ISSUE_MSG
 }
 

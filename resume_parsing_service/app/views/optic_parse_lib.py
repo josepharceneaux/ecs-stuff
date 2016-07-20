@@ -57,9 +57,6 @@ def fetch_optic_response(resume, filename_str):
     bg_response = requests.post(bg_url, headers=headers, json=data)
 
     if bg_response.status_code != requests.codes.ok:
-        # Since this error is displayed to the user we may want to obfuscate it a bit and log more
-        # developer friendly messages. "Error processing this resume. The development team has been
-        # notified of this issue" type of message.
         raise ForbiddenError(
             error_message=error_constants.BG_UNAVAILABLE['message'],
             error_code=error_constants.BG_UNAVAILABLE['code']

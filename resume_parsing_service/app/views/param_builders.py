@@ -17,7 +17,8 @@ def build_params_from_json(request):
     :rtype: dict
     """
     request_json = get_json_data_if_validated(request, create_candidate_schema,
-                                              custom_msg=error_constants.JSON_SCHEMA_ERROR['message'])
+                                              custom_msg=error_constants.JSON_SCHEMA_ERROR['message'],
+                                              custom_error_code=error_constants.JSON_SCHEMA_ERROR['code'])
     logger.info('Beginning parsing with JSON params: {}'.format(request_json))
 
     filepicker_key = request_json['filepicker_key']

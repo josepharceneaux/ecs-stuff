@@ -161,7 +161,7 @@ def get_users_talent_pools(formatted_token_str):
                                             headers={'Authorization': formatted_token_str})
     except requests.exceptions.ConnectionError:
         logger.exception("ResumeParsingService could not reach CandidatePool API in get_users_talent_pools")
-        raise InvalidUsage(
+        raise InternalServerError(
             error_message=error_constants.TALENT_POOLS_GET['message'],
             error_code=error_constants.TALENT_POOLS_GET['code']
         )

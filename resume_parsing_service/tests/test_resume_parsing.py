@@ -54,7 +54,8 @@ def test_invalid_fp_key(token_fixture, user_fixture):
 
 def test_none_fp_key(token_fixture, user_fixture):
     content, status = fetch_resume_fp_key_response(token_fixture, None)
-    assert content['error']['message'] == error_constants.GT_ISSUE_MSG
+    assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+    assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
     assert status == requests.codes.bad_request
 
 
@@ -69,7 +70,8 @@ def test_posting_no_file(token_fixture, user_fixture):
                                                   'create_candidate': True})
                                 )
     content = json.loads(invalid_post.content)
-    assert content['error']['message'] == error_constants.GT_ISSUE_MSG
+    assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+    assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
     assert invalid_post.status_code == requests.codes.bad_request
 
 
@@ -84,11 +86,12 @@ def test_posting_None_file(token_fixture, user_fixture):
                                                   'create_candidate': True})
                                 )
     content = json.loads(invalid_post.content)
-    assert content['error']['message'] == error_constants.GT_ISSUE_MSG
+    assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+    assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
     assert invalid_post.status_code == requests.codes.bad_request
 
 
-def test_talent_pool_error(token_fixture):
+def test_no_fp_json_key_error(token_fixture):
     invalid_post = requests.post(ResumeApiUrl.PARSE,
                                  headers={
                                      'Authorization': 'Bearer {}'.format(token_fixture.access_token),
@@ -98,7 +101,8 @@ def test_talent_pool_error(token_fixture):
                                                   'create_candidate': True})
                                 )
     content = json.loads(invalid_post.content)
-    assert content['error']['message'] == error_constants.GT_ISSUE_MSG
+    assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+    assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
     assert invalid_post.status_code == requests.codes.bad_request
 
 def test_no_token_fails():
@@ -131,21 +135,26 @@ def test_bad_header(token_fixture, user_fixture):
                                                   'create_candidate': True})
                                 )
     content = json.loads(invalid_post.content)
-    assert content['error']['message'] == error_constants.GT_ISSUE_MSG
+    assert content['error']['message'] == error_constants.INVALID_HEADERS['message']
+    assert content['error']['code'] == error_constants.INVALID_HEADERS['code']
     assert invalid_post.status_code == requests.codes.bad_request
 
 
 def test_blank_file(token_fixture, user_fixture):
     content, status = fetch_resume_fp_key_response(token_fixture, 'blank.txt')
-    assert content['error']['message'] == error_constants.FILE_TYPE_MSG, "There should be an error if no text can be extracted."
+    assert content['error']['message'] == error_constants.NO_TEXT_EXTRACTED['message'], "There should be an error if no text can be extracted."
+    assert content['error']['code'] == error_constants.NO_TEXT_EXTRACTED['code']
 
 
 def test_picture_not_resume(token_fixture, user_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'notResume.jpg')
-    assert content['error']['message'] == error_constants.GENERIC_ERROR_MSG, "There should be an error Because it's a picture of a backyard."
+    assert content['error']['message'] == error_constants.ERROR_ENCODING_TEXT['message'], "There should be an error Because it's a picture of a backyard."
+    # The ocr of a tree returns japanese characters and cannot be encoded.
+    assert content['error']['code'] == error_constants.ERROR_ENCODING_TEXT['code']
 
     content, status = fetch_resume_post_response(token_fixture, 'notResume2.jpg')
-    assert content['error']['message'] == error_constants.FILE_TYPE_MSG, "There should be an error Because it's a picture of food."
+    assert content['error']['message'] == error_constants.NO_TEXT_EXTRACTED['message'], "There should be an error Because it's a picture of food."
+    assert content['error']['code'] == error_constants.NO_TEXT_EXTRACTED['code']
 
 
 def test_bad_create_candidate_inputs(token_fixture):
@@ -164,7 +173,8 @@ def test_bad_create_candidate_inputs(token_fixture):
         content = json.loads(test_response.content)
         status_code = test_response.status_code
 
-        assert content['error']['message'] == error_constants.GT_ISSUE_MSG
+        assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+        assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
         assert status_code == requests.codes.bad
 
 def test_bad_filename_inputs(token_fixture):
@@ -183,7 +193,8 @@ def test_bad_filename_inputs(token_fixture):
         content = json.loads(test_response.content)
         status_code = test_response.status_code
 
-        assert content['error']['message'] == error_constants.GT_ISSUE_MSG
+        assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+        assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
         assert status_code == requests.codes.bad
 
 def test_bad_fpkey_inputs(token_fixture):
@@ -201,7 +212,8 @@ def test_bad_fpkey_inputs(token_fixture):
         content = json.loads(test_response.content)
         status_code = test_response.status_code
 
-        assert content['error']['message'] == error_constants.GT_ISSUE_MSG
+        assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+        assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
         assert status_code == requests.codes.bad
 
 
@@ -221,7 +233,8 @@ def test_bad_tpool_inputs(token_fixture):
         content = json.loads(test_response.content)
         status_code = test_response.status_code
 
-        assert content['error']['message'] == error_constants.GT_ISSUE_MSG
+        assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+        assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
         assert status_code == requests.codes.bad
 
 
