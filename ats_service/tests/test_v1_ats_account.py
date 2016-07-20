@@ -103,8 +103,9 @@ class TestATSAccounts(object):
         value =  'https://someotherhost.com/loginpage'
         new_data = { key : value }
         response = send_request('put', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first, new_data)
-        assert response.status_code == codes.OK
+        assert response.status_code == codes.CREATED
         response = send_request('get', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first, {}, verify=False)
         assert response.status_code == codes.OK
+        # TODO: Normalize service output text between endpoints
         values = json.loads(json.loads(response.text))
         assert values[key] == value

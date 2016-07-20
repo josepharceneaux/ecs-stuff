@@ -4,8 +4,6 @@ Utility functions for the ATS service.
 
 __author__ = 'Joseph Arceneaux'
 
-from requests import codes
-
 from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
 from ats_service.common.models.candidate import Candidate
 from ats_service.common.models.user import User
@@ -20,7 +18,7 @@ def validate_ats_account_data(data):
     """
     Verify that POST data contains all required fields for dealing with an ATS account.
 
-    :param data: dict, keys and their values
+    :param dict data: keys and their values
     :rtype: None
     """
     missing_fields = [field for field in ATS_ACCOUNT_FIELDS if field not in data or not data[field]]
@@ -32,7 +30,7 @@ def invalid_account_fields_check(data):
     """
     Verify that data contains only valid ATS account fields.
 
-    :param data: dict, keys and their values
+    :param dict data: keys and their values
     :rtype: None
     """
     field_names = data.keys()
@@ -45,7 +43,7 @@ def validate_ats_candidate_data(data):
     """
     Verify that POST data contains all required fields for dealing with an ATS candidate.
 
-    :param data: dict, keys and their values
+    :param dict data: keys and their values
     :return: None, or throws an exception.
     """
     missing_fields = [field for field in ATS_CANDIDATE_FIELDS if field not in data or not data[field]]
@@ -57,7 +55,7 @@ def new_ats(data):
     """
     Register a new Applicant Tracking System.
 
-    :param data: dict, keys and values describing the ATS.
+    :param dict data: keys and values describing the ATS.
     :rtype: ATS
     """
     ats = ATS(name=data['ats_name'], homepage_url=data['ats_homepage'], login_url=data['ats_login'], auth_type=data['ats_auth_type'])
@@ -69,9 +67,9 @@ def new_ats_account(user_id, ats_id, data):
     """
     Register an ATS account for a user.
 
-    :param user_id: int, id of the user to associate the account with.
-    :param ats_id: int, id of the ATS system.
-    :param data: dict, keys and values describing the account.
+    :param int user_id: id of the user to associate the account with.
+    :param int ats_id: id of the ATS system.
+    :param dict data: keys and values describing the account.
     :rtype: ATS
     """
     # Create account and credential entries
@@ -81,11 +79,11 @@ def new_ats_account(user_id, ats_id, data):
     credentials.save()
 
     # Now make the two rows point to each other
-    update_dict = { 'ats_credential_id': credentials.id }
+    update_dict = {'ats_credential_id': credentials.id}
     account.update(**update_dict)
-    update_dict = { 'ats_account_id': account.id }
+    update_dict = {'ats_account_id': account.id}
     credentials.update(**update_dict)
-    update_dict = { 'ats_enabled': True }
+    update_dict = {'ats_enabled': True}
     User.get(user_id).update(**update_dict)
 
     return account
@@ -95,8 +93,8 @@ def update_ats_account(account_id, new_data):
     """
     Update the values of an ATS account.
 
-    :param account_id: int, primary key of the account.
-    :param new_data: dict, New values for the account.
+    :param int account_id: primary key of the account.
+    :param dict new_data: New values for the account.
     :rtype: None
     """
     # Search for the account, complain if it doesn't exist
@@ -132,7 +130,7 @@ def update_ats_account(account_id, new_data):
     # If they're changing credentials, find those. Presumably auth_type won't change.
     if 'ats_credentials' in new_data:
         credentials = ATSCredential.get(account.ats_credential_id)
-        update_dict = { 'credentials_json' : new_data['ats_credentials'] }
+        update_dict = {'credentials_json' : new_data['ats_credentials']}
         credentials.update(**update_dict)
 
 
@@ -140,7 +138,7 @@ def delete_ats_account(user_id, ats_account_id):
     """
     Remove an ATS account and all of its candidates.
 
-    :param ats_account_id: int, id of the ATS account.
+    :param int ats_account_id: id of the ATS account.
     :rtype: None
     """
     # First, verify the user and account
@@ -166,9 +164,9 @@ def delete_ats_account(user_id, ats_account_id):
     ATSAccount.delete(account)
 
     # If this is the only ATS account for this user, mark the user as not ATS enabled
-    all_accounts = ATSAccount.query.filter(ATSAccount.id == ats_account_id).all()
+    all_accounts = ATSAccount.query.filter(ATSAccount.user_id == user_id).all()
     if not all_accounts:
-        update_dict = { 'ats_enabled': False }
+        update_dict = {'ats_enabled': False}
         User.query.filter(User.id == user_id).update(update_dict)
         db.session.commit()
 
@@ -177,8 +175,8 @@ def new_ats_candidate(account, data):
     """
     Register an ATS candidate with an ATS account.
 
-    :param account: object, an ATS account object.
-    :param data: dict, keys and values describing the candidate.
+    :param obj account: an ATS account object.
+    :param dict data: keys and values describing the candidate.
     :rtype: ATSCandidate
     """
     gt_candidate_id = data.get('gt_candidate_id', None)
@@ -194,7 +192,7 @@ def delete_ats_candidate(candidate_id):
     """
     Remove an ATS candidate from the database.
 
-    :param candiate_id: int The id of the candidate.
+    :param int candidate_id: The id of the candidate.
     :rtype: None
     """
     candidate = ATSCandidate.get(candidate_id)
@@ -212,13 +210,13 @@ def update_ats_candidate(account_id, candidate_id, new_data):
     """
     Update the profile of an ATS candidate.
 
-    :param account_id: int, primary key of the account the candidate belongs to.
-    :param candidate_id: int, primary key of the candidate.
-    :param new_data: values to update for the candidate.
+    :param int account_id: primary key of the account the candidate belongs to.
+    :param int candidate_id: primary key of the candidate.
+    :param dict new_data: values to update for the candidate.
     :rtype: None
     """
     if 'profile_json' not in new_data:
-        raise InvalidUsage("profile_json {} not found.")
+        raise InvalidUsage("profile_json not found.")
 
     # Validate ATS Account
     account = ATSAccount.get(account_id)
@@ -235,7 +233,7 @@ def update_ats_candidate(account_id, candidate_id, new_data):
     if not profile:
         raise UnprocessableEntity("Invalid candidate profile id", additional_error_info=dict(id=candidate.profile_id))
 
-    update_dict = { 'profile_json' : new_data['profile_json'] }
+    update_dict = {'profile_json' : new_data['profile_json']}
     profile.update(**update_dict)
     return candidate
 
@@ -244,8 +242,8 @@ def link_ats_candidate(gt_candidate_id, ats_candidate_id):
     """
     Mark an ATS candidate as being the same as a getTalent candidate.
 
-    :param gt_candidate_id: int, id of the GT candidate.
-    :param ats_candidate_id: int, id of the ATS candidate.
+    :param int gt_candidate_id: id of the GT candidate.
+    :param int ats_candidate_id: id of the ATS candidate.
     :rtype: None
     """
     gt_candidate = Candidate.get(gt_candidate_id)
@@ -256,7 +254,7 @@ def link_ats_candidate(gt_candidate_id, ats_candidate_id):
     if not ats_candidate:
         raise InvalidUsage("ATS candidate id {} not found.".format(ats_candidate_id))
 
-    update_dict = { 'gt_candidate_id': gt_candidate_id }
+    update_dict = {'gt_candidate_id': gt_candidate_id}
     ats_candidate.update(**update_dict)
 
 
@@ -264,8 +262,8 @@ def unlink_ats_candidate(gt_candidate_id, ats_candidate_id):
     """
     Remove the association of a GT candidate with an ATS candidate.
 
-    :param gt_candidate_id: int, id of the GT candidate.
-    :param ats_candidate_id: int, id of the ATS candidate.
+    :param int gt_candidate_id: id of the GT candidate.
+    :param int ats_candidate_id: id of the ATS candidate.
     :rtype: None
     """
     gt_candidate = Candidate.get(gt_candidate_id)
@@ -276,5 +274,5 @@ def unlink_ats_candidate(gt_candidate_id, ats_candidate_id):
     if not ats_candidate:
         raise InvalidUsage("ATS Candidate id {} not found".format(ats_candidate_id))
 
-    update_dict = { 'gt_candidate_id': None }
+    update_dict = {'gt_candidate_id': None}
     ats_candidate.update(**update_dict)

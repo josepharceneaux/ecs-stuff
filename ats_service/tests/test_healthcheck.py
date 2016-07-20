@@ -7,8 +7,8 @@ def test_healthcheck():
     Test basic healthcheck request.
     """
     response = requests.get(ATSServiceApiUrl.HEALTH_CHECK)
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK
 
     # Testing Health Check URL with trailing slash
     response = requests.get(ATSServiceApiUrl.HEALTH_CHECK + '/')
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.OK

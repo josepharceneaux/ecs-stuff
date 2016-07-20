@@ -13,7 +13,6 @@ from ats_service.tests.test_utils import (missing_field_test,
                                           create_and_validate_account,
                                           verify_nonexistant_candidate,
                                           link_candidates)
-from ats_service.app.api.ats_utils import ATS_ACCOUNT_FIELDS
 from ats_service.common.routes import ATSServiceApiUrl
 from ats_service.common.tests.conftest import *
 

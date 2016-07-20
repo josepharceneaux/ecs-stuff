@@ -5,20 +5,18 @@ Utilities for ATS tests.
 import json
 
 from requests import codes
-from contracts import contract
 
-from ats_service.common.error_handling import InvalidUsage
 from ats_service.common.utils.test_utils import send_request
-from ats_service.common.routes import ATSServiceApi, ATSServiceApiUrl
+from ats_service.common.routes import ATSServiceApiUrl
 from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
 
 # Database
 from ats_service.common.models.candidate import db, Candidate
 
+
 def missing_field_test(data, key, token):
     """
-    This function sends a POST request to the ATS account api with data which has one required field
-    missing and checks that it raises InvalidUsage 400
+    This function sends a POST request to the ATS account api with data which has one required field missing.
     :param dict data: ATS data
     :param string key: field key
     :param string token: auth token
@@ -29,6 +27,7 @@ def missing_field_test(data, key, token):
     response = response.json()
     error = response['error']
     assert error['missing_fields'] == [key]
+
 
 def empty_database():
     """
@@ -56,12 +55,13 @@ def empty_database():
 
     db.session.commit()
 
+
 def create_and_validate_account(token, post_data):
     """
     Create an account and validate that all entries have been correctly made.
 
     :param str token: authentication token
-    :param str post_data: JSON string of account values
+    :param dict post_data: JSON string of account values
     """
     response = send_request('post', ATSServiceApiUrl.ACCOUNTS, token, post_data)
     assert response.status_code == codes.CREATED
@@ -77,6 +77,7 @@ def create_and_validate_account(token, post_data):
     assert values[0]['login_url'] == post_data['ats_login']
     return account_id
 
+
 def verify_nonexistant_account(token, account_id):
     """
     Verify that an account does not exist.
@@ -86,6 +87,7 @@ def verify_nonexistant_account(token, account_id):
     """
     response = send_request('get', ATSServiceApiUrl.ACCOUNT % account_id, token, {}, verify=False)
     assert response.status_code == codes.NOT_FOUND
+
 
 def create_and_validate_candidate(token, account_id, post_data):
     """
@@ -113,6 +115,7 @@ def create_and_validate_candidate(token, account_id, post_data):
     assert profile['some'] == profile_dict.values()[0]
     return candidate_id
 
+
 def verify_nonexistant_candidate(token, account_id, candidate_id):
     """
     Verify that a candidate does not exist.
@@ -123,6 +126,7 @@ def verify_nonexistant_candidate(token, account_id, candidate_id):
     """
     response = send_request('get', ATSServiceApiUrl.CANDIDATE % (account_id, candidate_id), token, {}, verify=False)
     assert response.status_code == codes.NOT_FOUND
+
 
 def link_candidates(token, account_data, candidate_data):
     """

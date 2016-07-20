@@ -50,11 +50,7 @@ class ATS(db.Model):
         Retrieve all ATS entries and return as JSON.
         :rtype: str
         """
-        return_json = []
-        ats_list = ATS.query.all()
-        for ats in ats_list:
-            item = ats.to_dict()
-            return_json.append(item)
+        return_json = [ats.to_dict() for ats in ATS.query.all()]
 
         return json.dumps(return_json)
 
@@ -97,6 +93,7 @@ class ATSAccount(db.Model):
     def __repr__(self):
         return "<ATS Credential ( = %r)>" % self.id
 
+
 class ATSCredential(db.Model):
     """
     Credentials used to access an ATS account.
@@ -130,7 +127,8 @@ class ATSCandidate(db.Model):
         Return a dict representation of this object.
         :rtype: dict
         """
-        return { 'id' : self.id, 'ats_account_id' : self.ats_account_id, 'ats_remote_id' : self.ats_remote_id, 'gt_candidate_id' : self.gt_candidate_id }
+        return { 'id' : self.id, 'ats_account_id' : self.ats_account_id,
+                 'ats_remote_id' : self.ats_remote_id, 'gt_candidate_id' : self.gt_candidate_id }
 
     @classmethod
     def get_all(cls, account_id):
@@ -159,12 +157,12 @@ class ATSCandidate(db.Model):
             item = c.to_dict()
             profile = ATSCandidateProfile.get(c.profile_id)
             item.update(profile.to_dict())
-            return_json.append( { c.id : item } )
+            return_json.append({c.id : item})
 
         return json.dumps(return_json)
 
     def __repr__(self):
-        return "<ATS Candidate ( = %r)>" % self.ats_remote_id
+        return "<ATS Candidate (id = %r)>" % self.ats_remote_id
 
 
 class ATSCandidateProfile(db.Model):
@@ -187,4 +185,4 @@ class ATSCandidateProfile(db.Model):
         return { 'active' : self.active, 'profile_json' : self.profile_json }
 
     def __repr__(self):
-        return "<ATS Candidate Profile ( = %r)>" % self.profile_json
+        return "<ATS Candidate Profile (profile = %r)>" % self.profile_json

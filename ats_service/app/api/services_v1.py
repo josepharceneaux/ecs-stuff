@@ -19,6 +19,7 @@ from ats_service.common.routes import ATSServiceApi, ATSServiceApiUrl
 from ats_service.common.utils.api_utils import ApiResponse, api_route
 from ats_service.common.talent_api import TalentApi
 from ats_service.common.utils.handy_functions import get_valid_json_data
+from ats_service.common.error_handling import *
 
 from ats_utils import (validate_ats_account_data,
                        validate_ats_candidate_data,
@@ -65,7 +66,6 @@ class ATSService(Resource):
         """
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
-        authenticated_user = request.user
 
         return ATS.get_all_as_json()
 
@@ -89,20 +89,16 @@ class ATSAccountService(Resource):
         """
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
-        authenticated_user = request.user
         account = ATSAccount.get_by_id(account_id)
         if not account:
-            ats_service.app.logger.info("Attempt to fetch non-existant ATS account {}".format(account_id))
-            response = json.dumps(dict(id=account_id, message="ATS account (id = {}) does not exist.".format(account_id)))
-            headers = dict(Location=ATSServiceApiUrl.ACCOUNT % account_id)
-            return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
+            raise NotFoundError('Account id not found', additional_error_info=dict(account_id=account_id))
 
         account_dict = account.to_dict()
         credentials = ATSCredential.get_by_id(account.ats_credential_id)
         ats = ATS.get_by_id(account.ats_id)
-        account_dict.update( { 'credentials' : credentials.credentials_json,
-                               'ats_name' : ats.name, 'ats_homepage' : ats.homepage_url,
-                               'ats_login' : ats.login_url} )
+        account_dict.update({'credentials' : credentials.credentials_json,
+                             'ats_name' : ats.name, 'ats_homepage' : ats.homepage_url,
+                             'ats_login' : ats.login_url})
 
         return json.dumps(account_dict)
 
@@ -110,7 +106,7 @@ class ATSAccountService(Resource):
         """
         DELETE /v1/ats-accounts/:account_id
 
-        Decomission an ATS account for a user.
+        Decommission an ATS account for a user.
 
         :param account_id: int, id of the ATS account.
         :rtype string, JSON indicating success.
@@ -119,7 +115,7 @@ class ATSAccountService(Resource):
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         delete_ats_account(request.user.id, account_id)
 
-        return '{ "delete" : "success" }'
+        return '{"delete" : "success"}'
 
     def put(self, account_id):
         """
@@ -133,7 +129,6 @@ class ATSAccountService(Resource):
 
         # Validate data fields
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
-        authenticated_user = request.user
         data = get_valid_json_data(request)
         invalid_account_fields_check(data)
 
@@ -144,7 +139,7 @@ class ATSAccountService(Resource):
 
         response = json.dumps(dict(id=account_id, message="ATS account updated."))
         headers = dict(Location=ATSServiceApiUrl.ACCOUNT % account_id)
-        return ApiResponse(response, headers=headers, status=codes.OK)
+        return ApiResponse(response, headers=headers, status=codes.CREATED)
 
 
 @api.route(ATSServiceApi.ACCOUNTS)
@@ -189,10 +184,7 @@ class ATSAccountsService(Resource):
         # Search for this ATS account entry already existing
         account = ATSAccount.get_account(authenticated_user.id, data['ats_name'])
         if account:
-            ats_service.app.logger.info("Attempt to create already existing ATS account {}".format(account.id))
-            response = json.dumps(dict(id=account.id, message="ATS account already exists."))
-            headers = dict(Location=ATSServiceApiUrl.ACCOUNT % account.id)
-            return ApiResponse(response, headers=headers, status=codes.OK)
+            raise NotFoundError('Account id not found', additional_error_info=dict(account_id=account_id))
 
         # Search for ATS entry, create if absent
         ats = ATS.get_by_name(data['ats_name'])
@@ -228,13 +220,9 @@ class ATSCandidatesService(Resource):
         """
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
-        authenticated_user = request.user
         account = ATSAccount.get_by_id(account_id)
         if not account:
-            ats_service.app.logger.info("ATS account not found {}".format(account_id))
-            response = json.dumps(dict(account_id=account_id, message="ATS account not found {}".format(account_id)))
-            headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account_id)
-            return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
+            raise NotFoundError('Account id not found', additional_error_info=dict(account_id=account_id))
 
         candidates = ATSCandidate.get_all_as_json(account_id)
         if candidates:
@@ -256,7 +244,6 @@ class ATSCandidatesService(Resource):
         """
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
-        authenticated_user = request.user
         data = get_valid_json_data(request)
 
         # Validate data fields
@@ -265,10 +252,7 @@ class ATSCandidatesService(Resource):
         # Validate ATS Account
         account = ATSAccount.get_by_id(account_id)
         if not account:
-            ats_service.app.logger.info("Attempt to create ATS candidate in non-existant ATS {}".format(data['ats_name']))
-            response = json.dumps(dict(ats=data['ats_name'], message="Create candidate: non-existant ATS {}".format(account_id)))
-            headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account)
-            return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
+            raise NotFoundError('Account id not found', additional_error_info=dict(account_id=account_id))
 
         # Create the candidate. No attempt to determine if duplicate.
         candidate = new_ats_candidate(account, data)
@@ -300,17 +284,11 @@ class ATSCandidateService(Resource):
 
         candidate = ATSCandidate.get_by_id(candidate_id)
         if not candidate:
-            ats_service.app.logger.info("ATS candidate not found {}".format(candidate_id))
-            response = json.dumps(dict(account_id=candidate_id, message="ATS account not found {}".format(candidate_id)))
-            headers = dict(Location=ATSServiceApiUrl.CANDIDATE % (account_id, candidate_id))
-            return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
+            raise NotFoundError('Candidate id not found', additional_error_info=dict(candidate_id=candidate_id))
 
         profile = ATSCandidateProfile.get_by_id(candidate.profile_id)
         if not profile:
-            ats_service.app.logger.info("ATS candidate profile not found {}".format(candidate.profile_id))
-            response = json.dumps(dict(account_id=candidate.profile_id, message="ATS account not found {}".format(candidate.profile_id)))
-            headers = dict(Location=ATSServiceApiUrl.CANDIDATE % (account_id, candidate_id))
-            return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
+            raise NotFoundError('Candidate profile id not found', additional_error_info=dict(profile_id=candidate.profile_id))
 
         candidate_dict = dict(id=candidate_id, ats_account_id=candidate.ats_account_id, ats_remote_id=candidate.ats_remote_id,
                               gt_candidate_id=candidate.gt_candidate_id, profile_json=profile.profile_json)
@@ -330,7 +308,6 @@ class ATSCandidateService(Resource):
         """
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
-        authenticated_user = request.user
         data = get_valid_json_data(request)
 
         # Validate data fields
@@ -356,7 +333,8 @@ class ATSCandidateService(Resource):
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         delete_ats_candidate(candidate_id)
-        return '{ "delete" : "success" }'
+        return '{"delete" : "success"}'
+
 
 @api.route(ATSServiceApi.CANDIDATE_LINK)
 class ATSCandidateLinkService(Resource):
@@ -398,7 +376,7 @@ class ATSCandidateLinkService(Resource):
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         unlink_ats_candidate(candidate_id, ats_candidate_id)
 
-        return '{ "unlink" : "success" }'
+        return '{"unlink" : "success"}'
 
 
 @api.route(ATSServiceApi.CANDIDATES_REFRESH)
@@ -420,8 +398,7 @@ class ATSCandidateRefreshService(Resource):
         """
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
-        authenticated_user = request.user
 
         # Magic happens here
 
-        return '{{ "account_id" : {},  "refresh" : "success" }}'.format(account_id)
+        return '{{"account_id" : {},  "refresh" : "success"}}'.format(account_id)
