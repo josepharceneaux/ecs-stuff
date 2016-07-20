@@ -3,26 +3,15 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This file contains pyTest fixtures for tests of SMS Campaign Service.
 """
-# Standard Import
-import json
-from datetime import (datetime, timedelta)
-
 # Third Party
 from requests import codes
-from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm.exc import ObjectDeletedError
 
 # Application Specific
 # common conftest
-from sms_campaign_service.common.tests.conftest import \
-    (db, pytest, fake, requests, gen_salt, user_auth, access_token_first,
-     sample_client, test_domain, first_group, domain_first, user_first, candidate_first,
-     test_domain_2, second_group, domain_second, candidate_second,
-     user_same_domain, user_from_diff_domain, access_token_second, talent_pipeline, talent_pool,
-     access_token_other, access_token_same, talent_pool_other, talent_pipeline_other, get_auth_header)
+from sms_campaign_service.common.tests.conftest import *
 
 # Service specific
-from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from sms_campaign_service.tests.modules.common_functions import (assert_api_send_response,
@@ -31,10 +20,10 @@ from sms_campaign_service.tests.modules.common_functions import (assert_api_send
                                                                  assert_campaign_creation,
                                                                  candidate_ids_associated_with_campaign,
                                                                  reply_and_assert_response,
-                                                                 assert_campaign_delete)
-from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
-                                                                     TWILIO_TEST_NUMBER,
-                                                                     TWILIO_INVALID_TEST_NUMBER)
+                                                                 assert_campaign_delete, generate_campaign_data,
+                                                                 generate_campaign_schedule_data,
+                                                                 remove_any_user_phone_record_with_twilio_test_number)
+from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL)
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
@@ -44,39 +33,7 @@ from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidateP
 
 # Common Utils
 from sms_campaign_service.common.routes import CandidateApiUrl
-from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
-from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers, \
-    FixtureHelpers
-
-# This is data to create/update SMS campaign
-CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
-                        "body_text": "Hi all, we have few openings at https://www.gettalent.com",
-                        "smartlist_ids": ""
-                        }
-INVALID_FREQUENCY_IDS = [fake.numerify(), 'string', True, None, dict(), list(), '', '      ']
-INVALID_STRING = [123, True, None, dict(), list(), '', '      ']
-
-
-# This is data to schedule an SMS campaign
-def generate_campaign_schedule_data():
-    """
-    This returns a dictionary to schedule an sms-campaign
-    """
-    return {"frequency_id": Frequency.ONCE,
-            "start_datetime": DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=1)),
-            "end_datetime": DatetimeUtils.to_utc_str(datetime.utcnow() + relativedelta(days=+5))}
-
-
-def remove_any_user_phone_record_with_twilio_test_number():
-    """
-    This function cleans the database tables user_phone and candidate_phone.
-    If any record in these two tables has phone number value either TWILIO_TEST_NUMBER or
-    TWILIO_INVALID_TEST_NUMBER, we remove all those records before running the tests.
-    """
-    records = UserPhone.get_by_phone_value(TWILIO_TEST_NUMBER)
-    records += UserPhone.get_by_phone_value(TWILIO_INVALID_TEST_NUMBER)
-    map(UserPhone.delete, records)
-
+from sms_campaign_service.common.campaign_services.tests_helpers import (CampaignsTestsHelpers, FixtureHelpers)
 
 # clean database tables user_phone and candidate_phone first
 remove_any_user_phone_record_with_twilio_test_number()
@@ -190,7 +147,7 @@ def campaign_valid_data(smartlist_with_two_candidates):
     """
     This returns the valid data to save an SMS campaign in database
     """
-    campaign_data = CREATE_CAMPAIGN_DATA.copy()
+    campaign_data = generate_campaign_data()
     campaign_data['smartlist_ids'] = [smartlist_with_two_candidates[0]]
     return campaign_data
 
@@ -202,7 +159,7 @@ def invalid_data_for_campaign_creation(request):
     field from data to make it invalid.
     Required fields are 'name', 'body_text', 'smartlist_ids'
     """
-    campaign_data = CREATE_CAMPAIGN_DATA.copy()
+    campaign_data = generate_campaign_data()
     del campaign_data[request.param]
     return campaign_data, request.param
 
@@ -213,14 +170,6 @@ def invalid_id(request):
     This function returns invalid Ids to create/update/delete an sms-campaign.
     """
     return [request.param]
-
-
-@pytest.fixture(params=[123, True, None, dict(), list(), '', '      '])
-def invalid_string(request):
-    """
-    This function returns invalid campaign name to create/update an sms-campaign.
-    """
-    return request.param
 
 
 @pytest.fixture()

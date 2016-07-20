@@ -11,12 +11,12 @@ from operator import itemgetter
 import requests
 
 # Service Specific
+from sms_campaign_service.tests.conftest import db
 from sms_campaign_service.common.tests.sample_data import fake
-from sms_campaign_service.tests.conftest import db, INVALID_STRING
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import (assert_campaign_delete,
                                                                  assert_campaign_creation,
-                                                                 assert_valid_campaign_get)
+                                                                 assert_valid_campaign_get, INVALID_STRING)
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 

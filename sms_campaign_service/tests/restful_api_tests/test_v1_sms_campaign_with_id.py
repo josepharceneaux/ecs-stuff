@@ -11,9 +11,8 @@ import requests
 
 # Service Specific
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
-from sms_campaign_service.tests.modules.common_functions import assert_campaign_delete, \
-    assert_valid_campaign_get
-from sms_campaign_service.tests.conftest import generate_campaign_schedule_data, INVALID_STRING
+from sms_campaign_service.tests.modules.common_functions import (assert_campaign_delete, assert_valid_campaign_get,
+                                                                 INVALID_STRING,  generate_campaign_schedule_data)
 
 # Common Utils
 from sms_campaign_service.common.models.misc import Frequency
@@ -243,7 +242,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         data = campaign_valid_data.copy()
         data['smartlist_ids'].extend([smartlist_with_two_candidates_in_other_domain[0]])
         response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers, data=json.dumps(data))
-        CampaignsTestsHelpers.assert_non_ok_response(response)
+        CampaignsTestsHelpers.assert_non_ok_response(response, ForbiddenError.http_status_code())
 
     def test_campaign_update_with_valid_and_non_existing_smartlist_ids(self, headers, campaign_valid_data,
                                                                        sms_campaign_of_user_first):
@@ -317,15 +316,12 @@ class TestSmsCampaignWithIdHTTPDelete(object):
         response = requests.delete(self.URL % sms_campaign_in_other_domain['id'], headers=headers)
         CampaignsTestsHelpers.assert_non_ok_response(response, ForbiddenError.http_status_code())
 
-    def test_with_deleted_campaign(self, headers, user_first, sms_campaign_of_user_first):
+    def test_with_deleted_campaign(self, access_token_first, sms_campaign_of_user_first):
         """
-        We first delete an SMS campaign, and again try to delete it. It should result in ResourceNotFound error.
+        We first delete an SMS campaign and again try to delete it. It should result in ResourceNotFound error.
         """
-        campaign_id = sms_campaign_of_user_first['id']
-        response = requests.delete(self.URL % campaign_id, headers=headers)
-        assert_campaign_delete(response, user_first.id, campaign_id)
-        response_after_delete = requests.delete(self.URL % campaign_id, headers=headers)
-        CampaignsTestsHelpers.assert_non_ok_response(response, ResourceNotFound.http_status_code())
+        CampaignsTestsHelpers.request_after_deleting_campaign(
+            sms_campaign_of_user_first, self.URL, self.URL, self.HTTP_METHOD, access_token_first)
 
     def test_campaign_delete_with_invalid_campaign_id(self, access_token_first):
         """

@@ -13,7 +13,8 @@ import requests
 from sms_campaign_service.common.models.misc import Frequency
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
-from sms_campaign_service.tests.conftest import generate_campaign_schedule_data, INVALID_FREQUENCY_IDS
+from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
+from sms_campaign_service.tests.modules.common_functions import INVALID_FREQUENCY_IDS, generate_campaign_schedule_data
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 

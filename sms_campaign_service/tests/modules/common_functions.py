@@ -3,21 +3,65 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains the code which is common for different tests.
 """
+# Standard Lib
+import copy
+
 # Third Party
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 import requests
 
 # Common Utils
 from sms_campaign_service.common.models.db import db
+from sms_campaign_service.common.models.user import UserPhone
+from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from sms_campaign_service.modules.sms_campaign_app_constants import TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER
 from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.common.tests.conftest import fake
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
+from sms_campaign_service.common.models.misc import (UrlConversion, Activity, Frequency)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaignReply,
                                                              SmsCampaign)
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
     get_candidates_of_smartlist
+
+# This list is used to create/update an sms-campaign with invalid name and body_text.
+INVALID_STRING = [fake.numerify(), True, None, dict(), list(), '', '      ']
+# This list is used to schedule/reschedule an sms-campaign with invalid frequency Id.
+INVALID_FREQUENCY_IDS = copy.copy(INVALID_STRING)
+INVALID_FREQUENCY_IDS.extend([fake.word()])
+
+
+def generate_campaign_data():
+    """
+    This returns a dictionary to create/update an sms-campaign
+    """
+    return {"name": "TEST SMS Campaign",
+            "body_text": "Hi all, we have few openings at https://www.gettalent.com",
+            "smartlist_ids": ""
+            }
+
+
+def generate_campaign_schedule_data():
+    """
+    This returns a dictionary to schedule an sms-campaign
+    """
+    return {"frequency_id": Frequency.ONCE,
+            "start_datetime": DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=1)),
+            "end_datetime": DatetimeUtils.to_utc_str(datetime.utcnow() + relativedelta(days=+5))}
+
+
+def remove_any_user_phone_record_with_twilio_test_number():
+    """
+    This function cleans the database tables user_phone and candidate_phone.
+    If any record in these two tables has phone number value either TWILIO_TEST_NUMBER or
+    TWILIO_INVALID_TEST_NUMBER, we remove all those records before running the tests.
+    """
+    records = UserPhone.get_by_phone_value(TWILIO_TEST_NUMBER)
+    records += UserPhone.get_by_phone_value(TWILIO_INVALID_TEST_NUMBER)
+    map(UserPhone.delete, records)
 
 
 def assert_url_conversion(sms_campaign_sends):

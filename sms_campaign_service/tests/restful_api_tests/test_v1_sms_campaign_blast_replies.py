@@ -9,8 +9,8 @@ import requests
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.tests.modules.common_functions import assert_valid_reply_object, \
-    assert_valid_blast_object
+from sms_campaign_service.tests.modules.common_functions import (assert_valid_reply_object,
+                                                                 assert_valid_blast_object)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
