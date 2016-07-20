@@ -94,7 +94,14 @@ def parse_resume(file_obj, filename_str, cache_key):
         )
 
 
+@contract
 def is_resume_image(file_ext, file_obj):
+    """ Test to see if file is an image
+
+    :param string file_ext: File extension of file being tested
+    :param cStringIO_StringIO file_obj: In memory representation of the file being tested
+    :rtype: bool
+    """
     resume_is_image = False
 
     if not file_ext.startswith("."):
