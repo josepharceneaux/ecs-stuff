@@ -1,14 +1,8 @@
 """
 Helper functions for tests written for the candidate_service
 """
-import time
-
 # Third party
 import pycountry as pc
-
-# Models
-from candidate_service.common.models.user import Permission
-
 
 
 def check_for_id(_dict):
