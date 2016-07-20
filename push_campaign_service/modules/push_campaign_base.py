@@ -144,6 +144,10 @@ class PushCampaignBase(CampaignBase):
                                % [candidate.id for candidate in candidates])
         return candidate_and_device_ids
 
+    @celery_app.task(name='get_smartlist_candidates')
+    def get_smartlist_candidates(self, campaign_smartlist):
+        return super(PushCampaignBase, self).get_smartlist_candidates(campaign_smartlist)
+
     @celery_app.task(name='send_campaign_to_candidate')
     def send_campaign_to_candidate(self, candidate_and_device_ids):
         """
@@ -262,6 +266,14 @@ class PushCampaignBase(CampaignBase):
         """
         logger.warn('Error occurred while sending push campaign.')
         db.session.rollback()
+
+    @celery_app.task(name='process_campaign_send')
+    def process_campaign_send(self, celery_result):
+        """
+        """
+        self, celery_result = celery_result, self
+        with app.app_context():
+            super(PushCampaignBase, self).process_campaign_send(celery_result)
 
     def save(self, form_data):
         """

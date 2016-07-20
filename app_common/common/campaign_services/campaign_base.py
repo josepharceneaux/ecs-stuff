@@ -259,6 +259,7 @@ class CampaignBase(object):
         self.oauth_header = self.get_authorization_header(user_id)
         # It will be instance of model e.g. SmsCampaign or PushNotification etc.
         self.campaign = None
+        self.campaign_smartlists = None
         self.campaign_blast_id = None  # Campaign's blast id in database
         self.campaign_type = self.get_campaign_type()
         CampaignUtils.raise_if_not_valid_campaign_type(self.campaign_type)
@@ -1064,7 +1065,7 @@ class CampaignBase(object):
             task_id = self.schedule(pre_processed_data['data_to_schedule'])
         return task_id
 
-    def send(self):
+    def send(self, get_candidate_with_celery=False):
         """
         This does the following steps to send campaign to candidates.
 
@@ -1083,7 +1084,8 @@ class CampaignBase(object):
         5- Create campaign blast record in e.g. sms_campaign_blast database table.
         6- Call send_campaign_to_candidates() to send the campaign to candidates via Celery
             task.
-
+        :param bool get_candidate_with_celery: boolean flag to specify, whether candidates will be retrieved with
+        a celery process or in request context.
         :Example:
 
             1- Create class object
@@ -1120,20 +1122,23 @@ class CampaignBase(object):
                                                                                              self.campaign.id,
                                                                                              self.user.id),
                                error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
-        # GET smartlist candidates
-        lists_of_smartlist_candidates = map(self.get_smartlist_candidates, campaign_smartlists)
-        # Making a flat list out of "lists_of_smartlist_candidates" and removing duplicate candidate ids
-        # which ensures that if one candidate is associated with multiple smartlists, then that candidate receives
-        # only one campaign.
-        candidates = list(set(itertools.chain(*lists_of_smartlist_candidates)))
-        if not candidates:
-            raise InvalidUsage('No candidate is associated with smartlist(s). %s(id:%s). campaign smartlist ids are %s'
-                               % (self.campaign_type, self.campaign.id,
-                                  [smartlist.id for smartlist in campaign_smartlists]),
-                               error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
-        # create campaign blast object
-        self.campaign_blast_id = self.create_campaign_blast(self.campaign)
-        self.send_campaign_to_candidates(candidates)
+        if get_candidate_with_celery:
+            self.get_smartlist_candidates_via_celery(campaign_smartlists)
+        else:
+            # GET smartlist candidates
+            lists_of_smartlist_candidates = map(super(self.__class__, self).get_smartlist_candidates, campaign_smartlists)
+            # Making a flat list out of "lists_of_smartlist_candidates" and removing duplicate candidate ids
+            # which ensures that if one candidate is associated with multiple smartlists, then that candidate receives
+            # only one campaign.
+            candidates = list(set(itertools.chain(*lists_of_smartlist_candidates)))
+            if not candidates:
+                raise InvalidUsage('No candidate is associated with smartlist(s). %s(id:%s). campaign smartlist ids are %s'
+                                   % (self.campaign_type, self.campaign.id,
+                                      [smartlist.id for smartlist in campaign_smartlists]),
+                                   error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
+            # create campaign blast object
+            self.campaign_blast_id = self.create_campaign_blast(self.campaign)
+            self.send_campaign_to_candidates(candidates)
 
     @staticmethod
     def create_campaign_blast(campaign):
@@ -1198,6 +1203,40 @@ class CampaignBase(object):
             logger.error('get_smartlist_candidates: No Candidate found. smartlist id is %s. '
                          '(User(id:%s))' % (campaign_smartlist.smartlist_id, self.user.id))
         return candidates
+
+    def get_smartlist_candidates_via_celery(self, campaign_smartlists):
+        """
+        """
+        # Register function to be called after all candidates are fetched from smartlists
+        callback = self.process_campaign_send.subtask((self,))
+        # self.campaign_smartlists = campaign_smartlists
+        # Get candidates present in each smartlist
+        tasks = [self.get_smartlist_candidates.subtask((self, smartlist)) for smartlist in campaign_smartlists]
+
+        # This runs all tasks asynchronously and sets callback function to be hit once all
+        # tasks in list finish running without raising any error. Otherwise callback
+        # results in failure status.
+        chord(tasks)(callback)
+
+    def process_campaign_send(self, celery_result):
+        """
+        """
+        logger = current_app.config[TalentConfigKeys.LOGGER]
+        smartlist_ids = []
+        all_candidate_ids = []
+        if not celery_result:
+            logger.error('No candidate(s) found for smartlist_ids %s, campaign_id: %s'
+                         'user_id: %s.' % (smartlist_ids, self.campaign.id, self.user.id))
+            return
+
+        # gather all candidates from various smartlists
+        for candidate_list in celery_result:
+            all_candidate_ids.extend(candidate_list)
+        all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
+        # create campaign blast object
+        print('dadsdsaddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd')
+        self.campaign_blast_id = self.create_campaign_blast(self.campaign)
+        self.send_campaign_to_candidates(all_candidate_ids)
 
     def pre_process_celery_task(self, candidates):
         """
