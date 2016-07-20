@@ -13,9 +13,9 @@ from flask import current_app
 import PyPDF2
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
-from resume_parsing_service.app.views.utils import gen_hash_from_file
 from resume_parsing_service.app.views.ocr_lib import google_vision_ocr
 from resume_parsing_service.app.views.pdf_utils import convert_pdf_to_text, decrypt_pdf
 from resume_parsing_service.common.error_handling import InvalidUsage
@@ -58,14 +58,21 @@ def parse_resume(file_obj, filename_str, cache_key):
     if not doc_content:
         bucket = current_app.config['S3_BUCKET_NAME']
         boto3_put(file_obj.getvalue(), bucket, filename_str, 'FailedResumes')
-        raise InvalidUsage("Unable to determine the contents of the document: {}".format(filename_str))
+        logger.exception("Unable to determine the contents of the document: {}".format(filename_str))
+        raise InvalidUsage(
+            error_message=error_constants.NO_TEXT_EXTRACTED['message'],
+            error_code=error_constants.NO_TEXT_EXTRACTED['code']
+        )
 
     try:
         encoded_resume = base64.b64encode(doc_content)
 
     except Exception:
         logger.exception('Error encoding resume before sending to BG Optic.')
-        raise InvalidUsage('Issue encoding resume text. Please ensure the file is of a resume and not blurry.')
+        raise InvalidUsage(
+            error_message=error_constants.ERROR_ENCODING_TEXT['message'],
+            error_code=error_constants.ERROR_ENCODING_TEXT['code']
+        )
 
     optic_response = fetch_optic_response(encoded_resume, filename_str)
 
@@ -76,7 +83,11 @@ def parse_resume(file_obj, filename_str, cache_key):
         return {'raw_response': optic_response, 'candidate': candidate_data}
 
     else:
-        raise InvalidUsage('No XML text received from Optic Response for {}'.format(filename_str))
+        logger.info('No XML text received from Optic Response for {}'.format(filename_str))
+        raise InvalidUsage(
+            error_message=error_constants.BG_NO_PARSED_TEXT['message'],
+            error_code=error_constants.BG_NO_PARSED_TEXT['code']
+        )
 
 
 def is_resume_image(file_ext, file_obj):
@@ -86,7 +97,11 @@ def is_resume_image(file_ext, file_obj):
         file_ext = ".{}".format(file_ext)
 
     if file_ext not in IMAGE_FORMATS and file_ext not in DOC_FORMATS:
-        raise InvalidUsage('File ext \'{}\' not in accepted image or document formats'.format(file_ext))
+        logger.info('File ext \'{}\' not in accepted image or document formats'.format(file_ext))
+        raise InvalidUsage(
+            error_message=error_constants.INVALID_FILE_TYPE['message'],
+            error_code=error_constants.INVALID_FILE_TYPE['code']
+        )
 
     # Find out if the file is an image
     if file_ext in IMAGE_FORMATS:

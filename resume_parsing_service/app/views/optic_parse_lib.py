@@ -17,6 +17,7 @@ import phonenumbers
 # Module Specific
 from flask import current_app
 from resume_parsing_service.app import logger
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.OauthClient import OAuthClient
 from resume_parsing_service.common.error_handling import ForbiddenError, InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
@@ -56,10 +57,10 @@ def fetch_optic_response(resume, filename_str):
     bg_response = requests.post(bg_url, headers=headers, json=data)
 
     if bg_response.status_code != requests.codes.ok:
-        # Since this error is displayed to the user we may want to obfuscate it a bit and log more
-        # developer friendly messages. "Error processing this resume. The development team has been
-        # notified of this issue" type of message.
-        raise ForbiddenError('Error connecting to BG instance.')
+        raise ForbiddenError(
+            error_message=error_constants.BG_UNAVAILABLE['message'],
+            error_code=error_constants.BG_UNAVAILABLE['code']
+        )
 
     try:
         html_parser = HTMLParser.HTMLParser()
@@ -68,7 +69,10 @@ def fetch_optic_response(resume, filename_str):
 
     except Exception:
         logger.exception('Error translating BG response.')
-        raise InternalServerError('Error decoding parsed resume text.')
+        raise InternalServerError(
+            error_message=error_constants.ERROR_DECODING_TEXT['message'],
+            error_code=error_constants.ERROR_DECODING_TEXT['code']
+        )
 
     logger.info(
         "Benchmark: fetch_optic_response({}) took {}s".format(filename_str,
