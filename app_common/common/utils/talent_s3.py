@@ -1,5 +1,5 @@
 __author__ = 'ufarooqi'
-
+from cStringIO import StringIO
 import boto
 from flask import current_app as app
 import boto.exception
@@ -8,6 +8,7 @@ from boto.s3.key import Key
 from ..error_handling import InternalServerError, InvalidUsage
 from ..talent_config_manager import TalentConfigKeys
 from boto.s3.connection import OrdinaryCallingFormat, S3Connection
+from botocore.exceptions import ClientError
 import boto3
 
 
@@ -233,12 +234,18 @@ def boto3_get_file(bucket, filename):
         aws_access_key_id=app.config[TalentConfigKeys.AWS_KEY],
         aws_secret_access_key=app.config[TalentConfigKeys.AWS_SECRET]
     )
+
+    CLIENT_ERROR_MSG = "There has been an error retrieving the uploaded file. Please try again"
+
     try:
         s3_file = client.get_object(Bucket=bucket, Key=filename)
+    except ClientError as e:
+        app.logger.exception("boto3 ClientError. Error retrieving {} from {}. Exception: {}".format(filename, bucket, e.message))
+        raise InvalidUsage(error_message=CLIENT_ERROR_MSG)
     except Exception as e:
-        app.logger.exception("S3 error. Error retrieving {} from {}. Exception: {}".format(filename, bucket, e.message))
-        raise InvalidUsage(error_message="There has been an error retrieving the uploaded file. Please try again")
-    from cStringIO import StringIO
+        app.logger.exception("boto3 Exception. Error retrieving {} from {}. Exception: {}".format(filename, bucket, e.message))
+        raise InternalServerError(error_message=CLIENT_ERROR_MSG)
+
     return StringIO(s3_file['Body'].read())
 
 
