@@ -4,7 +4,7 @@ __author__ = 'ufarooqi'
 
 from flask import Blueprint
 from dateutil import parser
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from flask_restful import Resource
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
@@ -62,9 +62,9 @@ class TalentPipelineApi(Resource):
             sort_type = request.args.get('sort_type', 'DESC')
             search_keyword = request.args.get('search', '').strip()
 
-            talent_pipelines = TalentPipeline.query.join(TalentPipeline.user).filter(
-                    User.domain_id == request.user.domain_id and (TalentPipeline.name.ilike(
-                            '%' + search_keyword + '%') or TalentPipeline.description.ilike('%' + search_keyword + '%'))).all()
+            talent_pipelines = TalentPipeline.query.join(TalentPipeline.user).filter(and_(
+                    User.domain_id == request.user.domain_id, or_(TalentPipeline.name.ilike(
+                            '%' + search_keyword + '%'), TalentPipeline.description.ilike('%' + search_keyword + '%')))).all()
 
             page = request.args.get('page', DEFAULT_PAGE)
             per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
@@ -88,17 +88,17 @@ class TalentPipelineApi(Resource):
                     talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_data['id'])
 
             talent_pipelines_data = sorted(talent_pipelines_data, key=lambda talent_pipeline_data: talent_pipeline_data[
-                sort_by], reverse=(True if sort_type == 'ASC' else False))
+                sort_by], reverse=(False if sort_type == 'ASC' else True))
 
             total_number_of_talent_pipelines = len(talent_pipelines_data)
 
-            talent_pipelines_data = talent_pipelines_data[(page - DEFAULT_PAGE) * DEFAULT_PAGE_SIZE:page * DEFAULT_PAGE_SIZE]
+            talent_pipelines_data = talent_pipelines_data[(page - 1) * per_page:page * per_page]
 
             if sort_by != 'engagement_score':
                 for talent_pipeline_data in talent_pipelines_data:
                     talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_data['id'])
 
-            headers = generate_pagination_headers(total_number_of_talent_pipelines ,per_page, page)
+            headers = generate_pagination_headers(total_number_of_talent_pipelines, per_page, page)
 
             response = dict(
                     talent_pipelines=talent_pipelines_data,

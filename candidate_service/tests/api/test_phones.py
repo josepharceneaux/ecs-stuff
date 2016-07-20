@@ -22,7 +22,7 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 
 
 class TestAddCandidatePhones(object):
-    def test_create_candidate_phones(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_phones(self, access_token_first, talent_pool):
         """
         Test:   Create CandidatePhones for Candidate
         Expect: 201
@@ -45,7 +45,7 @@ class TestAddCandidatePhones(object):
         assert can_phones_data[0]['value'] == data['candidates'][0]['phones'][0]['value']
         assert can_phones_data[0]['label'] == data['candidates'][0]['phones'][0]['label']
 
-    def test_create_international_phone_number(self, access_token_first, user_first, talent_pool):
+    def test_create_international_phone_number(self, access_token_first, talent_pool):
         """
         Test:  Create CandidatePhone using international phone number
         Expect: 201, phone number must be formatted before inserting into db
@@ -64,7 +64,7 @@ class TestAddCandidatePhones(object):
         # assert candidate_phones[0]['value'] in data['candidates'][0]['phones'][0]['value']
         assert get_phone_number_extension_if_exists(phone_number_from_data)[-1] == candidate_phones[0]['extension']
 
-    def test_create_candidate_without_phone_label(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_without_phone_label(self, access_token_first, talent_pool):
         """
         Test:   Create a Candidate without providing phone's label
         Expect: 201; phone's label must be 'Home'
@@ -87,7 +87,7 @@ class TestAddCandidatePhones(object):
         assert candidate_dict['phones'][0]['label'] == PhoneLabel.DEFAULT_LABEL
         assert candidate_dict['phones'][-1]['label'] == PhoneLabel.OTHER_LABEL
 
-    def test_create_candidate_with_bad_phone_label(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_with_bad_phone_label(self, access_token_first, talent_pool):
         """
         Test:   e.g. Phone label = 'vork'
         Expect: 201, phone label must be 'Other'
@@ -110,7 +110,7 @@ class TestAddCandidatePhones(object):
         assert candidate_dict['phones'][0]['label'] == PhoneLabel.OTHER_LABEL
         assert candidate_dict['phones'][-1]['label'] == PhoneLabel.OTHER_LABEL
 
-    def test_add_phone_without_value(self, access_token_first, user_first, talent_pool):
+    def test_add_phone_without_value(self, access_token_first, talent_pool):
         """
         Test:  Add candidate phone without providing value
         Expect:  400; phone value is a required property
@@ -124,7 +124,7 @@ class TestAddCandidatePhones(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
-    def test_add_candidate_with_duplicate_phone_number(self, access_token_first, user_first, talent_pool):
+    def test_add_candidate_with_duplicate_phone_number(self, access_token_first, talent_pool):
         """
         Test: Add candidate using identical phone numbers
         """
@@ -139,7 +139,7 @@ class TestAddCandidatePhones(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.INVALID_USAGE
 
-    def test_add_candidate_using_an_existing_number(self, access_token_first, user_first, talent_pool):
+    def test_add_candidate_using_an_existing_number(self, access_token_first, talent_pool):
         """
         Test: Add a candidate using a phone number that already exists in candidate's domain
         """
@@ -155,9 +155,25 @@ class TestAddCandidatePhones(object):
         assert create_resp.status_code == requests.codes.FORBIDDEN
         assert create_resp.json()['error']['code'] == custom_error.PHONE_FORBIDDEN
 
+    def test_add_multiple_default_phones(self, access_token_first, talent_pool):
+        """
+        Test: Add multiple phones with "is default" set to true
+        """
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'phones': [
+                {'value': fake.phone_number(), 'is_default': True},
+                {'value': fake.phone_number(), 'is_default': True},
+                {'value': fake.phone_number(), 'is_default': True}
+            ]}
+        ]}
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.BAD
+        assert create_resp.json()['error']['code'] == custom_error.INVALID_USAGE
+
 
 class TestUpdateCandidatePhones(object):
-    def test_add_invlid_phone_number(self, access_token_first, user_first, candidate_first):
+    def test_add_invlid_phone_number(self, access_token_first, candidate_first):
         """
         Test:  Add invalid phone numbers to candidate's profile
         Expect: 400; phone numbers should not be added to candidate's profile
@@ -180,7 +196,7 @@ class TestUpdateCandidatePhones(object):
         assert resp.status_code == requests.codes.BAD
 
 
-    def test_add_candidate_phones(self, access_token_first, user_first, talent_pool):
+    def test_add_candidate_phones(self, access_token_first, talent_pool):
         """
         Test:   Add CandidatePhone to an existing Candidate. Number of candidate's phones must increase by 1.
         Expect: 200
@@ -211,7 +227,7 @@ class TestUpdateCandidatePhones(object):
         assert phones_after_update[-1]['label'] == phones_from_data[0]['label'].capitalize()
         assert len(phones_after_update) == phones_count_before_update + 1
 
-    def test_multiple_is_default_phones(self, access_token_first, user_first, talent_pool):
+    def test_multiple_is_default_phones(self, access_token_first, talent_pool):
         """
         Test:   Add more than one CandidatePhone with is_default set to True
         Expect: 200, but only one CandidatePhone must have is_current True, the rest must be False
@@ -232,7 +248,7 @@ class TestUpdateCandidatePhones(object):
         # Only one of the phones must be default!
         assert sum([1 for phone in updated_can_phones if phone['is_default']]) == 1
 
-    def test_update_existing_phone(self, access_token_first, user_first, talent_pool):
+    def test_update_existing_phone(self, access_token_first, talent_pool):
         """
         Test:   Update an existing CandidatePhone. Number of candidate's phones must remain unchanged.
         Expect: 200
@@ -289,7 +305,7 @@ class TestDeleteCandidatePhone(object):
         print response_info(resp)
         assert resp.status_code == requests.codes.NOT_FOUND
 
-    def test_delete_phone_of_a_candidate_belonging_to_a_diff_user(self, user_first, access_token_first,
+    def test_delete_phone_of_a_candidate_belonging_to_a_diff_user(self, access_token_first,
                                                                   talent_pool, user_second,
                                                                   access_token_second):
         """
@@ -310,7 +326,7 @@ class TestDeleteCandidatePhone(object):
         assert updated_resp.status_code == requests.codes.FORBIDDEN
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_delete_phone_of_a_different_candidate(self, user_first, access_token_first, talent_pool):
+    def test_delete_phone_of_a_different_candidate(self, access_token_first, talent_pool):
         """
         Test:   Attempt to delete the phone of a different Candidate
         Expect: 403
@@ -334,7 +350,7 @@ class TestDeleteCandidatePhone(object):
         assert updated_resp.status_code == requests.codes.FORBIDDEN
         assert updated_resp.json()['error']['code'] == custom_error.PHONE_FORBIDDEN
 
-    def test_delete_candidate_phones(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_phones(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's phones from db
         Expect: 204, Candidate must not have any phones left
@@ -354,7 +370,7 @@ class TestDeleteCandidatePhone(object):
         assert updated_resp.status_code == requests.codes.NO_CONTENT
         assert len(can_dict_after_update['phones']) == 0
 
-    def test_delete_candidate_phone(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_phone(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's phone from db
         Expect: 204, Candidate's phones must be less 1
