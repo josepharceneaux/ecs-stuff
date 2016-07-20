@@ -28,7 +28,7 @@ from sms_campaign_service.common.inter_service_calls.candidate_pool_service_call
     get_candidates_of_smartlist
 
 # This list is used to create/update an sms-campaign with invalid name and body_text.
-INVALID_STRING = [fake.numerify(), True, None, dict(), list(), '', '      ']
+INVALID_STRING = [int(fake.numerify()), True, None, dict(), list(), '', '      ']
 # This list is used to schedule/reschedule an sms-campaign with invalid frequency Id.
 INVALID_FREQUENCY_IDS = copy.copy(INVALID_STRING)
 INVALID_FREQUENCY_IDS.extend([fake.word()])

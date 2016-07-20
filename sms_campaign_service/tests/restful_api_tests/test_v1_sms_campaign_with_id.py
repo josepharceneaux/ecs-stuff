@@ -202,8 +202,8 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         This is a test to update SMS campaign with invalid campaign name. Status code should be 400 and
         campaign should not be updated.
         """
+        campaign_data = campaign_valid_data.copy()
         for invalid_campaign_name in INVALID_STRING:
-            campaign_data = campaign_valid_data.copy()
             campaign_data['name'] = invalid_campaign_name
             response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers,
                                     data=json.dumps(campaign_data))
@@ -215,8 +215,8 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         This is a test to update SMS campaign with invalid body_text. Status code should be 400 and
         campaign should not be updated.
         """
+        campaign_data = campaign_valid_data.copy()
         for invalid_body_text in INVALID_STRING:
-            campaign_data = campaign_valid_data.copy()
             campaign_data['body_text'] = invalid_body_text
             response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers,
                                     data=json.dumps(campaign_data))
