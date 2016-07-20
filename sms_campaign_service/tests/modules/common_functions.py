@@ -3,35 +3,28 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains the code which is common for different tests.
 """
-# Standard Lib
-import copy
-
 # Third Party
+import requests
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-import requests
+
 
 # Common Utils
 from sms_campaign_service.common.models.db import db
-from sms_campaign_service.common.models.user import UserPhone
-from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
-from sms_campaign_service.modules.sms_campaign_app_constants import TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER
 from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.common.tests.conftest import fake
+from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.models.misc import (UrlConversion, Activity, Frequency)
+from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from sms_campaign_service.common.models.misc import (UrlConversion, Activity,
+                                                     Frequency)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaignReply,
                                                              SmsCampaign)
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
     get_candidates_of_smartlist
-
-# This list is used to create/update an sms-campaign with invalid name and body_text.
-INVALID_STRING = [int(fake.numerify()), True, None, dict(), list(), '', '      ']
-# This list is used to schedule/reschedule an sms-campaign with invalid frequency Id.
-INVALID_FREQUENCY_IDS = copy.copy(INVALID_STRING)
-INVALID_FREQUENCY_IDS.extend([fake.word()])
+from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER)
 
 
 def generate_campaign_data():

@@ -8,6 +8,7 @@ __author__ = 'basit'
 import sys
 import time
 import json
+import copy
 from datetime import datetime, timedelta
 
 # Third Party
@@ -35,8 +36,8 @@ from ..utils.test_utils import get_fake_dict
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
                               ResourceNotFound, UnprocessableEntity)
-from ..inter_service_calls.candidate_pool_service_calls import create_smartlist_from_api, \
-    assert_smartlist_candidates
+from ..inter_service_calls.candidate_pool_service_calls import (create_smartlist_from_api,
+                                                                assert_smartlist_candidates)
 from ..inter_service_calls.candidate_service_calls import create_candidates_from_candidate_api
 
 
@@ -45,6 +46,12 @@ class CampaignsTestsHelpers(object):
     This class contains common helper methods for tests of sms_campaign_service and
     push_campaign_service etc.
     """
+    # This list is used to create/update a campaign, e.g. sms-campaign with invalid name and body_text.
+    INVALID_STRING = [int(fake.numerify()), True, None, dict(), list(), '', '      ']
+    # This list is used to schedule/reschedule a campaign e.g. sms-campaign with invalid frequency Id.
+    INVALID_FREQUENCY_IDS = copy.copy(INVALID_STRING)
+    INVALID_FREQUENCY_IDS.extend([fake.word()])
+
     @classmethod
     def request_for_forbidden_error(cls, method, url, access_token, data=None):
         """
@@ -685,6 +692,39 @@ class CampaignsTestsHelpers(object):
             'It should result in bad request error because unexpected data was given.'
         assert 'unexpected_key' in response.json()['error']['message']
         assert 'frequency' in response.json()['error']['message']
+
+    @staticmethod
+    def campaign_create_or_update_with_invalid_string(method, url, access_token, campaign_data, field):
+        """
+        This creates or updates a campaign with unexpected fields present in the data and
+        asserts that we get invalid usage error from respective API. Data passed should be a dictionary
+        here.
+        :param str method: Name of HTTP method
+        :param str url: URL on which we are supposed to make HTTP request
+        :param str access_token: Access token of user
+        :param dict campaign_data: Data to be passed in HTTP request
+        :param str field: Field in campaign data
+        """
+        for invalid_campaign_name in CampaignsTestsHelpers.INVALID_STRING:
+            campaign_data[field] = invalid_campaign_name
+            response = send_request(method, url, access_token, data=campaign_data)
+            CampaignsTestsHelpers.assert_non_ok_response(response)
+
+    @staticmethod
+    def campaign_schedule_or_reschedule_with_invalid_frequency_id(method, url, access_token, schedule_data):
+        """
+        This creates or updates a campaign with unexpected fields present in the data and
+        asserts that we get invalid usage error from respective API. Data passed should be a dictionary
+        here.
+        :param str method: Name of HTTP method
+        :param str url: URL on which we are supposed to make HTTP request
+        :param str access_token: Access token of user
+        :param dict schedule_data: Data to be passed in HTTP request
+        """
+        for invalid_frequency_id in CampaignsTestsHelpers.INVALID_FREQUENCY_IDS:
+            schedule_data['frequency_id'] = invalid_frequency_id
+            response = send_request(method, url, access_token, data=schedule_data)
+            CampaignsTestsHelpers.assert_non_ok_response(response)
 
 
 class FixtureHelpers(object):

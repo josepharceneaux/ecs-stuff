@@ -12,7 +12,7 @@ import requests
 # Service Specific
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import (assert_campaign_delete, assert_valid_campaign_get,
-                                                                 INVALID_STRING,  generate_campaign_schedule_data)
+                                                                 generate_campaign_schedule_data)
 
 # Common Utils
 from sms_campaign_service.common.models.misc import Frequency
@@ -193,34 +193,29 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         invalid data (having some unexpected fields). It should result in Invalid usage error.
         """
         CampaignsTestsHelpers.campaign_create_or_update_with_unexpected_fields(
-            'put', self.URL % sms_campaign_of_user_first['id'],
-            access_token_first, campaign_valid_data)
+            self.HTTP_METHOD,  self.URL % sms_campaign_of_user_first['id'], access_token_first, campaign_valid_data)
 
-    def test_campaign_update_with_invalid_campaign_name(self, headers, campaign_valid_data,
+    def test_campaign_update_with_invalid_campaign_name(self, access_token_first, campaign_valid_data,
                                                         sms_campaign_of_user_first):
         """
         This is a test to update SMS campaign with invalid campaign name. Status code should be 400 and
         campaign should not be updated.
         """
-        campaign_data = campaign_valid_data.copy()
-        for invalid_campaign_name in INVALID_STRING:
-            campaign_data['name'] = invalid_campaign_name
-            response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers,
-                                    data=json.dumps(campaign_data))
-            CampaignsTestsHelpers.assert_non_ok_response(response)
+        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.HTTP_METHOD,
+                                                                            self.URL % sms_campaign_of_user_first['id'],
+                                                                            access_token_first,
+                                                                            campaign_valid_data.copy(), 'name')
 
-    def test_campaign_update_with_invalid_body_text(self, headers, campaign_valid_data,
+    def test_campaign_update_with_invalid_body_text(self, access_token_first, campaign_valid_data,
                                                     sms_campaign_of_user_first):
         """
         This is a test to update SMS campaign with invalid body_text. Status code should be 400 and
         campaign should not be updated.
         """
-        campaign_data = campaign_valid_data.copy()
-        for invalid_body_text in INVALID_STRING:
-            campaign_data['body_text'] = invalid_body_text
-            response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers,
-                                    data=json.dumps(campaign_data))
-            CampaignsTestsHelpers.assert_non_ok_response(response)
+        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.HTTP_METHOD,
+                                                                            self.URL % sms_campaign_of_user_first['id'],
+                                                                            access_token_first,
+                                                                            campaign_valid_data.copy(), 'body_text')
 
     def test_campaign_update_with_valid_and_invalid_smartlist_ids(self, headers, campaign_valid_data,
                                                                   sms_campaign_of_user_first, invalid_id):

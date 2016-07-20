@@ -13,8 +13,7 @@ import requests
 from sms_campaign_service.common.models.misc import Frequency
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
-from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
-from sms_campaign_service.tests.modules.common_functions import INVALID_FREQUENCY_IDS, generate_campaign_schedule_data
+from sms_campaign_service.tests.modules.common_functions import generate_campaign_schedule_data
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
@@ -70,16 +69,13 @@ class TestSmsCampaignScheduleHTTPPOST(object):
                                  headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_non_ok_response(response)
 
-    def test_campaign_schedule_with_invalid_frequency_id(self, headers, sms_campaign_of_user_first):
+    def test_campaign_schedule_with_invalid_frequency_id(self, access_token_first, sms_campaign_of_user_first):
         """
-        Trying to schedule a campaign with invalid frequency Id. It should get result in bad request error.
+        Trying to schedule a campaign with invalid frequency_id. It should get result in bad request error.
         """
-        for invalid_frequency_id in INVALID_FREQUENCY_IDS:
-            data = generate_campaign_schedule_data()
-            data['frequency_id'] = invalid_frequency_id
-            response = requests.post(self.URL % sms_campaign_of_user_first['id'], headers=headers,
-                                     data=json.dumps(data))
-            CampaignsTestsHelpers.assert_non_ok_response(response)
+        data = generate_campaign_schedule_data()
+        CampaignsTestsHelpers.campaign_schedule_or_reschedule_with_invalid_frequency_id(
+            self.HTTP_METHOD, self.URL % sms_campaign_of_user_first['id'], access_token_first, data)
 
     def test_campaign_schedule_with_not_owned_campaign(self, access_token_first,
                                                        sms_campaign_in_other_domain):
@@ -273,23 +269,21 @@ class TestSmsCampaignScheduleHTTPPUT(object):
     def test_reschedule_deleted_campaign(self, access_token_first, scheduled_sms_campaign_of_user_first):
         """
         Here we first delete the campaign from database. Then we try to re-schedule it. It
-        should get ResourceNotFound error.
+        should result in ResourceNotFound error.
         """
         CampaignsTestsHelpers.request_after_deleting_campaign(scheduled_sms_campaign_of_user_first,
                                                               SmsCampaignApiUrl.CAMPAIGN, self.URL, self.HTTP_METHOD,
                                                               access_token_first,
                                                               data=generate_campaign_schedule_data())
 
-    def test_reschedule_campaign_with_invalid_frequency_id(self, headers, scheduled_sms_campaign_of_user_first):
+    def test_reschedule_campaign_with_invalid_frequency_id(self, access_token_first,
+                                                           scheduled_sms_campaign_of_user_first):
         """
-        Trying to re-schedule a campaign with invalid frequency Id, It should result in bad request error.
+        Trying to re-schedule a campaign with invalid frequency_id, It should result in bad request error.
         """
-        for invalid_frequency_id in INVALID_FREQUENCY_IDS:
-            data = generate_campaign_schedule_data()
-            data['frequency_id'] = invalid_frequency_id
-            response = requests.put(self.URL % scheduled_sms_campaign_of_user_first['id'], headers=headers,
-                                    data=json.dumps(data))
-            CampaignsTestsHelpers.assert_non_ok_response(response)
+        data = generate_campaign_schedule_data()
+        CampaignsTestsHelpers.campaign_schedule_or_reschedule_with_invalid_frequency_id(
+            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_user_first['id'], access_token_first, data)
 
 
 class TestSmsCampaignScheduleHTTPDELETE(object):
