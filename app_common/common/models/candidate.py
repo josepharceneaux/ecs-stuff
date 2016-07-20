@@ -98,15 +98,11 @@ class Candidate(db.Model):
                                                                source_id,
                                                                product_id):
         assert user_id
-        return cls.query.filter(
-            and_(
-                Candidate.first_name == first_name,
-                Candidate.last_name == last_name,
-                Candidate.user_id == user_id,
-                Candidate.source_id == source_id,
-                Candidate.source_product_id == product_id
-            )
-        ).first()
+        return cls.query.filter_by(first_name=first_name,
+                                   last_name=last_name,
+                                   user_id=user_id,
+                                   source_id=source_id,
+                                   source_product_id=product_id).first()
 
     @classmethod
     def set_is_web_hidden_to_true(cls, candidate_id):

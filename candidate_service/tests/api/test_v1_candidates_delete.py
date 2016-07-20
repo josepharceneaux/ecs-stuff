@@ -122,31 +122,21 @@ class TestDeleteCandidate(object):
         db.session.commit()
 
         # Delete Candidate
-        candidate_email='email_not_found_45623@simple.com'
+        candidate_email = "{unique}{email}".format(unique=str(uuid.uuid4())[:5], email=fake.safe_email())
         resp = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_email, access_token_first)
         print response_info(resp)
         assert resp.status_code == requests.codes.NOT_FOUND
         assert resp.json()['error']['code'] == custom_error.EMAIL_NOT_FOUND
 
-    def test_delete_candidate_from_a_diff_domain(self, access_token_first, talent_pool, access_token_second,
-                                                 user_second):
+    def test_delete_candidate_from_a_diff_domain(self, access_token_second, user_second, candidate_first):
         """
         Test:   Delete a Candidate via candidate's email
         """
         user_second.role_id = Role.get_by_name('DOMAIN_ADMIN').id
         db.session.commit()
 
-        # Create Candidate with user_first
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        candidate_1_id = create_resp.json()['candidates'][0]['id']
-
-        # Retrieve Candidate
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_1_id, access_token_first, data)
-        candidate_dict = get_resp.json()['candidate']
-
         # Delete Candidate with user_second
-        resp = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_dict['id'], access_token_second)
+        resp = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_first.id, access_token_second)
         print response_info(resp)
         assert resp.status_code == requests.codes.FORBIDDEN
         assert resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
@@ -204,10 +194,10 @@ class TestDeleteCandidateAddress(object):
         Expect: 401
         """
         # Delete Candidate's addresses
-        resp = send_request('delete', CandidateApiUrl.ADDRESSES % 5, None)
+        resp = send_request('delete', CandidateApiUrl.ADDRESSES % '5', None)
         print response_info(resp)
-        assert resp.status_code == 401
-        assert resp.json()['error']['code'] == 11
+        assert resp.status_code == requests.codes.UNAUTHORIZED
+        # assert resp.json()['error']['code'] == 11  # TODO: move service custom error codes into common and use mapping
 
     def test_delete_candidate_address_with_bad_input(self, access_token_second):
         """
