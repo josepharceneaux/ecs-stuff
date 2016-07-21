@@ -1123,10 +1123,10 @@ class CampaignBase(object):
                                                                                              self.user.id),
                                error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
         if get_candidate_with_celery:
-            self.get_smartlist_candidates_via_celery(campaign_smartlists)
+            self.get_candidates_and_send_campaign_via_celery(campaign_smartlists)
         else:
             # GET smartlist candidates
-            lists_of_smartlist_candidates = map(super(self.__class__, self).get_smartlist_candidates, campaign_smartlists)
+            lists_of_smartlist_candidates = map(self.get_smartlist_candidates, campaign_smartlists)
             # Making a flat list out of "lists_of_smartlist_candidates" and removing duplicate candidate ids
             # which ensures that if one candidate is associated with multiple smartlists, then that candidate receives
             # only one campaign.
@@ -1166,6 +1166,15 @@ class CampaignBase(object):
         blast_model.save(blast_obj)
         return blast_obj.id
 
+    @abstractmethod
+    def get_smartlist_candidates_task(self, campaign_smartlist):
+        """
+        Child classes will implement this method as celery task because in campaign base there is no celery app.
+        This method will retrieve candidates of a smartlist in a celery task.
+        :param PushCampaignSmartlist | SmsCampaignSmartlist campaign_smartlist: campaign smartlist object
+        """
+        pass
+
     def get_smartlist_candidates(self, campaign_smartlist):
         """
         This will get the candidates associated to a provided smart list. This makes
@@ -1204,25 +1213,47 @@ class CampaignBase(object):
                          '(User(id:%s))' % (campaign_smartlist.smartlist_id, self.user.id))
         return candidates
 
-    def get_smartlist_candidates_via_celery(self, campaign_smartlists):
+    def get_candidates_and_send_campaign_via_celery(self, campaign_smartlists):
         """
+        This method creates a celery `chord` to retrieve candidates of all smartlists. When all celery tasks are
+        done with retrieving candidates, celery sends the list of results to registered callback function which
+        is `callback_campaign_send` which will send campaign to all candidates.
+
+        :param PushCampaignSmartlist | SmsCampaignSmartlist campaign_smartlists: smartlists associated with campaign
         """
         # Register function to be called after all candidates are fetched from smartlists
-        callback = self.process_campaign_send.subtask((self,))
+        callback = self.callback_campaign_send.subtask((self,), queue=self.campaign_type)
+
         self.smartlist_ids = [campaign_smartlist.smartlist_id for campaign_smartlist in campaign_smartlists]
+
         # Get candidates present in each smartlist
-        tasks = [self.get_smartlist_candidates.subtask((self, smartlist)) for smartlist in campaign_smartlists]
+        tasks = [self.get_smartlist_candidates_task.subtask((self, smartlist),
+                                                            link_error=self.celery_error_handler.subtask(
+                                                           queue=self.campaign_type),
+                                                       queue=self.campaign_type) for smartlist in campaign_smartlists]
 
         # This runs all tasks asynchronously and sets callback function to be hit once all
         # tasks in list finish running without raising any error. Otherwise callback
         # results in failure status.
         chord(tasks)(callback)
 
+    @abstractmethod
+    def callback_campaign_send(self, celery_result):
+        """
+        When all celery tasks to retrieve smartlist candidates are finished, celery chord calls respective child
+         class' function with an array or data (candidates) from all tasks. Child class' function will further
+         call super class method `process_campaign_send` to process this data and send campaigns to all candidates.
+        :param list celery_result: list of lists of candidates
+        """
+        pass
+
     def process_campaign_send(self, celery_result):
         """
+        This method takes `celery_result` input argument which is a list of `lists of candidate ids` and then creates
+        campaign blast and sends campaign to all candidates using celery.
+        :param list celery_result: list of lists of candidates
         """
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        # smartlist_ids = []
         all_candidate_ids = []
         if not celery_result:
             logger.error('No candidate(s) found for smartlist_ids %s, campaign_id: %s'
@@ -1234,7 +1265,6 @@ class CampaignBase(object):
             all_candidate_ids.extend(candidate_list)
         all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
         # create campaign blast object
-        print('dadsdsaddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd')
         self.campaign_blast_id = self.create_campaign_blast(self.campaign)
         self.send_campaign_to_candidates(all_candidate_ids)
 

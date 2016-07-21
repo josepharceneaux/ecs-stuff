@@ -140,12 +140,18 @@ class PushCampaignBase(CampaignBase):
         # get all device ids and if there is no device associated with any candidate, raise InvalidUsage
         all_device_ids = list(itertools.chain(*map(lambda item: item[1], candidate_and_device_ids)))
         if not all_device_ids:
-            raise InvalidUsage('There is no device associated with any candidate. Candidate Ids: %s'
+            raise InvalidUsage('There is no device associated with '
+                               ''
+                               'qany candidate. Candidate Ids: %s'
                                % [candidate.id for candidate in candidates])
         return candidate_and_device_ids
 
-    @celery_app.task(name='get_smartlist_candidates')
-    def get_smartlist_candidates(self, campaign_smartlist):
+    @celery_app.task(name='get_smartlist_candidates_task')
+    def get_smartlist_candidates_task(self, campaign_smartlist):
+        """
+        This method will retrieve smartlist candidate from candidate pool service in a celery task.
+        :param PushCampaignSmartlist | SmsCampaignSmartlist campaign_smartlist: campaign smartlist object
+        """
         return super(PushCampaignBase, self).get_smartlist_candidates(campaign_smartlist)
 
     @celery_app.task(name='send_campaign_to_candidate')
@@ -267,13 +273,19 @@ class PushCampaignBase(CampaignBase):
         logger.warn('Error occurred while sending push campaign.')
         db.session.rollback()
 
-    @celery_app.task(name='process_campaign_send')
-    def process_campaign_send(self, celery_result):
+    @celery_app.task(name='callback_campaign_send')
+    def callback_campaign_send(self, celery_result):
         """
+        When all celery tasks to retrieve smartlist candidates are finished, celery chord calls this function
+        with an array or data (candidates) from all tasks. This function will further call super class method
+        to process this data and send campaigns to all candidates.
+        :param list celery_result: list of lists of candidates
         """
+        # Celery calls callback method with `results` as first argument even it is a instance method so
+        # we need to switch values to maintain the convention of `self` being first argument
         self, celery_result = celery_result, self
         with app.app_context():
-            super(PushCampaignBase, self).process_campaign_send(celery_result)
+            self.process_campaign_send(celery_result)
 
     def save(self, form_data):
         """
