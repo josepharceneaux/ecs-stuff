@@ -85,6 +85,7 @@ def save_token_v2(user):
     )
 
     user.last_login_datetime = datetime.utcnow()
+    db.session.commit()
 
     return jsonify(dict(
         user_id=user.id,
