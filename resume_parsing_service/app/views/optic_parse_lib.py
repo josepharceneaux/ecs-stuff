@@ -396,7 +396,7 @@ def parse_candidate_skills(bg_skills_xml_list):
         if start_days and end_days:
             months_used = (int(end_days) - int(start_days)) / 30
 
-        if months_used:
+        if months_used and months_used > 0: # Rarely a skill will have an end before the start.
             processed_skill['months_used'] = int(months_used)
 
         if processed_skill['name'] not in skills_parsed:
