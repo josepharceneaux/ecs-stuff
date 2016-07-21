@@ -347,6 +347,16 @@ def test_encrypted_resume(token_fixture, user_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'jDiMaria.pdf')
     assert_non_create_content_and_status(content, status)
 
+
+def test_626a(token_fixture, user_fixture):
+    content, status = fetch_resume_post_response(token_fixture, 'GET_626a.doc')
+    assert_non_create_content_and_status(content, status)
+
+
+def test_626b(token_fixture, user_fixture):
+    content, status = fetch_resume_post_response(token_fixture, 'GET_626b.doc')
+    assert_non_create_content_and_status(content, status)
+
 ####################################################################################################
 # Test Candidate Creation
 ####################################################################################################

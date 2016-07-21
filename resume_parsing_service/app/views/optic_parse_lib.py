@@ -87,7 +87,7 @@ def fetch_optic_response(resume, filename_str):
 def parse_optic_xml(resume_xml_text):
     """
     Takes in a Burning Glass XML tree in string format and returns a candidate JSON object.
-    :param str | unicode resume_xml_text: An XML tree represented in unicode format. It is a slightly
+    :param string resume_xml_text: An XML tree represented in unicode format. It is a slightly
                                    processed response from the Burning Glass API.
     :return: Results of various parsing functions on the input xml string.
     :rtype: dict
@@ -486,8 +486,7 @@ def get_date_from_date_tag(parent_tag, date_tag_name):
         try:
             if date_tag_name == 'end' and ('current' in date_tag.text.lower() or
                                            'present' in date_tag.text.lower()):
-                return datetime.date.isoformat()
-            return date_tag['iso8601']
+                return date_tag['iso8601']
         except Exception:
             logger.exception('Exception during date parse with datetag: {}'.format(date_tag))
     return None

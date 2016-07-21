@@ -33,7 +33,7 @@ RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 def parse_resume(file_obj, filename_str, cache_key):
     """Primary resume parsing function.
 
-    :param cStringIO_StringIO file_obj: a StringIO representation of the raw binary.
+    :param cStringIO file_obj: a StringIO representation of the raw binary.
     :param unicode filename_str: The file_obj file name.
     :param str cache_key: A key used to get/store BG data.
     :return: Processed candidate data.
@@ -99,7 +99,7 @@ def is_resume_image(file_ext, file_obj):
     """ Test to see if file is an image
 
     :param string file_ext: File extension of file being tested
-    :param cStringIO_StringIO file_obj: In memory representation of the file being tested
+    :param cStringIO file_obj: In memory representation of the file being tested
     :rtype: bool
     """
     resume_is_image = False
