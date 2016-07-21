@@ -16,7 +16,7 @@ from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import (assert_campaign_delete,
                                                                  assert_campaign_creation,
-                                                                 assert_valid_campaign_get)
+                                                                 assert_valid_campaign_get, generate_campaign_data)
 
 
 # Models
@@ -153,14 +153,14 @@ class TestSmsCampaignHTTPPost(object):
     """
     This class contains tests for endpoint /v1/sms-campaigns and HTTP method POST.
     """
-    METHOD = 'post'
+    HTTP_METHOD = 'post'
     URL = SmsCampaignApiUrl.CAMPAIGNS
 
     def test_campaign_creation_with_invalid_token(self):
         """
         User auth token is invalid, it should result in Unauthorized Error.
         """
-        CampaignsTestsHelpers.request_with_invalid_token(self.METHOD, self.URL)
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL)
 
     def test_campaign_creation_with_invalid_header(self, access_token_first):
         """
@@ -219,8 +219,18 @@ class TestSmsCampaignHTTPPost(object):
         User has one phone number, valid header and invalid data (unexpected fields) to
         create sms-campaign. It should result in Invalid usage error.
         """
-        CampaignsTestsHelpers.campaign_create_or_update_with_unexpected_fields(self.METHOD, self.URL,
+        CampaignsTestsHelpers.campaign_create_or_update_with_unexpected_fields(self.HTTP_METHOD, self.URL,
                                                                                access_token_first, campaign_valid_data)
+
+    def test_campaign_create_with_invalid_smartlist_ids(self, access_token_first):
+        """
+        This is a test to create SMS campaign with invalid smartlist_ids.
+        Invalid smartlist ids include Non-existing id, non-integer id, empty list, duplicate items in list etc.
+        Status code should be 400 and campaign should not be created.
+        """
+        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_smartlist(self.HTTP_METHOD, self.URL,
+                                                                               access_token_first,
+                                                                               generate_campaign_data())
 
     def test_campaign_create_with_valid_and_not_owned_smartlist_ids(self, headers, campaign_valid_data,
                                                                     smartlist_with_two_candidates_in_other_domain):
@@ -233,34 +243,12 @@ class TestSmsCampaignHTTPPost(object):
         response = requests.post(self.URL, headers=headers, data=json.dumps(data))
         CampaignsTestsHelpers.assert_non_ok_response(response, ForbiddenError.http_status_code())
 
-    def test_campaign_create_with_valid_and_non_existing_smartlist_ids(self, headers, campaign_valid_data):
-        """
-        This is a test to create SMS campaign with valid and non-existing smartlist_ids.
-        It should result in ResourceNotFound error.
-        """
-        data = campaign_valid_data.copy()
-        non_existing_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
-        data['smartlist_ids'].extend([non_existing_id])
-        response = requests.post(self.URL, headers=headers, data=json.dumps(data))
-        CampaignsTestsHelpers.assert_non_ok_response(response, ResourceNotFound.http_status_code())
-
-    def test_campaign_create_with_valid_and_invalid_smartlist_ids(self, headers, campaign_valid_data,
-                                                                  invalid_id):
-        """
-        This is a test to create SMS campaign with valid and invalid smartlist_ids. Status code should be 400 and
-        campaign should not be created.
-        """
-        data = campaign_valid_data.copy()
-        data['smartlist_ids'].extend(invalid_id)
-        response = requests.post(self.URL, headers=headers, data=json.dumps(data))
-        CampaignsTestsHelpers.assert_non_ok_response(response)
-
     def test_campaign_create_with_invalid_campaign_name(self, access_token_first, campaign_valid_data):
         """
         This is a test to create SMS campaign with invalid campaign name. Status code should be 400 and
         campaign should not be created.
         """
-        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.METHOD, self.URL, access_token_first,
+        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.HTTP_METHOD, self.URL, access_token_first,
                                                                             campaign_valid_data.copy(), 'name')
 
     def test_campaign_create_with_invalid_body_text(self, access_token_first, campaign_valid_data):
@@ -268,7 +256,8 @@ class TestSmsCampaignHTTPPost(object):
         This is a test to create SMS campaign with invalid body_text. Status code should be 400 and
         campaign should not be created.
         """
-        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.METHOD, self.URL, access_token_first,
+        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.HTTP_METHOD, self.URL,
+                                                                            access_token_first,
                                                                             campaign_valid_data.copy(), 'body_text')
 
     def test_campaign_creation_with_invalid_url_in_body_text(self, campaign_valid_data, headers, user_phone_1):

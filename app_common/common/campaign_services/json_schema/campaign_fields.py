@@ -15,8 +15,10 @@ campaign_schema = {
         },
         "smartlist_ids": {
             "type": "array",
+            "minItems": 1,
+            "uniqueItems": True,
             "items": {
-                "type": "integer"
+                "type": "integer",
             }
         }
     },

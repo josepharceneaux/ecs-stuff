@@ -20,9 +20,11 @@ from requests import Response
 # Application Specific
 from ..models.db import db
 from ..tests.conftest import fake
+from ..models.smartlist import Smartlist
 from ..routes import CandidatePoolApiUrl
 from custom_errors import CampaignException
 from ..models.user import (Permission, User)
+from ..utils.test_utils import get_fake_dict
 from ..models.sms_campaign import SmsCampaign
 from ..models.misc import (Frequency, Activity)
 from ..models.push_campaign import PushCampaign
@@ -32,7 +34,6 @@ from campaign_utils import get_model, CampaignUtils
 from ..utils.validators import raise_if_not_instance_of
 from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
-from ..utils.test_utils import get_fake_dict
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
                               ResourceNotFound, UnprocessableEntity)
@@ -707,6 +708,26 @@ class CampaignsTestsHelpers(object):
         """
         for invalid_campaign_name in CampaignsTestsHelpers.INVALID_STRING:
             campaign_data[field] = invalid_campaign_name
+            response = send_request(method, url, access_token, data=campaign_data)
+            CampaignsTestsHelpers.assert_non_ok_response(response)
+
+    @staticmethod
+    def campaign_create_or_update_with_invalid_smartlist(method, url, access_token, campaign_data):
+        """
+        This creates or updates a campaign with invalid lists and asserts that we get invalid usage error from
+        respective API. Data passed should be a dictionary.
+        Invalid smartlist ids include Non-existing id, non-integer id, empty list, duplicate items in list etc.
+        :param str method: Name of HTTP method
+        :param str url: URL on which we are supposed to make HTTP request
+        :param str access_token: Access token of user
+        :param dict campaign_data: Data to be passed in HTTP request
+        """
+        # This list is used to create/update a campaign, e.g. sms-campaign with invalid smartlist ids.
+        invalid_lists = [[], [0], [None], [fake.word()], [True], [dict()], ['']]
+        non_existing_smartlist_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
+        invalid_lists.extend([non_existing_smartlist_id, non_existing_smartlist_id]) # Test for unique items
+        for invalid_list in invalid_lists:
+            campaign_data['smartlist_ids'] = invalid_list
             response = send_request(method, url, access_token, data=campaign_data)
             CampaignsTestsHelpers.assert_non_ok_response(response)
 

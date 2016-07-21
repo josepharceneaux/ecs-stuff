@@ -12,7 +12,8 @@ import requests
 # Service Specific
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import (assert_campaign_delete, assert_valid_campaign_get,
-                                                                 generate_campaign_schedule_data)
+                                                                 generate_campaign_schedule_data,
+                                                                 generate_campaign_data)
 
 # Common Utils
 from sms_campaign_service.common.models.misc import Frequency
@@ -217,15 +218,13 @@ class TestSmsCampaignWithIdHTTPPUT(object):
                                                                             access_token_first,
                                                                             campaign_valid_data.copy(), 'body_text')
 
-    def test_campaign_update_with_valid_and_invalid_smartlist_ids(self, headers, campaign_valid_data,
-                                                                  sms_campaign_of_user_first, invalid_id):
+    def test_campaign_update_with_invalid_smartlists_ids(self, access_token_first, sms_campaign_of_user_first):
         """
         This is a test to update a campaign with invalid smartlist Ids. It should result in InvalidUsage error.
         """
-        data = campaign_valid_data.copy()
-        data['smartlist_ids'].extend(invalid_id)
-        response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers, data=json.dumps(data))
-        CampaignsTestsHelpers.assert_non_ok_response(response)
+        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_smartlist(
+            self.HTTP_METHOD,  self.URL % sms_campaign_of_user_first['id'],  access_token_first,
+            generate_campaign_data())
 
     def test_campaign_update_with_valid_and_not_owned_smartlist_ids(self, headers, campaign_valid_data,
                                                                     smartlist_with_two_candidates_in_other_domain,
@@ -238,18 +237,6 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         data['smartlist_ids'].extend([smartlist_with_two_candidates_in_other_domain[0]])
         response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers, data=json.dumps(data))
         CampaignsTestsHelpers.assert_non_ok_response(response, ForbiddenError.http_status_code())
-
-    def test_campaign_update_with_valid_and_non_existing_smartlist_ids(self, headers, campaign_valid_data,
-                                                                       sms_campaign_of_user_first):
-        """
-        This is a test to update a campaign with non-existing smartlist id. It should result in
-        ResourceNotFound Error.
-        """
-        data = campaign_valid_data.copy()
-        non_existing_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
-        data['smartlist_ids'].extend([non_existing_id])
-        response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers, data=json.dumps(data))
-        CampaignsTestsHelpers.assert_non_ok_response(response, ResourceNotFound.http_status_code())
 
     def test_campaign_update_with_invalid_url_in_body_text(self, campaign_valid_data, headers,
                                                            sms_campaign_of_user_first):

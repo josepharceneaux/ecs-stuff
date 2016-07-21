@@ -97,7 +97,7 @@ from sms_campaign_service.common.utils.api_utils import (api_route, ApiResponse,
                                                          get_paginated_response)
 from sms_campaign_service.common.utils.validators import get_json_data_if_validated
 from sms_campaign_service.common.campaign_services.campaign_base import CampaignBase
-from sms_campaign_service.common.campaign_services.json_schema.campaign_fields import get_campaign_schema
+from sms_campaign_service.common.campaign_services.json_schema.campaign_fields import campaign_schema
 from sms_campaign_service.common.campaign_services.campaign_utils import (CampaignUtils,
                                                                           raise_if_dict_values_are_not_int_or_long)
 from sms_campaign_service.common.campaign_services.json_schema.campaign_schedule import campaign_schedule_schema
@@ -216,7 +216,7 @@ class SMSCampaigns(Resource):
                         5003 (TwilioApiError)
                         5005 (MultipleUsersFound)
         """
-        data_from_ui = get_json_data_if_validated(request, get_campaign_schema())
+        data_from_ui = get_json_data_if_validated(request, campaign_schema)
         campaign_obj = SmsCampaignBase(request.user.id)
         campaign_id = campaign_obj.save(data_from_ui)
         headers = {'Location': SmsCampaignApiUrl.CAMPAIGN % campaign_id}
@@ -526,7 +526,7 @@ class CampaignById(Resource):
         .. Error codes::
                     5017 (INVALID_URL_FORMAT)
         """
-        campaign_data = get_json_data_if_validated(request, get_campaign_schema())
+        campaign_data = get_json_data_if_validated(request, campaign_schema)
         camp_obj = SmsCampaignBase(request.user.id, campaign_id)
         camp_obj.update(campaign_data, campaign_id=campaign_id)
         return dict(message='SMS Campaign(id:%s) has been updated successfully' % campaign_id), requests.codes.OK
