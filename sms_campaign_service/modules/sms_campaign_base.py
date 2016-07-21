@@ -179,6 +179,8 @@ class SmsCampaignBase(CampaignBase):
         .. see also:: CampaignBase class in app_common/common/utils/campaign_base.py.
     """
 
+    REQUIRED_FIELDS = ('name', 'body_text', 'smartlist_ids')
+
     def __init__(self, user_id, campaign_id=None):
         """
         Here we set the "user" by calling super constructor and "user_phone" by

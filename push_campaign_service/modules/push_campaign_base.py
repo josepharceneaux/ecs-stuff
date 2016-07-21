@@ -54,6 +54,8 @@ from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 
 class PushCampaignBase(CampaignBase):
 
+    REQUIRED_FIELDS = ('name', 'body_text', 'url', 'smartlist_ids')
+
     def __init__(self, user_id, campaign_id=None):
         """
         Here we set the "user_id" by calling super constructor.
@@ -272,4 +274,5 @@ class PushCampaignBase(CampaignBase):
         """
         form_data['user_id'] = self.user.id
         return super(PushCampaignBase, self).save(form_data)
+
 
