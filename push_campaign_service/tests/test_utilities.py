@@ -23,7 +23,7 @@ def missing_key_test(data, key, token):
     :param string key: field key
     :param string token: auth token
     """
-    del data[key]
+    data.pop(key, None)
     response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
     assert response.status_code == codes.BAD_REQUEST
 

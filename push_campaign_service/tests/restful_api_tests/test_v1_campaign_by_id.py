@@ -179,6 +179,7 @@ class TestUpdateCampaign(object):
         """
         # Test invalid field
         data = generate_campaign_data()
+        # valid fields for push campaign are ['name', 'body_text', 'smartlist_ids', 'url`]
         data['invalid_field_name'] = 'Any Value'
         campaign_id = campaign_in_db['id']
         update_campaign(campaign_id, data, token_first, expected_status=(codes.BAD_REQUEST,))
