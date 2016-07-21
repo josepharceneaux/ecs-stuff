@@ -4,9 +4,11 @@
 import json
 # Third Party/Framework Specific.
 import requests
+from contracts import contract
 from flask import current_app
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.decorators import upload_failed_IO
 from resume_parsing_service.app.views.parse_lib import parse_resume
@@ -26,11 +28,14 @@ DOC_FORMATS = ['.pdf', '.doc', '.docx', '.rtf', '.txt']
 RESUME_EXPIRE_TIME = 60 * 60 * 24 * 7  # one week in seconds.
 
 
+@contract
 def process_resume(parse_params):
     """
     Parses a resume based on a provided: filepicker key or binary, filename
     :param dict parse_params:
-    :return: dict: {'candidate': {...}, 'raw': {...}}
+    :return: Processed candidate data and BG info in form:
+                {'candidate': {...}, 'raw': {...}}
+    :rtype: dict
     """
 
     # None may be explicitly passed so the normal .get('attr', default) doesn't apply here.
@@ -49,7 +54,10 @@ def process_resume(parse_params):
     talent_pools = parse_params.get('talent_pools')
     # Talent pools are the ONLY thing required to create a candidate.
     if create_candidate and not talent_pools:
-        raise InvalidUsage('Talent Pools required for candidate creation')
+        raise InvalidUsage(
+            error_message=error_constants.NO_TP_ARG['message'],
+            error_code=error_constants.NO_TP_ARG['code']
+        )
 
     oauth_string = parse_params.get('oauth')
     parsed_resume['candidate']['talent_pool_ids']['add'] = talent_pools
@@ -82,7 +90,10 @@ def process_resume(parse_params):
                                           headers={'Authorization': oauth_string})
 
     if candidate_get_response.status_code is not requests.codes.ok:
-        raise InvalidUsage(error_message='Error retrieving created candidate')
+        raise InvalidUsage(
+            error_message=error_constants.CANDIDATE_GET['message'],
+            error_code=error_constants.CANDIDATE_GET['code']
+        )
 
     candidate = json.loads(candidate_get_response.content)
 
@@ -90,12 +101,13 @@ def process_resume(parse_params):
 
 
 @upload_failed_IO
+@contract
 def get_or_store_bgxml(resume_file, filename_str):
     """
     Tries to retrieve processed resume data from redis or parses it and stores it.
-    :param resume_file:
-    :param filename_str:
-    :return:
+    :param cStringIO_StringIO resume_file:
+    :param str filename_str:
+    :rtype: dict
     """
     cache_key_from_file = 'parsedResume_{}'.format(gen_hash_from_file(resume_file))
     cached_bg_xml = redis_store.get(cache_key_from_file)

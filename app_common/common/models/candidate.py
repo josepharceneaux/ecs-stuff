@@ -9,7 +9,8 @@ from associations import ReferenceEmail
 from venue import Venue
 from event import Event
 from sms_campaign import SmsCampaignReply
-from email_campaign import (EmailCampaign, EmailCampaignSend)
+from tag import CandidateTag
+from email_campaign import EmailCampaign, EmailCampaignSend
 
 
 class Candidate(db.Model):
@@ -64,6 +65,7 @@ class Candidate(db.Model):
     skills = relationship('CandidateSkill', cascade='all, delete-orphan', passive_deletes=True)
     social_networks = relationship('CandidateSocialNetwork', cascade='all, delete-orphan', passive_deletes=True)
     text_comments = relationship('CandidateTextComment', cascade='all, delete-orphan', passive_deletes=True)
+    tags = relationship('CandidateTag', cascade='all, delete-orphan', passive_deletes=True)
     work_preferences = relationship('CandidateWorkPreference', cascade='all, delete-orphan', passive_deletes=True)
     unidentifieds = relationship('CandidateUnidentified', cascade='all, delete-orphan', passive_deletes=True)
     email_campaign_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan', passive_deletes=True)
@@ -71,7 +73,6 @@ class Candidate(db.Model):
                                       backref='candidate')
     push_campaign_sends = relationship('PushCampaignSend', cascade='all, delete-orphan', passive_deletes=True,
                                        backref='candidate')
-
     voice_comments = relationship('VoiceComment', cascade='all, delete-orphan', passive_deletes=True)
     devices = relationship('CandidateDevice', cascade='all, delete-orphan', passive_deletes=True,
                            backref='candidate', lazy='dynamic')
@@ -97,15 +98,11 @@ class Candidate(db.Model):
                                                                source_id,
                                                                product_id):
         assert user_id
-        return cls.query.filter(
-            and_(
-                Candidate.first_name == first_name,
-                Candidate.last_name == last_name,
-                Candidate.user_id == user_id,
-                Candidate.source_id == source_id,
-                Candidate.source_product_id == product_id
-            )
-        ).first()
+        return cls.query.filter_by(first_name=first_name,
+                                   last_name=last_name,
+                                   user_id=user_id,
+                                   source_id=source_id,
+                                   source_product_id=product_id).first()
 
     @classmethod
     def set_is_web_hidden_to_true(cls, candidate_id):
@@ -294,8 +291,8 @@ class CandidatePhone(db.Model):
         from user import User  # This has to be here to avoid circular import
         if not isinstance(current_user, User):
             raise InternalServerError('Invalid User object given')
-        return cls.query.join(Candidate).\
-            join(User, User.domain_id == current_user.domain_id).\
+        return cls.query.join(Candidate). \
+            join(User, User.domain_id == current_user.domain_id). \
             filter(Candidate.user_id == User.id, cls.value == phone_value.strip()).all()
 
 
@@ -444,8 +441,8 @@ class CandidateEmail(db.Model):
     @classmethod
     def get_emails_in_domain(cls, domain_id, email_addresses):
         from user import User
-        return cls.query.join(Candidate).join(User).\
-            filter(User.domain_id == domain_id).\
+        return cls.query.join(Candidate).join(User). \
+            filter(User.domain_id == domain_id). \
             filter(cls.address.in_(email_addresses)).all()
 
 
@@ -795,6 +792,15 @@ class CandidateReference(db.Model):
 
     def __repr__(self):
         return "<CandidateReference (candidate_id=' %r')>" % self.candidate_id
+
+    @classmethod
+    def get_all(cls, candidate_id):
+        """
+        Will return a list of candidate references
+        :type candidate_id:  int | long
+        :rtype:  list[CandidateReference]
+        """
+        return cls.query.filter_by(candidate_id=candidate_id).all()
 
 
 class ReferenceWebAddress(db.Model):

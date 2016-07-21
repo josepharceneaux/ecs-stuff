@@ -12,11 +12,13 @@ import unicodedata
 import urllib2
 # Third Party
 from bs4 import BeautifulSoup as bs4
+from contracts import contract
 import requests
 import phonenumbers
 # Module Specific
 from flask import current_app
 from resume_parsing_service.app import logger
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.OauthClient import OAuthClient
 from resume_parsing_service.common.error_handling import ForbiddenError, InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
@@ -25,13 +27,14 @@ from resume_parsing_service.common.utils.handy_functions import normalize_value
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
 
 
+@contract
 def fetch_optic_response(resume, filename_str):
     """
     Takes in an encoded resume file and returns a bs4 'soup-able' format
     (utf-decode and html escape).
     :param str resume: a base64 encoded resume file.
-    :return: str unescaped: an html unquoted, utf-decoded string that represents the Burning Glass
-                            XML.
+    :return: HTML unquoted, utf-decoded string that represents the Burning Glass XML.
+    :rtype: unicode
     """
     start_time = time()
     bg_url = current_app.config['BG_URL']
@@ -56,10 +59,10 @@ def fetch_optic_response(resume, filename_str):
     bg_response = requests.post(bg_url, headers=headers, json=data)
 
     if bg_response.status_code != requests.codes.ok:
-        # Since this error is displayed to the user we may want to obfuscate it a bit and log more
-        # developer friendly messages. "Error processing this resume. The development team has been
-        # notified of this issue" type of message.
-        raise ForbiddenError('Error connecting to BG instance.')
+        raise ForbiddenError(
+            error_message=error_constants.BG_UNAVAILABLE['message'],
+            error_code=error_constants.BG_UNAVAILABLE['code']
+        )
 
     try:
         html_parser = HTMLParser.HTMLParser()
@@ -68,7 +71,10 @@ def fetch_optic_response(resume, filename_str):
 
     except Exception:
         logger.exception('Error translating BG response.')
-        raise InternalServerError('Error decoding parsed resume text.')
+        raise InternalServerError(
+            error_message=error_constants.ERROR_DECODING_TEXT['message'],
+            error_code=error_constants.ERROR_DECODING_TEXT['code']
+        )
 
     logger.info(
         "Benchmark: fetch_optic_response({}) took {}s".format(filename_str,
@@ -77,18 +83,20 @@ def fetch_optic_response(resume, filename_str):
     return unescaped
 
 
-def parse_optic_xml(resume_xml_unicode):
+@contract
+def parse_optic_xml(resume_xml_text):
     """
     Takes in a Burning Glass XML tree in string format and returns a candidate JSON object.
-    :param str resume_xml_unicode: An XML tree represented in unicode format. It is a slightly
-                                  processed response from the Burning Glass API.
-    :return dict candidate: Results of various parsing functions on the input xml string.
+    :param str | unicode resume_xml_text: An XML tree represented in unicode format. It is a slightly
+                                   processed response from the Burning Glass API.
+    :return: Results of various parsing functions on the input xml string.
+    :rtype: dict
     """
-    contact_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('contact')
-    experience_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('experience')
-    educations_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('education')
-    skill_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('canonskill')
-    references_xml = bs4(resume_xml_unicode, 'lxml').findAll('references')
+    contact_xml_list = bs4(resume_xml_text, 'lxml').findAll('contact')
+    experience_xml_list = bs4(resume_xml_text, 'lxml').findAll('experience')
+    educations_xml_list = bs4(resume_xml_text, 'lxml').findAll('education')
+    skill_xml_list = bs4(resume_xml_text, 'lxml').findAll('canonskill')
+    references_xml = bs4(resume_xml_text, 'lxml').findAll('references')
     name = parse_candidate_name(contact_xml_list)
     emails = parse_candidate_emails(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
@@ -97,7 +105,7 @@ def parse_optic_xml(resume_xml_unicode):
     skills = parse_candidate_skills(skill_xml_list)
     addresses = parse_candidate_addresses(contact_xml_list)
     references = parse_candidate_reference(references_xml)
-    candidate = dict(
+    return dict(
         first_name=name['first_name'],
         last_name=name['last_name'],
         emails=emails,
@@ -109,14 +117,15 @@ def parse_optic_xml(resume_xml_unicode):
         talent_pool_ids={'add': None},
         references=references
     )
-    return candidate
 
 
+@contract
 def parse_candidate_name(bs_contact_xml_list):
     """
     Parses a name from a list of contact tags found in a BGXML response.
-    :param bs4.element.Tag bs_contact_xml_list:
-    :return dict: Formatted name strings using title() in a dictionary.
+    :param bs4_ResultSet bs_contact_xml_list:
+    :return: Formatted name strings using title() in a dictionary.
+    :rtype: dict
     """
 
     givenname = None
@@ -142,11 +151,13 @@ def parse_candidate_name(bs_contact_xml_list):
     return {'first_name': first_name, 'last_name': last_name}
 
 
+@contract
 def parse_candidate_emails(bs_contact_xml_list):
     """
     Parses an email list from a list of contact tags found in a BGXML response.
-    :param bs4.element.Tag bs_contact_xml_list:
-    :return list output: List of dicts containing email data.
+    :param bs4_ResultSet bs_contact_xml_list:
+    :return: List of dicts containing email data.
+    :rtype: list(dict)
     """
     output = []
     for contact in bs_contact_xml_list:
@@ -164,11 +175,13 @@ def parse_candidate_emails(bs_contact_xml_list):
     return unique_output
 
 
+@contract
 def parse_candidate_phones(bs_contact_xml_list):
     """
     Parses a phone list from a list of contact tags found in a BGXML response.
-    :param bs4.element.Tag bs_contact_xml_list:
-    :return list output: List of dicts containing phone data.
+    :param bs4_ResultSet bs_contact_xml_list:
+    :return: List of dicts containing phone data.
+    :rtype: list(dict)
     """
     output = []
 
@@ -198,11 +211,12 @@ def parse_candidate_phones(bs_contact_xml_list):
     return output
 
 
+@contract
 def get_phone_type(bg_phone_type):
     """
     Provides a mapping between BurningGlass phone types to the the static values in the GT database.
-    :param string bg_phone_type:
-    :return string:
+    :param str | None bg_phone_type: BG phone type (if parsed from XML).
+    :rtype: str
     """
     return {
         'cell': 'Mobile',
@@ -212,11 +226,13 @@ def get_phone_type(bg_phone_type):
     }.get(bg_phone_type, 'Other')
 
 
+@contract
 def parse_candidate_experiences(bg_experience_xml_list):
     """
     Parses an experience list from a list of experience tags found in a BGXML response.
-    :param bs4.element.Tag bg_experience_xml_list:
-    :return list output: List of dicts containing experience data.
+    :param bs4_ResultSet bg_experience_xml_list:
+    :return: List of dicts containing experience data.
+    :rtype: list(dict)
     """
     # TODO investigate is current not picking up current jobs.
     output = []
@@ -301,11 +317,13 @@ def parse_candidate_experiences(bg_experience_xml_list):
     return output
 
 
+@contract
 def parse_candidate_educations(bg_educations_xml_list):
     """
     Parses an education list from a list of education tags found in a BGXML response.
-    :param bs4.element.Tag bg_educations_xml_list:
-    :return list output: List of dicts containing education data.
+    :param bs4_ResultSet bg_educations_xml_list:
+    :return: List of dicts containing education data.
+    :rtype: list(dict)
     """
     EDU_DATE_FORMAT = '%Y-%m-%d'
     start_month, start_year, end_month, end_year = None, None, None, None
@@ -355,11 +373,13 @@ def parse_candidate_educations(bg_educations_xml_list):
     return output
 
 
+@contract
 def parse_candidate_skills(bg_skills_xml_list):
     """
     Parses a skill list from a list of skill tags found in a BGXML response.
-    :param bs4.element.Tag bg_skills_xml_list:
-    :return list output: List of dicts containing skill data.
+    :param bs4_ResultSet bg_skills_xml_list:
+    :return: List of dicts containing skill data.
+    :rtype: list(dict)
     """
     skills_parsed = {}
     output = []
@@ -386,11 +406,13 @@ def parse_candidate_skills(bg_skills_xml_list):
     return output
 
 
+@contract
 def parse_candidate_addresses(bg_xml_list):
     """
     Parses an address list from a list of contact tags found in a BGXML response.
-    :param bs4.element.Tag bg_xml_list:
-    :return list output: List of dicts containing address data.
+    :param bs4_ResultSet bg_xml_list:
+    :return: List of dicts containing address data.
+    :rtype: list(dict)
     """
     output = []
     for address in bg_xml_list:
@@ -404,10 +426,11 @@ def parse_candidate_addresses(bg_xml_list):
     return output
 
 
+@contract
 def parse_candidate_reference(xml_references_list):
     """
-    :param bs4.element.Tag xml_references_list:
-    :return: str | None
+    :param bs4_ResultSet xml_references_list:
+    :rtype: str | None
     """
     reference_comments = []
     comment_string = None

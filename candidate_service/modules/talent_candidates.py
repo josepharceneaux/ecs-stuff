@@ -1867,7 +1867,7 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
     # Raise an error if more than one email is set as "default"
     is_default_values = [email.get('is_default') for email in emails]
     if len(filter(None, is_default_values)) > 1:
-        raise InvalidUsage('Only one email should be set as default', custom_error.INVALID_USAGE)
+        raise InvalidUsage('Only one email should be set as default email', custom_error.INVALID_USAGE)
 
     # If any of emails' is_default is True, set all of candidate's emails' is_default to False
     if any(is_default_values):
@@ -1881,16 +1881,17 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
     if len(set(email_addresses)) < len(emails):
         raise InvalidUsage(error_message='Identical email addresses provided',
                            error_code=custom_error.INVALID_USAGE,
-                           additional_error_info={'Duplicates': email_addresses})
+                           additional_error_info={'duplicates': email_addresses})
 
     for i, email in enumerate(emails):
 
         # If there's no is_default, the first email should be default
         is_default = i == 0 if not emails_has_default else email.get('is_default')
 
-        # If there's no label, the first email's label will be 'Primary', rest will be 'Other'
+        # If there's no label, the first email's label will be 'Primary'; rest will be 'Other'
         email_label = EmailLabel.PRIMARY_DESCRIPTION if (not emails_has_label and i == 0) \
             else (email.get('label') or '').strip().title()
+
         email_address = email.get('address')
 
         email_dict = dict(

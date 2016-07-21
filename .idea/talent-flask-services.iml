@@ -4,6 +4,7 @@
     <content url="file://$MODULE_DIR$" />
     <orderEntry type="jdk" jdkName="Python 2.7.9 (~/.pyenv/versions/2.7.9/bin/python)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="ats_service" />
   </component>
   <component name="TemplatesService">
     <option name="TEMPLATE_FOLDERS">

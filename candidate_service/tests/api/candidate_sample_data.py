@@ -324,7 +324,7 @@ class GenerateCandidateData(object):
         return data
 
     @staticmethod
-    def emails(talent_pool_ids=None, candidate_id=None, email_id=None):
+    def emails(talent_pool_ids=None, candidate_id=None, email_id=None, is_default=None, label=None):
         """
         :type talent_pool_ids:  list[int]
         :rtype:  dict[list]
@@ -334,7 +334,11 @@ class GenerateCandidateData(object):
                 'id': candidate_id, 'talent_pool_ids': {'add': talent_pool_ids},
                 'emails': [
                     {
-                        'id': email_id, 'label': 'primary', 'address': fake.safe_email()
+                        'id': email_id,
+                        'label': label or random.choice([EmailLabel.PRIMARY_DESCRIPTION, EmailLabel.OTHER_DESCRIPTION,
+                                                         EmailLabel.HOME_DESCRIPTION, EmailLabel.WORK_DESCRIPTION]),
+                        'address': fake.safe_email(),
+                        'is_default': is_default or random.choice([True, False, None])
                     }
                 ]
             }

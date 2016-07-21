@@ -8,10 +8,12 @@ import base64
 import json
 # Third Party/Framework Specific.
 from bs4 import BeautifulSoup
+from contracts import contract
 from flask import current_app
 import requests
 # Module Specific
 from resume_parsing_service.app import logger
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.utils import send_abbyy_email
 from resume_parsing_service.common.error_handling import ForbiddenError
 from resume_parsing_service.common.error_handling import InternalServerError
@@ -21,6 +23,7 @@ ABBY_OCR_API_AUTH_TUPLE = ('gettalent', 'lfnJdQNWyevJtg7diX7ot0je')
 ABBY_URL = 'http://cloud.ocrsdk.com/processImage'
 
 
+@contract
 def google_vision_ocr(file_string_io):
     """
     Utilizes Google Vision API to OCR image with Abbyy as a fallback.
@@ -28,8 +31,9 @@ def google_vision_ocr(file_string_io):
     Specific JSON responses:
         https://cloud.google.com/vision/reference/rest/v1/images/annotate#annotateimageresponse
         https://cloud.google.com/vision/reference/rest/v1/images/annotate#entityannotation
-    :param cStringIO.StringIO file_string_io:
-    :return unicode:
+    :param cStringIO_StringIO file_string_io: Resume file in memory.
+    :return: The first `description` key from the first `textAnnotations` item in the OCR results.
+    :rtype: str | unicode
     """
     file_string_io.seek(0)
     b64_string = base64.b64encode(file_string_io.getvalue())
@@ -56,13 +60,19 @@ def google_vision_ocr(file_string_io):
                                         timeout=20,
                                         headers={'content-type': 'application/json'})
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-        logger.exception("google_vision_ocr: Could not reach Google API")
-        raise InternalServerError("Unable to reach Google API in resume OCR")
+        logger.exception("Could not reach Google API")
+        raise InternalServerError(
+            error_message=error_constants.GOOGLE_OCR_UNAVAILABLE['message'],
+            error_code=error_constants.GOOGLE_OCR_UNAVAILABLE['code'],
+        )
 
     if google_response.status_code is not requests.codes.ok:
         logger.info('google_vision_ocr: Google API response error with headers: {} content{}'.format(
             google_response.headers, google_response.content))
-        raise InternalServerError('Error in response from candidate service during creation')
+        raise InternalServerError(
+            error_message=error_constants.GOOGLE_OCR_ERROR['message'],
+            error_code=error_constants.GOOGLE_OCR_ERROR['code'],
+        )
 
     ocr_results = json.loads(google_response.content)
     # Check for errors since even a 'bad' request gives a 200 response. And use Abby in that event.
@@ -77,18 +87,19 @@ def google_vision_ocr(file_string_io):
     text_annotations = ocr_results['responses'][0].get('textAnnotations')
 
     if text_annotations:
-        return text_annotations[0].get('description', '')
+        return text_annotations[0].get('description', u'')
     else:
-        return ''
+        return u''
 
 
+@contract
 def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
     """
     Posts the image to Abby OCR API, then keeps pinging to check if it's done. Quits if not done in
     certain number of tries.
-    :param cStringIO.StringIO img_file_obj: File initially posted to the resume parsing service.
+    :param cStringIO_StringIO img_file_obj: (Image) File posted to the resume parsing service.
     :param string export_format: Abby OCR param.
-    :return Image file OCR'd in desired format.:
+    :return: Image file OCR text parsed from Abbyy.
     :rtype str:
     """
 
@@ -99,7 +110,10 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
                                    data={'profile': 'documentConversion', 'exportFormat': export_format})
 
     if abbyy_response.status_code != 200:
-        raise ForbiddenError('Error connecting to Abby OCR instance.')
+        raise ForbiddenError(
+            error_message=error_constants.ABBYY_UNABLE_TO_QUEUE['message'],
+            error_code=error_constants.ABBYY_UNABLE_TO_QUEUE['code']
+        )
 
     xml = BeautifulSoup(abbyy_response.text, 'lxml')
     logger.info("ocr_image() - Abby response to processImage: %s", abbyy_response.text)
@@ -109,7 +123,10 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
 
     if task.get('status') == 'NotEnoughCredits':
         send_abbyy_email()
-        raise InternalServerError(error_message='Error with image/pdf to text conversion.')
+        raise InternalServerError(
+            error_message=error_constants.ABBYY_CREDITS['message'],
+            error_code=error_constants.ABBYY_CREDITS['code']
+        )
 
     estimated_processing_time = int(xml.response.task['estimatedprocessingtime'])
 
@@ -134,7 +151,11 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
             if num_tries > max_num_tries:
                 logger.error('OCR took > {} tries to process image'.format(
                     max_num_tries))
-                raise Exception('OCR took > {} tries to process image'.format(max_num_tries))
+                raise InternalServerError(
+                    error_message=error_constants.ABBYY_MAX_ATTEMPTS['message'],
+                    error_code=error_constants.ABBYY_MAX_ATTEMPTS['code']
+                )
+
             # If not done in originally estimated processing time, wait 2 more seconds.
             estimated_processing_time = 2
             num_tries += 1
@@ -150,4 +171,7 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
         return status_response.content
 
     else:
-        raise InternalServerError(error_message='Could not obtain text from uploaded file.')
+        raise InternalServerError(
+            error_message=error_constants.ABBYY_UNAVAILABLE['message'],
+            error_code=error_constants.ABBYY_UNAVAILABLE['code']
+        )

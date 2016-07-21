@@ -6,22 +6,26 @@ import hashlib
 import json
 from cStringIO import StringIO
 # Third Party
+from contracts import contract
 from flask import current_app
 import boto3
 import requests
 # Module Specific
 from resume_parsing_service.app import logger
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.routes import CandidateApiUrl, CandidatePoolApiUrl
 from resume_parsing_service.common.utils.talent_s3 import boto3_get_file
 
 
+@contract
 def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename):
     """
     Sends candidate dict to candidate service POST and returns response.
     :param dict candidate_dict: dict containing candidate info in candidate format.
-    :param str formatted_token_str: string in format 'Bearer foo'.
-    :return tuple (bool, int):
+    :param unicode formatted_token_str: string in format 'Bearer foo'.
+    :return: Tuple stating if candidate was created and the corresponding id.
+    :rtype: tuple(bool, int)
     """
     try:
         create_response = requests.post(CandidateApiUrl.CANDIDATES,
@@ -32,11 +36,20 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename
 
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.exception("create_parsed_resume_candidate. Could not reach CandidateService POST")
-        raise InternalServerError("Unable to reach Candidates API during candidate creation")
+        raise InternalServerError(
+            error_message=error_constants.CANDIDATE_POST_CONNECTION['message'],
+            error_code=error_constants.CANDIDATE_POST_CONNECTION['code']
+        )
 
     # Handle bad responses from Candidate Service.
     if create_response.status_code in xrange(500, 511):
-        raise InternalServerError('Error in response from candidate service during creation')
+        logger.error('Error in response from candidate service during creation: {}'.format(
+            create_response)
+        )
+        raise InternalServerError(
+            error_message=error_constants.CANDIDATE_5XX['message'],
+            error_code=error_constants.CANDIDATE_5XX['code']
+        )
 
     response_dict = json.loads(create_response.content)
 
@@ -53,14 +66,12 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename
         # the error code supplied by Candidate Service.
         else:
             candidate_service_error = response_dict.get('error', {}).get('message')
+            logger.error(candidate_service_error)
 
-            if candidate_service_error:
-                error_text = candidate_service_error + ' Filename: {}'.format(filename)
-
-            else:
-                error_text = 'Error in candidate creating from resume service. Filename {}'.format(filename)
-
-            raise InvalidUsage(error_message=error_text)
+            raise InvalidUsage(
+                error_message=error_constants.CANDIDATE_POST_ERROR['message'],
+                error_code=error_constants.CANDIDATE_POST_ERROR['code']
+            )
 
 
 
@@ -71,13 +82,15 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename
         return True, candidate_id
 
 
+@contract
 def update_candidate_from_resume(candidate_dict, formatted_token_str, filename_str):
     """
     Sends candidate dict to candidate service PATCH and returns response. If the update is not
     successfull it will raise an error.
     :param dict candidate_dict: dict containing candidate info in candidate format.
-    :param str formatted_token_str: string in format 'Bearer foo'.
-    :return bool:
+    :param unicode formatted_token_str: string in format 'Bearer foo'.
+    :return: Returns True if candidate is updated, else exception is raised.
+    :rtype: bool
     """
     try:
         update_response = requests.patch(CandidateApiUrl.CANDIDATES,
@@ -87,15 +100,22 @@ def update_candidate_from_resume(candidate_dict, formatted_token_str, filename_s
                                                   'Content-Type': 'application/json'})
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.exception("update_candidate_from_resume. Could not reach CandidateService PATCH")
-        raise InternalServerError("Unable to reach Candidates API in during candidate update")
+        raise InternalServerError(
+            error_message=error_constants.CANDIDATE_PATCH_CONNECTION['message'],
+            error_code=error_constants.CANDIDATE_PATCH_CONNECTION['code']
+        )
 
     if update_response.status_code is not requests.codes.ok:
         logger.info(
-            "ResumetoCandidateError. {} received from CandidateService (update)".format(
-                update_response.status_code))
+            "ResumetoCandidateError. {} received from CandidateService (update). File: {}".format(
+                update_response.status_code, filename_str
+            )
+        )
 
         raise InternalServerError(
-            'Candidate from {} exists, error updating info'.format(filename_str))
+            error_message=error_constants.CANDIDATE_PATCH_GENERIC['message'],
+            error_code=error_constants.CANDIDATE_PATCH_GENERIC['code']
+        )
 
     response_dict = json.loads(update_response.content)
     candidate_id = response_dict.get('candidates')[0]['id']
@@ -104,6 +124,7 @@ def update_candidate_from_resume(candidate_dict, formatted_token_str, filename_s
     return True
 
 
+@contract
 def send_candidate_references(candidate_references, candidate_id, oauth_string):
     """
     Makes an attempt to create references for a candidate using their id. Failure does not raise an
@@ -134,24 +155,35 @@ def send_candidate_references(candidate_references, candidate_id, oauth_string):
             candidate_id, references_response.content))
 
 
+@contract
 def get_users_talent_pools(formatted_token_str):
     """
     Uses the candidate pool service to get talent pools of a user's domain via their token.
-    :param str formatted_token_str: "bearer foo" formatted string; as it appears in header.
+    :param unicode formatted_token_str: "bearer foo" formatted string; as it appears in header.
     :return: List of talent pools ids
-    :rtype: list
+    :rtype: list(int)
     """
     try:
         talent_pool_response = requests.get(CandidatePoolApiUrl.TALENT_POOLS,
                                             headers={'Authorization': formatted_token_str})
     except requests.exceptions.ConnectionError:
-        raise InvalidUsage("ResumeParsingService could not reach CandidatePool API in get_users_talent_pools")
+        logger.exception("ResumeParsingService could not reach CandidatePool API in get_users_talent_pools")
+        raise InternalServerError(
+            error_message=error_constants.TALENT_POOLS_GET['message'],
+            error_code=error_constants.TALENT_POOLS_GET['code']
+        )
 
     talent_pools_response = json.loads(talent_pool_response.content)
 
     if 'error' in talent_pools_response:
-        raise InvalidUsage(error_message=talent_pools_response['error'].get(
-            'message', 'Error in getting user talent pools.'))
+        logger.error(
+            talent_pools_response['error'].get('message', 'Error in getting user talent pools.')
+        )
+
+        raise InvalidUsage(
+            error_message=error_constants.TALENT_POOLS_ERROR['message'],
+            error_code=error_constants.TALENT_POOLS_ERROR['code']
+        )
 
     try:
         return [talent_pools_response['talent_pools'][0]['id']]
@@ -212,6 +244,9 @@ def resume_file_from_params(parse_params):
         resume_file = StringIO(resume_bin.read())
 
     else:
-        raise InvalidUsage('Invalid query params for /parse_resume')
+        raise InvalidUsage(
+            error_message=error_constants.INVALID_ARGS['message'],
+            error_code=error_constants.INVALID_ARGS['code']
+        )
 
     return resume_file
