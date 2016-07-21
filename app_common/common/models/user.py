@@ -130,6 +130,8 @@ class User(db.Model):
                     tzinfo=pytz.UTC).isoformat() if self.updated_time else None,
             'last_read_datetime': self.last_read_datetime.replace(
                     tzinfo=pytz.UTC).isoformat() if self.last_read_datetime else None,
+            'last_login_datetime': self.last_login_datetime.replace(
+                    tzinfo=pytz.UTC).isoformat() if self.last_login_datetime else None,
             'thumbnail_url': self.thumbnail_url,
             'locale': self.locale,
             'is_disabled': True if self.is_disabled == 1 else False
