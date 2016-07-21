@@ -150,7 +150,7 @@ def create_user(email, domain_id, first_name, last_name, expiration, phone="", d
     # Make new entry in user table
     user = User(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, expiration=expiration,
                 dice_user_id=dice_user_id, password=hashed_password, phone=phone, thumbnail_url=thumbnail_url,
-                user_group_id=user_group.id, locale=locale)
+                user_group_id=user_group.id, locale=locale, is_disabled=True)
     db.session.add(user)
     db.session.commit()
 

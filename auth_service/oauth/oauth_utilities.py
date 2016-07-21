@@ -84,6 +84,8 @@ def save_token_v2(user):
         created_at=datetime.utcnow().isoformat()
     )
 
+    user.last_login_datetime = datetime.utcnow()
+
     return jsonify(dict(
         user_id=user.id,
         access_token=s.dumps(payload),
@@ -205,7 +207,10 @@ def save_token_v1(token, request, *args, **kwargs):
         user_id=request.user.id,
     )
     db.session.add(tok)
+    request.user.last_login_datetime = datetime.utcnow()
+
     db.session.commit()
+
     logger.info('Bearer token has been created for user %s', request.user.id)
     return tok
 
