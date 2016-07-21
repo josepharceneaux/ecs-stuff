@@ -55,6 +55,11 @@ class EmailCampaign(db.Model):
         :param list[str] | None include_fields: List of fields to include, or None for all.
         :rtype: dict[str, T]
         """
+        from smartlist import Smartlist
+        smart_lists = Smartlist.query.join(EmailCampaignSmartlist).filter(EmailCampaignSmartlist.campaign_id == self.id).all()
+        talent_pipelines = [{"id": smart_list.talent_pipeline.id, "name": smart_list.talent_pipeline.name}
+                            for smart_list in smart_lists if smart_list.talent_pipeline]
+
         return_dict = {"id": self.id,
                        "user_id": self.user_id,
                        "name": self.name,
@@ -69,8 +74,8 @@ class EmailCampaign(db.Model):
                        "body_html": self.body_html if (include_fields and 'body_html' in include_fields) else None,
                        "body_text": self.body_text if (include_fields and 'body_text' in include_fields) else None,
                        "is_hidden": self.is_hidden,
-                       "list_ids": EmailCampaignSmartlist.get_smartlists_of_campaign(self.id,
-                                                                                     smartlist_ids_only=True)}
+                       "talent_pipelines": talent_pipelines,
+                       "list_ids": [smart_list.id for smart_list in smart_lists]}
 
         # Only include the fields that are supposed to be included
         if include_fields:
@@ -104,7 +109,6 @@ class EmailCampaign(db.Model):
         is_hidden = True if is_hidden else False
         return cls.query.join(User).filter(User.domain_id == domain_id, cls.name.ilike(
                 '%' + search_keyword + '%'), cls.is_hidden == is_hidden).order_by(sort_by_object)
-
 
     def __repr__(self):
         return "<EmailCampaign(name=' %r')>" % self.name
