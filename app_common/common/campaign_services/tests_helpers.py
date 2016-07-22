@@ -44,16 +44,16 @@ from ..inter_service_calls.candidate_service_calls import create_candidates_from
 
 class CampaignsTestsHelpers(object):
     """
-    This class contains common helper methods for tests of sms_campaign_service and
-    push_campaign_service etc.
+    This class contains common helper methods for tests of sms_campaign_service and push_campaign_service etc.
     """
     # This list is used to update/delete a campaign, e.g. sms-campaign with invalid id
-    INVALID_ID = [0, fake.word(), None, dict(), list(), '', '      ']
+    INVALID_ID = [fake.word(), 0, None, dict(), list(), '', '      ']
     # This list is used to create/update a campaign, e.g. sms-campaign with invalid name and body_text.
     INVALID_STRING = INVALID_ID[1:]
     # This list is used to schedule/reschedule a campaign e.g. sms-campaign with invalid frequency Id.
-    INVALID_FREQUENCY_IDS = copy.copy(INVALID_STRING)
-    INVALID_FREQUENCY_IDS.extend([fake.word()])
+    INVALID_FREQUENCY_IDS = copy.copy(INVALID_ID)
+    # Remove 0 from list as it is valid frequency_id and replace it with three digit frequency_id
+    INVALID_FREQUENCY_IDS[1] = int(fake.numerify())
 
     @classmethod
     def request_for_forbidden_error(cls, method, url, access_token, data=None):
@@ -709,6 +709,7 @@ class CampaignsTestsHelpers(object):
         :param str field: Field in campaign data
         """
         for invalid_campaign_name in CampaignsTestsHelpers.INVALID_STRING:
+            print "Iterating %s as campaign name/body_text" % invalid_campaign_name
             campaign_data[field] = invalid_campaign_name
             response = send_request(method, url, access_token, data=campaign_data)
             CampaignsTestsHelpers.assert_non_ok_response(response)
@@ -729,6 +730,7 @@ class CampaignsTestsHelpers(object):
         non_existing_smartlist_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
         invalid_lists.extend([non_existing_smartlist_id, non_existing_smartlist_id])  # Test for unique items
         for invalid_list in invalid_lists:
+            print "Iterating %s as smartlist_id" % invalid_list
             campaign_data['smartlist_ids'] = invalid_list
             response = send_request(method, url, access_token, data=campaign_data)
             CampaignsTestsHelpers.assert_non_ok_response(response)
@@ -745,6 +747,7 @@ class CampaignsTestsHelpers(object):
         :param dict schedule_data: Data to be passed in HTTP request
         """
         for invalid_frequency_id in CampaignsTestsHelpers.INVALID_FREQUENCY_IDS:
+            print "Iterating %s as frequency_id" % invalid_frequency_id
             schedule_data['frequency_id'] = invalid_frequency_id
             response = send_request(method, url, access_token, data=schedule_data)
             CampaignsTestsHelpers.assert_non_ok_response(response)
