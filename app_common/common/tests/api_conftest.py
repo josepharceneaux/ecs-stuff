@@ -58,7 +58,7 @@ def user_first():
     :return: user dictionary object
     """
     user_id = test_config['USER_FIRST']['user_id']
-    return {'id': user_id}
+    return {'id': int(user_id)}
 
 
 @pytest.fixture(scope='session')

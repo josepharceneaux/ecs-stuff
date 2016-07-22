@@ -68,7 +68,6 @@ class RsvpEventImporter(Resource):
             raise InvalidUsage("No mode of value %s found" % mode)
 
         if not (social_network.lower() in ["meetup", "facebook", "eventbrite"]):
-            # TODO: Should raise not implemented
             raise InvalidUsage("No social network with name %s found." % social_network)
 
         social_network_name = social_network.lower()
@@ -84,11 +83,20 @@ class RsvpEventImporter(Resource):
                                       % social_network_name)
 
         data = request.get_json()
+        datetime_range = {}
 
-        datetime_range = {
-            'date_range_start': get_valid_datetime_from_dict(data=data, key='date_created_range_start').strftime("%Y-%m-%dT%H:%M:%SZ"),
-            'date_range_end': get_valid_datetime_from_dict(data=data, key='date_created_range_end').strftime("%Y-%m-%dT%H:%M:%SZ")
-        }
+        # We need date_ranges in event importer mode only.
+        if mode.lower() == "event":
+            datetime_range['date_range_start'] = get_valid_datetime_from_dict(data=data,
+                                                                              key='date_created_range_start')\
+                .strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            # Since there is no support for eventbrite end_datetime filter. So, we are only interested in start_datetime
+            # filter in case of eventbrite and start/end datetime ranges in case of meetup
+            if social_network.lower() == "meetup":
+                datetime_range['date_range_end'] = get_valid_datetime_from_dict(data=data,
+                                                                                key='date_created_range_end')\
+                    .strftime("%Y-%m-%dT%H:%M:%SZ")
 
         all_user_credentials = UserSocialNetworkCredential.get_all_credentials(social_network_id)
 
@@ -104,7 +112,6 @@ class RsvpEventImporter(Resource):
         return dict(message="%s are being imported." % mode.upper())
 
 
-@api.route(SocialNetworkApi.EVENTBRITE_IMPORTER)
 class RsvpImporterEventbrite(Resource):
     # TODO--are the following comments OK?
     """

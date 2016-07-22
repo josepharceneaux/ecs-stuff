@@ -1,7 +1,5 @@
 # Application Specific
 import json
-import uuid
-from datetime import datetime, timedelta
 from time import sleep
 
 import requests
@@ -10,12 +8,13 @@ from social_network_service.common.models import db
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.rsvp import RSVP
-from social_network_service.common.models.user import UserSocialNetworkCredential, DomainRole
+from social_network_service.common.models.user import UserSocialNetworkCredential, Permission
 from social_network_service.common.routes import SocialNetworkApiUrl
-from social_network_service.common.tests.conftest import talent_pool_sample
-from social_network_service.common.utils.handy_functions import http_request, add_role_to_test_user
+from social_network_service.common.tests.api_conftest import user_first, token_first, talent_pool
+from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import get_class
 from social_network_service.social_network_app import logger
+from social_network_service.tests.helper_functions import send_request
 
 
 class Test_Event_Importer:
@@ -26,7 +25,7 @@ class Test_Event_Importer:
      2- meetup_event_dict to create event on social network website and put
         it in dict.
     """
-    def test_meetup_event_importer_with_invalid_token(self, sample_user,
+    def test_meetup_event_importer_with_invalid_token(self, user_first,
                                                       meetup_event_dict):
         """
         :param auth_data: This creates a test user and its social network
@@ -46,7 +45,7 @@ class Test_Event_Importer:
         meetup_event_dict['id'] = event.id
         social_network_event_id = event.social_network_event_id
         user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
-            sample_user.id, event.social_network.id)
+            user_first['id'], event.social_network.id)
         Event.delete(event.id)
         # create object of respective social network to run Event importer
         social_network = SocialNetwork.get_by_name(user_credentials.social_network.name)
@@ -59,11 +58,12 @@ class Test_Event_Importer:
         logger.debug('Access Token has been malformed.')
         sn.process('event', user_credentials=user_credentials)
         # get the imported event by social_network_event_id and user_id
-        event = Event.get_by_user_and_social_network_event_id(sample_user.id,
+        event = Event.get_by_user_and_social_network_event_id(user_first['id'],
                                                               social_network_event_id)
         assert event is None
 
-    def test_meetup_event_importer_with_valid_token(self, sample_user, meetup_event_dict):
+    def test_meetup_event_importer_with_valid_token(self, user_first, meetup_event_dict, talent_pool,
+                                                    meetup_event_data, token_first):
         """
         :param auth_data: This creates a test user and its social network
             credentials.
@@ -81,7 +81,7 @@ class Test_Event_Importer:
         event = meetup_event_dict['event']
         social_network_event_id = event.social_network_event_id
         user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
-            sample_user.id, event.social_network.id)
+            user_first['id'], event.social_network.id)
         Event.delete(event.id)
         # create object of respective social network to run Event importer
         social_network = SocialNetwork.get_by_name(user_credentials.social_network.name)
@@ -94,13 +94,17 @@ class Test_Event_Importer:
         db.db.session.commit()
         # get the imported event by social_network_event_id and user_id
         event = Event.get_by_user_and_social_network_event_id(
-            sample_user.id, social_network_event_id)
+            user_first['id'], social_network_event_id)
         assert isinstance(event, Event), "event should be a model object"
         assert event.description.find("Test Event Description"), \
             'Event not imported in database'
-        meetup_event_dict['id'] = event.id
 
-    def test_meetup_rsvp_importer_with_invalid_token(self, sample_user,
+        response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event.id,
+                                access_token=token_first)
+
+        assert response.status_code == 200
+
+    def test_meetup_rsvp_importer_with_invalid_token(self, user_first, token_first,
                                                      meetup_event_dict):
         """
         :param auth_data: This creates a test user and its social network
@@ -119,7 +123,7 @@ class Test_Event_Importer:
         event = meetup_event_dict['event']
         social_network_event_id = event.social_network_event_id
         user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
-            sample_user.id, event.social_network.id)
+            user_first['id'], event.social_network.id)
         # create object of respective social network to run RSVP importer
         social_network = SocialNetwork.get_by_name(user_credentials.social_network.name)
         social_network_class = get_class(social_network.name.lower(), 'social_network',
@@ -141,9 +145,12 @@ class Test_Event_Importer:
         rsvp_in_db = RSVP.get_by_social_network_rsvp_id_and_social_network_id(
             social_network_rsvp_id, social_network.id)
         assert rsvp_in_db is None
-        meetup_event_dict['id'] = event.id
+        response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event.id,
+                                access_token=token_first)
 
-    def test_meetup_rsvp_importer_with_valid_token(self, sample_user, talent_pool_sample, meetup_event_dict):
+        assert response.status_code == 200
+
+    def test_meetup_rsvp_importer_with_valid_token(self, user_first, token_first, meetup_event_dict):
         """
         :param auth_data: This creates a test user and its social network
             credentials.
@@ -162,12 +169,10 @@ class Test_Event_Importer:
         - We add 'id' of newly created event to delete it from social network
             website in the finalizer of meetup_event_dict.
         """
-        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_EDIT_CANDIDATES,
-                                            DomainRole.Roles.CAN_DELETE_CANDIDATES])
         event = meetup_event_dict['event']
         social_network_event_id = event.social_network_event_id
         user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
-            sample_user.id, event.social_network.id)
+            user_first['id'], event.social_network.id)
         # create object of respective social network to run RSVP importer
         social_network = SocialNetwork.get_by_name(user_credentials.social_network.name)
         social_network_class = get_class(social_network.name.lower(), 'social_network',
@@ -188,10 +193,14 @@ class Test_Event_Importer:
             social_network_rsvp_id, social_network.id)
         assert isinstance(rsvp_in_db, RSVP)
         assert rsvp_in_db.status == payload['rsvp']
-        meetup_event_dict['id'] = event.id
+        response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event.id,
+                                access_token=token_first)
 
-    def test_meetup_rsvp_importer_endpoint_with_valid_token(self, sample_user, talent_pool_sample,  meetup_event_dict,
-                                                            token):
+        assert response.status_code == 200
+
+    def test_meetup_rsvp_importer_endpoint_with_valid_token(self, user_first, talent_pool,
+                                                            meetup_event_dict,
+                                                            token_first):
         """
         :param auth_data: This creates a test user and its social network
             credentials.
@@ -210,35 +219,36 @@ class Test_Event_Importer:
         - We add 'id' of newly created event to delete it from social network
             website in the finalizer of meetup_event_dict.
         """
-        add_role_to_test_user(sample_user, [DomainRole.Roles.CAN_ADD_CANDIDATES, DomainRole.Roles.CAN_EDIT_CANDIDATES,
-                                            DomainRole.Roles.CAN_DELETE_CANDIDATES])
         event = meetup_event_dict['event']
         social_network_event_id = event.social_network_event_id
         user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
-            sample_user.id, event.social_network.id)
+            user_first.id, event.social_network.id)
 
-        headers = dict(Authorization='Bearer %s' % token)
+        headers = dict(Authorization='Bearer %s' % token_first)
         headers['Content-Type'] = 'application/json'
         response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('rsvp', 'meetup'), headers=headers)
         assert response.status_code == 200
 
-    def test_eventbrite_event_importer_endpoint(self, talent_pool_sample, token):
+    def test_eventbrite_event_importer_endpoint(self, token_first):
         """
         Test eventbrite events importer.
-        - Create an event on eventbrite using social network service endpoint
-        - Then delete eventbrite event directly from db
-        - Then run event importer for eventbrite.
+        - An existing event is created on eventbrite
+        - Run event importer for eventbrite.
         - Then check if event event is imported correctly or not
         """
 
         social_network_event_id = '26557579435'
         user_id = 1
-        headers = dict(Authorization='Bearer %s' % token)
+        event = Event.get_by_user_and_social_network_event_id(user_id=user_id,
+                                                              social_network_event_id=social_network_event_id)
+        if event:
+            Event.delete(event)
+        headers = dict(Authorization='Bearer %s' % token_first)
         headers['Content-Type'] = 'application/json'
 
         # Specify datetime to get already created event
-        start_datetime = "2016-07-13T10:00:00.0Z"
-        end_datetime = "2016-07-14T06:00:00.0Z"
+        start_datetime = "2016-07-12T23:00:00Z"
+        end_datetime = "2016-07-13T00:00:00Z"
 
         data = {
             'date_created_range_start': start_datetime,
@@ -255,7 +265,47 @@ class Test_Event_Importer:
 
         Event.delete(event.id)
 
-    def test_meetup_event_importer_endpoint(self, sample_user, talent_pool_sample, meetup_event, meetup_event_dict, token):
+    def test_eventbrite_rsvp_importer_endpoint(self, token_first):
+        """
+        Test eventbrite rsvps importer.
+        A pre-existing rsvp is on eventbrite.
+        - Run rsvp importer for eventbrite.
+        - Then check if already created rsvp is imported correctly or not
+        """
+
+        social_network_event_id = '26557579435'
+        user_id = 1
+        headers = dict(Authorization='Bearer %s' % token_first)
+        headers['Content-Type'] = 'application/json'
+        event = Event.get_by_user_and_social_network_event_id(
+            user_id=user_id, social_network_event_id=social_network_event_id)
+        # If event is not imported then run event importer and import events first
+        if not event:
+            # Specify datetime to get already created event
+            start_datetime = "2016-07-13T10:00:00.0Z"
+            end_datetime = "2016-07-14T06:00:00.0Z"
+
+            data = {
+                'date_created_range_start': start_datetime,
+                'date_created_range_end': end_datetime
+            }
+
+            # Import events first then import RSVPs
+            response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'eventbrite'), data=json.dumps(data),
+                                     headers=headers)
+            assert response.status_code == 200
+
+            sleep(80)
+
+        response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('rsvp', 'eventbrite'), data=json.dumps({}),
+                                 headers=headers)
+        assert response.status_code == 200
+        sleep(50)
+        db.db.session.commit()
+
+
+
+    def test_meetup_event_importer_endpoint(self, user_first, meetup_event, meetup_event_dict, token_first):
         """
         Test meetup events importer.
         - Create an event on meetup using social network service endpoint
@@ -266,12 +316,22 @@ class Test_Event_Importer:
         event = meetup_event_dict['event']
         social_network_event_id = event.social_network_event_id
         Event.delete(event.id)
-        headers = dict(Authorization='Bearer %s' % token)
+        headers = dict(Authorization='Bearer %s' % token_first)
         headers['Content-Type'] = 'application/json'
-        response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'meetup'), headers=headers)
+
+        # Specify datetime to get already created event
+        start_datetime = "2016-07-13T10:00:00.0Z"
+        end_datetime = "2016-07-14T06:00:00.0Z"
+
+        data = {
+            'date_created_range_start': start_datetime,
+            'date_created_range_end': end_datetime
+        }
+
+        response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'meetup'), data=json.dumps(data) ,headers=headers)
         assert response.status_code == 200
-        sleep(40)
-        event = Event.get_by_user_and_social_network_event_id(sample_user.id,
+        sleep(80)
+        event = Event.get_by_user_and_social_network_event_id(user_first['id'],
                                                               social_network_event_id=social_network_event_id)
         db.db.session.commit()
         assert event

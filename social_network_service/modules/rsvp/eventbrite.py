@@ -198,7 +198,7 @@ class Eventbrite(RSVPBase):
         rsvp = {'rsvp_id': social_network_rsvp_id}
         return rsvp
 
-    def process_rsvps(self, events):
+    def process_rsvps(self, events=None):
         """
         - As we do not import RSVPs for eventbrite via rsvp importer rather we
           do this via webhook. So, log error if someone tries to run rsvp
@@ -206,15 +206,50 @@ class Eventbrite(RSVPBase):
 
         - This overrides the base class method process_rsvps().
         """
-        
+        pass
 
-    def get_all_rsvps(self, events):
+    def get_all_rsvps(self, events=None):
         """
         - This method is used to get all attendees from each eventbrite events of a user
         :param events: Eventbrite events object
         :return: list of rsvps
         """
-        http_request('GET', self.api_url + '/')
+        rsvp_url = self.api_url + '/users/%s/owned_event_attendees'
+        response = http_request('GET', headers=self.headers,
+                                url=rsvp_url
+                                % self.user_credentials_dict['member_id'])
+        all_rsvps = []
+        if response.ok:
+            # if response is ok, get json data
+            data = response.json()
+            page_size = data['pagination']['page_size']
+            total_records = data['pagination']['object_count']
+            temp_attendees = []
+            # Add all attendees whose event is in db
+            for attendee in data['attendees']:
+                if Event.get_events_by_social_network_event_id(attendee['event_id']).first():
+                    temp_attendees.append(attendee)
+            all_rsvps.extend(temp_attendees)
+            current_page = 1
+            total_pages = total_records / page_size
+            for page in range(1, total_pages):
+                params = {'page': current_page}
+                current_page += 1
+                # get data for every page
+                response = http_request('GET', rsvp_url,
+                                        params=params,
+                                        headers=self.headers,
+                                        user_id=self.user.id)
+                if response.ok:
+                    data = response.json()
+                    temp_attendees = []
+                    for attendee in data['attendees']:
+                        if Event.get_events_by_social_network_event_id(attendee['event_id']).first():
+                            temp_attendees.append(attendee)
+                all_rsvps.extend(temp_attendees)
+
+            return all_rsvps
+        return all_rsvps
 
     def get_rsvps(self, event):
         pass

@@ -9,7 +9,6 @@ from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.custom_exceptions import *
 from social_network_service.social_network_app import logger
-from social_network_service.social_network_app.app import WEBHOOK_REDIRECT_URL
 
 
 class Eventbrite(SocialNetworkBase):

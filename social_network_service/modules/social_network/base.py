@@ -285,7 +285,8 @@ class SocialNetworkBase(object):
             # create object of selected event class
             sn_event_obj = event_class(user_credentials=user_credentials,
                                        social_network=self.social_network,
-                                       headers=self.headers, **kwargs)
+                                       headers=self.headers,
+                                       **kwargs)
 
             if mode == 'event':
                 # gets events using respective API of Social Network

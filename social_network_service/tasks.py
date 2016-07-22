@@ -32,7 +32,7 @@ def rsvp_events_importer(social_network_name, mode, user_credentials, datetime_r
             social_network_class = get_class(social_network.name.lower(), 'social_network',
                                              user_credentials=user_credentials)
             # we call social network class here for auth purpose, If token is expired
-            # access token is refreshed and we use fresh token
+            # access token is refreshed and we use fresh token8
             sn = social_network_class(user_credentials.user_id)
 
             logger.debug('%s Importer has started for %s(UserId: %s).'

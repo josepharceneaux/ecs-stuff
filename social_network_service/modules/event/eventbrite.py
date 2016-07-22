@@ -118,7 +118,7 @@ class Eventbrite(EventBase):
             kwargs.get('date_range_end') \
             or datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    def process_events_rsvps(self, user_credentials, rsvp_data=None):
+    def process_events_rsvps(self, user_credentials, rsvp_data=None, **kwargs):
         """
         We get events against a particular user_credential.
         Then we get the rsvps of all events present in database and process
@@ -132,10 +132,11 @@ class Eventbrite(EventBase):
         # create object of selected rsvp class
         sn_rsvp_obj = sn_rsvp_class(user_credentials=user_credentials,
                                     headers=self.headers,
-                                    social_network=self.social_network
+                                    social_network=self.social_network,
+                                     kwargs=kwargs
                                     )
         # process RSVPs and save in database
-        sn_rsvp_obj.process_rsvp_via_webhook(rsvp_data)
+        sn_rsvp_obj.process_rsvps()
 
     def get_events(self):
         """

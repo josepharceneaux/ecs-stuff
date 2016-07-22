@@ -87,4 +87,15 @@ class Event(db.Model):
                 Event.id == event_id
             )).first()
 
-
+    @classmethod
+    def get_events_by_social_network_event_id(cls, social_network_event_id):
+        """
+        Returns list of events filtered by social_network_event_id field
+        :param social_network_event_id: Social network event_id field
+        :type social_network_event_id: str
+        :return:
+        """
+        assert social_network_event_id
+        return cls.query.filter(
+            Event.social_network_event_id == social_network_event_id
+        )
