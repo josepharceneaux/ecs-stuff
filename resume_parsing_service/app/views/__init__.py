@@ -1,11 +1,7 @@
 __author__ = 'erikfarmer'
-import cStringIO
-from bs4.element import ResultSet
-from contracts import new_contract
-from flask import request
-from werkzeug.local import LocalProxy
+from resume_parsing_service.common.custom_contracts import define_custom_contracts
 
 
-new_contract('cStringIO_StringIO', lambda x: isinstance(x, (cStringIO.InputType, cStringIO.OutputType)))
-new_contract('bs4_ResultSet', lambda x: isinstance(x, ResultSet))
-new_contract('flask_request', lambda x: isinstance(x, LocalProxy))
+# Make use of the following contracts:
+#    long, bs4_ResultSet, cStringIO, flask_request
+define_custom_contracts()
