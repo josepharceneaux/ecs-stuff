@@ -59,12 +59,13 @@ def build_params_from_form(request):
     create_mode = request.form.get('create_candidate', 'false')
     create_candidate = True if create_mode.lower() == 'true' else False
     filepicker_key = None
-    talent_pool_ids = None
+    talent_pool_ids_raw = request.form.get('talent_pool_ids')
+    talen_pool_ids = [int(x) for x in talent_pool_ids_raw.split(',')]
 
     return {
         'create_candidate': create_candidate,
         'filename': resume_file_name,
         'filepicker_key': filepicker_key,
         'resume_file': resume_file,
-        'talent_pools': talent_pool_ids
+        'talent_pools': talen_pool_ids
     }
