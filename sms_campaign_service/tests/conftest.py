@@ -164,21 +164,6 @@ def invalid_data_for_campaign_creation(request):
     return campaign_data, request.param
 
 
-@pytest.fixture(params=[0, 'a', '1', None, dict(), list()])
-def invalid_id(request):
-    """
-    This function returns invalid Ids to create/update/delete an sms-campaign.
-    """
-    return [request.param]
-
-
-@pytest.fixture(params=[[], [1,1], 'string', '1', None, dict(), list()])
-def invalid_list(request):
-    """
-    This function returns invalid Ids to create/update/delete an sms-campaign.
-    """
-    return [request.param]
-
 @pytest.fixture()
 def smartlist_with_two_candidates(access_token_first, talent_pipeline):
     """

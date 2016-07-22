@@ -47,8 +47,10 @@ class CampaignsTestsHelpers(object):
     This class contains common helper methods for tests of sms_campaign_service and
     push_campaign_service etc.
     """
+    # This list is used to update/delete a campaign, e.g. sms-campaign with invalid id
+    INVALID_ID = [0, fake.word(), None, dict(), list(), '', '      ']
     # This list is used to create/update a campaign, e.g. sms-campaign with invalid name and body_text.
-    INVALID_STRING = [int(fake.numerify()), True, None, dict(), list(), '', '      ']
+    INVALID_STRING = INVALID_ID[1:]
     # This list is used to schedule/reschedule a campaign e.g. sms-campaign with invalid frequency Id.
     INVALID_FREQUENCY_IDS = copy.copy(INVALID_STRING)
     INVALID_FREQUENCY_IDS.extend([fake.word()])
@@ -294,7 +296,8 @@ class CampaignsTestsHelpers(object):
         """
         raise_if_not_instance_of(response, Response)
         raise_if_not_instance_of(expected_status_code, int)
-        assert response.status_code == expected_status_code, 'Expected status code is %s' % expected_status_code
+        assert response.status_code == expected_status_code, \
+            'Expected status code:%s. Got:%s' % (expected_status_code ,response.status_code)
         error = response.json()['error']
         assert error, 'error key is missing from response'
         assert error['message']
@@ -347,8 +350,7 @@ class CampaignsTestsHelpers(object):
         return response_post
 
     @classmethod
-    def assert_campaign_failure(cls, response, campaign,
-                                expected_status=200):
+    def assert_campaign_failure(cls, response, campaign, expected_status=200):
         """
         If we try to send a campaign with invalid data, e.g. a campaign with no smartlist associated
         or with 0 candidates, the campaign sending will fail. This method asserts that the specified
@@ -723,9 +725,9 @@ class CampaignsTestsHelpers(object):
         :param dict campaign_data: Data to be passed in HTTP request
         """
         # This list is used to create/update a campaign, e.g. sms-campaign with invalid smartlist ids.
-        invalid_lists = [[], [0], [None], [fake.word()], [True], [dict()], ['']]
+        invalid_lists = [[item] for item in CampaignsTestsHelpers.INVALID_ID]
         non_existing_smartlist_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
-        invalid_lists.extend([non_existing_smartlist_id, non_existing_smartlist_id]) # Test for unique items
+        invalid_lists.extend([non_existing_smartlist_id, non_existing_smartlist_id])  # Test for unique items
         for invalid_list in invalid_lists:
             campaign_data['smartlist_ids'] = invalid_list
             response = send_request(method, url, access_token, data=campaign_data)
@@ -745,6 +747,19 @@ class CampaignsTestsHelpers(object):
         for invalid_frequency_id in CampaignsTestsHelpers.INVALID_FREQUENCY_IDS:
             schedule_data['frequency_id'] = invalid_frequency_id
             response = send_request(method, url, access_token, data=schedule_data)
+            CampaignsTestsHelpers.assert_non_ok_response(response)
+
+    @staticmethod
+    def campaign_delete_with_invalid_campaign_ids(url, access_token):
+        """
+        This tests the campaigns' endpoint to delete multiple campaigns with invalid ids.
+        It should result in Bad Request Error and campaigns should not be removed.
+        :param str url: URL on which we are supposed to make HTTP request
+        :param str access_token: Access token of user
+        """
+        for invalid_id in CampaignsTestsHelpers.INVALID_ID:
+            print "Iterating %s as campaign id" % invalid_id
+            response = send_request('delete', url, access_token, data={'ids': [invalid_id]})
             CampaignsTestsHelpers.assert_non_ok_response(response)
 
 

@@ -371,15 +371,11 @@ class TestSmsCampaignHTTPDelete(object):
                                    data=json.dumps({'ids': [sms_campaign_of_user_first['id'], non_existing_id]}))
         CampaignsTestsHelpers.assert_non_ok_response(response, ResourceNotFound.http_status_code())
 
-    def test_campaigns_delete_with_valid_and_invalid_campaign_ids(self, headers, sms_campaign_of_user_first,
-                                                                  invalid_id):
+    def test_campaigns_delete_with_valid_and_invalid_campaign_ids(self, access_token_first):
         """
-        User auth token is valid, but invalid data provided (ids other than int, not owned campaign and Non-exisiting),
-        It should result in bad request error.
+        User auth token is valid, but invalid data provided (ids other than int). It should result in bad request error.
         """
-        response = requests.delete(self.URL, headers=headers,
-                                   data=json.dumps({'ids': [sms_campaign_of_user_first['id']].extend(invalid_id)}))
-        CampaignsTestsHelpers.assert_non_ok_response(response)
+        CampaignsTestsHelpers.campaign_delete_with_invalid_campaign_ids(self.URL, access_token_first)
 
     def test_campaigns_delete_with_authorized_ids(self, headers, user_first, sms_campaign_of_user_first):
         """
