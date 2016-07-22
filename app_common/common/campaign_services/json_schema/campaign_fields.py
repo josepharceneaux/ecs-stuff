@@ -8,10 +8,14 @@ campaign_schema = {
     "type": "object",
     "properties": {
         "name": {
-            "type": "string"
+            "type": "string",
+            "pattern": "\w",
+            "minLength": 1,
         },
         "body_text": {
-            "type": "string"
+            "type": "string",
+            "pattern": "\w",
+            "minLength": 1,
         },
         "smartlist_ids": {
             "type": "array",
