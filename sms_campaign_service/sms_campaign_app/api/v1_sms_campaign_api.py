@@ -103,7 +103,6 @@ from sms_campaign_service.common.campaign_services.campaign_utils import (Campai
 from sms_campaign_service.common.campaign_services.json_schema.campaign_schedule import campaign_schedule_schema
 
 
-
 # creating blueprint
 sms_campaign_blueprint = Blueprint('sms_campaign_api', __name__)
 api = TalentApi()

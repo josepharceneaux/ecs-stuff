@@ -342,7 +342,8 @@ class CampaignBase(object):
         # if frequency_id not provided or is 0, set to id of ONCE
         if not campaign_data.get('frequency_id'):
             campaign_data.update({'frequency_id': Frequency.ONCE})
-        validate_form_data(campaign_data, self.user)
+        required_fields = self.__class__.REQUIRED_FIELDS
+        validate_form_data(campaign_data, self.user, required_fields=required_fields)
         logger.info('Campaign data has been validated.')
         validated_data = campaign_data.copy()
         # get respective campaign model. e.g. sms_campaign or push_campaign etc

@@ -115,13 +115,10 @@ from flask.ext.restful import Resource
 
 # Application Specific
 from push_campaign_service.push_campaign_app import logger
-from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-from push_campaign_service.common.campaign_services.custom_errors import CampaignException
 from push_campaign_service.common.campaign_services.validators import get_valid_json_data
-from push_campaign_service.common.error_handling import (InternalServerError, ResourceNotFound,
-                                                         ForbiddenError, InvalidUsage)
+from push_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError, InvalidUsage)
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.talent_api import TalentApi
 from push_campaign_service.common.routes import PushCampaignApi, PushCampaignApiUrl
@@ -241,16 +238,10 @@ class PushCampaignsResource(Resource):
         """
         user = request.user
         data = get_valid_json_data(request)
-        missing_fields = [field for field in ['name', 'body_text', 'url',
-                                              'smartlist_ids'] if field not in data or not data[field]]
-        if missing_fields:
-            raise InvalidUsage('Some required fields are missing',
-                               additional_error_info=dict(missing_fields=missing_fields),
-                               error_code=CampaignException.MISSING_REQUIRED_FIELD)
+
         campaign = PushCampaignBase(user_id=user.id)
         campaign_id = campaign.save(data)
         response = dict(id=campaign_id, message='Push campaign was created successfully')
-        response = json.dumps(response)
         headers = dict(Location=PushCampaignApiUrl.CAMPAIGN % campaign_id)
         return ApiResponse(response, headers=headers, status=201)
 
@@ -380,28 +371,8 @@ class CampaignByIdResource(Resource):
         """
         user = request.user
         data = get_valid_json_data(request)
-        if not campaign_id > 0:
-            raise ResourceNotFound('Campaign id must be a positive number. Given %s' % campaign_id)
-        campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
-                                                                    CampaignUtils.PUSH)
-        for key, value in data.items():
-            if key not in CAMPAIGN_REQUIRED_FIELDS:
-                raise InvalidUsage('Invalid field in campaign data',
-                                   additional_error_info=dict(invalid_field=key))
-            if not value:
-                raise InvalidUsage('Invalid value for field in campaign data',
-                                   additional_error_info=dict(field=key,
-                                                              invalid_value=value),
-                                   error_code=CampaignException.MISSING_REQUIRED_FIELD)
-
-        data['user_id'] = user.id
-        # We are confirmed that this key has some value after above validation
-        smartlist_ids = data.pop('smartlist_ids')
-        campaign.update(**data)
-        associated_smartlist_ids = [smartlist.id for smartlist in campaign.smartlists]
-        if isinstance(smartlist_ids, list):
-            smartlist_ids = list(set(smartlist_ids) - set(associated_smartlist_ids))
-            PushCampaignBase.create_campaign_smartlist(campaign, smartlist_ids)
+        camp_obj = PushCampaignBase(user.id, campaign_id)
+        camp_obj.update(data, campaign_id=campaign_id)
         response = dict(message='Push campaign was updated successfully')
         return response, 200
 
