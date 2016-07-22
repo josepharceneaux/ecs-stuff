@@ -49,6 +49,7 @@ def build_params_from_form(request):
     """
     resume_file = request.files.get('resume_file')
     resume_file_name = request.form.get('resume_file_name')
+    talent_pool_ids = None
     if not (resume_file and resume_file_name):
         raise InvalidUsage(
             error_message=error_constants.INVALID_ARGS_MOBILE['message'],
@@ -60,12 +61,13 @@ def build_params_from_form(request):
     create_candidate = True if create_mode.lower() == 'true' else False
     filepicker_key = None
     talent_pool_ids_raw = request.form.get('talent_pool_ids')
-    talen_pool_ids = [int(x) for x in talent_pool_ids_raw.split(',')]
+    if talent_pool_ids_raw:
+        talent_pool_ids = [int(x) for x in talent_pool_ids_raw.split(',')]
 
     return {
         'create_candidate': create_candidate,
         'filename': resume_file_name,
         'filepicker_key': filepicker_key,
         'resume_file': resume_file,
-        'talent_pools': talen_pool_ids
+        'talent_pools': talent_pool_ids
     }
