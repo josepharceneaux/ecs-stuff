@@ -140,9 +140,7 @@ class PushCampaignBase(CampaignBase):
         # get all device ids and if there is no device associated with any candidate, raise InvalidUsage
         all_device_ids = list(itertools.chain(*map(lambda item: item[1], candidate_and_device_ids)))
         if not all_device_ids:
-            raise InvalidUsage('There is no device associated with '
-                               ''
-                               'qany candidate. Candidate Ids: %s'
+            raise InvalidUsage('There is no device associated with any candidate. Candidate Ids: %s'
                                % [candidate.id for candidate in candidates])
         return candidate_and_device_ids
 

@@ -596,8 +596,11 @@ class SendPushCampaign(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         """
         user = request.user
+        # To get candidates over celery, query parameter should be 1 e.g. v1/push-campaigns/1/send?asynchronous=1
+        get_candidates_with_celery = request.args.get('asynchronous')
+        get_candidates_with_celery = True if get_candidates_with_celery == '1' else False
         campaign_obj = PushCampaignBase(user_id=user.id, campaign_id=campaign_id)
-        campaign_obj.send(get_candidate_with_celery=True)
+        campaign_obj.send(get_candidates_with_celery=get_candidates_with_celery)
         return dict(message='Campaign(id:%s) is being sent to candidates' % campaign_id), 200
 
 

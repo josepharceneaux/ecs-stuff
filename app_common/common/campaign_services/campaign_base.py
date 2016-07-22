@@ -1065,7 +1065,7 @@ class CampaignBase(object):
             task_id = self.schedule(pre_processed_data['data_to_schedule'])
         return task_id
 
-    def send(self, get_candidate_with_celery=False):
+    def send(self, get_candidates_with_celery=False):
         """
         This does the following steps to send campaign to candidates.
 
@@ -1084,7 +1084,7 @@ class CampaignBase(object):
         5- Create campaign blast record in e.g. sms_campaign_blast database table.
         6- Call send_campaign_to_candidates() to send the campaign to candidates via Celery
             task.
-        :param bool get_candidate_with_celery: boolean flag to specify, whether candidates will be retrieved with
+        :param bool get_candidates_with_celery: boolean flag to specify, whether candidates will be retrieved with
         a celery process or in request context.
         :Example:
 
@@ -1122,7 +1122,7 @@ class CampaignBase(object):
                                                                                              self.campaign.id,
                                                                                              self.user.id),
                                error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
-        if get_candidate_with_celery:
+        if get_candidates_with_celery:
             self.get_candidates_and_send_campaign_via_celery(campaign_smartlists)
         else:
             # GET smartlist candidates
