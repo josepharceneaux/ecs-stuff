@@ -600,6 +600,28 @@ class SmsCampaignBase(CampaignBase):
     def celery_error_handler(uuid):
         db.session.rollback()
 
+    @celery_app.task(name='callback_campaign_send')
+    def callback_campaign_send(self, celery_result):
+        """
+        When all celery tasks to retrieve smartlist candidates are finished, celery chord calls this function
+        with an array or data (candidates) from all tasks. This function will further call super class method
+        to process this data and send campaigns to all candidates.
+        :param list celery_result: list of lists of candidates
+        """
+        # Celery calls callback method with `results` as first argument even it is a instance method so
+        # we need to switch values to maintain the convention of `self` being first argument
+        self, celery_result = celery_result, self
+        with app.app_context():
+            self.process_campaign_send(celery_result)
+
+    @celery_app.task(name='get_smartlist_candidates_task')
+    def get_smartlist_candidates_task(self, campaign_smartlist):
+        """
+        This method will retrieve smartlist candidate from candidate pool service in a celery task.
+        :param SmsCampaignSmartlist campaign_smartlist: campaign smartlist object
+        """
+        return super(SmsCampaignBase, self).get_smartlist_candidates(campaign_smartlist)
+
     def process_urls_in_sms_body_text(self, candidate_id):
         """
         We use "url_conversion" table fields:
