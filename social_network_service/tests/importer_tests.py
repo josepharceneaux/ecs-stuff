@@ -273,17 +273,26 @@ class Test_Event_Importer:
         - Then check if already created rsvp is imported correctly or not
         """
 
+        rsvp_id = '672393772'
         social_network_event_id = '26557579435'
         user_id = 1
         headers = dict(Authorization='Bearer %s' % token_first)
         headers['Content-Type'] = 'application/json'
+
+        eventbrite_obj = SocialNetwork.get_by_name('Eventbrite')
+
+        rsvp = RSVP.get_by_social_network_rsvp_id_and_social_network_id(rsvp_id, eventbrite_obj.id)
+
+        if rsvp:
+            RSVP.delete(rsvp.id)
+
         event = Event.get_by_user_and_social_network_event_id(
             user_id=user_id, social_network_event_id=social_network_event_id)
         # If event is not imported then run event importer and import events first
         if not event:
             # Specify datetime to get already created event
-            start_datetime = "2016-07-13T10:00:00.0Z"
-            end_datetime = "2016-07-14T06:00:00.0Z"
+            start_datetime = "2016-07-12T23:00:00Z"
+            end_datetime = "2016-07-13T00:00:00Z"
 
             data = {
                 'date_created_range_start': start_datetime,
@@ -300,10 +309,10 @@ class Test_Event_Importer:
         response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('rsvp', 'eventbrite'), data=json.dumps({}),
                                  headers=headers)
         assert response.status_code == 200
-        sleep(50)
+        sleep(80)
         db.db.session.commit()
-
-
+        rsvp = RSVP.get_by_social_network_rsvp_id_and_social_network_id(rsvp_id, eventbrite_obj.id)
+        assert rsvp
 
     def test_meetup_event_importer_endpoint(self, user_first, meetup_event, meetup_event_dict, token_first):
         """

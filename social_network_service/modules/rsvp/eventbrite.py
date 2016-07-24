@@ -10,6 +10,7 @@ from datetime import datetime
 
 from base import RSVPBase
 # Application Specific
+from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.models.candidate import SocialNetwork
@@ -198,16 +199,6 @@ class Eventbrite(RSVPBase):
         rsvp = {'rsvp_id': social_network_rsvp_id}
         return rsvp
 
-    def process_rsvps(self, events=None):
-        """
-        - As we do not import RSVPs for eventbrite via rsvp importer rather we
-          do this via webhook. So, log error if someone tries to run rsvp
-          importer for eventbrite.
-
-        - This overrides the base class method process_rsvps().
-        """
-        pass
-
     def get_all_rsvps(self, events=None):
         """
         - This method is used to get all attendees from each eventbrite events of a user
@@ -224,12 +215,8 @@ class Eventbrite(RSVPBase):
             data = response.json()
             page_size = data['pagination']['page_size']
             total_records = data['pagination']['object_count']
-            temp_attendees = []
-            # Add all attendees whose event is in db
-            for attendee in data['attendees']:
-                if Event.get_events_by_social_network_event_id(attendee['event_id']).first():
-                    temp_attendees.append(attendee)
-            all_rsvps.extend(temp_attendees)
+
+            all_rsvps.extend(data['attendees'])
             current_page = 1
             total_pages = total_records / page_size
             for page in range(1, total_pages):
@@ -242,14 +229,11 @@ class Eventbrite(RSVPBase):
                                         user_id=self.user.id)
                 if response.ok:
                     data = response.json()
-                    temp_attendees = []
-                    for attendee in data['attendees']:
-                        if Event.get_events_by_social_network_event_id(attendee['event_id']).first():
-                            temp_attendees.append(attendee)
-                all_rsvps.extend(temp_attendees)
+                    all_rsvps.extend(data['attendees'])
 
             return all_rsvps
-        return all_rsvps
+        else:
+            raise InternalServerError('Error occured while getting rsvp for eventbrite. %s' % response.text)
 
     def get_rsvps(self, event):
         pass
@@ -283,56 +267,39 @@ class Eventbrite(RSVPBase):
             .. seealso:: process_rsvps_via_webhook() method in class Eventbrite
                 inside social_network_service/rsvp/eventbrite.py
         """
-        url = self.api_url + "/orders/" + rsvp['rsvp_id']
-        response = http_request('GET', url, headers=self.headers,
-                                user_id=self.user.id)
-        if response.ok:
-            try:
-                data = response.json()
-                created_datetime = datetime.strptime(data['created'][:19],
-                                                     "%Y-%m-%dT%H:%M:%S")
-                attendee = Attendee()
-                attendee.first_name = data['first_name']
-                attendee.full_name = data['name']
-                attendee.last_name = data['last_name']
-                attendee.added_time = created_datetime
-                attendee.rsvp_status = 'yes' \
-                    if data['status'] == 'placed' else data['status']
-                attendee.email = data['email']
-                attendee.vendor_rsvp_id = rsvp['rsvp_id']
-                attendee.gt_user_id = self.user.id
-                attendee.social_network_id = self.social_network.id
-                attendee.vendor_img_link = \
-                    "<img class='pull-right'" \
-                    " style='width:60px;height:30px' " \
-                    "src='/web/static/images/activities/eventbrite_logo.png'/>"
-                # get event_id
-                social_network_event_id = data['event_id']
-                event = Event.get_by_user_id_social_network_id_vendor_event_id(
-                    self.user.id, self.social_network.id,
-                    social_network_event_id)
-                if event:
-                    attendee.event = event
-                    # Get profile url of candidate to save
-                    url = self.api_url + "/orders/" + rsvp['rsvp_id']
-                    response_orders = http_request('GET', url, headers=self.headers,
-                                                   user_id=self.user.id)
-                    url = self.api_url \
-                          + "/events/" + str(event.social_network_event_id) + '/attendees/'
-                    response_attendees = http_request('GET', url, headers=self.headers)
-                    event_attendees = json.loads(response_attendees.text)['attendees']
-                    for event_attendee in event_attendees:
-                        if event_attendee['created'] == json.loads(response_orders.text)['created']:
-                            # In case of Eventbrite, we have a Attendee object created
-                            # on Eventbrite website. We save that link as profile url.
-                            attendee.social_profile_url = event_attendee['resource_uri']
-                            break
-                    return attendee
-                else:
-                    raise EventNotFound('Event is not present in db, '
-                                        'social_network_event_id is '
-                                        '%s. User Id: %s'
-                                        % (social_network_event_id,
-                                           self.user.id))
-            except Exception:
-                raise
+
+        created_datetime = datetime.strptime(rsvp['created'][:19],
+                                             "%Y-%m-%dT%H:%M:%S")
+        attendee = Attendee()
+        attendee.first_name = rsvp['profile']['first_name']
+        attendee.full_name = rsvp['profile']['name']
+        attendee.last_name = rsvp['profile']['last_name']
+        attendee.added_time = created_datetime
+        attendee.rsvp_status = 'yes' \
+            if rsvp['status'] == 'placed' else rsvp['status']
+        attendee.email = rsvp['profile']['email']
+        attendee.vendor_rsvp_id = rsvp['id']
+        attendee.gt_user_id = self.user.id
+        attendee.social_network_id = self.social_network.id
+        attendee.vendor_img_link = \
+            "<img class='pull-right'" \
+            " style='width:60px;height:30px' " \
+            "src='/web/static/images/activities/eventbrite_logo.png'/>"
+        attendee.social_profile_url = rsvp['resource_uri']
+        # get event_id
+        social_network_event_id = rsvp['event_id']
+        event = Event.get_by_user_id_social_network_id_vendor_event_id(
+            self.user.id, self.social_network.id,
+            social_network_event_id)
+        if event:
+            attendee.event = event
+            # Get profile url of candidate to save
+            return attendee
+        else:
+            logger.info('Event is not present in db, '
+                                'social_network_event_id is '
+                                '%s. User Id: %s'
+                                % (social_network_event_id,
+                                   self.user.id))
+            return None
+

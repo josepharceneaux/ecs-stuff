@@ -26,6 +26,7 @@ from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.candidate import Candidate
 from social_network_service.common.models.candidate import CandidateSocialNetwork
 from social_network_service.common.routes import UserServiceApiUrl
+from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.custom_exceptions import UserCredentialsNotFound, ProductNotFound
 from social_network_service.social_network_app import logger
 
@@ -349,6 +350,9 @@ class RSVPBase(object):
         """
         try:
             attendee = self.get_attendee(rsvp)
+            if not attendee:
+                logger.info('Attendee object couldn\'t be created')
+                return
             # following picks the source product id for attendee
             attendee = self.pick_source_product(attendee)
             # following will store candidate info in attendees
@@ -360,7 +364,7 @@ class RSVPBase(object):
             # finally we store info in table activity
             attendee = self.save_rsvp_in_activity_table(attendee)
             return attendee
-        except:
+        except Exception:
             # Shouldn't raise an exception, just log it and move to
             # process next RSVP
             logger.exception('post_process_rsvps: user_id: %s, RSVP data: %s, '
@@ -470,14 +474,13 @@ class RSVPBase(object):
 
         candidate_source = {
             "source": {
-                "description": attendee.event.description[:495] if attendee.event.description else None,
+                "description": attendee.event.description[:495] if attendee.event.description else 'Not given',
                 "notes": attendee.event.title
             }
         }
-        # TODO: why not http_request here?
-        response = requests.post(UserServiceApiUrl.DOMAIN_SOURCES,
-                                 headers=headers,
-                                 data=json.dumps(candidate_source))
+        response = http_request('POST', UserServiceApiUrl.DOMAIN_SOURCES,
+                                headers=headers,
+                                data=json.dumps(candidate_source))
 
         # Source already exist
         if response.status_code == 400:

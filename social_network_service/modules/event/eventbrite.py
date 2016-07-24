@@ -135,8 +135,10 @@ class Eventbrite(EventBase):
                                     social_network=self.social_network,
                                      kwargs=kwargs
                                     )
+        rsvps = sn_rsvp_obj.get_all_rsvps()
+
         # process RSVPs and save in database
-        sn_rsvp_obj.process_rsvps()
+        sn_rsvp_obj.process_rsvps(rsvps=rsvps)
 
     def get_events(self):
         """

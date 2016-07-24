@@ -94,6 +94,10 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
                      'content-type': 'application/json'},
             data=json.dumps(data)
     )
+    data = resp.json()
+    # Candidate already exists. So return id of candidate
+    if resp.status_code == 400 and data['error']['code'] == 3013 and return_candidate_ids_only:
+        return [data['error']['id']]
     assert resp.status_code == 201
     if return_candidate_ids_only:
         return [candidate['id'] for candidate in resp.json()['candidates']]
