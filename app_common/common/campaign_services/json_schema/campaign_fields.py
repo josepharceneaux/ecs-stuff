@@ -1,6 +1,7 @@
 """
 This file contains JSON schema for campaign APIs.
 """
+
 __author__ = 'basit'
 
 campaign_schema = {
@@ -30,6 +31,24 @@ campaign_schema = {
         "name",
         "body_text",
         "smartlist_ids"
+    ]
+}
+
+campaigns_delete_schema = {
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+        "ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": True,
+            "items": {
+                "type": "integer"
+            }
+        }
+    },
+    "required": [
+        "ids"
     ]
 }
 

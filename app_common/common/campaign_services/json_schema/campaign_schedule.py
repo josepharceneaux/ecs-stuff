@@ -12,11 +12,11 @@ campaign_schedule_schema = {
         },
         "start_datetime": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time"  # TODO: Add custom validator to make sure start_datetime is in future
         },
         "end_datetime": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time"  # TODO: Add custom validator to make sure end_datetime is ahead of start_datetime
         }
     },
     "required": [

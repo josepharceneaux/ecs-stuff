@@ -225,7 +225,6 @@ class SMSCampaigns(Resource):
     def delete(self):
         """
         Deletes multiple campaigns using ids given in list in request data.
-        :return:
 
         :Example:
 

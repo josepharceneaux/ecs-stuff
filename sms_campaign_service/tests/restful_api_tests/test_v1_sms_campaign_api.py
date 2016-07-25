@@ -21,7 +21,6 @@ from sms_campaign_service.tests.modules.common_functions import (assert_campaign
 
 # Models
 from sms_campaign_service.common.models.user import UserPhone
-from sms_campaign_service.common.models.smartlist import Smartlist
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 
 # Common Utils
@@ -375,7 +374,7 @@ class TestSmsCampaignHTTPDelete(object):
         """
         User auth token is valid, but invalid data provided (ids other than int). It should result in bad request error.
         """
-        CampaignsTestsHelpers.campaign_delete_with_invalid_campaign_ids(self.URL, access_token_first)
+        CampaignsTestsHelpers.campaigns_delete_with_invalid_data(self.URL, access_token_first, SmsCampaign)
 
     def test_campaigns_delete_with_authorized_ids(self, headers, user_first, sms_campaign_of_user_first):
         """
@@ -407,7 +406,7 @@ class TestSmsCampaignHTTPDelete(object):
     def test_delete_campaigns_of_multiple_users(self, headers, user_first, sms_campaign_of_other_user_in_same_domain,
                                                 sms_campaign_of_user_first):
         """
-        Test with one SMS campaigns in a domian. It should result in OK response.
+        Test with one SMS campaigns in a domain. It should result in OK response.
         """
         response = requests.delete(self.URL, headers=headers,
                                    data=json.dumps({'ids': [sms_campaign_of_other_user_in_same_domain['id'],

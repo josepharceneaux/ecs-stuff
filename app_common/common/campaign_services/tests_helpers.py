@@ -730,7 +730,7 @@ class CampaignsTestsHelpers(object):
         non_existing_smartlist_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
         invalid_lists.extend([non_existing_smartlist_id, non_existing_smartlist_id])  # Test for unique items
         for invalid_list in invalid_lists:
-            print "Iterating %s as smartlist_id" % invalid_list
+            print "Iterating %s" % invalid_list
             campaign_data['smartlist_ids'] = invalid_list
             response = send_request(method, url, access_token, data=campaign_data)
             CampaignsTestsHelpers.assert_non_ok_response(response)
@@ -753,16 +753,20 @@ class CampaignsTestsHelpers(object):
             CampaignsTestsHelpers.assert_non_ok_response(response)
 
     @staticmethod
-    def campaign_delete_with_invalid_campaign_ids(url, access_token):
+    def campaigns_delete_with_invalid_data(url, access_token, campaign_model):
         """
-        This tests the campaigns' endpoint to delete multiple campaigns with invalid ids.
-        It should result in Bad Request Error and campaigns should not be removed.
+        This tests the campaigns' endpoint to delete multiple campaigns with invalid data (non-int ids,
+        duplicate ids etc). It should result in Bad Request Error and campaigns should not be removed.
         :param str url: URL on which we are supposed to make HTTP request
         :param str access_token: Access token of user
+        :param (db.Model) campaign_model: SQLAlchemy model
         """
-        for invalid_id in CampaignsTestsHelpers.INVALID_ID:
-            print "Iterating %s as campaign id" % invalid_id
-            response = send_request('delete', url, access_token, data={'ids': [invalid_id]})
+        invalid_data = [[item] for item in CampaignsTestsHelpers.INVALID_ID]
+        non_existing_campaign_id = CampaignsTestsHelpers.get_non_existing_id(campaign_model)
+        invalid_data.extend([[non_existing_campaign_id, non_existing_campaign_id]])  # Test for unique items
+        for invalid_item in invalid_data:
+            print "Iterating %s." % invalid_item
+            response = send_request('delete', url, access_token, data={'ids': invalid_item})
             CampaignsTestsHelpers.assert_non_ok_response(response)
 
 
