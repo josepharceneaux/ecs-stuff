@@ -38,7 +38,6 @@ class TestATSCandidates(object):
         :param dict account_post_data: values for creating an ATS account
         :param dict candidate_post_data: values for creating an ATS account
         """
-        empty_database()
         account_id = create_and_validate_account(access_token_first, account_post_data)
         create_and_validate_candidate(access_token_first, account_id, candidate_post_data)
 
@@ -54,7 +53,6 @@ class TestATSCandidates(object):
         :param dict account_post_data: values for creating an ATS account
         :param dict candidate_post_data: values for creating an ATS account
         """
-        empty_database()
         account_id = create_and_validate_account(access_token_first, account_post_data)
         candidate_id = create_and_validate_candidate(access_token_first, account_id, candidate_post_data)
         response = send_request('delete', ATSServiceApiUrl.CANDIDATE % (account_id, candidate_id), access_token_first)
@@ -71,7 +69,6 @@ class TestATSCandidates(object):
         :param dict account_post_data: values for creating an ATS account
         :param dict candidate_post_data: values for creating an ATS account
         """
-        empty_database()
         link_candidates(access_token_first, account_post_data, candidate_post_data)
 
     def test_unlink_ats_candidate(self, access_token_first, account_post_data, candidate_post_data):
@@ -84,7 +81,6 @@ class TestATSCandidates(object):
         :param dict account_post_data: values for creating an ATS account
         :param dict candidate_post_data: values for creating an ATS account
         """
-        empty_database()
         account_id, gt_candidate_id, ats_candidate_id = link_candidates(access_token_first, account_post_data, candidate_post_data)
         response = send_request('delete', ATSServiceApiUrl.CANDIDATE_LINK % (gt_candidate_id, ats_candidate_id), access_token_first)
         assert response.status_code == codes.OK
@@ -105,7 +101,6 @@ class TestATSCandidates(object):
         :param dict account_post_data: values for creating an ATS account
         :param dict candidate_post_data: values for creating an ATS account
         """
-        empty_database()
         account_id = create_and_validate_account(access_token_first, account_post_data)
         candidate_id = create_and_validate_candidate(access_token_first, account_id, candidate_post_data)
         response = send_request('get', ATSServiceApiUrl.CANDIDATE % (account_id, candidate_id), access_token_first, {}, verify=False)

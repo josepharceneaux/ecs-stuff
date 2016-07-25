@@ -70,42 +70,42 @@ class TestATSAccounts(object):
         """
         create_and_validate_account(access_token_first, account_post_data)
 
-    # def test_delete_ats_account(self, access_token_first, account_post_data):
-    #     """
-    #     POST /v1/ats-accounts Test creating an account
-    #     DELETE /v1/ats-accounts/:account_id
+    def test_delete_ats_account(self, access_token_first, account_post_data):
+        """
+        POST /v1/ats-accounts Test creating an account
+        DELETE /v1/ats-accounts/:account_id
 
-    #     Verify deletion of account.
+        Verify deletion of account.
         
-    #     :param str access_token_first: authentication token
-    #     :param dict account_post_data: values for creating an ATS account
-    #     """
-    #     account_id = create_and_validate_account(access_token_first, account_post_data)
-    #     response = send_request('delete', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first)
-    #     assert response.status_code == codes.OK
-    #     values = json.loads(json.loads(response.text))
-    #     assert values['delete'] == 'success'
-    #     verify_nonexistant_account(access_token_first, account_id)
+        :param str access_token_first: authentication token
+        :param dict account_post_data: values for creating an ATS account
+        """
+        account_id = create_and_validate_account(access_token_first, account_post_data)
+        response = send_request('delete', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first)
+        assert response.status_code == codes.OK
+        values = json.loads(json.loads(response.text))
+        assert values['delete'] == 'success'
+        verify_nonexistant_account(access_token_first, account_id)
 
-    # def test_update_ats_account(self, access_token_first, account_post_data):
-    #     """
-    #     POST /v1/ats-accounts Test creating an account
-    #     PUT /v1/ats-accounts/:account_id Test updating an account
-    #     GET /v1/ats-accounts/:account_id Test fetching an account
+    def test_update_ats_account(self, access_token_first, account_post_data):
+        """
+        POST /v1/ats-accounts Test creating an account
+        PUT /v1/ats-accounts/:account_id Test updating an account
+        GET /v1/ats-accounts/:account_id Test fetching an account
 
-    #     Update and verify new data of account.
+        Update and verify new data of account.
 
-    #     :param str access_token_first: authentication token
-    #     :param dict account_post_data: values for creating an ATS account
-    #     """
-    #     account_id = create_and_validate_account(access_token_first, account_post_data)
-    #     key = 'ats_homepage'
-    #     value =  'https://someotherhost.com/loginpage'
-    #     new_data = { key : value }
-    #     response = send_request('put', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first, new_data)
-    #     assert response.status_code == codes.CREATED
-    #     response = send_request('get', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first, {}, verify=False)
-    #     assert response.status_code == codes.OK
-    #     # TODO: Normalize service output text between endpoints
-    #     values = json.loads(json.loads(response.text))
-    #     assert values[key] == value
+        :param str access_token_first: authentication token
+        :param dict account_post_data: values for creating an ATS account
+        """
+        account_id = create_and_validate_account(access_token_first, account_post_data)
+        key = 'ats_homepage'
+        value =  'https://someotherhost.com/loginpage'
+        new_data = { key : value }
+        response = send_request('put', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first, new_data)
+        assert response.status_code == codes.CREATED
+        response = send_request('get', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first, {}, verify=False)
+        assert response.status_code == codes.OK
+        # TODO: Normalize service output text between endpoints
+        values = json.loads(json.loads(response.text))
+        assert values[key] == value
