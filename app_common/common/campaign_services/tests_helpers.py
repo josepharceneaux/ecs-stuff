@@ -762,18 +762,6 @@ def get_invalid_fake_dict():
     return fake_dict
 
 
-def assest_zero_blasts_and_sends(service_api_urls, campaign_id, token, sleep_time=30):
-    """
-
-    :param service_api_urls: Url class like SmsCampaignApiUrls etc.
-    :param int | long campaign_id: campaign unique id
-    :param string token: user access token
-    :param int sleep_time: time to retry for zero blasts or sends
-    """
-    for key in ['blasts', 'sends']:
-        get_and_assert_zero(getattr(service_api_urls, key.upper()) % campaign_id, key, token)
-
-
 def _assert_api_response_for_missing_field(method, url, access_token, data, field_to_remove):
     """
     This function removes the field from data as specified by field_to_remove, and

@@ -16,8 +16,7 @@ from sms_campaign_service.modules.custom_exceptions import (CandidateNotFoundInU
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
-from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers, \
-    assest_zero_blasts_and_sends
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
                                                                          MultipleCandidatesFound)
 

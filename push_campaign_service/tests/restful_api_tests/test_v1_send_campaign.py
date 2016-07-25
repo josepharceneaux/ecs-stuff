@@ -22,7 +22,6 @@ from redo import retry
 from requests import codes
 
 # Application specific imports
-from push_campaign_service.common.campaign_services.tests_helpers import assest_zero_blasts_and_sends
 from push_campaign_service.common.utils.test_utils import get_and_assert_zero
 from push_campaign_service.tests.test_utilities import send_campaign, get_blasts, get_blast_sends
 from push_campaign_service.common.routes import PushCampaignApiUrl
