@@ -7,6 +7,7 @@ __author__ = 'basit'
 campaign_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
+    "additionalProperties": False,
     "properties": {
         "name": {
             "type": "string",
@@ -37,6 +38,7 @@ campaign_schema = {
 campaigns_delete_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
+    "additionalProperties": False,
     "properties": {
         "ids": {
             "type": "array",

@@ -239,6 +239,8 @@ class CampaignBase(object):
         This makes HTTP POST call to "activity_service" to create activity in database.
     """
     __metaclass__ = ABCMeta
+    # Child classes will overwrite this.
+    REQUIRED_FIELDS = []
 
     def __init__(self, user_id, campaign_id=None):
         """
@@ -339,9 +341,6 @@ class CampaignBase(object):
         if not campaign_data:
             raise InvalidUsage('No data received from UI to save/update campaign.')
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        # if frequency_id not provided or is 0, set to id of ONCE
-        if not campaign_data.get('frequency_id'):
-            campaign_data.update({'frequency_id': Frequency.ONCE})
         required_fields = self.__class__.REQUIRED_FIELDS
         validate_form_data(campaign_data, self.user, required_fields=required_fields)
         logger.info('Campaign data has been validated.')
@@ -351,10 +350,6 @@ class CampaignBase(object):
         # 'smartlist_ids' is not a field of sms_campaign or push_campaign tables, so
         # need to remove it from data.
         del validated_data['smartlist_ids']
-        # If there exists any unexpected field in data from UI, raise invalid usage error.
-        unexpected_fields = campaign_model.get_invalid_fields(validated_data)
-        if unexpected_fields:
-            raise InvalidUsage('Unexpected field(s) `%s` found in data.' % unexpected_fields)
         return campaign_model, validated_data
 
     def save(self, form_data):

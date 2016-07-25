@@ -678,7 +678,7 @@ class CampaignsTestsHelpers(object):
         assert DatetimeUtils.utc_isoformat_to_datetime(datetime_str) < current_datetime + timedelta(minutes=minutes)
 
     @staticmethod
-    def campaign_create_or_update_with_unexpected_fields(method, url, access_token, campaign_data):
+    def test_api_with_with_unexpected_field_in_data(method, url, access_token, campaign_data):
         """
         This creates or updates a campaign with unexpected fields present in the data and
         asserts that we get invalid usage error from respective API. Data passed should be a dictionary
@@ -689,12 +689,10 @@ class CampaignsTestsHelpers(object):
         :param dict campaign_data: Data to be passed in HTTP request
         """
         campaign_data['unexpected_key'] = fake.word()
-        campaign_data['frequency'] = 0
         response = send_request(method, url, access_token, data=campaign_data)
         assert response.status_code == InvalidUsage.http_status_code(), \
             'It should result in bad request error because unexpected data was given.'
         assert 'unexpected_key' in response.json()['error']['message']
-        assert 'frequency' in response.json()['error']['message']
 
     @staticmethod
     def campaign_create_or_update_with_invalid_string(method, url, access_token, campaign_data, field):

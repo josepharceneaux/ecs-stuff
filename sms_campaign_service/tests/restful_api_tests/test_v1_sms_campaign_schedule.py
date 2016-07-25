@@ -136,6 +136,14 @@ class TestSmsCampaignScheduleHTTPPOST(object):
             self.HTTP_METHOD, self.URL % sms_campaign_of_user_first['id'], access_token_first,
             one_time_and_periodic)
 
+    def test_campaign_schedule_with_unexpected_field_in_data(self, access_token_first, sms_campaign_of_user_first):
+        """
+        This adds one unexpected field in data to schedule a campaign. It should result in Invalid usage error.
+        """
+        CampaignsTestsHelpers.test_api_with_with_unexpected_field_in_data(
+            self.HTTP_METHOD, self.URL % sms_campaign_of_user_first['id'], access_token_first,
+            generate_campaign_schedule_data())
+
     def test_campaign_schedule_with_invalid_datetime_format(self, access_token_first,
                                                             sms_campaign_of_user_first,
                                                             one_time_and_periodic):
@@ -245,6 +253,15 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         CampaignsTestsHelpers.missing_fields_in_schedule_data(
             self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_user_first['id'],
             access_token_first, one_time_and_periodic)
+
+    def test_campaign_reschedule_with_unexpected_field_in_data(self, access_token_first,
+                                                               scheduled_sms_campaign_of_user_first):
+        """
+        This adds one unexpected field in data to reschedule a campaign. It should result in Invalid usage error.
+        """
+        CampaignsTestsHelpers.test_api_with_with_unexpected_field_in_data(
+            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_user_first['id'], access_token_first,
+            generate_campaign_schedule_data())
 
     def test_reschedule_campaign_with_invalid_datetime_format(
             self, access_token_first, scheduled_sms_campaign_of_user_first,

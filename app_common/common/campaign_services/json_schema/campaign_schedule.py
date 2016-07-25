@@ -6,6 +6,7 @@ __author__ = 'basit'
 campaign_schedule_schema = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
+    "additionalProperties": False,
     "properties": {
         "frequency_id": {
             "type": "integer"

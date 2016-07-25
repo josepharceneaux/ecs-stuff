@@ -218,8 +218,8 @@ class TestSmsCampaignHTTPPost(object):
         User has one phone number, valid header and invalid data (unexpected fields) to
         create sms-campaign. It should result in Invalid usage error.
         """
-        CampaignsTestsHelpers.campaign_create_or_update_with_unexpected_fields(self.HTTP_METHOD, self.URL,
-                                                                               access_token_first, campaign_valid_data)
+        CampaignsTestsHelpers.test_api_with_with_unexpected_field_in_data(self.HTTP_METHOD, self.URL,
+                                                                          access_token_first, campaign_valid_data)
 
     def test_campaign_create_with_invalid_smartlist_ids(self, access_token_first):
         """
@@ -310,7 +310,7 @@ class TestSmsCampaignHTTPDelete(object):
     """
     This class contains tests for endpoint /v1/sms-campaigns and HTTP method DELETE.
     """
-
+    HTTP_METHOD = 'delete'
     URL = SmsCampaignApiUrl.CAMPAIGNS
 
     def test_campaigns_delete_with_invalid_token(self):
@@ -423,6 +423,15 @@ class TestSmsCampaignHTTPDelete(object):
         assert_campaign_delete(response, user_first.id, campaign_id)
         response_after_delete = requests.delete(self.URL, headers=headers, data=json.dumps({'ids': [campaign_id]}))
         CampaignsTestsHelpers.assert_non_ok_response(response_after_delete, ResourceNotFound.http_status_code())
+
+    def test_campaigns_delete_with_unexpected_fields_in_data(self, sms_campaign_of_user_first, access_token_first,
+                                                             user_phone_1):
+        """
+        This adds unexpected field in data to delete campaigns. It should result in Invalid usage error.
+        """
+        campaign_id = sms_campaign_of_user_first['id']
+        CampaignsTestsHelpers.test_api_with_with_unexpected_field_in_data(self.HTTP_METHOD, self.URL,
+                                                                          access_token_first, {'ids': [campaign_id]})
 
 
 def _delete_created_number_of_user(user):

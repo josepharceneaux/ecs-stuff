@@ -187,14 +187,14 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         assert response.status_code == InvalidUsage.http_status_code(), 'It should get bad request error'
         assert missing_key in response.json()['error']['message']
 
-    def test_with_unexpected_field_in_data(self, campaign_valid_data, access_token_first, user_phone_1,
-                                           sms_campaign_of_user_first):
+    def test_campaign_update_with_unexpected_field_in_data(self, campaign_valid_data, access_token_first, user_phone_1,
+                                                           sms_campaign_of_user_first):
         """
         User has one phone value, headers are valid and sms-campaign is being updated with
         invalid data (having some unexpected fields). It should result in Invalid usage error.
         """
-        CampaignsTestsHelpers.campaign_create_or_update_with_unexpected_fields(
-            self.HTTP_METHOD,  self.URL % sms_campaign_of_user_first['id'], access_token_first, campaign_valid_data)
+        CampaignsTestsHelpers.test_api_with_with_unexpected_field_in_data(
+            self.HTTP_METHOD, self.URL % sms_campaign_of_user_first['id'], access_token_first, campaign_valid_data)
 
     def test_campaign_update_with_invalid_campaign_name(self, access_token_first, campaign_valid_data,
                                                         sms_campaign_of_user_first):
