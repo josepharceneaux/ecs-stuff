@@ -1,6 +1,5 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Test Scheduler Service" type="js.build_tools.gulp" factoryName="Gulp.js">
-    <node-interpreter>project</node-interpreter>
     <node-options />
     <gulpfile>$PROJECT_DIR$/scheduler_service_admin/gulpfile.js</gulpfile>
     <tasks />

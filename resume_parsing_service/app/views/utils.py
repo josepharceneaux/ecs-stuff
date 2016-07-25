@@ -25,7 +25,7 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename
     :param dict candidate_dict: dict containing candidate info in candidate format.
     :param unicode formatted_token_str: string in format 'Bearer foo'.
     :return: Tuple stating if candidate was created and the corresponding id.
-    :rtype: tuple(bool, int)
+    :rtype: tuple(bool, int|long)
     """
     try:
         create_response = requests.post(CandidateApiUrl.CANDIDATES,
