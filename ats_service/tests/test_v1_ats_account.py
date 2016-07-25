@@ -57,18 +57,18 @@ class TestATSAccounts(object):
         """
         verify_nonexistant_account(access_token_first, 12)
 
-    # def test_create_ats_account(self, access_token_first, account_post_data):
-    #     """
-    #     POST /v1/ats-accounts Test creating an account
-    #     GET  /v1/ats-accounts/id Test retrieving an account
-    #     GET  /v1/ats Test getting the ATS entry created by adding the account
+    def test_create_ats_account(self, access_token_first, account_post_data):
+        """
+        POST /v1/ats-accounts Test creating an account
+        GET  /v1/ats-accounts/id Test retrieving an account
+        GET  /v1/ats Test getting the ATS entry created by adding the account
 
-    #     Create an account then test that all table entries have been correctly added.
+        Create an account then test that all table entries have been correctly added.
         
-    #     :param str access_token_first: authentication token
-    #     :param dict account_post_data: values for creating an ATS account
-    #     """
-    #     create_and_validate_account(access_token_first, account_post_data)
+        :param str access_token_first: authentication token
+        :param dict account_post_data: values for creating an ATS account
+        """
+        create_and_validate_account(access_token_first, account_post_data)
 
     # def test_delete_ats_account(self, access_token_first, account_post_data):
     #     """
