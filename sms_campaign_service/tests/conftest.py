@@ -74,17 +74,17 @@ def headers_for_different_users_of_same_domain(request, headers, headers_same_do
 
 
 @pytest.fixture(params=['user_first', 'user_same_domain'])
-def access_token_for_different_users_of_same_domain(request, access_token_first, access_token_same,
-                                                    user_same_domain):
+def data_for_different_users_of_same_domain(request, access_token_first, access_token_same,
+                                            user_first, user_same_domain, headers, headers_same_domain):
     """
     This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
     using their access_tokens.
     """
     if request.param == 'user_first':
-        return access_token_first
+        return {'access_token': access_token_first, 'user': user_first, 'headers': headers}
     elif request.param == 'user_same_domain':
         CampaignsTestsHelpers.assign_roles(user_same_domain)
-        return access_token_same
+        return {'access_token': access_token_same, 'user': user_same_domain, 'headers': headers_same_domain}
 
 
 @pytest.fixture()
@@ -413,7 +413,7 @@ def scheduled_sms_campaign_of_user_first(request, user_first, access_token_first
 
 
 @pytest.fixture()
-def scheduled_sms_campaign_of_other_domain(request, user_from_diff_domain,
+def scheduled_sms_campaign_of_other_domain(request, user_from_diff_domain, headers_other,
                                            access_token_other, sms_campaign_in_other_domain):
     """
     This creates the SMS campaign for user_from_diff_domain using valid data.

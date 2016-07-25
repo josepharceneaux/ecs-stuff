@@ -21,10 +21,8 @@ class TestSmsCampaignScheduleHTTPPOST(object):
     HTTP_METHOD = 'post'
     URL = SmsCampaignApiUrl.SCHEDULE
 
-    def test_campaign_schedule_with_valid_data(self, user_first,
-                                               access_token_for_different_users_of_same_domain,
-                                               sms_campaign_of_user_first,
-                                               one_time_and_periodic):
+    def test_campaign_schedule_with_valid_data(self, data_for_different_users_of_same_domain,
+                                               sms_campaign_of_user_first, one_time_and_periodic):
         """
         Here we schedule a campaign, both one time and periodically. We shouldn't get any error.
         This runs for both users
@@ -36,8 +34,9 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         assert not campaign['start_datetime']
         assert not campaign['end_datetime']
         task_id = CampaignsTestsHelpers.assert_campaign_schedule_or_reschedule(
-            self.HTTP_METHOD, self.URL, access_token_for_different_users_of_same_domain,
-            user_first.id, campaign['id'], SmsCampaignApiUrl.CAMPAIGN, one_time_and_periodic)
+            self.HTTP_METHOD, self.URL, data_for_different_users_of_same_domain['access_token'],
+            data_for_different_users_of_same_domain['user'].id, campaign['id'],
+            SmsCampaignApiUrl.CAMPAIGN, one_time_and_periodic)
         one_time_and_periodic['task_id'] = task_id
 
     def test_campaign_schedule_with_no_auth_header(self, access_token_first,
@@ -327,7 +326,7 @@ class TestSmsCampaignScheduleHTTPDELETE(object):
             SmsCampaign, self.HTTP_METHOD, self.URL, access_token_first,
             generate_campaign_schedule_data())
 
-    def test_unschedule_a_campaign(self, access_token_for_different_users_of_same_domain,
+    def test_unschedule_a_campaign(self, data_for_different_users_of_same_domain,
                                    scheduled_sms_campaign_of_user_first):
         """
         Here we un schedule a campaign. It should get OK response.
@@ -338,12 +337,12 @@ class TestSmsCampaignScheduleHTTPDELETE(object):
         # It should get campaign has been un scheduled
         response = requests.delete(
             self.URL % scheduled_sms_campaign_of_user_first['id'],
-            headers={'Authorization': 'Bearer %s' % access_token_for_different_users_of_same_domain})
+            headers=data_for_different_users_of_same_domain['headers'])
         assert response.ok
         # It should get campaign is already unscheduled
         response = requests.delete(
             self.URL % scheduled_sms_campaign_of_user_first['id'],
-            headers={'Authorization': 'Bearer %s' % access_token_for_different_users_of_same_domain})
+            headers=data_for_different_users_of_same_domain['headers'])
         assert response.ok
 
     def test_unschedule_not_owned_campaign(self, access_token_first,

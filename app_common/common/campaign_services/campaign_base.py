@@ -808,7 +808,7 @@ class CampaignBase(object):
                                 headers=self.oauth_header)
         # If any error occurs on POST call, we log the error inside http_request().
         if 'id' in response.json():
-            # Update campaign object with scheduler data, # update sms_campaign record with task_id
+            # Update campaign object with scheduler data
             self.campaign.update(frequency_id=data_to_schedule['frequency_id'],
                                  start_datetime=data_to_schedule['start_datetime'],
                                  end_datetime=data_to_schedule['end_datetime'],

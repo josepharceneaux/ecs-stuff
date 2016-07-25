@@ -41,7 +41,7 @@ class TestSmsCampaignWithIdHTTPGET(object):
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
                                                          self.URL % sms_campaign_of_user_first['id'])
 
-    def test_get_campaign_in_same_domain(self, access_token_for_different_users_of_same_domain,
+    def test_get_campaign_in_same_domain(self, data_for_different_users_of_same_domain,
                                          sms_campaign_of_user_first):
         """
         User auth token is valid. It uses 'sms_campaign_of_user_first' fixture
@@ -51,7 +51,7 @@ class TestSmsCampaignWithIdHTTPGET(object):
         This runs for both users
         1) Who created the campaign and 2) Some other user of same domain
         """
-        access_token = access_token_for_different_users_of_same_domain
+        access_token = data_for_different_users_of_same_domain['access_token']
         response = requests.get(self.URL % sms_campaign_of_user_first['id'],
                                 headers=dict(Authorization='Bearer %s' % access_token))
         assert response.status_code == requests.codes.OK, 'Response should be ok (200)'
