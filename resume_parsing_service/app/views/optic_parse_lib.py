@@ -275,7 +275,9 @@ def parse_candidate_experiences(bg_experience_xml_list):
             company_address = employement.find('address')
             company_city = _tag_text(company_address, 'city', capwords=True)
             company_state = _tag_text(company_address, 'state')
-            company_country = 'United States'
+            company_country = 'US' # TODO: <address> has the inferred-country attr
+            # first pass can be with `_tag_text(company_address, 'state')`
+            # second pass can be with `company_address.get('inferred-state')`
             # Check if an experience already exists
             existing_experience_list_order = is_experience_already_exists(output,
                                                                           organization or '',
@@ -302,17 +304,17 @@ def parse_candidate_experiences(bg_experience_xml_list):
                     ))
             if not existing_experience_list_order:
                 output.append(dict(
-                    bullets=candidate_experience_bullets,
+                    position=position_title,
+                    organization=organization,
                     city=company_city,
-                    country=company_country,
+                    state=company_state,
+                    country_code=company_country,
+                    start_month=start_month,
+                    start_year=start_year,
                     end_month=end_month,
                     end_year=end_year,
                     is_current=is_current_job,
-                    organization=organization,
-                    position=position_title,
-                    start_month=start_month,
-                    start_year=start_year,
-                    state=company_state,
+                    bullets=candidate_experience_bullets
                 ))
     return output
 
