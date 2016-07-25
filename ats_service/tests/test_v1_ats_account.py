@@ -23,39 +23,39 @@ class TestATSAccounts(object):
         """
         empty_database()
 
-    # def test_post_account_without_auth(self, account_post_data):
-    #     """
-    #     POST /v1/ats-accounts
+    def test_post_account_without_auth(self, account_post_data):
+        """
+        POST /v1/ats-accounts
 
-    #     Test authentication failure.
+        Test authentication failure.
         
-    #     :param dict account_post_data: values for creating an ATS account
-    #     """
-    #     response = send_request('post', ATSServiceApiUrl.ACCOUNTS, 'bad_bad_token', account_post_data)
-    #     assert response.status_code == codes.UNAUTHORIZED
+        :param dict account_post_data: values for creating an ATS account
+        """
+        response = send_request('post', ATSServiceApiUrl.ACCOUNTS, 'bad_bad_token', account_post_data)
+        assert response.status_code == codes.UNAUTHORIZED
 
-    # def test_post_account_with_missing_fields(self, account_post_data, access_token_first):
-    #     """
-    #     POST /v1/ats-accounts
+    def test_post_account_with_missing_fields(self, account_post_data, access_token_first):
+        """
+        POST /v1/ats-accounts
 
-    #     Test creating account with missing data.
+        Test creating account with missing data.
         
-    #     :param str access_token_first: authentication token
-    #     :param dict account_post_data: values for creating an ATS account
-    #     """
-    #     for field in ATS_ACCOUNT_FIELDS:
-    #         data = account_post_data.copy()
-    #         missing_field_test(data, field, access_token_first)
+        :param str access_token_first: authentication token
+        :param dict account_post_data: values for creating an ATS account
+        """
+        for field in ATS_ACCOUNT_FIELDS:
+            data = account_post_data.copy()
+            missing_field_test(data, field, access_token_first)
 
-    # def test_get_nonexistant_account(self, access_token_first):
-    #     """
-    #     GET /v1/ats-accounts
+    def test_get_nonexistant_account(self, access_token_first):
+        """
+        GET /v1/ats-accounts
 
-    #     Test error from retrieving non-existant account.
+        Test error from retrieving non-existant account.
         
-    #     :param str access_token_first: authentication token
-    #     """
-    #     verify_nonexistant_account(access_token_first, 12)
+        :param str access_token_first: authentication token
+        """
+        verify_nonexistant_account(access_token_first, 12)
 
     # def test_create_ats_account(self, access_token_first, account_post_data):
     #     """
