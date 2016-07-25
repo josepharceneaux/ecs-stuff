@@ -1,6 +1,7 @@
 """Code for building params dict from multiple types of requests objects."""
 __author__ = 'erik@gettalent.com'
 # pylint: disable=wrong-import-position, fixme, import-error
+import re
 from contracts import contract
 from resume_parsing_service.app import logger
 from resume_parsing_service.app.constants import error_constants
@@ -49,6 +50,7 @@ def build_params_from_form(request):
     """
     resume_file = request.files.get('resume_file')
     resume_file_name = request.form.get('resume_file_name')
+    talent_pool_ids = None
     if not (resume_file and resume_file_name):
         raise InvalidUsage(
             error_message=error_constants.INVALID_ARGS_MOBILE['message'],
@@ -59,7 +61,9 @@ def build_params_from_form(request):
     create_mode = request.form.get('create_candidate', 'false')
     create_candidate = True if create_mode.lower() == 'true' else False
     filepicker_key = None
-    talent_pool_ids = None
+    talent_pool_ids_raw = request.form.get('talent_pool_ids')
+    if talent_pool_ids_raw:
+        talent_pool_ids = [int(x) for x in re.findall(r'\d+', talent_pool_ids_raw)]
 
     return {
         'create_candidate': create_candidate,
