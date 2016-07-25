@@ -1169,11 +1169,11 @@ class CampaignBase(object):
         return blast_obj.id
 
     @abstractmethod
-    def get_smartlist_candidates_task(self, campaign_smartlist):
+    def get_smartlist_candidates_task(self, smartlist_id):
         """
         Child classes will implement this method as celery task because in campaign base there is no celery app.
         This method will retrieve candidates of a smartlist in a celery task.
-        :param PushCampaignSmartlist | SmsCampaignSmartlist campaign_smartlist: campaign smartlist object
+        :param int | long smartlist_id: campaign smartlist id
         """
         pass
 
@@ -1254,6 +1254,7 @@ class CampaignBase(object):
         campaign blast and sends campaign to all candidates using celery.
         :param list celery_result: list of lists of candidates
         """
+        db.session.commit()
         logger = current_app.config[TalentConfigKeys.LOGGER]
         all_candidate_ids = []
         if not celery_result:

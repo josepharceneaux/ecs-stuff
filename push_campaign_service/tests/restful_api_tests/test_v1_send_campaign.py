@@ -23,6 +23,7 @@ from requests import codes
 
 # Application specific imports
 from push_campaign_service.common.campaign_services.tests_helpers import assest_zero_blasts_and_sends
+from push_campaign_service.common.utils.test_utils import get_and_assert_zero
 from push_campaign_service.tests.test_utilities import send_campaign, get_blasts, get_blast_sends
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
@@ -141,12 +142,14 @@ class TestSendCampaign(object):
         In this test I want to test the scenario that if a push campaign is being sent to multiple candidates
         and there is no push device associated with any candidate, then API will raise InvalidUsage error if we send
         request with we do not pass `asynchronous=1` query parameter otherwise we will get OK response but no campaign
-        will be sent. i.e. blasts = 0, sends = 0
+        will be sent. i.e. blasts = 1, sends = 0
         """
         campaign_id = campaign_with_two_candidates_with_no_push_device_associated['id']
         if asynchronous:
             send_campaign(campaign_id, token_first, asynchronous=True, expected_status=(codes.OK,))
-            assest_zero_blasts_and_sends(PushCampaignApiUrl, campaign_id, token_first)
+            retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
+                  args=(campaign_id, token_first), kwargs={'count': 1})
+            get_and_assert_zero(PushCampaignApiUrl.SENDS % campaign_id, 'sends', token_first)
         else:
             send_campaign(campaign_id, token_first, expected_status=(codes.BAD_REQUEST,))
 
@@ -155,12 +158,14 @@ class TestSendCampaign(object):
         """
         In this test, we will send a campaign to a valid candidate (in same domain), but candidate
         has no device associated with him. So no campaign will be sent which will result in
-        zero blasts or sends.
+        one blasts and no sends.
         """
         campaign_id = campaign_in_db['id']
         if asynchronous:
             send_campaign(campaign_id, token_first, asynchronous=True, expected_status=(codes.OK,))
-            assest_zero_blasts_and_sends(PushCampaignApiUrl, campaign_id, token_first)
+            retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
+                  args=(campaign_id, token_first), kwargs={'count': 1})
+            get_and_assert_zero(PushCampaignApiUrl.SENDS % campaign_id, 'sends', token_first)
         else:
             send_campaign(campaign_id, token_first, expected_status=(codes.BAD_REQUEST,))
 
