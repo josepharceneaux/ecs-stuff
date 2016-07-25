@@ -27,6 +27,7 @@ from flask import current_app
 
 # Database Models
 from ..utils.auth_utils import refresh_token
+from ..models.db import db
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
 from ..models.push_campaign import PushCampaignBlast
@@ -1122,11 +1123,12 @@ class CampaignBase(object):
                                                                                              self.campaign.id,
                                                                                              self.user.id),
                                error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
+        self.smartlist_ids = [campaign_smartlist.smartlist_id for campaign_smartlist in campaign_smartlists]
         if get_candidates_with_celery:
-            self.get_candidates_and_send_campaign_via_celery(campaign_smartlists)
+            self.get_candidates_and_send_campaign_via_celery(self.smartlist_ids)
         else:
             # GET smartlist candidates
-            lists_of_smartlist_candidates = map(self.get_smartlist_candidates, campaign_smartlists)
+            lists_of_smartlist_candidates = map(self.get_smartlist_candidates, self.smartlist_ids)
             # Making a flat list out of "lists_of_smartlist_candidates" and removing duplicate candidate ids
             # which ensures that if one candidate is associated with multiple smartlists, then that candidate receives
             # only one campaign.
@@ -1175,7 +1177,7 @@ class CampaignBase(object):
         """
         pass
 
-    def get_smartlist_candidates(self, campaign_smartlist):
+    def get_smartlist_candidates(self, smartlist_id):
         """
         This will get the candidates associated to a provided smart list. This makes
         HTTP GET call on candidate service API to get the candidate associated candidates.
@@ -1186,14 +1188,15 @@ class CampaignBase(object):
         :Example:
                 SmsCampaignBase.get_candidates(1)
 
-        :param campaign_smartlist: obj (e.g record of "sms_campaign_smartlist" database table)
-        :type campaign_smartlist: object e.g. obj of SmsCampaignSmartlist
+        :param int | long smartlist_id: smartlist id
         :return: Returns array of candidates in the campaign's smartlists.
         :rtype: list
         :exception: Invalid usage
         **See Also**
         .. see also:: send() method in SmsCampaignBase class.
         """
+        # this is required to avoid DetachedInstanceError
+        db.session.commit()
         candidates = []
         logger = current_app.config[TalentConfigKeys.LOGGER]
         # As this method is called per smartlist_id for all smartlist_ids associated with
@@ -1201,36 +1204,34 @@ class CampaignBase(object):
         # we just log the error and move on to next iteration. In case of any error, we return
         # empty list.
         try:
-            raise_if_not_instance_of(campaign_smartlist, CampaignUtils.SMARTLIST_MODELS)
-            candidates_ids = get_candidates_of_smartlist(campaign_smartlist.smartlist_id, candidate_ids_only=True,
+            raise_if_not_instance_of(smartlist_id, (int, long))
+            candidates_ids = get_candidates_of_smartlist(smartlist_id, candidate_ids_only=True,
                                                          access_token=self.auth_token)
             candidates = [Candidate.get_by_id(candidate_id) for candidate_id in candidates_ids]
         except Exception:
             logger.exception('get_smartlist_candidates: Error while fetching candidates for '
-                             'smartlist(id:%s)' % campaign_smartlist.smartlist_id)
+                             'smartlist(id:%s)' % smartlist_id)
         if not candidates:
             logger.error('get_smartlist_candidates: No Candidate found. smartlist id is %s. '
-                         '(User(id:%s))' % (campaign_smartlist.smartlist_id, self.user.id))
+                         '(User(id:%s))' % (smartlist_id, self.user.id))
         return candidates
 
-    def get_candidates_and_send_campaign_via_celery(self, campaign_smartlists):
+    def get_candidates_and_send_campaign_via_celery(self, smartlist_ids):
         """
         This method creates a celery `chord` to retrieve candidates of all smartlists. When all celery tasks are
         done with retrieving candidates, celery sends the list of results to registered callback function which
         is `callback_campaign_send` which will send campaign to all candidates.
 
-        :param PushCampaignSmartlist | SmsCampaignSmartlist campaign_smartlists: smartlists associated with campaign
+        :param list(int | long) smartlist_ids: smartlists associated with campaign
         """
         # Register function to be called after all candidates are fetched from smartlists
         callback = self.callback_campaign_send.subtask((self,), queue=self.campaign_type)
 
-        self.smartlist_ids = [campaign_smartlist.smartlist_id for campaign_smartlist in campaign_smartlists]
-
         # Get candidates present in each smartlist
-        tasks = [self.get_smartlist_candidates_task.subtask((self, smartlist),
+        tasks = [self.get_smartlist_candidates_task.subtask((self, smartlist_id),
                                                             link_error=self.celery_error_handler.subtask(
                                                            queue=self.campaign_type),
-                                                       queue=self.campaign_type) for smartlist in campaign_smartlists]
+                                                       queue=self.campaign_type) for smartlist_id in smartlist_ids]
 
         # This runs all tasks asynchronously and sets callback function to be hit once all
         # tasks in list finish running without raising any error. Otherwise callback
@@ -1301,6 +1302,7 @@ class CampaignBase(object):
         **See Also**
         .. see also:: send() method in SmsCampaignBase class.
         """
+        db.session.commit()
         if not candidates:
             raise InvalidUsage('No candidates with valid data found for %s(id:%s).'
                                % (self.campaign_type, self.campaign.id),

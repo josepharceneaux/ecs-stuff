@@ -454,6 +454,7 @@ class SmsCampaignBase(CampaignBase):
         :param candidates: list of candidates to whom we want to send campaign
         :type candidates: list[Candidate]
         """
+        db.session.commit()
         not_owned_ids = []
         multiple_records_ids = []
         candidates_and_phones = []
@@ -615,12 +616,12 @@ class SmsCampaignBase(CampaignBase):
             self.process_campaign_send(celery_result)
 
     @celery_app.task(name='get_smartlist_candidates_task')
-    def get_smartlist_candidates_task(self, campaign_smartlist):
+    def get_smartlist_candidates_task(self, smartlist_id):
         """
         This method will retrieve smartlist candidate from candidate pool service in a celery task.
-        :param SmsCampaignSmartlist campaign_smartlist: campaign smartlist object
+        :param int | long smartlist_id: campaign smartlist id
         """
-        return super(SmsCampaignBase, self).get_smartlist_candidates(campaign_smartlist)
+        return super(SmsCampaignBase, self).get_smartlist_candidates(smartlist_id)
 
     def process_urls_in_sms_body_text(self, candidate_id):
         """

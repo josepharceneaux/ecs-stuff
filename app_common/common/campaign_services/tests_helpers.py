@@ -382,8 +382,8 @@ class CampaignsTestsHelpers(object):
             url += "?asynchronous=1"
             response_post = send_request('post', url,  access_token)
             assert response_post.status_code == requests.codes.OK
-            assert campaign_service_urls.getattr('BLASTS') and campaign_service_urls.getattr('SENDS')
-            assest_zero_blasts_and_sends(campaign_service_urls, campaign_id, access_token)
+            assert getattr(campaign_service_urls, 'SENDS')
+            get_and_assert_zero(getattr(campaign_service_urls, 'SENDS') % campaign_id, 'sends', access_token)
         else:
             response_post = send_request('post', url,  access_token)
             error_resp = cls.assert_api_response(response_post,
