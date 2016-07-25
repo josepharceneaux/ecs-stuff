@@ -31,9 +31,9 @@ def google_vision_ocr(file_string_io):
     Specific JSON responses:
         https://cloud.google.com/vision/reference/rest/v1/images/annotate#annotateimageresponse
         https://cloud.google.com/vision/reference/rest/v1/images/annotate#entityannotation
-    :param cStringIO_StringIO file_string_io: Resume file in memory.
+    :param cStringIO file_string_io: Resume file in memory.
     :return: The first `description` key from the first `textAnnotations` item in the OCR results.
-    :rtype: str | unicode
+    :rtype: string
     """
     file_string_io.seek(0)
     b64_string = base64.b64encode(file_string_io.getvalue())
@@ -97,10 +97,10 @@ def abbyy_ocr_image(img_file_obj, export_format='pdfSearchable'):
     """
     Posts the image to Abby OCR API, then keeps pinging to check if it's done. Quits if not done in
     certain number of tries.
-    :param cStringIO_StringIO img_file_obj: (Image) File posted to the resume parsing service.
+    :param cStringIO img_file_obj: (Image) File posted to the resume parsing service.
     :param string export_format: Abby OCR param.
     :return: Image file OCR text parsed from Abbyy.
-    :rtype str:
+    :rtype string:
     """
 
     # Post the image to Abby

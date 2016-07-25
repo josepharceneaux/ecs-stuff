@@ -105,7 +105,7 @@ def process_resume(parse_params):
 def get_or_store_bgxml(resume_file, filename_str):
     """
     Tries to retrieve processed resume data from redis or parses it and stores it.
-    :param cStringIO_StringIO resume_file:
+    :param cStringIO resume_file:
     :param str filename_str:
     :rtype: dict
     """
