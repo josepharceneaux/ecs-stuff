@@ -73,4 +73,4 @@ echo
 
 py.test ats_service/tests/test_v1_ats_account.py
 
-# ats_service/tests/test_v1_ats_candidate.py
+py.test ats_service/tests/test_v1_ats_candidate.py
