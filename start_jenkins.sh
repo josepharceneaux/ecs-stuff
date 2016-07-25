@@ -71,4 +71,4 @@ echo
 
 py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests sms_campaign_service/tests resume_parsing_service/tests candidate_service/tests email_campaign_service/tests ats_service/tests/test_v1_ats_candidate.py
 
-py.test ats_service/tests/test_v1_ats_account.py
+# py.test ats_service/tests/test_v1_ats_account.py
