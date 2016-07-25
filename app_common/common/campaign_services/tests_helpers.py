@@ -108,30 +108,44 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(data, dict) if data else None
         campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
         # Delete the campaign first
-        cls.request_for_ok_response('delete', url_to_delete_campaign % campaign_id, access_token)
+        response = send_request('delete', url_to_delete_campaign % campaign_id, access_token)
+        assert response.ok
         cls.request_for_resource_not_found_error(
             method_after_delete, url_after_delete % campaign_id, access_token, data)
 
     @staticmethod
-    def request_for_ok_response(method, url, access_token, data=None):
+    def assert_campaign_schedule_or_reschedule(method, url, access_token, user_id, campaign_id, url_to_get_campaign,
+                                               data):
         """
         This function is expected to schedule a campaign with all valid parameters.
-        :param (str) method: Name of HTTP method
-        :param (str) url: URL to to make HTTP request
-        :param (str) access_token: access access_token of user
-        :param (dict | None) data: Data to be posted
+        It then gets the campaign and validates that requested fields have been saved in database.
+        :param string method: Name of HTTP method
+        :param string url: URL to to make HTTP request to schedule/re-schedule campaign
+        :param string access_token: access access_token of user
+        :param int|long user_id: Id of user
+        :param int|long campaign_id: Id of requested campaign
+        :param string url_to_get_campaign: URL to get campaign once campaign is scheduled
+        :param dict|None data: Data to be posted
         """
         raise_if_not_instance_of(method, basestring)
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(data, dict) if data else None
-        response = send_request(method, url, access_token, data)
-        assert response.ok
+        response = send_request(method, url % campaign_id, access_token, data)
+        assert response.status_code == requests.codes.OK, response.json()['error']['message']
         json_response = response.json()
         assert json_response
-        if method.lower() != 'delete':
-            assert json_response['task_id']
-            return json_response['task_id']
+        assert 'task_id' in response.json()
+        CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_id)
+        # get updated record to verify the changes we made
+        response_get = send_request('get', url_to_get_campaign % campaign_id, access_token)
+        assert response_get.status_code == requests.codes.OK, 'Response should be ok (200)'
+        resp = response_get.json()['campaign']
+        assert resp['frequency'].lower() in Frequency.standard_frequencies()
+        assert resp['start_datetime']
+        if resp['frequency']:
+            assert resp['end_datetime']
+        return json_response['task_id']
 
     @staticmethod
     def request_with_past_start_and_end_datetime(method, url, access_token, data):
@@ -378,8 +392,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(campaign_id, (int, long))
         response_post = send_request('post', url,  access_token)
-        error_resp = cls.assert_non_ok_response(response_post,
-                                             expected_status_code=InvalidUsage.http_status_code())
+        error_resp = cls.assert_non_ok_response(response_post)
         assert error_resp['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
         assert str(campaign_id) in error_resp['message']
 
@@ -387,9 +400,9 @@ class CampaignsTestsHelpers(object):
     def assert_for_activity(user_id, _type, source_id):
         """
         This verifies that activity has been created for given action
-        :param (int, long) user_id: Id of user
-        :param (int, long) _type: Type number of activity
-        :param (int, long) source_id: Id of activity source
+        :param int|long user_id: Id of user
+        :param int|long _type: Type number of activity
+        :param int|long source_id: Id of activity source
         """
         raise_if_not_instance_of(user_id, (int, long))
         raise_if_not_instance_of(_type, (int, long))

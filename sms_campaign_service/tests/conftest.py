@@ -398,12 +398,12 @@ def one_time_and_periodic(request, headers):
 
 
 @pytest.fixture()
-def scheduled_sms_campaign_of_user_first(request, user_first, headers,
+def scheduled_sms_campaign_of_user_first(request, user_first, access_token_first, headers,
                                          sms_campaign_of_user_first):
     """
     This creates the SMS campaign for user_first using valid data.
     """
-    campaign = _get_scheduled_campaign(user_first, sms_campaign_of_user_first, headers)
+    campaign = _get_scheduled_campaign(user_first, sms_campaign_of_user_first, access_token_first)
 
     def delete_scheduled_task():
         _unschedule_campaign(campaign, headers)
@@ -414,13 +414,11 @@ def scheduled_sms_campaign_of_user_first(request, user_first, headers,
 
 @pytest.fixture()
 def scheduled_sms_campaign_of_other_domain(request, user_from_diff_domain,
-                                           headers_other, sms_campaign_in_other_domain):
+                                           access_token_other, sms_campaign_in_other_domain):
     """
     This creates the SMS campaign for user_from_diff_domain using valid data.
     """
-    campaign = _get_scheduled_campaign(user_from_diff_domain,
-                                       sms_campaign_in_other_domain,
-                                       headers_other)
+    campaign = _get_scheduled_campaign(user_from_diff_domain, sms_campaign_in_other_domain, access_token_other)
 
     def delete_scheduled_task():
         _unschedule_campaign(campaign, headers_other)
@@ -765,16 +763,18 @@ def _create_candidate_mobile_phone(candidate, phone_value):
     return candidate_phone
 
 
-def _get_scheduled_campaign(user, campaign, auth_header):
+def _get_scheduled_campaign(user, campaign, access_token):
     """
     This schedules the given campaign and return it.
     """
-    response = requests.post(
-        SmsCampaignApiUrl.SCHEDULE % campaign['id'], headers=auth_header,
-        data=json.dumps(generate_campaign_schedule_data()))
-    assert_campaign_schedule(response, user.id, campaign['id'])
+    CampaignsTestsHelpers.assert_campaign_schedule_or_reschedule('post',
+                                                                 SmsCampaignApiUrl.SCHEDULE,
+                                                                 access_token, user.id, campaign['id'],
+                                                                 SmsCampaignApiUrl.CAMPAIGN,
+                                                                 generate_campaign_schedule_data())
     # GET campaign from API, now it should have scheduler_task_id associated with it.
-    response = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign['id'], headers=auth_header)
+    response = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign['id'],
+                            headers={'Authorization': 'Bearer %s' % access_token})
     assert response.ok
     return response.json()['campaign']
 

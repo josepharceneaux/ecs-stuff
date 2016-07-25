@@ -3,9 +3,6 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains pyTests for endpoint /v1/sms-campaigns/:id/schedule of SMS Campaign API.
 """
-# Standard Imports
-import json
-
 # Third Party Imports
 import requests
 
@@ -13,8 +10,8 @@ import requests
 from sms_campaign_service.common.models.misc import Frequency
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
-from sms_campaign_service.tests.modules.common_functions import generate_campaign_schedule_data
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from sms_campaign_service.tests.modules.common_functions import generate_campaign_schedule_data
 
 
 class TestSmsCampaignScheduleHTTPPOST(object):
@@ -24,20 +21,23 @@ class TestSmsCampaignScheduleHTTPPOST(object):
     HTTP_METHOD = 'post'
     URL = SmsCampaignApiUrl.SCHEDULE
 
-    def test_campaign_schedule_with_valid_data(self,
+    def test_campaign_schedule_with_valid_data(self, user_first,
                                                access_token_for_different_users_of_same_domain,
                                                sms_campaign_of_user_first,
                                                one_time_and_periodic):
         """
-        Here we reschedule a campaign, both one time and periodically. We shouldn't get
-        any error.
-
+        Here we schedule a campaign, both one time and periodically. We shouldn't get any error.
         This runs for both users
         1) Who created the campaign and 2) Some other user of same domain
         """
-        task_id = CampaignsTestsHelpers.request_for_ok_response(
-            self.HTTP_METHOD, self.URL % sms_campaign_of_user_first['id'],
-            access_token_for_different_users_of_same_domain, one_time_and_periodic)
+        campaign = sms_campaign_of_user_first
+        # Assert that initially campaign has no values saved related to scheduler.
+        assert not campaign['frequency']
+        assert not campaign['start_datetime']
+        assert not campaign['end_datetime']
+        task_id = CampaignsTestsHelpers.assert_campaign_schedule_or_reschedule(
+            self.HTTP_METHOD, self.URL, access_token_for_different_users_of_same_domain,
+            user_first.id, campaign['id'], SmsCampaignApiUrl.CAMPAIGN, one_time_and_periodic)
         one_time_and_periodic['task_id'] = task_id
 
     def test_campaign_schedule_with_no_auth_header(self, access_token_first,
@@ -181,30 +181,31 @@ class TestSmsCampaignScheduleHTTPPUT(object):
     HTTP_METHOD = 'put'
     URL = SmsCampaignApiUrl.SCHEDULE
 
-    def test_reschedule_campaign_from_one_time_to_periodic(
-            self, access_token_first,
-            scheduled_sms_campaign_of_user_first):
+    def test_reschedule_campaign_from_one_time_to_periodic(self, access_token_first, user_first,
+                                                           scheduled_sms_campaign_of_user_first):
         """
         Campaign is scheduled one time. Here we try to re-schedule it periodically with valid data.
         It should be re-scheduled.
         """
+        campaign_id = scheduled_sms_campaign_of_user_first['id']
         data = generate_campaign_schedule_data()
         data['frequency_id'] = Frequency.DAILY  # for Periodic job
-        CampaignsTestsHelpers.request_for_ok_response(
-            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_user_first['id'],
-            access_token_first, data)
+        CampaignsTestsHelpers.assert_campaign_schedule_or_reschedule(
+            self.HTTP_METHOD, self.URL, access_token_first, user_first.id, campaign_id, SmsCampaignApiUrl.CAMPAIGN,
+            data)
 
-    def test_reschedule_campaign_with_other_user_of_same_domain(
-            self, access_token_same, scheduled_sms_campaign_of_user_first):
+    def test_reschedule_campaign_with_other_user_of_same_domain(self, access_token_same, user_same_domain,
+                                                                scheduled_sms_campaign_of_user_first):
         """
         Campaign is scheduled one time. Here we try to re-schedule it periodically with valid data
         with some other user of same domain. It should be re-scheduled.
         """
+        campaign_id = scheduled_sms_campaign_of_user_first['id']
         data = generate_campaign_schedule_data()
         data['frequency_id'] = Frequency.DAILY  # for Periodic job
-        CampaignsTestsHelpers.request_for_ok_response(
-            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_user_first['id'],
-            access_token_same, data)
+        CampaignsTestsHelpers.assert_campaign_schedule_or_reschedule(
+            self.HTTP_METHOD, self.URL, access_token_same, user_same_domain.id, campaign_id, SmsCampaignApiUrl.CAMPAIGN,
+            data)
 
     def test_reschedule_campaign_with_invalid_token(self, sms_campaign_of_user_first):
         """
@@ -333,16 +334,17 @@ class TestSmsCampaignScheduleHTTPDELETE(object):
 
         This runs for both users
         1) Who created the campaign and 2) Some other user of same domain
-
         """
         # It should get campaign has been un scheduled
-        CampaignsTestsHelpers.request_for_ok_response(
-            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_user_first['id'],
-            access_token_for_different_users_of_same_domain)
+        response = requests.delete(
+            self.URL % scheduled_sms_campaign_of_user_first['id'],
+            headers={'Authorization': 'Bearer %s' % access_token_for_different_users_of_same_domain})
+        assert response.ok
         # It should get campaign is already unscheduled
-        CampaignsTestsHelpers.request_for_ok_response(
-            self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_user_first['id'],
-            access_token_for_different_users_of_same_domain)
+        response = requests.delete(
+            self.URL % scheduled_sms_campaign_of_user_first['id'],
+            headers={'Authorization': 'Bearer %s' % access_token_for_different_users_of_same_domain})
+        assert response.ok
 
     def test_unschedule_not_owned_campaign(self, access_token_first,
                                            scheduled_sms_campaign_of_other_domain):

@@ -113,7 +113,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
     def test_updating_campaign_in_same_domain(self, headers_for_different_users_of_same_domain,
                                               campaign_valid_data, sms_campaign_of_user_first):
         """
-        This uses fixture to create an sms_campaign record in db. It then makes a POST
+        This uses fixture to create an sms_campaign record in db. It then makes a PUT
         call to update that record with name modification. If status code is 200, it then
         gets the record from database and assert the 'name' of modified record.
         """
@@ -121,21 +121,15 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         data = campaign_valid_data.copy()
         modified_name = 'Modified Name'
         data.update({'name': modified_name})
-        scheduler_data = generate_campaign_schedule_data()
-        data.update(scheduler_data)
-        response_post = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers,
-                                     data=json.dumps(data))
-        assert response_post.status_code == requests.codes.OK, 'Response should be ok (200)'
+        response = requests.put(self.URL % sms_campaign_of_user_first['id'], headers=headers, data=json.dumps(data))
+        assert response.status_code == requests.codes.OK, response.json()['error']['message']
 
         # get updated record to verify the change we made in name
         response_get = requests.get(self.URL % sms_campaign_of_user_first['id'], headers=headers)
-        assert response_get.status_code == requests.codes.OK, 'Response should be ok (200)'
+        assert response_get.status_code == requests.codes.OK, response_get.json()['error']['message']
         resp = response_get.json()['campaign']
         assert resp
         assert resp['name'] == modified_name
-        assert resp['frequency'].lower() in Frequency.standard_frequencies()
-        assert resp['start_datetime']
-        assert resp['end_datetime']
 
     def test_updating_sms_campaign_of_other_domain(self, headers, sms_campaign_in_other_domain, campaign_valid_data):
         """
@@ -187,7 +181,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         assert response.status_code == InvalidUsage.http_status_code(), 'It should get bad request error'
         assert missing_key in response.json()['error']['message']
 
-    def test_campaign_update_with_unexpected_field_in_data(self, campaign_valid_data, access_token_first, user_phone_1,
+    def test_campaign_update_with_unexpected_field_in_data(self, campaign_valid_data, access_token_first,
                                                            sms_campaign_of_user_first):
         """
         User has one phone value, headers are valid and sms-campaign is being updated with

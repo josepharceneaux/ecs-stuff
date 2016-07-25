@@ -377,8 +377,6 @@ class SmsCampaignBase(CampaignBase):
         )
         # get scheduler task_id created on scheduler_service
         scheduler_task_id = super(SmsCampaignBase, self).schedule(data_to_schedule)
-        # update sms_campaign record with task_id
-        self.campaign.update(scheduler_task_id=scheduler_task_id)
         return scheduler_task_id
 
     @staticmethod

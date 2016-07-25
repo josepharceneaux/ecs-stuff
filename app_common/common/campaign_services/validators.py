@@ -37,13 +37,12 @@ def validation_of_data_to_schedule_campaign(request):
     :rtype: dict
     """
     data_to_schedule_campaign = get_valid_json_data(request)
-    # get number of seconds from frequency id
+    # get number of seconds from frequency_id
     frequency = Frequency.get_seconds_from_id(data_to_schedule_campaign.get('frequency_id'))
     # check if task to be schedule is periodic
     if frequency and not data_to_schedule_campaign.get('end_datetime'):
         raise InvalidUsage("end_datetime is required to schedule a periodic task")
     data_to_schedule_campaign['frequency'] = frequency
-    # convert end_datetime_str in datetime obj
     return data_to_schedule_campaign
 
 
