@@ -15,7 +15,6 @@ from sms_campaign_service.common.tests.conftest import *
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from sms_campaign_service.tests.modules.common_functions import (assert_api_send_response,
-                                                                 assert_campaign_schedule,
                                                                  delete_test_scheduled_task,
                                                                  assert_campaign_creation,
                                                                  candidate_ids_associated_with_campaign,
@@ -60,25 +59,11 @@ def headers_same_domain(access_token_same):
 
 
 @pytest.fixture(params=['user_first', 'user_same_domain'])
-def headers_for_different_users_of_same_domain(request, headers, headers_same_domain,
-                                               user_same_domain):
-    """
-    This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
-    using their respective headers.
-    """
-    if request.param == 'user_first':
-        return headers
-    elif request.param == 'user_same_domain':
-        CampaignsTestsHelpers.assign_roles(user_same_domain)
-        return headers_same_domain
-
-
-@pytest.fixture(params=['user_first', 'user_same_domain'])
 def data_for_different_users_of_same_domain(request, access_token_first, access_token_same,
                                             user_first, user_same_domain, headers, headers_same_domain):
     """
     This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
-    using their access_tokens.
+    using their access_tokens. This returns a dict containing access_token, user object and auth headers.
     """
     if request.param == 'user_first':
         return {'access_token': access_token_first, 'user': user_first, 'headers': headers}

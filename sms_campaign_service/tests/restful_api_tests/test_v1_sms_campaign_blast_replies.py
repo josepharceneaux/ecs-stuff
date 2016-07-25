@@ -52,7 +52,7 @@ class TestSmsCampaignBlastReplies(object):
             campaign, SmsCampaignApiUrl.CAMPAIGN, self.URL % ('%s', blast_id),
             self.HTTP_METHOD, access_token_first)
 
-    def test_get_with_one_blast_reply(self, headers_for_different_users_of_same_domain,
+    def test_get_with_one_blast_reply(self, data_for_different_users_of_same_domain,
                                       candidate_and_phone_1,
                                       sent_campaign_and_blast_ids,
                                       create_campaign_replies):
@@ -65,7 +65,7 @@ class TestSmsCampaignBlastReplies(object):
         """
         campaign, blast_ids = sent_campaign_and_blast_ids
         response = requests.get(self.URL % (campaign['id'], blast_ids[0]),
-                                headers=headers_for_different_users_of_same_domain)
+                                headers=data_for_different_users_of_same_domain['headers'])
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         received_reply_objects = response.json()[self.ENTITY]
         # Assert all reply objects have valid fields

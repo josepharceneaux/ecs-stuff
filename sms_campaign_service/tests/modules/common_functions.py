@@ -116,18 +116,11 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_sends, 
     assert len(sms_campaign_sends) == expected_sends
     # assert on activity of individual campaign sends
     for sms_campaign_send in sms_campaign_sends:
-        assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SMS_SEND, sms_campaign_send.id)
+        CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SMS_SEND, sms_campaign_send.id)
     if sms_campaign_sends:
         # assert on activity for whole campaign send
-        assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SEND, campaign.id)
+        CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SEND, campaign.id)
     assert_url_conversion(sms_campaign_sends)
-
-
-def assert_for_activity(user_id, type_, source_id):
-    """
-    This verifies that activity has been created for given action
-    """
-    CampaignsTestsHelpers.assert_for_activity(user_id, type_, source_id)
 
 
 def assert_api_send_response(campaign, response, expected_status_code):
@@ -169,7 +162,7 @@ def assert_campaign_delete(response, user_id, campaign_id):
     created successfully.
     """
     assert response.status_code == 200, 'should get ok response(200)'
-    assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_DELETE, campaign_id)
+    CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_DELETE, campaign_id)
 
 
 def delete_test_scheduled_task(task_id, headers):
@@ -191,7 +184,7 @@ def assert_campaign_creation(response, user_id, expected_status_code):
     json_response = response.json()
     assert 'location' in response.headers
     assert 'id' in json_response
-    assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_CREATE, json_response['id'])
+    CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_CREATE, json_response['id'])
     return json_response['id']
 
 
@@ -223,8 +216,8 @@ def reply_and_assert_response(campaign_obj, user_phone, candidate_phone, access_
     assert campaign_reply_in_db[reply_count - 1].body_text == reply_text
     reply_count_after = get_replies_count(campaign_obj, access_token)
     assert reply_count_after == reply_count_before + 1
-    assert_for_activity(user_phone.user_id, Activity.MessageIds.CAMPAIGN_SMS_REPLY,
-                        campaign_reply_in_db[reply_count - 1].id)
+    CampaignsTestsHelpers.assert_for_activity(user_phone.user_id, Activity.MessageIds.CAMPAIGN_SMS_REPLY,
+                                              campaign_reply_in_db[reply_count - 1].id)
 
 
 def get_campaign_reply(candidate_phone):

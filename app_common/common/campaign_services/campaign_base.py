@@ -702,10 +702,9 @@ class CampaignBase(object):
             end_datetime as we did in step 2 for start_datetime.
         9- Removes the frequency_id from given dict of data and put frequency (number of seconds)
             in it.
-        :exception: Forbidden error
-        :exception: Resource not found
-        :exception: Bad request
-        :exception: Invalid usage
+        :param flask.request request: request from UI
+        :param int|long campaign_id: id of campaign
+        :param string campaign_type: Type of campaign
         :return: dictionary containing Campaign obj, data to schedule SMS campaign,
                     scheduled_task and auth header
         :rtype: dict
@@ -715,9 +714,8 @@ class CampaignBase(object):
         """
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         # get campaign obj, scheduled task data and oauth_header
-        campaign_obj, scheduled_task, oauth_header = \
-            cls.get_campaign_and_scheduled_task(campaign_id, request.user,
-                                                campaign_type)
+        campaign_obj, scheduled_task, oauth_header = cls.get_campaign_and_scheduled_task(campaign_id, request.user,
+                                                                                         campaign_type)
         # Updating scheduled task should not be allowed in POST request
         if scheduled_task and request.method == 'POST':
             raise ForbiddenError('Use PUT method instead to update already scheduled task')
@@ -1047,10 +1045,9 @@ class CampaignBase(object):
                 data or we need to schedule new one.
             3) If we need to schedule again, we call schedule() method.
 
-        :param _request: request from UI
-        :param campaign_id: id of campaign
-        :type campaign_id: int | long
-        :return:
+        :param flask.request _request: request from UI
+        :param int|long campaign_id: id of campaign
+        :rtype: str
         """
         task_id = None
         # validate data to schedule

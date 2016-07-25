@@ -110,14 +110,14 @@ class TestSmsCampaignWithIdHTTPPUT(object):
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         assert response.status_code == InvalidUsage.http_status_code(), 'It should be a bad request (400)'
 
-    def test_updating_campaign_in_same_domain(self, headers_for_different_users_of_same_domain,
+    def test_updating_campaign_in_same_domain(self, data_for_different_users_of_same_domain,
                                               campaign_valid_data, sms_campaign_of_user_first):
         """
         This uses fixture to create an sms_campaign record in db. It then makes a PUT
         call to update that record with name modification. If status code is 200, it then
         gets the record from database and assert the 'name' of modified record.
         """
-        headers = headers_for_different_users_of_same_domain
+        headers = data_for_different_users_of_same_domain['headers']
         data = campaign_valid_data.copy()
         modified_name = 'Modified Name'
         data.update({'name': modified_name})

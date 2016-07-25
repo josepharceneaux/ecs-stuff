@@ -47,7 +47,7 @@ from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.handy_functions import replace_ngrok_link_with_localhost
 from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 from sms_campaign_service.tests.modules.common_functions import \
-    (assert_on_blasts_sends_url_conversion_and_activity, assert_for_activity,
+    (assert_on_blasts_sends_url_conversion_and_activity,
      assert_api_send_response, assert_campaign_schedule, delete_test_scheduled_task, generate_campaign_schedule_data)
 
 
@@ -285,8 +285,8 @@ class TestURLRedirectionApi(object):
             campaign_in_db)
         assert hit_count_after == hit_count + 1
         assert clicks_after == clicks + 1
-        assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_SMS_CLICK,
-                            campaign_in_db.id)
+        CampaignsTestsHelpers.assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_SMS_CLICK,
+                                                  campaign_in_db.id)
 
     def test_get_with_no_signature(self, url_conversion_by_send_test_sms_campaign):
         """
