@@ -304,17 +304,14 @@ class CampaignsTestsHelpers(object):
         """
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
-        if not asynchronous:
-            response = send_request('post', url, access_token, None)
-            assert response.status_code == InvalidUsage.http_status_code(), \
-                'It should be invalid usage error(400)'
-            error_resp = response.json()['error']
-            assert error_resp['code'] == CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
-            assert 'No Smartlist'.lower() in error_resp['message'].lower()
-        else:
+        if asynchronous:
             url += "?asynchronous=1"
-            response = send_request('post', url, access_token, None)
-            assert response.status_code == requests.codes.OK
+        response = send_request('post', url, access_token, None)
+        assert response.status_code == InvalidUsage.http_status_code(), \
+            'It should be invalid usage error(400)'
+        error_resp = response.json()['error']
+        assert error_resp['code'] == CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
+        assert 'No Smartlist'.lower() in error_resp['message'].lower()
 
     @classmethod
     def campaign_send_with_no_smartlist_candidate(cls, url, access_token, campaign,

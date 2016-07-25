@@ -70,8 +70,6 @@ class TestSendSmsCampaign(object):
         """
         CampaignsTestsHelpers.campaign_send_with_no_smartlist(self.URL % invalid_sms_campaign.id,
                                                               access_token_first, asynchronous=asynchronous)
-        if asynchronous:
-            get_and_assert_zero(SmsCampaignApiUrl.SENDS % invalid_sms_campaign.id, 'sends', access_token_first)
 
     @pytest.mark.parametrize("asynchronous", [True, False])
     def test_post_with_no_smartlist_candidate(self, access_token_first,

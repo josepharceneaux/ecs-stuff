@@ -1117,7 +1117,7 @@ class CampaignBase(object):
                                                                      self.campaign.id),
                                error_code=CampaignException.EMPTY_BODY_TEXT)
         # Get smartlists associated to this campaign
-        campaign_smartlists = self.campaign.smartlists
+        campaign_smartlists = self.campaign.smartlists.all()
         if not campaign_smartlists:
             raise InvalidUsage('No smartlist is associated with %s(id:%s). (User(id:%s))' % (self.campaign_type,
                                                                                              self.campaign.id,
