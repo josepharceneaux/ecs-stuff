@@ -217,15 +217,18 @@ def delete_campaigns(data, token, expected_status=(200,)):
 
 
 @contract
-def send_campaign(campaign_id, token, expected_status=(200,)):
+def send_campaign(campaign_id, token, asynchronous=False, expected_status=(200,)):
     """
     This method sends a POST request to Push Campaign API to send a campaign to associated candidates.
     :type campaign_id: int | long
     :type token: string
+    :type asynchronous: bool
     :type expected_status: tuple[int]
     :rtype dict
     """
-    response = send_request('post', PushCampaignApiUrl.SEND % campaign_id, token)
+    url = PushCampaignApiUrl.SEND % campaign_id
+    url = url + "?asynchronous=1" if asynchronous else url
+    response = send_request('post', url, token)
     logger.info('tests : send_campaign: %s', response.content)
     print('tests : send_campaign: %s', response.content)
     assert response.status_code in expected_status

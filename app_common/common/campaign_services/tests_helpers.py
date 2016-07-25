@@ -31,7 +31,7 @@ from campaign_utils import get_model, CampaignUtils
 from ..utils.validators import raise_if_not_instance_of
 from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
-from ..utils.test_utils import get_fake_dict
+from ..utils.test_utils import get_fake_dict, get_and_assert_zero
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
                               ResourceNotFound, UnprocessableEntity)
@@ -292,26 +292,33 @@ class CampaignsTestsHelpers(object):
         return error
 
     @staticmethod
-    def campaign_send_with_no_smartlist(url, access_token):
+    def campaign_send_with_no_smartlist(url, access_token, asynchronous=False):
         """
         This is the test to send a campaign which has no smartlist associated  with it.
-        It should get Invalid usage error. Custom error should be
-        NoSmartlistAssociatedWithCampaign.
+        It should get Invalid usage error is sent synchronously, Custom error should be
+        NoSmartlistAssociatedWithCampaign or we will get OK response it sent asynchronously but no campaign will
+        be sent.
         :param (str) url: URL to to make HTTP request
         :param (str) access_token: access access_token of user
+        :param (str) asynchronous: boolean to specify whether to send a campaign synchronously or asynchronously
         """
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
-        response = send_request('post', url, access_token, None)
-        assert response.status_code == InvalidUsage.http_status_code(), \
-            'It should be invalid usage error(400)'
-        error_resp = response.json()['error']
-        assert error_resp['code'] == CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
-        assert 'No Smartlist'.lower() in error_resp['message'].lower()
+        if not asynchronous:
+            response = send_request('post', url, access_token, None)
+            assert response.status_code == InvalidUsage.http_status_code(), \
+                'It should be invalid usage error(400)'
+            error_resp = response.json()['error']
+            assert error_resp['code'] == CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN
+            assert 'No Smartlist'.lower() in error_resp['message'].lower()
+        else:
+            url += "?asynchronous=1"
+            response = send_request('post', url, access_token, None)
+            assert response.status_code == requests.codes.OK
 
     @classmethod
     def campaign_send_with_no_smartlist_candidate(cls, url, access_token, campaign,
-                                                  talent_pipeline_id):
+                                                  talent_pipeline_id, asynchronous=False):
         """
         User auth access_token is valid, campaign has one smart list associated. But smartlist has
         no candidate associated with it. The function tries to send the email campaign and resturns the
@@ -319,7 +326,7 @@ class CampaignsTestsHelpers(object):
         :param (SmsCampaign | EmailCampaign | PushCampaign) campaign: Campaign object
         :param (str) url: URL to to make HTTP request
         :param (str) access_token: access access_token of user
-        :param (int, long) talent_pipeline_id: Id of talent_pipeline
+        :param (int | long) talent_pipeline_id: Id of talent_pipeline
         """
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
@@ -334,6 +341,8 @@ class CampaignsTestsHelpers(object):
         campaign_smartlist_obj = campaign_smartlist_model(campaign_id=campaign.id,
                                                           smartlist_id=smartlist_id)
         campaign_smartlist_model.save(campaign_smartlist_obj)
+        if asynchronous:
+            url += "?asynchronous=1"
         response_post = send_request('post', url, access_token)
         return response_post
 
@@ -353,7 +362,8 @@ class CampaignsTestsHelpers(object):
         assert len(blasts) == 0
 
     @classmethod
-    def campaign_test_with_no_valid_candidate(cls, url, access_token, campaign_id):
+    def campaign_test_with_no_valid_candidate(cls, url, access_token, campaign_id, asynchronous=False,
+                                              campaign_service_urls=None):
         """
         This is the test to send campaign to candidate(s) who do not have valid
         data for the campaign to be sent to them. e.g. in case of email_campaign, candidate
@@ -361,24 +371,33 @@ class CampaignsTestsHelpers(object):
         associated. This should assert custom error NO_VALID_CANDIDATE_FOUND in response.
         :param (str) url: URL to to make HTTP request
         :param (str) access_token: access access_token of user
-        :param (int, long) campaign_id: Id of campaign
+        :param (int | long) campaign_id: Id of campaign
+        :param (bool) asynchronous: whether to send campaign synchronously or not
+        :param PushCampaignApiUrl | SmsCampaignApiUrl campaign_service_urls: routes url class
         """
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(campaign_id, (int, long))
-        response_post = send_request('post', url,  access_token)
-        error_resp = cls.assert_api_response(response_post,
-                                             expected_status_code=InvalidUsage.http_status_code())
-        assert error_resp['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
-        assert str(campaign_id) in error_resp['message']
+        if asynchronous:
+            url += "?asynchronous=1"
+            response_post = send_request('post', url,  access_token)
+            assert response_post.status_code == requests.codes.OK
+            assert campaign_service_urls.getattr('BLASTS') and campaign_service_urls.getattr('SENDS')
+            assest_zero_blasts_and_sends(campaign_service_urls, campaign_id, access_token)
+        else:
+            response_post = send_request('post', url,  access_token)
+            error_resp = cls.assert_api_response(response_post,
+                                                 expected_status_code=InvalidUsage.http_status_code())
+            assert error_resp['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
+            assert str(campaign_id) in error_resp['message']
 
     @staticmethod
     def assert_for_activity(user_id, _type, source_id):
         """
         This verifies that activity has been created for given action
-        :param (int, long) user_id: Id of user
-        :param (int, long) _type: Type number of activity
-        :param (int, long) source_id: Id of activity source
+        :param (int | long) user_id: Id of user
+        :param (int | long) _type: Type number of activity
+        :param (in | long) source_id: Id of activity source
         """
         raise_if_not_instance_of(user_id, (int, long))
         raise_if_not_instance_of(_type, (int, long))
@@ -746,6 +765,18 @@ def get_invalid_fake_dict():
     return fake_dict
 
 
+def assest_zero_blasts_and_sends(service_api_urls, campaign_id, token, sleep_time=30):
+    """
+
+    :param service_api_urls: Url class like SmsCampaignApiUrls etc.
+    :param int | long campaign_id: campaign unique id
+    :param string token: user access token
+    :param int sleep_time: time to retry for zero blasts or sends
+    """
+    for key in ['blasts', 'sends']:
+        get_and_assert_zero(getattr(service_api_urls, key.upper()) % campaign_id, key, token)
+
+
 def _assert_api_response_for_missing_field(method, url, access_token, data, field_to_remove):
     """
     This function removes the field from data as specified by field_to_remove, and
@@ -884,9 +915,9 @@ def _get_invalid_id_and_status_code_pair(invalid_ids):
 def _assert_activity(user_id, _type, source_id):
     """
     This gets that activity from database table Activity for given params
-    :param (int, long) user_id: Id of user
-    :param (int, long) _type: Type number of activity
-    :param (int, long) source_id: Id of activity source
+    :param (int | long) user_id: Id of user
+    :param (int | long) _type: Type number of activity
+    :param (int | long) source_id: Id of activity source
     """
     raise_if_not_instance_of(user_id, (int, long))
     raise_if_not_instance_of(_type, (int, long))
