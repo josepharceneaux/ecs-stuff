@@ -63,7 +63,7 @@ def build_params_from_form(request):
     filepicker_key = None
     talent_pool_ids_raw = request.form.get('talent_pool_ids')
     if talent_pool_ids_raw:
-        talent_pool_ids = [int(x) for x in re.findall(r'\d+", talent_pool_ids_raw]
+        talent_pool_ids = [int(x) for x in re.findall(r'\d+', talent_pool_ids_raw)]
 
     return {
         'create_candidate': create_candidate,
