@@ -3,6 +3,7 @@ import json
 from time import sleep
 
 import requests
+from datetime import datetime
 
 from social_network_service.common.models import db
 from social_network_service.common.models.candidate import SocialNetwork
@@ -219,10 +220,6 @@ class Test_Event_Importer:
         - We add 'id' of newly created event to delete it from social network
             website in the finalizer of meetup_event_dict.
         """
-        event = meetup_event_dict['event']
-        social_network_event_id = event.social_network_event_id
-        user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
-            user_first.id, event.social_network.id)
 
         headers = dict(Authorization='Bearer %s' % token_first)
         headers['Content-Type'] = 'application/json'
@@ -241,20 +238,19 @@ class Test_Event_Importer:
         user_id = 1
         event = Event.get_by_user_and_social_network_event_id(user_id=user_id,
                                                               social_network_event_id=social_network_event_id)
+
+        social_network = SocialNetwork.get_by_name('Eventbrite')
+
+        user_credential = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_id, social_network.id)
+        assert user_credential
+        # Change the last updated time to past and run importer. After that check if event is imported.
+        user_credential.update(last_updated=datetime(2012, 12, 1))
         if event:
             Event.delete(event)
         headers = dict(Authorization='Bearer %s' % token_first)
         headers['Content-Type'] = 'application/json'
 
-        # Specify datetime to get already created event
-        start_datetime = "2016-07-12T23:00:00Z"
-        end_datetime = "2016-07-13T00:00:00Z"
-
-        data = {
-            'date_created_range_start': start_datetime,
-            'date_created_range_end': end_datetime
-        }
-        response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'eventbrite'), data=json.dumps(data),
+        response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'eventbrite'),
                                  headers=headers)
         assert response.status_code == 200
         sleep(50)
@@ -290,17 +286,8 @@ class Test_Event_Importer:
             user_id=user_id, social_network_event_id=social_network_event_id)
         # If event is not imported then run event importer and import events first
         if not event:
-            # Specify datetime to get already created event
-            start_datetime = "2016-07-12T23:00:00Z"
-            end_datetime = "2016-07-13T00:00:00Z"
-
-            data = {
-                'date_created_range_start': start_datetime,
-                'date_created_range_end': end_datetime
-            }
-
             # Import events first then import RSVPs
-            response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'eventbrite'), data=json.dumps(data),
+            response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'eventbrite'),
                                      headers=headers)
             assert response.status_code == 200
 
@@ -325,19 +312,18 @@ class Test_Event_Importer:
         event = meetup_event_dict['event']
         social_network_event_id = event.social_network_event_id
         Event.delete(event.id)
+
+        social_network = SocialNetwork.get_by_name('Meetup')
+
+        user_credential = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_first['id'],
+                                                                                        social_network.id)
+        assert user_credential
+        # Change the last updated time to past and run importer. After that check if event is imported.
+        user_credential.update(last_updated=datetime(2012, 12, 1))
         headers = dict(Authorization='Bearer %s' % token_first)
         headers['Content-Type'] = 'application/json'
 
-        # Specify datetime to get already created event
-        start_datetime = "2016-07-13T10:00:00.0Z"
-        end_datetime = "2016-07-14T06:00:00.0Z"
-
-        data = {
-            'date_created_range_start': start_datetime,
-            'date_created_range_end': end_datetime
-        }
-
-        response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'meetup'), data=json.dumps(data) ,headers=headers)
+        response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'meetup'),headers=headers)
         assert response.status_code == 200
         sleep(80)
         event = Event.get_by_user_and_social_network_event_id(user_first['id'],

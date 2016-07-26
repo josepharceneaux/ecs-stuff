@@ -7,33 +7,36 @@ These methods are called by run_job method asynchronously
     celery -A social_network_service.run.celery  worker --concurrency=4 --loglevel=info
 
 """
-#TODO: Wrong module level docs
 # Application imports
 from social_network_service.common.models.candidate import SocialNetwork
+from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.modules.utilities import get_class
 from social_network_service.social_network_app import celery_app as celery, app
 
 
 @celery.task(name="events_and_rsvps_importer")
-def rsvp_events_importer(social_network_name, mode, user_credentials, datetime_range):
+def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetime_range):
     """
     Imports RSVPs or events of a user, create candidates store them in db and also upload them on Cloud search
     :param social_network_name: Facebook, Eventbrite, Meetup
     :param mode: rsvp or event
+    :param user_credentials_id: user credentials entry
     :param app: Flask app
     :return:
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
-
+        user_credentials = UserSocialNetworkCredential.get_by_id(user_credentials_id)
+        user_id = user_credentials.user_id
         try:
+
             social_network = SocialNetwork.get_by_name(social_network_name.lower())
             social_network_class = get_class(social_network.name.lower(), 'social_network',
                                              user_credentials=user_credentials)
             # we call social network class here for auth purpose, If token is expired
             # access token is refreshed and we use fresh token8
-            sn = social_network_class(user_credentials.user_id)
+            sn = social_network_class(user_id)
 
             logger.debug('%s Importer has started for %s(UserId: %s).'
                          ' Social Network is %s.'
@@ -41,7 +44,7 @@ def rsvp_events_importer(social_network_name, mode, user_credentials, datetime_r
                             social_network.name))
             sn.process(mode, user_credentials=user_credentials, **datetime_range)
         except KeyError:
-            logger.exception("Key error while running importer for user %s" % user_credentials.user_id)
+            logger.exception("Key error while running importer for user %s" % user_id)
         except Exception:
             logger.exception('start: running %s importer, user_id: %s',
-                             mode, user_credentials.user_id)
+                             mode, user_id)

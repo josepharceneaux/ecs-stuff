@@ -1,27 +1,26 @@
 # Standard imports
 import json
+import os
 import types
 
 # 3rd party imports
 import datetime
-import flask
 import requests
-from flask import Blueprint, request
+from flask import Blueprint
 from flask.ext.restful import Resource
 
 # App specific imports
-from scheduler_service.validators import get_valid_datetime_from_dict
 from social_network_service.common.error_handling import InvalidUsage, InternalServerError
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential, User
 from social_network_service.common.routes import SocialNetworkApi, SchedulerApiUrl, SocialNetworkApiUrl
 from social_network_service.common.talent_api import TalentApi
+from social_network_service.common.talent_config_manager import TalentEnvs, TalentConfigKeys
 from social_network_service.common.utils.api_utils import api_route
 from social_network_service.common.utils.auth_utils import require_oauth
-from social_network_service.modules.utilities import get_class
+from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.social_network_app import logger
 from social_network_service.tasks import rsvp_events_importer
-from social_network_service.modules.rsvp.eventbrite import Eventbrite as EventbriteRsvp
 
 rsvp_blueprint = Blueprint('importer', __name__)
 api = TalentApi()
@@ -31,7 +30,6 @@ api.route = types.MethodType(api_route, api)
 
 @api.route(SocialNetworkApi.IMPORTER)
 class RsvpEventImporter(Resource):
-    # TODO--are the following comments OK and correct?
     """
         This resource gets all RSVPs or events.
 
@@ -39,12 +37,11 @@ class RsvpEventImporter(Resource):
         social network website.
 
         1- Meetup
-        2- Facebook.
-        3- Eventbrite (only in case of events)
+        2- Eventbrite
 
         ** Working **
         What this method does, is explained in following steps:
-        1- Call celery importer task depending on mode value
+        1- Call celery importer task depending on mode and social_network value
 
         2- It gets the user_social_network_credentials of all the users related
             to given social network (social_network provided in arguments) from
@@ -59,7 +56,7 @@ class RsvpEventImporter(Resource):
                     social_network_service/base.py.
 
     """
-    decorators = [require_oauth()]
+    decorators = [require_oauth(allow_null_user=True)]
 
     def post(self, mode, social_network):
 
@@ -72,39 +69,33 @@ class RsvpEventImporter(Resource):
 
         social_network_name = social_network.lower()
         try:
-            # TODO--I think we should keep only the following statement within try/except and catch a more
-            # specific exception
             social_network_obj = SocialNetwork.get_by_name(social_network_name)
-            # TODO: if not social_network_obj: raise ...
+            if not social_network_obj:
+                raise InvalidUsage('Social Network with name %s doesn\'t exist.' % social_network)
             social_network_id = social_network_obj.id
         except Exception:
             raise NotImplementedError('Social Network "%s" is not allowed for now, '
                                       'please implement code for this social network.'
                                       % social_network_name)
 
-        data = request.get_json()
-        datetime_range = {}
-
-        # We need date_ranges in event importer mode only.
-        if mode.lower() == "event":
-            datetime_range['date_range_start'] = get_valid_datetime_from_dict(data=data,
-                                                                              key='date_created_range_start')\
-                .strftime("%Y-%m-%dT%H:%M:%SZ")
-
-            # Since there is no support for eventbrite end_datetime filter. So, we are only interested in start_datetime
-            # filter in case of eventbrite and start/end datetime ranges in case of meetup
-            if social_network.lower() == "meetup":
-                datetime_range['date_range_end'] = get_valid_datetime_from_dict(data=data,
-                                                                                key='date_created_range_end')\
-                    .strftime("%Y-%m-%dT%H:%M:%SZ")
-
         all_user_credentials = UserSocialNetworkCredential.get_all_credentials(social_network_id)
 
-        # TODO: we can add logger.info() here that we got say 1000 users for Meetup.(Basit)
-        # TODO--please comment the code here
         if all_user_credentials:
+            logger.info('Got %s users for %s' % (len(all_user_credentials), social_network))
             for user_credentials in all_user_credentials:
-                rsvp_events_importer.apply_async([social_network, mode, user_credentials, datetime_range])
+                # Get last updated time of current user_credentials if NULL, then run event importer for that user
+                # first time and get all events otherwise get events from last_updated date
+                datetime_range = {}
+                if mode == 'event':
+                    last_updated = \
+                      user_credentials.last_updated if user_credentials.last_updated else datetime.datetime(2000, 1, 1)
+                    datetime_range.update({
+                        'date_range_start': DatetimeUtils.to_utc_str(last_updated),
+                        'date_range_end': DatetimeUtils.to_utc_str(datetime.datetime.utcnow())
+                    })
+                    # Update last_updated of each user_credentials.
+                    user_credentials.update(last_updated=datetime.datetime.utcnow())
+                rsvp_events_importer.apply_async([social_network, mode, user_credentials.id, datetime_range])
         else:
             logger.error('User Credentials not found for social network %s'
                          % social_network)
@@ -112,116 +103,43 @@ class RsvpEventImporter(Resource):
         return dict(message="%s are being imported." % mode.upper())
 
 
-class RsvpImporterEventbrite(Resource):
-    # TODO--are the following comments OK?
-    """
-        This resource get all RSVPs or events. This callback method will be called when someone hit register
-        on an Eventbrite event.
-
-        ** Working **
-        What this method does, is explained in following steps:
-        1- Call celery importer task depending on mode value
-
-        2- It gets the user_social_network_credentials of all the users related
-            to given social network (social_network provided in arguments) from
-            getTalent database in variable all_user_credentials.
-        3- It picks one user_credential from all_user_credentials and instantiates
-            respective social network class for auth process.
-        4- If access token is not valid, we raise
-            AccessTokenHasExpired exception in celery task and move on to next user_credential.
-
-        **See Also**
-        .. seealso:: process() method of SocialNetworkBase class inside
-                    social_network_service/base.py.
-
-    """
-    # TODO: Previously there were both GET and POST. Why only POST now?
-    def post(self, **kwargs):
-        """
-        This function only receives data when a candidate rsvp to some event.
-        It first finds the getTalent user having incoming webhook id.
-        Then it creates the candidate in candidate table by getting information
-        of attendee. Then it inserts in rsvp table the required information.
-        It will also insert an entry in activity database table.
-        """
-        user_id = ''
-
-        if request.data:
-            # TODO--try / except shouldn't contain this much code
-            try:
-                data = json.loads(request.data)
-                action = data['config']['action']
-                if action.lower() == 'order.placed':
-                    webhook_id = data['config']['webhook_id']
-                    user_credentials = \
-                        EventbriteRsvp.get_user_credentials_by_webhook(webhook_id)
-                    logger.debug('Got an RSVP on %s Event via webhook.'
-                                 % user_credentials.social_network.name)
-                    user_id = user_credentials.user_id
-                    social_network_class = \
-                        get_class(user_credentials.social_network.name.lower(),
-                                  'social_network')
-                    # we make social network object here to check the validity of
-                    # access token. If access token is valid, we proceed to do the
-                    # processing to save in getTalent db tables otherwise we raise
-                    # exception AccessTokenHasExpired.
-                    sn_obj = social_network_class(user_id=user_credentials.user_id)
-                    sn_obj.process('rsvp', user_credentials=user_credentials,
-                                   rsvp_data=data)
-                elif action == 'test':
-                    logger.debug('Successful webhook connection')
-
-            except Exception as error:
-                logger.exception('handle_rsvp: Request data: %s, user_id: %s',
-                                 request.data, user_id)
-                # TODO--kindly use request.codes instead of 500 and 200
-                data = {'message': error.message,
-                        'status_code': 500}
-                return flask.jsonify(**data), 500
-
-            data = {'message': 'RSVP Saved',
-                    'status_code': 200}
-            return flask.jsonify(**data)
-
-        else:
-            error_message = 'No RSVP data received.'
-            data = {'message': error_message,
-                    'status_code': 200}
-            return flask.jsonify(**data)
-
-
 def schedule_importer_job():
     """
-    Schedule a general job that hits RSVP importer endpoint every hour.
+    Schedule 4 general jobs that hits Event and RSVP importer endpoint every hour.
     :return:
     """
-    task_name_meetup = 'Retrieve Meetup RSVP'
-    task_name_facebook = 'Retrieve Facebook RSVP'
+    task_name_meetup = 'Retrieve_Meetup_%s'
+    task_name_eventbrite = 'Retrieve_Eventbrite_%s'
+
+    url = SocialNetworkApiUrl.IMPORTER % ('event', 'meetup')
+    schedule_job(task_name=task_name_meetup % 'events', url=url)
+
+    url = SocialNetworkApiUrl.IMPORTER % ('event', 'eventbrite')
+    schedule_job(task_name=task_name_eventbrite % 'events', url=url)
 
     url = SocialNetworkApiUrl.IMPORTER % ('rsvp', 'meetup')
-    schedule_job(task_name=task_name_meetup, url=url)
+    schedule_job(task_name=task_name_meetup % 'rsvp', url=url)
 
-    url = SocialNetworkApiUrl.IMPORTER % ('rsvp', 'facebook')
-    schedule_job(task_name=task_name_facebook, url=url)
+    url = SocialNetworkApiUrl.IMPORTER % ('rsvp', 'eventbrite')
+    schedule_job(task_name=task_name_eventbrite % 'rsvp', url=url)
 
 
 def schedule_job(url, task_name):
     """
-    Schedule a general job that hits RSVP importer endpoint every hour.
+    Schedule a general job that hits Event and RSVP importer endpoint every hour.
     :param url: URL to hit
     :type url: basestring
     :param task_name: task_name of scheduler job
     :type task_name: basestring
     """
     start_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
-    # Infinite times
-    # TODO: Is there a reason of explicitly multiplying?
+    # Schedule for next 100 years
     end_datetime = datetime.datetime.utcnow() + datetime.timedelta(weeks=52 * 100)
-    # TODO: IMO, it should be configurable in case of dev testing.
-    frequency = 3600
+
+    env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
+    frequency = 120 if env in [TalentEnvs.DEV, TalentEnvs.JENKINS] else 3600
 
     secret_key_id, access_token = User.generate_jw_token()
-    # TODO: PEP08
     headers = {
             'Content-Type': 'application/json',
             'X-Talent-Secret-Key-ID': secret_key_id,
@@ -230,20 +148,21 @@ def schedule_job(url, task_name):
     data = {
         'start_datetime': start_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         'end_datetime': end_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
-        'frequency': frequency
+        'frequency': frequency,
+        'is_jwt_request': True
     }
+
     response = requests.get(SchedulerApiUrl.TASK_NAME % task_name, headers=headers)
     # If job is not scheduled then schedule it
-    # TODO--use request.codes
-    if response.status_code == 404:
+    if response.status_code == requests.codes.not_found:
         data.update({'url': url})
-        data.update({'task_name': task_name})
+        data.update({'task_name': task_name, 'task_type': 'periodic'})
 
         response = requests.post(SchedulerApiUrl.TASKS, headers=headers,
-                                 data=data)
+                                 data=json.dumps(data))
 
-        if response.status_code != 200:
+        if not (response.status_code == requests.codes.created or response.json()['error']['code'] == 6057):
             logger.error(response.text)
             raise InternalServerError(error_message='Unable to schedule meetup importer job')
-    elif response.status_code == 401:  # TODO: What if token has expired?
+    elif response.status_code == requests.codes.unauthorized:
         logger.info('Job already scheduled')

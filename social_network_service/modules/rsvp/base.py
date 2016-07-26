@@ -156,7 +156,6 @@ class RSVPBase(object):
         # TODO: we should check isinstance here as we are getting object properties below
         if kwargs.get('user_credentials'):
             self.user_credentials = kwargs.get('user_credentials')
-            # TODO: Not sure whats session expire issue. (Basit)
             # To resolve session expire issue, save the fields in a dict
             self.user_credentials_dict = dict(id=self.user_credentials.id,
                                               access_token=self.user_credentials.access_token,
