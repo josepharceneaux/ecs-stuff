@@ -1,0 +1,54 @@
+"""
+This script updates specified-tables' foreign keys to ensure that all of candidate's records
+will be removed if their parent (candidate) is deleted.
+
+Script is taking the following steps:
+    1. sets foreign key checks to 0
+    2. iterates over specified tables in the tables list, and
+    3. retrieves column name that has "candidate" in it
+        (this is because some columns are named 'CandidateId' and some are named 'candidate_id')
+    4. retrieves foreign key name that references Candidate.id
+    5. drops the foreign key found in step 4
+    6. adds foreign key with on delete cascade and on update cascade options
+    7. sets foreign key checks to 1
+"""
+from candidate_service.common.models.db import db
+from sqlalchemy import text
+
+db.session.execute(text("set foreign_key_checks=0;"))
+
+tables = [
+    "candidate_tag",
+    "candidate_reference",
+    "candidate_education",
+    "candidate_experience",
+    "candidate_military_service"
+]
+for table in tables:
+
+    column_descriptions = db.session.execute(text("show columns from `%s`" % table)).fetchall()
+    name_of_column_to_be_updated = None
+    for i, column in enumerate(column_descriptions):
+        column_name = column_descriptions[i][0]
+        if 'candidate' in column_name.lower():
+            name_of_column_to_be_updated = column_name
+
+    result = db.session.execute(text("""select constraint_name from information_schema.key_column_usage
+                                        where referenced_table_name is not null and table_name = '%s'
+                                        and column_name = '%s'""" % (table, name_of_column_to_be_updated)))
+
+    candidate_table_candidate_fk_description = result.first()
+    if candidate_table_candidate_fk_description:
+        db.session.execute(text("alter table `%s` drop foreign key %s"
+        % (table, candidate_table_candidate_fk_description[0])))
+        db.session.execute(text("""alter table `%s` add constraint fk_%s_candidate foreign key (%s)
+                                   references candidate(id) on delete cascade on update cascade""" %
+                                   (table, table, name_of_column_to_be_updated)))
+    else:
+        if name_of_column_to_be_updated:
+            db.session.execute(text("""alter table `%s` add constraint fk_%s_candidate foreign key (%s)
+                                       references candidate(id) on delete cascade on update cascade"""
+                                       % (table, table, name_of_column_to_be_updated)))
+
+
+db.session.execute(text("set foreign_key_checks=1;"))

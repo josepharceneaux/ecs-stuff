@@ -81,7 +81,7 @@ def create_test_token(user_id):
             token.expires += timedelta(days=30)
 
 
-def create_test_date():
+def create_test_data():
     """
     To create test data (Domains, Users, Groups etc.) call this method before running test
     """
@@ -112,6 +112,9 @@ def create_test_date():
 
     # # Now write test config file
     local_config_path = os.path.expanduser('~') + "/.talent/common_test.cfg"
+    # `user_emails` is a list of tuple and each tuple contains email addresses in one domain
+    # [("test_email@test.com", "test_email_same_domain@test.com"), ("test_email_second@test.com",)]
+    # Here I want a simple list of all emails in all domains, so flattening nested collection
     user_emails = [email for emails in user_emails for email in emails]
     with open(local_config_path, mode='w+') as cfg:
         for user_id, email, order in zip(user_ids, user_emails, ['FIRST', 'SAME_DOMAIN', 'SECOND']):
@@ -132,5 +135,5 @@ def create_test_date():
         cfg.flush()
 
 # Create data
-create_test_date()
+create_test_data()
 
