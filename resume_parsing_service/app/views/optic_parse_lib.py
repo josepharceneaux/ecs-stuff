@@ -275,9 +275,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
             company_address = employement.find('address')
             company_city = _tag_text(company_address, 'city', capwords=True)
             company_state = _tag_text(company_address, 'state')
-            company_country = 'US' # TODO: <address> has the inferred-country attr
-            # first pass can be with `_tag_text(company_address, 'state')`
-            # second pass can be with `company_address.get('inferred-state')`
+            company_country = 'US'
             # Check if an experience already exists
             existing_experience_list_order = is_experience_already_exists(output,
                                                                           organization or '',
@@ -336,7 +334,7 @@ def parse_candidate_educations(bg_educations_xml_list):
             school_address = school.find('address')
             school_city = _tag_text(school_address, 'city', capwords=True)
             school_state = _tag_text(school_address, 'state')
-            country = 'United States'
+            country = 'US'
 
             start_date = get_date_from_date_tag(school, 'start')
             end_date = get_date_from_date_tag(school, 'end')
@@ -355,20 +353,31 @@ def parse_candidate_educations(bg_educations_xml_list):
                 end_month = end_dt.month
                 end_year = end_dt.year
 
+            degree_tag = school.find('degree')
+            degree_type = degree_tag.get('name') if degree_tag else None
+            gpa_tag = school.find('gpa')
+            gpa_value = float(gpa_tag.get('value')) if gpa_tag else None
+
             output.append(dict(
                 school_name=school_name,
                 city=school_city,
                 state=school_state,
-                country=country,
+                country_code=country,
                 degrees=[
                     {
-                        'type': _tag_text(school, 'degree'),
-                        'title': _tag_text(school, 'major'),
+                        'type': degree_type,
+                        'title': _tag_text(school, 'degree'),
                         'start_year': start_year,
                         'start_month': start_month,
                         'end_year': end_year,
                         'end_month': end_month,
-                        'bullets': []
+                        'gpa_num': gpa_value,
+                        'bullets': [
+                            {
+                                'major': _tag_text(school, 'major'),
+                                'comments': _tag_text(school, 'honors')
+                            }
+                        ]
                     }
                 ],
             ))
@@ -385,18 +394,26 @@ def parse_candidate_skills(bg_skills_xml_list):
     """
     skills_parsed = {}
     output = []
+    year_zero = datetime.datetime(year=1, month=1, day=1)
 
     for skill in bg_skills_xml_list:
         name = skill.get('name')
         skill_text = skill.text.strip()
+
         start_days = skill.get('start')
         end_days = skill.get('end')
         months_used = None
+        last_used_date = None
+
         parsed_name = name or skill_text
-        processed_skill = {'name': parsed_name}
+        processed_skill = {'name': parsed_name, 'last_used_date': None, 'months_used': None}
 
         if start_days and end_days:
             months_used = (int(end_days) - int(start_days)) / 30
+            last_used_date = year_zero + datetime.timedelta(days=int(end_days))
+
+        if last_used_date:
+            processed_skill['last_used_date'] = last_used_date.strftime(ISO8601_DATE_FORMAT)
 
         if months_used and months_used > 0: # Rarely a skill will have an end before the start.
             processed_skill['months_used'] = int(months_used)
@@ -422,7 +439,7 @@ def parse_candidate_addresses(bg_xml_list):
             'address_line_1': _tag_text(address, 'street'),
             'city': address.get('inferred-city', '').title() or _tag_text(address, 'city'),
             'state': address.get('inferred-state', '').title() or _tag_text(address, 'state'),
-            'country': address.get('inferred-country', '').title() or 'US',
+            'country_code': 'US',
             'zip_code': sanitize_zip_code(_tag_text(address, 'postalcode'))
         })
     return output
@@ -486,9 +503,7 @@ def get_date_from_date_tag(parent_tag, date_tag_name):
     date_tag = parent_tag.find(date_tag_name)
     if date_tag:
         try:
-            if date_tag_name == 'end' and ('current' in date_tag.text.lower() or
-                                           'present' in date_tag.text.lower()):
-                return date_tag['iso8601']
+            return date_tag.get('iso8601')
         except Exception:
             logger.exception('Exception during date parse with datetag: {}'.format(date_tag))
     return None
