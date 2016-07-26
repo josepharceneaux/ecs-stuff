@@ -77,17 +77,15 @@ class TalentPipelineApi(Resource):
                 raise InvalidUsage('Value of sort parameter is not valid')
 
             if owner_user_id:
-                talent_pipelines = TalentPipeline.query.filter(and_(
-                        TalentPipeline.user.domain_id == request.user.domain_id, TalentPipeline.user.id == int(
+                talent_pipelines = TalentPipeline.query.join(User).filter(and_(
+                        User.domain_id == request.user.domain_id, TalentPipeline.user.id == int(
                                 owner_user_id), or_(TalentPipeline.name.ilike('%' + search_keyword + '%'),
-                                                    TalentPipeline.description.ilike(
-                                                            '%' + search_keyword + '%')))).all()
+                                                    TalentPipeline.description.ilike( '%' + search_keyword + '%')))).all()
             else:
-                talent_pipelines = TalentPipeline.query.filter(and_(
-                        TalentPipeline.user.domain_id == request.user.domain_id, or_(
+                talent_pipelines = TalentPipeline.query.join(User).filter(and_(
+                        User.domain_id == request.user.domain_id, or_(
                                 TalentPipeline.name.ilike('%' + search_keyword + '%'),
-                                TalentPipeline.description.ilike(
-                                '%' + search_keyword + '%')))).all()
+                                TalentPipeline.description.ilike('%' + search_keyword + '%')))).all()
 
             talent_pipelines_data = [talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
                                                              get_growth_function=get_pipeline_growth
