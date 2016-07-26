@@ -8,8 +8,10 @@ Run:
 python setup_environment/reset_database_and_cloud_search.py
 
 """
+# Third Party
 from sqlalchemy import text
 
+# App specific
 from common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from common.talent_flask import TalentFlask
 # Flush redis-cache

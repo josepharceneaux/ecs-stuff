@@ -27,6 +27,7 @@ from social_network_service.modules.utilities import milliseconds_since_epoch_to
 
 TEST_DATE = datetime(2015, 1, 1)
 UTC_TIMEZONE = timezone('UTC')
+# TODO Should we not select the time zone of the machine???
 LOCAL_TIMEZONE = timezone('Asia/Karachi')
 UTC_TEST_DATE = UTC_TIMEZONE.localize(TEST_DATE, is_dst=None)
 LOCAL_TEST_DATE = LOCAL_TIMEZONE.localize(TEST_DATE, is_dst=None)

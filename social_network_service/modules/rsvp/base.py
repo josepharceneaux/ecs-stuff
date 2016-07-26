@@ -9,10 +9,11 @@ etc.
 import json
 from abc import ABCMeta
 from abc import abstractmethod
-
-# Application Specific
 from datetime import datetime, timedelta
 from urllib import urlencode
+
+# Application Specific
+import requests
 
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
@@ -477,9 +478,9 @@ class RSVPBase(object):
                                 data=json.dumps(candidate_source))
 
         # Source already exist
-        if response.status_code == 400:
+        if response.status_code == requests.codes.bad:
             attendee.candidate_source_id = response.json()['error']['source_id']
-        elif response.status_code != 201:
+        elif response.status_code != requests.codes.created:
             logger.exception(response.text)
             raise InternalServerError(error_message="Error while creating candidate source")
         else:

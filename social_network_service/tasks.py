@@ -4,7 +4,7 @@ These methods are called by run_job method asynchronously
 
 - Running celery using commandline (social_network_service directory) =>
 
-    celery -A social_network_service.run.celery  worker --concurrency=4 --loglevel=info
+    celery -A social_network_service.social_network_app.celery_app worker  worker --concurrency=4 --loglevel=info
 
 """
 # Application imports

@@ -1,15 +1,15 @@
-# Application Specific
+# Std imports
 import json
 from time import sleep
-
 import requests
 from datetime import datetime
 
+# Application Specific
 from social_network_service.common.models import db
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.rsvp import RSVP
-from social_network_service.common.models.user import UserSocialNetworkCredential, Permission
+from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.tests.api_conftest import user_first, token_first, talent_pool
 from social_network_service.common.utils.handy_functions import http_request

@@ -35,16 +35,12 @@ class TalentPool(db.Model):
     @classmethod
     def get_by_user_id(cls, user_id):
         """
-        Filter first record using user_id
-        :param user_id:
-        :return:
+        Filter all records using user_id
+        :param user_id: User id whose talent_pools need to return
+        :type user_id: int
+        :return: talent pools
+        :rtype: TalentPool
         """
-        # TODO: add inline param type
-        # TODO: Update empty :return: here and every where else.
-        # TODO: Add rtype
-        # TODO: kindly make sure of these minor nits before asking for code review. Thanks.
-        # TODO: Docs says first record, I don't see .first() here. Kindly double check.
-        # TODO--document the arg in docstring and assert (Waqas)
         return cls.query.filter_by(user_id=user_id)
 
 

@@ -8,7 +8,6 @@
 from flask import request, redirect
 
 # Application specific imports
-
 from restful.v1_data import data_blueprint
 from restful.v1_events import events_blueprint
 from social_network_service.common.redis_cache import redis_store
