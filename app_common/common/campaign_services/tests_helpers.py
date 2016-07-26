@@ -747,7 +747,7 @@ class CampaignsTestsHelpers(object):
             CampaignsTestsHelpers.assert_non_ok_response(response)
 
     @staticmethod
-    def campaign_schedule_or_reschedule_with_invalid_frequency_id(method, url, access_token, schedule_data):
+    def campaign_schedule_or_reschedule_with_invalid_frequency_id(method, url, access_token, scheduler_data):
         """
         This creates or updates a campaign with unexpected fields present in the data and
         asserts that we get invalid usage error from respective API. Data passed should be a dictionary
@@ -755,12 +755,12 @@ class CampaignsTestsHelpers(object):
         :param str method: Name of HTTP method
         :param str url: URL on which we are supposed to make HTTP request
         :param str access_token: Access token of user
-        :param dict schedule_data: Data to be passed in HTTP request
+        :param dict scheduler_data: Data to be passed in HTTP request to schedule/reschedule given campaign
         """
         for invalid_frequency_id in CampaignsTestsHelpers.INVALID_FREQUENCY_IDS:
             print "Iterating %s as frequency_id" % invalid_frequency_id
-            schedule_data['frequency_id'] = invalid_frequency_id
-            response = send_request(method, url, access_token, data=schedule_data)
+            scheduler_data['frequency_id'] = invalid_frequency_id
+            response = send_request(method, url, access_token, data=scheduler_data)
             CampaignsTestsHelpers.assert_non_ok_response(response)
 
     @staticmethod

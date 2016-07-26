@@ -58,6 +58,16 @@ def headers_same_domain(access_token_same):
     return get_auth_header(access_token_same)
 
 
+@pytest.fixture()
+def headers_other(access_token_other):
+    """
+    Returns the header (for user of some other domain) containing access token and content-type
+    to make POST/DELETE requests.
+    :param access_token_other: fixture to get access token of user from some other domain
+    """
+    return get_auth_header(access_token_other)
+
+
 @pytest.fixture(params=['user_first', 'user_same_domain'])
 def data_for_different_users_of_same_domain(request, access_token_first, access_token_same,
                                             user_first, user_same_domain, headers, headers_same_domain):
@@ -70,16 +80,6 @@ def data_for_different_users_of_same_domain(request, access_token_first, access_
     elif request.param == 'user_same_domain':
         CampaignsTestsHelpers.assign_roles(user_same_domain)
         return {'access_token': access_token_same, 'user': user_same_domain, 'headers': headers_same_domain}
-
-
-@pytest.fixture()
-def headers_other(access_token_other):
-    """
-    Returns the header (for user of some other domain) containing access token and content-type
-    to make POST/DELETE requests.
-    :param access_token_other: fixture to get access token of user from some other domain
-    """
-    return get_auth_header(access_token_other)
 
 
 @pytest.fixture()

@@ -239,7 +239,8 @@ class CampaignBase(object):
         This makes HTTP POST call to "activity_service" to create activity in database.
     """
     __metaclass__ = ABCMeta
-    # Child classes will overwrite this.
+
+    # Child classes will set value of this.
     REQUIRED_FIELDS = []
 
     def __init__(self, user_id, campaign_id=None):
