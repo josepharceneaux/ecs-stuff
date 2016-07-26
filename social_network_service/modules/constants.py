@@ -3,3 +3,4 @@ __author__ = 'basit'
 APPLICATION_BASED_AUTH_URL = 'https://api.twitter.com/oauth2/token'
 MEETUP_CODE_LENGTH = 32
 QUEUE_NAME = 'social_network'
+REQUEST_TIMEOUT = 30

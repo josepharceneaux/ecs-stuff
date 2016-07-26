@@ -261,8 +261,7 @@ class TestResourceEvents:
         event_data[key] = ''
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token_first)
         logger.info(response.text)
-        #TODO assert message sohuld be more clear e.g. "Couldn't create event because required fields were missing"
-        assert response.status_code == 400, 'It should fail'
+        assert response.status_code == 400, response.text
         response = response.json()
         assert response['error']['code'] == EventInputMissing.error_code, 'There should be an missing field error for %s KeyError' % key
 

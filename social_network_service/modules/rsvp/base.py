@@ -10,24 +10,24 @@ import json
 from abc import ABCMeta
 from abc import abstractmethod
 
-# Third Party libraries
-import requests
-
 # Application Specific
+from datetime import datetime, timedelta
+from urllib import urlencode
+
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
-from social_network_service.common.inter_service_calls.candidate_service_calls import \
-    create_candidates_from_candidate_api
+from social_network_service.common.inter_service_calls.candidate_service_calls import create_or_update_candidate
 from social_network_service.common.models.rsvp import RSVP
 from social_network_service.common.models.talent_pools_pipelines import TalentPool
-from social_network_service.common.models.user import User, Token
+from social_network_service.common.models.user import User, Token, UserSocialNetworkCredential
 from social_network_service.common.models.misc import Product
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.candidate import Candidate
 from social_network_service.common.models.candidate import CandidateSocialNetwork
-from social_network_service.common.routes import UserServiceApiUrl
+from social_network_service.common.routes import UserServiceApiUrl, AuthApiUrl
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.custom_exceptions import UserCredentialsNotFound, ProductNotFound
+from social_network_service.modules.constants import REQUEST_TIMEOUT
 from social_network_service.social_network_app import logger
 
 
@@ -153,8 +153,7 @@ class RSVPBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
-        # TODO: we should check isinstance here as we are getting object properties below
-        if kwargs.get('user_credentials'):
+        if isinstance(kwargs.get('user_credentials'), UserSocialNetworkCredential):
             self.user_credentials = kwargs.get('user_credentials')
             # To resolve session expire issue, save the fields in a dict
             self.user_credentials_dict = dict(id=self.user_credentials.id,
@@ -164,6 +163,9 @@ class RSVPBase(object):
                                               member_id=self.user_credentials.member_id,
                                               user_id=self.user_credentials.user_id)
             self.user = User.get_by_id(self.user_credentials_dict['user_id'])
+            self.user_access_token = Token.get_by_user_id(self.user_credentials.user_id)
+            if not self.user_access_token.access_token:
+                raise InternalServerError('Unable to create candidate candidateaccess_token is null')
         else:
             raise UserCredentialsNotFound('User Credentials are empty/none')
 
@@ -173,6 +175,7 @@ class RSVPBase(object):
         self.access_token = self.user_credentials_dict['access_token']
         self.start_date_dt = None
         self.rsvps = []
+        self.flag_create_activity = True
 
     @abstractmethod
     def get_rsvps(self, event):
@@ -450,7 +453,6 @@ class RSVPBase(object):
           RSVPBase class inside social_network_service/rsvp/base.py.
 
         - We use this method while importing RSVPs through social network
-          manager or webhook.
 
         :Example:
 
@@ -459,16 +461,9 @@ class RSVPBase(object):
         **See Also**
             .. seealso:: process_rsvps() method in EventBase class
         :return attendee:
-        :rtype: object
+        :rtype: Attendee
         """
-        # TODO: Update rtype to be Attendee (import from utilities) here and every where else
-        # TODO: Now we have removed use of self. It should be static now.
-
-        # TODO--please ensure the comments of this method still reflect the reality
-        token = Token.get_by_user_id(attendee.gt_user_id)
-        # TODO: Shouldn't we raise if token is not found? rather than requesting candidate_service with None token?(Basit)
-        # TODO--not sure but is not None a problem in the headers?
-        headers = {'Authorization': 'Bearer {}'.format(token.access_token if token else None),
+        headers = {'Authorization': 'Bearer {}'.format(self.user_access_token.access_token),
                    "Content-Type": "application/json"}
 
         candidate_source = {
@@ -492,8 +487,7 @@ class RSVPBase(object):
 
         return attendee
 
-    @staticmethod
-    def save_attendee_as_candidate(attendee):
+    def save_attendee_as_candidate(self, attendee):
         """
         :param attendee: attendees is a utility object we share in calls that
          contains pertinent data.
@@ -508,8 +502,6 @@ class RSVPBase(object):
           RSVPBase class inside social_network_service/rsvp/base.py.
 
         - We use this method while importing RSVPs through social network
-          manager or webhook.
-
         :Example:
 
             attendee = self.save_attendee_as_candidate(attendee)
@@ -517,10 +509,8 @@ class RSVPBase(object):
         **See Also**
             .. seealso:: process_rsvps() method in EventBase class
         :return attendee:
-        :rtype: object
+        :rtype: Attendee
         """
-        # TODO--kindly ensure the above comments reflect the reality
-        #TODO--following isn't being used anywhere
         candidate_in_db = \
             Candidate.get_by_first_last_name_owner_user_id_source_id_product(
                 attendee.first_name,
@@ -529,11 +519,10 @@ class RSVPBase(object):
                 attendee.candidate_source_id,
                 attendee.source_product_id)
 
-        # TODO--kindly add comments why the need of talent pool id
+        # To create candidates, user must have be associated with talent_pool
         talent_pools = TalentPool.get_by_user_id(attendee.gt_user_id)
         talent_pool_ids = map(lambda talent_pool: talent_pool.id, talent_pools)
-        # TODO: Log useful data. e.g., user_id, sn_id etc (Basit)
-        # TODO--what if talent_pool_ids has [None, '', 0]. Please cater this scenario when you check for None. Yes, assume this may happen
+
         if not talent_pool_ids:
             raise InternalServerError("save_attendee_as_candidate: user doesn't have any talent_pool")
 
@@ -543,7 +532,6 @@ class RSVPBase(object):
                 'source_id': attendee.candidate_source_id,
                 'talent_pool_ids': dict(add=talent_pool_ids)
                 }
-        # TODO: pep8 violation
         social_network_data = {
              'name': attendee.event.social_network.name,
              'profile_url': attendee.social_profile_url
@@ -555,7 +543,6 @@ class RSVPBase(object):
             data = dict(candidates=[data])
 
             # Get candidate's social network if already exist
-            # TODO: pep8 violation (Basit)
             candidate_social_network_in_db = \
                 CandidateSocialNetwork.get_by_candidate_id_and_sn_id(
                     candidate_id, attendee.social_network_id)
@@ -569,22 +556,34 @@ class RSVPBase(object):
 
         # Update social network data to be sent with candidate
         data.update({'social_networks': [social_network_data]})
-        # TODO: we are getting token again. I think make it property of Attendee object.
-        token = Token.get_by_user_id(attendee.gt_user_id)
-        # TODO: Isn't this creating every time? How will it update if candidate exists? i.e. patch request.
-        response = create_candidates_from_candidate_api(oauth_token=token.access_token if token else None,
-                                                        data=dict(candidates=[data]),
-                                                        return_candidate_ids_only=True)
-        # TODO: In case of update, we will already have id. (Basit)
-        # TODO --is the response being validated
+
+        # We need to refresh token if token is expired. For that send request to auth service and request a
+        # refresh token.
+        if self.user_access_token and \
+                            (self.user_access_token.expires - timedelta(seconds=REQUEST_TIMEOUT)) < datetime.utcnow():
+            data = {
+                'client_id': self.user_access_token.client_id,
+                'client_secret': self.user_access_token.client.client_secret,
+                'refresh_token': self.user_access_token.refresh_token,
+                'grant_type': u'refresh_token'
+            }
+
+            resp = http_request('POST', AuthApiUrl.TOKEN_CREATE, headers=
+                                {'content-type': 'application/x-www-form-urlencoded'},
+                                data=urlencode(data))
+            logger.info('Token refreshed %s' % resp.json()['expires_at'])
+            self.user_access_token.access_token = "Bearer " + resp.json()['access_token']
+
+        response = create_or_update_candidate(oauth_token=self.user_access_token.access_token,
+                                              data=dict(candidates=[data]),
+                                              return_candidate_ids_only=True)
         # Get created candidate id
         candidate_id = response[0]
         attendee.candidate_id = candidate_id
 
         return attendee
 
-    @staticmethod
-    def save_rsvp(attendee):
+    def save_rsvp(self, attendee):
         """
         :param attendee: attendees is a utility object we share in calls that
          contains pertinent data.
@@ -599,7 +598,6 @@ class RSVPBase(object):
           RSVPBase class inside social_network_service/rsvp/base.py.
 
         - We use this method while importing RSVPs through social network
-          manager or webhook.
 
         :Example:
 
@@ -608,7 +606,7 @@ class RSVPBase(object):
         **See Also**
             .. seealso:: process_rsvps() method in EventBase class
         :return attendee:
-        :rtype: object
+        :rtype: Attendee
         """
         rsvp_in_db = \
             RSVP.get_by_vendor_rsvp_id_candidate_id_vendor_id_event_id(
@@ -627,6 +625,7 @@ class RSVPBase(object):
         if rsvp_in_db:
             rsvp_in_db.update(**data)
             rsvp_id_db = rsvp_in_db.id
+            self.flag_create_activity = False
         else:
             rsvp = RSVP(**data)
             RSVP.save(rsvp)
@@ -647,7 +646,6 @@ class RSVPBase(object):
           RSVPBase class inside social_network_service/rsvp/base.py.
 
         - We use this method while importing RSVPs through social network
-          manager or webhook.
 
         :Example:
 
@@ -656,7 +654,7 @@ class RSVPBase(object):
         **See Also**
             .. seealso:: process_rsvps() method in EventBase class
         :return attendee:
-        :rtype: object
+        :rtype: Attendee
         """
         assert attendee.event.title is not None
         event_title = attendee.event.title
@@ -672,11 +670,10 @@ class RSVPBase(object):
                   'img': attendee.vendor_img_link,
                   'creator': '%s' % gt_user_first_name + ' %s'
                                                          % gt_user_last_name}
-        # TODO: why aren't we checking that activity has already been created? IMOit will create multiple activities
-        # TODO: for a particular event.
-        add_activity(user_id=attendee.gt_user_id,
-                     activity_type=Activity.MessageIds.RSVP_EVENT,
-                     source_id=attendee.rsvp_id,
-                     source_table=RSVP.__tablename__,
-                     params=json.dumps(params))
+        if self.flag_create_activity:
+            add_activity(user_id=attendee.gt_user_id,
+                         activity_type=Activity.MessageIds.RSVP_EVENT,
+                         source_id=attendee.rsvp_id,
+                         source_table=RSVP.__tablename__,
+                         params=json.dumps(params))
         return attendee

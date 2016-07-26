@@ -31,9 +31,8 @@ class TestOrganizers:
         """
         response = requests.get(SocialNetworkApiUrl.EVENT_ORGANIZERS, headers=auth_header(token_first))
         logger.info(response.text)
-        # TODO I think we should put the message telling why the result wasn't 200 on the RHS of assert and it applies
         # to most messages we placed on RHS of asserts
-        assert response.status_code == 200, 'Status should be Ok (200)'
+        assert response.status_code == 200, response.text
         results = response.json()
         assert 'event_organizers' in results
 
@@ -52,7 +51,7 @@ class TestOrganizers:
         response = requests.post(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(event_organizer),
                                  headers=get_headers('invalid_token'))
         logger.info(response.text)
-        assert response.status_code == 401, 'It should be unauthorized (401)'
+        assert response.status_code == 401, response.text
 
     def test_post_with_valid_token(self, token_first, user_first):
         """
@@ -87,7 +86,7 @@ class TestOrganizers:
         response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps({'ids': []}),
                                    headers=get_headers('invalid_token'))
         logger.info(response.text)
-        assert response.status_code == 401, 'It should be unauthorized (401)'
+        assert response.status_code == 401, response.text
 
     def test_delete_with_invalid_id(self, token_first):
         """
@@ -99,7 +98,7 @@ class TestOrganizers:
         response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS,  data=json.dumps(organizer_ids),
                                    headers=get_headers(token_first))
         logger.info(response.text)
-        assert response.status_code == 207, 'Unable to delete all organizers (207)'
+        assert response.status_code == 207, response.text
         response = response.json()
         assert 'deleted' in response and len(response['deleted']) == 0
         assert 'not_deleted' in response and len(response['not_deleted']) == 1
@@ -116,13 +115,13 @@ class TestOrganizers:
         response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS,  data=json.dumps(organizer_ids),
                                    headers=get_headers(token_first))
         logger.info(response.text)
-        assert response.status_code == 200, 'Status should be Ok (200)'
+        assert response.status_code == 200, response.text
 
         organizer_ids = {'ids': -1}  # invalid ids format to test 400 status code
         response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS,  data=json.dumps(organizer_ids),
                                    headers=get_headers(token_first))
         logger.info(response.text)
-        assert response.status_code == 400, 'Bad Request'
+        assert response.status_code == 400, response.text
         response = response.json()
         assert 'message' in response['error'] and \
                response['error']['message'] == 'Bad request, include ids as list data'

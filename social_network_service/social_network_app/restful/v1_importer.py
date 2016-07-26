@@ -152,9 +152,11 @@ def schedule_job(url, task_name):
         'is_jwt_request': True
     }
 
+    logger.info('Checking if %s task already running...' % task_name)
     response = requests.get(SchedulerApiUrl.TASK_NAME % task_name, headers=headers)
     # If job is not scheduled then schedule it
     if response.status_code == requests.codes.not_found:
+        logger.info('Task %s not scheduled. Scheduling %s task.' % (task_name, task_name))
         data.update({'url': url})
         data.update({'task_name': task_name, 'task_type': 'periodic'})
 
@@ -164,5 +166,5 @@ def schedule_job(url, task_name):
         if not (response.status_code == requests.codes.created or response.json()['error']['code'] == 6057):
             logger.error(response.text)
             raise InternalServerError(error_message='Unable to schedule meetup importer job')
-    elif response.status_code == requests.codes.unauthorized:
-        logger.info('Job already scheduled')
+    elif response.status_code == requests.codes.ok:
+        logger.info('Job already scheduled. %s' % response.text)

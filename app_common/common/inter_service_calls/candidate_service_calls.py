@@ -94,11 +94,45 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
                      'content-type': 'application/json'},
             data=json.dumps(data)
     )
-    data = resp.json()
-    # Candidate already exists. So return id of candidate
-    if resp.status_code == 400 and data['error']['code'] == 3013 and return_candidate_ids_only:
-        return [data['error']['id']]
     assert resp.status_code == 201
+    if return_candidate_ids_only:
+        return [candidate['id'] for candidate in resp.json()['candidates']]
+    return resp.json()
+
+
+def create_or_update_candidate(oauth_token, data, return_candidate_ids_only=False):
+    """
+    Function sends a request to CandidateResource/post()
+    Call candidate api using oauth token or user_id
+
+    :param oauth_token: Oauth token, if None, then create a secret X-Talent-Key oauth token (JWT)
+    :param data: Candidates object data to create candidate
+    :param return_candidate_ids_only: If true it will only return the created candidate ids
+    else it will return the created candidate response json object
+    Returns: list of created candidate ids
+    # """
+
+    resp = requests.post(
+            url=CandidateApiUrl.CANDIDATES,
+            headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token,
+                     'content-type': 'application/json'},
+            data=json.dumps(data)
+    )
+    data_resp = resp.json()
+    # Candidate already exists. So, we update candidate data and return candidate id
+    # 3013 error code represents candidate already exists.
+    if resp.status_code == requests.codes.bad and data_resp['error']['code'] == 3013:
+        data['candidates'][0]['id'] = resp.json()['error']['id']
+        patch_resp = requests.patch(
+            url=CandidateApiUrl.CANDIDATES,
+            headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token,
+                     'content-type': 'application/json'},
+            data=json.dumps(data)
+        )
+        if return_candidate_ids_only:
+            return [candidate['id'] for candidate in patch_resp.json()['candidates']]
+        resp = patch_resp
+    assert resp.status_code == requests.codes.created
     if return_candidate_ids_only:
         return [candidate['id'] for candidate in resp.json()['candidates']]
     return resp.json()
