@@ -1,5 +1,6 @@
 import requests
 
+from ats_service.app.api.ats_utils import ATS_ACCOUNT_FIELDS
 from ats_service.common.routes import ATSServiceApiUrl
 
 def test_healthcheck():
