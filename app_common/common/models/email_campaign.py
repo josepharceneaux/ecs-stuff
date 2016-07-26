@@ -60,6 +60,8 @@ class EmailCampaign(db.Model):
         talent_pipelines = [{"id": smart_list.talent_pipeline.id, "name": smart_list.talent_pipeline.name}
                             for smart_list in smart_lists if smart_list.talent_pipeline]
 
+        talent_pipelines = [dict(tupleized) for tupleized in set(tuple(item.items()) for item in talent_pipelines)]
+
         return_dict = {"id": self.id,
                        "user_id": self.user_id,
                        "name": self.name,
