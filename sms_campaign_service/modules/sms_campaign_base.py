@@ -54,8 +54,7 @@ from sms_campaign_service.modules.validators import (validate_url_format,
 from sms_campaign_service.modules.handy_functions import (TwilioSMS, replace_localhost_with_ngrok,
                                                           get_formatted_phone_number,
                                                           search_urls_in_text)
-from sms_campaign_service.modules.sms_campaign_app_constants import (MOBILE_PHONE_LABEL, TWILIO,
-                                                                     TWILIO_TEST_NUMBER)
+from sms_campaign_service.modules.constants import (MOBILE_PHONE_LABEL, TWILIO, TWILIO_TEST_NUMBER)
 from sms_campaign_service.modules.custom_exceptions import (TwilioApiError,
                                                             MultipleUsersFound,
                                                             ErrorUpdatingBodyText,

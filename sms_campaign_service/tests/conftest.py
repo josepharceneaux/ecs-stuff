@@ -13,6 +13,7 @@ from sms_campaign_service.common.tests.conftest import *
 
 # Service specific
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.modules.constants import (TWILIO, MOBILE_PHONE_LABEL)
 from sms_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from sms_campaign_service.tests.modules.common_functions import (assert_api_send_response,
                                                                  delete_test_scheduled_task,
@@ -22,7 +23,6 @@ from sms_campaign_service.tests.modules.common_functions import (assert_api_send
                                                                  assert_campaign_delete, generate_campaign_data,
                                                                  generate_campaign_schedule_data,
                                                                  remove_any_user_phone_record_with_twilio_test_number)
-from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL)
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
