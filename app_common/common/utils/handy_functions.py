@@ -364,7 +364,7 @@ def validate_json_header(request):
     If header of request is not proper, it raises InvalidUsage exception
     :return:
     """
-    if not request.content_type == JSON_CONTENT_TYPE_HEADER['content-type']:
+    if JSON_CONTENT_TYPE_HEADER['content-type'] not in request.content_type:
         raise InvalidUsage('Invalid header provided. Kindly send request with JSON data '
                            'and application/json content-type header')
 

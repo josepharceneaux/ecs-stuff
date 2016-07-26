@@ -7,9 +7,11 @@ class. Meetup contains methods like refresh_access_token(), get_member_id() etc.
 import json
 
 # Application Specific
+from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.error_handling import InternalServerError, InvalidUsage
 from social_network_service.modules import custom_codes
+from social_network_service.modules.custom_codes import (VENUE_EXISTS_ON_GT_DATABASE, MATCHING_VENUE_FOUND_ON_MEETUP)
 from social_network_service.modules.utilities import logger
 from base import SocialNetworkBase
 from social_network_service.social_network_app import app
@@ -279,8 +281,14 @@ class Meetup(SocialNetworkBase):
         elif response.status_code == 409:
             # 409 is returned when our venue is matching existing
             # venue/venues.
-            raise InvalidUsage('Matching venue already exists.',
-                               additional_error_info=dict(venue_error=json_resp['errors'][0]['potential_matches']))
+            match = json_resp['errors'][0]['potential_matches'][0]
+            venue = Venue.get_by_user_id_and_social_network_venue_id(self.user.id, match.get('id'))
+            if venue:
+                raise InvalidUsage('Venue already exists in getTalent database',
+                                   error_code=VENUE_EXISTS_ON_GT_DATABASE)
+            raise InvalidUsage('Matching venue already exists on Meetup.',
+                               additional_error_info=dict(venue_error=json_resp['errors'][0]['potential_matches']),
+                               error_code=MATCHING_VENUE_FOUND_ON_MEETUP)
         else:
             raise InternalServerError('ApiError: Unable to create venue for Meetup',
                                       additional_error_info=dict(venue_error=json_resp))
