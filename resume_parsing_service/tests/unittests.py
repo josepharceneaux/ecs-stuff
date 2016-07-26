@@ -4,6 +4,7 @@ __author__ = 'erik@gettalent.com'
 # pylint: disable=wrong-import-position
 # Third party.
 from bs4 import BeautifulSoup as bs4
+from jsonschema import validate, FormatChecker
 # JSON outputs.
 from .resume_xml import DOCX
 from .resume_xml import GET_1301
@@ -24,7 +25,9 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_nam
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_phones
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_skills
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_reference
-
+# JSON Schemas
+from json_schemas import (NAME_SCHEMA, EMAIL_SCHEMA, PHONE_SCHEMA, EXPERIENCE_SCHEMA, EDU_SCHEMA,\
+                          SKILL_SCHEMA, ADDRESS_SCHEMA)
 # XML Combinations:
 import edu_combinations
 import contact_combinations
@@ -32,22 +35,17 @@ import job_combinations
 import skill_combinations
 
 
-EDUCATIONS_KEYS = ('city', 'country', 'degrees', 'state', 'school_name')
-WORK_EXPERIENCES_KEYS = ('bullets', 'city', 'country', 'end_month', 'end_year', 'is_current',
-                         'organization', 'position', 'start_month', 'start_year', 'state')
-ADDRESS_KEYS = ('address_line_1', 'city', 'country', 'state', 'zip_code')
-
-DOCX_ADDRESS = {'city': u'Lansdale', 'state': u'Pennsylvania', 'country': 'US', 'zip_code': '19446',
+DOCX_ADDRESS = {'city': u'Lansdale', 'state': u'Pennsylvania', 'country_code': 'US', 'zip_code': '19446',
                 'address_line_1': u'466 Tailor Way'}
-GET_642_ADDRESS = {'city': u'Liberty Township', 'state': u'OH', 'country': 'US',
+GET_642_ADDRESS = {'city': u'Liberty Township', 'state': u'OH', 'country_code': 'US',
                    'zip_code': '45011', 'address_line_1': u'6507 Hughes Ridge Lane'}
-GET_646_ADDRESS = {'city': u'Solana Beach', 'state': u'CA', 'country': 'US', 'zip_code': '92075',
+GET_646_ADDRESS = {'city': u'Solana Beach', 'state': u'CA', 'country_code': 'US', 'zip_code': '92075',
                   'address_line_1': u'930 Via Di Salerno Unit 119'}
-GET_626a_ADDRESS = {'city': u'Portland', 'state': u'Oregon', 'country': 'US', 'zip_code': '97211',
+GET_626a_ADDRESS = {'city': u'Portland', 'state': u'Oregon', 'country_code': 'US', 'zip_code': '97211',
                     'address_line_1': u'1602 NE Junior St.'}
-GET_626b_ADDRESS = {'city': u'Portland', 'state': u'OR', 'country': 'US', 'zip_code': '97212',
+GET_626b_ADDRESS = {'city': u'Portland', 'state': u'OR', 'country_code': 'US', 'zip_code': '97212',
                     'address_line_1': u'4014 NE Failing Street'}
-PDF_ADDRESS = {'city': u'St. Petersburg', 'state': u'FL', 'country': 'US', 'zip_code': '33713-5855',
+PDF_ADDRESS = {'city': u'St. Petersburg', 'state': u'FL', 'country_code': 'US', 'zip_code': '33713-5855',
                'address_line_1': u'2462 13 th Avenue North #6-101'}
 
 XML_MAPS = [
@@ -80,6 +78,7 @@ def test_name_parsing():
         contact_xml_list = bs4(resume, 'lxml').findAll('contact')
         if contact_xml_list:
             name = parse_candidate_name(contact_xml_list)
+            assert validate(name, NAME_SCHEMA, format_checker=FormatChecker()) is None
             assert name['first_name'] == xml['name'].split()[0]
             assert name['last_name'] == xml['name'].split()[1]
 
@@ -96,7 +95,7 @@ def test_email_parsing():
         emails = parse_candidate_emails(contact_xml_list)
         assert len(emails) == xml['email_len']
         for email in emails:
-            assert 'address' in email
+            assert validate(email, EMAIL_SCHEMA, format_checker=FormatChecker()) is None
 
 
 def test_phone_parsing():
@@ -111,7 +110,7 @@ def test_phone_parsing():
         phones = parse_candidate_phones(contact_xml_list)
         assert len(phones) == xml['phone_len']
         for phone in phones:
-            assert 'value' in phone, 'Phone dict is missing value key'
+            assert validate(phone, PHONE_SCHEMA, format_checker=FormatChecker()) is None
 
 
 def test_experience_parsing():
@@ -126,21 +125,16 @@ def test_experience_parsing():
         experiences = parse_candidate_experiences(experience_xml_list)
         assert len(experiences) == xml['experience_len']
         for experience in experiences:
-            # Asserts that experience contains all keys inside WORK_EXPERIENCE_KEYS
-            assert all(k in experience for k in WORK_EXPERIENCES_KEYS if experience)
-            # Check nested dicts in bullets
-            if experience['bullets']:
-                for bullet in experience['bullets']:
-                    assert 'description' in bullet
+            assert validate(experience, EXPERIENCE_SCHEMA, format_checker=FormatChecker()) is None
     # Tests against specific KeyError reported in JIRA (GET-626)
     xml_experiences_a = bs4(GET_626a, 'lxml').findAll('experience')
     processed_experiences_a = parse_candidate_experiences(xml_experiences_a)
     xml_experiences_b = bs4(GET_626b, 'lxml').findAll('experience')
     processed_experiences_b = parse_candidate_experiences(xml_experiences_b)
-    for experience_dict in processed_experiences_a:
-        assert all(k in experience_dict for k in WORK_EXPERIENCES_KEYS if experience_dict)
-    for experience_dict in processed_experiences_b:
-        assert all(k in experience_dict for k in WORK_EXPERIENCES_KEYS if experience_dict)
+    for experience in processed_experiences_a:
+        assert validate(experience, EXPERIENCE_SCHEMA, format_checker=FormatChecker()) is None
+    for experience in processed_experiences_b:
+        assert validate(experience, EXPERIENCE_SCHEMA, format_checker=FormatChecker()) is None
 
 
 def test_education_parsing():
@@ -157,8 +151,7 @@ def test_education_parsing():
         assert len(educations) == xml['education_len']
         # Very each dict in list has proper keys
         for education in educations:
-            assert all(k in education for k in EDUCATIONS_KEYS if education)
-        assert type(education['degrees'] == list())
+            assert validate(education, EDU_SCHEMA, format_checker=FormatChecker()) is None
 
 
 def test_skill_parsing():
@@ -169,7 +162,7 @@ def test_skill_parsing():
         skills = parse_candidate_skills(skill_xml_list)
         assert len(skills) == xml['skills_len']
         for skill in skills:
-            assert 'name' in skill
+            assert validate(skill, SKILL_SCHEMA) is None
 
 
 def test_skills_duplicates():
@@ -190,7 +183,7 @@ def test_address_parsing():
         addresses = parse_candidate_addresses(contact_xml_list)
         assert len(addresses) == xml['addresses_len']
         for address in addresses:
-            assert all(k in address for k in ADDRESS_KEYS if address)
+            assert validate(address, ADDRESS_SCHEMA, format_checker=FormatChecker()) is None
 
 
 def test_docx_accuracy():
@@ -241,7 +234,10 @@ def test_docx_accuracy():
     edu1 = next((edu for edu in educations if edu["school_name"] == u'South Bank University'), None)
     assert edu1
     assert edu1['city'] == u'London'
-    assert {'bullets': [], 'type': u'B.Sc', 'title': u'Computing Studies'} in edu1['degrees']
+    assert {
+                'start_month': None, 'end_month': 7, 'start_year': None,
+                'bullets': [{'major': u'Computing Studies', 'comments': None}], 'title': u'B.Sc',
+                'gpa_num': None, 'end_year': 1995, 'type': 'Bachelor of Science'} in edu1['degrees']
 
 
 def test_g642_accuracy():
@@ -336,7 +332,9 @@ def test_g642_accuracy():
     educations = parse_candidate_educations(educations_xml_list)
     edu1 = next((edu for edu in educations if edu["school_name"] == u'Northeast Louisiana University'), None)
     assert edu1
-    assert {'bullets': [], 'type': u'B.S', 'title': u'Computer Science'} in edu1['degrees']
+    assert {'start_month': None, 'end_month': 12, 'start_year': None,
+            'bullets': [{'major': u'Computer Science', 'comments': None}], 'title': u'B.S',
+            'gpa_num': None, 'end_year': 1988, 'type': 'Bachelor of Science'} in edu1['degrees']
 
 
 def test_g646_accuracy():
@@ -378,7 +376,9 @@ def test_g646_accuracy():
     # assert edu1
     edu2 = next((edu for edu in educations if edu["school_name"] == u'Butte College'), None)
     assert edu2
-    assert {'bullets': [], 'type': u'A.A', 'title': None} in edu2['degrees']
+    assert {'start_month': 1, 'end_month': 1, 'start_year': 1995,
+            'bullets': [{'major': None, 'comments': None}], 'title': u'A.A', 'gpa_num': None,
+            'end_year': 1996, 'type': 'Associate of Arts'} in edu2['degrees']
 
 
 def test_g626a_accuracy():
@@ -474,17 +474,27 @@ def test_g626a_accuracy():
     educations = parse_candidate_educations(educations_xml_list)
     edu1 = next((edu for edu in educations if edu["school_name"] == u'University of Phoenix'), None)
     assert edu1
-    assert {'bullets': [], 'type': u'Masters', 'title': u'Information Systems/Management'} in edu1['degrees']
+    assert {'start_month': None, 'end_month': 1, 'start_year': None,
+            'bullets': [{'major': u'Information Systems/Management', 'comments': None}],
+            'title': u'Masters', 'gpa_num': None, 'end_year': 2007, 'type': "Master's"} in edu1['degrees']
     edu2 = next((edu for edu in educations if edu["school_name"] == u'Heald College'), None)
     assert edu2
-    assert {'bullets': [], 'type': u'Diploma', 'title': u'Computer Technology'} in edu2['degrees']
+    assert {'start_month': None, 'end_month': 1, 'start_year': None,
+            'bullets': [{'major': u'Computer Technology', 'comments': None}],
+            'title': u'Diploma', 'gpa_num': None, 'end_year': 1999, 'type': 'Diploma'} in edu2['degrees']
     # edu3 = next((edu for edu in educations if edu["school_name"] == u'Cornell University'), None)
     edu4 = next((edu for edu in educations if edu["school_name"] == u'Cornell University'), None)
     assert edu4
-    assert {'bullets': [], 'type': u'Master of Arts Degree', 'title': u'Linguistics'} in edu4['degrees']
+    assert {'start_month': None, 'end_month': 1, 'start_year': None,
+            'bullets': [{'major': u'Linguistics', 'comments': None}],
+            'title': u'Master of Arts Degree', 'gpa_num': None, 'end_year': 1988,
+            'type': "Master's"} in edu4['degrees']
     edu5 = next((edu for edu in educations if edu["school_name"] == u'University of Ibadan'), None)
     assert edu5
-    assert {'bullets': [], 'type': u'Bachelor of Arts Degree', 'title': u'Linguistics'} in edu5['degrees']
+    assert {'start_month': None, 'end_month': 1, 'start_year': None,
+            'bullets': [{'major': u'Linguistics', 'comments': None}],
+            'title': u'Bachelor of Arts Degree', 'gpa_num': None, 'end_year': 1979,
+            'type': "Bachelor's"} in edu5['degrees']
 
 
 def test_g626b_accuracy():
@@ -529,7 +539,9 @@ def test_g626b_accuracy():
     educations = parse_candidate_educations(educations_xml_list)
     edu1 = next((edu for edu in educations if edu["school_name"] == u'San Francisco State University'), None)
     assert edu1
-    assert {'bullets': [], 'type': u'Bachelor of Arts', 'title': u'Humanities'} in edu1['degrees']
+    assert {'start_month': None, 'end_month': None, 'start_year': None,
+            'bullets': [{'major': u'Humanities', 'comments': None}], 'title': u'Bachelor of Arts',
+            'gpa_num': None, 'end_year': None, 'type': "Bachelor's"} in edu1['degrees']
 
 
 def test_pdf_accuracy():
@@ -618,7 +630,10 @@ def test_pdf_accuracy():
     educations = parse_candidate_educations(educations_xml_list)
     edu1 = next((edu for edu in educations if edu["school_name"] == u'ITT Technical Institute'), None)
     assert edu1
-    assert {'bullets': [], 'type': u'Bachelor of Science Degree', 'title': u'Information Systems/Cyber Securities'} in edu1['degrees']
+    assert {'start_month': None, 'end_month': 1, 'start_year': None,
+            'bullets': [{'major': u'Information Systems/Cyber Securities', 'comments': None}],
+            'title': u'Bachelor of Science Degree', 'gpa_num': None, 'end_year': 2013,
+            'type': "Bachelor's"} in edu1['degrees']
 
 
 def test_pdf13_accuracy():
@@ -661,7 +676,10 @@ def test_pdf13_accuracy():
     educations = parse_candidate_educations(educations_xml_list)
     edu1 = next((edu for edu in educations if edu["school_name"] == u'Purdue University'), None)
     assert edu1
-    assert {'bullets': [], 'type': u'Bachelor of Science', 'title': u'Information Systems'} in edu1['degrees']
+    assert {'start_month': None, 'end_month': None, 'start_year': None,
+            'bullets': [{'major': u'Information Systems', 'comments': None}],
+            'title': u'Bachelor of Science', 'gpa_num': None, 'end_year': None,
+            'type': "Bachelor's"} in edu1['degrees']
 
 
 def test_pdf14_accuracy():
@@ -691,72 +709,78 @@ def test_pdf14_accuracy():
     #     org['position'] == u'Software Testing Engineer')), None)
     edu1 = next((edu for edu in educations if edu["school_name"] == u'ITESO University'), None)
     assert edu1
-    assert {'bullets': [], 'type': u'B. Sc', 'title': u'Computer Systems Engineer'} in edu1['degrees']
+    assert {'start_month': None, 'end_month': 1, 'start_year': None,
+            'bullets': [{'major': u'Computer Systems Engineer', 'comments': None}],
+            'title': u'B. Sc', 'gpa_num': None, 'end_year': 1992,
+            'type': 'Bachelor of Science'} in edu1['degrees']
     # edu2 = next((edu for edu in educations if edu["school_name"] == u'ITESM University'), None)
     edu3 = next((edu for edu in educations if edu["school_name"] == u'British Columbia Institute of Technology'), None)
-    assert edu3
+    assert {'start_month': None, 'end_month': 1, 'start_year': None,
+            'bullets': [{'major': u'software Engineering', 'comments': None}],
+            'title': u'Software Engineering Diploma', 'gpa_num': None, 'end_year': 1993,
+            'type': 'Diploma'} in edu3['degrees']
 
 
 def test_parsing_edu_combinations():
     xml_combos = [xml for xml in dir(edu_combinations) if "__" not in xml]
     for combo in xml_combos:
         combo_to_parse = bs4(getattr(edu_combinations, combo), 'lxml').findAll('education')
-        successful_parse = parse_candidate_educations(combo_to_parse)
-        # Sometime it may return an empty array so we cannot just assert on this.
-        assert successful_parse is not None
+        educations = parse_candidate_educations(combo_to_parse)
+        for education in educations:
+            assert validate(education, EDU_SCHEMA, format_checker=FormatChecker()) is None
 
 
 def test_parsing_addresses():
     xml_combos = [xml for xml in dir(contact_combinations) if "__" not in xml]
     for combo in xml_combos:
         combo_to_parse = bs4(getattr(contact_combinations, combo), 'lxml').findAll('contact')
-        successful_parse = parse_candidate_addresses(combo_to_parse)
-        # Sometime it may return an empty array so we cannot just assert on this.
-        assert successful_parse is not None
+        addresses = parse_candidate_addresses(combo_to_parse)
+        for address in addresses:
+            assert validate(address, ADDRESS_SCHEMA, format_checker=FormatChecker()) is None
 
 
 def test_parsing_emails():
     xml_combos = [xml for xml in dir(contact_combinations) if "__" not in xml]
     for combo in xml_combos:
         combo_to_parse = bs4(getattr(contact_combinations, combo), 'lxml').findAll('contact')
-        successful_parse = parse_candidate_emails(combo_to_parse)
-        # Sometime it may return an empty array so we cannot just assert on this.
-        assert successful_parse is not None
+        emails = parse_candidate_emails(combo_to_parse)
+        for email in emails:
+            assert validate(email, EMAIL_SCHEMA, format_checker=FormatChecker()) is None
 
 
 def test_parsing_names():
     xml_combos = [xml for xml in dir(contact_combinations) if "__" not in xml]
     for combo in xml_combos:
         combo_to_parse = bs4(getattr(contact_combinations, combo), 'lxml').findAll('contact')
-        successful_parse = parse_candidate_name(combo_to_parse)
+        name = parse_candidate_name(combo_to_parse)
         # Sometime it may return an empty array so we cannot just assert on this.
-        assert successful_parse is not None
+        assert validate(name, NAME_SCHEMA, format_checker=FormatChecker()) is None
 
 
 def test_parsing_phones():
     xml_combos = [xml for xml in dir(contact_combinations) if "__" not in xml]
     for combo in xml_combos:
         combo_to_parse = bs4(getattr(contact_combinations, combo), 'lxml').findAll('contact')
-        successful_parse = parse_candidate_phones(combo_to_parse)
-        # Sometime it may return an empty array so we cannot just assert on this.
-        assert successful_parse is not None
+        phones = parse_candidate_phones(combo_to_parse)
+        for phone in phones:
+            assert validate(phone, PHONE_SCHEMA, format_checker=FormatChecker()) is None
 
 
 def test_parsing_experiences():
     xml_combos = [xml for xml in dir(job_combinations) if "__" not in xml]
     for combo in xml_combos:
         combo_to_parse = bs4(getattr(job_combinations, combo), 'lxml').findAll('experience')
-        successful_parse = parse_candidate_experiences(combo_to_parse)
-        # Sometime it may return an empty array so we cannot just assert on this.
-        assert successful_parse is not None
+        experiences = parse_candidate_experiences(combo_to_parse)
+        for experience in experiences:
+            assert validate(experience, EXPERIENCE_SCHEMA, format_checker=FormatChecker()) is None
 
 def test_parsing_skills():
     xml_combos = [xml for xml in dir(skill_combinations) if "__" not in xml]
     for combo in xml_combos:
         combo_to_parse = bs4(getattr(skill_combinations, combo), 'lxml').findAll('canonskill')
-        successful_parse = parse_candidate_skills(combo_to_parse)
-        # Sometime it may return an empty array so we cannot just assert on this.
-        assert successful_parse is not None
+        skills = parse_candidate_skills(combo_to_parse)
+        for skill in skills:
+            assert validate(skill, SKILL_SCHEMA, format_checker=FormatChecker()) is None
 
 
 def test_reference_parsing():
