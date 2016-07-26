@@ -1130,6 +1130,7 @@ class CampaignBase(object):
         if get_candidates_with_celery:
             self.get_candidates_and_send_campaign_via_celery(self.smartlist_ids)
         else:
+            # TODO--w: less the code the better, remove all code after else
             # TODO: Will there be any case we will want to do all this without Celery? I agree this gives flexibility,
             # TODO, but I don't understand use case of this.
             # GET smartlist candidates
@@ -1235,6 +1236,8 @@ class CampaignBase(object):
         # Register function to be called after all candidates are fetched from smartlists
         # TODO: IMO, this is not callback of campaign send, rather this is callback of candidates retrieval. So name
         # TODO: be changed. maybe send_campaign_to_candidates?
+        # TODO--w: Move this all code to send()
+        # TODO--w: rename callback to send_callback() or campaign_send_callback
         callback = self.callback_campaign_send.subtask((self,), queue=self.campaign_type)
 
         # Get candidates present in each smartlist
