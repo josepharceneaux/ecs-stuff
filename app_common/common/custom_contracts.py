@@ -3,7 +3,6 @@ This module contains our custom pyvalidators, which will be used to valid params
 docstring with the help of PyContracts.
 
 """
-from contracts import new_contract
 import cStringIO
 from bs4.element import ResultSet
 from contracts import new_contract
