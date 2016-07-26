@@ -1268,6 +1268,7 @@ class CampaignBase(object):
         :param list celery_result: list of lists of candidates
         """
         # TODO: type in docs list[list[Candidate]]
+        # TODO: assert on the param as well and comment why the commit here.
         db.session.commit()
         logger = current_app.config[TalentConfigKeys.LOGGER]
         all_candidate_ids = []

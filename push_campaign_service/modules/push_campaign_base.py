@@ -287,6 +287,7 @@ class PushCampaignBase(CampaignBase):
         # TODO: We need to think on this. Maybe, static method will do the magic here
         # TODO: e.g. callback_campaign_send(self, celery_result) will change to
         # TODO: @static -> callback_campaign_send(celery_result, class_object), or maybe some other better solution
+        # TODO-w: following sounds wrong or not? If not wrong, definitely confusing
         self, celery_result = celery_result, self
         with app.app_context():
             self.process_campaign_send(celery_result)

@@ -549,6 +549,7 @@ def get_and_assert_zero(url, key, token, sleep_time=30):
     :param sleep_time: maximum time to wait
     """
     # TODO: IMO, we should set this magic constant in some constants file so that it reflects everywhere.
+    # TODO: Need to rethink the method name e.g. get_and_assert_obj_length(url, key, token, sleep_time=30, obj_length=0)
     attempts = sleep_time / 3
     for _ in retrier(attempts=attempts, sleeptime=3, sleepscale=1):
         assert len(send_request('get', url, token).json()[key]) == 0
