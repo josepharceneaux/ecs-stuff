@@ -86,6 +86,8 @@ class TestSendSmsCampaign(object):
                 self.URL % campaign.id, access_token_first,
                 campaign, talent_pipeline.id, asynchronous=asynchronous)
             if not asynchronous:
+                # TODO: IMO, similar test case should be in push_campaign and hence this should go under tests_helpers.py
+                # TODO: pep08 line length violation
                 error_resp = CampaignsTestsHelpers.assert_api_response(response_post,
                                                                        expected_status_code=InvalidUsage.http_status_code())
                 assert error_resp['code'] == CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST

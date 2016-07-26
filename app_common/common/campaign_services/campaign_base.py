@@ -26,6 +26,7 @@ from celery import chord
 from flask import current_app
 
 # Database Models
+# TODO: I think following one import is not in right section
 from ..utils.auth_utils import refresh_token
 from ..models.db import db
 from ..models.user import (Token, User)
@@ -260,7 +261,7 @@ class CampaignBase(object):
         self.oauth_header = self.get_authorization_header(user_id)
         # It will be instance of model e.g. SmsCampaign or PushNotification etc.
         self.campaign = None
-        self.smartlist_ids = None
+        self.smartlist_ids = None # TODO: Kindly add a comment about this property as we have for all others.
         self.campaign_blast_id = None  # Campaign's blast id in database
         self.campaign_type = self.get_campaign_type()
         CampaignUtils.raise_if_not_valid_campaign_type(self.campaign_type)
@@ -1066,6 +1067,7 @@ class CampaignBase(object):
             task_id = self.schedule(pre_processed_data['data_to_schedule'])
         return task_id
 
+    # TODO: IMO get_candidates_with_celery -> use_celery
     def send(self, get_candidates_with_celery=False):
         """
         This does the following steps to send campaign to candidates.
@@ -1124,9 +1126,12 @@ class CampaignBase(object):
                                                                                              self.user.id),
                                error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
         self.smartlist_ids = [campaign_smartlist.smartlist_id for campaign_smartlist in campaign_smartlists]
+        # TODO: IMO we should check isinstance of bool as well, or check param type with @contract
         if get_candidates_with_celery:
             self.get_candidates_and_send_campaign_via_celery(self.smartlist_ids)
         else:
+            # TODO: Will there be any case we will want to do all this without Celery? I agree this gives flexibility,
+            # TODO, but I don't understand use case of this.
             # GET smartlist candidates
             lists_of_smartlist_candidates = map(self.get_smartlist_candidates, self.smartlist_ids)
             # Making a flat list out of "lists_of_smartlist_candidates" and removing duplicate candidate ids
@@ -1134,6 +1139,7 @@ class CampaignBase(object):
             # only one campaign.
             candidates = list(set(itertools.chain(*lists_of_smartlist_candidates)))
             if not candidates:
+                # TODO: pep08 line length violation
                 raise InvalidUsage('No candidate is associated with smartlist(s). %s(id:%s). campaign smartlist ids are %s'
                                    % (self.campaign_type, self.campaign.id,
                                       [smartlist.id for smartlist in campaign_smartlists]),
@@ -1195,6 +1201,7 @@ class CampaignBase(object):
         **See Also**
         .. see also:: send() method in SmsCampaignBase class.
         """
+        # TODO: nit: rtype list[list[Candidate]], Also double check at everywhere else
         # this is required to avoid DetachedInstanceError
         db.session.commit()
         candidates = []
@@ -1224,12 +1231,17 @@ class CampaignBase(object):
 
         :param list(int | long) smartlist_ids: smartlists associated with campaign
         """
+        #TODO: Pycharm isn't recognising type in docs. It should be as list[int|long]
         # Register function to be called after all candidates are fetched from smartlists
+        # TODO: IMO, this is not callback of campaign send, rather this is callback of candidates retrieval. So name
+        # TODO: be changed. maybe send_campaign_to_candidates?
         callback = self.callback_campaign_send.subtask((self,), queue=self.campaign_type)
 
         # Get candidates present in each smartlist
+        #TODO: IMO get_smartlist_candidates_task -> get_smartlist_candidates_via_celery
         tasks = [self.get_smartlist_candidates_task.subtask((self, smartlist_id),
                                                             link_error=self.celery_error_handler.subtask(
+        # TODO: Pep08 warning in 2 lines below
                                                            queue=self.campaign_type),
                                                        queue=self.campaign_type) for smartlist_id in smartlist_ids]
 
@@ -1246,6 +1258,7 @@ class CampaignBase(object):
          call super class method `process_campaign_send` to process this data and send campaigns to all candidates.
         :param list celery_result: list of lists of candidates
         """
+        # TODO: rtype list[list[Candidate]]
         pass
 
     def process_campaign_send(self, celery_result):
@@ -1254,6 +1267,7 @@ class CampaignBase(object):
         campaign blast and sends campaign to all candidates using celery.
         :param list celery_result: list of lists of candidates
         """
+        # TODO: type in docs list[list[Candidate]]
         db.session.commit()
         logger = current_app.config[TalentConfigKeys.LOGGER]
         all_candidate_ids = []
@@ -1263,6 +1277,9 @@ class CampaignBase(object):
             return
 
         # gather all candidates from various smartlists
+        # TODO: why not use itertools here as well as we are using in send()?
+        # TODO: ALso, I think this is also similar chunk of code as we have in else of send(), maybe we can combine
+        # TODO: this somehow
         for candidate_list in celery_result:
             all_candidate_ids.extend(candidate_list)
         all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
@@ -1303,6 +1320,7 @@ class CampaignBase(object):
         **See Also**
         .. see also:: send() method in SmsCampaignBase class.
         """
+        # TODO: Do we really need this in more than one functions?
         db.session.commit()
         if not candidates:
             raise InvalidUsage('No candidates with valid data found for %s(id:%s).'

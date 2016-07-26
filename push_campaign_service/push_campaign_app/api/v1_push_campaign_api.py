@@ -601,6 +601,8 @@ class SendPushCampaign(Resource):
         get_candidates_with_celery = True if get_candidates_with_celery == '1' else False
         campaign_obj = PushCampaignBase(user_id=user.id, campaign_id=campaign_id)
         campaign_obj.send(get_candidates_with_celery=get_candidates_with_celery)
+        # TODO: Not related to this PR, but it will be great if we change status codes to requests.codes. everywhere in
+        # TODO: this file.
         return dict(message='Campaign(id:%s) is being sent to candidates' % campaign_id), 200
 
 

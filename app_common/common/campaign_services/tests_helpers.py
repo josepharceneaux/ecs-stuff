@@ -302,6 +302,8 @@ class CampaignsTestsHelpers(object):
         :param (str) access_token: access access_token of user
         :param (str) asynchronous: boolean to specify whether to send a campaign synchronously or asynchronously
         """
+        # TODO: Kinda lost in docs from line 2. kindly double check this.
+        # TODO: type of asynchronous has been set wrongly to str, and it seems it should be bool from signature
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
         if asynchronous:
@@ -325,6 +327,7 @@ class CampaignsTestsHelpers(object):
         :param (str) access_token: access access_token of user
         :param (int | long) talent_pipeline_id: Id of talent_pipeline
         """
+        # TODO: Kindly remove redundant parenthesis from types where you have touched docs.
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
@@ -362,7 +365,7 @@ class CampaignsTestsHelpers(object):
     def campaign_test_with_no_valid_candidate(cls, url, access_token, campaign_id, asynchronous=False,
                                               campaign_service_urls=None):
         """
-        This is the test to send campaign to candidate(s) who do not have valid
+        This is the test to send campaign to candidate(s) which does not have valid
         data for the campaign to be sent to them. e.g. in case of email_campaign, candidate
         will have no email or for SMS campaign, candidate will not have any mobile number
         associated. This should assert custom error NO_VALID_CANDIDATE_FOUND in response.
@@ -372,6 +375,7 @@ class CampaignsTestsHelpers(object):
         :param (bool) asynchronous: whether to send campaign synchronously or not
         :param PushCampaignApiUrl | SmsCampaignApiUrl campaign_service_urls: routes url class
         """
+        # TODO: Remove parenthesis from types in docs
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(campaign_id, (int, long))
@@ -396,6 +400,7 @@ class CampaignsTestsHelpers(object):
         :param (int | long) _type: Type number of activity
         :param (in | long) source_id: Id of activity source
         """
+        # TODO: Remove parenthesis from types in docs
         raise_if_not_instance_of(user_id, (int, long))
         raise_if_not_instance_of(_type, (int, long))
         raise_if_not_instance_of(source_id, (int, long))
@@ -904,6 +909,7 @@ def _assert_activity(user_id, _type, source_id):
     :param (int | long) _type: Type number of activity
     :param (int | long) source_id: Id of activity source
     """
+    # TODO: Remove parenthesis from types in docs
     raise_if_not_instance_of(user_id, (int, long))
     raise_if_not_instance_of(_type, (int, long))
     raise_if_not_instance_of(source_id, (int, long))

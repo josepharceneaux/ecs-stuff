@@ -454,6 +454,7 @@ class SmsCampaignBase(CampaignBase):
         :param candidates: list of candidates to whom we want to send campaign
         :type candidates: list[Candidate]
         """
+        # TODO: Maybe we do this in BaseClass so that it will be common across child classes
         db.session.commit()
         not_owned_ids = []
         multiple_records_ids = []

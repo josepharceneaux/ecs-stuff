@@ -147,9 +147,11 @@ class PushCampaignBase(CampaignBase):
     @celery_app.task(name='get_smartlist_candidates_task')
     def get_smartlist_candidates_task(self, smartlist_id):
         """
-        This method will retrieve smartlist candidate from candidate pool service in a celery task.
-        :param int | long smartlist_id: campaign smartlist id
+        This method will retrieve smartlist candidates from candidate_pool_service in a celery task.
+        :param int | long smartlist_id: Id of smartlist associated with campaign
         """
+        # TODO: I think we can get class from "self". If so, we can move this to Base method as we not doing anything
+        # TODO:  here rather than calling super
         return super(PushCampaignBase, self).get_smartlist_candidates(smartlist_id)
 
     @celery_app.task(name='send_campaign_to_candidate')
@@ -281,6 +283,10 @@ class PushCampaignBase(CampaignBase):
         """
         # Celery calls callback method with `results` as first argument even it is a instance method so
         # we need to switch values to maintain the convention of `self` being first argument
+        # TODO: So "self" is actually "celery_result" and "celery_result" is actually "self" in this method :)
+        # TODO: We need to think on this. Maybe, static method will do the magic here
+        # TODO: e.g. callback_campaign_send(self, celery_result) will change to
+        # TODO: @static -> callback_campaign_send(celery_result, class_object), or maybe some other better solution
         self, celery_result = celery_result, self
         with app.app_context():
             self.process_campaign_send(celery_result)
