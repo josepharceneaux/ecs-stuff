@@ -70,5 +70,7 @@ py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests acti
 # echo "py.test ats_service/tests/test_v1_ats_account.py"
 # py.test ats_service/tests/test_v1_ats_account.py
 
-echo "py.test ats_service/tests/test_v1_ats_candidate.py"
-py.test ats_service/tests/test_v1_ats_candidate.py
+# echo "py.test ats_service/tests/test_v1_ats_candidate.py"
+# py.test ats_service/tests/test_v1_ats_candidate.py
+
+py.test ats_service/tests
