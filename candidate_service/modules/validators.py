@@ -198,11 +198,10 @@ def validate_id_list(key, values):
 def validate_string_list(key, values):
 
     if ',' in values or isinstance(values, list):
-        values = [value.strip() for value in values.split(',') if value.strip()] if ',' in values else values
-        values = [str(value).encode('string-escape') for value in values]
+        values = [value.strip().replace("'", r"\'") for value in values.split(',') if value.strip()] if ',' in values else values
         return values[0] if values.__len__() == 1 else values
     else:
-        return str(values.strip()).encode('string-escape')
+        return values.strip().replace("'", r"\'")
 
 
 def validate_sort_by(key, value):
