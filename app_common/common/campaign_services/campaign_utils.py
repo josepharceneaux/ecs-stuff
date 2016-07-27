@@ -32,7 +32,7 @@ from ..models.push_campaign import (PushCampaign, PushCampaignBlast, PushCampaig
 # Common Utils
 from ..routes import SchedulerApiUrl
 from ..utils.datetime_utils import DatetimeUtils
-from json_schema.campaign_fields import campaigns_delete_schema
+from json_schema.campaign_fields import CAMPAIGNS_DELETE_SCHEMA
 from ..talent_config_manager import TalentConfigKeys, TalentEnvs
 from .validators import raise_if_dict_values_are_not_int_or_long
 from ..utils.handy_functions import (http_request, snake_case_to_pascal_case)
@@ -397,7 +397,7 @@ class CampaignUtils(object):
         :param flask.request request_obj: API request object
         :param campaign_class: Campaign base class. e.g. SmsCampaignBase or PushCampaignBase
         """
-        requested_data = get_json_data_if_validated(request_obj, campaigns_delete_schema)
+        requested_data = get_json_data_if_validated(request_obj, CAMPAIGNS_DELETE_SCHEMA)
         campaign_ids = requested_data['ids']
         # Validate all requested campaigns exist in logged-in user's domain
         campaigns = [campaign_class(request_obj.user.id, campaign_id) for campaign_id in campaign_ids]

@@ -26,15 +26,15 @@ from celery import chord
 from flask import current_app
 
 # Database Models
-from ..utils.auth_utils import refresh_token
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
+from ..models.misc import (UrlConversion, Activity)
 from ..models.push_campaign import PushCampaignBlast
 from ..models.email_campaign import EmailCampaignBlast
-from ..models.misc import (UrlConversion, Frequency, Activity)
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
 # Common Utils
+from ..utils.auth_utils import refresh_token
 from ..utils.datetime_utils import DatetimeUtils
 from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys

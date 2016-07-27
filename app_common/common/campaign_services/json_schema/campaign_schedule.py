@@ -3,7 +3,7 @@ This file contains JSON schema for campaigns' scheduling API.
 """
 __author__ = 'basit'
 
-campaign_schedule_schema = {
+CAMPAIGN_SCHEDULE_SCHEMA = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "additionalProperties": False,

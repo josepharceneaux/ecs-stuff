@@ -4,7 +4,7 @@ This file contains JSON schema for campaign APIs.
 
 __author__ = 'basit'
 
-campaign_schema = {
+CAMPAIGN_SCHEMA = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "additionalProperties": False,
@@ -12,12 +12,10 @@ campaign_schema = {
         "name": {
             "type": "string",
             "pattern": "\w",
-            "minLength": 1,
         },
         "body_text": {
             "type": "string",
             "pattern": "\w",
-            "minLength": 1,
         },
         "smartlist_ids": {
             "type": "array",
@@ -35,7 +33,7 @@ campaign_schema = {
     ]
 }
 
-campaigns_delete_schema = {
+CAMPAIGNS_DELETE_SCHEMA = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "additionalProperties": False,
@@ -62,4 +60,4 @@ def get_campaign_schema():
     basic schema for campaign creation. Any other type of campaign can update this at its end.
     :rtype: dict
     """
-    return campaign_schema.copy()
+    return CAMPAIGN_SCHEMA.copy()
