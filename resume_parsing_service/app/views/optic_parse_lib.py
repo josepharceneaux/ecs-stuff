@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup as bs4
 from contracts import contract
 import requests
 import phonenumbers
+import pycountry
 # Module Specific
 from flask import current_app
 from resume_parsing_service.app import logger
@@ -275,7 +276,8 @@ def parse_candidate_experiences(bg_experience_xml_list):
             company_address = employement.find('address')
             company_city = _tag_text(company_address, 'city', capwords=True)
             company_state = _tag_text(company_address, 'state')
-            company_country = 'US'
+            company_country = get_country_code_from_address_tag(company_address)
+
             # Check if an experience already exists
             existing_experience_list_order = is_experience_already_exists(output,
                                                                           organization or '',
@@ -334,7 +336,7 @@ def parse_candidate_educations(bg_educations_xml_list):
             school_address = school.find('address')
             school_city = _tag_text(school_address, 'city', capwords=True)
             school_state = _tag_text(school_address, 'state')
-            country = 'US'
+            country = get_country_code_from_address_tag(school_address)
 
             start_date = get_date_from_date_tag(school, 'start')
             end_date = get_date_from_date_tag(school, 'end')
@@ -439,7 +441,7 @@ def parse_candidate_addresses(bg_xml_list):
             'address_line_1': _tag_text(address, 'street'),
             'city': address.get('inferred-city', '').title() or _tag_text(address, 'city'),
             'state': address.get('inferred-state', '').title() or _tag_text(address, 'state'),
-            'country_code': 'US',
+            'country_code': get_country_code_from_address_tag(address),
             'zip_code': sanitize_zip_code(_tag_text(address, 'postalcode'))
         })
     return output
@@ -542,3 +544,14 @@ def scrub_candidate_name(name_unicode):
     name_unicode = name_unicode.title()
 
     return name_unicode
+
+
+def get_country_code_from_address_tag(address):
+    if address:
+        country_tag = address.find('country')
+
+        if country_tag and country_tag.get('iso3'):
+            company_country_i3 = pycountry.countries.get(alpha3=country_tag.get('iso3'))
+            return company_country_i3.alpha2
+
+    return None
