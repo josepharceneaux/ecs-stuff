@@ -35,17 +35,17 @@ import job_combinations
 import skill_combinations
 
 
-DOCX_ADDRESS = {'city': u'Lansdale', 'state': u'Pennsylvania', 'country_code': 'US', 'zip_code': '19446',
+DOCX_ADDRESS = {'city': u'Lansdale', 'state': u'Pennsylvania', 'country_code': None, 'zip_code': '19446',
                 'address_line_1': u'466 Tailor Way'}
-GET_642_ADDRESS = {'city': u'Liberty Township', 'state': u'OH', 'country_code': 'US',
+GET_642_ADDRESS = {'city': u'Liberty Township', 'state': u'OH', 'country_code': None,
                    'zip_code': '45011', 'address_line_1': u'6507 Hughes Ridge Lane'}
-GET_646_ADDRESS = {'city': u'Solana Beach', 'state': u'CA', 'country_code': 'US', 'zip_code': '92075',
+GET_646_ADDRESS = {'city': u'Solana Beach', 'state': u'CA', 'country_code': None, 'zip_code': '92075',
                   'address_line_1': u'930 Via Di Salerno Unit 119'}
-GET_626a_ADDRESS = {'city': u'Portland', 'state': u'Oregon', 'country_code': 'US', 'zip_code': '97211',
+GET_626a_ADDRESS = {'city': u'Portland', 'state': u'Oregon', 'country_code': None, 'zip_code': '97211',
                     'address_line_1': u'1602 NE Junior St.'}
-GET_626b_ADDRESS = {'city': u'Portland', 'state': u'OR', 'country_code': 'US', 'zip_code': '97212',
+GET_626b_ADDRESS = {'city': u'Portland', 'state': u'OR', 'country_code': None, 'zip_code': '97212',
                     'address_line_1': u'4014 NE Failing Street'}
-PDF_ADDRESS = {'city': u'St. Petersburg', 'state': u'FL', 'country_code': 'US', 'zip_code': '33713-5855',
+PDF_ADDRESS = {'city': u'St. Petersburg', 'state': u'FL', 'country_code': None, 'zip_code': '33713-5855',
                'address_line_1': u'2462 13 th Avenue North #6-101'}
 
 XML_MAPS = [
