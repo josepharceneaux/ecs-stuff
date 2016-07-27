@@ -132,7 +132,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(data, dict) if data else None
         response = send_request(method, url % campaign_id, access_token, data)
-        assert response.status_code == requests.codes.OK, response.json()['error']['message']
+        assert response.status_code == requests.codes.OK, response.text
         json_response = response.json()
         assert json_response
         assert 'task_id' in response.json()
@@ -143,8 +143,7 @@ class CampaignsTestsHelpers(object):
         resp = response_get.json()['campaign']
         assert resp['frequency'].lower() in Frequency.standard_frequencies()
         assert resp['start_datetime']
-        if resp['frequency']:
-            assert resp['end_datetime']
+        assert resp['end_datetime']
         return json_response['task_id']
 
     @staticmethod

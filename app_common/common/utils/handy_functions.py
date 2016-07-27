@@ -10,18 +10,15 @@ import string
 
 # Third Party
 import requests
-from itertools import izip_longest
-
 from flask import Flask
-
+from itertools import izip_longest
 from requests import ConnectionError
 from flask import current_app, request
+from werkzeug.exceptions import BadRequest
 
 # Application Specific
-from ..models.db import db
-from werkzeug.exceptions import BadRequest
+from ..models.user import User
 from ..talent_config_manager import TalentConfigKeys
-from ..models.user import (User, Role)
 from ..utils.validators import raise_if_not_positive_int_or_long
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
@@ -293,18 +290,18 @@ def find_missing_items(data_dict, required_fields=None, verify_all=False):
     """
     if not isinstance(data_dict, dict):
         raise InvalidUsage('include data_dict as dict.')
+    check_value = lambda value: not str(value).strip() and not value == 0
     if not data_dict:  # If data_dict is empty, return all the required_fields as missing_item
         return [{item: ''} for item in required_fields]
     elif verify_all:
         # verify that all keys in the data_dict have valid values
-        missing_items = [{key: value} for key, value in data_dict.iteritems()
-                         if not str(value).strip() and not value == 0]
+        missing_items = [{key: value} for key, value in data_dict.iteritems() if check_value(value)]
     else:
         # verify if required fields are present as keys in data_dict
         validate_required_fields(data_dict, required_fields)
         # verify that keys of data_dict present in required_field have valid values
         missing_items = [{key: value} for key, value in data_dict.iteritems()
-                         if key in required_fields and not str(value).strip() and not value == 0]
+                         if key in required_fields and check_value(value)]
     return [missing_item for missing_item in missing_items]
 
 
