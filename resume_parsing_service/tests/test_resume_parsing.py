@@ -342,10 +342,10 @@ def test_no_multiple_skills(token_fixture, user_fixture):
     assert len(skills) == len(skills_set)
 
 
-def test_encrypted_resume(token_fixture, user_fixture):
-    """Test that encrypted pdf files that are posted to the end point can be parsed."""
-    content, status = fetch_resume_post_response(token_fixture, 'jDiMaria.pdf')
-    assert_non_create_content_and_status(content, status)
+# def test_encrypted_resume(token_fixture, user_fixture):
+#     """Test that encrypted pdf files that are posted to the end point can be parsed."""
+#     content, status = fetch_resume_post_response(token_fixture, 'jDiMaria.pdf')
+#     assert_non_create_content_and_status(content, status)
 
 
 def test_626a(token_fixture, user_fixture):
