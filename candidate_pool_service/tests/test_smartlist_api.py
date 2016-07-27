@@ -36,8 +36,7 @@ class TestSmartlistResource(object):
             :rtype: tuple[(int|long, int|long)]
             """
             smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
-                access_token, talent_pipeline, count=count, emails_list=True, assign_role=True,
-                smartlist_name=smartlist_name)
+                access_token, talent_pipeline, count=count, emails_list=True, smartlist_name=smartlist_name)
             return smartlist_id, candidate_ids
 
         def test_create_smartlist_with_search_params(self, access_token_first, talent_pipeline):

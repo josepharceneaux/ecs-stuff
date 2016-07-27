@@ -123,7 +123,6 @@ class TestCeleryTasks(object):
         should be sent to both of the candidates. Sms-campaign was created by some other user
         of same domain.
         """
-        CampaignsTestsHelpers.assign_roles(user_same_domain)
         campaign_id = sms_campaign_of_user_first['id']
         response_send = self.send_campaign(sms_campaign_of_user_first, access_token_same)
         assert_api_send_response(sms_campaign_of_user_first, response_send, codes.OK)
