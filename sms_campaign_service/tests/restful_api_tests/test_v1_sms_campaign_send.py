@@ -103,7 +103,7 @@ class TestSendSmsCampaign(object):
             sms_campaign_with_no_valid_candidate['id'], campaign_service_urls=SmsCampaignApiUrl)
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone(
-            self, user_first, sms_campaign_of_user_first, candidates_with_same_phone):
+            self, access_token_first, user_first, sms_campaign_of_user_first, candidates_with_same_phone):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. Both candidates have same phone numbers. It should get an empty list which
@@ -111,12 +111,10 @@ class TestSendSmsCampaign(object):
         """
         candidate_1, candidate_2 = candidates_with_same_phone
         with app.app_context():
-            obj = SmsCampaignBase(user_first.id, campaign_id=sms_campaign_of_user_first['id'])
-            try:
-                obj.pre_process_celery_task([candidate_1, candidate_2])
-                assert None, 'Invalid usage should occur'
-            except InvalidUsage as error:
-                assert error.status_code == CampaignException.NO_VALID_CANDIDATE_FOUND
+            campaign_id = sms_campaign_of_user_first['id']
+            obj = SmsCampaignBase(user_first.id, campaign_id=campaign_id)
+            obj.pre_process_celery_task([candidate_1, candidate_2])
+            get_and_assert_zero(SmsCampaignApiUrl.SENDS % campaign_id, 'sends', access_token_first)
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone_in_diff_domain(
             self, user_first, sms_campaign_of_user_first, candidates_with_same_phone_in_diff_domains):
