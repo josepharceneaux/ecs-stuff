@@ -496,17 +496,10 @@ def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines
     return None
 
 
-# date_tag has child tag that could be one of: current, YYYY-MM, notKnown, YYYY, YYYY-MM-DD, or
-# notApplicable (I think)
 def get_date_from_date_tag(parent_tag, date_tag_name):
     """Parses date value from bs4.soup"""
-    date_tag = parent_tag.find(date_tag_name)
-    if date_tag:
-        try:
-            return date_tag.get('iso8601')
-        except Exception:
-            logger.exception('Exception during date parse with datetag: {}'.format(date_tag))
-    return None
+    date_tag = parent_tag.find(date_tag_name) or {}
+    return date_tag.get('iso8601')
 
 
 def is_experience_already_exists(candidate_experiences, organization, position_title, start_month,

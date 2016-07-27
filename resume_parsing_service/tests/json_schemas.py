@@ -20,7 +20,8 @@ EMAIL_SCHEMA = {
   "type": "object",
   "properties": {
     "address": {
-      "type": "string"
+      "type": "string",
+      "format": "email"
     }
   },
   "required": [
