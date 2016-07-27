@@ -144,14 +144,12 @@ class PushCampaignBase(CampaignBase):
                                % [candidate.id for candidate in candidates])
         return candidate_and_device_ids
 
-    @celery_app.task(name='get_smartlist_candidates_task')
-    def get_smartlist_candidates_task(self, smartlist_id):
+    @celery_app.task(name='get_smartlist_candidates_via_celery')
+    def get_smartlist_candidates_via_celery(self, smartlist_id):
         """
         This method will retrieve smartlist candidates from candidate_pool_service in a celery task.
         :param int | long smartlist_id: Id of smartlist associated with campaign
         """
-        # TODO: I think we can get class from "self". If so, we can move this to Base method as we not doing anything
-        # TODO:  here rather than calling super
         return super(PushCampaignBase, self).get_smartlist_candidates(smartlist_id)
 
     @celery_app.task(name='send_campaign_to_candidate')
@@ -273,24 +271,18 @@ class PushCampaignBase(CampaignBase):
         logger.warn('Error occurred while sending push campaign.')
         db.session.rollback()
 
+    @staticmethod
     @celery_app.task(name='callback_campaign_send')
-    def callback_campaign_send(self, celery_result):
+    def send_callback(celery_result, campaign_obj):
         """
         When all celery tasks to retrieve smartlist candidates are finished, celery chord calls this function
         with an array or data (candidates) from all tasks. This function will further call super class method
         to process this data and send campaigns to all candidates.
-        :param list celery_result: list of lists of candidates
+        :param list[list[Candidate]] celery_result: list of lists of candidates
+        :param PushCampaignBase campaign_obj: PushCampaignBase object
         """
-        # Celery calls callback method with `results` as first argument even it is a instance method so
-        # we need to switch values to maintain the convention of `self` being first argument
-        # TODO: So "self" is actually "celery_result" and "celery_result" is actually "self" in this method :)
-        # TODO: We need to think on this. Maybe, static method will do the magic here
-        # TODO: e.g. callback_campaign_send(self, celery_result) will change to
-        # TODO: @static -> callback_campaign_send(celery_result, class_object), or maybe some other better solution
-        # TODO-w: following sounds wrong or not? If not wrong, definitely confusing
-        self, celery_result = celery_result, self
         with app.app_context():
-            self.process_campaign_send(celery_result)
+            campaign_obj.process_campaign_send(celery_result)
 
     def save(self, form_data):
         """

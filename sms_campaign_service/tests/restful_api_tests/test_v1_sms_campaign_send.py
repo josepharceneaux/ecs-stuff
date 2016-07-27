@@ -56,24 +56,19 @@ class TestSendSmsCampaign(object):
                                                           self.URL % sms_campaign_in_other_domain['id'],
                                                           access_token_first)
 
-    @pytest.mark.parametrize("asynchronous", [True, False])
     def test_post_with_no_smartlist_associated(self, access_token_first,
-                                               invalid_sms_campaign, asynchronous):
+                                               invalid_sms_campaign):
         """
         User auth token is valid but given SMS campaign has no associated smartlist with it. So
         up til this point we only have created a user and SMS campaign of that user (using fixtures
         passed in as params).
-        It should result in Invalid usage error in synchronous mode and
-        custom error should be NoSmartlistAssociatedWithCampaign but in asynchronous mode, it should return OK
-        response.
+        It should result in Invalid usage error and custom error should be NoSmartlistAssociatedWithCampaign.
         """
         CampaignsTestsHelpers.campaign_send_with_no_smartlist(self.URL % invalid_sms_campaign.id,
-                                                              access_token_first, asynchronous=asynchronous)
+                                                              access_token_first)
 
-    @pytest.mark.parametrize("asynchronous", [True, False])
     def test_post_with_no_smartlist_candidate(self, access_token_first,
-                                              sms_campaign_with_no_candidate,
-                                              talent_pipeline, asynchronous):
+                                              sms_campaign_with_no_candidate, talent_pipeline):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
         no candidate associated with it. It should result in invalid usage error in synchronous mode and
@@ -84,17 +79,9 @@ class TestSendSmsCampaign(object):
         with app.app_context():
             response_post = CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
                 self.URL % campaign.id, access_token_first,
-                campaign, talent_pipeline.id, asynchronous=asynchronous)
-            if not asynchronous:
-                # TODO: IMO, similar test case should be in push_campaign and hence this should go under tests_helpers.py
-                # TODO: pep08 line length violation
-                error_resp = CampaignsTestsHelpers.assert_api_response(response_post,
-                                                                       expected_status_code=InvalidUsage.http_status_code())
-                assert error_resp['code'] == CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
-                assert error_resp['message']
-            else:
-                assert response_post.status_code == codes.OK
-                get_and_assert_zero(SmsCampaignApiUrl.SENDS % campaign.id, 'sends', access_token_first)
+                campaign, talent_pipeline.id)
+            assert response_post.status_code == codes.OK
+            get_and_assert_zero(SmsCampaignApiUrl.SENDS % campaign.id, 'sends', access_token_first)
 
     def test_post_with_invalid_campaign_id(self, access_token_first):
         """
@@ -105,17 +92,15 @@ class TestSendSmsCampaign(object):
                                                                self.URL,
                                                                access_token_first)
 
-    @pytest.mark.parametrize("asynchronous", [True, False])
     def test_post_with_one_smartlist_two_candidates_with_no_phone(
-            self, access_token_first, sms_campaign_with_no_valid_candidate, asynchronous):
+            self, access_token_first, sms_campaign_with_no_valid_candidate):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. Candidates have no phone number associated. So, total sends should be 0.
         """
         CampaignsTestsHelpers.campaign_test_with_no_valid_candidate(
             self.URL % sms_campaign_with_no_valid_candidate['id'], access_token_first,
-            sms_campaign_with_no_valid_candidate['id'], asynchronous= asynchronous,
-            campaign_service_urls=SmsCampaignApiUrl)
+            sms_campaign_with_no_valid_candidate['id'], campaign_service_urls=SmsCampaignApiUrl)
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone(
             self, user_first, sms_campaign_of_user_first, candidates_with_same_phone):

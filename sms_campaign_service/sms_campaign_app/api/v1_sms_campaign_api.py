@@ -604,11 +604,8 @@ class SendSmsCampaign(Resource):
                          5102 (NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
                          5103 (NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
         """
-        # To get candidates over celery, query parameter should be 1 e.g. v1/push-campaigns/1/send?asynchronous=1
-        get_candidates_with_celery = request.args.get('asynchronous')
-        get_candidates_with_celery = True if get_candidates_with_celery == '1' else False
         camp_obj = SmsCampaignBase(request.user.id, campaign_id)
-        camp_obj.send(get_candidates_with_celery=get_candidates_with_celery)
+        camp_obj.send()
         return dict(message='Campaign(id:%s) is being sent to candidates.' % campaign_id), requests.codes.OK
 
 

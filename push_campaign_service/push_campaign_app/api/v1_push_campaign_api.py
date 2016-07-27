@@ -109,6 +109,7 @@ import types
 
 # Third Party
 from flask import request
+from requests import codes
 from flask import redirect
 from flask import Blueprint
 from flask.ext.restful import Resource
@@ -243,7 +244,7 @@ class PushCampaignsResource(Resource):
         campaign_id = campaign.save(data)
         response = dict(id=campaign_id, message='Push campaign was created successfully')
         headers = dict(Location=PushCampaignApiUrl.CAMPAIGN % campaign_id)
-        return ApiResponse(response, headers=headers, status=201)
+        return ApiResponse(response, headers=headers, status=codes.CREATED)
 
     def delete(self):
         """
@@ -322,7 +323,7 @@ class CampaignByIdResource(Resource):
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
         response = dict(campaign=campaign.to_json())
-        return response, 200
+        return response, codes.OK
 
     def put(self, campaign_id):
         """
@@ -374,7 +375,7 @@ class CampaignByIdResource(Resource):
         camp_obj = PushCampaignBase(user.id, campaign_id)
         camp_obj.update(data, campaign_id=campaign_id)
         response = dict(message='Push campaign was updated successfully')
-        return response, 200
+        return response, codes.OK
 
     def delete(self, campaign_id):
         """
@@ -405,7 +406,7 @@ class CampaignByIdResource(Resource):
         """
         campaign_obj = PushCampaignBase(request.user.id, campaign_id)
         campaign_obj.delete()
-        return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), 200
+        return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), codes.OK
 
 
 @api.route(PushCampaignApi.SCHEDULE)
@@ -468,7 +469,7 @@ class SchedulePushCampaignResource(Resource):
         campaign_obj.campaign = pre_processed_data['campaign']
         task_id = campaign_obj.schedule(pre_processed_data['data_to_schedule'])
         message = 'Campaign(id:%s) has been scheduled.' % campaign_id
-        return dict(message=message, task_id=task_id), 200
+        return dict(message=message, task_id=task_id), codes.OK
 
     def put(self, campaign_id):
         """
@@ -520,7 +521,7 @@ class SchedulePushCampaignResource(Resource):
         else:
             message = 'Campaign(id:%s) is already scheduled with given data.' % campaign_id
             task_id = push_camp_obj.campaign.scheduler_task_id
-        return dict(message=message, task_id=task_id), 200
+        return dict(message=message, task_id=task_id), codes.OK
 
     def delete(self, campaign_id):
         """
@@ -555,9 +556,9 @@ class SchedulePushCampaignResource(Resource):
             raise InvalidUsage('campaign_id should be a positive number')
         task_unscheduled = PushCampaignBase.unschedule(campaign_id, request, CampaignUtils.PUSH)
         if task_unscheduled:
-            return dict(message='Campaign(id:%s) has been unscheduled.' % campaign_id), 200
+            return dict(message='Campaign(id:%s) has been unscheduled.' % campaign_id), codes.OK
         else:
-            return dict(message='Campaign(id:%s) is already unscheduled.' % campaign_id), 200
+            return dict(message='Campaign(id:%s) is already unscheduled.' % campaign_id), codes.OK
 
 
 @api.route(PushCampaignApi.SEND)
@@ -596,14 +597,9 @@ class SendPushCampaign(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         """
         user = request.user
-        # To get candidates over celery, query parameter should be 1 e.g. v1/push-campaigns/1/send?asynchronous=1
-        get_candidates_with_celery = request.args.get('asynchronous')
-        get_candidates_with_celery = True if get_candidates_with_celery == '1' else False
         campaign_obj = PushCampaignBase(user_id=user.id, campaign_id=campaign_id)
-        campaign_obj.send(get_candidates_with_celery=get_candidates_with_celery)
-        # TODO: Not related to this PR, but it will be great if we change status codes to requests.codes. everywhere in
-        # TODO: this file.
-        return dict(message='Campaign(id:%s) is being sent to candidates' % campaign_id), 200
+        campaign_obj.send()
+        return dict(message='Campaign(id:%s) is being sent to candidates' % campaign_id), codes.OK
 
 
 @api.route(PushCampaignApi.BLAST_SENDS)
@@ -851,7 +847,7 @@ class PushCampaignBlastById(Resource):
         # Get a campaign that was created by this user
         blast = CampaignBase.get_valid_blast_obj(campaign_id, blast_id, user, CampaignUtils.PUSH)
 
-        return dict(blast=blast.to_json()), 200
+        return dict(blast=blast.to_json()), codes.OK
 
 
 @api.route(PushCampaignApi.REDIRECT)
@@ -905,7 +901,7 @@ class PushCampaignUrlRedirection(Resource):
             # As this endpoint is hit by client, so we log the error, and return internal server
             # error.
             logger.exception("Error occurred while URL redirection for Push campaign.\nError: %s" % str(e))
-        return dict(message='Internal Server Error'), 500
+        return dict(message='Internal Server Error'), codes.INTERNAL_SERVER_ERROR
 
 
 @api.route(PushCampaignApi.URL_CONVERSION, PushCampaignApi.URL_CONVERSION_BY_SEND_ID)
@@ -966,13 +962,13 @@ class UrlConversionResource(Resource):
             if not url_conversion:
                 raise ForbiddenError("You can not get other domain's url_conversion records")
 
-            return {'url_conversion': url_conversion.to_json()}
+            return {'url_conversion': url_conversion.to_json()}, codes.OK
 
         elif send_id:
             url_conversion = PushCampaignBase.get_url_conversion_by_send_id(send_id,
                                                                             CampaignUtils.PUSH,
                                                                             user)
-            return {'url_conversion': url_conversion.to_json()}
+            return {'url_conversion': url_conversion.to_json()}, codes.OK
 
     def delete(self, **kwargs):
         """
@@ -1016,7 +1012,7 @@ class UrlConversionResource(Resource):
             if not url_conversion:
                 raise ForbiddenError("You can not delete other domain's url_conversion records")
             UrlConversion.delete(url_conversion)
-            return {'message': "UrlConversion (id: %s) deleted successfully" % _id}
+            return {'message': "UrlConversion (id: %s) deleted successfully" % _id}, codes.OK
 
         elif send_id:
             url_conversion = PushCampaignBase.get_url_conversion_by_send_id(send_id,
@@ -1024,5 +1020,5 @@ class UrlConversionResource(Resource):
                                                                             user)
             _id = url_conversion.id
             UrlConversion.delete(url_conversion)
-            return {'message': "UrlConversion (id: %s) deleted successfully" % _id}
+            return {'message': "UrlConversion (id: %s) deleted successfully" % _id}, codes.OK
 

@@ -454,7 +454,6 @@ class SmsCampaignBase(CampaignBase):
         :param candidates: list of candidates to whom we want to send campaign
         :type candidates: list[Candidate]
         """
-        # TODO: Maybe we do this in BaseClass so that it will be common across child classes
         db.session.commit()
         not_owned_ids = []
         multiple_records_ids = []
@@ -602,22 +601,21 @@ class SmsCampaignBase(CampaignBase):
     def celery_error_handler(uuid):
         db.session.rollback()
 
-    @celery_app.task(name='callback_campaign_send')
-    def callback_campaign_send(self, celery_result):
+    @staticmethod
+    @celery_app.task(name='send_callback')
+    def send_callback(celery_result, campaign_obj):
         """
         When all celery tasks to retrieve smartlist candidates are finished, celery chord calls this function
         with an array or data (candidates) from all tasks. This function will further call super class method
         to process this data and send campaigns to all candidates.
-        :param list celery_result: list of lists of candidates
+        :param list[list[Candidate]] celery_result: list of lists of candidate ids
+        :param SmsCampaignBase campaign_obj: PushCampaignBase object
         """
-        # Celery calls callback method with `results` as first argument even it is a instance method so
-        # we need to switch values to maintain the convention of `self` being first argument
-        self, celery_result = celery_result, self
         with app.app_context():
-            self.process_campaign_send(celery_result)
+            campaign_obj.process_campaign_send(celery_result)
 
-    @celery_app.task(name='get_smartlist_candidates_task')
-    def get_smartlist_candidates_task(self, smartlist_id):
+    @celery_app.task(name='get_smartlist_candidates_via_celery')
+    def get_smartlist_candidates_via_celery(self, smartlist_id):
         """
         This method will retrieve smartlist candidate from candidate pool service in a celery task.
         :param int | long smartlist_id: campaign smartlist id
