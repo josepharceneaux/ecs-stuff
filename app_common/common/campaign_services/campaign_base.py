@@ -1190,8 +1190,6 @@ class CampaignBase(object):
         **See Also**
         .. see also:: send() method in SmsCampaignBase class.
         """
-        # this is required to avoid DetachedInstanceError
-        db.session.commit()
         candidates = []
         logger = current_app.config[TalentConfigKeys.LOGGER]
         # As this method is called per smartlist_id for all smartlist_ids associated with
@@ -1229,8 +1227,6 @@ class CampaignBase(object):
         campaign blast and sends campaign to all candidates using celery.
         :param list[list[int | long]] list celery_result: list of lists of candidates
         """
-        # Ned to commit here to avoid DetachedInstanceError in celery task
-        db.session.commit()
         logger = current_app.config[TalentConfigKeys.LOGGER]
         if not celery_result:
             logger.error('No candidate(s) found for smartlist_ids %s, campaign_id: %s'
@@ -1238,10 +1234,10 @@ class CampaignBase(object):
             return
 
         # gather all candidates from various smartlists
-        all_candidate = list(set(itertools.chain(*celery_result)))  # Unique candidates
+        all_candidates = list(set(itertools.chain(*celery_result)))  # Unique candidates
         # create campaign blast object
         self.campaign_blast_id = self.create_campaign_blast(self.campaign)
-        self.send_campaign_to_candidates(all_candidate)
+        self.send_campaign_to_candidates(all_candidates)
 
     def pre_process_celery_task(self, candidates):
         """
@@ -1253,9 +1249,8 @@ class CampaignBase(object):
         :param candidates:
         """
         if not candidates:
-            raise InvalidUsage('No candidates with valid data found for %s(id:%s).'
-                               % (self.campaign_type, self.campaign.id),
-                               error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
+            logger = current_app.config[TalentConfigKeys.LOGGER]
+            logger.warn('No candidates with valid data found for %s(id:%s).' % (self.campaign_type, self.campaign.id))
         return candidates
 
     def send_campaign_to_candidates(self, candidates):
@@ -1277,11 +1272,11 @@ class CampaignBase(object):
         .. see also:: send() method in SmsCampaignBase class.
         """
         # We need to commit here to avoid DetachedInstanceError in celery task.
-        db.session.commit()
         if not candidates:
             raise InvalidUsage('No candidates with valid data found for %s(id:%s).'
                                % (self.campaign_type, self.campaign.id),
                                error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
+        candidates = Candidate.refresh_all(candidates)
         pre_processed_data = self.pre_process_celery_task(candidates)
         try:
             # callback is a function which will be hit after campaign is sent to all candidates i.e.

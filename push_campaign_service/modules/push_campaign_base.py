@@ -128,6 +128,7 @@ class PushCampaignBase(CampaignBase):
         :type candidates: list
         :return: list of candidates and their device ids as tuple [(device_id, [device_id1, device_id2])]
         """
+        candidates = super(PushCampaignBase, self).pre_process_celery_task(candidates)
         candidate_and_device_ids = []
         for candidate in candidates:
             devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
@@ -139,9 +140,10 @@ class PushCampaignBase(CampaignBase):
 
         # get all device ids and if there is no device associated with any candidate, raise InvalidUsage
         all_device_ids = list(itertools.chain(*map(lambda item: item[1], candidate_and_device_ids)))
-        if not all_device_ids:
-            raise InvalidUsage('There is no device associated with any candidate. Candidate Ids: %s'
-                               % [candidate.id for candidate in candidates])
+        if not all_device_ids and candidates:
+            logger.warn('There is no device associated with any candidate. Candidate Ids: %s'
+                        % [candidate.id for candidate in candidates])
+            return []
         return candidate_and_device_ids
 
     @celery_app.task(name='get_smartlist_candidates_via_celery')

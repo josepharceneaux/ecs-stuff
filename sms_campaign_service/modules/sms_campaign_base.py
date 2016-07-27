@@ -454,7 +454,6 @@ class SmsCampaignBase(CampaignBase):
         :param candidates: list of candidates to whom we want to send campaign
         :type candidates: list[Candidate]
         """
-        db.session.commit()
         not_owned_ids = []
         multiple_records_ids = []
         candidates_and_phones = []
@@ -480,6 +479,8 @@ class SmsCampaignBase(CampaignBase):
         logger.info('user_phone %s' % self.user_phone.value)
         candidates_and_phones = filter(lambda obj: obj is not None, candidates_and_phones)
         super(SmsCampaignBase, self).pre_process_celery_task(candidates_and_phones)
+        if not candidates_and_phones:
+            logger.warn('There is no candidate associated with this campaign. SmsCampaign id (%s)' % self.campaign.id)
         return candidates_and_phones
 
     @celery_app.task(name='send_campaign_to_candidate')

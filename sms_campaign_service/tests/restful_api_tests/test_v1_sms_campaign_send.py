@@ -119,8 +119,7 @@ class TestSendSmsCampaign(object):
                 assert error.status_code == CampaignException.NO_VALID_CANDIDATE_FOUND
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone_in_diff_domain(
-            self, user_first, sms_campaign_of_user_first,
-            candidates_with_same_phone_in_diff_domains):
+            self, user_first, sms_campaign_of_user_first, candidates_with_same_phone_in_diff_domains):
         """
         User auth token is valid. Campaign has one smartlist associated. Smartlist has two
         candidates. One candidate exists in more than one domains with same phone. It should
