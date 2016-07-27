@@ -504,7 +504,6 @@ class CampaignsTestsHelpers(object):
         :param string access_token: Access token of user
         :param string blasts_url: URL to get blasts of campaign
         :param int expected_count: Expected number of count
-        :rtype: bool
         """
         received_blasts_count = len(CampaignsTestsHelpers.get_blasts(campaign, access_token, blasts_url))
         print 'Expected Blasts:%s' % expected_count
