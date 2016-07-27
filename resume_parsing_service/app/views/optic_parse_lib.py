@@ -396,7 +396,6 @@ def parse_candidate_skills(bg_skills_xml_list):
     """
     skills_parsed = {}
     output = []
-    year_zero = datetime.datetime(year=1, month=1, day=1)
 
     for skill in bg_skills_xml_list:
         name = skill.get('name')
@@ -411,8 +410,17 @@ def parse_candidate_skills(bg_skills_xml_list):
         processed_skill = {'name': parsed_name, 'last_used_date': None, 'months_used': None}
 
         if start_days and end_days:
+            """
+            BurningGlass skill start and end dates come in the format of 6 digit whole numbers.
+            Example:
+                730000 through 730274
+
+            This is assumed to be days since January 1st, 1
+            Example: 730274 days since this date is 2000-06-04 and a tag with that number for the
+                       end date will say '2000'
+            """
             months_used = (int(end_days) - int(start_days)) / 30
-            last_used_date = year_zero + datetime.timedelta(days=int(end_days))
+            last_used_date = datetime.datetime(year=1, month=1, day=1) + datetime.timedelta(days=int(end_days))
 
         if last_used_date:
             processed_skill['last_used_date'] = last_used_date.strftime(ISO8601_DATE_FORMAT)
