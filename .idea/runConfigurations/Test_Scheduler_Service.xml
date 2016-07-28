@@ -4,7 +4,6 @@
     <gulpfile>$PROJECT_DIR$/scheduler_service_admin/gulpfile.js</gulpfile>
     <tasks />
     <arguments>test</arguments>
-    <pass-parent-envs>true</pass-parent-envs>
     <envs />
     <method />
   </configuration>
