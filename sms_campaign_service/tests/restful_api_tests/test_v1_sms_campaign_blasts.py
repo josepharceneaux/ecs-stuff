@@ -6,6 +6,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 """
 # Third Party
 import requests
+from redo import retry
 
 # Common Utils
 from sms_campaign_service.common.models.db import db
@@ -110,9 +111,10 @@ class TestSmsCampaignBlasts(object):
             CampaignsTestsHelpers.send_campaign(SmsCampaignApiUrl.SEND,
                                                 sent_campaign, access_token_first,
                                                 SmsCampaignApiUrl.BLASTS)
-        response = requests.get(url, headers=headers)
-        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=10, entity=self.ENTITY)
-        blast_ids = [blast['id'] for blast in response.json()['blasts']]
+        blasts = retry(CampaignsTestsHelpers.get_blasts, sleeptime=3, attempts=20, sleepscale=1,
+                       args=(sent_campaign, access_token_first, url), kwargs=dict(count=10),
+                       retry_exceptions=(AssertionError,))
+        blast_ids = [blast['id'] for blast in blasts]
 
         # Poll sends for 4th blast
         CampaignsTestsHelpers.assert_blast_sends(

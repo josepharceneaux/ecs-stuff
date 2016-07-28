@@ -440,7 +440,7 @@ class CampaignsTestsHelpers(object):
         return response
 
     @staticmethod
-    def get_blasts(campaign, access_token=None, blasts_url=None):
+    def get_blasts(campaign, access_token=None, blasts_url=None, count=None):
         """
         This returns all the blasts associated with given campaign
         """
@@ -454,6 +454,8 @@ class CampaignsTestsHelpers(object):
             blasts_get_response = send_request('get', blasts_url, access_token)
             blasts = blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
         assert blasts
+        if count and isinstance(count, int):
+            assert len(blasts) == count
         return blasts
 
     @staticmethod

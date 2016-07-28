@@ -160,6 +160,19 @@ class CampaignBase(object):
         This method is used send the campaign to candidates. This has the common functionality
         for all campaigns.
 
+    * process_campaign_send(self, celery_result)
+        This method flattens candidates' lists and then sends campaign to every candidate by calling
+        `send_campaign_to_candidates()`
+
+    * get_smartlist_candidates_via_celery(self, smartlist_id)
+        This is an abstract method and child classes will implement it as celery task.
+        This method will retrieve smartlist candidates over celery
+
+    * send_callback(celery_result, campaign_obj)
+        This method is abstract method and child classes  will implement this as celery task.
+        This method is called when all celery tasks are done with retrieving candidates of all smartlists. It call
+        `process_send_campaign()` method to send campaign to those candidates.
+
     * create_campaign_blast(campaign): [static]
         For each campaign, here we create blast obj for given campaign
 
@@ -238,6 +251,10 @@ class CampaignBase(object):
 
     * create_activity(self, type_=None, source_table=None, source_id=None, params=None):
         This makes HTTP POST call to "activity_service" to create activity in database.
+
+    * refresh_all_db_objects(self)
+        When working with celery tasks, db/model objects get expired. This method attaches them to current session.
+        
     """
     __metaclass__ = ABCMeta
 
@@ -1236,6 +1253,7 @@ class CampaignBase(object):
         # gather all candidates from various smartlists
         all_candidates = list(set(itertools.chain(*celery_result)))  # Unique candidates
         # create campaign blast object
+        self.refresh_all_db_objects()
         self.campaign_blast_id = self.create_campaign_blast(self.campaign)
         self.send_campaign_to_candidates(all_candidates)
 
@@ -1806,3 +1824,16 @@ class CampaignBase(object):
             return url_conversion
         else:
             raise ForbiddenError("You can not get other domain's url_conversion records")
+
+    def refresh_all_db_objects(self):
+        """
+        In case of celery, when we pass objects from one session to another session, model objects get detached from
+        session or get expired, so we need to attach them to current session. In this method, we are getting all model
+        objects that are attributes on self and attaching them to current session and updating existing with
+        updated values.
+        """
+        for key in dir(self):
+            obj = getattr(self, key)
+            if isinstance(obj, db.Model):
+                setattr(self, key, db.session.merge(obj))
+
