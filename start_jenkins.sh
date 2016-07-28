@@ -74,4 +74,5 @@ if [ $? -ne 0 ] ; then
     exit 1
 fi
 
+# Declare success with this string that Jenkins looks for - see Jenkins config.
 echo "My here work is done"
