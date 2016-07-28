@@ -17,7 +17,6 @@ Send a Campaign: /v1/push-campaigns/:id/send [POST]
 import sys
 
 # 3rd party imports
-import pytest
 from redo import retry
 from requests import codes
 

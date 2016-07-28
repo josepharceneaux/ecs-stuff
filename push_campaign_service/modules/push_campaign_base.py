@@ -152,7 +152,7 @@ class PushCampaignBase(CampaignBase):
         This method will retrieve smartlist candidates from candidate_pool_service in a celery task.
         :param int | long smartlist_id: Id of smartlist associated with campaign
         """
-        return super(PushCampaignBase, self).get_smartlist_candidates(smartlist_id)
+        return self.get_smartlist_candidates(smartlist_id)
 
     @celery_app.task(name='send_campaign_to_candidate')
     def send_campaign_to_candidate(self, candidate_and_device_ids):

@@ -550,5 +550,5 @@ def get_and_assert_zero(url, key, token, sleep_time=SLEEP_TIME):
     :param sleep_time: maximum time to wait
     """
     attempts = sleep_time / SLEEP_INTERVAL
-    for _ in retrier(attempts=attempts, sleeptime=3, sleepscale=1):
+    for _ in retrier(attempts=attempts, sleeptime=SLEEP_INTERVAL, sleepscale=1):
         assert len(send_request('get', url, token).json()[key]) == 0

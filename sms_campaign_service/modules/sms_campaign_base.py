@@ -476,7 +476,6 @@ class SmsCampaignBase(CampaignBase):
                          '(User(id:%s))' % (self.campaign.id, not_owned_ids,
                                             multiple_records_ids,
                                             self.user.id))
-        self.user_phone = db.session.merge(self.user_phone)
         logger.info('user_phone %s' % self.user_phone.value)
         candidates_and_phones = filter(lambda obj: obj is not None, candidates_and_phones)
         super(SmsCampaignBase, self).pre_process_celery_task(candidates_and_phones)
@@ -622,7 +621,7 @@ class SmsCampaignBase(CampaignBase):
         This method will retrieve smartlist candidate from candidate pool service in a celery task.
         :param int | long smartlist_id: campaign smartlist id
         """
-        return super(SmsCampaignBase, self).get_smartlist_candidates(smartlist_id)
+        return self.get_smartlist_candidates(smartlist_id)
 
     def process_urls_in_sms_body_text(self, candidate_id):
         """

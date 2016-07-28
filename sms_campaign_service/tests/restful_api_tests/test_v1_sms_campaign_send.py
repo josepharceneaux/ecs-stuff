@@ -3,10 +3,10 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains pyTests for endpoint /v1/sms-campaigns/:id/send of SMS Campaign API.
 """
-# Service Specific
-import pytest
+# Third party imports
 from requests import codes
 
+# Service Specific
 from sms_campaign_service.common.utils.test_utils import get_and_assert_zero
 from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
@@ -14,7 +14,6 @@ from sms_campaign_service.modules.custom_exceptions import (CandidateNotFoundInU
                                                             SmsCampaignApiException)
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
@@ -71,8 +70,7 @@ class TestSendSmsCampaign(object):
                                               sms_campaign_with_no_candidate, talent_pipeline):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
-        no candidate associated with it. It should result in invalid usage error in synchronous mode and
-        custom error should be NoCandidateAssociatedWithSmartlist but in asynchronous mode, it should return OK
+        no candidate associated with it. API will return OK response but there will be no sends
         response.
         """
         campaign = SmsCampaign.get(sms_campaign_with_no_candidate['id'])

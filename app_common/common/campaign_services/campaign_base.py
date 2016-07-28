@@ -1245,6 +1245,7 @@ class CampaignBase(object):
         :param list[list[int | long]] list celery_result: list of lists of candidates
         """
         logger = current_app.config[TalentConfigKeys.LOGGER]
+        self.refresh_all_db_objects()
         if not celery_result:
             logger.error('No candidate(s) found for smartlist_ids %s, campaign_id: %s'
                          'user_id: %s.' % (self.smartlist_ids, self.campaign.id, self.user.id))
@@ -1253,7 +1254,6 @@ class CampaignBase(object):
         # gather all candidates from various smartlists
         all_candidates = list(set(itertools.chain(*celery_result)))  # Unique candidates
         # create campaign blast object
-        self.refresh_all_db_objects()
         self.campaign_blast_id = self.create_campaign_blast(self.campaign)
         self.send_campaign_to_candidates(all_candidates)
 
@@ -1289,7 +1289,6 @@ class CampaignBase(object):
         **See Also**
         .. see also:: send() method in SmsCampaignBase class.
         """
-        # We need to commit here to avoid DetachedInstanceError in celery task.
         if not candidates:
             raise InvalidUsage('No candidates with valid data found for %s(id:%s).'
                                % (self.campaign_type, self.campaign.id),
