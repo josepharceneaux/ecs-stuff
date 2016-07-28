@@ -30,12 +30,16 @@ class UserInviteApi(Resource):
 
         requested_user_id = kwargs.get('id')
         requested_user = User.get(requested_user_id)
-        if not requested_user or requested_user.is_disabled == 1:
+        if not requested_user:
             raise NotFoundError("User with user id %s is not found" % requested_user_id)
+
+        if requested_user.is_disabled == 0:
+            raise InvalidUsage("User %s is already active" % requested_user_id)
 
         temp_password = gen_salt(8)
         requested_user.password = gettalent_generate_password_hash(temp_password)
         requested_user.password_reset_time = datetime.utcnow()
+        requested_user.is_disabled = 0
         db.session.commit()
 
         send_new_account_email(requested_user.email, temp_password, requested_user.email)
@@ -63,39 +67,20 @@ class UserApi(Resource):
         requested_user_id = kwargs.get('id')
         if requested_user_id:
             requested_user = User.query.get(requested_user_id)
-            if not requested_user or requested_user.is_disabled == 1:
-                raise NotFoundError(error_message="User with user id %s not found" % requested_user_id)
+            if not requested_user:
+                raise NotFoundError("User with user id %s not found" % requested_user_id)
 
             if request.user.role.name != 'TALENT_ADMIN' and requested_user.domain_id != request.user.domain_id:
                 raise UnauthorizedError("User %s doesn't have appropriate permission to get user %s" % (
                     request.user.id, requested_user_id))
 
             return {
-                'user':
-                    {
-                        'id': requested_user.id,
-                        'domain_id': requested_user.domain_id,
-                        'email': requested_user.email,
-                        'first_name': requested_user.first_name,
-                        'last_name': requested_user.last_name,
-                        'phone': requested_user.phone,
-                        'registration_id': requested_user.registration_id,
-                        'dice_user_id': requested_user.dice_user_id,
-                        'user_group_id': requested_user.user_group_id,
-                        'added_time': requested_user.added_time.replace(
-                                tzinfo=pytz.UTC).isoformat() if requested_user.added_time else None,
-                        'updated_time': requested_user.updated_time.replace(
-                                tzinfo=pytz.UTC).isoformat() if requested_user.updated_time else None,
-                        'last_read_datetime': requested_user.last_read_datetime.replace(
-                                tzinfo=pytz.UTC).isoformat() if requested_user.last_read_datetime else None,
-                        'thumbnail_url': requested_user.thumbnail_url,
-                        'locale': requested_user.locale
-                    }
+                'user': requested_user.to_dict()
             }
 
         # User id is not provided so logged-in user wants to get all users of its domain
         else:
-            return {'users': [user.id for user in User.all_users_of_domain(request.user.domain_id) if not user.is_disabled]}
+            return {'users': [user.to_dict() for user in User.all_users_of_domain(request.user.domain_id)]}
 
     @require_all_permissions(Permission.PermissionNames.CAN_ADD_USERS)
     def post(self):

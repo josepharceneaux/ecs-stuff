@@ -4,7 +4,7 @@ __author__ = 'ufarooqi'
 
 from flask import Blueprint
 from dateutil import parser
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from flask_restful import Resource
 from candidate_pool_service.common.error_handling import *
 from candidate_pool_service.common.talent_api import TalentApi
@@ -61,22 +61,31 @@ class TalentPipelineApi(Resource):
             sort_by = request.args.get('sort_by', 'added_time')
             sort_type = request.args.get('sort_type', 'DESC')
             search_keyword = request.args.get('search', '').strip()
-
-            talent_pipelines = TalentPipeline.query.join(TalentPipeline.user).filter(
-                    User.domain_id == request.user.domain_id and (TalentPipeline.name.ilike(
-                            '%' + search_keyword + '%') or TalentPipeline.description.ilike('%' + search_keyword + '%'))).all()
-
+            owner_user_id = request.args.get('user_id', '')
             page = request.args.get('page', DEFAULT_PAGE)
             per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
-
-            if talent_pipelines and sort_by not in ('growth', 'added_time', 'name', 'engagement_score'):
-                raise InvalidUsage('Value of sort parameter is not valid')
-
             if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
                 raise InvalidUsage("page and per_page should be positive integers")
 
             page = int(page)
             per_page = int(per_page)
+
+            if owner_user_id and is_number(owner_user_id) and not User.query.get(int(owner_user_id)):
+                raise InvalidUsage("User: (%s) doesn't exist in system")
+
+            if sort_by not in ('growth', 'added_time', 'name', 'engagement_score'):
+                raise InvalidUsage('Value of sort parameter is not valid')
+
+            if owner_user_id:
+                talent_pipelines = TalentPipeline.query.join(User).filter(and_(
+                        User.domain_id == request.user.domain_id, TalentPipeline.user.id == int(
+                                owner_user_id), or_(TalentPipeline.name.ilike('%' + search_keyword + '%'),
+                                                    TalentPipeline.description.ilike( '%' + search_keyword + '%')))).all()
+            else:
+                talent_pipelines = TalentPipeline.query.join(User).filter(and_(
+                        User.domain_id == request.user.domain_id, or_(
+                                TalentPipeline.name.ilike('%' + search_keyword + '%'),
+                                TalentPipeline.description.ilike('%' + search_keyword + '%')))).all()
 
             talent_pipelines_data = [talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
                                                              get_growth_function=get_pipeline_growth
@@ -88,17 +97,17 @@ class TalentPipelineApi(Resource):
                     talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_data['id'])
 
             talent_pipelines_data = sorted(talent_pipelines_data, key=lambda talent_pipeline_data: talent_pipeline_data[
-                sort_by], reverse=(True if sort_type == 'ASC' else False))
+                sort_by], reverse=(False if sort_type == 'ASC' else True))
 
             total_number_of_talent_pipelines = len(talent_pipelines_data)
 
-            talent_pipelines_data = talent_pipelines_data[(page - DEFAULT_PAGE) * DEFAULT_PAGE_SIZE:page * DEFAULT_PAGE_SIZE]
+            talent_pipelines_data = talent_pipelines_data[(page - 1) * per_page:page * per_page]
 
             if sort_by != 'engagement_score':
                 for talent_pipeline_data in talent_pipelines_data:
                     talent_pipeline_data['engagement_score'] = engagement_score_of_pipeline(talent_pipeline_data['id'])
 
-            headers = generate_pagination_headers(total_number_of_talent_pipelines ,per_page, page)
+            headers = generate_pagination_headers(total_number_of_talent_pipelines, per_page, page)
 
             response = dict(
                     talent_pipelines=talent_pipelines_data,

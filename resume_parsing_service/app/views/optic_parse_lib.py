@@ -12,11 +12,14 @@ import unicodedata
 import urllib2
 # Third Party
 from bs4 import BeautifulSoup as bs4
+from contracts import contract
 import requests
 import phonenumbers
+import pycountry
 # Module Specific
 from flask import current_app
 from resume_parsing_service.app import logger
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.OauthClient import OAuthClient
 from resume_parsing_service.common.error_handling import ForbiddenError, InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
@@ -25,13 +28,14 @@ from resume_parsing_service.common.utils.handy_functions import normalize_value
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
 
 
+@contract
 def fetch_optic_response(resume, filename_str):
     """
     Takes in an encoded resume file and returns a bs4 'soup-able' format
     (utf-decode and html escape).
     :param str resume: a base64 encoded resume file.
-    :return: str unescaped: an html unquoted, utf-decoded string that represents the Burning Glass
-                            XML.
+    :return: HTML unquoted, utf-decoded string that represents the Burning Glass XML.
+    :rtype: unicode
     """
     start_time = time()
     bg_url = current_app.config['BG_URL']
@@ -56,10 +60,10 @@ def fetch_optic_response(resume, filename_str):
     bg_response = requests.post(bg_url, headers=headers, json=data)
 
     if bg_response.status_code != requests.codes.ok:
-        # Since this error is displayed to the user we may want to obfuscate it a bit and log more
-        # developer friendly messages. "Error processing this resume. The development team has been
-        # notified of this issue" type of message.
-        raise ForbiddenError('Error connecting to BG instance.')
+        raise ForbiddenError(
+            error_message=error_constants.BG_UNAVAILABLE['message'],
+            error_code=error_constants.BG_UNAVAILABLE['code']
+        )
 
     try:
         html_parser = HTMLParser.HTMLParser()
@@ -68,7 +72,10 @@ def fetch_optic_response(resume, filename_str):
 
     except Exception:
         logger.exception('Error translating BG response.')
-        raise InternalServerError('Error decoding parsed resume text.')
+        raise InternalServerError(
+            error_message=error_constants.ERROR_DECODING_TEXT['message'],
+            error_code=error_constants.ERROR_DECODING_TEXT['code']
+        )
 
     logger.info(
         "Benchmark: fetch_optic_response({}) took {}s".format(filename_str,
@@ -77,18 +84,20 @@ def fetch_optic_response(resume, filename_str):
     return unescaped
 
 
-def parse_optic_xml(resume_xml_unicode):
+@contract
+def parse_optic_xml(resume_xml_text):
     """
     Takes in a Burning Glass XML tree in string format and returns a candidate JSON object.
-    :param str resume_xml_unicode: An XML tree represented in unicode format. It is a slightly
-                                  processed response from the Burning Glass API.
-    :return dict candidate: Results of various parsing functions on the input xml string.
+    :param string resume_xml_text: An XML tree represented in unicode format. It is a slightly
+                                   processed response from the Burning Glass API.
+    :return: Results of various parsing functions on the input xml string.
+    :rtype: dict
     """
-    contact_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('contact')
-    experience_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('experience')
-    educations_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('education')
-    skill_xml_list = bs4(resume_xml_unicode, 'lxml').findAll('canonskill')
-    references_xml = bs4(resume_xml_unicode, 'lxml').findAll('references')
+    contact_xml_list = bs4(resume_xml_text, 'lxml').findAll('contact')
+    experience_xml_list = bs4(resume_xml_text, 'lxml').findAll('experience')
+    educations_xml_list = bs4(resume_xml_text, 'lxml').findAll('education')
+    skill_xml_list = bs4(resume_xml_text, 'lxml').findAll('canonskill')
+    references_xml = bs4(resume_xml_text, 'lxml').findAll('references')
     name = parse_candidate_name(contact_xml_list)
     emails = parse_candidate_emails(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
@@ -97,7 +106,7 @@ def parse_optic_xml(resume_xml_unicode):
     skills = parse_candidate_skills(skill_xml_list)
     addresses = parse_candidate_addresses(contact_xml_list)
     references = parse_candidate_reference(references_xml)
-    candidate = dict(
+    return dict(
         first_name=name['first_name'],
         last_name=name['last_name'],
         emails=emails,
@@ -109,14 +118,15 @@ def parse_optic_xml(resume_xml_unicode):
         talent_pool_ids={'add': None},
         references=references
     )
-    return candidate
 
 
+@contract
 def parse_candidate_name(bs_contact_xml_list):
     """
     Parses a name from a list of contact tags found in a BGXML response.
-    :param bs4.element.Tag bs_contact_xml_list:
-    :return dict: Formatted name strings using title() in a dictionary.
+    :param bs4_ResultSet bs_contact_xml_list:
+    :return: Formatted name strings using title() in a dictionary.
+    :rtype: dict
     """
 
     givenname = None
@@ -142,11 +152,13 @@ def parse_candidate_name(bs_contact_xml_list):
     return {'first_name': first_name, 'last_name': last_name}
 
 
+@contract
 def parse_candidate_emails(bs_contact_xml_list):
     """
     Parses an email list from a list of contact tags found in a BGXML response.
-    :param bs4.element.Tag bs_contact_xml_list:
-    :return list output: List of dicts containing email data.
+    :param bs4_ResultSet bs_contact_xml_list:
+    :return: List of dicts containing email data.
+    :rtype: list(dict)
     """
     output = []
     for contact in bs_contact_xml_list:
@@ -164,11 +176,13 @@ def parse_candidate_emails(bs_contact_xml_list):
     return unique_output
 
 
+@contract
 def parse_candidate_phones(bs_contact_xml_list):
     """
     Parses a phone list from a list of contact tags found in a BGXML response.
-    :param bs4.element.Tag bs_contact_xml_list:
-    :return list output: List of dicts containing phone data.
+    :param bs4_ResultSet bs_contact_xml_list:
+    :return: List of dicts containing phone data.
+    :rtype: list(dict)
     """
     output = []
 
@@ -198,11 +212,12 @@ def parse_candidate_phones(bs_contact_xml_list):
     return output
 
 
+@contract
 def get_phone_type(bg_phone_type):
     """
     Provides a mapping between BurningGlass phone types to the the static values in the GT database.
-    :param string bg_phone_type:
-    :return string:
+    :param str | None bg_phone_type: BG phone type (if parsed from XML).
+    :rtype: str
     """
     return {
         'cell': 'Mobile',
@@ -212,11 +227,13 @@ def get_phone_type(bg_phone_type):
     }.get(bg_phone_type, 'Other')
 
 
+@contract
 def parse_candidate_experiences(bg_experience_xml_list):
     """
     Parses an experience list from a list of experience tags found in a BGXML response.
-    :param bs4.element.Tag bg_experience_xml_list:
-    :return list output: List of dicts containing experience data.
+    :param bs4_ResultSet bg_experience_xml_list:
+    :return: List of dicts containing experience data.
+    :rtype: list(dict)
     """
     # TODO investigate is current not picking up current jobs.
     output = []
@@ -259,7 +276,8 @@ def parse_candidate_experiences(bg_experience_xml_list):
             company_address = employement.find('address')
             company_city = _tag_text(company_address, 'city', capwords=True)
             company_state = _tag_text(company_address, 'state')
-            company_country = 'United States'
+            company_country = get_country_code_from_address_tag(company_address)
+
             # Check if an experience already exists
             existing_experience_list_order = is_experience_already_exists(output,
                                                                           organization or '',
@@ -286,27 +304,31 @@ def parse_candidate_experiences(bg_experience_xml_list):
                     ))
             if not existing_experience_list_order:
                 output.append(dict(
-                    bullets=candidate_experience_bullets,
+                    position=position_title,
+                    organization=organization,
                     city=company_city,
-                    country=company_country,
+                    state=company_state,
+                    country_code=company_country,
+                    start_month=start_month,
+                    start_year=start_year,
                     end_month=end_month,
                     end_year=end_year,
                     is_current=is_current_job,
-                    organization=organization,
-                    position=position_title,
-                    start_month=start_month,
-                    start_year=start_year,
-                    state=company_state,
+                    bullets=candidate_experience_bullets
                 ))
     return output
 
 
+@contract
 def parse_candidate_educations(bg_educations_xml_list):
     """
     Parses an education list from a list of education tags found in a BGXML response.
-    :param bs4.element.Tag bg_educations_xml_list:
-    :return list output: List of dicts containing education data.
+    :param bs4_ResultSet bg_educations_xml_list:
+    :return: List of dicts containing education data.
+    :rtype: list(dict)
     """
+    EDU_DATE_FORMAT = '%Y-%m-%d'
+    start_month, start_year, end_month, end_year = None, None, None, None
     output = []
     for education in bg_educations_xml_list:
         for school in education.findAll('school'):
@@ -314,42 +336,63 @@ def parse_candidate_educations(bg_educations_xml_list):
             school_address = school.find('address')
             school_city = _tag_text(school_address, 'city', capwords=True)
             school_state = _tag_text(school_address, 'state')
-            country = 'United States'
+            country = get_country_code_from_address_tag(school_address)
 
-            # education_start_date = get_date_from_date_tag(school, 'start')
-            # education_end_date = None
-            # end_date = get_date_from_date_tag(school, 'end')
-            # completion_date = get_date_from_date_tag(school, 'completiondate')
-            #
-            # if completion_date:
-            #     education_end_date = completion_date
-            # elif end_date:
-            #     education_end_date = end_date
+            start_date = get_date_from_date_tag(school, 'start')
+            end_date = get_date_from_date_tag(school, 'end')
+            completion_date = get_date_from_date_tag(school, 'completiondate')
 
-            # GPA data no longer used in educations dict.
-            # Save for later or elimate this and gpa_num_and_denom?
-            # gpa_num, gpa_denom = gpa_num_and_denom(school, 'gpa')
+            if completion_date:
+                end_date = completion_date
+
+            if start_date:
+                start_dt = datetime.datetime.strptime(start_date, EDU_DATE_FORMAT)
+                start_month = start_dt.month
+                start_year = start_dt.year
+
+            if end_date:
+                end_dt = datetime.datetime.strptime(end_date, EDU_DATE_FORMAT)
+                end_month = end_dt.month
+                end_year = end_dt.year
+
+            degree_tag = school.find('degree')
+            degree_type = degree_tag.get('name') if degree_tag else None
+            gpa_tag = school.find('gpa')
+            gpa_value = float(gpa_tag.get('value')) if gpa_tag else None
+
             output.append(dict(
                 school_name=school_name,
                 city=school_city,
                 state=school_state,
-                country=country,
+                country_code=country,
                 degrees=[
                     {
-                        'type': _tag_text(school, 'degree'),
-                        'title': _tag_text(school, 'major'),
-                        'bullets': []
+                        'type': degree_type,
+                        'title': _tag_text(school, 'degree'),
+                        'start_year': start_year,
+                        'start_month': start_month,
+                        'end_year': end_year,
+                        'end_month': end_month,
+                        'gpa_num': gpa_value,
+                        'bullets': [
+                            {
+                                'major': _tag_text(school, 'major'),
+                                'comments': _tag_text(school, 'honors')
+                            }
+                        ]
                     }
                 ],
             ))
     return output
 
 
+@contract
 def parse_candidate_skills(bg_skills_xml_list):
     """
     Parses a skill list from a list of skill tags found in a BGXML response.
-    :param bs4.element.Tag bg_skills_xml_list:
-    :return list output: List of dicts containing skill data.
+    :param bs4_ResultSet bg_skills_xml_list:
+    :return: List of dicts containing skill data.
+    :rtype: list(dict)
     """
     skills_parsed = {}
     output = []
@@ -357,16 +400,32 @@ def parse_candidate_skills(bg_skills_xml_list):
     for skill in bg_skills_xml_list:
         name = skill.get('name')
         skill_text = skill.text.strip()
+
         start_days = skill.get('start')
         end_days = skill.get('end')
         months_used = None
+        last_used_date = None
+
         parsed_name = name or skill_text
-        processed_skill = {'name': parsed_name}
+        processed_skill = {'name': parsed_name, 'last_used_date': None, 'months_used': None}
 
         if start_days and end_days:
-            months_used = (int(end_days) - int(start_days)) / 30
+            """
+            BurningGlass skill start and end dates come in the format of 6 digit whole numbers.
+            Example:
+                730000 through 730274
 
-        if months_used:
+            This is assumed to be days since January 1st, 1
+            Example: 730274 days since this date is 2000-06-04 and a tag with that number for the
+                       end date will say '2000'
+            """
+            months_used = (int(end_days) - int(start_days)) / 30
+            last_used_date = datetime.datetime(year=1, month=1, day=1) + datetime.timedelta(days=int(end_days))
+
+        if last_used_date:
+            processed_skill['last_used_date'] = last_used_date.strftime(ISO8601_DATE_FORMAT)
+
+        if months_used and months_used > 0: # Rarely a skill will have an end before the start.
             processed_skill['months_used'] = int(months_used)
 
         if processed_skill['name'] not in skills_parsed:
@@ -376,11 +435,13 @@ def parse_candidate_skills(bg_skills_xml_list):
     return output
 
 
+@contract
 def parse_candidate_addresses(bg_xml_list):
     """
     Parses an address list from a list of contact tags found in a BGXML response.
-    :param bs4.element.Tag bg_xml_list:
-    :return list output: List of dicts containing address data.
+    :param bs4_ResultSet bg_xml_list:
+    :return: List of dicts containing address data.
+    :rtype: list(dict)
     """
     output = []
     for address in bg_xml_list:
@@ -388,16 +449,17 @@ def parse_candidate_addresses(bg_xml_list):
             'address_line_1': _tag_text(address, 'street'),
             'city': address.get('inferred-city', '').title() or _tag_text(address, 'city'),
             'state': address.get('inferred-state', '').title() or _tag_text(address, 'state'),
-            'country': address.get('inferred-country', '').title() or 'US',
+            'country_code': get_country_code_from_address_tag(address),
             'zip_code': sanitize_zip_code(_tag_text(address, 'postalcode'))
         })
     return output
 
 
+@contract
 def parse_candidate_reference(xml_references_list):
     """
-    :param bs4.element.Tag xml_references_list:
-    :return: str | None
+    :param bs4_ResultSet xml_references_list:
+    :rtype: str | None
     """
     reference_comments = []
     comment_string = None
@@ -444,20 +506,10 @@ def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines
     return None
 
 
-# date_tag has child tag that could be one of: current, YYYY-MM, notKnown, YYYY, YYYY-MM-DD, or
-# notApplicable (I think)
 def get_date_from_date_tag(parent_tag, date_tag_name):
     """Parses date value from bs4.soup"""
-    date_tag = parent_tag.find(date_tag_name)
-    if date_tag:
-        try:
-            if date_tag_name == 'end' and ('current' in date_tag.text.lower() or
-                                           'present' in date_tag.text.lower()):
-                return datetime.date.isoformat()
-            return date_tag['iso8601']
-        except Exception:
-            return None
-    return None
+    date_tag = parent_tag.find(date_tag_name) or {}
+    return date_tag.get('iso8601')
 
 
 def is_experience_already_exists(candidate_experiences, organization, position_title, start_month,
@@ -500,3 +552,14 @@ def scrub_candidate_name(name_unicode):
     name_unicode = name_unicode.title()
 
     return name_unicode
+
+
+def get_country_code_from_address_tag(address):
+    if address:
+        country_tag = address.find('country')
+
+        if country_tag and country_tag.get('iso3'):
+            company_country_i3 = pycountry.countries.get(alpha3=country_tag.get('iso3'))
+            return company_country_i3.alpha2
+
+    return None

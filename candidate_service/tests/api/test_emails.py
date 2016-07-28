@@ -7,8 +7,6 @@ from candidate_service.candidate_app import app
 # Conftest
 from candidate_service.common.tests.conftest import *
 
-from candidate_service.common.models.candidate import EmailLabel
-
 # Helper functions
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
@@ -19,9 +17,12 @@ from candidate_sample_data import (fake, generate_single_candidate_data, Generat
 # Custom errors
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
+# Models
+from candidate_service.common.models.candidate import EmailLabel
+
 
 class TestCreateCandidateEmail(object):
-    def test_create_candidate_without_email(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_without_email(self, access_token_first, talent_pool):
         """
         Test:   Attempt to create a Candidate with no email
         Expect: 201
@@ -41,7 +42,7 @@ class TestCreateCandidateEmail(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.INVALID_INPUT
 
-    def test_create_candidate_with_bad_email(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_with_bad_email(self, access_token_first, talent_pool):
         """
         Test:   Attempt to create a Candidate with invalid email format
         Expect: 400
@@ -54,7 +55,7 @@ class TestCreateCandidateEmail(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.INVALID_EMAIL
 
-    def test_create_candidate_without_email_label(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_without_email_label(self, access_token_first, talent_pool):
         """
         Test:   Create a Candidate without providing email's label
         Expect: 201, email's label must be 'Primary'
@@ -79,7 +80,7 @@ class TestCreateCandidateEmail(object):
         assert candidate_dict['emails'][0]['label'] == EmailLabel.PRIMARY_DESCRIPTION
         assert candidate_dict['emails'][-1]['label'] == EmailLabel.OTHER_DESCRIPTION
 
-    def test_add_emails_with_whitespaced_values(self, access_token_first, user_first, talent_pool):
+    def test_add_emails_with_whitespaced_values(self, access_token_first, talent_pool):
         """
         Test:  Add candidate emails with values containing whitespaces
         Expect:  201; but whitespaces should be stripped
@@ -107,7 +108,7 @@ class TestCreateCandidateEmail(object):
         assert emails[1]['address'] == data['candidates'][0]['emails'][1]['address'].strip()
         assert emails[1]['label'] == data['candidates'][0]['emails'][1]['label'].strip()
 
-    def test_add_candidate_with_duplicate_emails(self, access_token_first, user_first, talent_pool):
+    def test_add_candidate_with_duplicate_emails(self, access_token_first, talent_pool):
         """
         Test: Add candidate with two identical emails
         Expect: 201, but only one email should be added to db
@@ -126,7 +127,7 @@ class TestCreateCandidateEmail(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.INVALID_USAGE
 
-    def test_add_duplicate_candidate_with_same_email(self, access_token_first, user_first, talent_pool):
+    def test_add_duplicate_candidate_with_same_email(self, access_token_first, talent_pool):
         """
         Test: Add candidate with an email that is associated with another candidate in the same domain
         """
@@ -143,19 +144,64 @@ class TestCreateCandidateEmail(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == custom_error.CANDIDATE_ALREADY_EXISTS
 
+    def test_add_multiple_default_emails(self, access_token_first, talent_pool):
+        """
+        Test: Add multiple emails with "is default" set to true
+        """
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
+                {'address': fake.safe_email(), 'is_default': True},
+                {'address': fake.safe_email(), 'is_default': True},
+                {'address': fake.safe_email(), 'is_default': True}
+            ]}
+        ]}
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.BAD
+        assert create_resp.json()['error']['code'] == custom_error.INVALID_USAGE
+
+    def test_add_email_with_address_only(self, access_token_first, talent_pool):
+        """
+        Test: Add emails without providing is_default and label values
+        Expect: 201, only the first email should be the default email and its
+          label should be "Primary"; the rest should have "Other" as their label
+        """
+        data = {'candidates': [
+            {'talent_pool_ids': {'add': [talent_pool.id]}, 'emails': [
+                {'address': fake.safe_email()}, {'address': fake.safe_email()}, {'address': fake.safe_email()}
+            ]}
+        ]}
+
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.CREATED
+
+        # Retrieve candidate and assert on the integrity of its data
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_resp)
+        assert get_resp.status_code == requests.codes.OK
+
+        retrieved_email_data = get_resp.json()['candidate']['emails']
+        assert len(retrieved_email_data) == len(data['candidates'][0]['emails'])
+        assert retrieved_email_data[0]['is_default'] is True
+        assert retrieved_email_data[0]['label'] == EmailLabel.PRIMARY_DESCRIPTION
+
+        # Only one of the emails should be labeled 'Primary'
+        email_labels = [email['label'] for email in retrieved_email_data]
+        assert len(filter(lambda label: label == EmailLabel.PRIMARY_DESCRIPTION, email_labels)) == 1
+
+        # Only one of the emails should be default email
+        assert len(filter(None, [email['is_default'] for email in retrieved_email_data])) == 1
 
 class TestUpdateCandidateEmails(object):
-    def test_add_emails(self, access_token_first, user_first, talent_pool):
+    def test_add_emails(self, access_token_first, candidate_first):
         """
         Test:   Add an email to an existing Candidate. Number of candidate's emails must increase by 1.
         Expect: 200
         """
-        # Create Candidate
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
         # Retrieve Candidate
-        candidate_id = create_resp.json()['candidates'][0]['id']
+        candidate_id = candidate_first.id
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         emails = get_resp.json()['candidate']['emails']
         emails_count = len(emails)
@@ -177,28 +223,25 @@ class TestUpdateCandidateEmails(object):
         assert emails[-1]['address'] == email_from_data['address']
         assert len(emails) == emails_count + 1
 
-    def test_multiple_is_default_emails(self, access_token_first, user_first, talent_pool):
+    def test_add_multiple_is_default_emails_to_candidate(self, access_token_first, candidate_first):
         """
-        Test:   Add more than one CandidateEmail with is_default set to True
-        Expect: 200, but only one CandidateEmail must have is_current True, the rest must be False
+        Test: Add multiple emails to candidate's profile with is_default set to True
+        Expect: 400
         """
-        # Create Candidate
-        data = generate_single_candidate_data([talent_pool.id])
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        candidate_id = candidate_first.id
 
-        # Add a new email to the existing Candidate with is_current set to True
-        candidate_id = create_resp.json()['candidates'][0]['id']
-        send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        data = {'candidates': [{'id': candidate_id, 'emails': [
+            {'address': fake.safe_email(), 'is_default': True},
+            {'address': fake.safe_email(), 'is_default': True}
+        ]}]}
 
-        # Retrieve Candidate after update
-        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
-        updated_candidate_dict = get_resp.json()['candidate']
-        updated_can_emails = updated_candidate_dict['emails']
+        # Add emails to candidate's profile
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+        assert update_resp.status_code == requests.codes.BAD
+        assert update_resp.json()['error']['code'] == custom_error.INVALID_USAGE
 
-        # Only one of the emails must be default!
-        assert sum([1 for email in updated_can_emails if email['is_default']]) == 1
-
-    def test_update_existing_email(self, access_token_first, user_first, talent_pool):
+    def test_update_existing_email(self, access_token_first, talent_pool):
         """
         Test:   Update an existing CandidateEmail. Number of candidate's emails must remain unchanged
         Expect: 200
@@ -230,7 +273,7 @@ class TestUpdateCandidateEmails(object):
         assert emails_after_update[0]['address'] == data['candidates'][0]['emails'][0]['address']
         assert emails_count_before_update == len(emails_after_update)
 
-    def test_update_existing_email_with_bad_email_address(self, access_token_first, user_first, talent_pool):
+    def test_update_existing_email_with_bad_email_address(self, access_token_first, talent_pool):
         """
         Test:   Use a bad email address to update and existing CandidateEmail
         Expect: 400
@@ -262,7 +305,7 @@ class TestUpdateCandidateEmails(object):
         assert emails_count_before_update == len(emails_after_update)
         assert emails_before_update[0]['address'] == emails_after_update[0]['address']
 
-    def test_add_forbidden_email_to_candidate(self, access_token_first, user_first, talent_pool):
+    def test_add_forbidden_email_to_candidate(self, access_token_first, talent_pool):
         """
         Test: Add two candidates. Then add another email to candidate 2 using candidate's 1 email
         """
@@ -285,6 +328,36 @@ class TestUpdateCandidateEmails(object):
         print response_info(update_resp)
         assert update_resp.status_code == requests.codes.FORBIDDEN
         assert update_resp.json()['error']['code'] == custom_error.EMAIL_FORBIDDEN
+
+    def test_add_default_email_to_candidate_with_default_email(self, access_token_first, talent_pool):
+        """
+        Test: Add an email to a candidate who already has a default email
+        Expect: 200; but all other existing emails should not be default
+        """
+        data = GenerateCandidateData.emails([talent_pool.id], is_default=True, label=EmailLabel.PRIMARY_DESCRIPTION)
+        print "\ndata: {}".format(data)
+
+        # Add candidate with one email set as default
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.CREATED
+
+        # Add another default email to existing candidate with its lebel set to "Primary" also
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        data = GenerateCandidateData.emails(candidate_id=candidate_id, is_default=True,
+                                            label=EmailLabel.PRIMARY_DESCRIPTION)
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(update_resp)
+        assert update_resp.status_code == requests.codes.OK
+
+        # Retrieve candidate's emails and ensure only one of them is the default email
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        assert get_resp.status_code == requests.codes.OK
+
+        email_data = get_resp.json()['candidate']['emails']
+
+        # Only one of the emails should be the default email
+        assert len(filter(None, [email['is_default'] for email in email_data])) == 1
 
 
 class TestDeleteCandidateEmail(object):
@@ -313,7 +386,7 @@ class TestDeleteCandidateEmail(object):
         print response_info(resp)
         assert resp.status_code == requests.codes.NOT_FOUND
 
-    def test_delete_email_of_a_candidate_belonging_to_a_diff_user(self, user_first, access_token_first, talent_pool,
+    def test_delete_email_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, talent_pool,
                                                                   user_second, access_token_second):
         """
         Test:   Attempt to delete the email of a Candidate that belongs
@@ -331,7 +404,7 @@ class TestDeleteCandidateEmail(object):
         assert updated_resp.status_code == requests.codes.FORBIDDEN
         assert updated_resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
-    def test_delete_email_of_a_different_candidate(self, user_first, access_token_first, talent_pool):
+    def test_delete_email_of_a_different_candidate(self, access_token_first, talent_pool):
         """
         Test:   Attempt to delete the email of a different Candidate
         Expect: 403
@@ -355,7 +428,7 @@ class TestDeleteCandidateEmail(object):
         assert updated_resp.status_code == requests.codes.FORBIDDEN
         assert updated_resp.json()['error']['code'] == custom_error.EMAIL_FORBIDDEN
 
-    def test_delete_candidate_emails(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_emails(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's emails from db
         Expect: 204, Candidate must not have any emails left
@@ -375,7 +448,7 @@ class TestDeleteCandidateEmail(object):
         assert updated_resp.status_code == requests.codes.NO_CONTENT
         assert len(can_dict_after_update['emails']) == 0
 
-    def test_delete_candidate_email(self, user_first, access_token_first, talent_pool):
+    def test_delete_candidate_email(self, access_token_first, talent_pool):
         """
         Test:   Remove Candidate's email from db
         Expect: 204, Candidate's emails must be less 1
@@ -405,7 +478,7 @@ class TestDeleteCandidateEmail(object):
 
 
 class TestTrackCandidateEmailEdits(object):
-    def test_edit_candidate_email(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_email(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's email record
         Expect: 200

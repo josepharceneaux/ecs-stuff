@@ -1,3 +1,4 @@
+import pytz
 import datetime
 import os
 import time
@@ -47,10 +48,12 @@ class User(db.Model):
     # I'm assuming First row of Role table will be Standard Role
     role_id = db.Column('roleId', db.Integer, db.ForeignKey('role.id'), nullable=False, default=1)
     last_read_datetime = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
+    last_login_datetime = db.Column('lastLoginDateTime', db.DateTime)
     thumbnail_url = db.Column('thumbnailUrl', db.TEXT)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
     locale = db.Column(db.String(10), default='en-US')
     # TODO: Set Nullable = False after setting user_group_id for existing data
+    ats_enabled = db.Column(db.Boolean, default=False)
 
     # Relationships
     candidates = relationship('Candidate', backref='user')
@@ -105,6 +108,34 @@ class User(db.Model):
             return
 
         raise UnauthorizedError(error_message="User %s doesn't exist in database" % data['user_id'])
+
+    def to_dict(self):
+        """
+        This method withh convert sqlalchemy user object to a dictionary
+        :return:
+        """
+        return {
+            'id': self.id,
+            'domain_id': self.domain_id,
+            'email': self.email,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'phone': self.phone,
+            'registration_id': self.registration_id,
+            'dice_user_id': self.dice_user_id,
+            'user_group_id': self.user_group_id,
+            'added_time': self.added_time.replace(
+                    tzinfo=pytz.UTC).isoformat() if self.added_time else None,
+            'updated_time': self.updated_time.replace(
+                    tzinfo=pytz.UTC).isoformat() if self.updated_time else None,
+            'last_read_datetime': self.last_read_datetime.replace(
+                    tzinfo=pytz.UTC).isoformat() if self.last_read_datetime else None,
+            'last_login_datetime': self.last_login_datetime.replace(
+                    tzinfo=pytz.UTC).isoformat() if self.last_login_datetime else None,
+            'thumbnail_url': self.thumbnail_url,
+            'locale': self.locale,
+            'is_disabled': True if self.is_disabled == 1 else False
+        }
 
     def is_authenticated(self):
         return True

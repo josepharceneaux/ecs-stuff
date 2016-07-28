@@ -1,17 +1,19 @@
 # Standard Lib
 from cStringIO import StringIO
 # Third Party/Common
+from contracts import contract
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.common.error_handling import InternalServerError
-from resume_parsing_service.app.views.ocr_lib import abbyy_ocr_image
 import PyPDF2
 
 
+@contract
 def convert_pdf_to_text(pdf_file_obj):
     """
     Attempts to extract text from an unencrypted PDF file. This is to see if the PDF has text
     contents or if it is an embedded picture.
-    :param cStringIO.StringIO pdf_file_obj:
-    :return str:
+    :param cStringIO pdf_file_obj: PDF file object to be converted
+    :rtype: str
     """
     pdf_file_obj.seek(0)
     pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
@@ -37,11 +39,12 @@ def convert_pdf_to_text(pdf_file_obj):
     return text
 
 
+@contract
 def decrypt_pdf(pdf_file_obj):
     """
     Returns an unencrypted pdf_file, if encrypted , or the original file.
-    :param cStringIO.StringIO pdf_file_obj:
-    :return cStringIO.StringIO:
+    :param cStringIO pdf_file_obj: PDF file to be decrypted
+    :rtype: cStringIO
     """
     pdf_file_obj.seek(0)
     pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
@@ -50,7 +53,9 @@ def decrypt_pdf(pdf_file_obj):
         decrypted = pdf_reader.decrypt('')
         if not decrypted:
             raise InternalServerError(
-                'The PDF appears to be encrypted and could not be read. Please try using an un-encrypted PDF')
+                error_message=error_constants.ENCRYPTED_PDF['message'],
+                error_code=error_constants.ENCRYPTED_PDF['code']
+            )
 
         unencrypted_pdf_io = StringIO()
         pdf_writer = PyPDF2.PdfFileWriter()

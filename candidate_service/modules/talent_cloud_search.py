@@ -1361,7 +1361,7 @@ def get_filter_query_from_request_vars(request_vars, filter_queries_list):
         filter_queries.append("(range field=total_months_experience [%s,%s])" % (min_months, max_months))
 
     # date filtering
-    if request_vars.get('date_from' or 'date_to'):
+    if request_vars.get('date_from') or request_vars.get('date_to'):
         filter_queries = filter_queries + _get_candidates_by_filter_date(request_vars)
 
     if isinstance(request_vars.get('job_title'), list):

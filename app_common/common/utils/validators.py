@@ -245,14 +245,17 @@ def get_json_if_exist(_request):
     return _request.get_json()
 
 
-def get_json_data_if_validated(request_body, json_schema, format_checker=True, custom_msg=None):
+def get_json_data_if_validated(request_body, json_schema, format_checker=True, custom_msg=None,
+                               custom_error_code=None):
     """
     Function will compare requested json data with provided json schema
     :type request_body:  request
     :type json_schema:  dict
     :type custom_msg:  str
+    :type custom_error_code:  int
     :param format_checker:  If True, specified formats will need to be validated, e.g. datetime
     :param custom_msg: If provided, will return a custom (possibly user facing) message.
+    :param custom_error_code: If provided, will include a custom (possibly user facing) code.
     :return:  JSON data if validation passes
     """
     try:
@@ -263,7 +266,8 @@ def get_json_data_if_validated(request_body, json_schema, format_checker=True, c
             validate(instance=body_dict, schema=json_schema)
     except ValidationError as e:
         default_message = 'JSON schema validation error: {}'.format(e)
-        raise InvalidUsage(custom_msg if custom_msg else default_message)
+        raise InvalidUsage(error_message=(custom_msg if custom_msg else default_message),
+                           error_code=custom_error_code)
     return body_dict
 
 

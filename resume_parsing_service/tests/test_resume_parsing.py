@@ -8,7 +8,7 @@ import os
 import requests
 # Module Specific.
 # Test fixtures, imports required even though not 'used'
-# TODO: Look into importing these once and use via namespacing.
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.common.routes import ResumeApiUrl
 from resume_parsing_service.tests.test_fixtures import client_fixture
 from resume_parsing_service.tests.test_fixtures import country_fixture
@@ -54,7 +54,8 @@ def test_invalid_fp_key(token_fixture, user_fixture):
 
 def test_none_fp_key(token_fixture, user_fixture):
     content, status = fetch_resume_fp_key_response(token_fixture, None)
-    assert 'error' in content
+    assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+    assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
     assert status == requests.codes.bad_request
 
 
@@ -69,7 +70,8 @@ def test_posting_no_file(token_fixture, user_fixture):
                                                   'create_candidate': True})
                                 )
     content = json.loads(invalid_post.content)
-    assert 'error' in content
+    assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+    assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
     assert invalid_post.status_code == requests.codes.bad_request
 
 
@@ -84,11 +86,12 @@ def test_posting_None_file(token_fixture, user_fixture):
                                                   'create_candidate': True})
                                 )
     content = json.loads(invalid_post.content)
-    assert 'error' in content
+    assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+    assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
     assert invalid_post.status_code == requests.codes.bad_request
 
 
-def test_talent_pool_error(token_fixture):
+def test_no_fp_json_key_error(token_fixture):
     invalid_post = requests.post(ResumeApiUrl.PARSE,
                                  headers={
                                      'Authorization': 'Bearer {}'.format(token_fixture.access_token),
@@ -98,7 +101,8 @@ def test_talent_pool_error(token_fixture):
                                                   'create_candidate': True})
                                 )
     content = json.loads(invalid_post.content)
-    assert 'error' in content
+    assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+    assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
     assert invalid_post.status_code == requests.codes.bad_request
 
 def test_no_token_fails():
@@ -131,25 +135,29 @@ def test_bad_header(token_fixture, user_fixture):
                                                   'create_candidate': True})
                                 )
     content = json.loads(invalid_post.content)
-    assert 'error' in content
+    assert content['error']['message'] == error_constants.INVALID_HEADERS['message']
+    assert content['error']['code'] == error_constants.INVALID_HEADERS['code']
     assert invalid_post.status_code == requests.codes.bad_request
 
 
 def test_blank_file(token_fixture, user_fixture):
     content, status = fetch_resume_fp_key_response(token_fixture, 'blank.txt')
-    assert 'error' in content, "There should be an error if no text can be extracted."
+    assert content['error']['message'] == error_constants.NO_TEXT_EXTRACTED['message'], "There should be an error if no text can be extracted."
+    assert content['error']['code'] == error_constants.NO_TEXT_EXTRACTED['code']
 
 
 def test_picture_not_resume(token_fixture, user_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'notResume.jpg')
-    assert 'error' in content, "There should be an error Because it's a picture of a backyard."
+    assert content['error']['message'] == error_constants.ERROR_ENCODING_TEXT['message'], "There should be an error Because it's a picture of a backyard."
+    # The ocr of a tree returns japanese characters and cannot be encoded.
+    assert content['error']['code'] == error_constants.ERROR_ENCODING_TEXT['code']
 
     content, status = fetch_resume_post_response(token_fixture, 'notResume2.jpg')
-    assert 'error' in content, "There should be an error Because it's a picture of food."
+    assert content['error']['message'] == error_constants.NO_TEXT_EXTRACTED['message'], "There should be an error Because it's a picture of food."
+    assert content['error']['code'] == error_constants.NO_TEXT_EXTRACTED['code']
 
 
 def test_bad_create_candidate_inputs(token_fixture):
-    error_message = 'There has been a critical error parsing this resume, the development team has been notified'
     for invalid_type in [1, 'string', {}, []]:
         test_response = requests.post(
             ResumeApiUrl.PARSE,
@@ -165,12 +173,11 @@ def test_bad_create_candidate_inputs(token_fixture):
         content = json.loads(test_response.content)
         status_code = test_response.status_code
 
-        assert 'error' in content
-        assert content.get('error', {}).get('message') == error_message
+        assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+        assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
         assert status_code == requests.codes.bad
 
 def test_bad_filename_inputs(token_fixture):
-    error_message = 'There has been a critical error parsing this resume, the development team has been notified'
     for invalid_type in [1, True, {}, []]:
         test_response = requests.post(
             ResumeApiUrl.PARSE,
@@ -186,12 +193,11 @@ def test_bad_filename_inputs(token_fixture):
         content = json.loads(test_response.content)
         status_code = test_response.status_code
 
-        assert 'error' in content
-        assert content.get('error', {}).get('message') == error_message
+        assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+        assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
         assert status_code == requests.codes.bad
 
 def test_bad_fpkey_inputs(token_fixture):
-    error_message = 'There has been a critical error parsing this resume, the development team has been notified'
     for invalid_type in [1, True, {}, [], None]:
         test_response = requests.post(
             ResumeApiUrl.PARSE,
@@ -206,13 +212,12 @@ def test_bad_fpkey_inputs(token_fixture):
         content = json.loads(test_response.content)
         status_code = test_response.status_code
 
-        assert 'error' in content
-        assert content.get('error', {}).get('message') == error_message
+        assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+        assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
         assert status_code == requests.codes.bad
 
 
 def test_bad_tpool_inputs(token_fixture):
-    error_message = 'There has been a critical error parsing this resume, the development team has been notified'
     for invalid_type in [1, True, {}, 'string']:
         test_response = requests.post(
             ResumeApiUrl.PARSE,
@@ -228,8 +233,8 @@ def test_bad_tpool_inputs(token_fixture):
         content = json.loads(test_response.content)
         status_code = test_response.status_code
 
-        assert 'error' in content
-        assert content.get('error', {}).get('message') == error_message
+        assert content['error']['message'] == error_constants.JSON_SCHEMA_ERROR['message']
+        assert content['error']['code'] == error_constants.JSON_SCHEMA_ERROR['code']
         assert status_code == requests.codes.bad
 
 
@@ -337,9 +342,21 @@ def test_no_multiple_skills(token_fixture, user_fixture):
     assert len(skills) == len(skills_set)
 
 
-def test_encrypted_resume(token_fixture, user_fixture):
-    """Test that encrypted pdf files that are posted to the end point can be parsed."""
-    content, status = fetch_resume_post_response(token_fixture, 'jDiMaria.pdf')
+# def test_encrypted_resume(token_fixture, user_fixture):
+#     """Test that encrypted pdf files that are posted to the end point can be parsed."""
+#     content, status = fetch_resume_post_response(token_fixture, 'jDiMaria.pdf')
+#     assert_non_create_content_and_status(content, status)
+
+
+def test_626a(token_fixture, user_fixture):
+    """Adds test case for old previously crashing resume. Adding for code coverage"""
+    content, status = fetch_resume_post_response(token_fixture, 'GET_626a.doc')
+    assert_non_create_content_and_status(content, status)
+
+
+def test_626b(token_fixture, user_fixture):
+    """Adds test case for old previously crashing resume. Adding for code coverage"""
+    content, status = fetch_resume_post_response(token_fixture, 'GET_626b.doc')
     assert_non_create_content_and_status(content, status)
 
 ####################################################################################################
@@ -433,7 +450,7 @@ def test_already_exists_candidate(token_fixture, user_fixture):
 def fetch_resume_post_response(token_fixture, file_name, create_mode=False):
     """Posts file to local test auth server for json formatted resumes."""
     current_dir = os.path.dirname(__file__)
-    with open(os.path.join(current_dir, 'test_resumes/{}'.format(file_name)), 'rb') as resume_file:
+    with open(os.path.join(current_dir, 'resume_files/{}'.format(file_name)), 'rb') as resume_file:
         response = requests.post(ResumeApiUrl.PARSE,
                                  headers={'Authorization': 'Bearer {}'.format(
                                      token_fixture.access_token)},
