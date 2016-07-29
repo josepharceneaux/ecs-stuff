@@ -1,11 +1,11 @@
 import json
 import requests
 from contracts import contract
-from ..custom_contracts import define_custom_contracts
+# from ..custom_contracts import define_custom_contracts
 from ..routes import CandidatePoolApiUrl, EmailCampaignApiUrl
 from ..utils.handy_functions import http_request, create_oauth_headers
 
-define_custom_contracts()
+# define_custom_contracts()
 
 
 def create_smartlist_from_api(data, access_token):

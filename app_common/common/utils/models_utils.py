@@ -418,7 +418,7 @@ def init_talent_app(app_name):
         except Exception as e:
             logger.exception("Exception running migrations: {}".format(e.message))
             db.session.rollback()
-
+        define_custom_contracts()
         return flask_app, logger
 
     except Exception as error:
