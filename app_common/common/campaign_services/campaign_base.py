@@ -241,7 +241,7 @@ class CampaignBase(object):
     __metaclass__ = ABCMeta
 
     # Child classes will set value of this.
-    REQUIRED_FIELDS = []
+    REQUIRED_FIELDS = ()
 
     def __init__(self, user_id, campaign_id=None):
         """
