@@ -25,6 +25,7 @@ from custom_errors import CampaignException
 from ..utils.test_utils import get_fake_dict
 from ..models.misc import (Frequency, Activity)
 from ..utils.datetime_utils import DatetimeUtils
+from ..custom_contracts import define_custom_contracts
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
@@ -32,6 +33,8 @@ from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
 from ..inter_service_calls.candidate_pool_service_calls import create_smartlist_from_api, \
     assert_smartlist_candidates
 from ..inter_service_calls.candidate_service_calls import create_candidates_from_candidate_api
+
+define_custom_contracts()
 
 
 class CampaignsTestsHelpers(object):
