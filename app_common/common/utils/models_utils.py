@@ -61,7 +61,6 @@ from ..routes import GTApis, HEALTH_CHECK
 from ..redis_cache import redis_store
 from ..talent_flask import TalentFlask
 from ..utils.talent_ec2 import get_ec2_instance_id
-from ..custom_contracts import define_custom_contracts
 from ..error_handling import register_error_handlers, InvalidUsage
 from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
@@ -418,7 +417,6 @@ def init_talent_app(app_name):
         except Exception as e:
             logger.exception("Exception running migrations: {}".format(e.message))
             db.session.rollback()
-        define_custom_contracts()
         return flask_app, logger
 
     except Exception as error:

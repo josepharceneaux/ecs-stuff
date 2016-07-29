@@ -23,10 +23,10 @@ from sqlalchemy.orm import Query
 from models_utils import to_json
 from ..error_handling import InvalidUsage
 from .handy_functions import JSON_CONTENT_TYPE_HEADER
-# from ..custom_contracts import define_custom_contracts
+from ..custom_contracts import define_custom_contracts
 from ..utils.validators import raise_if_not_instance_of
 
-# define_custom_contracts()
+define_custom_contracts()
 
 DEFAULT_PAGE = 1
 DEFAULT_PAGE_SIZE = 10
