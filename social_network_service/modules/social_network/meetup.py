@@ -6,12 +6,16 @@ class. Meetup contains methods like refresh_access_token(), get_member_id() etc.
 # Standard Library
 import json
 
+# 3rd party imports
+from requests import codes
+
 # Application Specific
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.error_handling import InternalServerError, InvalidUsage
 from social_network_service.modules import custom_codes
-from social_network_service.modules.custom_codes import (VENUE_EXISTS_ON_GT_DATABASE, MATCHING_VENUE_FOUND_ON_MEETUP)
+from social_network_service.modules.custom_codes import (VENUE_EXISTS_IN_GT_DATABASE, MATCHING_VENUE_FOUND_IN_MEETUP,
+                                                         INVALID_MEETUP_RESPONSE)
 from social_network_service.modules.utilities import logger
 from base import SocialNetworkBase
 from social_network_service.social_network_app import app
@@ -278,17 +282,20 @@ class Meetup(SocialNetworkBase):
         if response.ok:
             venue_id = json_resp['id']
             logger.info('|  Venue has been Added  |')
-        elif response.status_code == 409:
+        elif response.status_code == codes.CONFLICT:
             # 409 is returned when our venue is matching existing
             # venue/venues.
-            match = json_resp['errors'][0]['potential_matches'][0]
-            venue = Venue.get_by_user_id_and_social_network_venue_id(self.user.id, match.get('id'))
+            try:
+                match_id = json_resp['errors'][0]['potential_matches'][0]['id']
+            except:
+                raise InternalServerError('Invalid response from Meetup', error_code=INVALID_MEETUP_RESPONSE)
+            venue = Venue.get_by_user_id_and_social_network_venue_id(self.user.id, match_id)
             if venue:
                 raise InvalidUsage('Venue already exists in getTalent database',
-                                   error_code=VENUE_EXISTS_ON_GT_DATABASE)
+                                   error_code=VENUE_EXISTS_IN_GT_DATABASE)
             raise InvalidUsage('Matching venue already exists on Meetup.',
                                additional_error_info=dict(venue_error=json_resp['errors'][0]['potential_matches']),
-                               error_code=MATCHING_VENUE_FOUND_ON_MEETUP)
+                               error_code=MATCHING_VENUE_FOUND_IN_MEETUP)
         else:
             raise InternalServerError('ApiError: Unable to create venue for Meetup',
                                       additional_error_info=dict(venue_error=json_resp))
