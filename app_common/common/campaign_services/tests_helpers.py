@@ -540,8 +540,8 @@ class CampaignsTestsHelpers(object):
         If they are, it returns True, otherwise returns False.
         :param campaign_models|dict campaign: Campaign object
         :param int expected_count: Expected number of blasts of campaign
-        :param string access_token|None : Access token of user
-        :param string blasts_url|None: URL to get blasts of campaign
+        :param string|None access_token: Access token of user
+        :param string|None blasts_url: URL to get blasts of campaign
         """
         received_blasts_count = len(CampaignsTestsHelpers.get_blasts(campaign, access_token, blasts_url))
         print 'Expected Blasts:%s' % expected_count
