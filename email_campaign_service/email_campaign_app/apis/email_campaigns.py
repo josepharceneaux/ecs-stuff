@@ -68,7 +68,7 @@ from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.models.email_campaign import EmailCampaign
 from email_campaign_service.common.utils.validators import is_number
 from email_campaign_service.common.error_handling import (InvalidUsage, NotFoundError,
-                                                          ForbiddenError)
+                                                          ForbiddenError, MethodNotAllowedError)
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response,
                                                            get_pagination_params)
@@ -160,6 +160,29 @@ class EmailCampaigns(Resource):
                                          frequency_id=data['frequency_id'])
 
         return {'campaign': campaign}, requests.codes.CREATED
+
+    def patch(self, **kwargs):
+        """
+        This endpoint updates an existing campaign
+        :param dict kwargs: dictionary containing campaign id
+        """
+        campaign_id = kwargs.get('id')
+        if not campaign_id:
+            raise MethodNotAllowedError('Campaign id is not given')
+        email_campaign = EmailCampaign.get_by_id(campaign_id)
+        if not email_campaign:
+            raise NotFoundError("Email campaign with id: %s does not exist" % campaign_id)
+        if not email_campaign.user.domain_id == request.user.domain_id:
+            raise ForbiddenError("Email campaign doesn't belongs to user's domain")
+        # Get and validate request data
+        data = request.get_json(silent=True)
+        if not data:
+            raise InvalidUsage("Received empty request body")
+        is_hidden = data.get('is_hidden', False)
+        if is_hidden not in [True, False, 1, 0]:
+            raise InvalidUsage("is_hidden field should be a boolean, given: %s" % is_hidden)
+        email_campaign.update(is_hidden=is_hidden)
+        return dict(message="Email campaign (id: %s) updated successfully" % campaign_id), requests.codes.OK
 
 
 @api.route(EmailCampaignApi.SEND)

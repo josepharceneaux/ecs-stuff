@@ -69,6 +69,12 @@ class ForbiddenError(TalentError):
         return 403
 
 
+class MethodNotAllowedError(TalentError):
+    @classmethod
+    def http_status_code(cls):
+        return 405
+
+
 class UnprocessableEntity(TalentError):
     """https://tools.ietf.org/html/rfc4918#section-11.2"""
 
@@ -109,6 +115,10 @@ def register_error_handlers(app, logger):
     @app.errorhandler(ResourceNotFound)
     def handle_resource_not_found(error):
         return handle_error(error, 'Resource not found.')
+
+    @app.errorhandler(MethodNotAllowedError)
+    def handle_method_not_allowed(error):
+        return handle_error(error, 'Method Not allowed.')
 
     @app.errorhandler(UnprocessableEntity)
     def handle_unprocessable(error):
