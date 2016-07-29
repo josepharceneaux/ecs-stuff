@@ -32,11 +32,12 @@ from ..models.push_campaign import (PushCampaign, PushCampaignBlast, PushCampaig
 # Common Utils
 from ..routes import SchedulerApiUrl
 from ..utils.datetime_utils import DatetimeUtils
+from json_schema.campaign_fields import CAMPAIGNS_DELETE_SCHEMA
 from ..talent_config_manager import TalentConfigKeys, TalentEnvs
-from ..error_handling import (InvalidUsage, ResourceNotFound, InternalServerError)
 from .validators import raise_if_dict_values_are_not_int_or_long
-from ..utils.handy_functions import (http_request, snake_case_to_pascal_case, get_valid_json_data)
-from ..utils.validators import raise_if_not_instance_of
+from ..utils.handy_functions import (http_request, snake_case_to_pascal_case)
+from ..error_handling import (InvalidUsage, ResourceNotFound, InternalServerError)
+from ..utils.validators import raise_if_not_instance_of, get_json_data_if_validated
 
 
 def _get_campaign_type_prefix(campaign_type):
@@ -385,7 +386,7 @@ class CampaignUtils(object):
         """
         This is helper method which will be used across campaigns to delete multiple campaigns.
         It raises
-        1- InvalidUsage error if
+        1- InvalidUsage error if (These all are done in JSON schema validation)
             1.1- Requested campaigns ids are not in a list format
             1.2- No campaign id is provided
             1.3- Any of campaigns id is invalid (non-integer)
@@ -393,18 +394,11 @@ class CampaignUtils(object):
         3- Forbidden error if any of the requested campaign_ids does not belong to user's domain.
         4- InternalServerError if any of the campaigns is unable to delete.
 
-        :param request_obj: API request object
+        :param flask.request request_obj: API request object
         :param campaign_class: Campaign base class. e.g. SmsCampaignBase or PushCampaignBase
         """
-        requested_data = get_valid_json_data(request_obj)
-        campaign_ids =  requested_data.get('ids', [])
-        if not isinstance(campaign_ids, list):
-            raise InvalidUsage('Bad request, include campaign_ids as list data')
-        # check if list of campaigns_ids is not empty
-        if not campaign_ids:
-            raise InvalidUsage('No campaign id provided to delete')
-        if not any([isinstance(campaign_id, (int, long)) for campaign_id in campaign_ids]):
-            raise InvalidUsage('Campaign_ids must be integer or long > 0.')
+        requested_data = get_json_data_if_validated(request_obj, CAMPAIGNS_DELETE_SCHEMA)
+        campaign_ids = requested_data['ids']
         # Validate all requested campaigns exist in logged-in user's domain
         campaigns = [campaign_class(request_obj.user.id, campaign_id) for campaign_id in campaign_ids]
         # Delete all requested campaigns

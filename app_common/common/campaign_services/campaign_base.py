@@ -26,15 +26,15 @@ from celery import chord
 from flask import current_app
 
 # Database Models
-from ..utils.auth_utils import refresh_token
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
+from ..models.misc import (UrlConversion, Activity)
 from ..models.push_campaign import PushCampaignBlast
 from ..models.email_campaign import EmailCampaignBlast
-from ..models.misc import (UrlConversion, Frequency, Activity)
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
 # Common Utils
+from ..utils.auth_utils import refresh_token
 from ..utils.datetime_utils import DatetimeUtils
 from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
@@ -240,6 +240,9 @@ class CampaignBase(object):
     """
     __metaclass__ = ABCMeta
 
+    # Child classes will set value of this.
+    REQUIRED_FIELDS = ()
+
     def __init__(self, user_id, campaign_id=None):
         """
         This gets the user object from given user_id and sets it in self.user.
@@ -339,9 +342,6 @@ class CampaignBase(object):
         if not campaign_data:
             raise InvalidUsage('No data received from UI to save/update campaign.')
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        # if frequency_id not provided or is 0, set to id of ONCE
-        if not campaign_data.get('frequency_id'):
-            campaign_data.update({'frequency_id': Frequency.ONCE})
         required_fields = self.__class__.REQUIRED_FIELDS
         validate_form_data(campaign_data, self.user, required_fields=required_fields)
         logger.info('Campaign data has been validated.')
@@ -351,10 +351,6 @@ class CampaignBase(object):
         # 'smartlist_ids' is not a field of sms_campaign or push_campaign tables, so
         # need to remove it from data.
         del validated_data['smartlist_ids']
-        # If there exists any unexpected field in data from UI, raise invalid usage error.
-        unexpected_fields = campaign_model.get_invalid_fields(validated_data)
-        if unexpected_fields:
-            raise InvalidUsage('Unexpected field(s) `%s` found in data.' % unexpected_fields)
         return campaign_model, validated_data
 
     def save(self, form_data):
@@ -707,10 +703,9 @@ class CampaignBase(object):
             end_datetime as we did in step 2 for start_datetime.
         9- Removes the frequency_id from given dict of data and put frequency (number of seconds)
             in it.
-        :exception: Forbidden error
-        :exception: Resource not found
-        :exception: Bad request
-        :exception: Invalid usage
+        :param flask.request request: request from UI
+        :param int|long campaign_id: id of campaign
+        :param string campaign_type: Type of campaign
         :return: dictionary containing Campaign obj, data to schedule SMS campaign,
                     scheduled_task and auth header
         :rtype: dict
@@ -720,9 +715,8 @@ class CampaignBase(object):
         """
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         # get campaign obj, scheduled task data and oauth_header
-        campaign_obj, scheduled_task, oauth_header = \
-            cls.get_campaign_and_scheduled_task(campaign_id, request.user,
-                                                campaign_type)
+        campaign_obj, scheduled_task, oauth_header = cls.get_campaign_and_scheduled_task(campaign_id, request.user,
+                                                                                         campaign_type)
         # Updating scheduled task should not be allowed in POST request
         if scheduled_task and request.method == 'POST':
             raise ForbiddenError('Use PUT method instead to update already scheduled task')
@@ -730,7 +724,7 @@ class CampaignBase(object):
         if not scheduled_task and request.method == 'PUT':
             raise ForbiddenError('Use POST method instead to schedule campaign first time')
         # get JSON data from request
-        data_to_schedule_campaign = validation_of_data_to_schedule_campaign(campaign_obj, request)
+        data_to_schedule_campaign = validation_of_data_to_schedule_campaign(request)
         return {'campaign': campaign_obj,
                 'data_to_schedule': data_to_schedule_campaign,
                 'scheduled_task': scheduled_task,
@@ -813,6 +807,11 @@ class CampaignBase(object):
                                 headers=self.oauth_header)
         # If any error occurs on POST call, we log the error inside http_request().
         if 'id' in response.json():
+            # Update campaign object with scheduler data
+            self.campaign.update(frequency_id=data_to_schedule['frequency_id'],
+                                 start_datetime=data_to_schedule['start_datetime'],
+                                 end_datetime=data_to_schedule['end_datetime'],
+                                 scheduler_task_id=response.json()['id'])
             # create campaign scheduled activity
             try:
                 self.create_campaign_schedule_activity(self.user, self.campaign, self.oauth_header)
@@ -1047,10 +1046,9 @@ class CampaignBase(object):
                 data or we need to schedule new one.
             3) If we need to schedule again, we call schedule() method.
 
-        :param _request: request from UI
-        :param campaign_id: id of campaign
-        :type campaign_id: int | long
-        :return:
+        :param flask.request _request: request from UI
+        :param int|long campaign_id: id of campaign
+        :rtype: str
         """
         task_id = None
         # validate data to schedule
