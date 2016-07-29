@@ -27,7 +27,7 @@ from custom_errors import CampaignException
 from ..utils.test_utils import get_fake_dict
 from ..models.misc import (Frequency, Activity)
 from ..utils.datetime_utils import DatetimeUtils
-from ..custom_contracts import define_custom_contracts
+from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
@@ -35,8 +35,6 @@ from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
 from ..inter_service_calls.candidate_pool_service_calls import (create_smartlist_from_api,
                                                                 assert_smartlist_candidates)
 from ..inter_service_calls.candidate_service_calls import create_candidates_from_candidate_api
-
-define_custom_contracts()
 
 
 class CampaignsTestsHelpers(object):
@@ -569,7 +567,7 @@ class CampaignsTestsHelpers(object):
               retry_exceptions=(AssertionError,))
 
     @staticmethod
-    @contract
+    @contract(talent_pipeline=TalentPipeline)
     def create_smartlist_with_candidate(access_token, talent_pipeline, count=1, data=None,
                                         emails_list=False, create_phone=False,
                                         assert_candidates=True, smartlist_name=fake.word(),
@@ -578,7 +576,7 @@ class CampaignsTestsHelpers(object):
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
         :param string access_token: Access token of user
-        :param model talent_pipeline: Talent Pipeline object
+        # :param model talent_pipeline: Talent Pipeline object
         :param int count: Expected number of candidates
         :param dict|None data: Dictionary to create candidates
         :param bool emails_list: If True will create email for candidates
@@ -612,12 +610,12 @@ class CampaignsTestsHelpers(object):
         return smartlist_id, candidate_ids
 
     @staticmethod
-    @contract
+    @contract(talent_pipeline=TalentPipeline)
     def get_two_smartlists_with_same_candidate(talent_pipeline, access_token, count=1, create_phone=False,
                                                email_list=False):
         """
         Create two smartlists with same candidate in both of them and returns smartlist ids in list format.
-        :param model talent_pipeline: Talent pipeline object of user
+        # :param model talent_pipeline: Talent pipeline object of user
         :param string access_token: Access token of user
         :param int count: Number of candidates in first smartlist
         :param bool create_phone: True if need to create candidate's phone
