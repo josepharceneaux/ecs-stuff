@@ -51,14 +51,15 @@ class CampaignsTestsHelpers(object):
 
     @classmethod
     @contract
-    def request_for_forbidden_error(cls, method, url, access_token):
+    def request_for_forbidden_error(cls, method, url, access_token,data=None):
         """
         This should get forbidden error because requested campaign does not belong to logged-in user's domain.
         :param http_method method: Name of HTTP method
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
+        :param dict|None data: Data to be send in HTTP request
         """
-        response = send_request(method, url, access_token, None)
+        response = send_request(method, url, access_token, data=data)
         cls.assert_non_ok_response(response, expected_status_code=ForbiddenError.http_status_code())
 
     @classmethod
@@ -533,14 +534,14 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def verify_blasts(campaign, access_token, blasts_url, expected_count):
+    def verify_blasts(campaign, expected_count, access_token=None, blasts_url=None):
         """
         This function verifies that given campaign has expected number of blast objects.
         If they are, it returns True, otherwise returns False.
         :param campaign_models|dict campaign: Campaign object
-        :param string access_token: Access token of user
-        :param string blasts_url: URL to get blasts of campaign
-        :param int expected_count: Expected number of count
+        :param int expected_count: Expected number of blasts of campaign
+        :param string access_token|None : Access token of user
+        :param string blasts_url|None: URL to get blasts of campaign
         """
         received_blasts_count = len(CampaignsTestsHelpers.get_blasts(campaign, access_token, blasts_url))
         print 'Expected Blasts:%s' % expected_count
@@ -561,7 +562,7 @@ class CampaignsTestsHelpers(object):
         """
         attempts = timeout / 3 + 1
         retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
-              args=(campaign, access_token, blasts_url, expected_count),
+              args=(campaign, expected_count, access_token, blasts_url),
               retry_exceptions=(AssertionError,))
 
     @staticmethod
