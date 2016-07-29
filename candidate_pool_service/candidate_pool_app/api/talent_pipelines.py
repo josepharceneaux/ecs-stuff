@@ -61,22 +61,31 @@ class TalentPipelineApi(Resource):
             sort_by = request.args.get('sort_by', 'added_time')
             sort_type = request.args.get('sort_type', 'DESC')
             search_keyword = request.args.get('search', '').strip()
-
-            talent_pipelines = TalentPipeline.query.join(TalentPipeline.user).filter(and_(
-                    User.domain_id == request.user.domain_id, or_(TalentPipeline.name.ilike(
-                            '%' + search_keyword + '%'), TalentPipeline.description.ilike('%' + search_keyword + '%')))).all()
-
+            owner_user_id = request.args.get('user_id', '')
             page = request.args.get('page', DEFAULT_PAGE)
             per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
-
-            if talent_pipelines and sort_by not in ('growth', 'added_time', 'name', 'engagement_score'):
-                raise InvalidUsage('Value of sort parameter is not valid')
-
             if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
                 raise InvalidUsage("page and per_page should be positive integers")
 
             page = int(page)
             per_page = int(per_page)
+
+            if owner_user_id and is_number(owner_user_id) and not User.query.get(int(owner_user_id)):
+                raise InvalidUsage("User: (%s) doesn't exist in system")
+
+            if sort_by not in ('growth', 'added_time', 'name', 'engagement_score'):
+                raise InvalidUsage('Value of sort parameter is not valid')
+
+            if owner_user_id:
+                talent_pipelines = TalentPipeline.query.join(User).filter(and_(
+                        User.domain_id == request.user.domain_id, TalentPipeline.user.id == int(
+                                owner_user_id), or_(TalentPipeline.name.ilike('%' + search_keyword + '%'),
+                                                    TalentPipeline.description.ilike( '%' + search_keyword + '%')))).all()
+            else:
+                talent_pipelines = TalentPipeline.query.join(User).filter(and_(
+                        User.domain_id == request.user.domain_id, or_(
+                                TalentPipeline.name.ilike('%' + search_keyword + '%'),
+                                TalentPipeline.description.ilike('%' + search_keyword + '%')))).all()
 
             talent_pipelines_data = [talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
                                                              get_growth_function=get_pipeline_growth
