@@ -66,8 +66,7 @@ sleep 10
 
 echo "Beginning tests."
 
-#py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests sms_campaign_service/tests resume_parsing_service/tests candidate_service/tests email_campaign_service/tests
-py.test -n 48 sms_campaign_service/tests
+py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests sms_campaign_service/tests resume_parsing_service/tests candidate_service/tests email_campaign_service/tests
 if [ $? -ne 0 ] ; then
     exit 1
 fi

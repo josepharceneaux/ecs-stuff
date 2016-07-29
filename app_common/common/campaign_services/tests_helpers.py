@@ -579,7 +579,7 @@ class CampaignsTestsHelpers(object):
                                                email_list=False):
         """
         Create two smartlists with same candidate in both of them and returns smartlist ids in list format.
-        :param model_class talent_pipeline: Talent pipeline object of user
+        :param model talent_pipeline: Talent pipeline object of user
         :param string access_token: Access token of user
         :param int count: Number of candidates in first smartlist
         :param bool create_phone: True if need to create candidate's phone
