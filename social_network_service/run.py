@@ -3,6 +3,7 @@ from social_network_service.common.routes import GTApis
 from social_network_service.social_network_app.app import app
 
 if __name__ == '__main__':
+    # Using inline import to avoid cyclic import issue
     from social_network_service.social_network_app.restful.v1_importer import schedule_importer_job
     # Schedule RSVP and Event importer general job
     schedule_importer_job()

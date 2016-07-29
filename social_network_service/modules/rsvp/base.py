@@ -7,14 +7,13 @@ etc.
 
 # Standard Library
 import json
+import requests
 from abc import ABCMeta
 from abc import abstractmethod
 from datetime import datetime, timedelta
 from urllib import urlencode
 
 # Application Specific
-import requests
-
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.inter_service_calls.candidate_service_calls import create_or_update_candidate
@@ -121,7 +120,7 @@ class RSVPBase(object):
 
     - To understand how the RSVP importer works, we have an example here.
         We make the object of this class while importing RSVPs both through
-        manager and webhook.
+        social_network.
 
         :Example:
 
@@ -156,14 +155,7 @@ class RSVPBase(object):
     def __init__(self, *args, **kwargs):
         if isinstance(kwargs.get('user_credentials'), UserSocialNetworkCredential):
             self.user_credentials = kwargs.get('user_credentials')
-            # To resolve session expire issue, save the fields in a dict
-            self.user_credentials_dict = dict(id=self.user_credentials.id,
-                                              access_token=self.user_credentials.access_token,
-                                              refresh_token=self.user_credentials.refresh_token,
-                                              social_network_id=self.user_credentials.social_network_id,
-                                              member_id=self.user_credentials.member_id,
-                                              user_id=self.user_credentials.user_id)
-            self.user = User.get_by_id(self.user_credentials_dict['user_id'])
+            self.user = User.get_by_id(self.user_credentials.user_id)
             self.user_access_token = Token.get_by_user_id(self.user_credentials.user_id)
             if not self.user_access_token.access_token:
                 raise InternalServerError('Unable to create candidate candidateaccess_token is null')
@@ -173,7 +165,7 @@ class RSVPBase(object):
         self.headers = kwargs.get('headers')
         self.social_network = kwargs.get('social_network')
         self.api_url = kwargs.get('social_network').api_url
-        self.access_token = self.user_credentials_dict['access_token']
+        self.access_token = self.user_credentials.access_token
         self.start_date_dt = None
         self.rsvps = []
         self.flag_create_activity = True
@@ -236,7 +228,7 @@ class RSVPBase(object):
         - We use this method inside process_events_rsvps() defined in
             EventBase class inside social_network_service/event/base.py.
 
-        - We use this method while importing RSVPs via social network manager.
+        - We use this method while importing RSVPs through social_network.
 
         **See Also**
             .. seealso:: process_events_rsvps() method in EventBase class
@@ -336,8 +328,7 @@ class RSVPBase(object):
         - This method is called from process_rsvps() defined in
             RSVPBase class inside social_network_service/rsvp/base.py.
 
-        - We use this method while importing RSVPs via social network manager
-            or webhook.
+        - We use this method while importing RSVPs through social network
 
         :Example:
             - rsvp_obj = Meetup(social_network=self.social_network,
@@ -391,7 +382,6 @@ class RSVPBase(object):
           RSVPBase class inside social_network_service/rsvp/base.py.
 
         - We use this method while importing RSVPs through social network
-          manager or webhook.
 
         :Example:
 
@@ -419,7 +409,6 @@ class RSVPBase(object):
           RSVPBase class inside social_network_service/rsvp/base.py.
 
         - We use this method while importing RSVPs through social network
-          manager or webhook.
 
         :Example:
 

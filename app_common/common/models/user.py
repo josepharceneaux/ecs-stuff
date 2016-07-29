@@ -733,7 +733,7 @@ class UserSocialNetworkCredential(db.Model):
     access_token = db.Column('AccessToken', db.String(1000))
     social_network = db.relationship("SocialNetwork", backref=db.backref(
         'user_social_network_credential', cascade="all, delete-orphan"))
-    last_updated = db.Column(db.DateTime, nullable=True)
+    updated_datetime = db.Column('UpdatedDatetime', db.DateTime, nullable=True)
 
     @classmethod
     def get_all_credentials(cls, social_network_id=None):

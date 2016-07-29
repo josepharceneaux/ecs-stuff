@@ -96,6 +96,4 @@ class Event(db.Model):
         :return:
         """
         assert social_network_event_id
-        return cls.query.filter(
-            Event.social_network_event_id == social_network_event_id
-        )
+        return cls.query.filter_by(social_network_event_id=social_network_event_id)

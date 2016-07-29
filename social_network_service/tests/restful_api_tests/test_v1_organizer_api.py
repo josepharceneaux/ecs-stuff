@@ -11,7 +11,6 @@ from social_network_service.tests.helper_functions import auth_header, get_heade
 
 
 class TestOrganizers:
-
     def test_get_with_invalid_token(self):
         """
         Send GET request with invalid token in header and response should be unauthorize access
@@ -95,7 +94,7 @@ class TestOrganizers:
         :return:
         """
         organizer_ids = {'ids': [-1]}  # event id which does not exists, test 207 status
-        response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS,  data=json.dumps(organizer_ids),
+        response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(organizer_ids),
                                    headers=get_headers(token_first))
         logger.info(response.text)
         assert response.status_code == 207, response.text
@@ -112,13 +111,13 @@ class TestOrganizers:
         :return:
         """
         organizer_ids = {'ids': [organizer_in_db.id]}
-        response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS,  data=json.dumps(organizer_ids),
+        response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(organizer_ids),
                                    headers=get_headers(token_first))
         logger.info(response.text)
         assert response.status_code == 200, response.text
 
         organizer_ids = {'ids': -1}  # invalid ids format to test 400 status code
-        response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS,  data=json.dumps(organizer_ids),
+        response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(organizer_ids),
                                    headers=get_headers(token_first))
         logger.info(response.text)
         assert response.status_code == 400, response.text

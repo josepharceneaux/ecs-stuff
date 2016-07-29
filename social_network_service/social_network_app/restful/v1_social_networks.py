@@ -1115,4 +1115,3 @@ class ProcessAccessTokenResource(Resource):
         else:
             raise ResourceNotFound('Social Network not found')
 
-

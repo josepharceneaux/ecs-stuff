@@ -303,7 +303,7 @@ class SocialNetworkBase(object):
             elif mode == 'rsvp':
                 sn_event_obj.process_events_rsvps(user_credentials,
                                                   rsvp_data=rsvp_data)
-        except:
+        except Exception:
             logger.exception('process: running %s importer, user_id: %s, '
                              'social network: %s(id: %s)'
                              % (mode, user_id, social_network_name,

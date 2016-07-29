@@ -8,6 +8,8 @@ These methods are called by run_job method asynchronously
 
 """
 # Application imports
+import datetime
+
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.talent_config_manager import TalentConfigKeys
@@ -22,6 +24,7 @@ def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetim
     :param social_network_name: Facebook, Eventbrite, Meetup
     :param mode: rsvp or event
     :param user_credentials_id: user credentials entry
+    :param datetime_range:
     :param app: Flask app
     :return:
     """
@@ -43,8 +46,8 @@ def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetim
                          % (mode.title(), sn.user.name, sn.user.id,
                             social_network.name))
             sn.process(mode, user_credentials=user_credentials, **datetime_range)
-        except KeyError:
-            logger.exception("Key error while running importer for user %s" % user_id)
-        except Exception:
-            logger.exception('start: running %s importer, user_id: %s',
-                             mode, user_id)
+            # Update last_updated of each user_credentials.
+            user_credentials.update(updated_datetime=datetime.datetime.utcnow())
+        except Exception as e:
+            logger.exception('start: running %s importer, user_id: %s failed. %s',
+                             mode, user_id, e.message)

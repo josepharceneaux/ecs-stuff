@@ -5,7 +5,7 @@ import json
 import requests
 from ..models.user import User
 from ..routes import CandidateApiUrl
-from ..utils.handy_functions import create_oauth_headers, http_request
+from ..utils.handy_functions import create_oauth_headers, http_request, send_request
 from ..error_handling import InternalServerError, InvalidUsage, ForbiddenError
 from ..utils.validators import raise_if_not_positive_int_or_long
 
@@ -32,9 +32,9 @@ def search_candidates_from_params(search_params, access_token, url_args=None, us
 
     url = CandidateApiUrl.CANDIDATE_SEARCH_URI
     response = requests.get(
-            url=(url + url_args) if url_args else url,
-            params=search_params,
-            headers=headers
+        url=(url + url_args) if url_args else url,
+        params=search_params,
+        headers=headers
     )
     if not response.ok:
         raise InvalidUsage("Couldn't get candidates from Search API because %s" % response)
@@ -88,11 +88,11 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
     headers.update({'content-type': 'application/json'})
 
     resp = requests.post(
-            url=CandidateApiUrl.CANDIDATES,
-            headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s'
-                                                                                  % oauth_token,
-                     'content-type': 'application/json'},
-            data=json.dumps(data)
+        url=CandidateApiUrl.CANDIDATES,
+        headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s'
+                                                                              % oauth_token,
+                 'content-type': 'application/json'},
+        data=json.dumps(data)
     )
     assert resp.status_code == 201
     if return_candidate_ids_only:
@@ -112,26 +112,29 @@ def create_or_update_candidate(oauth_token, data, return_candidate_ids_only=Fals
     Returns: list of created candidate ids
     # """
 
-    resp = requests.post(
-            url=CandidateApiUrl.CANDIDATES,
-            headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token,
-                     'content-type': 'application/json'},
-            data=json.dumps(data)
-    )
+    resp = send_request('post',
+                        url=CandidateApiUrl.CANDIDATES,
+                        headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token,
+                                 'content-type': 'application/json'},
+                        data=json.dumps(data)
+                        )
     data_resp = resp.json()
     # Candidate already exists. So, we update candidate data and return candidate id
     # 3013 error code represents candidate already exists.
     if resp.status_code == requests.codes.bad and data_resp['error']['code'] == 3013:
-        data['candidates'][0]['id'] = resp.json()['error']['id']
-        patch_resp = requests.patch(
-            url=CandidateApiUrl.CANDIDATES,
-            headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token,
-                     'content-type': 'application/json'},
-            data=json.dumps(data)
-        )
+        data['candidates'][0]['id'] = data_resp['error']['id']
+        patch_resp = send_request('patch',
+                                  url=CandidateApiUrl.CANDIDATES,
+                                  headers=
+                                  {
+                                      'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token,
+                                      'content-type': 'application/json'},
+                                  data=json.dumps(data)
+                                  )
         if return_candidate_ids_only:
             return [candidate['id'] for candidate in patch_resp.json()['candidates']]
-        resp = patch_resp
+        else:
+            return patch_resp.json()
     assert resp.status_code == requests.codes.created
     if return_candidate_ids_only:
         return [candidate['id'] for candidate in resp.json()['candidates']]

@@ -26,7 +26,7 @@ from social_network_service.common.models.user import UserSocialNetworkCredentia
 from social_network_service.modules.utilities import delete_events
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.talent_config_manager import TalentConfigKeys
-from social_network_service.tests.helper_functions import send_request
+from social_network_service.common.utils.handy_functions import send_request
 
 # This is common data for creating test events
 EVENT_DATA = {

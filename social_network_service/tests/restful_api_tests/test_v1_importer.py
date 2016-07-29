@@ -15,7 +15,7 @@ from social_network_service.common.tests.api_conftest import user_first, token_f
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import get_class
 from social_network_service.social_network_app import logger
-from social_network_service.tests.helper_functions import send_request
+from social_network_service.common.utils.handy_functions import send_request
 
 
 class Test_Event_Importer:
@@ -228,12 +228,11 @@ class Test_Event_Importer:
 
     def test_eventbrite_event_importer_endpoint(self, token_first):
         """
-        Test eventbrite events importer.
-        - An existing event is created on eventbrite
+        Test Eventbrite events importer.
+        - An existing event is created on eventbrite with id `26557579435` and is associated with our user id 1
         - Run event importer for eventbrite.
         - Then check if event event is imported correctly or not
         """
-
         social_network_event_id = '26557579435'
         user_id = 1
         event = Event.get_by_user_and_social_network_event_id(user_id=user_id,
@@ -253,7 +252,7 @@ class Test_Event_Importer:
         response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'eventbrite'),
                                  headers=headers)
         assert response.status_code == 200
-        sleep(50)
+        sleep(80)
         db.db.session.commit()
         event = Event.get_by_user_and_social_network_event_id(user_id=user_id,
                                                               social_network_event_id=social_network_event_id)
@@ -291,7 +290,7 @@ class Test_Event_Importer:
                                      headers=headers)
             assert response.status_code == 200
 
-            sleep(80)
+            sleep(50)
 
         response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('rsvp', 'eventbrite'), data=json.dumps({}),
                                  headers=headers)

@@ -15,7 +15,8 @@ from social_network_service.common.models.misc import Activity
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.tests.api_conftest import token_first
 from social_network_service.social_network_app import logger
-from social_network_service.tests.helper_functions import auth_header, send_request, unauthorize_test
+from social_network_service.tests.helper_functions import auth_header, unauthorize_test
+from social_network_service.common.utils.handy_functions import send_request
 
 
 class TestEventById(object):

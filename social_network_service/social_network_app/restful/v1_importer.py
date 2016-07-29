@@ -2,10 +2,10 @@
 import json
 import os
 import types
-
-# 3rd party imports
 import datetime
 import requests
+
+# 3rd party imports
 from flask import Blueprint
 from flask.ext.restful import Resource
 
@@ -13,6 +13,7 @@ from flask.ext.restful import Resource
 from social_network_service.common.error_handling import InvalidUsage, InternalServerError
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential, User
+from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.routes import SocialNetworkApi, SchedulerApiUrl, SocialNetworkApiUrl
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.talent_config_manager import TalentEnvs, TalentConfigKeys
@@ -59,12 +60,17 @@ class RsvpEventImporter(Resource):
     decorators = [require_oauth(allow_null_user=True)]
 
     def post(self, mode, social_network):
-
+        # Lock the importer for 3500 seconds. So that someone doesn't make multiple requests to this endpoint
+        import_lock_key = 'Importer_Lock'
+        if not redis_store.get(import_lock_key):
+            redis_store.set(import_lock_key, True, 3500)
+        else:
+            raise InvalidUsage('Importer is locked at the moment. Please try again later.')
         # Start celery rsvp importer method here.
         if mode.lower() not in ["event", "rsvp"]:
-            raise InvalidUsage("No mode of value %s found" % mode)
+            raise InvalidUsage("There is no mode with name %s found" % mode)
 
-        if not (social_network.lower() in ["meetup", "facebook", "eventbrite"]):
+        if not (social_network.lower() in ["meetup", "eventbrite"]):
             raise InvalidUsage("No social network with name %s found." % social_network)
 
         social_network_name = social_network.lower()
@@ -88,13 +94,12 @@ class RsvpEventImporter(Resource):
                 datetime_range = {}
                 if mode == 'event':
                     last_updated = \
-                      user_credentials.last_updated if user_credentials.last_updated else datetime.datetime(2000, 1, 1)
+                        user_credentials.last_updated if user_credentials.updated_datetime else datetime.datetime(
+                            2000, 1, 1)
                     datetime_range.update({
                         'date_range_start': DatetimeUtils.to_utc_str(last_updated),
                         'date_range_end': DatetimeUtils.to_utc_str(datetime.datetime.utcnow())
                     })
-                    # Update last_updated of each user_credentials.
-                    user_credentials.update(last_updated=datetime.datetime.utcnow())
                 rsvp_events_importer.apply_async([social_network, mode, user_credentials.id, datetime_range])
         else:
             logger.error('User Credentials not found for social network %s'
@@ -141,10 +146,10 @@ def schedule_job(url, task_name):
 
     secret_key_id, access_token = User.generate_jw_token()
     headers = {
-            'Content-Type': 'application/json',
-            'X-Talent-Secret-Key-ID': secret_key_id,
-            'Authorization': access_token
-        }
+        'Content-Type': 'application/json',
+        'X-Talent-Secret-Key-ID': secret_key_id,
+        'Authorization': access_token
+    }
     data = {
         'start_datetime': start_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
         'end_datetime': end_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
@@ -162,9 +167,9 @@ def schedule_job(url, task_name):
 
         response = requests.post(SchedulerApiUrl.TASKS, headers=headers,
                                  data=json.dumps(data))
-
+        #
         if not (response.status_code == requests.codes.created or response.json()['error']['code'] == 6057):
             logger.error(response.text)
-            raise InternalServerError(error_message='Unable to schedule meetup importer job')
+            raise InternalServerError(error_message='Unable to schedule Meetup importer job')
     elif response.status_code == requests.codes.ok:
         logger.info('Job already scheduled. %s' % response.text)

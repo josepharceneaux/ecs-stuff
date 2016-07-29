@@ -646,7 +646,7 @@ class SocialNetworkApi(object):
     # TODO: refactor
     TIMEZONES = '/' + VERSION + '/data/timezones'
     RSVP = '/' + VERSION + '/rsvp'
-    IMPORTER = '/' + VERSION + '/importer/<string:mode>/<string:social_network>'
+    IMPORTER = '/' + VERSION + '/import/<string:mode>/<string:social_network>'
     CODE = '/' + VERSION + '/code'
     # URL for Twitter authentication
     TWITTER_AUTH = '/' + VERSION + '/twitter-auth'
@@ -681,7 +681,7 @@ class SocialNetworkApiUrl(object):
     USER_SOCIAL_NETWORK_CREDENTIALS = HOST_NAME % ('/' + VERSION + '/social-networks/%s/user/credentials')
     RSVP = HOST_NAME % ('/' + VERSION + '/rsvp')
     CODE = HOST_NAME % ('/' + VERSION + '/code')
-    IMPORTER = HOST_NAME % ('/' + VERSION + '/importer/%s/%s')
+    IMPORTER = HOST_NAME % ('/' + VERSION + '/import/%s/%s')
     TWITTER_CALLBACK= HOST_NAME % ('/' + VERSION + '/twitter-callback/%s')
 
 
