@@ -32,10 +32,8 @@ from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidateP
 
 # Common Utils
 from sms_campaign_service.common.routes import CandidateApiUrl
-from sms_campaign_service.common.custom_contracts import define_custom_contracts
 from sms_campaign_service.common.campaign_services.tests_helpers import (CampaignsTestsHelpers, FixtureHelpers)
 
-define_custom_contracts()
 # clean database tables user_phone and candidate_phone first
 remove_any_user_phone_record_with_twilio_test_number()
 

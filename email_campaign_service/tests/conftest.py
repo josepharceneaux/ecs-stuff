@@ -14,9 +14,6 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   create_smartlist_with_given_email_candidate)
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from sms_campaign_service.common.custom_contracts import define_custom_contracts
-
-define_custom_contracts()
 
 
 @pytest.fixture()
