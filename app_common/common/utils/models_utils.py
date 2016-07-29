@@ -288,7 +288,7 @@ def delete(cls, ref, app=None, commit_session=True):
 @classmethod
 def get_invalid_fields(cls, data_to_be_verified):
     """
-    This takes some data in dict from and checks if there is any key which is not a ATTRIBUTE of given model.`
+    This takes some data in dict from and checks if there is any key which is not a ATTRIBUTE of given model.
     It then returns all such fields in a list format.
     :param db.Model cls: Database model class
     :param dict data_to_be_verified: Dictionary of data.

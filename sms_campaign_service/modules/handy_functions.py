@@ -19,7 +19,7 @@ from twilio.rest import TwilioRestClient
 # Service specific
 from sms_campaign_service.sms_campaign_app import logger, app
 from sms_campaign_service.modules.custom_exceptions import TwilioApiError
-from sms_campaign_service.modules.sms_campaign_app_constants import (NGROK_URL, TWILIO_TEST_NUMBER)
+from sms_campaign_service.modules.constants import (NGROK_URL, TWILIO_TEST_NUMBER)
 
 # Common utils
 from sms_campaign_service.common.routes import (GTApis, SmsCampaignApiUrl)

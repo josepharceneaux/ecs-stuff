@@ -9,30 +9,25 @@ from operator import itemgetter
 
 # Third Party Imports
 import requests
-from werkzeug.security import gen_salt
-
 
 # Service Specific
+from sms_campaign_service.tests.conftest import db
 from sms_campaign_service.common.tests.sample_data import fake
-from sms_campaign_service.tests.conftest import db, CREATE_CAMPAIGN_DATA
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
-from sms_campaign_service.tests.modules.common_functions import (assert_for_activity,
-                                                                 assert_campaign_delete,
+from sms_campaign_service.tests.modules.common_functions import (assert_campaign_delete,
                                                                  assert_campaign_creation,
-                                                                 assert_valid_campaign_get)
-from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+                                                                 assert_valid_campaign_get, generate_campaign_data)
 
 
 # Models
-from sms_campaign_service.common.models.misc import Activity
 from sms_campaign_service.common.models.user import UserPhone
-from sms_campaign_service.common.models.smartlist import Smartlist
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.error_handling import (InvalidUsage, InternalServerError,
                                                         ForbiddenError, ResourceNotFound)
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 class TestSmsCampaignHTTPGet(object):
@@ -157,13 +152,14 @@ class TestSmsCampaignHTTPPost(object):
     """
     This class contains tests for endpoint /v1/sms-campaigns and HTTP method POST.
     """
+    HTTP_METHOD = 'post'
     URL = SmsCampaignApiUrl.CAMPAIGNS
 
     def test_campaign_creation_with_invalid_token(self):
         """
         User auth token is invalid, it should result in Unauthorized Error.
         """
-        CampaignsTestsHelpers.request_with_invalid_token('post', self.URL)
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL)
 
     def test_campaign_creation_with_invalid_header(self, access_token_first):
         """
@@ -171,7 +167,6 @@ class TestSmsCampaignHTTPPost(object):
         """
         response = requests.post(self.URL, headers={'Authorization': 'Bearer %s' % access_token_first})
         assert response.status_code == InvalidUsage.http_status_code(), 'It should be a bad request (400)'
-        assert 'header' in response.json()['error']['message']
 
     def test_campaign_creation_with_no_user_phone_and_valid_data(self, user_first, campaign_valid_data, headers):
         """
@@ -191,7 +186,7 @@ class TestSmsCampaignHTTPPost(object):
         :param user_phone_1: user_phone fixture to assign a test phone number to user
         """
         response = requests.post(self.URL, headers=headers)
-        assert response.status_code == InvalidUsage.http_status_code(), 'Should be a bad request (400)'
+        CampaignsTestsHelpers.assert_non_ok_response(response)
 
     def test_campaign_creation_with_non_json_data(self, headers, campaign_valid_data, user_phone_1):
         """
@@ -202,8 +197,7 @@ class TestSmsCampaignHTTPPost(object):
         :param user_phone_1: user_phone fixture to assign a test phone number to user
         """
         response = requests.post(self.URL, headers=headers, data=campaign_valid_data)
-
-        assert response.status_code == InvalidUsage.http_status_code(), 'Should be a bad request (400)'
+        CampaignsTestsHelpers.assert_non_ok_response(response)
 
     def test_campaign_creation_with_missing_required_fields(self, headers, invalid_data_for_campaign_creation,
                                                             user_phone_1):
@@ -224,8 +218,18 @@ class TestSmsCampaignHTTPPost(object):
         User has one phone number, valid header and invalid data (unexpected fields) to
         create sms-campaign. It should result in Invalid usage error.
         """
-        CampaignsTestsHelpers.campaign_create_or_update_with_unexpected_fields('post', self.URL, access_token_first,
-                                                                               campaign_valid_data)
+        CampaignsTestsHelpers.test_api_with_with_unexpected_field_in_data(self.HTTP_METHOD, self.URL,
+                                                                          access_token_first, campaign_valid_data)
+
+    def test_campaign_create_with_invalid_smartlist_ids(self, access_token_first):
+        """
+        This is a test to create SMS campaign with invalid smartlist_ids.
+        Invalid smartlist ids include Non-existing id, non-integer id, empty list, duplicate items in list etc.
+        Status code should be 400 and campaign should not be created.
+        """
+        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_smartlist(self.HTTP_METHOD, self.URL,
+                                                                               access_token_first,
+                                                                               generate_campaign_data())
 
     def test_campaign_create_with_valid_and_not_owned_smartlist_ids(self, headers, campaign_valid_data,
                                                                     smartlist_with_two_candidates_in_other_domain):
@@ -236,29 +240,24 @@ class TestSmsCampaignHTTPPost(object):
         data = campaign_valid_data.copy()
         data['smartlist_ids'].extend([smartlist_with_two_candidates_in_other_domain[0]])
         response = requests.post(self.URL, headers=headers, data=json.dumps(data))
-        assert response.status_code == ForbiddenError.http_status_code()
+        CampaignsTestsHelpers.assert_non_ok_response(response, ForbiddenError.http_status_code())
 
-    def test_campaign_create_with_valid_and_non_existing_smartlist_ids(self, headers, campaign_valid_data):
+    def test_campaign_create_with_invalid_campaign_name(self, access_token_first, campaign_valid_data):
         """
-        This is a test to create SMS campaign with valid and non-existing smartlist_ids.
-        It should result in ResourceNotFound error.
-        """
-        data = campaign_valid_data.copy()
-        non_existing_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
-        data['smartlist_ids'].extend([non_existing_id])
-        response = requests.post(self.URL, headers=headers, data=json.dumps(data))
-        assert response.status_code == ResourceNotFound.http_status_code()
-
-    def test_campaign_create_with_valid_and_invalid_smartlist_ids(self, headers, campaign_valid_data,
-                                                                  invalid_id):
-        """
-        This is a test to create SMS campaign with valid and invalid smartlist_ids. Status code should be 400 and
+        This is a test to create SMS campaign with invalid campaign name. Status code should be 400 and
         campaign should not be created.
         """
-        data = campaign_valid_data.copy()
-        data['smartlist_ids'].extend(invalid_id)
-        response = requests.post(self.URL, headers=headers, data=json.dumps(data))
-        assert response.status_code == InvalidUsage.http_status_code()
+        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.HTTP_METHOD, self.URL, access_token_first,
+                                                                            campaign_valid_data.copy(), 'name')
+
+    def test_campaign_create_with_invalid_body_text(self, access_token_first, campaign_valid_data):
+        """
+        This is a test to create SMS campaign with invalid body_text. Status code should be 400 and
+        campaign should not be created.
+        """
+        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.HTTP_METHOD, self.URL,
+                                                                            access_token_first,
+                                                                            campaign_valid_data.copy(), 'body_text')
 
     def test_campaign_creation_with_invalid_url_in_body_text(self, campaign_valid_data, headers, user_phone_1):
         """
@@ -311,7 +310,7 @@ class TestSmsCampaignHTTPDelete(object):
     """
     This class contains tests for endpoint /v1/sms-campaigns and HTTP method DELETE.
     """
-
+    HTTP_METHOD = 'delete'
     URL = SmsCampaignApiUrl.CAMPAIGNS
 
     def test_campaigns_delete_with_invalid_token(self):
@@ -326,21 +325,21 @@ class TestSmsCampaignHTTPDelete(object):
         It should result in bad request error.
         """
         response = requests.delete(self.URL, headers=headers)
-        assert response.status_code == InvalidUsage.http_status_code(), 'It should be a bad request (400)'
+        CampaignsTestsHelpers.assert_non_ok_response(response)
 
     def test_campaigns_delete_with_no_data(self, headers):
         """
         User auth token is valid, but no data provided. It should result in bad request error.
         """
         response = requests.delete(self.URL, headers=headers)
-        assert response.status_code == InvalidUsage.http_status_code(), 'It should be a bad request (400)'
+        CampaignsTestsHelpers.assert_non_ok_response(response)
 
     def test_campaigns_delete_with_non_json_data(self, headers):
         """
         User auth token is valid, but non JSON data provided. It should result in bad request error.
         """
         response = requests.delete(self.URL, headers=headers, data={'ids': [1, 2, 3]})
-        assert response.status_code == InvalidUsage.http_status_code(), 'It should be a bad request (400)'
+        CampaignsTestsHelpers.assert_non_ok_response(response)
 
     def test_campaigns_delete_with_campaign_ids_in_non_list_form(self, headers):
         """
@@ -348,7 +347,7 @@ class TestSmsCampaignHTTPDelete(object):
         It should result in bad request error.
         """
         response = requests.delete(self.URL, headers=headers, data=json.dumps({'ids': 1}))
-        assert response.status_code == InvalidUsage.http_status_code(), 'It should be a bad request (400)'
+        CampaignsTestsHelpers.assert_non_ok_response(response)
 
     def test_campaigns_delete_with_valid_and_not_owned_campaigns(self, headers, sms_campaign_in_other_domain,
                                                                  sms_campaign_of_user_first):
@@ -359,7 +358,7 @@ class TestSmsCampaignHTTPDelete(object):
         response = requests.delete(self.URL, headers=headers,
                                    data=json.dumps({'ids': [sms_campaign_of_user_first['id'],
                                                             sms_campaign_in_other_domain['id']]}))
-        assert response.status_code == ForbiddenError.http_status_code(), 'It should be a Forbidden error (403)'
+        CampaignsTestsHelpers.assert_non_ok_response(response, ForbiddenError.http_status_code())
 
     def test_campaigns_delete_with_valid_and_not_existing_campaigns(self, headers, sms_campaign_of_user_first):
         """
@@ -369,17 +368,13 @@ class TestSmsCampaignHTTPDelete(object):
         non_existing_id = CampaignsTestsHelpers.get_non_existing_id(SmsCampaign)
         response = requests.delete(self.URL, headers=headers,
                                    data=json.dumps({'ids': [sms_campaign_of_user_first['id'], non_existing_id]}))
-        assert response.status_code == ResourceNotFound.http_status_code(), 'It should be a ResourceNotFound (404)'
+        CampaignsTestsHelpers.assert_non_ok_response(response, ResourceNotFound.http_status_code())
 
-    def test_campaigns_delete_with_valid_and_invalid_campaign_ids(self, headers, sms_campaign_of_user_first,
-                                                                  invalid_id):
+    def test_campaigns_delete_with_valid_and_invalid_campaign_ids(self, access_token_first):
         """
-        User auth token is valid, but invalid data provided (ids other than int, not owned campaign and Non-exisiting),
-        It should result in bad request error.
+        User auth token is valid, but invalid data provided (ids other than int). It should result in bad request error.
         """
-        response = requests.delete(self.URL, headers=headers,
-                                   data=json.dumps({'ids': [sms_campaign_of_user_first['id']].extend(invalid_id)}))
-        assert response.status_code == InvalidUsage.http_status_code(), 'It should be a bad request (400)'
+        CampaignsTestsHelpers.campaigns_delete_with_invalid_data(self.URL, access_token_first, SmsCampaign)
 
     def test_campaigns_delete_with_authorized_ids(self, headers, user_first, sms_campaign_of_user_first):
         """
@@ -406,12 +401,12 @@ class TestSmsCampaignHTTPDelete(object):
         """
         response = requests.delete(self.URL, headers=headers,
                                    data=json.dumps({'ids': [sms_campaign_in_other_domain['id']]}))
-        assert response.status_code == ForbiddenError.http_status_code(), 'It should result in forbidden error (403)'
+        CampaignsTestsHelpers.assert_non_ok_response(response, ForbiddenError.http_status_code())
 
     def test_delete_campaigns_of_multiple_users(self, headers, user_first, sms_campaign_of_other_user_in_same_domain,
                                                 sms_campaign_of_user_first):
         """
-        Test with one SMS campaigns in a domian. It should result in OK response.
+        Test with one SMS campaigns in a domain. It should result in OK response.
         """
         response = requests.delete(self.URL, headers=headers,
                                    data=json.dumps({'ids': [sms_campaign_of_other_user_in_same_domain['id'],
@@ -424,10 +419,19 @@ class TestSmsCampaignHTTPDelete(object):
         ResourceNotFound error.
         """
         campaign_id = sms_campaign_of_user_first['id']
-        response = requests.delete(self.URL, headers=headers, data=json.dumps({ 'ids': [campaign_id]}))
+        response = requests.delete(self.URL, headers=headers, data=json.dumps({'ids': [campaign_id]}))
         assert_campaign_delete(response, user_first.id, campaign_id)
         response_after_delete = requests.delete(self.URL, headers=headers, data=json.dumps({'ids': [campaign_id]}))
-        assert response_after_delete.status_code == ResourceNotFound.http_status_code()
+        CampaignsTestsHelpers.assert_non_ok_response(response_after_delete, ResourceNotFound.http_status_code())
+
+    def test_campaigns_delete_with_unexpected_fields_in_data(self, sms_campaign_of_user_first, access_token_first,
+                                                             user_phone_1):
+        """
+        This adds unexpected field in data to delete campaigns. It should result in Invalid usage error.
+        """
+        campaign_id = sms_campaign_of_user_first['id']
+        CampaignsTestsHelpers.test_api_with_with_unexpected_field_in_data(self.HTTP_METHOD, self.URL,
+                                                                          access_token_first, {'ids': [campaign_id]})
 
 
 def _delete_created_number_of_user(user):

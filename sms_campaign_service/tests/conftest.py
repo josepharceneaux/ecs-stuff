@@ -3,38 +3,26 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This file contains pyTest fixtures for tests of SMS Campaign Service.
 """
-# Standard Import
-import json
-from datetime import (datetime, timedelta)
-
 # Third Party
 from requests import codes
-from dateutil.relativedelta import relativedelta
 from sqlalchemy.orm.exc import ObjectDeletedError
 
 # Application Specific
 # common conftest
-from sms_campaign_service.common.tests.conftest import \
-    (db, pytest, fake, requests, gen_salt, user_auth, access_token_first,
-     sample_client, test_domain, first_group, domain_first, user_first, candidate_first,
-     test_domain_2, second_group, domain_second, candidate_second,
-     user_same_domain, user_from_diff_domain, access_token_second, talent_pipeline, talent_pool,
-     access_token_other, access_token_same, talent_pool_other, talent_pipeline_other, get_auth_header)
+from sms_campaign_service.common.tests.conftest import *
 
 # Service specific
-from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
+from sms_campaign_service.modules.constants import (TWILIO, MOBILE_PHONE_LABEL)
 from sms_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from sms_campaign_service.tests.modules.common_functions import (assert_api_send_response,
-                                                                 assert_campaign_schedule,
                                                                  delete_test_scheduled_task,
                                                                  assert_campaign_creation,
                                                                  candidate_ids_associated_with_campaign,
                                                                  reply_and_assert_response,
-                                                                 assert_campaign_delete)
-from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO, MOBILE_PHONE_LABEL,
-                                                                     TWILIO_TEST_NUMBER,
-                                                                     TWILIO_INVALID_TEST_NUMBER)
+                                                                 assert_campaign_delete, generate_campaign_data,
+                                                                 generate_campaign_schedule_data,
+                                                                 remove_any_user_phone_record_with_twilio_test_number)
 
 # Database Models
 from sms_campaign_service.common.models.user import UserPhone
@@ -44,36 +32,7 @@ from sms_campaign_service.common.models.candidate import (PhoneLabel, CandidateP
 
 # Common Utils
 from sms_campaign_service.common.routes import CandidateApiUrl
-from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from sms_campaign_service.common.campaign_services.tests_helpers import (CampaignsTestsHelpers, FixtureHelpers)
-
-# This is data to create/update SMS campaign
-CREATE_CAMPAIGN_DATA = {"name": "TEST SMS Campaign",
-                        "body_text": "Hi all, we have few openings at https://www.gettalent.com",
-                        "smartlist_ids": ""
-                        }
-
-
-# This is data to schedule an SMS campaign
-def generate_campaign_schedule_data():
-    """
-    This returns a dictionary to schedule an sms-campaign
-    """
-    return {"frequency_id": Frequency.ONCE,
-            "start_datetime": DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=1)),
-            "end_datetime": DatetimeUtils.to_utc_str(datetime.utcnow() + relativedelta(days=+5))}
-
-
-def remove_any_user_phone_record_with_twilio_test_number():
-    """
-    This function cleans the database tables user_phone and candidate_phone.
-    If any record in these two tables has phone number value either TWILIO_TEST_NUMBER or
-    TWILIO_INVALID_TEST_NUMBER, we remove all those records before running the tests.
-    """
-    records = UserPhone.get_by_phone_value(TWILIO_TEST_NUMBER)
-    records += UserPhone.get_by_phone_value(TWILIO_INVALID_TEST_NUMBER)
-    map(UserPhone.delete, records)
-
 
 # clean database tables user_phone and candidate_phone first
 remove_any_user_phone_record_with_twilio_test_number()
@@ -99,32 +58,6 @@ def headers_same_domain(access_token_same):
     return get_auth_header(access_token_same)
 
 
-@pytest.fixture(params=['user_first', 'user_same_domain'])
-def headers_for_different_users_of_same_domain(request, headers, headers_same_domain,
-                                               user_same_domain):
-    """
-    This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
-    using their respective headers.
-    """
-    if request.param == 'user_first':
-        return headers
-    elif request.param == 'user_same_domain':
-        return headers_same_domain
-
-
-@pytest.fixture(params=['user_first', 'user_same_domain'])
-def access_token_for_different_users_of_same_domain(request, access_token_first, access_token_same,
-                                                    user_same_domain):
-    """
-    This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
-    using their access_tokens.
-    """
-    if request.param == 'user_first':
-        return access_token_first
-    elif request.param == 'user_same_domain':
-        return access_token_same
-
-
 @pytest.fixture()
 def headers_other(access_token_other):
     """
@@ -133,6 +66,19 @@ def headers_other(access_token_other):
     :param access_token_other: fixture to get access token of user from some other domain
     """
     return get_auth_header(access_token_other)
+
+
+@pytest.fixture(params=['user_first', 'user_same_domain'])
+def data_for_different_users_of_same_domain(request, access_token_first, access_token_same,
+                                            user_first, user_same_domain, headers, headers_same_domain):
+    """
+    This fixture is used to test the API with two users of same domain("user_first" and "user_same_domain")
+    using their access_tokens. This returns a dict containing access_token, user object and auth headers.
+    """
+    if request.param == 'user_first':
+        return {'access_token': access_token_first, 'user': user_first, 'headers': headers}
+    elif request.param == 'user_same_domain':
+        return {'access_token': access_token_same, 'user': user_same_domain, 'headers': headers_same_domain}
 
 
 @pytest.fixture()
@@ -185,29 +131,21 @@ def campaign_valid_data(smartlist_with_two_candidates):
     """
     This returns the valid data to save an SMS campaign in database
     """
-    campaign_data = CREATE_CAMPAIGN_DATA.copy()
+    campaign_data = generate_campaign_data()
     campaign_data['smartlist_ids'] = [smartlist_with_two_candidates[0]]
     return campaign_data
 
 
-@pytest.fixture(params=['name', 'body_text', 'smartlist_ids'])
+@pytest.fixture(params=generate_campaign_data().keys())
 def invalid_data_for_campaign_creation(request):
     """
     This function returns the data to create an sms-campaign. It also removes a required
     field from data to make it invalid.
     Required fields are 'name', 'body_text', 'smartlist_ids'
     """
-    campaign_data = CREATE_CAMPAIGN_DATA.copy()
+    campaign_data = generate_campaign_data()
     del campaign_data[request.param]
     return campaign_data, request.param
-
-
-@pytest.fixture(params=[0, 'a', '1', None, dict(), list()])
-def invalid_id(request):
-    """
-    This function returns invalid Ids to create/update/delete an sms-campaign.
-    """
-    return [request.param]
 
 
 @pytest.fixture()
@@ -444,12 +382,12 @@ def one_time_and_periodic(request, headers):
 
 
 @pytest.fixture()
-def scheduled_sms_campaign_of_user_first(request, user_first, headers,
+def scheduled_sms_campaign_of_user_first(request, user_first, access_token_first, headers,
                                          sms_campaign_of_user_first):
     """
     This creates the SMS campaign for user_first using valid data.
     """
-    campaign = _get_scheduled_campaign(user_first, sms_campaign_of_user_first, headers)
+    campaign = _get_scheduled_campaign(user_first, sms_campaign_of_user_first, access_token_first)
 
     def delete_scheduled_task():
         _unschedule_campaign(campaign, headers)
@@ -459,14 +397,12 @@ def scheduled_sms_campaign_of_user_first(request, user_first, headers,
 
 
 @pytest.fixture()
-def scheduled_sms_campaign_of_other_domain(request, user_from_diff_domain,
-                                           headers_other, sms_campaign_in_other_domain):
+def scheduled_sms_campaign_of_other_domain(request, user_from_diff_domain, headers_other,
+                                           access_token_other, sms_campaign_in_other_domain):
     """
     This creates the SMS campaign for user_from_diff_domain using valid data.
     """
-    campaign = _get_scheduled_campaign(user_from_diff_domain,
-                                       sms_campaign_in_other_domain,
-                                       headers_other)
+    campaign = _get_scheduled_campaign(user_from_diff_domain, sms_campaign_in_other_domain, access_token_other)
 
     def delete_scheduled_task():
         _unschedule_campaign(campaign, headers_other)
@@ -811,16 +747,18 @@ def _create_candidate_mobile_phone(candidate, phone_value):
     return candidate_phone
 
 
-def _get_scheduled_campaign(user, campaign, auth_header):
+def _get_scheduled_campaign(user, campaign, access_token):
     """
     This schedules the given campaign and return it.
     """
-    response = requests.post(
-        SmsCampaignApiUrl.SCHEDULE % campaign['id'], headers=auth_header,
-        data=json.dumps(generate_campaign_schedule_data()))
-    assert_campaign_schedule(response, user.id, campaign['id'])
+    CampaignsTestsHelpers.assert_campaign_schedule_or_reschedule('post',
+                                                                 SmsCampaignApiUrl.SCHEDULE,
+                                                                 access_token, user.id, campaign['id'],
+                                                                 SmsCampaignApiUrl.CAMPAIGN,
+                                                                 generate_campaign_schedule_data())
     # GET campaign from API, now it should have scheduler_task_id associated with it.
-    response = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign['id'], headers=auth_header)
+    response = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign['id'],
+                            headers={'Authorization': 'Bearer %s' % access_token})
     assert response.ok
     return response.json()['campaign']
 
