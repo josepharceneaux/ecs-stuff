@@ -64,8 +64,7 @@ class TestSmsCampaignSends(object):
                                                               self.URL, self.HTTP_METHOD,
                                                               access_token_first)
 
-    def test_get_with_valid_token_and_two_sends(self,
-                                                access_token_for_different_users_of_same_domain,
+    def test_get_with_valid_token_and_two_sends(self, data_for_different_users_of_same_domain,
                                                 sent_campaign_and_blast_ids):
         """
         This is the case where we assume we have sent the campaign to 2 candidates. We are
@@ -77,7 +76,7 @@ class TestSmsCampaignSends(object):
         This runs for both users
         1) Who created the campaign and 2) Some other user of same domain
         """
-        access_token = access_token_for_different_users_of_same_domain
+        access_token = data_for_different_users_of_same_domain['access_token']
         campaign, blast_ids = sent_campaign_and_blast_ids
         candidate_ids = candidate_ids_associated_with_campaign(campaign, access_token)
         CampaignsTestsHelpers.assert_blast_sends(campaign, 2,

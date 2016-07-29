@@ -41,7 +41,7 @@ class TestSmsCampaignBlastsWithId(object):
             self.URL % ('%s', blast_ids[0]), self.HTTP_METHOD, access_token_first)
 
     def test_get_blast_with_two_sends_one_reply(self,
-                                                access_token_for_different_users_of_same_domain,
+                                                data_for_different_users_of_same_domain,
                                                 sent_campaign_and_blast_ids,
                                                 create_campaign_replies):
         """
@@ -57,12 +57,11 @@ class TestSmsCampaignBlastsWithId(object):
         CampaignsTestsHelpers.assert_blast_sends(
             campaign, expected_sends,
             blast_url=SmsCampaignApiUrl.BLAST % (campaign['id'], blast_ids[0]),
-            access_token=access_token_for_different_users_of_same_domain)
+            access_token=data_for_different_users_of_same_domain['access_token'])
 
         response = requests.get(
             self.URL % (campaign['id'], blast_ids[0]),
-            headers=dict(
-                Authorization='Bearer %s' % access_token_for_different_users_of_same_domain))
+            headers=data_for_different_users_of_same_domain['headers'])
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY,
                                                             check_count=False)
         json_resp = response.json()[self.ENTITY]
