@@ -464,7 +464,6 @@ def normalize_value(value):
     return value.strip().lower()
 
 
-@contract
 def send_request(method, url, access_token, data=None, params=None, is_json=True, verify=True):
     """
     This is a generic method to send HTTP request. We can just pass our data/ payload
