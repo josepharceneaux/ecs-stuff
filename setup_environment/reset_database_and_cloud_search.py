@@ -26,6 +26,7 @@ flush_redis_entries = ['apscheduler.jobs', 'apscheduler.run_times', 'count_*_req
 app = TalentFlask(__name__)
 load_gettalent_config(app.config)
 
+print("SQLALCHEMY_DATABASE_URI: " + str(app.config['SQLALCHEMY_DATABASE_URI']))
 if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'jenkins']:
     print "You can reset your database and CloudSearch domain only in 'dev' or 'jenkins' environment"
     raise SystemExit(0)
