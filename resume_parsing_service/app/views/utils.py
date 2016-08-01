@@ -197,37 +197,6 @@ def gen_hash_from_file(_file):
     return hashlib.md5(_file.read()).hexdigest()
 
 
-def send_abbyy_email():
-    """
-    Function to send warning emails in the event Abbyy is out of credits. If RPS uses ses
-    functionality more this can be made more modular.
-    :return dict:
-    """
-
-    email_client = boto3.client('ses', region_name='us-east-1')
-    # Send to work/personal of DRI as well as Osman as back up in the event DRI is unavailable.
-    recipients = ['erik@gettalent.com', 'erikdfarmer@gmail.com', 'osman@gettalent.com']
-    ses_source = 'no-reply@gettalent.com'
-    subject = 'RED ALERT - Abbyy OCR is out of credits!'
-    body = 'Purchase credits from: https://cloud.ocrsdk.com/Account/Welcome immediately\n'
-
-    response = email_client.send_email(
-        Source=ses_source,
-        Destination={'ToAddresses': recipients},
-        Message={
-            'Subject': {
-                'Data': subject
-            },
-            'Body': {
-                'Text': {
-                    'Data': body
-                }
-            }
-        }
-    )
-    return response
-
-
 def resume_file_from_params(parse_params):
     """
     Obtains a resume from the POST JSON data.
