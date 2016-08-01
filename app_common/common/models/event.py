@@ -95,5 +95,8 @@ class Event(db.Model):
         :type social_network_event_id: str
         :return:
         """
+        # TODO: Remove redundant :return: and kindly keep this in mind for future
+        # TODO: Add rtype
+        # TODO: This is only filtering and not returning any list as mentioned in docs
         assert social_network_event_id
         return cls.query.filter_by(social_network_event_id=social_network_event_id)

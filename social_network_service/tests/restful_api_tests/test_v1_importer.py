@@ -11,13 +11,15 @@ from social_network_service.common.models.event import Event
 from social_network_service.common.models.rsvp import RSVP
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.routes import SocialNetworkApiUrl
+# TODO: I think no need to import these
 from social_network_service.common.tests.api_conftest import user_first, token_first, talent_pool
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import get_class
 from social_network_service.social_network_app import logger
 from social_network_service.common.utils.handy_functions import send_request
 
-
+# TODO: Do we have a test where user has no talent-pool?
+# TODO: Do we have a test where we run importer more than once and assert that only one entry saves in DB, respective tables?
 class Test_Event_Importer:
     """
     - This class contains tests for both event importer and RSVP importer for
@@ -42,6 +44,7 @@ class Test_Event_Importer:
             event from social network website in the finalizer of
             meetup_event_dict.
         """
+        # TODO: I think docs are not correct
         event = meetup_event_dict['event']
         meetup_event_dict['id'] = event.id
         social_network_event_id = event.social_network_event_id
@@ -79,6 +82,7 @@ class Test_Event_Importer:
             event to delete newly created event from social network website in
             the finalizer of meetup_event_dict.
         """
+        # TODO: I think docs are not correct
         event = meetup_event_dict['event']
         social_network_event_id = event.social_network_event_id
         user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
@@ -137,6 +141,7 @@ class Test_Event_Importer:
                    'rsvp': 'no'}
         response = http_request('POST', url, params=payload, headers=sn.headers)
         assert response.ok is True
+        # TODO: I think print will be helpful in terms of jenkins
         logger.debug('RSVP has been posted successfully')
         social_network_rsvp_id = response.json()['rsvp_id']
         sn.headers = {'Authorization': 'Bearer invalid_token'}
@@ -170,6 +175,7 @@ class Test_Event_Importer:
         - We add 'id' of newly created event to delete it from social network
             website in the finalizer of meetup_event_dict.
         """
+        # TODO: Outdated docs w.r.t params: Applies to more than one places
         event = meetup_event_dict['event']
         social_network_event_id = event.social_network_event_id
         user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
@@ -220,7 +226,7 @@ class Test_Event_Importer:
         - We add 'id' of newly created event to delete it from social network
             website in the finalizer of meetup_event_dict.
         """
-
+        # TODO: Didn't understand difference between this and test_meetup_rsvp_importer_with_valid_token()?
         headers = dict(Authorization='Bearer %s' % token_first)
         headers['Content-Type'] = 'application/json'
         response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('rsvp', 'meetup'), headers=headers)
@@ -234,7 +240,7 @@ class Test_Event_Importer:
         - Then check if event event is imported correctly or not
         """
         social_network_event_id = '26557579435'
-        user_id = 1
+        user_id = 1  # TODO: Why 1? why not user_first fixture?
         event = Event.get_by_user_and_social_network_event_id(user_id=user_id,
                                                               social_network_event_id=social_network_event_id)
 
@@ -252,13 +258,13 @@ class Test_Event_Importer:
         response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'eventbrite'),
                                  headers=headers)
         assert response.status_code == 200
-        sleep(80)
+        sleep(80)  # TODO: See if we can do polling here: Applies to more than one places
         db.db.session.commit()
         event = Event.get_by_user_and_social_network_event_id(user_id=user_id,
                                                               social_network_event_id=social_network_event_id)
         assert event
 
-        Event.delete(event.id)
+        Event.delete(event.id) # TODO: Why not delete from API endpoint?
 
     def test_eventbrite_rsvp_importer_endpoint(self, token_first):
         """

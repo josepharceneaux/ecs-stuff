@@ -60,6 +60,9 @@ class RsvpEventImporter(Resource):
     decorators = [require_oauth(allow_null_user=True)]
 
     def post(self, mode, social_network):
+        #TODO: Describe params
+        # TODO: Is this social-network object? or social-network-name?
+        # TODO: Have we dicsussed this magic constant with Osman?
         # Lock the importer for 3500 seconds. So that someone doesn't make multiple requests to this endpoint
         import_lock_key = 'Importer_Lock'
         if not redis_store.get(import_lock_key):
@@ -67,10 +70,10 @@ class RsvpEventImporter(Resource):
         else:
             raise InvalidUsage('Importer is locked at the moment. Please try again later.')
         # Start celery rsvp importer method here.
-        if mode.lower() not in ["event", "rsvp"]:
+        if mode.lower() not in ["event", "rsvp"]: # TODO: Better to make constants of these as this is 2nd place I have seen these
             raise InvalidUsage("There is no mode with name %s found" % mode)
 
-        if not (social_network.lower() in ["meetup", "eventbrite"]):
+        if not (social_network.lower() in ["meetup", "eventbrite"]):  # TODO: I think we can avoid hard coding these
             raise InvalidUsage("No social network with name %s found." % social_network)
 
         social_network_name = social_network.lower()
@@ -91,8 +94,8 @@ class RsvpEventImporter(Resource):
             for user_credentials in all_user_credentials:
                 # Get last updated time of current user_credentials if NULL, then run event importer for that user
                 # first time and get all events otherwise get events from last_updated date
-                datetime_range = {}
-                if mode == 'event':
+                datetime_range = {}  # TODO: Is comment updating this line?
+                if mode == 'event':  # TODO: Use constant instead
                     last_updated = \
                         user_credentials.last_updated if user_credentials.updated_datetime else datetime.datetime(
                             2000, 1, 1)
@@ -100,6 +103,7 @@ class RsvpEventImporter(Resource):
                         'date_range_start': DatetimeUtils.to_utc_str(last_updated),
                         'date_range_end': DatetimeUtils.to_utc_str(datetime.datetime.utcnow())
                     })
+                    # TODO: We have social network object here. I think pass that rather than getting again inside this function
                 rsvp_events_importer.apply_async([social_network, mode, user_credentials.id, datetime_range])
         else:
             logger.error('User Credentials not found for social network %s'
@@ -113,20 +117,23 @@ def schedule_importer_job():
     Schedule 4 general jobs that hits Event and RSVP importer endpoint every hour.
     :return:
     """
+    # TODO: Remove empty :return: KLindly double check at every other place.
     task_name_meetup = 'Retrieve_Meetup_%s'
     task_name_eventbrite = 'Retrieve_Eventbrite_%s'
 
-    url = SocialNetworkApiUrl.IMPORTER % ('event', 'meetup')
+    url = SocialNetworkApiUrl.IMPORTER % ('event', 'meetup')  # TODO: Use constants instead
     schedule_job(task_name=task_name_meetup % 'events', url=url)
 
-    url = SocialNetworkApiUrl.IMPORTER % ('event', 'eventbrite')
+    url = SocialNetworkApiUrl.IMPORTER % ('event', 'eventbrite')  # TODO: Use constants instead
     schedule_job(task_name=task_name_eventbrite % 'events', url=url)
 
-    url = SocialNetworkApiUrl.IMPORTER % ('rsvp', 'meetup')
+    url = SocialNetworkApiUrl.IMPORTER % ('rsvp', 'meetup')  # TODO: Use constants instead
     schedule_job(task_name=task_name_meetup % 'rsvp', url=url)
 
-    url = SocialNetworkApiUrl.IMPORTER % ('rsvp', 'eventbrite')
+    url = SocialNetworkApiUrl.IMPORTER % ('rsvp', 'eventbrite')  # TODO: Use constants instead
     schedule_job(task_name=task_name_eventbrite % 'rsvp', url=url)
+    # TODO: Where is Facebook? And what if we add some new SocialNetwork? I think code should accomodate that too
+    # TODO: rather than adding new lines for every new social network
 
 
 def schedule_job(url, task_name):
@@ -140,7 +147,7 @@ def schedule_job(url, task_name):
     start_datetime = datetime.datetime.utcnow() + datetime.timedelta(seconds=15)
     # Schedule for next 100 years
     end_datetime = datetime.datetime.utcnow() + datetime.timedelta(weeks=52 * 100)
-
+    # TODO: IMO better to get this from app instance
     env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
     frequency = 120 if env in [TalentEnvs.DEV, TalentEnvs.JENKINS] else 3600
 
@@ -167,9 +174,10 @@ def schedule_job(url, task_name):
 
         response = requests.post(SchedulerApiUrl.TASKS, headers=headers,
                                  data=json.dumps(data))
-        #
+        # TODO: Avoid hardcoded error code
         if not (response.status_code == requests.codes.created or response.json()['error']['code'] == 6057):
             logger.error(response.text)
             raise InternalServerError(error_message='Unable to schedule Meetup importer job')
     elif response.status_code == requests.codes.ok:
         logger.info('Job already scheduled. %s' % response.text)
+    # TODO: Just wondaring, what about simple else?

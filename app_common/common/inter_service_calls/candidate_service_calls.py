@@ -111,7 +111,7 @@ def create_or_update_candidate(oauth_token, data, return_candidate_ids_only=Fals
     else it will return the created candidate response json object
     Returns: list of created candidate ids
     # """
-
+    # TODO: Above line should not be a comment - remove hash
     resp = send_request('post',
                         url=CandidateApiUrl.CANDIDATES,
                         headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token,
@@ -121,6 +121,7 @@ def create_or_update_candidate(oauth_token, data, return_candidate_ids_only=Fals
     data_resp = resp.json()
     # Candidate already exists. So, we update candidate data and return candidate id
     # 3013 error code represents candidate already exists.
+    # TODO: Avoid hard coded error code
     if resp.status_code == requests.codes.bad and data_resp['error']['code'] == 3013:
         data['candidates'][0]['id'] = data_resp['error']['id']
         patch_resp = send_request('patch',
@@ -132,11 +133,13 @@ def create_or_update_candidate(oauth_token, data, return_candidate_ids_only=Fals
                                   data=json.dumps(data)
                                   )
         if return_candidate_ids_only:
+            # TODO: If it will always be one candidate, why not simply return Id? rather than list
             return [candidate['id'] for candidate in patch_resp.json()['candidates']]
         else:
             return patch_resp.json()
     assert resp.status_code == requests.codes.created
     if return_candidate_ids_only:
+        # TODO: If it will always be one candidate, why not simply return Id? rather than list
         return [candidate['id'] for candidate in resp.json()['candidates']]
     return resp.json()
 

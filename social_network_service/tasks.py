@@ -28,6 +28,8 @@ def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetim
     :param app: Flask app
     :return:
     """
+    # TODO: No param "app"
+    # TODO: Add types of params
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
         user_credentials = UserSocialNetworkCredential.get_by_id(user_credentials_id)

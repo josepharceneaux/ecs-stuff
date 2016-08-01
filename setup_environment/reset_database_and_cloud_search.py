@@ -85,6 +85,7 @@ print 'Generating initial test data'
 
 
 create_dummy_users()
+# TODO: Add comment about following query
 q = '''INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '1', '18', NULL, '217041', '164351364314', 'YZASRSWZO5CWKSEXMELQ');'''
 sql = text(q)
 result = db.engine.execute(sql)

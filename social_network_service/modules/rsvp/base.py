@@ -121,6 +121,7 @@ class RSVPBase(object):
     - To understand how the RSVP importer works, we have an example here.
         We make the object of this class while importing RSVPs both through
         social_network.
+        # TODO: Need to update docs
 
         :Example:
 
@@ -153,6 +154,7 @@ class RSVPBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
+        # TODO: better to do as, if not .. raise
         if isinstance(kwargs.get('user_credentials'), UserSocialNetworkCredential):
             self.user_credentials = kwargs.get('user_credentials')
             self.user = User.get_by_id(self.user_credentials.user_id)
@@ -229,7 +231,7 @@ class RSVPBase(object):
             EventBase class inside social_network_service/event/base.py.
 
         - We use this method while importing RSVPs through social_network.
-
+        # TODO: Through nightly script which fetches data from different social networks
         **See Also**
             .. seealso:: process_events_rsvps() method in EventBase class
             inside social_network_service/event/base.py
@@ -329,6 +331,7 @@ class RSVPBase(object):
             RSVPBase class inside social_network_service/rsvp/base.py.
 
         - We use this method while importing RSVPs through social network
+        # TODO: Through nightly script which fetches data from different social networks
 
         :Example:
             - rsvp_obj = Meetup(social_network=self.social_network,
@@ -344,6 +347,8 @@ class RSVPBase(object):
         """
         try:
             attendee = self.get_attendee(rsvp)
+            # TODO: we can log more info. i.e. user_id, social_network_id etc
+            # TODO: This should be logger.error(), no?
             if not attendee:
                 logger.info('Attendee object couldn\'t be created')
                 return
@@ -453,6 +458,8 @@ class RSVPBase(object):
         :return attendee:
         :rtype: Attendee
         """
+        # TODO: "from social_network_service.modules.utilities import Attendee" on top so rtype is recognized
+        # TODO: Seems self.user_access_token.access_token confusing, maybe need to rename
         headers = {'Authorization': 'Bearer {}'.format(self.user_access_token.access_token),
                    "Content-Type": "application/json"}
 
@@ -466,13 +473,16 @@ class RSVPBase(object):
                                 headers=headers,
                                 data=json.dumps(candidate_source))
 
-        # Source already exist
+        # Source already exists
         if response.status_code == requests.codes.bad:
             attendee.candidate_source_id = response.json()['error']['source_id']
         elif response.status_code != requests.codes.created:
             logger.exception(response.text)
             raise InternalServerError(error_message="Error while creating candidate source")
         else:
+            # TODO: Response on Apiary is different http://docs.gettalentuserservice.apiary.io/#reference/source/sources-resource/create-source
+            # TODO: Kidnly double check this
+
             attendee.candidate_source_id = response.json()['source']['id']
 
         return attendee
@@ -523,6 +533,7 @@ class RSVPBase(object):
                 'talent_pool_ids': dict(add=talent_pool_ids)
                 }
         social_network_data = {
+            # TODO: PEP08 warning
              'name': attendee.event.social_network.name,
              'profile_url': attendee.social_profile_url
         }
@@ -549,6 +560,8 @@ class RSVPBase(object):
 
         # We need to refresh token if token is expired. For that send request to auth service and request a
         # refresh token.
+        # TODO: This can be used at multi places(In CampaignBase as well), IMO make a helper function for this
+        # TODO: or maybe there is already some function for this
         if self.user_access_token and \
                             (self.user_access_token.expires - timedelta(seconds=REQUEST_TIMEOUT)) < datetime.utcnow():
             data = {
@@ -598,8 +611,10 @@ class RSVPBase(object):
         :return attendee:
         :rtype: Attendee
         """
+
         rsvp_in_db = \
             RSVP.get_by_vendor_rsvp_id_candidate_id_vendor_id_event_id(
+            # TODO: PEP08 violations
             attendee.vendor_rsvp_id,
             attendee.candidate_id,
             attendee.social_network_id,

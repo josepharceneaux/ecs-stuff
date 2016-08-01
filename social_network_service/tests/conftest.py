@@ -35,7 +35,9 @@ EVENT_DATA = {
     "title": "Test Event",
     "description": "Test Event Description",
     "registration_instruction": "Just Come",
+    # TODO: utcnow
     "start_datetime": (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+    # TODO: utcnow
     "end_datetime": (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
     "group_url_name": "QC-Python-Learning",
     "social_network_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
@@ -63,6 +65,7 @@ def token(request, user_auth, user_first, talent_pool):
     :param user_first: fixture in common/tests/conftest.py
     :return token
     """
+    # TODO: Either define all params or define no one: Applies to more than one places
     auth_token_obj = user_auth.get_auth_token(user_first, get_bearer_token=True)
     return auth_token_obj['access_token']
 
@@ -258,7 +261,7 @@ def meetup_event_with_user_first(request, user_first, test_meetup_credentials, m
     assert response.status_code == 201
 
     data = response.json()
-    db.session.commit()
+    db.session.commit()  # TODO: I don't think we need this
     event = Event.get_by_id(data['id'])
     event_id = event.id
 
@@ -284,6 +287,7 @@ def auth_header(request, token_first):
     :param auth_data: fixture to get access token
     :return: header dict object
     """
+    # TODO: request is unused: Applies to more than one places
     header = {'Authorization': 'Bearer ' + token_first,
               'Content-Type': 'application/json'}
     return header

@@ -10,6 +10,7 @@ from datetime import datetime
 from datetime import timedelta
 
 # Application specific
+# TODO: unused import
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.common.utils.handy_functions import http_request
@@ -109,11 +110,12 @@ class Eventbrite(EventBase):
         self.social_network_event_id = None
         self.ticket_payload = None
         self.venue_payload = None
+        # TODO: datetime.now() -> datetime.utcnow()
         self.start_date_in_utc =\
             kwargs.get('date_range_start') \
             or (datetime.now() -
                 timedelta(days=60)).strftime("%Y-%m-%dT%H:%M:%SZ")
-
+        # TODO: datetime.now() -> datetime.utcnow()
         self.end_date_in_utc =\
             kwargs.get('date_range_end') \
             or datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -127,12 +129,15 @@ class Eventbrite(EventBase):
                                     a specific social network in db.
         :type user_credentials: common.models.user.UserSocialNetworkCredential
         """
+        # TODO: Need to update docs
+        # TODO: It seems rsvp_data is unused, maybe need to remove this
         # get_required class under rsvp/ to process rsvps
         sn_rsvp_class = get_class(self.social_network.name, 'rsvp')
         # create object of selected rsvp class
         sn_rsvp_obj = sn_rsvp_class(user_credentials=user_credentials,
                                     headers=self.headers,
                                     social_network=self.social_network,
+                                    # TODO: PEP08 warning in line below
                                      kwargs=kwargs
                                     )
         rsvps = sn_rsvp_obj.get_all_rsvps()
@@ -274,6 +279,7 @@ class Eventbrite(EventBase):
                 about=organizer['description']
                 if organizer.has_key('description') else ''
             )
+            # TODO: Duplicating line 290? Why repetition?
             organizer_data['about'] = organizer_data['about'].get('html', '') if type(organizer_data['about']) == dict \
                 else ''
             organizer_in_db = EventOrganizer.get_by_user_id_and_name(

@@ -140,6 +140,7 @@ class TestEventById(object):
         datetime_now = datetime.datetime.now()
         datetime_now = datetime_now.replace(microsecond=0)
         event['title'] = 'Test update event'
+        # TODO: We can avoid hard coded format.
         event['start_datetime'] = (datetime_now + datetime.timedelta(days=50)).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
         event['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
         response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token_first, data=event)

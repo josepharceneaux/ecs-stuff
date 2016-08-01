@@ -182,6 +182,7 @@ class SocialNetworkBase(object):
         :param SocialNetwork | None social_network: Social Network object
         :param bool validate_credentials: If True, this will validate the credentials of user for given social network.
         """
+        # TODO: new param **kwargs is unused.
         self.events = []
         self.api_relative_url = None
         self.user, self.social_network = self.get_user_and_social_network(user_id, social_network_id)
@@ -275,6 +276,7 @@ class SocialNetworkBase(object):
             inside social_network_service/manager.py.
         """
         social_network_id = self.social_network.id
+        # TODO: IMO no need to save it new var when it is available in self
         user_id = self.user.id
         social_network_name = self.social_network.name
         try:

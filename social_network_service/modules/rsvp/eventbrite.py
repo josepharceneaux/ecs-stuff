@@ -9,6 +9,7 @@ from datetime import datetime
 from base import RSVPBase
 
 # Application Specific
+#TODO: Added unused import
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.models.event import Event
 from social_network_service.common.utils.handy_functions import http_request
@@ -64,10 +65,12 @@ class Eventbrite(RSVPBase):
             You can learn more about webhook and eventbrite API from following
             link - https://www.eventbrite.com/developer/v3/
         """
+    # TODO: We can make example of code in docs clearer by >>> symbol
 
     def __init__(self, *args, **kwargs):
         super(Eventbrite, self).__init__(*args, **kwargs)
 
+    # TODO: I think this is no longer needed
     @staticmethod
     def get_rsvp_id(url):
         """
@@ -92,6 +95,7 @@ class Eventbrite(RSVPBase):
         :param events: Eventbrite events object
         :return: list of rsvps
         """
+        # TODO: Unused param events
         rsvp_url = self.api_url + '/users/%s/owned_event_attendees'
         response = http_request('GET', headers=self.headers,
                                 url=rsvp_url
@@ -119,7 +123,10 @@ class Eventbrite(RSVPBase):
         return all_rsvps
 
     def get_rsvps(self, event):
+        # TODO: Add docs why only pass here
         pass
+        # TODO: I think we can retrieve attendees of a single event of Eventbrite.
+        # TODO: See this url = self.api_url + "/events/" + str(event.social_network_event_id) + '/attendees/'
 
     def get_attendee(self, rsvp):
         """
@@ -150,13 +157,14 @@ class Eventbrite(RSVPBase):
             .. seealso:: process_rsvps_via_webhook() method in class Eventbrite
                 inside social_network_service/rsvp/eventbrite.py
         """
-
+        # TODO: Correct rtype as you did at other places
         # get event_id
         social_network_event_id = rsvp['event_id']
         event = Event.get_by_user_id_social_network_id_vendor_event_id(
             self.user.id, self.social_network.id,
             social_network_event_id)
         if not event:
+            # logger.error?
             logger.info('Event is not present in db, '
                         'social_network_event_id is '
                         '%s. User Id: %s'

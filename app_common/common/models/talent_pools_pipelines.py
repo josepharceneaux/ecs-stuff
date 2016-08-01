@@ -32,6 +32,7 @@ class TalentPool(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    # TODO: IMO We don't need this as we have relationship with user say User.talent_pool. So, IMO, remove this
     @classmethod
     def get_by_user_id(cls, user_id):
         """
@@ -41,6 +42,7 @@ class TalentPool(db.Model):
         :return: talent pools
         :rtype: TalentPool
         """
+        # TODO: rtype is not correct
         return cls.query.filter_by(user_id=user_id)
 
 
