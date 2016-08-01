@@ -454,6 +454,7 @@ class SmsCampaignBase(CampaignBase):
         :param candidates: list of candidates to whom we want to send campaign
         :type candidates: list[Candidate]
         """
+        # TODO: I think call super method here for validation of candidates
         not_owned_ids = []
         multiple_records_ids = []
         candidates_and_phones = []
@@ -480,6 +481,7 @@ class SmsCampaignBase(CampaignBase):
         candidates_and_phones = filter(lambda obj: obj is not None, candidates_and_phones)
         super(SmsCampaignBase, self).pre_process_celery_task(candidates_and_phones)
         if not candidates_and_phones:
+            #TODO: I think need to correct this message. "There is no valid candidate..."
             logger.warn('There is no candidate associated with this campaign. SmsCampaign id (%s)' % self.campaign.id)
         return candidates_and_phones
 

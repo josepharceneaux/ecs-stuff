@@ -367,6 +367,7 @@ class CampaignsTestsHelpers(object):
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(campaign_id, (int, long))
+        # TODO: I think no need of this now
         url += "?asynchronous=1"
         response_post = send_request('post', url,  access_token)
         assert response_post.status_code == requests.codes.OK
@@ -610,6 +611,7 @@ class CampaignsTestsHelpers(object):
             candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                                  return_candidate_ids_only=True)
             if assert_candidates:
+                # TODO: polling does not work here fine when I tried. Has to be some other solution
                 time.sleep(30)  # TODO: Basit, we need to remove this and use polling instead
         smartlist_data = {'name': smartlist_name,
                           'candidate_ids': candidate_ids,

@@ -159,7 +159,7 @@ class TestCeleryTasks(object):
         assert_api_send_response(sms_campaign_with_two_smartlists, response_post, codes.OK)
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
                                                            campaign_id, access_token_first)
-
+    # TODO: Kindly open a JIRA for this
     # TODO: Basit, kindly fix this
     # def test_campaign_send_with_same_candidate_in_multiple_smartlists(
     #         self, access_token_first, user_first,

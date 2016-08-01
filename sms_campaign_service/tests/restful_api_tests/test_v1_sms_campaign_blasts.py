@@ -111,6 +111,7 @@ class TestSmsCampaignBlasts(object):
             CampaignsTestsHelpers.send_campaign(SmsCampaignApiUrl.SEND,
                                                 sent_campaign, access_token_first,
                                                 SmsCampaignApiUrl.BLASTS)
+        # TODO: maybe better to use constants that you defined for attempts etc
         blasts = retry(CampaignsTestsHelpers.get_blasts, sleeptime=3, attempts=20, sleepscale=1,
                        args=(sent_campaign, access_token_first, url), kwargs=dict(count=10),
                        retry_exceptions=(AssertionError,))

@@ -169,7 +169,7 @@ class CampaignBase(object):
         This method will retrieve smartlist candidates over celery
 
     * send_callback(celery_result, campaign_obj)
-        This method is abstract method and child classes  will implement this as celery task.
+        This method is abstract method and child classes will implement this as celery task.
         This method is called when all celery tasks are done with retrieving candidates of all smartlists. It call
         `process_send_campaign()` method to send campaign to those candidates.
 
@@ -1244,6 +1244,7 @@ class CampaignBase(object):
         campaign blast and sends campaign to all candidates using celery.
         :param list[list[int | long]] list celery_result: list of lists of candidates
         """
+        # TODO: correct type as list[list[Candidate]]
         logger = current_app.config[TalentConfigKeys.LOGGER]
         self.refresh_all_db_objects()
         if not celery_result:
@@ -1266,6 +1267,7 @@ class CampaignBase(object):
         .. see also:: pre_process_celery_task() method in SmsCampaignBase class.
         :param candidates:
         """
+        # TODO: Add type of param
         if not candidates:
             logger = current_app.config[TalentConfigKeys.LOGGER]
             logger.warn('No candidates with valid data found for %s(id:%s).' % (self.campaign_type, self.campaign.id))
@@ -1293,6 +1295,7 @@ class CampaignBase(object):
             raise InvalidUsage('No candidates with valid data found for %s(id:%s).'
                                % (self.campaign_type, self.campaign.id),
                                error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
+        # TODO:  As discussed with Zohaib, I think type of objects and type of model should be same
         candidates = Candidate.refresh_all(candidates)
         pre_processed_data = self.pre_process_celery_task(candidates)
         try:
@@ -1824,6 +1827,8 @@ class CampaignBase(object):
         else:
             raise ForbiddenError("You can not get other domain's url_conversion records")
 
+    # TODO: Maybe this will not be particular for campaigns only, so maybe move this to somewhere more appropriate place
+    # TODO: say models_utils.py?
     def refresh_all_db_objects(self):
         """
         In case of celery, when we pass objects from one session to another session, model objects get detached from
@@ -1835,4 +1840,3 @@ class CampaignBase(object):
             obj = getattr(self, key)
             if isinstance(obj, db.Model):
                 setattr(self, key, db.session.merge(obj))
-
