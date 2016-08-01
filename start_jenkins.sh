@@ -72,10 +72,10 @@ if [ $? -ne 0 ] ; then
 fi
 
 # ATS tests need to run separately as parallelism causes DB collisions
-py.test ats_service/tests
-if [ $? -ne 0 ] ; then
-    exit 1
-fi
+# py.test ats_service/tests
+# if [ $? -ne 0 ] ; then
+#     exit 1
+# fi
 
 echo "Tests completed."
 
