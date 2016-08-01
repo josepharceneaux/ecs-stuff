@@ -7,11 +7,11 @@ from os.path import basename
 from os.path import splitext
 from time import time
 import base64
-import json
 # Third Party/Framework Specific.
 from contracts import contract
 from flask import current_app
-import PyPDF2
+import json
+import requests
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.constants import error_constants
@@ -19,7 +19,7 @@ from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_respons
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.ocr_lib import google_vision_ocr
 from resume_parsing_service.app.views.pdf_utils import convert_pdf_to_text, decrypt_pdf
-from resume_parsing_service.common.error_handling import InvalidUsage
+from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.utils.talent_s3 import boto3_put
 
 
@@ -47,8 +47,14 @@ def parse_resume(file_obj, filename_str, cache_key):
     if file_ext == '.pdf':
         file_obj = decrypt_pdf(file_obj)
 
-    if is_resume_image(file_ext, file_obj):
-        # If file is an image, OCR it
+    is_image = is_resume_image(file_ext, file_obj)
+
+    if is_image:
+    # If file is an image, OCR it
+        if file_ext == '.pdf':
+            # If its a PDF replace file obj with a png representation of it.
+            # convert_pdf_to_png will close the old StringIO instance.
+            file_obj = convert_pdf_to_png(file_obj)
         start_time = time()
         doc_content = google_vision_ocr(file_obj)
         logger.info(
@@ -62,6 +68,7 @@ def parse_resume(file_obj, filename_str, cache_key):
     if not doc_content:
         bucket = current_app.config['S3_BUCKET_NAME']
         boto3_put(file_obj.getvalue(), bucket, filename_str, 'FailedResumes')
+        file_obj.close() # Close our file object to free memory buffer.
         logger.exception("Unable to determine the contents of the document: {}".format(filename_str))
         raise InvalidUsage(
             error_message=error_constants.NO_TEXT_EXTRACTED['message'],
@@ -78,6 +85,8 @@ def parse_resume(file_obj, filename_str, cache_key):
             error_code=error_constants.ERROR_ENCODING_TEXT['code']
         )
 
+    # Close our file object to free memory buffer.
+    file_obj.close()
     optic_response = fetch_optic_response(encoded_resume, filename_str)
 
     if optic_response:
@@ -125,3 +134,27 @@ def is_resume_image(file_ext, file_obj):
             resume_is_image = True
 
     return resume_is_image
+
+
+def convert_pdf_to_png(file_obj):
+    api_url = 'https://btw3l0bcc0.execute-api.us-east-1.amazonaws.com/prod'
+    api_key = 'Npr27Oo3A54d6TBmtMNnV8WL8hkvnof1bwJFWi3j'
+    headers = {'x-api-key': api_key}
+
+    pdf_data = file_obj.getvalue()
+    file_obj.close()
+    encoded = base64.b64encode(pdf_data)
+    payload = json.dumps({'pdf_bin': encoded})
+
+    conversion_response = requests.post(api_url, headers=headers, data=payload, timeout=20)
+
+    if conversion_response.status_code != requests.codes.ok:
+        raise InternalServerError('OHNOES')
+
+    content = json.loads(conversion_response.content)
+    img_data = content.get('img_data')
+
+    if not img_data:
+        raise InternalServerError('OHNOES {}'.format(content))
+
+    return StringIO(base64.b64decode(img_data))
