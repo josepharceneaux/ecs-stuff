@@ -38,7 +38,6 @@ from onesignalsdk.one_signal_sdk import OneSignalSdk
 
 # Application Specific
 # Import all model classes from push_campaign module
-from push_campaign_service.common.error_handling import InvalidUsage
 from push_campaign_service.common.models.db import db
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.models.user import User
@@ -49,7 +48,7 @@ from push_campaign_service.common.campaign_services.campaign_base import Campaig
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from push_campaign_service.common.models.push_campaign import (PushCampaign, PushCampaignSend,
                                                                PushCampaignSendUrlConversion)
-from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
+from push_campaign_service.modules.constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 
 
 class PushCampaignBase(CampaignBase):
