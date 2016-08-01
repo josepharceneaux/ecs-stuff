@@ -57,7 +57,7 @@ def fetch_optic_response(resume, filename_str):
         'instanceType': 'TM',
         'locale': 'en_us'
     }
-    bg_response = requests.post(bg_url, headers=headers, json=data)
+    bg_response = requests.post(bg_url, headers=headers, json=data, timeout=20)
 
     if bg_response.status_code != requests.codes.ok:
         raise ForbiddenError(
