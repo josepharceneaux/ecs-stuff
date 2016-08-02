@@ -20,13 +20,14 @@ from contracts import contract
 # Application Specific
 from ..models.db import db
 from ..tests.conftest import fake
-from campaign_utils import get_model, CampaignUtils
 from ..models.smartlist import Smartlist
 from ..routes import CandidatePoolApiUrl
 from custom_errors import CampaignException
 from ..utils.test_utils import get_fake_dict
 from ..models.misc import (Frequency, Activity)
 from ..utils.datetime_utils import DatetimeUtils
+from campaign_utils import get_model, CampaignUtils
+from ..utils.validators import raise_if_not_instance_of
 from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..tests.fake_testing_data_generator import FakeCandidatesData
@@ -83,13 +84,14 @@ class CampaignsTestsHelpers(object):
         """
         This is a helper function to request the given URL after deleting the given resource.
         It should result in ResourceNotFound error.
-        :param dict campaign: dict of campaign object
+        :param type(t) campaign: Campaign object
         :param string url_to_delete_campaign: URL to delete given campaign
         :param string url_after_delete: URL to be requested after deleting the campaign
         :param string method_after_delete: Name of method to be requested after deleting campaign
         :param string access_token: access access_token of logged-in user
         :param dict|None data: Data to be sent in request after deleting campaign
         """
+        raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
         # Delete the campaign first
         response = send_request('delete', url_to_delete_campaign % campaign_id, access_token)
@@ -311,7 +313,7 @@ class CampaignsTestsHelpers(object):
         assert 'No Smartlist'.lower() in error_resp['message'].lower()
 
     @classmethod
-    @contract(campaign=CampaignUtils.MODELS)
+    @contract
     def campaign_send_with_no_smartlist_candidate(cls, url, access_token, campaign, talent_pipeline_id):
         """
         User auth access_token is valid, campaign has one smart list associated. But smartlist has
@@ -319,10 +321,11 @@ class CampaignsTestsHelpers(object):
         response to calling function.
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
+        :param type(t) campaign: Campaign object
         :param positive talent_pipeline_id: Id of talent_pipeline
         """
-        smartlist_id = FixtureHelpers.create_smartlist_with_search_params(access_token,
-                                                                          talent_pipeline_id)
+        raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
+        smartlist_id = FixtureHelpers.create_smartlist_with_search_params(access_token, talent_pipeline_id)
         campaign_type = campaign.__tablename__
         #  Need to do this because cannot make changes until prod is stable
         campaign_smartlist_model = get_model(campaign_type,
@@ -334,15 +337,17 @@ class CampaignsTestsHelpers(object):
         return response_post
 
     @classmethod
-    @contract(campaign=CampaignUtils.MODELS)
+    @contract
     def assert_campaign_failure(cls, response, campaign, expected_status=200):
         """
         If we try to send a campaign with invalid data, e.g. a campaign with no smartlist associated
         or with 0 candidates, the campaign sending will fail. This method asserts that the specified
         campaign sending failed and no blasts have been created.
         :param Response response: HTTP response object
+        :param type(t) campaign: Campaign object
         :param int expected_status: Expected status code
         """
+        raise_if_not_instance_of(campaign, CampaignUtils.MODELS)
         assert response.status_code == expected_status
         assert response.json()
         db.session.commit()
@@ -401,16 +406,18 @@ class CampaignsTestsHelpers(object):
                 assert json_response[entity]
 
     @staticmethod
-    @contract(campaign=CampaignUtils.MODELS or dict)
+    @contract
     def send_campaign(url, campaign, access_token, blasts_url=None):
         """
         This function sends the campaign via /v1/email-campaigns/:id/send or
         /v1/sms-campaigns/:id/send depending on campaign type.
         sleep_time is set to be 20s here. One can modify this by passing required value.
         :param string url: URL to hit for sending given campaign
+        :param type(t) campaign: Campaign object
         :param string access_token: Auth access_token to make HTTP request
         :param string|None blasts_url: URL to get blasts of given campaign
         """
+        raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         # send campaign
         campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
         send_url = url % campaign_id
@@ -425,13 +432,15 @@ class CampaignsTestsHelpers(object):
         return response
 
     @staticmethod
-    @contract(campaign=CampaignUtils.MODELS or dict)
+    @contract
     def get_blasts(campaign, access_token=None, blasts_url=None):
         """
         This returns all the blasts associated with given campaign
+        :param type(t) campaign: Campaign object
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
         """
+        raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         if not blasts_url:
             db.session.commit()
             blasts = campaign.blasts.all()
@@ -442,41 +451,47 @@ class CampaignsTestsHelpers(object):
         return blasts
 
     @staticmethod
-    @contract(campaign=CampaignUtils.MODELS or dict)
+    @contract
     def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=300):
         """
         This polls the result of blasts of a campaign for given timeout (default 300s).
+        :param type(t) campaign: Campaign object
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
         :param positive timeout: No of seconds for retry function
         """
+        raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         attempts = timeout / 3 + 1
         return retry(CampaignsTestsHelpers.get_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
                      args=(campaign, access_token, blasts_url), retry_exceptions=(AssertionError,))
 
     @staticmethod
-    @contract(campaign=CampaignUtils.MODELS or dict)
+    @contract
     def get_blast_by_index_with_polling(campaign, blast_index=0, access_token=None, blasts_url=None, timeout=20):
         """
-        This polls the result of get_blasts_with_index() for given timeout (default 10s).
+        This polls the result of get_blasts_with_index() for given timeout (default 20s).
+        :param type(t) campaign: Campaign object
         :param int blast_index: index of campaign's blast
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
         :param positive timeout: No of seconds for retry function
         """
+        raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         attempts = timeout / 3 + 1
         return retry(CampaignsTestsHelpers.get_blast_with_index, sleeptime=3, attempts=attempts, sleepscale=1,
                      args=(campaign, blast_index, access_token, blasts_url), retry_exceptions=(AssertionError,))
 
     @staticmethod
-    @contract(campaign=CampaignUtils.MODELS or dict)
+    @contract
     def get_blast_with_index(campaign, blast_index=0, access_token=None, blasts_url=None):
         """
         This returns one particular blast associated with given campaign as specified by index.
+        :param type(t) campaign: Campaign object
         :param int blast_index: index of campaign's blast
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
         """
+        raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         if not blasts_url:
             db.session.commit()
             assert len(campaign.blasts.all()) > blast_index
@@ -489,16 +504,18 @@ class CampaignsTestsHelpers(object):
         return blasts
 
     @staticmethod
-    @contract(campaign=CampaignUtils.MODELS or dict)
+    @contract
     def verify_sends(campaign, expected_count, blast_index, blast_url=None, access_token=None):
         """
         This verifies that we get expected number of sends associated with given blast index of
         given campaign.
+        :param type(t) campaign: Campaign object
         :param int expected_count: Expected number of count
         :param int blast_index: index of campaign's blast
         :param string|None blast_url: URL to get blasts of campaign
         :param string|None access_token: Access token of user
         """
+        raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         db.session.commit()
         if not blast_url:
             assert campaign.blasts[blast_index].sends == expected_count
@@ -508,48 +525,54 @@ class CampaignsTestsHelpers(object):
                 assert response.json()['blast']['sends'] == expected_count
 
     @staticmethod
-    @contract(campaign=CampaignUtils.MODELS or dict)
+    @contract
     def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=300,
                            blast_url=None, access_token=None):
         """
         This function asserts that particular blast of given campaign has expected number of sends
+        :param type(t) campaign: Campaign object
         :param int expected_count: Expected number of count
         :param int blast_index: index of campaign's blast
         :param int abort_time_for_sends: timeout for retry function
         :param string|None blast_url: URL to get blasts of campaign
         :param string|None access_token: Access token of user
         """
+        raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         attempts = abort_time_for_sends / 3 + 1
         retry(CampaignsTestsHelpers.verify_sends, sleeptime=5, attempts=attempts, sleepscale=1,
               args=(campaign, expected_count, blast_index, blast_url, access_token),
               retry_exceptions=(AssertionError, IndexError,))
 
     @staticmethod
-    @contract(campaign=CampaignUtils.MODELS or dict)
+    @contract
     def verify_blasts(campaign, expected_count, access_token=None, blasts_url=None):
         """
         This function verifies that given campaign has expected number of blast objects.
         If they are, it returns True, otherwise returns False.
+        :param type(t) campaign: Campaign object
         :param int expected_count: Expected number of blasts of campaign
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
         """
+        raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         received_blasts_count = len(CampaignsTestsHelpers.get_blasts(campaign, access_token, blasts_url))
         print 'Expected Blasts:%s' % expected_count
         print 'Received Blasts:%s' % received_blasts_count
         assert received_blasts_count == expected_count
 
     @staticmethod
-    @contract(campaign=CampaignUtils.MODELS or dict)
+    @contract
     def assert_campaign_blasts(campaign, expected_count, access_token=None, blasts_url=None, timeout=10):
         """
         This function polls verify_blasts() to assert that given campaign has expected number
         of blast objects.
+        :param type(t) campaign: Campaign object
         :param int expected_count: Expected number of count
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
         :param int timeout: timeout for retry function
         """
+        raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         attempts = timeout / 3 + 1
         retry(CampaignsTestsHelpers.verify_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
               args=(campaign, expected_count, access_token, blasts_url),
@@ -710,14 +733,16 @@ class CampaignsTestsHelpers(object):
             CampaignsTestsHelpers.assert_non_ok_response(response)
 
     @staticmethod
-    @contract(campaign_model=CampaignUtils.MODELS)
+    @contract
     def campaigns_delete_with_invalid_data(url, access_token, campaign_model):
         """
         This tests the campaigns' endpoint to delete multiple campaigns with invalid data (non-int ids,
         duplicate ids etc). It should result in Bad Request Error and campaigns should not be removed.
         :param string url: URL on which we are supposed to make HTTP request
         :param string access_token: Access token of user
+        :param type(t) campaign_model: Campaign object
         """
+        raise_if_not_instance_of(campaign_model, CampaignUtils.MODELS)
         invalid_data = [[item] for item in CampaignsTestsHelpers.INVALID_ID]
         non_existing_campaign_id = CampaignsTestsHelpers.get_non_existing_id(campaign_model)
         invalid_data.extend([[non_existing_campaign_id, non_existing_campaign_id]])  # Test for unique items
