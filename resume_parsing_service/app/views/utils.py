@@ -19,7 +19,7 @@ from resume_parsing_service.common.utils.talent_s3 import boto3_get_file
 
 
 @contract
-def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename):
+def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
     """
     Sends candidate dict to candidate service POST and returns response.
     :param dict candidate_dict: dict containing candidate info in candidate format.
@@ -194,7 +194,7 @@ def get_users_talent_pools(formatted_token_str):
 
 def gen_hash_from_file(_file):
     """Handy function for creating file hashes. Used as redis keys to store parsed resumes."""
-    return hashlib.md5(_file.read()).hexdigest()
+    return hashlib.md5(_file.getvalue()).hexdigest()
 
 
 def resume_file_from_params(parse_params):
@@ -211,6 +211,7 @@ def resume_file_from_params(parse_params):
     elif parse_params.get('filename'):
         resume_bin = parse_params.get('resume_file')
         resume_file = StringIO(resume_bin.read())
+        resume_bin.close()
 
     else:
         raise InvalidUsage(

@@ -64,9 +64,8 @@ def process_resume(parse_params):
 
     # Upload resumes we want to create candidates from.
     try:
-        resume_file.seek(0)
         bucket = current_app.config['S3_BUCKET_NAME']
-        boto3_put(resume_file.read(), bucket, filename_str, 'OriginalFiles')
+        boto3_put(resume_file.getvalue(), bucket, filename_str, 'OriginalFiles')
         parsed_resume['candidate']['resume_url'] = filename_str
 
     except Exception as e:

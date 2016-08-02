@@ -137,8 +137,7 @@ def is_resume_image(file_ext, file_obj):
 
 
 def convert_pdf_to_png(file_obj):
-    api_url = 'https://btw3l0bcc0.execute-api.us-east-1.amazonaws.com/prod'
-    api_key = 'Npr27Oo3A54d6TBmtMNnV8WL8hkvnof1bwJFWi3j'
+    api_key, api_url = current_app.config['IMAAS_KEY'], current_app.config['IMAAS_URL']
     headers = {'x-api-key': api_key}
 
     pdf_data = file_obj.getvalue()
@@ -146,15 +145,29 @@ def convert_pdf_to_png(file_obj):
     encoded = base64.b64encode(pdf_data)
     payload = json.dumps({'pdf_bin': encoded})
 
-    conversion_response = requests.post(api_url, headers=headers, data=payload, timeout=20)
+    try:
+        conversion_response = requests.post(api_url, headers=headers, data=payload, timeout=20)
+
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        logger.exception("Could not reach IMaaS Lambda")
+        raise InternalServerError(
+            error_message=error_constants.IMAAS_UNAVAILABLE['message'],
+            error_code=error_constants.IMAAS_UNAVAILABLE['code']
+        )
 
     if conversion_response.status_code != requests.codes.ok:
-        raise InternalServerError('OHNOES')
+        raise InternalServerError(
+            error_message=error_constants.IMAAS_ERROR['message'],
+            error_code=error_constants.IMAAS_ERROR['code']
+        )
 
     content = json.loads(conversion_response.content)
     img_data = content.get('img_data')
 
     if not img_data:
-        raise InternalServerError('OHNOES {}'.format(content))
+        raise InternalServerError(
+            error_message=error_constants.IMAAS_NO_DATA['message'],
+            error_code=error_constants.IMAAS_NO_DATA['code']
+        )
 
     return StringIO(base64.b64decode(img_data))

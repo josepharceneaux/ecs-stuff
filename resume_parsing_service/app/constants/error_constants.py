@@ -102,6 +102,26 @@ BG_NO_PARSED_TEXT = {
     'message': FILE_TYPE_MSG
 }
 
+IMAAS_UNAVAILABLE = {
+    'code': 3108,
+    'message': GENERIC_ERROR_MSG
+}
+
+IMAAS_ERROR = {
+    'code': 3109,
+    'message': GENERIC_ERROR_MSG
+}
+
+IMAAS_NO_DATA = {
+    'code': 3110,
+    'message': GENERIC_ERROR_MSG
+}
+
+BG_ERROR = {
+    'code': 3111,
+    'message': GENERIC_ERROR_MSG
+}
+
 
 # Issues with internal services
 CANDIDATE_POST_CONNECTION = {

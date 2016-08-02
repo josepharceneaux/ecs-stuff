@@ -68,5 +68,4 @@ def decrypt_pdf(pdf_file_obj):
         return unencrypted_pdf_io
 
     else:
-        pdf_file_obj.seek(0)
         return pdf_file_obj

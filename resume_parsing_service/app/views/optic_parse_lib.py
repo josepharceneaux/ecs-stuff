@@ -57,12 +57,22 @@ def fetch_optic_response(resume, filename_str):
         'instanceType': 'TM',
         'locale': 'en_us'
     }
-    bg_response = requests.post(bg_url, headers=headers, json=data, timeout=20)
 
-    if bg_response.status_code != requests.codes.ok:
-        raise ForbiddenError(
+    try:
+        bg_response = requests.post(bg_url, headers=headers, json=data, timeout=20)
+
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        logger.exception("Could not reach Burning Glass")
+        raise InternalServerError(
             error_message=error_constants.BG_UNAVAILABLE['message'],
             error_code=error_constants.BG_UNAVAILABLE['code']
+        )
+
+    if bg_response.status_code != requests.codes.ok:
+        logger.error(bg_response.get('content'))
+        raise InternalServerError(
+            error_message=error_constants.BG_ERROR['message'],
+            error_code=error_constants.BG_ERROR['code']
         )
 
     try:
