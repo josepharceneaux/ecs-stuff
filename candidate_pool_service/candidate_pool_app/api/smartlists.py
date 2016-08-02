@@ -82,6 +82,11 @@ class SmartlistResource(Resource):
             }
         """
         list_id = kwargs.get('id')
+        candidate_count = request.args.get('candidate_count', True)
+
+        if not is_number(candidate_count) or int(candidate_count) not in (True, False):
+            raise InvalidUsage("`candidate_count` field value can be 0 or 1")
+
         auth_user = request.user
         if list_id:
             smartlist = Smartlist.query.get(list_id)
@@ -90,7 +95,7 @@ class SmartlistResource(Resource):
             # check whether smartlist belongs to user's domain
             if request.user.role.name != 'TALENT_ADMIN' and smartlist.user.domain_id != auth_user.domain_id:
                 raise ForbiddenError("List does not belong to user's domain")
-            return {'smartlist': create_smartlist_dict(smartlist, request.oauth_token)}
+            return {'smartlist': create_smartlist_dict(smartlist, request.oauth_token, int(candidate_count))}
         else:
             # Return all smartlists from user's domain
             page = request.args.get('page', DEFAULT_PAGE)
@@ -107,7 +112,7 @@ class SmartlistResource(Resource):
             headers = generate_pagination_headers(total_number_of_smartlists, per_page, page)
 
             response = {
-                'smartlists': get_all_smartlists(auth_user, request.oauth_token, int(page), int(per_page)),
+                'smartlists': get_all_smartlists(auth_user, request.oauth_token, int(page), int(per_page), candidate_count),
                 'page_number': page,
                 'smartlists_per_page': per_page,
                 'total_number_of_smartlists': total_number_of_smartlists
