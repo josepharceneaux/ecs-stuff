@@ -3,6 +3,7 @@ __author__ = 'ufarooqi'
 import json
 from db import db
 from datetime import datetime, timedelta
+from sqlalchemy.dialects.mysql import TINYINT
 from user import Domain, UserGroup, User
 from candidate import Candidate
 
@@ -86,6 +87,7 @@ class TalentPipeline(db.Model):
     user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id'), nullable=False)
     search_params = db.Column(db.String(1023))
+    is_hidden = db.Column(TINYINT, default='0', nullable=False)
     added_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow,
                              nullable=False)
@@ -139,6 +141,7 @@ class TalentPipeline(db.Model):
                 self.search_params) if self.search_params else None,
             'talent_pool_id': self.talent_pool_id,
             'date_needed': self.date_needed.isoformat() if self.date_needed else None,
+            'is_hidden': self.is_hidden,
             'added_time': self.added_time.isoformat(),
             'updated_time': self.updated_time.isoformat()
         }
