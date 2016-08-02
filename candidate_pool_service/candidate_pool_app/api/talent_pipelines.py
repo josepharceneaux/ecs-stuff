@@ -62,8 +62,13 @@ class TalentPipelineApi(Resource):
             sort_type = request.args.get('sort_type', 'DESC')
             search_keyword = request.args.get('search', '').strip()
             owner_user_id = request.args.get('user_id', '')
+            is_hidden = request.args.get('is_hidden', 0)
             page = request.args.get('page', DEFAULT_PAGE)
             per_page = request.args.get('per_page', DEFAULT_PAGE_SIZE)
+
+            if not is_number(is_hidden) or int(is_hidden) not in (0, 1):
+                raise InvalidUsage('`is_hidden` can be either 0 or 1')
+
             if not is_number(page) or not is_number(per_page) or int(page) < 1 or int(per_page) < 1:
                 raise InvalidUsage("page and per_page should be positive integers")
 
@@ -78,12 +83,13 @@ class TalentPipelineApi(Resource):
 
             if owner_user_id:
                 talent_pipelines = TalentPipeline.query.join(User).filter(and_(
-                        User.domain_id == request.user.domain_id, TalentPipeline.user.id == int(
-                                owner_user_id), or_(TalentPipeline.name.ilike('%' + search_keyword + '%'),
-                                                    TalentPipeline.description.ilike( '%' + search_keyword + '%')))).all()
+                        TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id,
+                        TalentPipeline.user.id == int(owner_user_id), or_(TalentPipeline.name.ilike(
+                                '%' + search_keyword + '%'), TalentPipeline.description.ilike(
+                                '%' + search_keyword + '%')))).all()
             else:
                 talent_pipelines = TalentPipeline.query.join(User).filter(and_(
-                        User.domain_id == request.user.domain_id, or_(
+                        TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id, or_(
                                 TalentPipeline.name.ilike('%' + search_keyword + '%'),
                                 TalentPipeline.description.ilike('%' + search_keyword + '%')))).all()
 
@@ -117,8 +123,6 @@ class TalentPipelineApi(Resource):
 
             return ApiResponse(response=response, headers=headers, status=200)
 
-
-
     @require_all_permissions(Permission.PermissionNames.CAN_DELETE_TALENT_PIPELINES)
     def delete(self, **kwargs):
         """
@@ -144,7 +148,8 @@ class TalentPipelineApi(Resource):
         if request.user.role.name != 'TALENT_ADMIN' and talent_pipeline.user.domain_id != request.user.domain_id:
             raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
-        talent_pipeline.delete()
+        talent_pipeline.is_hidden = 1
+        db.session.commit()
 
         return {
             'talent_pipeline': {'id': talent_pipeline_id}
@@ -273,6 +278,7 @@ class TalentPipelineApi(Resource):
         positions = posted_data.get('positions', '')
         date_needed = posted_data.get('date_needed', '')
         talent_pool_id = posted_data.get('talent_pool_id', '')
+        is_hidden = posted_data.get('is_hidden', 0)
         search_params = posted_data.get('search_params', dict())
 
         if name:
@@ -327,6 +333,11 @@ class TalentPipelineApi(Resource):
                     raise NotFoundError("Key[{}] is invalid".format(key))
 
             talent_pipeline.search_params = json.dumps(search_params)
+
+        if not is_number(is_hidden) or (int(is_hidden) not in (0, 1)):
+            raise InvalidUsage("Possible vaues of `is_hidden` are 0 and 1")
+
+        talent_pipeline.is_hidden = int(is_hidden)
 
         db.session.commit()
 
