@@ -20,7 +20,7 @@ from contracts import contract
 # Application Specific
 from ..models.db import db
 from ..tests.conftest import fake
-from campaign_utils import get_model
+from campaign_utils import get_model, CampaignUtils
 from ..models.smartlist import Smartlist
 from ..routes import CandidatePoolApiUrl
 from custom_errors import CampaignException
@@ -311,7 +311,7 @@ class CampaignsTestsHelpers(object):
         assert 'No Smartlist'.lower() in error_resp['message'].lower()
 
     @classmethod
-    @contract
+    @contract(campaign=CampaignUtils.MODELS)
     def campaign_send_with_no_smartlist_candidate(cls, url, access_token, campaign, talent_pipeline_id):
         """
         User auth access_token is valid, campaign has one smart list associated. But smartlist has
@@ -319,7 +319,6 @@ class CampaignsTestsHelpers(object):
         response to calling function.
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
-        :param campaign_models campaign: Campaign object
         :param positive talent_pipeline_id: Id of talent_pipeline
         """
         smartlist_id = FixtureHelpers.create_smartlist_with_search_params(access_token,
@@ -335,14 +334,13 @@ class CampaignsTestsHelpers(object):
         return response_post
 
     @classmethod
-    @contract
+    @contract(campaign=CampaignUtils.MODELS)
     def assert_campaign_failure(cls, response, campaign, expected_status=200):
         """
         If we try to send a campaign with invalid data, e.g. a campaign with no smartlist associated
         or with 0 candidates, the campaign sending will fail. This method asserts that the specified
         campaign sending failed and no blasts have been created.
         :param Response response: HTTP response object
-        :param campaign_models campaign: Campaigns' model object
         :param int expected_status: Expected status code
         """
         assert response.status_code == expected_status
@@ -403,14 +401,13 @@ class CampaignsTestsHelpers(object):
                 assert json_response[entity]
 
     @staticmethod
-    @contract
+    @contract(campaign=CampaignUtils.MODELS or dict)
     def send_campaign(url, campaign, access_token, blasts_url=None):
         """
         This function sends the campaign via /v1/email-campaigns/:id/send or
         /v1/sms-campaigns/:id/send depending on campaign type.
         sleep_time is set to be 20s here. One can modify this by passing required value.
         :param string url: URL to hit for sending given campaign
-        :param campaign_models|dict campaign: Campaign object
         :param string access_token: Auth access_token to make HTTP request
         :param string|None blasts_url: URL to get blasts of given campaign
         """
@@ -428,11 +425,10 @@ class CampaignsTestsHelpers(object):
         return response
 
     @staticmethod
-    @contract
+    @contract(campaign=CampaignUtils.MODELS or dict)
     def get_blasts(campaign, access_token=None, blasts_url=None):
         """
         This returns all the blasts associated with given campaign
-        :param campaign_models|dict campaign: Campaign object
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
         """
@@ -446,11 +442,10 @@ class CampaignsTestsHelpers(object):
         return blasts
 
     @staticmethod
-    @contract
+    @contract(campaign=CampaignUtils.MODELS or dict)
     def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=300):
         """
         This polls the result of blasts of a campaign for given timeout (default 300s).
-        :param campaign_models|dict campaign: Campaign object
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
         :param positive timeout: No of seconds for retry function
@@ -460,11 +455,10 @@ class CampaignsTestsHelpers(object):
                      args=(campaign, access_token, blasts_url), retry_exceptions=(AssertionError,))
 
     @staticmethod
-    @contract
+    @contract(campaign=CampaignUtils.MODELS or dict)
     def get_blast_by_index_with_polling(campaign, blast_index=0, access_token=None, blasts_url=None, timeout=20):
         """
         This polls the result of get_blasts_with_index() for given timeout (default 10s).
-        :param campaign_models|dict campaign: Campaign object
         :param int blast_index: index of campaign's blast
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
@@ -475,11 +469,10 @@ class CampaignsTestsHelpers(object):
                      args=(campaign, blast_index, access_token, blasts_url), retry_exceptions=(AssertionError,))
 
     @staticmethod
-    @contract
+    @contract(campaign=CampaignUtils.MODELS or dict)
     def get_blast_with_index(campaign, blast_index=0, access_token=None, blasts_url=None):
         """
         This returns one particular blast associated with given campaign as specified by index.
-        :param campaign_models|dict campaign: Campaign object
         :param int blast_index: index of campaign's blast
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
@@ -496,12 +489,11 @@ class CampaignsTestsHelpers(object):
         return blasts
 
     @staticmethod
-    @contract
+    @contract(campaign=CampaignUtils.MODELS or dict)
     def verify_sends(campaign, expected_count, blast_index, blast_url=None, access_token=None):
         """
         This verifies that we get expected number of sends associated with given blast index of
         given campaign.
-        :param campaign_models|dict campaign: Campaign object
         :param int expected_count: Expected number of count
         :param int blast_index: index of campaign's blast
         :param string|None blast_url: URL to get blasts of campaign
@@ -516,12 +508,11 @@ class CampaignsTestsHelpers(object):
                 assert response.json()['blast']['sends'] == expected_count
 
     @staticmethod
-    @contract
+    @contract(campaign=CampaignUtils.MODELS or dict)
     def assert_blast_sends(campaign, expected_count, blast_index=0, abort_time_for_sends=300,
                            blast_url=None, access_token=None):
         """
         This function asserts that particular blast of given campaign has expected number of sends
-        :param campaign_models|dict campaign: Campaign object
         :param int expected_count: Expected number of count
         :param int blast_index: index of campaign's blast
         :param int abort_time_for_sends: timeout for retry function
@@ -534,12 +525,11 @@ class CampaignsTestsHelpers(object):
               retry_exceptions=(AssertionError, IndexError,))
 
     @staticmethod
-    @contract
+    @contract(campaign=CampaignUtils.MODELS or dict)
     def verify_blasts(campaign, expected_count, access_token=None, blasts_url=None):
         """
         This function verifies that given campaign has expected number of blast objects.
         If they are, it returns True, otherwise returns False.
-        :param campaign_models|dict campaign: Campaign object
         :param int expected_count: Expected number of blasts of campaign
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
@@ -550,12 +540,11 @@ class CampaignsTestsHelpers(object):
         assert received_blasts_count == expected_count
 
     @staticmethod
-    @contract
+    @contract(campaign=CampaignUtils.MODELS or dict)
     def assert_campaign_blasts(campaign, expected_count, access_token=None, blasts_url=None, timeout=10):
         """
         This function polls verify_blasts() to assert that given campaign has expected number
         of blast objects.
-        :param campaign_models|dict campaign: Campaign object
         :param int expected_count: Expected number of count
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
@@ -576,7 +565,6 @@ class CampaignsTestsHelpers(object):
         This creates candidate(s) as specified by the count and assign it to a smartlist.
         Finally it returns smartlist_id and candidate_ids.
         :param string access_token: Access token of user
-        # :param model talent_pipeline: Talent Pipeline object
         :param int count: Expected number of candidates
         :param dict|None data: Dictionary to create candidates
         :param bool emails_list: If True will create email for candidates
@@ -615,7 +603,6 @@ class CampaignsTestsHelpers(object):
                                                email_list=False):
         """
         Create two smartlists with same candidate in both of them and returns smartlist ids in list format.
-        # :param model talent_pipeline: Talent pipeline object of user
         :param string access_token: Access token of user
         :param int count: Number of candidates in first smartlist
         :param bool create_phone: True if need to create candidate's phone
@@ -664,16 +651,17 @@ class CampaignsTestsHelpers(object):
         assert 'unexpected_key' in response.json()['error']['message']
 
     @staticmethod
+    @contract
     def campaign_create_or_update_with_invalid_string(method, url, access_token, campaign_data, field):
         """
         This creates or updates a campaign with unexpected fields present in the data and
         asserts that we get invalid usage error from respective API. Data passed should be a dictionary
         here.
-        :param str method: Name of HTTP method
-        :param str url: URL on which we are supposed to make HTTP request
-        :param str access_token: Access token of user
+        :param string method: Name of HTTP method
+        :param string url: URL on which we are supposed to make HTTP request
+        :param string access_token: Access token of user
         :param dict campaign_data: Data to be passed in HTTP request
-        :param str field: Field in campaign data
+        :param string field: Field in campaign data
         """
         for invalid_campaign_name in CampaignsTestsHelpers.INVALID_STRING:
             print "Iterating %s as campaign name/body_text" % invalid_campaign_name
@@ -682,14 +670,15 @@ class CampaignsTestsHelpers(object):
             CampaignsTestsHelpers.assert_non_ok_response(response)
 
     @staticmethod
+    @contract
     def campaign_create_or_update_with_invalid_smartlist(method, url, access_token, campaign_data):
         """
         This creates or updates a campaign with invalid lists and asserts that we get invalid usage error from
         respective API. Data passed should be a dictionary.
         Invalid smartlist ids include Non-existing id, non-integer id, empty list, duplicate items in list etc.
-        :param str method: Name of HTTP method
-        :param str url: URL on which we are supposed to make HTTP request
-        :param str access_token: Access token of user
+        :param string method: Name of HTTP method
+        :param string url: URL on which we are supposed to make HTTP request
+        :param string access_token: Access token of user
         :param dict campaign_data: Data to be passed in HTTP request
         """
         # This list is used to create/update a campaign, e.g. sms-campaign with invalid smartlist ids.
@@ -703,14 +692,15 @@ class CampaignsTestsHelpers(object):
             CampaignsTestsHelpers.assert_non_ok_response(response)
 
     @staticmethod
+    @contract
     def campaign_schedule_or_reschedule_with_invalid_frequency_id(method, url, access_token, scheduler_data):
         """
         This creates or updates a campaign with unexpected fields present in the data and
         asserts that we get invalid usage error from respective API. Data passed should be a dictionary
         here.
-        :param str method: Name of HTTP method
-        :param str url: URL on which we are supposed to make HTTP request
-        :param str access_token: Access token of user
+        :param string method: Name of HTTP method
+        :param string url: URL on which we are supposed to make HTTP request
+        :param string access_token: Access token of user
         :param dict scheduler_data: Data to be passed in HTTP request to schedule/reschedule given campaign
         """
         for invalid_frequency_id in CampaignsTestsHelpers.INVALID_FREQUENCY_IDS:
@@ -720,13 +710,13 @@ class CampaignsTestsHelpers(object):
             CampaignsTestsHelpers.assert_non_ok_response(response)
 
     @staticmethod
+    @contract(campaign_model=CampaignUtils.MODELS)
     def campaigns_delete_with_invalid_data(url, access_token, campaign_model):
         """
         This tests the campaigns' endpoint to delete multiple campaigns with invalid data (non-int ids,
         duplicate ids etc). It should result in Bad Request Error and campaigns should not be removed.
-        :param str url: URL on which we are supposed to make HTTP request
-        :param str access_token: Access token of user
-        :param (db.Model) campaign_model: SQLAlchemy model
+        :param string url: URL on which we are supposed to make HTTP request
+        :param string access_token: Access token of user
         """
         invalid_data = [[item] for item in CampaignsTestsHelpers.INVALID_ID]
         non_existing_campaign_id = CampaignsTestsHelpers.get_non_existing_id(campaign_model)

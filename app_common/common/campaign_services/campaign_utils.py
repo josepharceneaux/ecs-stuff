@@ -65,7 +65,7 @@ class CampaignUtils(object):
     EMAIL = EmailCampaign.__tablename__
 
     # Any campaign service will add the entry of respective model name here
-    MODELS = (SmsCampaign, EmailCampaign, PushCampaign)
+    MODELS = SmsCampaign or EmailCampaign or PushCampaign
     SMARTLIST_MODELS = (SmsCampaignSmartlist, PushCampaignSmartlist)
     BLAST_MODELS = (SmsCampaignBlast, EmailCampaignBlast, PushCampaignBlast)
     SEND_MODELS = (SmsCampaignSend, EmailCampaignSend, PushCampaignSend)

@@ -34,17 +34,8 @@ def define_custom_contracts():
         new_contract('flask_request', lambda x: isinstance(x, LocalProxy))
         new_contract('model_class', lambda model: db.Model in model.__mro__)
         new_contract('model', lambda x: isinstance(x, db.Model))
-        new_contract('campaign_models', lambda model: contract_for_campaign_model(model))
         new_contract('Response', lambda x: isinstance(x, Response))
 
     except ValueError:
         # ignore in case of ValueError which means it is already defined
         pass
-
-
-def contract_for_campaign_model(model):
-    # Placing them at top causes "Can't proceed with initialization of other mappers"
-    from models.push_campaign import PushCampaign
-    from models.email_campaign import EmailCampaign
-    from models.sms_campaign import SmsCampaign
-    return isinstance(model, (SmsCampaign, EmailCampaign, PushCampaign))
