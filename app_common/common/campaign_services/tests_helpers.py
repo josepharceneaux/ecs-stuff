@@ -739,7 +739,7 @@ class CampaignsTestsHelpers(object):
         :param string access_token: Access token of user
         :param type(t) campaign_model: Campaign object
         """
-        raise_if_not_instance_of(campaign_model, CampaignUtils.MODELS)
+        assert db.Model in campaign_model.__mro__
         invalid_data = [[item] for item in CampaignsTestsHelpers.INVALID_ID]
         non_existing_campaign_id = CampaignsTestsHelpers.get_non_existing_id(campaign_model)
         invalid_data.extend([[non_existing_campaign_id, non_existing_campaign_id]])  # Test for unique items
