@@ -226,6 +226,7 @@ class CampaignsTestsHelpers(object):
         :param string access_token: access access_token of user
         :param dict|None data: Data to be posted
         """
+        assert db.Model in model.__mro__
         invalid_ids = (0, cls.get_non_existing_id(model))
         invalid_id_and_status_code = _get_invalid_id_and_status_code_pair(invalid_ids)
         for _id, status_code in invalid_id_and_status_code:
