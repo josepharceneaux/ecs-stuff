@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup as bs4
 from contracts import contract
 import requests
 import phonenumbers
+import pycountry
 # Module Specific
 from flask import current_app
 from resume_parsing_service.app import logger
@@ -39,7 +40,7 @@ def fetch_optic_response(resume, filename_str):
     start_time = time()
     bg_url = current_app.config['BG_URL']
     oauth = OAuthClient(url=bg_url,
-                        method='POST', consumerKey='osman',
+                        method='POST', consumerKey='StevePeck',
                         consumerSecret=current_app.config['CONSUMER_SECRET'],
                         token='Utility',
                         tokenSecret=current_app.config['TOKEN_SECRET'],
@@ -53,7 +54,7 @@ def fetch_optic_response(resume, filename_str):
     }
     data = {
         'binaryData': resume,
-        'instanceType': 'TM',
+        'instanceType': 'XRAY',
         'locale': 'en_us'
     }
     bg_response = requests.post(bg_url, headers=headers, json=data)
@@ -275,7 +276,8 @@ def parse_candidate_experiences(bg_experience_xml_list):
             company_address = employement.find('address')
             company_city = _tag_text(company_address, 'city', capwords=True)
             company_state = _tag_text(company_address, 'state')
-            company_country = 'United States'
+            company_country = get_country_code_from_address_tag(company_address)
+
             # Check if an experience already exists
             existing_experience_list_order = is_experience_already_exists(output,
                                                                           organization or '',
@@ -302,17 +304,17 @@ def parse_candidate_experiences(bg_experience_xml_list):
                     ))
             if not existing_experience_list_order:
                 output.append(dict(
-                    bullets=candidate_experience_bullets,
+                    position=position_title,
+                    organization=organization,
                     city=company_city,
-                    country=company_country,
+                    state=company_state,
+                    country_code=company_country,
+                    start_month=start_month,
+                    start_year=start_year,
                     end_month=end_month,
                     end_year=end_year,
                     is_current=is_current_job,
-                    organization=organization,
-                    position=position_title,
-                    start_month=start_month,
-                    start_year=start_year,
-                    state=company_state,
+                    bullets=candidate_experience_bullets
                 ))
     return output
 
@@ -334,7 +336,7 @@ def parse_candidate_educations(bg_educations_xml_list):
             school_address = school.find('address')
             school_city = _tag_text(school_address, 'city', capwords=True)
             school_state = _tag_text(school_address, 'state')
-            country = 'United States'
+            country = get_country_code_from_address_tag(school_address)
 
             start_date = get_date_from_date_tag(school, 'start')
             end_date = get_date_from_date_tag(school, 'end')
@@ -353,20 +355,31 @@ def parse_candidate_educations(bg_educations_xml_list):
                 end_month = end_dt.month
                 end_year = end_dt.year
 
+            degree_tag = school.find('degree')
+            degree_type = degree_tag.get('name') if degree_tag else None
+            gpa_tag = school.find('gpa')
+            gpa_value = float(gpa_tag.get('value')) if gpa_tag else None
+
             output.append(dict(
                 school_name=school_name,
                 city=school_city,
                 state=school_state,
-                country=country,
+                country_code=country,
                 degrees=[
                     {
-                        'type': _tag_text(school, 'degree'),
-                        'title': _tag_text(school, 'major'),
+                        'type': degree_type,
+                        'title': _tag_text(school, 'degree'),
                         'start_year': start_year,
                         'start_month': start_month,
                         'end_year': end_year,
                         'end_month': end_month,
-                        'bullets': []
+                        'gpa_num': gpa_value,
+                        'bullets': [
+                            {
+                                'major': _tag_text(school, 'major'),
+                                'comments': _tag_text(school, 'honors')
+                            }
+                        ]
                     }
                 ],
             ))
@@ -387,14 +400,30 @@ def parse_candidate_skills(bg_skills_xml_list):
     for skill in bg_skills_xml_list:
         name = skill.get('name')
         skill_text = skill.text.strip()
+
         start_days = skill.get('start')
         end_days = skill.get('end')
         months_used = None
+        last_used_date = None
+
         parsed_name = name or skill_text
-        processed_skill = {'name': parsed_name}
+        processed_skill = {'name': parsed_name, 'last_used_date': None, 'months_used': None}
 
         if start_days and end_days:
+            """
+            BurningGlass skill start and end dates come in the format of 6 digit whole numbers.
+            Example:
+                730000 through 730274
+
+            This is assumed to be days since January 1st, 1
+            Example: 730274 days since this date is 2000-06-04 and a tag with that number for the
+                       end date will say '2000'
+            """
             months_used = (int(end_days) - int(start_days)) / 30
+            last_used_date = datetime.datetime(year=1, month=1, day=1) + datetime.timedelta(days=int(end_days))
+
+        if last_used_date:
+            processed_skill['last_used_date'] = last_used_date.strftime(ISO8601_DATE_FORMAT)
 
         if months_used and months_used > 0: # Rarely a skill will have an end before the start.
             processed_skill['months_used'] = int(months_used)
@@ -420,7 +449,7 @@ def parse_candidate_addresses(bg_xml_list):
             'address_line_1': _tag_text(address, 'street'),
             'city': address.get('inferred-city', '').title() or _tag_text(address, 'city'),
             'state': address.get('inferred-state', '').title() or _tag_text(address, 'state'),
-            'country': address.get('inferred-country', '').title() or 'US',
+            'country_code': get_country_code_from_address_tag(address),
             'zip_code': sanitize_zip_code(_tag_text(address, 'postalcode'))
         })
     return output
@@ -477,19 +506,10 @@ def _tag_text(tag, child_tag_name, remove_questions=False, remove_extra_newlines
     return None
 
 
-# date_tag has child tag that could be one of: current, YYYY-MM, notKnown, YYYY, YYYY-MM-DD, or
-# notApplicable (I think)
 def get_date_from_date_tag(parent_tag, date_tag_name):
     """Parses date value from bs4.soup"""
-    date_tag = parent_tag.find(date_tag_name)
-    if date_tag:
-        try:
-            if date_tag_name == 'end' and ('current' in date_tag.text.lower() or
-                                           'present' in date_tag.text.lower()):
-                return date_tag['iso8601']
-        except Exception:
-            logger.exception('Exception during date parse with datetag: {}'.format(date_tag))
-    return None
+    date_tag = parent_tag.find(date_tag_name) or {}
+    return date_tag.get('iso8601')
 
 
 def is_experience_already_exists(candidate_experiences, organization, position_title, start_month,
@@ -532,3 +552,14 @@ def scrub_candidate_name(name_unicode):
     name_unicode = name_unicode.title()
 
     return name_unicode
+
+
+def get_country_code_from_address_tag(address):
+    if address:
+        country_tag = address.find('country')
+
+        if country_tag and country_tag.get('iso3'):
+            company_country_i3 = pycountry.countries.get(alpha3=country_tag.get('iso3'))
+            return company_country_i3.alpha2
+
+    return None

@@ -271,7 +271,7 @@ def test_talent_pipeline_api_delete(access_token_first, access_token_second, use
     assert status_code == 200
 
     db.session.commit()
-    assert not TalentPipeline.query.get(talent_pipeline_id)
+    assert talent_pipeline.is_hidden == 1
 
 
 def test_talent_pipeline_smart_list_api_post(access_token_first, access_token_second, user_second, user_first,
