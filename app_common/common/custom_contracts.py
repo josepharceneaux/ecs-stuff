@@ -12,7 +12,6 @@ from werkzeug.local import LocalProxy
 from requests import Response
 
 # Application Specific
-from models.db import db
 from contracts import new_contract
 
 
@@ -32,8 +31,6 @@ def define_custom_contracts():
         new_contract('bs4_ResultSet', lambda x: isinstance(x, ResultSet))
         new_contract('cStringIO', lambda x: isinstance(x, (cStringIO.InputType, cStringIO.OutputType)))
         new_contract('flask_request', lambda x: isinstance(x, LocalProxy))
-        new_contract('model_class', lambda model: db.Model in model.__mro__)
-        new_contract('model', lambda x: isinstance(x, db.Model))
         new_contract('Response', lambda x: isinstance(x, Response))
 
     except ValueError:

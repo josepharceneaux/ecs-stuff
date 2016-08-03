@@ -220,7 +220,7 @@ class CampaignsTestsHelpers(object):
         It creates two invalid ids for requested resource, 0 and some large number(non-existing id)
         that does not exist in database for given model. It then asserts to check we get status
         code 400 in case of id 0 and status code 404 in case of non-existing id.
-        :param model_class model: SQLAlchemy model
+        :param type(t) model: SQLAlchemy model
         :param http_method method: Name of HTTP method
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
@@ -233,36 +233,33 @@ class CampaignsTestsHelpers(object):
             assert response.status_code == status_code
 
     @staticmethod
-    @contract
     def get_last_id(model):
         """
         This methods returns the id of last record in given database table.
         If there is no record found, it returns None.
-        :param model_class model: SQLAlchemy model
         """
+        assert db.Model in model.__mro__
         last_obj = model.query.order_by(model.id.desc()).first()
         return last_obj.id if last_obj else None
 
     @classmethod
-    @contract
     def get_non_existing_id(cls, model):
         """
         This methods returns the non-existing id for given db Model.
         If last record is found, it adds 1000 in its id and return it.
         Otherwise it returns sys.maxint which ensures that returned number is a non-existing id for
         given model.
-        :param model_class model: SQLAlchemy model
         """
+        assert db.Model in model.__mro__
         last_id = cls.get_last_id(model)
         return last_id + 1000 if last_id else sys.maxint
 
     @classmethod
-    @contract
     def get_non_existing_ids(cls, model):
         """
         This methods returns a tuple of non-existing ids for given db Model.
-        :param model_class model: SQLAlchemy model
         """
+        assert db.Model in model.__mro__
         return get_invalid_ids(cls.get_non_existing_id(model))
 
     @classmethod
