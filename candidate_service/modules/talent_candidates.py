@@ -515,10 +515,16 @@ def candidate_contact_history(candidate):
                 event_datetime=event_datetime
             ))
 
+    timeline_with_valid_event_datetime = filter(lambda entry: isinstance(event['event_datetime'],
+                                                                         datetime.datetime), timeline)
+    timeline_with_null_event_datetime = filter(lambda entry: event['event_datetime'] is None, timeline)
+
     # Sort events by datetime and convert all date-times to ISO format
-    timeline = sorted(timeline, key=lambda entry: entry['event_datetime'], reverse=True)
+    timeline = sorted(timeline_with_valid_event_datetime, key=lambda entry: entry['event_datetime'], reverse=True)
     for event in timeline:
         event['event_datetime'] = event['event_datetime'].isoformat()
+
+    timeline += timeline_with_null_event_datetime
 
     return dict(timeline=timeline)
 
