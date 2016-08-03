@@ -50,6 +50,7 @@ from social_network_service.modules.custom_codes import VENUE_EXISTS_IN_GT_DATAB
 from social_network_service.modules.social_network.base import SocialNetworkBase
 from social_network_service.social_network_app import logger
 from social_network_service.modules.social_network.meetup import Meetup
+from social_network_service.modules.social_network.eventbrite import Eventbrite
 from social_network_service.modules.utilities import get_class
 
 from social_network_service.common.error_handling import *
@@ -866,7 +867,13 @@ class EventOrganizersResource(Resource):
 
         """
         organizer_data = get_valid_json_data(request)
-        organizer_data['user_id'] = request.user.id
+        user_id = request.user.id
+        social_network = SocialNetwork.get_by_name('Eventbrite')
+        eventbrite = Eventbrite(user_id, social_network_id=social_network.id)
+        organizer_id = eventbrite.create_event_organizer(organizer_data)
+        organizer_data['social_network_organizer_id'] = organizer_id
+        organizer_data['social_network_id'] = social_network.id
+        organizer_data['user_id'] = user_id
         organizer = EventOrganizer(**organizer_data)
         EventOrganizer.save(organizer)
         headers = {'Location': '{url}/{id}'.format(url=SocialNetworkApi.EVENT_ORGANIZERS,
