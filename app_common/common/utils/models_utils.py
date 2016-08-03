@@ -297,14 +297,16 @@ def get_invalid_fields(cls, data_to_be_verified):
     return [key for key in data_to_be_verified if key not in cls.__table__.columns]
 
 
-@staticmethod
-def refresh_all(obj_list):
+@classmethod
+def refresh_all(cls, obj_list):
     """
     This takes some data in dict from and checks if there is any key which is not a ATTRIBUTE of given model.`
     It then returns all such fields in a list format.
+    :param db.Model cls: Database model class
     :param list obj_list: list of Model objects
     :rtype: list
     """
+    assert all(isinstance(obj, cls) for obj in obj_list), 'All objects should of type: %s' % cls.__name__
     return [db.session.merge(obj) for obj in obj_list]
 
 

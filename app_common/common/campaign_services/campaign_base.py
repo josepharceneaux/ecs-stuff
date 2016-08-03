@@ -1291,7 +1291,6 @@ class CampaignBase(object):
             raise InvalidUsage('No candidates with valid data found for %s(id:%s).'
                                % (self.campaign_type, self.campaign.id),
                                error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
-        # TODO:  As discussed with Zohaib, I think type of objects and type of model should be same
         candidates = Candidate.refresh_all(candidates)
         pre_processed_data = self.pre_process_celery_task(candidates)
         try:
