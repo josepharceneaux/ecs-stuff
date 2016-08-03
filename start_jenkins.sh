@@ -42,11 +42,9 @@ ENV_VARIABLES=("GT_ENVIRONMENT" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY")
 
 FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "social-network-service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service" "sms-campaign-service" "push-campaign-service" "email-campaign-service" "ats-service")
 
+# Note that port 8016 is used for scheduler admin web app
 FLASK_APP_PORTS=("8001" "8002" "8003" "8004" "8005" "8007" "8008" "8009" "8011" "8012" "8013" "8014" "8015")
 
-# Note that port 8015 is reserved for ATS services, and port 8016 for scheduler admin web app
-
-output=""
 
 env_variable_parameters=""
 for env_variable_index in ${!ENV_VARIABLES[@]}
@@ -63,6 +61,23 @@ do
     eval $command
 done
 
+echo "Sleeping 10s"
 sleep 10
 
-py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests sms_campaign_service/tests resume_parsing_service/tests candidate_service/tests email_campaign_service/tests
+echo "Beginning tests."
+
+py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests sms_campaign_service/tests resume_parsing_service/tests candidate_service/tests email_campaign_service/tests push_campaign_service/tests
+if [ $? -ne 0 ] ; then
+    exit 1
+fi
+
+# ATS tests need to run separately as parallelism causes DB collisions
+py.test ats_service/tests
+if [ $? -ne 0 ] ; then
+    exit 1
+fi
+
+echo "Tests completed."
+
+# Declare success with this string that Jenkins looks for - see Jenkins config.
+echo "My work here is done."

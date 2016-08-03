@@ -115,9 +115,6 @@ class PushCampaignBase(CampaignBase):
         )
         # get scheduler task_id
         task_id = super(PushCampaignBase, self).schedule(data_to_schedule)
-        data_to_schedule.update({'task_id': task_id})
-        # update push_notification_campaign record with task_id
-        self.campaign.update(scheduler_task_id=task_id)
         return task_id
 
     def pre_process_celery_task(self, candidates):

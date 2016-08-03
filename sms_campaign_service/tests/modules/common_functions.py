@@ -5,19 +5,56 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 """
 # Third Party
 import requests
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
+
 
 # Common Utils
 from sms_campaign_service.common.models.db import db
 from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.common.tests.conftest import fake
+from sms_campaign_service.common.models.user import UserPhone
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.models.misc import (UrlConversion, Activity)
+from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from sms_campaign_service.common.models.misc import (UrlConversion, Activity,
+                                                     Frequency)
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaignReply,
                                                              SmsCampaign)
 from sms_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
     get_candidates_of_smartlist
+from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER)
+
+
+def generate_campaign_data():
+    """
+    This returns a dictionary to create/update an sms-campaign
+    """
+    return {"name": "TEST SMS Campaign",
+            "body_text": "Hi all, we have few openings at https://www.gettalent.com",
+            "smartlist_ids": ""
+            }
+
+
+def generate_campaign_schedule_data():
+    """
+    This returns a dictionary to schedule an sms-campaign
+    """
+    return {"frequency_id": Frequency.ONCE,
+            "start_datetime": DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=1)),
+            "end_datetime": DatetimeUtils.to_utc_str(datetime.utcnow() + relativedelta(days=+5))}
+
+
+def remove_any_user_phone_record_with_twilio_test_number():
+    """
+    This function cleans the database tables user_phone and candidate_phone.
+    If any record in these two tables has phone number value either TWILIO_TEST_NUMBER or
+    TWILIO_INVALID_TEST_NUMBER, we remove all those records before running the tests.
+    """
+    records = UserPhone.get_by_phone_value(TWILIO_TEST_NUMBER)
+    records += UserPhone.get_by_phone_value(TWILIO_INVALID_TEST_NUMBER)
+    map(UserPhone.delete, records)
 
 
 def assert_url_conversion(sms_campaign_sends):
@@ -79,18 +116,11 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_sends, 
     assert len(sms_campaign_sends) == expected_sends
     # assert on activity of individual campaign sends
     for sms_campaign_send in sms_campaign_sends:
-        assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SMS_SEND, sms_campaign_send.id)
+        CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SMS_SEND, sms_campaign_send.id)
     if sms_campaign_sends:
         # assert on activity for whole campaign send
-        assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SEND, campaign.id)
+        CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SEND, campaign.id)
     assert_url_conversion(sms_campaign_sends)
-
-
-def assert_for_activity(user_id, type_, source_id):
-    """
-    This verifies that activity has been created for given action
-    """
-    CampaignsTestsHelpers.assert_for_activity(user_id, type_, source_id)
 
 
 def assert_api_send_response(campaign, response, expected_status_code):
@@ -108,14 +138,22 @@ def assert_api_send_response(campaign, response, expected_status_code):
     assert str(campaign_id) in json_resp['message']
 
 
-def assert_campaign_schedule(response, user_id, campaign_id):
+def assert_campaign_schedule(response, user_id, campaign_id, headers):
     """
-    This asserts that campaign has scheduled successfully and we get 'task_id' in response
+    This asserts that campaign has scheduled successfully and we get 'task_id' in response.
+    We also assert that 'start_datetime', 'end_datetime' and 'frequency_id' have been updated in database.
     """
     assert response.status_code == 200, response.json()['error']['message']
     assert 'task_id' in response.json()
-    assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_id)
-    return response.json()['task_id']
+    CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_id)
+    # get updated record to verify the changes we made
+    response_get = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign_id, headers=headers)
+    assert response_get.status_code == requests.codes.OK, 'Response should be ok (200)'
+    resp = response_get.json()['campaign']
+    assert resp['frequency'].lower() in Frequency.standard_frequencies()
+    assert resp['start_datetime']
+    if resp['frequency']:
+        assert resp['end_datetime']
 
 
 def assert_campaign_delete(response, user_id, campaign_id):
@@ -124,7 +162,7 @@ def assert_campaign_delete(response, user_id, campaign_id):
     created successfully.
     """
     assert response.status_code == 200, 'should get ok response(200)'
-    assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_DELETE, campaign_id)
+    CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_DELETE, campaign_id)
 
 
 def delete_test_scheduled_task(task_id, headers):
@@ -146,7 +184,7 @@ def assert_campaign_creation(response, user_id, expected_status_code):
     json_response = response.json()
     assert 'location' in response.headers
     assert 'id' in json_response
-    assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_CREATE, json_response['id'])
+    CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_CREATE, json_response['id'])
     return json_response['id']
 
 
@@ -178,8 +216,8 @@ def reply_and_assert_response(campaign_obj, user_phone, candidate_phone, access_
     assert campaign_reply_in_db[reply_count - 1].body_text == reply_text
     reply_count_after = get_replies_count(campaign_obj, access_token)
     assert reply_count_after == reply_count_before + 1
-    assert_for_activity(user_phone.user_id, Activity.MessageIds.CAMPAIGN_SMS_REPLY,
-                        campaign_reply_in_db[reply_count - 1].id)
+    CampaignsTestsHelpers.assert_for_activity(user_phone.user_id, Activity.MessageIds.CAMPAIGN_SMS_REPLY,
+                                              campaign_reply_in_db[reply_count - 1].id)
 
 
 def get_campaign_reply(candidate_phone):

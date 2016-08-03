@@ -40,7 +40,7 @@ def fetch_optic_response(resume, filename_str):
     start_time = time()
     bg_url = current_app.config['BG_URL']
     oauth = OAuthClient(url=bg_url,
-                        method='POST', consumerKey='osman',
+                        method='POST', consumerKey='StevePeck',
                         consumerSecret=current_app.config['CONSUMER_SECRET'],
                         token='Utility',
                         tokenSecret=current_app.config['TOKEN_SECRET'],
@@ -54,7 +54,7 @@ def fetch_optic_response(resume, filename_str):
     }
     data = {
         'binaryData': resume,
-        'instanceType': 'TM',
+        'instanceType': 'XRAY',
         'locale': 'en_us'
     }
     bg_response = requests.post(bg_url, headers=headers, json=data)

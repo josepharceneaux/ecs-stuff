@@ -17,8 +17,7 @@ from sms_campaign_service.modules.validators import (validate_url_by_http_reques
 from sms_campaign_service.modules.custom_exceptions import (SmsCampaignApiException,
                                                             TwilioApiError)
 from sms_campaign_service.modules.handy_functions import search_urls_in_text, TwilioSMS
-from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO_TEST_NUMBER,
-                                                                     TWILIO_INVALID_TEST_NUMBER)
+from sms_campaign_service.modules.constants import (TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER)
 
 # Common Utils
 from sms_campaign_service.common.models.user import User
