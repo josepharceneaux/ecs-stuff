@@ -266,7 +266,7 @@ class CandidatesResource(Resource):
                 dice_profile_id=candidate_dict.get('dice_profile_id'),
                 added_datetime=added_datetime,
                 source_id=candidate_dict.get('source_id'),
-                source_product_id=candidate_dict('source_product_id'),
+                source_product_id=candidate_dict.get('source_product_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
                 talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []}),
