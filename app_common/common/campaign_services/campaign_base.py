@@ -1240,9 +1240,8 @@ class CampaignBase(object):
         """
         This method takes `celery_result` input argument which is a list of `lists of candidate ids` and then creates
         campaign blast and sends campaign to all candidates using celery.
-        :param list[list[int | long]] list celery_result: list of lists of candidates
+        :param list[list[Candidate]] list celery_result: list of lists of candidates
         """
-        # TODO: correct type as list[list[Candidate]]
         logger = current_app.config[TalentConfigKeys.LOGGER]
         self.refresh_all_db_objects()
         if not celery_result:
@@ -1263,9 +1262,8 @@ class CampaignBase(object):
 
          **See Also**
         .. see also:: pre_process_celery_task() method in SmsCampaignBase class.
-        :param candidates:
+        :param list[Candidate] candidates: list of candidates
         """
-        # TODO: Add type of param
         if not candidates:
             logger = current_app.config[TalentConfigKeys.LOGGER]
             logger.warn('No candidates with valid data found for %s(id:%s).' % (self.campaign_type, self.campaign.id))
@@ -1825,8 +1823,6 @@ class CampaignBase(object):
         else:
             raise ForbiddenError("You can not get other domain's url_conversion records")
 
-    # TODO: Maybe this will not be particular for campaigns only, so maybe move this to somewhere more appropriate place
-    # TODO: say models_utils.py?
     def refresh_all_db_objects(self):
         """
         In case of celery, when we pass objects from one session to another session, model objects get detached from

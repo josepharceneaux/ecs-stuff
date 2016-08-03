@@ -13,6 +13,7 @@ from sms_campaign_service.common.models.db import db
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.tests.modules.common_functions import assert_valid_blast_object
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from sms_campaign_service.common.constants import SLEEP_INTERVAL, RETRY_ATTEMPTS
 
 
 class TestSmsCampaignBlasts(object):
@@ -110,9 +111,8 @@ class TestSmsCampaignBlasts(object):
             CampaignsTestsHelpers.send_campaign(SmsCampaignApiUrl.SEND,
                                                 sent_campaign, access_token_first,
                                                 SmsCampaignApiUrl.BLASTS)
-        # TODO: maybe better to use constants that you defined for attempts etc
-        blasts = retry(CampaignsTestsHelpers.get_blasts, sleeptime=3, attempts=20, sleepscale=1,
-                       args=(sent_campaign, access_token_first, url), kwargs=dict(count=10),
+        blasts = retry(CampaignsTestsHelpers.get_blasts, sleeptime=SLEEP_INTERVAL, attempts=RETRY_ATTEMPTS,
+                       sleepscale=1, args=(sent_campaign, access_token_first, url), kwargs=dict(count=10),
                        retry_exceptions=(AssertionError,))
         blast_ids = [blast['id'] for blast in blasts]
 
