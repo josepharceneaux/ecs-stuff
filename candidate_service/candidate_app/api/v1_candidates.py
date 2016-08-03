@@ -21,10 +21,11 @@ from candidate_service.candidate_app import logger
 from candidate_service.common.models.db import db
 
 # Validators
+
 from candidate_service.common.talent_config_manager import TalentConfigKeys
 from candidate_service.common.talent_config_manager import TalentEnvs
 from candidate_service.common.utils.models_utils import to_json
-from candidate_service.common.utils.validators import is_valid_email, is_country_code_valid
+from candidate_service.common.utils.validators import is_valid_email, is_country_code_valid, is_number
 from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
@@ -174,6 +175,13 @@ class CandidatesResource(Resource):
                                        .format(source_id=source_id, domain_id=domain_id),
                                        error_code=custom_error.INVALID_SOURCE_ID)
 
+            source_product_id = candidate_dict_.get('source_product_id', 2)
+            if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in (0, 1, 2)):
+                raise InvalidUsage("Provided source product id ({source_product_id}) not recognized".format(
+                        source_product_id=source_product_id),  error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
+
+            candidate_dict_['source_product_id'] = int(source_product_id)
+
             for custom_field in candidate_dict_.get('custom_fields') or []:
                 custom_field_id = custom_field.get('custom_field_id')
                 if custom_field_id:
@@ -258,6 +266,7 @@ class CandidatesResource(Resource):
                 dice_profile_id=candidate_dict.get('dice_profile_id'),
                 added_datetime=added_datetime,
                 source_id=candidate_dict.get('source_id'),
+                source_product_id=candidate_dict('source_product_id'),
                 objective=candidate_dict.get('objective'),
                 summary=candidate_dict.get('summary'),
                 talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []}),
@@ -395,6 +404,13 @@ class CandidatesResource(Resource):
                                        .format(source_id=source_id, domain_id=domain_id),
                                        error_code=custom_error.INVALID_SOURCE_ID)
 
+            source_product_id = _candidate_dict.get('source_product_id')
+            if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in (0, 1, 2)):
+                raise InvalidUsage("Provided source product id ({source_product_id}) not recognized".format(
+                        source_product_id=source_product_id),  error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
+
+            _candidate_dict['source_product_id'] = int(source_product_id) if source_product_id else None
+
         if skip:
             db.session.commit()
             # Delete candidate from CS when set to hidden
@@ -459,6 +475,7 @@ class CandidatesResource(Resource):
                 dice_profile_id=candidate_dict.get('dice_profile_id'),
                 added_datetime=added_datetime,
                 source_id=candidate_dict.get('source_id', ''),
+                source_product_id=candidate_dict.get('source_product_id'),
                 objective=candidate_dict.get('objective', ''),
                 summary=candidate_dict.get('summary', ''),
                 talent_pool_ids=candidate_dict.get('talent_pool_id', {'add': [], 'delete': []}),
