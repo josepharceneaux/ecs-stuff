@@ -9,7 +9,7 @@ import requests
 # Application Specific
 from base import SocialNetworkBase
 from social_network_service.common.error_handling import InternalServerError, InvalidUsage
-from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.common.utils.handy_functions import http_request, find_missing_items
 from social_network_service.custom_exceptions import *
 from social_network_service.modules.custom_codes import ORGANIZER_ALREADY_EXISTS
 from social_network_service.social_network_app import logger
@@ -275,7 +275,7 @@ class Eventbrite(SocialNetworkBase):
         """
         mandatory_input_data = ['name', 'about']
         # gets fields which are missing
-        missing_items = [key for key in mandatory_input_data if not data.get(key)]
+        missing_items = find_missing_items(data, mandatory_input_data, verify_all=True)
         if missing_items:
             raise InvalidUsage("Mandatory Input Missing: %s" % missing_items)
 
@@ -284,7 +284,7 @@ class Eventbrite(SocialNetworkBase):
                 'organizer.description.html': data['about']
             }
         # create url to send post request to create organizer
-        url = self.api_url + "/organizers/"
+        url = "%s/organizers/" % self.api_url
         response = http_request('POST', url, params=payload,
                                 headers=self.headers,
                                 user_id=self.user.id)
