@@ -5,10 +5,10 @@ docstring with the help of PyContracts.
 """
 # Standard Lib
 import cStringIO
-from bs4.element import ResultSet
 
 # Third Party
 from requests import Response
+from bs4.element import ResultSet
 from contracts import new_contract
 from werkzeug.local import LocalProxy
 
