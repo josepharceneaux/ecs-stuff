@@ -115,10 +115,12 @@ from flask import Blueprint
 from flask.ext.restful import Resource
 
 # Application Specific
+from push_campaign_service.common.campaign_services.json_schema.campaign_schedule import CAMPAIGN_SCHEDULE_SCHEMA
+from push_campaign_service.common.utils.validators import get_json_data_if_validated
+from push_campaign_service.json_schema.campaign_fields import CAMPAIGN_SCHEMA
 from push_campaign_service.push_campaign_app import logger
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-from push_campaign_service.common.campaign_services.validators import get_valid_json_data
 from push_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError, InvalidUsage)
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.talent_api import TalentApi
@@ -238,7 +240,7 @@ class PushCampaignsResource(Resource):
         ..Error Codes:: 7003 (RequiredFieldsMissing)
         """
         user = request.user
-        data = get_valid_json_data(request)
+        data = get_json_data_if_validated(request, CAMPAIGN_SCHEMA)
 
         campaign = PushCampaignBase(user_id=user.id)
         campaign_id = campaign.save(data)
@@ -371,7 +373,7 @@ class CampaignByIdResource(Resource):
         ..Error Codes:: 7003 (RequiredFieldsMissing)
         """
         user = request.user
-        data = get_valid_json_data(request)
+        data = get_json_data_if_validated(request, CAMPAIGN_SCHEMA)
         camp_obj = PushCampaignBase(user.id, campaign_id)
         camp_obj.update(data, campaign_id=campaign_id)
         response = dict(message='Push campaign was updated successfully')
@@ -459,7 +461,7 @@ class SchedulePushCampaignResource(Resource):
         :return: dict containing message and task_id.
         """
         user = request.user
-        get_valid_json_data(request)
+        get_json_data_if_validated(request, CAMPAIGN_SCHEDULE_SCHEMA)
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
         pre_processed_data = PushCampaignBase.data_validation_for_campaign_schedule(
@@ -510,7 +512,7 @@ class SchedulePushCampaignResource(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: dict containing message and task_id.
         """
-        get_valid_json_data(request)
+        get_json_data_if_validated(request, CAMPAIGN_SCHEDULE_SCHEMA)
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
         # create object of class PushCampaignBase
