@@ -9,4 +9,4 @@ CAMPAIGN_SCHEMA['properties'].update({
         }
 })
 
-CAMPAIGN_SCHEMA['required'] = PushCampaignBase.REQUIRED_FIELDS
+CAMPAIGN_SCHEMA['required'] = list(PushCampaignBase.REQUIRED_FIELDS)
