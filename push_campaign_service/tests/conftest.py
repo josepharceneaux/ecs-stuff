@@ -19,6 +19,7 @@ from redo import retry
 from requests import codes
 
 from push_campaign_service.common.models.misc import Frequency
+from push_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from push_campaign_service.common.utils.test_utils import (delete_scheduler_task,
                                                            create_smartlist, get_smartlist_candidates, delete_smartlist)
 from push_campaign_service.common.test_config_manager import load_test_config
@@ -32,6 +33,7 @@ from push_campaign_service.common.tests.api_conftest import (token_first, token_
                                                              talent_pipeline_second)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.init_test_data import create_test_data
+from push_campaign_service.push_campaign_app import app
 from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
                                                         generate_campaign_schedule_data,
                                                         get_campaigns, create_campaign,
@@ -42,7 +44,9 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_data, 
 
 fake = Faker()
 # initialize test users and domains etc.
-create_test_data()
+if app.config[TalentConfigKeys.ENV_KEY] == TalentEnvs.DEV:
+    create_test_data()
+
 test_config = load_test_config()
 
 
