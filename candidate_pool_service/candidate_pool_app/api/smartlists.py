@@ -82,7 +82,7 @@ class SmartlistResource(Resource):
             }
         """
         list_id = kwargs.get('id')
-        candidate_count = request.args.get('candidate_count', True)
+        candidate_count = request.args.get('candidate-count', True)
 
         if not is_number(candidate_count) or int(candidate_count) not in (True, False):
             raise InvalidUsage("`candidate_count` field value can be 0 or 1")
