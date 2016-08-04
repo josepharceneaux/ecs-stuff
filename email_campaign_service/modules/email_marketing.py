@@ -875,8 +875,10 @@ def handle_email_bounce(message_id, bounce, emails):
             break
 
     if not send_obj:
-        logger.error('Unable to find email campaign send for this email bounce.'
-                     '\nMessageId: %s\nEmails: %s\nBounce: %s', message_id, emails, bounce)
+        logger.info("""Unable to find email campaign send for this email bounce.
+                       MessageId: %s
+                       Emails: %s
+                       Bounce: %s""", message_id, emails, bounce)
 
     # Mark the send object as bounced.
     else:
