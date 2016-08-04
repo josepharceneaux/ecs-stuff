@@ -190,6 +190,7 @@ def fetch_candidate_info(candidate, fields=None):
         'talent_pool_ids': talent_pool_ids,
         'resume_url': resume_url,
         'source_id': candidate.source_id,
+        'source_product_id': candidate.source_product_id,
         'summary': candidate.summary,
         'objective': candidate.objective
     }
@@ -515,10 +516,16 @@ def candidate_contact_history(candidate):
                 event_datetime=event_datetime
             ))
 
+    timeline_with_valid_event_datetime = filter(lambda entry: isinstance(entry['event_datetime'],
+                                                                         datetime.datetime), timeline)
+    timeline_with_null_event_datetime = filter(lambda entry: entry['event_datetime'] is None, timeline)
+
     # Sort events by datetime and convert all date-times to ISO format
-    timeline = sorted(timeline, key=lambda entry: entry['event_datetime'], reverse=True)
+    timeline = sorted(timeline_with_valid_event_datetime, key=lambda entry: entry['event_datetime'], reverse=True)
     for event in timeline:
         event['event_datetime'] = event['event_datetime'].isoformat()
+
+    timeline += timeline_with_null_event_datetime
 
     return dict(timeline=timeline)
 
@@ -838,6 +845,7 @@ def create_or_update_candidate_from_params(
         dice_profile_id=None,
         added_datetime=None,
         source_id=None,
+        source_product_id=None,
         objective=None,
         summary=None,
         talent_pool_ids=None,
@@ -885,6 +893,7 @@ def create_or_update_candidate_from_params(
     :type   dice_profile_id:        int
     :type   added_datetime:         str
     :param  source_id:              Source of candidate's intro, e.g. job-fair
+    :param  source_product_id       int
     :type   source_id:              int
     :type   objective:              basestring
     :type   summary:                basestring
@@ -931,12 +940,12 @@ def create_or_update_candidate_from_params(
 
     if is_updating:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
-                                         candidate_id, user_id, resume_url, source_id, status_id)
+                                         candidate_id, user_id, resume_url, source_id, source_product_id, status_id)
     else:  # Add Candidate
         candidate_id = _add_candidate(first_name, middle_name, last_name,
                                       formatted_name, added_datetime, status_id,
                                       user_id, dice_profile_id, dice_social_profile_id,
-                                      source_id, objective, summary, resume_url)
+                                      source_id, source_product_id, objective, summary, resume_url)
 
     candidate = Candidate.get_by_id(candidate_id)
     """
@@ -1125,7 +1134,7 @@ def social_network_name_from_url(url):
 
 
 def _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
-                      candidate_id, user_id, resume_url, source_id, candidate_status_id):
+                      candidate_id, user_id, resume_url, source_id, source_product_id, candidate_status_id):
     """
     Function will update Candidate's primary information.
     Candidate's Primary information include:
@@ -1148,7 +1157,8 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         last_name = parsed_names_object.last
 
     update_dict = {'objective': objective, 'summary': summary, 'filename': (resume_url or '').lower(),
-                   'source_id': source_id, 'candidate_status_id': candidate_status_id}
+                   'source_id': source_id, 'candidate_status_id': candidate_status_id,
+                   'source_product_id': source_product_id}
 
     # Strip each key-value and remove keys with empty-string-values
     update_dict = purge_dict(update_dict, remove_empty_strings_only=True)
@@ -1186,7 +1196,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
 def _add_candidate(first_name, middle_name, last_name, formatted_name,
                    added_time, candidate_status_id, user_id,
                    dice_profile_id, dice_social_profile_id, source_id,
-                   objective, summary, resume_url):
+                   source_product_id, objective, summary, resume_url):
     """
     Function will add Candidate and its primary information to db
     All empty values (None or empty strings) will be ignored
@@ -1195,9 +1205,10 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
     add_dict = dict(
         first_name=first_name, middle_name=middle_name, last_name=last_name, formatted_name=formatted_name,
         added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
-        dice_profile_id=dice_profile_id, dice_social_profile_id=dice_social_profile_id,
-        source_id=source_id, objective=objective, summary=summary, filename=(resume_url or '').lower(),
-        is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
+        source_product_id=source_product_id, dice_profile_id=dice_profile_id,
+        dice_social_profile_id=dice_social_profile_id, source_id=source_id, objective=objective,
+        summary=summary, filename=(resume_url or '').lower(), is_dirty=0
+        # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     )
 
     # All empty values must be removed
