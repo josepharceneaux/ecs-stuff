@@ -34,7 +34,7 @@ import sys
 from requests import codes
 
 # Application specific imports
-from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
+from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.tests.test_utilities import (invalid_data_test,
                                                         missing_key_test, create_campaign,
                                                         get_campaigns, delete_campaign,
@@ -74,7 +74,7 @@ class TestCreateCampaign(object):
         :param smartlist_first: smartlist dict object
         """
         # First test with missing keys
-        for key in CAMPAIGN_REQUIRED_FIELDS:
+        for key in PushCampaignBase.REQUIRED_FIELDS:
             data = campaign_data.copy()
             data['smartlist_ids'] = [smartlist_first['id']]
             missing_key_test(data, key, token_first)
