@@ -6,13 +6,11 @@ docstring with the help of PyContracts.
 # Standard Lib
 import cStringIO
 from bs4.element import ResultSet
-from werkzeug.local import LocalProxy
 
 # Third Party
 from requests import Response
-
-# Application Specific
 from contracts import new_contract
+from werkzeug.local import LocalProxy
 
 
 def define_custom_contracts():
