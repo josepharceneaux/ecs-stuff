@@ -45,19 +45,21 @@ def authenticate_user(username, password, *args, **kwargs):
             return user
         else:
             if not redis_store.exists('invalid_login_attempt_counter_{}'.format(username)):
-                redis_store.setex('invalid_login_attempt_counter_{}'.format(username), 3600, 1)
+                redis_store.setex('invalid_login_attempt_counter_{}'.format(username), 1, 3600)
             else:
-                previous_wrong_password_count = redis_store.get('invalid_login_attempt_counter_{}'.format(username))
+                previous_wrong_password_count = int(redis_store.get('invalid_login_attempt_counter_{}'.format(username)))
                 if previous_wrong_password_count + 1 >= MAXIMUM_NUMBER_OF_INVALID_LOGIN_ATTEMPTS:
                     redis_store.delete('invalid_login_attempt_counter_{}'.format(username))
                     user.is_disabled = 1
                     db.session.commit()
                     logger.info("User %s has been disabled because %s invalid login attempts have been made in "
                                 "last one hour", user.id, MAXIMUM_NUMBER_OF_INVALID_LOGIN_ATTEMPTS)
+                    raise UnauthorizedError("User %s has been disabled because %s invalid login attempts have made in "
+                                            "last one hour" % (user.id, MAXIMUM_NUMBER_OF_INVALID_LOGIN_ATTEMPTS))
                 else:
                     time_to_live = redis_store.ttl('invalid_login_attempt_counter_{}'.format(username))
                     redis_store.setex('invalid_login_attempt_counter_{}'.format(username),
-                                      time_to_live, previous_wrong_password_count + 1)
+                                      previous_wrong_password_count + 1, time_to_live)
 
     logger.warn('There is no user with username: %s and password: %s', username, password)
     return None
