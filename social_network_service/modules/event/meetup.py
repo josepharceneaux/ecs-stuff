@@ -512,7 +512,7 @@ class Meetup(EventBase):
         # these are required fields for Meetup event
         mandatory_input_data = ['title', 'description', 'social_network_group_id',
                                 'group_url_name', 'start_datetime', 'timezone',
-                                'max_attendees', 'venue_id', 'organizer_id']
+                                'max_attendees', 'venue_id']
         # gets fields which are missing
         missing_items = [key for key in mandatory_input_data if
                          not data.get(key)]
