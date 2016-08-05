@@ -38,7 +38,7 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
     :param http_method method: standard HTTP method like post, get (in lowercase)
     :param string url: target url
     :param (string | None)  access_token: authentication token, token can be empty, None or invalid
-    :param (dict | None) data: payload data for request
+    :param type(t) data: payload data for request
     :param (dict | None) params: query params
     :param bool is_json: a flag to determine, whether we need to dump given data or not.
             default value is true because most of the APIs are using json content-type.

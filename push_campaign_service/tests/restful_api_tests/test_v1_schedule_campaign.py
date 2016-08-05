@@ -36,16 +36,17 @@ Unschedule a campaign: /v1/push-campaigns/:id/schedule [DELETE]
 """
 # Builtin imports
 import sys
-from datetime import datetime
-
+from datetime import datetime, timedelta
 # 3rd party imports
 from redo import retry
 from requests import codes
 
 # Application specific imports
+from push_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
                                                         schedule_campaign, invalid_data_test,
-                                                        reschedule_campaign, unschedule_campaign, get_blasts)
+                                                        reschedule_campaign, unschedule_campaign, get_blasts,
+                                                        unexpected_field_test, get_campaign, match_schedule_data)
 from push_campaign_service.common.utils.test_utils import send_request
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.test_utils import unauthorize_test
@@ -141,6 +142,8 @@ class TestScheduleCampaignUsingPOST(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
+        campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
+        match_schedule_data(data, campaign)
         # retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
         #       args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
 
@@ -159,11 +162,13 @@ class TestScheduleCampaignUsingPOST(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
+        campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
+        match_schedule_data(data, campaign)
         # retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
         #       args=(campaign_id, token_first), kwargs={'count': 1})
 
     def test_schedule_a_campaign_with_user_from_diff_domain(self, token_first, token_second,
-                                                            campaign_in_db, smartlist_first, candidate_device_first):
+                                                            campaign_in_db, candidate_device_first):
         """
         Test with a valid campaign but user is not owner of campaign
         Here we created campaign with user whose Auth token_first is "token_first"
@@ -174,6 +179,44 @@ class TestScheduleCampaignUsingPOST(object):
         """
         data = generate_campaign_schedule_data()
         schedule_campaign(campaign_in_db['id'], data, token_second, expected_status=(codes.FORBIDDEN,))
+
+    def test_campaign_schedule_with_invalid_frequency_id(self, token_first, campaign_in_db):
+        """
+        Send a POST request to schedule a campaign with data where start datetime is in past. API
+        will raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_in_db: campaign object
+        """
+        some_invalid_frequency = -1
+        data = generate_campaign_schedule_data(frequency_id=some_invalid_frequency)
+        schedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
+
+    def test_campaign_schedule_with_past_datetimes(self, token_first, campaign_in_db):
+        """
+        Send a POST request to schedule a campaign with data where start datetime is in past. API
+        will raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_in_db: campaign object
+        """
+        data = generate_campaign_schedule_data()
+        start = datetime.utcnow() - timedelta(days=20)
+        data.update({'start_datetime': DatetimeUtils.to_utc_str(start)})
+        schedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
+
+        data = generate_campaign_schedule_data()
+        end = datetime.utcnow() - timedelta(days=20)
+        data.update({'end_datetime': DatetimeUtils.to_utc_str(end)})
+        schedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
+
+    def test_campaign_schedule_with_unexpected_field(self, token_first, campaign_in_db):
+        """
+        Send a POST request to schedule a campaign with data where one field is unexpected/not allowed. API
+        will raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_in_db: campaign object
+        """
+        data = generate_campaign_schedule_data()
+        unexpected_field_test('post', URL % campaign_in_db['id'], data, token_first)
 
 
 class TestRescheduleCampaignUsingPUT(object):
@@ -283,6 +326,8 @@ class TestRescheduleCampaignUsingPUT(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
+        campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
+        match_schedule_data(data, campaign)
         # retry(get_blasts, attempts=20, sleepscale=1, sleeptime=3, retry_exceptions=(AssertionError,),
         #       args=(campaign_in_db['id'], token_first), kwargs={'count': 2})
 
@@ -300,8 +345,49 @@ class TestRescheduleCampaignUsingPUT(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
+        campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
+        match_schedule_data(data, campaign)
         # retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
         #       args=(campaign_id, token_first), kwargs={'count': 1})
+
+    def test_campaign_reschedule_with_invalid_frequency_ids(self, token_first, campaign_in_db, schedule_a_campaign):
+        """
+        Try to reschedule a campaign with invalid frequency id like -1, API will raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_in_db: campaign object
+        :param dict schedule_a_campaign: a fixture to schedule a campaign
+        """
+        data = generate_campaign_schedule_data(frequency_id=-1)
+        start = datetime.utcnow() - timedelta(days=20)
+        data.update({'start_datetime': DatetimeUtils.to_utc_str(start)})
+        reschedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
+
+    def test_campaign_reschedule_with_past_datetimes(self, token_first, campaign_in_db, schedule_a_campaign):
+        """
+        Try to reschedule a campaign with start_datetime and end_datetime in past. API will raise Invalid Usage 400
+        :param string token_first: auth token
+        :param dict campaign_in_db: campaign object
+        :param dict schedule_a_campaign: a fixture to schedule a campaign
+        """
+        # data = generate_campaign_schedule_data()
+        # start = datetime.utcnow() - timedelta(days=20)
+        # data.update({'start_datetime': DatetimeUtils.to_utc_str(start)})
+        # reschedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
+
+        data = generate_campaign_schedule_data()
+        end = datetime.utcnow() - timedelta(days=20)
+        data.update({'end_datetime': DatetimeUtils.to_utc_str(end)})
+        reschedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
+
+    def test_campaign_reschedule_with_unexpected_field(self, token_first, campaign_in_db, schedule_a_campaign):
+        """
+        Try to reschedule a campaign with data having invalid field, API will raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_in_db: campaign object
+        :param dict schedule_a_campaign: a fixture to schedule a campaign
+        """
+        data = generate_campaign_schedule_data()
+        unexpected_field_test('post', URL % campaign_in_db['id'], data, token_first)
 
 
 class TestUnscheduleCamapignUsingDELETE(object):
@@ -346,13 +432,12 @@ class TestUnscheduleCamapignUsingDELETE(object):
         for _id, status_code in invalid_ids:
             unschedule_campaign(_id, token_first, expected_status=(status_code,))
 
-    def test_unschedule_a_campaign(self, token_first, campaign_in_db, smartlist_first,
+    def test_unschedule_a_campaign(self, token_first, campaign_in_db,
                                    schedule_a_campaign):
         """
         Try to unschedule a scheduled campaign and it should be unscheduled successfully
         :param token_first: auth token
         :param campaign_in_db: campaign object
-        :param smartlist_first: smartlist for user_first
         :param schedule_a_campaign: a fixture to schedule a campaign
         """
         unschedule_campaign(campaign_in_db['id'], token_first, expected_status=(codes.OK,))

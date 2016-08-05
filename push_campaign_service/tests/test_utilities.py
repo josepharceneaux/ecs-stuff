@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from dateutil.parser import parse
 from faker import Faker
 from requests import codes
 from contracts import contract
@@ -15,33 +16,58 @@ VERSION = PushCampaignApi.VERSION
 
 
 @contract
-def missing_key_test(data, key, token):
+def missing_keys_test(keys, smartlist, token, campaign_id=None, method='post'):
     """
-    This function sends a put request to api with data with one required field
-    missing and checks that it InvalidUsage 400
-    :param dict data: campaign data
-    :param string key: field key
+    This function sends a request to api with required field
+    with an invalid value and checks that it returns InvalidUsage 400
+    :param list | tuple keys: required fields
+    :param dict smartlist: smartlist dict object
     :param string token: auth token
+    :param int | long | None campaign_id: push campaign id
+    :param http_method method: http request method, post/put
     """
-    data.pop(key, None)
-    response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
+    for key in keys:
+        data = generate_campaign_data()
+        data['smartlist_ids'] = [smartlist['id']]
+        data.pop(key)
+        if method == 'post':
+            create_campaign(data, token, expected_status=(codes.BAD_REQUEST,))
+        elif campaign_id:
+            update_campaign(campaign_id, data, token, expected_status=(codes.BAD_REQUEST,))
+
+
+@contract
+def unexpected_field_test(method, url, data, token):
+    """
+    This function send a request to API with an unexpected field in request body. API should raise InvalidUsage 400
+    :param http_method method: request method, POST/PUT
+    :param string url: API resource url
+    :param dict data: request data
+    :param string token: access token
+    """
+    data[fake.word()] = fake.word()
+    response = send_request(method, url, token, data)
     assert response.status_code == codes.BAD_REQUEST
 
 
 @contract
-def invalid_value_test(data, key, token, campaign_id):
+def invalid_value_test(data, key, values, token, campaign_id=None, method='post'):
     """
-    This function sends a put request to api with required one required field
-    with an invalid value (empty string) and checks that it returns InvalidUsage 400
+    This function sends a request to api with required field
+    with an invalid value and checks that it returns InvalidUsage 400
     :param dict data: campaign data
     :param string key: field key
+    :param list values: possible invalid values
     :param string token: auth token
-    :param int | long campaign_id: push campaign id
+    :param int | long | None campaign_id: push campaign id
+    :param http_method method: http request method, post/put
     """
-    data.update(**generate_campaign_data())
-    data[key] = ''
-    response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_id, token, data)
-    assert response.status_code == codes.BAD_REQUEST
+    for val in values:
+        data[key] = val
+        if method == 'post':
+            create_campaign(data, token, expected_status=(codes.BAD_REQUEST,))
+        elif campaign_id:
+            update_campaign(campaign_id, data, token, expected_status=(codes.BAD_REQUEST,))
 
 
 @contract
@@ -53,19 +79,12 @@ def invalid_data_test(method, url, token):
     :param string url: api url
     :param string token: auth token
     """
-    data = None
-    response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == codes.BAD_REQUEST
-    response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == codes.BAD_REQUEST
-    data = {}
-    response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == codes.BAD_REQUEST
-    response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == codes.BAD_REQUEST
-    data = get_fake_dict()
-    response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == codes.BAD_REQUEST
+    data_set = [None, {}, get_fake_dict(), '',  '  ', []]
+    for data in data_set:
+        response = send_request(method, url, token, data, is_json=False)
+        assert response.status_code == codes.BAD_REQUEST
+        response = send_request(method, url, token, data, is_json=True)
+        assert response.status_code == codes.BAD_REQUEST
 
 
 def generate_campaign_data():
@@ -78,7 +97,7 @@ def generate_campaign_data():
         "body_text": fake.paragraph(1),
         "url": 'https://www.google.com/'
     }
-    return data
+    return data.copy()
 
 
 @contract
@@ -111,6 +130,20 @@ def compare_campaign_data(campaign_first, campaign_second):
     assert campaign_first['body_text'] == campaign_second['body_text']
     assert campaign_first['name'] == campaign_second['name']
     assert campaign_first['url'] == campaign_second['url']
+
+
+@contract
+def match_schedule_data(schedule_data, campaign):
+    """
+    This function takes schedule data and campaign object and matched schedule values like start_datetine,
+    end_datetime and frequency_id.
+    :param dict schedule_data: data used to schedule a campaign
+    :param dict campaign: campaign object
+    """
+    diff = timedelta(seconds=1)
+    assert (parse(schedule_data['start_datetime'].split('.')[0]) - parse(campaign['start_datetime'])) < diff
+    assert (parse(schedule_data['end_datetime'].split('.')[0]) - parse(campaign['end_datetime'])) < diff
+    assert schedule_data['frequency_id'] == campaign['frequency_id']
 
 
 @contract
