@@ -32,18 +32,9 @@ class TalentPool(db.Model):
         db.session.delete(self)
         db.session.commit()
 
-    # TODO: IMO We don't need this as we have relationship with user say User.talent_pool. So, IMO, remove this
     @classmethod
-    def get_by_user_id(cls, user_id):
-        """
-        Filter all records using user_id
-        :param user_id: User id whose talent_pools need to return
-        :type user_id: int
-        :return: talent pools
-        :rtype: TalentPool
-        """
-        # TODO: rtype is not correct
-        return cls.query.filter_by(user_id=user_id)
+    def filter_by_user_id(cls, user_id):
+        return cls.query.filter_by(user_id=user_id).all()
 
 
 class TalentPoolCandidate(db.Model):

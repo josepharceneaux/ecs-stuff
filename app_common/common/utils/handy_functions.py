@@ -1,6 +1,4 @@
 """Misc functions that have no logical grouping to a module."""
-# TODO: Added unused import, remove it
-from contracts import contract
 
 __author__ = 'erikfarmer'
 
@@ -17,6 +15,7 @@ from itertools import izip_longest
 from requests import ConnectionError
 from flask import current_app, request
 from werkzeug.exceptions import BadRequest
+from contracts import contract
 
 # Application Specific
 from ..models.user import User
@@ -24,7 +23,10 @@ from ..talent_config_manager import TalentConfigKeys
 from ..utils.validators import raise_if_not_positive_int_or_long
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
+from ..custom_contracts import define_custom_contracts
 
+
+define_custom_contracts()
 
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
@@ -465,7 +467,7 @@ def normalize_value(value):
     return value.strip().lower()
 
 
-# TODO: There used to be @contract on original version, any comment why removed that?
+@contract
 def send_request(method, url, access_token, data=None, params=None, is_json=True, verify=True):
     """
     This is a generic method to send HTTP request. We can just pass our data/ payload
@@ -483,7 +485,7 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
     """
     method = method.lower()
     request_method = getattr(requests, method)
-    headers = dict(Authorization='Bearer %s' % access_token)
+    headers = dict(Authorization='Bearer %s' % access_token if 'Bearer' in access_token else 'Bearer %s' % access_token)
     if is_json:
         headers['Content-Type'] = 'application/json'
         data = json.dumps(data)

@@ -110,37 +110,28 @@ def create_or_update_candidate(oauth_token, data, return_candidate_ids_only=Fals
     :param return_candidate_ids_only: If true it will only return the created candidate ids
     else it will return the created candidate response json object
     Returns: list of created candidate ids
-    # """
-    # TODO: Above line should not be a comment - remove hash
+    """
     resp = send_request('post',
-                        url=CandidateApiUrl.CANDIDATES,
-                        headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token,
-                                 'content-type': 'application/json'},
-                        data=json.dumps(data)
+                        url=CandidateApiUrl.CANDIDATES, access_token=oauth_token,
+                        data=data
                         )
     data_resp = resp.json()
     # Candidate already exists. So, we update candidate data and return candidate id
     # 3013 error code represents candidate already exists.
-    # TODO: Avoid hard coded error code
-    if resp.status_code == requests.codes.bad and data_resp['error']['code'] == 3013:
+    candidate_already_exist = 3013
+    if resp.status_code == requests.codes.bad and data_resp['error']['code'] == candidate_already_exist:
         data['candidates'][0]['id'] = data_resp['error']['id']
         patch_resp = send_request('patch',
-                                  url=CandidateApiUrl.CANDIDATES,
-                                  headers=
-                                  {
-                                      'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token,
-                                      'content-type': 'application/json'},
-                                  data=json.dumps(data)
+                                  url=CandidateApiUrl.CANDIDATES, access_token=oauth_token,
+                                  data=data
                                   )
         if return_candidate_ids_only:
-            # TODO: If it will always be one candidate, why not simply return Id? rather than list
-            return [candidate['id'] for candidate in patch_resp.json()['candidates']]
+            return patch_resp.json()['candidates'][0]['id']
         else:
             return patch_resp.json()
     assert resp.status_code == requests.codes.created
     if return_candidate_ids_only:
-        # TODO: If it will always be one candidate, why not simply return Id? rather than list
-        return [candidate['id'] for candidate in resp.json()['candidates']]
+        return resp.json()['candidates'][0]['id']
     return resp.json()
 
 

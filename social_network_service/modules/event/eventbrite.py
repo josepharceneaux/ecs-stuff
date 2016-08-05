@@ -10,13 +10,10 @@ from datetime import datetime
 from datetime import timedelta
 
 # Application specific
-# TODO: unused import
-from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import logger
 from social_network_service.modules.utilities import log_error
-from social_network_service.modules.utilities import get_class
 from social_network_service.modules.event.base import EventBase
 from social_network_service.custom_exceptions import VenueNotFound
 from social_network_service.custom_exceptions import EventNotCreated
@@ -101,7 +98,7 @@ class Eventbrite(EventBase):
                 utc start_date for event importer
 
         :param args:
-        :param kwargs:
+        :param kwargs: datetime range dict
         :return:
         """
         super(Eventbrite, self).__init__(*args, **kwargs)
@@ -110,40 +107,13 @@ class Eventbrite(EventBase):
         self.social_network_event_id = None
         self.ticket_payload = None
         self.venue_payload = None
-        # TODO: datetime.now() -> datetime.utcnow()
         self.start_date_in_utc =\
             kwargs.get('date_range_start') \
-            or (datetime.now() -
+            or (datetime.utcnow() -
                 timedelta(days=60)).strftime("%Y-%m-%dT%H:%M:%SZ")
-        # TODO: datetime.now() -> datetime.utcnow()
         self.end_date_in_utc =\
             kwargs.get('date_range_end') \
-            or datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-
-    def process_events_rsvps(self, user_credentials, rsvp_data=None, **kwargs):
-        """
-        We get events against a particular user_credential.
-        Then we get the rsvps of all events present in database and process
-        them to save in database.
-        :param user_credentials: are the credentials of user for
-                                    a specific social network in db.
-        :type user_credentials: common.models.user.UserSocialNetworkCredential
-        """
-        # TODO: Need to update docs
-        # TODO: It seems rsvp_data is unused, maybe need to remove this
-        # get_required class under rsvp/ to process rsvps
-        sn_rsvp_class = get_class(self.social_network.name, 'rsvp')
-        # create object of selected rsvp class
-        sn_rsvp_obj = sn_rsvp_class(user_credentials=user_credentials,
-                                    headers=self.headers,
-                                    social_network=self.social_network,
-                                    # TODO: PEP08 warning in line below
-                                     kwargs=kwargs
-                                    )
-        rsvps = sn_rsvp_obj.get_all_rsvps()
-
-        # process RSVPs and save in database
-        sn_rsvp_obj.process_rsvps(rsvps=rsvps)
+            or datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def get_events(self):
         """
@@ -279,16 +249,13 @@ class Eventbrite(EventBase):
                 about=organizer['description']
                 if organizer.has_key('description') else ''
             )
-            # TODO: Duplicating line 290? Why repetition?
+
             organizer_data['about'] = organizer_data['about'].get('html', '') if type(organizer_data['about']) == dict \
                 else ''
             organizer_in_db = EventOrganizer.get_by_user_id_and_name(
                 self.user.id,
                 organizer['name'] if organizer.has_key('name') else ''
                                                               )
-
-            organizer_data['about'] = organizer_data['about'].get('html', '') if type(organizer_data['about']) == dict \
-                else ''
             if organizer_in_db:
                 organizer_in_db.update(**organizer_data)
                 organizer_id = organizer_in_db.id

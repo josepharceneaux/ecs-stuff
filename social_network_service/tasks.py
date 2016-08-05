@@ -22,20 +22,20 @@ def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetim
     """
     Imports RSVPs or events of a user, create candidates store them in db and also upload them on Cloud search
     :param social_network_name: Facebook, Eventbrite, Meetup
+    :type social_network_name: str
     :param mode: rsvp or event
+    :type mode: str
     :param user_credentials_id: user credentials entry
+    :type user_credentials_id: id
     :param datetime_range:
-    :param app: Flask app
+    :type datetime_range: dict
     :return:
     """
-    # TODO: No param "app"
-    # TODO: Add types of params
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
         user_credentials = UserSocialNetworkCredential.get_by_id(user_credentials_id)
         user_id = user_credentials.user_id
         try:
-
             social_network = SocialNetwork.get_by_name(social_network_name.lower())
             social_network_class = get_class(social_network.name.lower(), 'social_network',
                                              user_credentials=user_credentials)

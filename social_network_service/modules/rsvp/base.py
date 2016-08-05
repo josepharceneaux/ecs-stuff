@@ -14,6 +14,8 @@ from datetime import datetime, timedelta
 from urllib import urlencode
 
 # Application Specific
+from social_network_service.common.utils.test_utils import refresh_token
+from social_network_service.modules.utilities import Attendee
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.inter_service_calls.candidate_service_calls import create_or_update_candidate
@@ -27,8 +29,8 @@ from social_network_service.common.models.candidate import CandidateSocialNetwor
 from social_network_service.common.routes import UserServiceApiUrl, AuthApiUrl
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.custom_exceptions import UserCredentialsNotFound, ProductNotFound
-from social_network_service.modules.constants import REQUEST_TIMEOUT
 from social_network_service.social_network_app import logger
+from social_network_service.common.constants import REQUEST_TIMEOUT
 
 
 class RSVPBase(object):
@@ -121,7 +123,6 @@ class RSVPBase(object):
     - To understand how the RSVP importer works, we have an example here.
         We make the object of this class while importing RSVPs both through
         social_network.
-        # TODO: Need to update docs
 
         :Example:
 
@@ -154,12 +155,11 @@ class RSVPBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
-        # TODO: better to do as, if not .. raise
         if isinstance(kwargs.get('user_credentials'), UserSocialNetworkCredential):
             self.user_credentials = kwargs.get('user_credentials')
             self.user = User.get_by_id(self.user_credentials.user_id)
-            self.user_access_token = Token.get_by_user_id(self.user_credentials.user_id)
-            if not self.user_access_token.access_token:
+            self.user_token = Token.get_by_user_id(self.user_credentials.user_id)
+            if not self.user_token.access_token:
                 raise InternalServerError('Unable to create candidate candidateaccess_token is null')
         else:
             raise UserCredentialsNotFound('User Credentials are empty/none')
@@ -230,8 +230,8 @@ class RSVPBase(object):
         - We use this method inside process_events_rsvps() defined in
             EventBase class inside social_network_service/event/base.py.
 
-        - We use this method while importing RSVPs through social_network.
-        # TODO: Through nightly script which fetches data from different social networks
+        - We use this method while importing RSVPs through social_network either by direct hitting endpoint or
+        by running an hourly job scheduled by scheduler service.
         **See Also**
             .. seealso:: process_events_rsvps() method in EventBase class
             inside social_network_service/event/base.py
@@ -347,10 +347,9 @@ class RSVPBase(object):
         """
         try:
             attendee = self.get_attendee(rsvp)
-            # TODO: we can log more info. i.e. user_id, social_network_id etc
-            # TODO: This should be logger.error(), no?
             if not attendee:
-                logger.info('Attendee object couldn\'t be created')
+                logger.info('Attendee object couldn\'t be created because event is not imported yet. RSVP data: %s'
+                            % rsvp)
                 return
             # following picks the source product id for attendee
             attendee = self.pick_source_product(attendee)
@@ -458,9 +457,7 @@ class RSVPBase(object):
         :return attendee:
         :rtype: Attendee
         """
-        # TODO: "from social_network_service.modules.utilities import Attendee" on top so rtype is recognized
-        # TODO: Seems self.user_access_token.access_token confusing, maybe need to rename
-        headers = {'Authorization': 'Bearer {}'.format(self.user_access_token.access_token),
+        headers = {'Authorization': 'Bearer {}'.format(self.user_token.access_token),
                    "Content-Type": "application/json"}
 
         candidate_source = {
@@ -480,9 +477,6 @@ class RSVPBase(object):
             logger.exception(response.text)
             raise InternalServerError(error_message="Error while creating candidate source")
         else:
-            # TODO: Response on Apiary is different http://docs.gettalentuserservice.apiary.io/#reference/source/sources-resource/create-source
-            # TODO: Kidnly double check this
-
             attendee.candidate_source_id = response.json()['source']['id']
 
         return attendee
@@ -520,7 +514,7 @@ class RSVPBase(object):
                 attendee.source_product_id)
 
         # To create candidates, user must have be associated with talent_pool
-        talent_pools = TalentPool.get_by_user_id(attendee.gt_user_id)
+        talent_pools = TalentPool.filter_by_user_id(attendee.gt_user_id)
         talent_pool_ids = map(lambda talent_pool: talent_pool.id, talent_pools)
 
         if not talent_pool_ids:
@@ -533,9 +527,8 @@ class RSVPBase(object):
                 'talent_pool_ids': dict(add=talent_pool_ids)
                 }
         social_network_data = {
-            # TODO: PEP08 warning
-             'name': attendee.event.social_network.name,
-             'profile_url': attendee.social_profile_url
+            'name': attendee.event.social_network.name,
+            'profile_url': attendee.social_profile_url
         }
 
         # Update if already exist
@@ -560,29 +553,12 @@ class RSVPBase(object):
 
         # We need to refresh token if token is expired. For that send request to auth service and request a
         # refresh token.
-        # TODO: This can be used at multi places(In CampaignBase as well), IMO make a helper function for this
-        # TODO: or maybe there is already some function for this
-        if self.user_access_token and \
-                            (self.user_access_token.expires - timedelta(seconds=REQUEST_TIMEOUT)) < datetime.utcnow():
-            data = {
-                'client_id': self.user_access_token.client_id,
-                'client_secret': self.user_access_token.client.client_secret,
-                'refresh_token': self.user_access_token.refresh_token,
-                'grant_type': u'refresh_token'
-            }
+        if self.user_token and (self.user_token.expires - timedelta(seconds=REQUEST_TIMEOUT)) < datetime.utcnow():
+            self.user_token.access_token = refresh_token(self.user_token)
 
-            resp = http_request('POST', AuthApiUrl.TOKEN_CREATE, headers=
-                                {'content-type': 'application/x-www-form-urlencoded'},
-                                data=urlencode(data))
-            logger.info('Token refreshed %s' % resp.json()['expires_at'])
-            self.user_access_token.access_token = "Bearer " + resp.json()['access_token']
-
-        response = create_or_update_candidate(oauth_token=self.user_access_token.access_token,
-                                              data=dict(candidates=[data]),
-                                              return_candidate_ids_only=True)
-        # Get created candidate id
-        candidate_id = response[0]
-        attendee.candidate_id = candidate_id
+        attendee.candidate_id = create_or_update_candidate(oauth_token=self.user_token.access_token,
+                                                           data=dict(candidates=[data]),
+                                                           return_candidate_ids_only=True)
 
         return attendee
 
@@ -614,11 +590,10 @@ class RSVPBase(object):
 
         rsvp_in_db = \
             RSVP.get_by_vendor_rsvp_id_candidate_id_vendor_id_event_id(
-            # TODO: PEP08 violations
-            attendee.vendor_rsvp_id,
-            attendee.candidate_id,
-            attendee.social_network_id,
-            attendee.event.id)
+                attendee.vendor_rsvp_id,
+                attendee.candidate_id,
+                attendee.social_network_id,
+                attendee.event.id)
         data = {
             'candidate_id': attendee.candidate_id,
             'event_id': attendee.event.id,

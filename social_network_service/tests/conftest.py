@@ -7,7 +7,10 @@ import pytest
 
 # App Settings
 from social_network_service.common.redis_cache import redis_store
-from social_network_service.common.tests.api_conftest import user_first, token_first, talent_pool
+from social_network_service.common.tests.api_conftest import user_first, token_first, talent_pool, user_same_domain, \
+    token_same_domain
+from social_network_service.common.tests.conftest import sample_user, domain_first, first_group, user_auth
+
 from social_network_service.modules.social_network.meetup import Meetup
 from social_network_service.social_network_app import app
 
@@ -35,10 +38,8 @@ EVENT_DATA = {
     "title": "Test Event",
     "description": "Test Event Description",
     "registration_instruction": "Just Come",
-    # TODO: utcnow
-    "start_datetime": (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-    # TODO: utcnow
-    "end_datetime": (datetime.now() + timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+    "start_datetime": (datetime.utcnow() + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+    "end_datetime": (datetime.utcnow() + timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
     "group_url_name": "QC-Python-Learning",
     "social_network_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
     "timezone": "Asia/Karachi",
@@ -57,15 +58,22 @@ def base_url():
     return SocialNetworkApiUrl.HOST_NAME
 
 
+@pytest.fixture(scope='function')
+def auth_token(user_auth, sample_user):
+    """
+    returns the access token using pytest fixture defined in common/tests/conftest.py
+    :param user_auth: fixture in common/tests/conftest.py
+    :param sample_user: fixture in common/tests/conftest.py
+    """
+    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
+    return auth_token_row['access_token']
+
+
 @pytest.fixture()
-def token(request, user_auth, user_first, talent_pool):
+def token(user_auth, user_first, talent_pool):
     """
     Returns the access token for a different user so that we can test forbidden error etc.
-    :param user_auth: fixture in common/tests/conftest.py
-    :param user_first: fixture in common/tests/conftest.py
-    :return token
     """
-    # TODO: Either define all params or define no one: Applies to more than one places
     auth_token_obj = user_auth.get_auth_token(user_first, get_bearer_token=True)
     return auth_token_obj['access_token']
 
@@ -74,7 +82,6 @@ def token(request, user_auth, user_first, talent_pool):
 def meetup():
     """
     This fixture returns Social network model object for meetup in getTalent database
-    :return:
     """
     return SocialNetwork.get_by_name('Meetup')
 
@@ -83,7 +90,6 @@ def meetup():
 def eventbrite():
     """
     This fixture returns Social network model object for eventbrite in getTalent database
-    :return:
     """
     return SocialNetwork.get_by_name('Eventbrite')
 
@@ -92,7 +98,6 @@ def eventbrite():
 def facebook():
     """
     This fixture returns Social network model object for facebook in getTalent database
-    :return:
     """
     return SocialNetwork.get_by_name('Facebook')
 
@@ -102,9 +107,6 @@ def test_eventbrite_credentials(request, user_first, eventbrite):
     """
     Create eventbrite social network credentials for this user so
     we can create event on Eventbrite.com
-    :param request:
-    :param user_first: fixture user
-    :return:
     """
     social_network_id = eventbrite.id
     user_credentials = UserSocialNetworkCredential(
@@ -130,9 +132,6 @@ def test_meetup_credentials(request, user_first, meetup):
     """
     Create meetup social network credentials for this user so
     we can create event on Meetup.com
-    :param request:
-    :param user_first: fixture user
-    :return:
     """
     # Create a redis object and add meetup access_token and refresh_token entry with 1.5 hour expiry time.
     meetup_key = 'Meetup'
@@ -192,7 +191,7 @@ def meetup_group(test_meetup_credentials, token_first):
 
 
 @pytest.fixture()
-def meetup_event_data(request, user_first, meetup, meetup_venue, organizer_in_db, meetup_group):
+def meetup_event_data(user_first, meetup, meetup_venue, organizer_in_db, meetup_group):
     """
     This fixture creates a dictionary containing event data to
     create event on Meetup social network.
@@ -210,7 +209,7 @@ def meetup_event_data(request, user_first, meetup, meetup_venue, organizer_in_db
 
 
 @pytest.fixture()
-def eventbrite_event_data(request, eventbrite, user_first, eventbrite_venue,
+def eventbrite_event_data(eventbrite, user_first, eventbrite_venue,
                           test_eventbrite_credentials, organizer_in_db):
     data = EVENT_DATA.copy()
     data['social_network_id'] = eventbrite.id
@@ -261,7 +260,6 @@ def meetup_event_with_user_first(request, user_first, test_meetup_credentials, m
     assert response.status_code == 201
 
     data = response.json()
-    db.session.commit()  # TODO: I don't think we need this
     event = Event.get_by_id(data['id'])
     event_id = event.id
 
@@ -281,20 +279,19 @@ def meetup_event_with_user_first(request, user_first, test_meetup_credentials, m
 
 
 @pytest.fixture()
-def auth_header(request, token_first):
+def auth_header(token_first):
     """
     returns the header which contains bearer token and content type
     :param auth_data: fixture to get access token
     :return: header dict object
     """
-    # TODO: request is unused: Applies to more than one places
     header = {'Authorization': 'Bearer ' + token_first,
               'Content-Type': 'application/json'}
     return header
 
 
 @pytest.fixture()
-def meetup_event_dict(request, user_first, meetup_event, talent_pool):
+def meetup_event_dict(user_first, meetup_event, talent_pool):
     """
     This puts meetup event in a dict 'meetup_event_in_db'.
     When event has been imported successfully, we add event_id in this dict.

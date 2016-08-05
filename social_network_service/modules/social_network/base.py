@@ -20,7 +20,7 @@ from social_network_service.modules.utilities import log_error
 from social_network_service.common.models.user import User
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
-from social_network_service.social_network_app import logger
+from social_network_service.social_network_app import logger, app
 from social_network_service.custom_exceptions import *
 
 
@@ -181,8 +181,8 @@ class SocialNetworkBase(object):
         :param int | long user_id: Id of User
         :param SocialNetwork | None social_network: Social Network object
         :param bool validate_credentials: If True, this will validate the credentials of user for given social network.
+        :param
         """
-        # TODO: new param **kwargs is unused.
         self.events = []
         self.api_relative_url = None
         self.user, self.social_network = self.get_user_and_social_network(user_id, social_network_id)
@@ -251,7 +251,7 @@ class SocialNetworkBase(object):
             social_network = SocialNetwork.get_by_name(self.__class__.__name__)
         return user, social_network
 
-    def process(self, mode, user_credentials=None, rsvp_data=None, **kwargs):
+    def process(self, mode, user_credentials=None, **kwargs):
         """
         :param mode: mode is either 'event' or 'rsvp.
         :param user_credentials: are the credentials of user for
@@ -276,7 +276,6 @@ class SocialNetworkBase(object):
             inside social_network_service/manager.py.
         """
         social_network_id = self.social_network.id
-        # TODO: IMO no need to save it new var when it is available in self
         user_id = self.user.id
         social_network_name = self.social_network.name
         try:
@@ -303,8 +302,7 @@ class SocialNetworkBase(object):
                 # process events to save in database
                 sn_event_obj.process_events(self.events)
             elif mode == 'rsvp':
-                sn_event_obj.process_events_rsvps(user_credentials,
-                                                  rsvp_data=rsvp_data)
+                sn_event_obj.process_events_rsvps(user_credentials, **kwargs)
         except Exception:
             logger.exception('process: running %s importer, user_id: %s, '
                              'social network: %s(id: %s)'
@@ -421,7 +419,8 @@ class SocialNetworkBase(object):
             # Now we have the URL, access token, and header is set too,
             get_member_id_response = http_request('POST', url,
                                                   headers=self.headers,
-                                                  user_id=self.user.id)
+                                                  user_id=self.user.id,
+                                                  app=app)
             if get_member_id_response.ok:
                 member_id = get_member_id_response.json().get('id')
                 data = dict(user_id=user_credentials.user_id,

@@ -9,8 +9,6 @@ from datetime import datetime
 from base import RSVPBase
 
 # Application Specific
-#TODO: Added unused import
-from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.models.event import Event
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.modules.utilities import Attendee
@@ -37,10 +35,10 @@ class Eventbrite(RSVPBase):
                                                             as EventbriteRsvp
 
         2. Get the social network class for auth purpose
-            user_id = user_credentials.user_id
-        social_network_class = get_class(
-                    user_credentials.social_network.name.lower(),
-                   'social_network')
+            >>> user_id = user_credentials.user_id
+            >>> social_network_class = get_class(
+            >>>        user_credentials.social_network.name.lower(),
+            >>>       'social_network')
         we call social network class here for auth purpose, If token is
         expired, access token is refreshed and we use fresh token
         sn = social_network_class(
@@ -48,12 +46,12 @@ class Eventbrite(RSVPBase):
                         social_network_id=user_credentials.social_network.id)
 
         3. Get the Eventbrite rsvp class imported and creates rsvp object
-            rsvp_class = get_class(
-                            user_credentials.social_network.name.lower(),
-                            'rsvp')
-            rsvp_obj = rsvp_class(
-            user_credentials=user_credentials,
-            social_network=user_credentials.social_network,headers=sn.headers)
+            >>> rsvp_class = get_class(
+            >>>                user_credentials.social_network.name.lower(),
+            >>>                'rsvp')
+            >>> rsvp_obj = rsvp_class(
+            >>> user_credentials=user_credentials,
+            >>> social_network=user_credentials.social_network,headers=sn.headers)
 
         4. Call get_all_rsvps method to get all Attendees of current user_credentials
 
@@ -65,41 +63,21 @@ class Eventbrite(RSVPBase):
             You can learn more about webhook and eventbrite API from following
             link - https://www.eventbrite.com/developer/v3/
         """
-    # TODO: We can make example of code in docs clearer by >>> symbol
 
     def __init__(self, *args, **kwargs):
         super(Eventbrite, self).__init__(*args, **kwargs)
 
-    # TODO: I think this is no longer needed
-    @staticmethod
-    def get_rsvp_id(url):
+    def get_rsvps(self, event):
         """
-        :param url: url we get from the response of RSVP via webhook
-        :type url: str
-
-        This gets the social_network_rsvp_id by comparing url of response of
-        rsvp and defined regular expression
-        :return: social_network_rsvp_id
-        :rtype: dict
+        This method is used to get all attendees of an event
+        :param event: eventbrite event
+        :type event: Event
+        :return: List of rsvps
+        :rtype: list
         """
-        regex_to_get_rsvp_id = \
-            '^https:\/\/www.eventbriteapi.com\/v3\/orders\/(?P<rsvp_id>[0-9]+)'
-        match = re.match(regex_to_get_rsvp_id, url)
-        social_network_rsvp_id = match.groupdict()['rsvp_id']
-        rsvp = {'rsvp_id': social_network_rsvp_id}
-        return rsvp
-
-    def get_all_rsvps(self, events=None):
-        """
-        - This method is used to get all attendees from each eventbrite events of a user
-        :param events: Eventbrite events object
-        :return: list of rsvps
-        """
-        # TODO: Unused param events
-        rsvp_url = self.api_url + '/users/%s/owned_event_attendees'
+        rsvp_url = self.api_url + '/events/%s/attendees'
         response = http_request('GET', headers=self.headers,
-                                url=rsvp_url
-                                % self.user_credentials.member_id)
+                                url=rsvp_url % event.social_network_event_id)
         all_rsvps = []
         data = response.json()
         page_size = data['pagination']['page_size']
@@ -122,18 +100,12 @@ class Eventbrite(RSVPBase):
 
         return all_rsvps
 
-    def get_rsvps(self, event):
-        # TODO: Add docs why only pass here
-        pass
-        # TODO: I think we can retrieve attendees of a single event of Eventbrite.
-        # TODO: See this url = self.api_url + "/events/" + str(event.social_network_event_id) + '/attendees/'
-
     def get_attendee(self, rsvp):
         """
         :param rsvp: rsvp is likely the response of social network API.
         :type rsvp: dict
         :return: attendee
-        :rtype: object
+        :rtype: Attendee
 
         - This function is used to get the data of candidate related
           to given rsvp. It attaches all the information in attendee object.
@@ -157,7 +129,6 @@ class Eventbrite(RSVPBase):
             .. seealso:: process_rsvps_via_webhook() method in class Eventbrite
                 inside social_network_service/rsvp/eventbrite.py
         """
-        # TODO: Correct rtype as you did at other places
         # get event_id
         social_network_event_id = rsvp['event_id']
         event = Event.get_by_user_id_social_network_id_vendor_event_id(

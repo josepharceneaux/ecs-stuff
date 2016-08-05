@@ -68,7 +68,7 @@ def user_second():
     :return: user dictionary object
     """
     user_id = test_config['USER_SECOND']['user_id']
-    return {'id': user_id}
+    return {'id': int(user_id)}
 
 
 @pytest.fixture(scope='session')
@@ -78,7 +78,7 @@ def user_same_domain():
     :return: user dictionary object
     """
     user_id = test_config['USER_SAME_DOMAIN']['user_id']
-    return {'id': user_id}
+    return {'id': int(user_id)}
 
 
 @pytest.fixture(scope='function')

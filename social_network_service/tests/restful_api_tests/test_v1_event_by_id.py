@@ -13,7 +13,6 @@ from social_network_service.common.models import db
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.routes import SocialNetworkApiUrl
-from social_network_service.common.tests.api_conftest import token_first
 from social_network_service.social_network_app import logger
 from social_network_service.tests.helper_functions import auth_header, unauthorize_test
 from social_network_service.common.utils.handy_functions import send_request
@@ -126,9 +125,6 @@ class TestEventById(object):
         - Using event id, send PUT request to update event data
         - Should get 200 response
         - Check if activity is created or not
-        :param token:
-        :param event_in_db:
-        :return:
         """
 
         event = event_in_db.to_json()
@@ -140,9 +136,9 @@ class TestEventById(object):
         datetime_now = datetime.datetime.now()
         datetime_now = datetime_now.replace(microsecond=0)
         event['title'] = 'Test update event'
-        # TODO: We can avoid hard coded format.
-        event['start_datetime'] = (datetime_now + datetime.timedelta(days=50)).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        event['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        datetime_format = '%Y-%m-%dT%H:%M:%S.%fZ'
+        event['start_datetime'] = (datetime_now + datetime.timedelta(days=50)).strftime(datetime_format)
+        event['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime(datetime_format)
         response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token_first, data=event)
         logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok, Resource Modified (200)'

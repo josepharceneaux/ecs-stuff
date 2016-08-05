@@ -16,7 +16,7 @@ import sys
 from social_network_service.common.models import db
 from social_network_service.common.models.misc import Activity
 from social_network_service.custom_exceptions import VenueNotFound, \
-    EventInputMissing, InvalidDatetime, EventOrganizerNotFound, SocialNetworkNotImplemented, SocialNetworkError
+    EventInputMissing, EventOrganizerNotFound, SocialNetworkNotImplemented, SocialNetworkError
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.tests.helper_functions import auth_header, send_post_request
@@ -36,7 +36,7 @@ class TestResourceEvents:
         assert response.status_code == 401, 'It should be unauthorized (401)'
         assert 'events' not in response.json()
 
-    def test_event_get_with_valid_token(self, token_first):
+    def test_event_get_with_valid_token(self, auth_token):
         """
         - Get events using valid access_token
         - As the test user is newly created. so, initially there will be no events
@@ -44,7 +44,7 @@ class TestResourceEvents:
         :return:
         """
         response = requests.get(SocialNetworkApiUrl.EVENTS,
-                                headers=auth_header(token_first))
+                                headers=auth_header(auth_token))
         logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok (200)'
         events = response.json()['events']

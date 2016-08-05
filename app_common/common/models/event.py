@@ -44,6 +44,15 @@ class Event(db.Model):
             )).first()
 
     @classmethod
+    def filter_by_user_and_social_network_id(cls, user_id, social_network_id):
+        assert user_id and social_network_id
+        return cls.query.filter(
+            db.and_(
+                Event.user_id == user_id,
+                Event.social_network_id == social_network_id
+            )).all()
+
+    @classmethod
     def get_by_user_id_vendor_id_start_date(cls, user_id, social_network_id, start_date):
         assert user_id and social_network_id and start_date
         return cls.query.filter(
@@ -93,10 +102,7 @@ class Event(db.Model):
         Returns list of events filtered by social_network_event_id field
         :param social_network_event_id: Social network event_id field
         :type social_network_event_id: str
-        :return:
+        :rtype: list
         """
-        # TODO: Remove redundant :return: and kindly keep this in mind for future
-        # TODO: Add rtype
-        # TODO: This is only filtering and not returning any list as mentioned in docs
         assert social_network_event_id
-        return cls.query.filter_by(social_network_event_id=social_network_event_id)
+        return cls.query.filter_by(social_network_event_id=social_network_event_id).all()

@@ -84,9 +84,10 @@ print 'DB reset is successful'
 print 'Generating initial test data'
 
 
+# Create dummy users for tests and insert user social network credentials of event brite and associate it with user_id 1
 create_dummy_users()
-# TODO: Add comment about following query
-q = '''INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '1', '18', NULL, '217041', '164351364314', 'YZASRSWZO5CWKSEXMELQ');'''
+q = '''INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '1', '18', NULL, '217041', '164351364314', 'YZASRSWZO5CWKSEXMELQ');
+INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '2', '18', NULL, '217041', '164351364314', 'YZASRSWZO5CWKSEXMELQ');'''
 sql = text(q)
 result = db.engine.execute(sql)
 

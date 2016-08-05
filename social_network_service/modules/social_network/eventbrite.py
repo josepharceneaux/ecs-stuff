@@ -188,46 +188,6 @@ class Eventbrite(SocialNetworkBase):
             user_id, social_network, method_type=method_type, payload=payload_data,
             api_relative_url=api_relative_url)
 
-    @classmethod
-    def create_webhook(cls, user_credentials):
-        """
-        :param user_credentials: User's social network credentials for which
-                we need to create webhook. Webhook is created to be updated
-                about any RSVP on an
-                event of Eventbrite.
-        :type user_credentials:  common.models.user.UserSocialNetworkCredential
-
-        - This method creates a webhook to stream the live feed of RSVPs of
-            Eventbrite events to the getTalent app. Once we have the webhook
-            id for given user, we update user credentials in db.
-
-        - It also performs a check which ensures that webhook is not generated
-            every time code passes through this flow once a webhook has been
-            created for a user (since webhook don't expire and are unique for
-            every user).
-
-        - This method is called from save_user_credentials_in_db() defined in
-            Eventbrite class inside social_network_service/eventbrite.py.
-
-        **See Also**
-        .. seealso:: save_user_credentials_in_db() function defined in Eventbrite
-            class inside social_network_service/eventbrite.py.
-
-        .. seealso:: get_access_and_refresh_token() function defined in Eventbrite
-            class inside social_network_service/eventbrite.py.
-        """
-        url = user_credentials.social_network.api_url + "/webhooks/"
-        payload = {'endpoint_url': WEBHOOK_REDIRECT_URL}
-        headers = {'Authorization': 'Bearer ' + user_credentials.access_token}
-        response = http_request('POST', url, params=payload, headers=headers,
-                                user_id=user_credentials.user.id)
-        try:
-            webhook_id = response.json()['id']
-            user_credentials.update(webhook=webhook_id)
-        except Exception:
-            logger.exception('create_webhook: user_id: %s' % user_credentials.user.id)
-            raise SNServerException("Eventbrite Webhook wasn't created successfully")
-
     def add_venue_to_sn(self, venue_data):
         """
         This function sends a POST request to Eventbrite api to create a venue for event.
