@@ -281,7 +281,7 @@ class Meetup(SocialNetworkBase):
         json_resp = response.json()
         if response.ok:
             venue_id = json_resp['id']
-            logger.info('|  Venue has been Added  |')
+            logger.info('Venue has been Added. Venue Id: %s', venue_id)
         elif response.status_code == codes.CONFLICT:
             # 409 is returned when our venue is matching existing
             # venue/venues.

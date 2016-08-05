@@ -269,7 +269,7 @@ class Eventbrite(SocialNetworkBase):
     def create_event_organizer(self, data):
         """
         This method sends a POST request to Eventbrite API to create an event organizer.
-        :param dict data: organizer data
+        :param dict[str, T] data: organizer data
         :return: organizer id on Eventbrite
         :rtype string
         """
@@ -289,8 +289,10 @@ class Eventbrite(SocialNetworkBase):
                                 headers=self.headers,
                                 user_id=self.user.id)
         json_response = response.json()
-        if not response.ok:
-            if response.status_code == requests.codes.BAD_REQUEST and json_response.get('error') == "NOT_ALLOWED":
-                raise InvalidUsage('Organizer name already exists', error_code=ORGANIZER_ALREADY_EXISTS)
-            raise InternalServerError('Error occurred while creating organizer.')
-        return json_response['id']
+        if response.ok:
+            return json_response['id']
+        elif response.status_code == requests.codes.BAD_REQUEST and json_response.get('error') == "NOT_ALLOWED":
+            raise InvalidUsage('Organizer name already exists', error_code=ORGANIZER_ALREADY_EXISTS)
+        raise InternalServerError('Error occurred while creating organizer.',
+                                  additional_error_info=dict(error=json_response))
+
