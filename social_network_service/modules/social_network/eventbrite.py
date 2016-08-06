@@ -3,11 +3,15 @@ This modules contains Eventbrite class. It inherits from SocialNetworkBase
 class. Eventbrite contains methods like create_webhook(), get_member_id() etc.
 """
 
+# 3rd party imports
+import requests
+
 # Application Specific
 from base import SocialNetworkBase
-from social_network_service.common.error_handling import InternalServerError
-from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.common.error_handling import InternalServerError, InvalidUsage
+from social_network_service.common.utils.handy_functions import http_request, find_missing_items
 from social_network_service.custom_exceptions import *
+from social_network_service.modules.custom_codes import ORGANIZER_ALREADY_EXISTS
 from social_network_service.social_network_app import logger
 
 
@@ -220,4 +224,34 @@ class Eventbrite(SocialNetworkBase):
         venue_data['user_id'] = self.user.id
         venue_data['social_network_venue_id'] = venue_id
         return SocialNetworkBase.save_venue(venue_data)
+
+    def create_event_organizer(self, data):
+        """
+        This method sends a POST request to Eventbrite API to create an event organizer.
+        :param dict[str, T] data: organizer data
+        :return: organizer id on Eventbrite
+        :rtype string
+        """
+        mandatory_input_data = ['name', 'about']
+        # gets fields which are missing
+        missing_items = find_missing_items(data, mandatory_input_data, verify_all=True)
+        if missing_items:
+            raise InvalidUsage("Mandatory Input Missing: %s" % missing_items)
+
+        payload = {
+                'organizer.name': data['name'],
+                'organizer.description.html': data['about']
+            }
+        # create url to send post request to create organizer
+        url = "%s/organizers/" % self.api_url
+        response = http_request('POST', url, params=payload,
+                                headers=self.headers,
+                                user_id=self.user.id)
+        json_response = response.json()
+        if response.ok:
+            return json_response['id']
+        elif response.status_code == requests.codes.BAD_REQUEST and json_response.get('error') == "NOT_ALLOWED":
+            raise InvalidUsage('Organizer name already exists', error_code=ORGANIZER_ALREADY_EXISTS)
+        raise InternalServerError('Error occurred while creating organizer.',
+                                  additional_error_info=dict(error=json_response))
 
