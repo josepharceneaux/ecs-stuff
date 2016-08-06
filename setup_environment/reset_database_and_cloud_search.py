@@ -56,6 +56,10 @@ def delete_entries(_redis, entries):
             print e.message
 
 
+redis2 = 'REDIS2'
+app.config[redis2 + '_URL'] = app.config[TalentConfigKeys.REDIS_URL_KEY]
+app.config['{0}_DATABASE'.format(redis2)] = 1
+
 redis_store.init_app(app)
 redis_store2.init_app(app)
 
