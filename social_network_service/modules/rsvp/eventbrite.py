@@ -75,7 +75,7 @@ class Eventbrite(RSVPBase):
         :return: List of rsvps
         :rtype: list
         """
-        rsvp_url = self.api_url + '/events/%s/attendees'
+        rsvp_url = '{}/events/%s/attendees'.format(self.api_url)
         response = http_request('GET', headers=self.headers,
                                 url=rsvp_url % event.social_network_event_id)
         all_rsvps = []

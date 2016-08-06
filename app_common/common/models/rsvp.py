@@ -47,20 +47,6 @@ class RSVP(db.Model):
         ).first()
 
     @classmethod
-    def filter_by_vendor_rsvp_id_vendor_id_event_id(cls,
-                                                    vendor_rsvp_id,
-                                                    social_network_id,
-                                                    event_id):
-        assert vendor_rsvp_id and social_network_id and event_id
-        return cls.query.filter(
-            db.and_(
-                RSVP.social_network_rsvp_id == vendor_rsvp_id,
-                RSVP.social_network_id == social_network_id,
-                RSVP.event_id == event_id
-            )
-        ).all()
-
-    @classmethod
     def get_by_social_network_rsvp_id_and_social_network_id(cls,
                                                             social_network_rsvp_id,
                                                             social_network_id,
@@ -74,17 +60,8 @@ class RSVP(db.Model):
         ).first()
 
     @classmethod
-    def filter_by_social_network_rsvp_id_and_social_network_id(cls,
-                                                               social_network_rsvp_id,
-                                                               social_network_id,
-                                                               ):
+    def filter_by(cls, **kwargs):
         """
-        Filters all rsvp by id and social network id
+        Filter RSVPs by kwargs
         """
-        assert social_network_id and social_network_rsvp_id
-        return cls.query.filter(
-            db.and_(
-                RSVP.social_network_rsvp_id == social_network_rsvp_id,
-                RSVP.social_network_id == social_network_id
-            )
-        ).all()
+        return cls.query.filter_by(**kwargs).all()

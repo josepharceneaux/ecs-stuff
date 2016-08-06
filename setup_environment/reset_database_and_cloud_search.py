@@ -15,7 +15,7 @@ from sqlalchemy import text
 from common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from common.talent_flask import TalentFlask
 # Flush redis-cache
-from common.redis_cache import redis_store
+from common.redis_cache import redis_store, redis_store2
 from common.models.db import db
 from candidate_service.candidate_app import app
 from setup_environment.create_dummy_users import create_dummy_users
@@ -35,13 +35,12 @@ if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'jenkins']:
     raise SystemExit(0)
 
 
-def save_meetup_token_and_flushredis(_redis):
-    if _redis.get('Meetup'):
-        _token = _redis.get('Meetup')
-        # Commenting this out because we need persistence in redis to store parsed resumes to save our
-        # BG transactions.
-        # _redis.flushall()
-        _redis.set('Meetup', _token)
+def save_sn_token_and_flushredis(_redis):
+    _token_meetup = _redis.get('Meetup')
+    _token_eventbrite = _redis.get('Eventbrite')
+    _redis.flushall()
+    _redis.set('Meetup', _token_meetup)
+    _redis.set('Eventbrite', _token_eventbrite)
 
 
 # Delete entries of redis given in a list (entries)
@@ -58,7 +57,10 @@ def delete_entries(_redis, entries):
 
 
 redis_store.init_app(app)
+redis_store2.init_app(app)
+
 # save_meetup_token_and_flushredis(redis_store)
+save_sn_token_and_flushredis(redis_store2)
 delete_entries(redis_store, flush_redis_entries)
 
 db.init_app(app)

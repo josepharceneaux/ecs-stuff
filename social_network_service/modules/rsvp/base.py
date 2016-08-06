@@ -11,7 +11,6 @@ import requests
 from abc import ABCMeta
 from abc import abstractmethod
 from datetime import datetime, timedelta
-from urllib import urlencode
 
 # Application Specific
 from social_network_service.common.utils.test_utils import refresh_token
@@ -26,7 +25,7 @@ from social_network_service.common.models.misc import Product
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.candidate import Candidate
 from social_network_service.common.models.candidate import CandidateSocialNetwork
-from social_network_service.common.routes import UserServiceApiUrl, AuthApiUrl
+from social_network_service.common.routes import UserServiceApiUrl
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.custom_exceptions import UserCredentialsNotFound, ProductNotFound
 from social_network_service.social_network_app import logger
@@ -514,7 +513,7 @@ class RSVPBase(object):
                 attendee.source_product_id)
 
         # To create candidates, user must have be associated with talent_pool
-        talent_pools = TalentPool.filter_by_user_id(attendee.gt_user_id)
+        talent_pools = TalentPool.filter_by_keywords(**{'user_id': attendee.gt_user_id})
         talent_pool_ids = map(lambda talent_pool: talent_pool.id, talent_pools)
 
         if not talent_pool_ids:

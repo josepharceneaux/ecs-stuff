@@ -22,7 +22,7 @@ from social_network_service.common.talent_config_manager import TalentEnvs, Tale
 from social_network_service.common.utils.api_utils import api_route
 from social_network_service.common.utils.auth_utils import require_oauth
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
-from social_network_service.modules.constants import EVENTBRITE, MEETUP
+from social_network_service.modules.constants import EVENTBRITE, MEETUP, TASK_ALREADY_SCHEDULED, RSVP, EVENT
 from social_network_service.social_network_app import logger, app
 from social_network_service.tasks import rsvp_events_importer
 
@@ -66,19 +66,17 @@ class RsvpEventImporter(Resource):
         """
         :param mode: Possible values -> rsvp, event
         :type mode: str
-        :param social_network: Possible values -> eventbrite, facebook
+        :param social_network: Possible values -> eventbrite, facebook, meetup
         :type social_network: str
         """
         # Lock the importer for 3500 seconds. So that someone doesn't make multiple requests to this endpoint
         import_lock_key = 'Importer_Lock'
-        event = 'event'
-        rsvp = 'rsvp'
         if not redis_store.get(import_lock_key):
             redis_store.set(import_lock_key, True, 3500)
         elif not app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
             raise InvalidUsage('Importer is locked at the moment. Please try again later.')
         # Start celery rsvp importer method here.
-        if mode.lower() not in [event, rsvp]:
+        if mode.lower() not in [EVENT, RSVP]:
             raise InvalidUsage("There is no mode with name %s found" % mode)
 
         if not (social_network.lower() in [MEETUP, EVENTBRITE]):
@@ -101,7 +99,7 @@ class RsvpEventImporter(Resource):
             logger.info('Got %s users for %s' % (len(all_user_credentials), social_network))
             for user_credentials in all_user_credentials:
                 datetime_range = {}
-                if mode == event:
+                if mode == EVENT:
                     # Get last updated time of current user_credentials if NULL, then run event importer for that user
                     # first time and get all events otherwise get events from last_updated date
                     last_updated = \
@@ -124,7 +122,7 @@ def schedule_importer_job():
     Schedule 4 general jobs that hits Event and RSVP importer endpoint every hour.
     """
     task_name = 'Retrieve_%s_%ss'
-    for mode, sn in itertools.product(['rsvp', 'event'], [MEETUP, EVENTBRITE]):
+    for mode, sn in itertools.product([RSVP, EVENT], [MEETUP, EVENTBRITE]):
         url = SocialNetworkApiUrl.IMPORTER % (mode, sn)
         schedule_job(task_name=task_name % (sn.title(), mode), url=url)
 
@@ -165,9 +163,9 @@ def schedule_job(url, task_name):
 
         response = requests.post(SchedulerApiUrl.TASKS, headers=headers,
                                  data=json.dumps(data))
-        task_already_scheduled = 6057
+
         is_already_created = \
-            response.status_code == requests.codes.created or response.json()['error']['code'] == task_already_scheduled
+            response.status_code == requests.codes.created or response.json()['error']['code'] == TASK_ALREADY_SCHEDULED
         if not is_already_created:
             logger.error(response.text)
             raise InternalServerError(error_message='Unable to schedule Meetup importer job')

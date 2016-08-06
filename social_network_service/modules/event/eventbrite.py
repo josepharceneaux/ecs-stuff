@@ -98,7 +98,7 @@ class Eventbrite(EventBase):
                 utc start_date for event importer
 
         :param args:
-        :param kwargs: datetime range dict
+        :param kwargs: datetime range dict or None
         :return:
         """
         super(Eventbrite, self).__init__(*args, **kwargs)

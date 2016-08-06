@@ -44,13 +44,11 @@ class Event(db.Model):
             )).first()
 
     @classmethod
-    def filter_by_user_and_social_network_id(cls, user_id, social_network_id):
-        assert user_id and social_network_id
-        return cls.query.filter(
-            db.and_(
-                Event.user_id == user_id,
-                Event.social_network_id == social_network_id
-            )).all()
+    def filter_by(cls, **kwargs):
+        """
+        Filter query w.r.t kwrargs
+        """
+        return cls.query.filter_by(**kwargs).all()
 
     @classmethod
     def get_by_user_id_vendor_id_start_date(cls, user_id, social_network_id, start_date):

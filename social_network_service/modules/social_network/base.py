@@ -181,7 +181,6 @@ class SocialNetworkBase(object):
         :param int | long user_id: Id of User
         :param SocialNetwork | None social_network: Social Network object
         :param bool validate_credentials: If True, this will validate the credentials of user for given social network.
-        :param
         """
         self.events = []
         self.api_relative_url = None

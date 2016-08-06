@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 import pytest
 
 # App Settings
-from social_network_service.common.redis_cache import redis_store
+from social_network_service.common.redis_cache import redis_store2
 from social_network_service.common.tests.api_conftest import user_first, token_first, talent_pool, user_same_domain, \
     token_same_domain
 from social_network_service.common.tests.conftest import sample_user, domain_first, first_group, user_auth
@@ -31,6 +31,8 @@ from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.common.utils.handy_functions import send_request
 
+DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+
 # This is common data for creating test events
 EVENT_DATA = {
     "organizer_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
@@ -38,8 +40,8 @@ EVENT_DATA = {
     "title": "Test Event",
     "description": "Test Event Description",
     "registration_instruction": "Just Come",
-    "start_datetime": (datetime.utcnow() + timedelta(days=2)).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-    "end_datetime": (datetime.utcnow() + timedelta(days=3)).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+    "start_datetime": (datetime.utcnow() + timedelta(days=2)).strftime(DATETIME_FORMAT),
+    "end_datetime": (datetime.utcnow() + timedelta(days=3)).strftime(DATETIME_FORMAT),
     "group_url_name": "QC-Python-Learning",
     "social_network_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
     "timezone": "Asia/Karachi",
@@ -108,11 +110,24 @@ def test_eventbrite_credentials(request, user_first, eventbrite):
     Create eventbrite social network credentials for this user so
     we can create event on Eventbrite.com
     """
+
+    eventbrite_key = 'Eventbrite'
+
+    # Store and use redis for eventbrite access_token
+    if not redis_store2.get(eventbrite_key):
+        redis_store2.set(eventbrite_key,
+                         json.dumps(dict(
+                             access_token=app.config[TalentConfigKeys.EVENTBRITE_ACCESS_TOKEN]
+                         )))
+
+    # Get the key value pair of access_token and refresh_token
+    eventbrite_kv = json.loads(redis_store2.get(eventbrite_key))
+
     social_network_id = eventbrite.id
     user_credentials = UserSocialNetworkCredential(
         social_network_id=social_network_id,
         user_id=user_first['id'],
-        access_token=app.config[TalentConfigKeys.EVENTBRITE_ACCESS_TOKEN],
+        access_token=eventbrite_kv['access_token'],
         refresh_token='')
     UserSocialNetworkCredential.save(user_credentials)
 
@@ -137,15 +152,15 @@ def test_meetup_credentials(request, user_first, meetup):
     meetup_key = 'Meetup'
 
     # If there is no entry with name 'Meetup' then create one using app config
-    if not redis_store.get(meetup_key):
-        redis_store.set(meetup_key,
-                           json.dumps(dict(
-                                       access_token=app.config[TalentConfigKeys.MEETUP_ACCESS_TOKEN],
-                                       refresh_token=app.config[TalentConfigKeys.MEETUP_REFRESH_TOKEN]
-                           )))
+    if not redis_store2.get(meetup_key):
+        redis_store2.set(meetup_key,
+                        json.dumps(dict(
+                            access_token=app.config[TalentConfigKeys.MEETUP_ACCESS_TOKEN],
+                            refresh_token=app.config[TalentConfigKeys.MEETUP_REFRESH_TOKEN]
+                        )))
 
     # Get the key value pair of access_token and refresh_token
-    meetup_kv = json.loads(redis_store.get(meetup_key))
+    meetup_kv = json.loads(redis_store2.get(meetup_key))
 
     social_network_id = meetup.id
     user_credentials = UserSocialNetworkCredential(
@@ -160,16 +175,17 @@ def test_meetup_credentials(request, user_first, meetup):
     db.session.commit()
 
     # Get the updated user_credentials
-    user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(social_network_id=social_network_id,
-                                                                                     user_id=int(user_first['id']))
+    user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
+        social_network_id=social_network_id,
+        user_id=int(user_first['id']))
 
     # If token is changed, then update the new token in redis too
     if meetup_kv['access_token'] != user_credentials.access_token:
         redis_store.set(meetup_key,
                         json.dumps(dict(
-                                       access_token=user_credentials.access_token,
-                                       refresh_token=user_credentials.refresh_token
-                           )))
+                            access_token=user_credentials.access_token,
+                            refresh_token=user_credentials.refresh_token
+                        )))
 
     def fin():
         """
@@ -245,13 +261,14 @@ def meetup_event(request, user_first, test_meetup_credentials, meetup,
         response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id,
                                 access_token=token_first)
         assert response.status_code == 200 or response.status_code == 403
+
     request.addfinalizer(fin)
     return event
 
 
 @pytest.fixture()
 def meetup_event_with_user_first(request, user_first, test_meetup_credentials, meetup,
-                 meetup_venue, organizer_in_db, token_first, meetup_event_data):
+                                 meetup_venue, organizer_in_db, token_first, meetup_event_data):
     response = send_request('post',
                             url=SocialNetworkApiUrl.EVENTS,
                             access_token=token_first,
@@ -274,6 +291,7 @@ def meetup_event_with_user_first(request, user_first, test_meetup_credentials, m
         response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id,
                                 access_token=token_first)
         assert response.status_code == 200 or response.status_code == 403
+
     request.addfinalizer(fin)
     return event
 
@@ -316,6 +334,7 @@ def meetup_event_dict(user_first, meetup_event, talent_pool):
 
         if 'id' in meetup_event_in_db:
             delete_events(user_first['id'], [meetup_event_in_db['id']])
+
     return meetup_event_in_db
 
 
@@ -422,16 +441,16 @@ def eventbrite_venue(user_first, eventbrite):
     """
     social_network_id = eventbrite.id
     venue = {
-    "social_network_id": social_network_id,
-    "user_id": user_first['id'],
-    "zip_code": "54600",
-    "address_line_2": "H# 163, Block A",
-    "address_line_1": "New Muslim Town",
-    "latitude": 0,
-    "longitude": 0,
-    "state": "Punjab",
-    "city": "Lahore",
-    "country": "Pakistan"
+        "social_network_id": social_network_id,
+        "user_id": user_first['id'],
+        "zip_code": "54600",
+        "address_line_2": "H# 163, Block A",
+        "address_line_1": "New Muslim Town",
+        "latitude": 0,
+        "longitude": 0,
+        "state": "Punjab",
+        "city": "Lahore",
+        "country": "Pakistan"
     }
     venue = Venue(**venue)
     Venue.save(venue)
@@ -599,4 +618,3 @@ def teardown_fixtures(user, client_credentials, domain, organization):
     User.delete(user.id)
     Domain.delete(domain.id)
     Organization.delete(organization.id)
-

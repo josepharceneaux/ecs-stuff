@@ -8,6 +8,7 @@ from ..routes import CandidateApiUrl
 from ..utils.handy_functions import create_oauth_headers, http_request, send_request
 from ..error_handling import InternalServerError, InvalidUsage, ForbiddenError
 from ..utils.validators import raise_if_not_positive_int_or_long
+from ..constants import CANDIDATE_ALREADY_EXIST
 
 __author__ = 'jitesh'
 
@@ -118,8 +119,7 @@ def create_or_update_candidate(oauth_token, data, return_candidate_ids_only=Fals
     data_resp = resp.json()
     # Candidate already exists. So, we update candidate data and return candidate id
     # 3013 error code represents candidate already exists.
-    candidate_already_exist = 3013
-    if resp.status_code == requests.codes.bad and data_resp['error']['code'] == candidate_already_exist:
+    if resp.status_code == requests.codes.bad and data_resp['error']['code'] == CANDIDATE_ALREADY_EXIST:
         data['candidates'][0]['id'] = data_resp['error']['id']
         patch_resp = send_request('patch',
                                   url=CandidateApiUrl.CANDIDATES, access_token=oauth_token,

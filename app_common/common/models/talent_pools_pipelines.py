@@ -33,10 +33,6 @@ class TalentPool(db.Model):
         db.session.delete(self)
         db.session.commit()
 
-    @classmethod
-    def filter_by_user_id(cls, user_id):
-        return cls.query.filter_by(user_id=user_id).all()
-
 
 class TalentPoolCandidate(db.Model):
     __tablename__ = 'talent_pool_candidate'

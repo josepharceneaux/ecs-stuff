@@ -3,6 +3,7 @@ from flask.ext.redis import FlaskRedis
 from redis_collections import Dict
 
 redis_store = FlaskRedis()
+redis_store2 = FlaskRedis(config_prefix='REDIS2')
 
 
 def redis_dict(redis_instance, redis_list_key=None):

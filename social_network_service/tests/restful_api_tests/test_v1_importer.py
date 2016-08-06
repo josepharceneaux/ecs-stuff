@@ -266,7 +266,10 @@ class Test_Event_Importer:
         # Check if rsvp is imported for user 1
         def f(_rsvp_id, _eventbrite_id, event_id, count=1):
             db.db.session.commit()
-            _rsvp = RSVP.filter_by_vendor_rsvp_id_vendor_id_event_id(_rsvp_id, _eventbrite_id, event_id)
+            _rsvp = RSVP.filter_by_keywords(**{'social_network_rsvp_id': _rsvp_id,
+                                    'social_network_id': _eventbrite_id,
+                                    'event_id': event_id
+                                    })
             assert len(_rsvp) == count
 
         retry(f, sleeptime=15, attempts=15, sleepscale=1, retry_exceptions=(AssertionError,),
@@ -324,6 +327,7 @@ class Test_Event_Importer:
 
             response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'meetup'),headers=headers)
             assert response.status_code == 200
+            # normally it will take around 80 seconds to import all rsvps (incase of tests). So, need of polling here
             sleep(80)
             event = Event.get_by_user_and_social_network_event_id(user_first['id'],
                                                                   social_network_event_id=social_network_event_id)
