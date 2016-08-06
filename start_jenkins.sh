@@ -66,7 +66,7 @@ sleep 10
 
 echo "Beginning tests."
 
-py.test social_network_service/tests
+py.test -n 1 social_network_service/tests
 if [ $? -ne 0 ] ; then
     exit 1
 fi
