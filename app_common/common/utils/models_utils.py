@@ -411,6 +411,7 @@ def init_talent_app(app_name):
         redis_store.init_app(flask_app)
 
         redis2 = 'REDIS2'
+        flask_app.config[redis2 + '_URL'] = flask_app.config[TalentConfigKeys.REDIS_URL_KEY]
         flask_app.config['{0}_DATABASE'.format(redis2)] = 1
         # Initialize Redis Cache for db 2
         redis_store2.init_app(flask_app, redis2)
