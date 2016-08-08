@@ -1884,7 +1884,10 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
     if any(is_default_values):
         CandidateEmail.set_is_default_to_false(candidate_id)
 
+    # Check if any of the emails have a label
     emails_has_label = any([email.get('label') for email in emails])
+
+    # Check if any of the emails is set as the default email
     emails_has_default = any([isinstance(email.get('is_default'), bool) for email in emails])
 
     # Prevent duplicate email addresses
@@ -1896,8 +1899,10 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
 
     for i, email in enumerate(emails):
 
-        # If there's no is_default, the first email should be default
-        is_default = i == 0 if not emails_has_default else email.get('is_default')
+        # If none of the provided emails have "is_default" set to true and none of candidate's existing emails
+        #   is set to default, then the first provided email will be a default email
+        is_default = i == 0 if (not emails_has_default and not CandidateEmail.has_default_email(candidate_id)) \
+            else email.get('is_default')
 
         # If there's no label, the first email's label will be 'Primary'; rest will be 'Other'
         email_label = EmailLabel.PRIMARY_DESCRIPTION if (not emails_has_label and i == 0) \
