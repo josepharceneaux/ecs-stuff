@@ -12,6 +12,7 @@ python setup_environment/reset_database_and_cloud_search.py
 from sqlalchemy import text
 
 # App specific
+from candidate_service.common.models.candidate import SocialNetwork
 from common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from common.talent_flask import TalentFlask
 # Flush redis-cache
@@ -92,8 +93,9 @@ print 'Generating initial test data'
 
 # Create dummy users for tests and insert user social network credentials of event brite and associate it with user_id 1
 create_dummy_users()
-q = '''INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '1', '18', NULL, '217041', '164351364314', 'YZASRSWZO5CWKSEXMELQ');
-INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '2', '18', NULL, '217041', '164351364314', 'YZASRSWZO5CWKSEXMELQ');'''
+eventbrite = SocialNetwork.get_by_name('Eventbrite')
+q = '''INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '1', '%s', NULL, '217041', '164351364314', 'YZASRSWZO5CWKSEXMELQ');
+INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '2', '%s', NULL, '217041', '164351364314', 'YZASRSWZO5CWKSEXMELQ');''' % (eventbrite.id, eventbrite.id)
 sql = text(q)
 result = db.engine.execute(sql)
 
