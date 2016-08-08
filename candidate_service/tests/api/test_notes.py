@@ -13,7 +13,7 @@ URL = CandidateApiUrl.NOTES
 
 class TestAddNotes(object):
 
-    def test_add_candidate_notes(self, user_first, access_token_first, candidate_first):
+    def test_add_candidate_notes(self, access_token_first, candidate_first):
         """
         Test:  Add notes to candidate
         """
@@ -28,7 +28,7 @@ class TestAddNotes(object):
         assert create_resp.status_code == requests.codes.CREATED
         assert len(create_resp.json()['candidate_notes']) == len(notes_data['notes'])
 
-    def test_add_note_without_title(self, user_first, access_token_first, candidate_first):
+    def test_add_note_without_title(self, access_token_first, candidate_first):
         """
         Test: Add note for candidate without providing a note title
         """
@@ -56,7 +56,6 @@ class TestGetNotes(object):
         """
         Test: Retrieve one of candidate's notes
         """
-
         candidate_id = notes_first['candidate'].id
         note_id = notes_first['notes']['candidate_notes'][0]['id']
 

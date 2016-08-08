@@ -1,0 +1,18 @@
+"""
+This script adds 'owner_user_id' column to CandidateTextComment
+
+Note: 'owner_user_id' is the ID of the user that created the note for the candidate
+"""
+
+from candidate_service.common.models.db import db
+from candidate_service.common.models.user import User
+from sqlalchemy import text
+from sqlalchemy.dialects.mysql import BIGINT
+
+db.session.execute(
+    text("""
+    ALTER TABLE `candidate_text_comment` ADD `owner_user_id` BIGINT(20),
+    ADD FOREIGN KEY fk_candidate_text_comment_user(owner_user_id) REFERENCES User(Id)
+    ON DELETE SET NULL
+    """)
+)
