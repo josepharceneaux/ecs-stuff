@@ -181,7 +181,7 @@ def test_meetup_credentials(request, user_first, meetup):
 
     # If token is changed, then update the new token in redis too
     if meetup_kv['access_token'] != user_credentials.access_token:
-        redis_store.set(meetup_key,
+        redis_store2.set(meetup_key,
                         json.dumps(dict(
                             access_token=user_credentials.access_token,
                             refresh_token=user_credentials.refresh_token
@@ -458,19 +458,23 @@ def eventbrite_venue(user_first, eventbrite):
     return venue
 
 
-@pytest.fixture()
-def organizer_in_db(request, user_first):
+@pytest.fixture(scope="session")
+def organizer_in_db(request, user_first, token_first):
     """
     This fixture returns an organizer in getTalent database
     """
+
+    social_network = SocialNetwork.get_by_name('Eventbrite')
     organizer = {
         "user_id": user_first['id'],
         "name": "Test Organizer",
         "email": "testemail@gmail.com",
-        "about": "He is a testing engineer"
+        "about": "He is a testing engineer",
+        "social_network_id": social_network.id,
+        "social_network_organizer_id": "11000067214"
     }
+
     organizer = EventOrganizer(**organizer)
-    EventOrganizer.save(organizer)
 
     def fin():
         try:

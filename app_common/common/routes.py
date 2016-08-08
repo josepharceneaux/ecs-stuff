@@ -682,7 +682,7 @@ class SocialNetworkApiUrl(object):
     RSVP = HOST_NAME % ('/' + VERSION + '/rsvp')
     CODE = HOST_NAME % ('/' + VERSION + '/code')
     IMPORTER = HOST_NAME % ('/' + VERSION + '/import/%s/%s')
-    TWITTER_CALLBACK= HOST_NAME % ('/' + VERSION + '/twitter-callback/%s')
+    TWITTER_CALLBACK = HOST_NAME % ('/' + VERSION + '/twitter-callback/%s')
 
 
 class SmsCampaignApi(object):
