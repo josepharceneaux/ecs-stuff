@@ -370,10 +370,9 @@ class CandidateEmail(db.Model):
         """
         Return true if any of candidate's existing email is set as default email
         :type candidate_id: int | long
-        :rtype: bool
+        :rtype: None | CandidateEmail
         """
-        emails = cls.query.filter_by(candidate_id=candidate_id).all()
-        return any([email.is_default for email in emails])
+        return cls.query.filter_by(candidate_id=candidate_id, is_default=True).first()
 
     @classmethod
     def search_email_in_user_domain(cls, user_model, user, email):

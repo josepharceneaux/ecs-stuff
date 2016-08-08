@@ -1897,15 +1897,15 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
                            error_code=custom_error.INVALID_USAGE,
                            additional_error_info={'duplicates': email_addresses})
 
-    for i, email in enumerate(emails):
+    for index, email in enumerate(emails):
 
         # If none of the provided emails have "is_default" set to true and none of candidate's existing emails
         #   is set to default, then the first provided email will be a default email
-        is_default = i == 0 if (not emails_has_default and not CandidateEmail.has_default_email(candidate_id)) \
+        is_default = index == 0 if (not emails_has_default and not CandidateEmail.has_default_email(candidate_id)) \
             else email.get('is_default')
 
         # If there's no label, the first email's label will be 'Primary'; rest will be 'Other'
-        email_label = EmailLabel.PRIMARY_DESCRIPTION if (not emails_has_label and i == 0) \
+        email_label = EmailLabel.PRIMARY_DESCRIPTION if (not emails_has_label and index == 0) \
             else (email.get('label') or '').strip().title()
 
         email_address = email.get('address')
