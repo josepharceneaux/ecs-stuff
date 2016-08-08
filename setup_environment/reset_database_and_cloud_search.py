@@ -91,7 +91,7 @@ print 'DB reset is successful'
 print 'Generating initial test data'
 
 
-# Create dummy users for tests and insert user social network credentials of event brite and associate it with user_id 1
+# Create dummy users for tests and insert user social network credentials of eventbrite and associate it with user_id 1
 create_dummy_users()
 eventbrite = SocialNetwork.get_by_name('Eventbrite')
 q = '''INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '1', '%s', NULL, '217041', '164351364314', 'YZASRSWZO5CWKSEXMELQ');
