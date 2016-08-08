@@ -68,7 +68,7 @@ class TestGetNotes(object):
         assert get_resp.json()['candidate_note']['title'] == note_data['title'].lower()
         assert get_resp.json()['candidate_note']['candidate_id'] == notes_first['candidate'].id
         assert get_resp.json()['candidate_note']['id'] == note_id
-        assert get_resp.json()['candidate_note']['owner_id'] == notes_first['user'].id
+        assert get_resp.json()['candidate_note']['owner_user_id'] == notes_first['user'].id
 
 
 class TestDeleteNotes(object):
