@@ -42,6 +42,7 @@ from redo import retry
 from requests import codes
 
 # Application specific imports
+from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from push_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
                                                         schedule_campaign, invalid_data_test,
@@ -198,15 +199,10 @@ class TestScheduleCampaignUsingPOST(object):
         :param string token_first: auth token
         :param dict campaign_in_db: campaign object
         """
-        data = generate_campaign_schedule_data()
-        start = datetime.utcnow() - timedelta(days=20)
-        data.update({'start_datetime': DatetimeUtils.to_utc_str(start)})
-        schedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
 
-        data = generate_campaign_schedule_data()
-        end = datetime.utcnow() - timedelta(days=20)
-        data.update({'end_datetime': DatetimeUtils.to_utc_str(end)})
-        schedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
+        CampaignsTestsHelpers.request_with_past_start_and_end_datetime('post', URL % campaign_in_db['id'],
+                                                                       token_first, data)
 
     def test_campaign_schedule_with_unexpected_field(self, token_first, campaign_in_db):
         """
@@ -300,7 +296,8 @@ class TestRescheduleCampaignUsingPUT(object):
         """
         In this test, we will reschedule a campaign with invalid datetime format and  it will raise an error 400.
         """
-        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
+        data = generate_campaign_schedule_data()
+
         start = datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
         reschedule_campaign(campaign_in_db['id'], data, token_first,
@@ -369,15 +366,9 @@ class TestRescheduleCampaignUsingPUT(object):
         :param dict campaign_in_db: campaign object
         :param dict schedule_a_campaign: a fixture to schedule a campaign
         """
-        # data = generate_campaign_schedule_data()
-        # start = datetime.utcnow() - timedelta(days=20)
-        # data.update({'start_datetime': DatetimeUtils.to_utc_str(start)})
-        # reschedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
-
-        data = generate_campaign_schedule_data()
-        end = datetime.utcnow() - timedelta(days=20)
-        data.update({'end_datetime': DatetimeUtils.to_utc_str(end)})
-        reschedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
+        CampaignsTestsHelpers.request_with_past_start_and_end_datetime('put', URL % campaign_in_db['id'],
+                                                                       token_first, data)
 
     def test_campaign_reschedule_with_unexpected_field(self, token_first, campaign_in_db, schedule_a_campaign):
         """

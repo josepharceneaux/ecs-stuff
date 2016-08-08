@@ -14,6 +14,7 @@ from ..models.candidate import Candidate
 from ..models.smartlist import Smartlist
 from ..models.sms_campaign import SmsCampaignBlast
 from ..models.misc import (Frequency, UrlConversion)
+from ..utils.datetime_utils import DatetimeUtils
 from ..models.email_campaign import EmailCampaignBlast
 
 # Common utils
@@ -37,11 +38,21 @@ def validation_of_data_to_schedule_campaign(request):
     :rtype: dict
     """
     data_to_schedule_campaign = get_valid_json_data(request)
+    start_datetime = DatetimeUtils.get_datetime_obj_if_format_is_valid(data_to_schedule_campaign.get('start_datetime'))
+    if not DatetimeUtils(start_datetime).is_in_future():
+        raise InvalidUsage('start_datetime must be in future. Given %s' % start_datetime)
+
     # get number of seconds from frequency_id
     frequency = Frequency.get_seconds_from_id(data_to_schedule_campaign.get('frequency_id'))
     # check if task to be schedule is periodic
     if frequency and not data_to_schedule_campaign.get('end_datetime'):
         raise InvalidUsage("end_datetime is required to schedule a periodic task")
+    else:
+        end_datetime = DatetimeUtils.get_datetime_obj_if_format_is_valid(data_to_schedule_campaign.get(
+            'end_datetime'))
+        if not DatetimeUtils(end_datetime).is_in_future():
+            raise InvalidUsage('end_datetime must be in future. Given %s' % end_datetime)
+
     data_to_schedule_campaign['frequency'] = frequency
     return data_to_schedule_campaign
 

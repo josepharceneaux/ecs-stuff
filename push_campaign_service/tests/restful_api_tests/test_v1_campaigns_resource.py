@@ -35,8 +35,7 @@ from requests import codes
 
 # Application specific imports
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
-from push_campaign_service.tests.test_utilities import (invalid_data_test,
-                                                        missing_key_test, create_campaign,
+from push_campaign_service.tests.test_utilities import (invalid_data_test, create_campaign,
                                                         get_campaigns, delete_campaign,
                                                         delete_campaigns, invalid_value_test, missing_keys_test,
                                                         unexpected_field_test)

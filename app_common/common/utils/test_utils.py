@@ -540,15 +540,17 @@ def get_response(access_token, arguments_to_url, expected_count=1, attempts=20, 
     raise NotFoundError('Unable to get expected number of candidates')
 
 
+@contract
 def get_and_assert_zero(url, key, token, sleep_time=SLEEP_TIME):
     """
     This function gets list of objects from given url and asserts that length of objects under a given key is zero.
     It keeps on retrying this process until it founds some records or sleep_time is over
-    :param url: URL of requested resource
-    :param key: key in response that has resource list
-    :param token: user access token
-    :param sleep_time: maximum time to wait
+    :param string url: URL of requested resource
+    :param string key: key in response that has resource list
+    :param string token: user access token
+    :param int sleep_time: maximum time to wait
     """
     attempts = sleep_time / SLEEP_INTERVAL
     for _ in retrier(attempts=attempts, sleeptime=SLEEP_INTERVAL, sleepscale=1):
         assert len(send_request('get', url, token).json()[key]) == 0
+

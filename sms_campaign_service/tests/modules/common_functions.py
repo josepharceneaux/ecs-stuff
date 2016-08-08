@@ -24,7 +24,7 @@ from sms_campaign_service.common.campaign_services.campaign_utils import Campaig
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
     get_candidates_of_smartlist
-from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER)
+from sms_campaign_service.modules.constants import (TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER)
 
 
 def generate_campaign_data():
