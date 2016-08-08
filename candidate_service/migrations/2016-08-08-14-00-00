@@ -12,7 +12,7 @@ from sqlalchemy.dialects.mysql import BIGINT
 db.session.execute(
     text("""
     ALTER TABLE `candidate_text_comment` ADD `owner_user_id` BIGINT(20),
-    ADD FOREIGN KEY fk_candidate_text_comment_user(owner_user_id) REFERENCES User(Id)
+    ADD FOREIGN KEY fk_candidate_text_comment_user(owner_user_id) REFERENCES user(Id)
     ON DELETE SET NULL
     """)
 )
