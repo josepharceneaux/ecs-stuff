@@ -37,8 +37,8 @@ Unschedule a campaign: /v1/push-campaigns/:id/schedule [DELETE]
 # Builtin imports
 import sys
 from datetime import datetime, timedelta
+
 # 3rd party imports
-from redo import retry
 from requests import codes
 
 # Application specific imports
@@ -46,7 +46,7 @@ from push_campaign_service.common.campaign_services.tests_helpers import Campaig
 from push_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
                                                         schedule_campaign, invalid_data_test,
-                                                        reschedule_campaign, unschedule_campaign, get_blasts,
+                                                        reschedule_campaign, unschedule_campaign,
                                                         unexpected_field_test, get_campaign, match_schedule_data)
 from push_campaign_service.common.utils.test_utils import send_request
 from push_campaign_service.common.routes import PushCampaignApiUrl

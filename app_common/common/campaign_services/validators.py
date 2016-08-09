@@ -14,10 +14,10 @@ from ..models.candidate import Candidate
 from ..models.smartlist import Smartlist
 from ..models.sms_campaign import SmsCampaignBlast
 from ..models.misc import (Frequency, UrlConversion)
-from ..utils.datetime_utils import DatetimeUtils
 from ..models.email_campaign import EmailCampaignBlast
 
 # Common utils
+from ..utils.datetime_utils import DatetimeUtils
 from ..error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
 from ..utils.handy_functions import (find_missing_items, get_valid_json_data)
 
