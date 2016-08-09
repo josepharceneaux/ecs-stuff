@@ -30,7 +30,8 @@ cd email_campaign_service && tar -czh . | docker build -t gettalent/email-campai
 cd ats_service && tar -czh . | docker build -t gettalent/ats-service:latest - && cd ../
 
 # Build the scheduler admin image, which is a nodejs web application
-cd scheduler_service_admin && tar -czh . | docker build -t gettalent/scheduler-service-admin:latest - && cd ../
+# This is disabled temporarily due to npm issues
+# cd scheduler_service_admin && tar -czh . | docker build -t gettalent/scheduler-service-admin:latest - && cd ../
 
 # Reset Database and Amazon Cloud Search
 export PYTHONPATH=.
