@@ -176,7 +176,7 @@ class CandidatesResource(Resource):
                                        error_code=custom_error.INVALID_SOURCE_ID)
 
             source_product_id = candidate_dict_.get('source_product_id', 2)
-            if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in (0, 1, 2)):
+            if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in (1, 2, 3, 4)):
                 raise InvalidUsage("Provided source product id ({source_product_id}) not recognized".format(
                         source_product_id=source_product_id),  error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
 
@@ -405,7 +405,7 @@ class CandidatesResource(Resource):
                                        error_code=custom_error.INVALID_SOURCE_ID)
 
             source_product_id = _candidate_dict.get('source_product_id')
-            if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in (0, 1, 2)):
+            if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in (1, 2, 3, 4)):
                 raise InvalidUsage("Provided source product id ({source_product_id}) not recognized".format(
                         source_product_id=source_product_id),  error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
 

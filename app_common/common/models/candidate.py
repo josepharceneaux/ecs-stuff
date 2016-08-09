@@ -366,6 +366,15 @@ class CandidateEmail(db.Model):
             email.is_default = False
 
     @classmethod
+    def has_default_email(cls, candidate_id):
+        """
+        Return true if any of candidate's existing email is set as default email
+        :type candidate_id: int | long
+        :rtype: None | CandidateEmail
+        """
+        return cls.query.filter_by(candidate_id=candidate_id, is_default=True).first()
+
+    @classmethod
     def search_email_in_user_domain(cls, user_model, user, email):
         """
         This returns the count of how many candidates are there in user's domain for given
