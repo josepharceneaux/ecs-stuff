@@ -1,3 +1,4 @@
+from user_service.modules.init_test_data import create_test_data
 
 __author__ = 'ufarooqi'
 from dateutil import parser
@@ -203,6 +204,7 @@ class DomainApi(Resource):
         db.session.commit()
 
         return {'updated_domain': {'id': requested_domain_id}}
+
 
 domain_blueprint = Blueprint('domain_api', __name__)
 api = TalentApi(domain_blueprint)
