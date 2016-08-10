@@ -24,59 +24,71 @@ from ..utils.test_utils import (create_candidate, delete_candidate,
                                 search_candidates, send_request)
 
 
-response = send_request('post', UserServiceApiUrl.TEST_SETUP, '')
-print("Test Data Response: ", response.content, response.status_code)
-assert response.status_code == codes.OK
+@pytest.fixture(scope='session')
+def test_data():
+    """
+    This fixture create test users, domains, groups, tokens etc. which will be used to create other fixtures/data like
+    smarlists, candidates, campaigns etc.
+    """
+    response = send_request('post', UserServiceApiUrl.TEST_SETUP, '')
+    print("Test Data Response: ", response.content, response.status_code)
+    assert response.status_code == codes.OK
 
-test_data = response.json()
+    return response.json()
 
 
 @pytest.fixture(scope='session')
-def token_first():
+def token_first(test_data):
     """
-    Au Authentication token for user_first.
+    Authentication token for user_first.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
     """
     return test_data['tokens'][0]['access_token']
 
 
 @pytest.fixture(scope='session')
-def token_same_domain():
+def token_same_domain(test_data):
     """
     Authentication token for user that belongs to same domain as user_first.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
     """
     return test_data['tokens'][1]['access_token']
 
 
 @pytest.fixture(scope='session')
-def token_second():
+def token_second(test_data):
     """
      Authentication token for user_second.
+     :param dict test_data: a collection of test users, domains, groups, tokens data.
     """
     return test_data['tokens'][2]['access_token']
 
 
 @pytest.fixture(scope='session')
-def user_first():
+def user_first(test_data):
     """
     This fixture will be used to get user from UserService using id from config.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
     :return: user dictionary object
     """
     return test_data['users'][0]
 
 
 @pytest.fixture(scope='session')
-def user_same_domain():
+def user_same_domain(test_data):
     """
     This fixture will be used to get user from UserService using id from config.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
     :return: user dictionary object
     """
     return test_data['users'][1]
 
 
 @pytest.fixture(scope='session')
-def user_second():
+def user_second(test_data):
     """
     This fixture will be used to get user from UserService using id from config.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
     :return: user dictionary object
     """
     return test_data['users'][2]
@@ -117,7 +129,7 @@ def candidate_same_domain(request, talent_pool, token_same_domain):
         delete_candidate(candidate_id, token_same_domain,
                          expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
 
-    request.addfinalizer(tear_down)
+    # request.addfinalizer(tear_down)
     return candidate
 
 
@@ -140,7 +152,7 @@ def candidate_second(request, token_second, talent_pool_second):
         delete_candidate(candidate_id, token_second,
                          expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
 
-    request.addfinalizer(tear_down)
+    # request.addfinalizer(tear_down)
     return candidate
 
 
@@ -165,7 +177,7 @@ def smartlist_first(request, token_first, candidate_first, talent_pipeline):
         delete_smartlist(smartlist_id, token_first,
                          expected_status=(codes.OK, codes.NOT_FOUND))
 
-    request.addfinalizer(tear_down)
+    # request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -189,7 +201,7 @@ def smartlist_second(request, token_second, candidate_second, talent_pipeline_se
     def tear_down():
         delete_smartlist(smartlist_id, token_second,
                          expected_status=(codes.OK, codes.NOT_FOUND))
-    request.addfinalizer(tear_down)
+    # request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -214,7 +226,7 @@ def smartlist_same_domain(request, token_same_domain, candidate_same_domain, tal
         delete_smartlist(smartlist_id, token_same_domain,
                          expected_status=(codes.OK, codes.NOT_FOUND))
 
-    request.addfinalizer(tear_down)
+    # request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -233,7 +245,7 @@ def talent_pool(request, token_first):
         delete_talent_pool(talent_pool_id, token_first,
                            expected_status=(codes.OK, codes.NOT_FOUND))
 
-    request.addfinalizer(tear_down)
+    # request.addfinalizer(tear_down)
     return talent_pool_obj
 
 
@@ -252,7 +264,7 @@ def talent_pool_second(request, token_second):
         delete_talent_pool(talent_pool_id, token_second,
                            expected_status=(codes.OK, codes.NOT_FOUND))
 
-    request.addfinalizer(tear_down)
+    # request.addfinalizer(tear_down)
     return talent_pool_obj
 
 

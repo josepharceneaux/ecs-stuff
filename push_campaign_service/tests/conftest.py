@@ -31,7 +31,7 @@ from push_campaign_service.common.tests.api_conftest import (token_first, token_
                                                              candidate_second, smartlist_first,
                                                              smartlist_same_domain, smartlist_second,
                                                              talent_pool, talent_pool_second, talent_pipeline,
-                                                             talent_pipeline_second)
+                                                             talent_pipeline_second, test_data)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.push_campaign_app import app
 from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
