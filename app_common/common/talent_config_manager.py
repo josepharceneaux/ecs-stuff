@@ -57,6 +57,7 @@ class TalentConfigKeys(object):
     TOKEN_SECRET="TOKEN_SECRET"
     TWILIO_ACCOUNT_SID = "TWILIO_ACCOUNT_SID"
     TWILIO_AUTH_TOKEN = "TWILIO_AUTH_TOKEN"
+    JENKINS_HOST_IP = "JENKINS_HOST_IP"
 
 
 class TalentEnvs(object):
