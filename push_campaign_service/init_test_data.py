@@ -130,6 +130,4 @@ def create_test_data():
 
         cfg.flush()
 
-# Create data
-create_test_data()
 

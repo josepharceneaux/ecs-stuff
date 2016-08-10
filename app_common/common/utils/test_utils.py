@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 # 3rd party imports
 import requests
 from faker import Faker
+from redo import retrier
 from requests import codes
 from contracts import contract
 from dateutil.parser import parse
@@ -18,6 +19,7 @@ from dateutil.parser import parse
 # Service specific imports
 from ..error_codes import ErrorCodes
 from ..tests.conftest import randomword
+from ..constants import SLEEP_TIME, SLEEP_INTERVAL
 from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
                       CandidatePoolApiUrl, SchedulerApiUrl)
 from ..custom_contracts import define_custom_contracts
@@ -36,7 +38,7 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
     :param http_method method: standard HTTP method like post, get (in lowercase)
     :param string url: target url
     :param (string | None)  access_token: authentication token, token can be empty, None or invalid
-    :param (dict | None) data: payload data for request
+    :param type(t) data: payload data for request
     :param (dict | None) params: query params
     :param bool is_json: a flag to determine, whether we need to dump given data or not.
             default value is true because most of the APIs are using json content-type.
@@ -536,3 +538,19 @@ def get_response(access_token, arguments_to_url, expected_count=1, attempts=20, 
             return resp
 
     raise NotFoundError('Unable to get expected number of candidates')
+
+
+@contract
+def get_and_assert_zero(url, key, token, sleep_time=SLEEP_TIME):
+    """
+    This function gets list of objects from given url and asserts that length of objects under a given key is zero.
+    It keeps on retrying this process until it founds some records or sleep_time is over
+    :param string url: URL of requested resource
+    :param string key: key in response that has resource list
+    :param string token: user access token
+    :param int sleep_time: maximum time to wait
+    """
+    attempts = sleep_time / SLEEP_INTERVAL
+    for _ in retrier(attempts=attempts, sleeptime=SLEEP_INTERVAL, sleepscale=1):
+        assert len(send_request('get', url, token).json()[key]) == 0
+

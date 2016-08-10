@@ -34,11 +34,11 @@ import sys
 from requests import codes
 
 # Application specific imports
-from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
-from push_campaign_service.tests.test_utilities import (invalid_data_test,
-                                                        missing_key_test, create_campaign,
+from push_campaign_service.modules.push_campaign_base import PushCampaignBase
+from push_campaign_service.tests.test_utilities import (invalid_data_test, create_campaign,
                                                         get_campaigns, delete_campaign,
-                                                        delete_campaigns)
+                                                        delete_campaigns, invalid_value_test, missing_keys_test,
+                                                        unexpected_field_test)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.test_utils import send_request
 from push_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
@@ -65,26 +65,64 @@ class TestCreateCampaign(object):
         """
         invalid_data_test('post', URL, token_first)
 
+    def test_create_campaign_with_unexpected_field(self, token_first, campaign_data, smartlist_first):
+        """
+        Create a campaign with an extra unexpected field, API should raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        :param dict smartlist_first: Smartlist object
+        """
+        campaign_data['smartlist_ids'] = [smartlist_first['id']]
+        unexpected_field_test('post', URL, campaign_data, token_first)
+
     def test_create_campaign_with_missing_fields(self, token_first, campaign_data, smartlist_first):
         """
         Here we will try to create campaign with some required fields missing and we will get
         400 status code
-        :param token_first: auth token
-        :param campaign_data: campaign dictionary data
-        :param smartlist_first: smartlist dict object
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        :param dict smartlist_first: Smartlist object
         """
         # First test with missing keys
-        for key in CAMPAIGN_REQUIRED_FIELDS:
-            data = campaign_data.copy()
-            data['smartlist_ids'] = [smartlist_first['id']]
-            missing_key_test(data, key, token_first)
+        missing_keys_test(PushCampaignBase.REQUIRED_FIELDS, smartlist_first, token_first)
+
+    def test_campaign_creation_with_invalid_body_text(self, token_first, campaign_data, smartlist_first):
+        """
+        Create a campaign with invalid body text, it should raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        :param dict smartlist_first: Smartlist object
+        """
+        campaign_data['smartlist_ids'] = [smartlist_first['id']]
+        invalid_values = ['', '  ', {}, [], None, True]
+        invalid_value_test(campaign_data, 'body_text', invalid_values, token_first)
+
+    def test_campaign_creation_with_invalid_smartlist_ids(self, token_first, campaign_data):
+        """
+        Create campaign with invalid smartlist ids, API should raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        """
+        invalid_ids = [0, -1, '1', None, True]
+        invalid_value_test(campaign_data, 'smartlist_ids', invalid_ids, token_first)
+
+    def test_campaign_creation_with_invalid_name(self, token_first, campaign_data, smartlist_first):
+        """
+        Create a campaign with invalid name field, API should raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        :param dict smartlist_first: Smartlist object
+        """
+        campaign_data['smartlist_ids'] = [smartlist_first['id']]
+        invalid_names = [0, -1, None, True, '', '    ']
+        invalid_value_test(campaign_data, 'name', invalid_names, token_first)
 
     def test_create_campaign(self, token_first, campaign_data, smartlist_first):
         """
         Here we will send a valid data to create a campaign and we are expecting 201 (created)
-        :param token_first: auth token
-        :param campaign_data: dict data for campaigns
-        :param smartlist_first: Smartlist dict object
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        :param dict smartlist_first: Smartlist object
         """
         # Success case. Send a valid data and campaign should be created (201)
         data = campaign_data.copy()

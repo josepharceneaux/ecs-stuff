@@ -172,7 +172,7 @@ def replace_ngrok_link_with_localhost(temp_ngrok_link):
     """
     relative_url = temp_ngrok_link.split(NGROK_URL % '')[1]
     # HOST_NAME is http://127.0.0.1:8011 for dev
-    return SmsCampaignApi.HOST_NAME % relative_url
+    return SmsCampaignApiUrl.HOST_NAME % relative_url
 
 
 # TODO: remove this when app is up

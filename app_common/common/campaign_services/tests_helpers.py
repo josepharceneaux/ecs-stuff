@@ -24,7 +24,6 @@ from ..models.smartlist import Smartlist
 from ..routes import CandidatePoolApiUrl
 from custom_errors import CampaignException
 from ..models.user import (Permission, User)
-from ..utils.test_utils import get_fake_dict
 from ..models.sms_campaign import SmsCampaign
 from ..models.misc import (Frequency, Activity)
 from ..models.push_campaign import PushCampaign
@@ -34,6 +33,7 @@ from campaign_utils import get_model, CampaignUtils
 from ..utils.validators import raise_if_not_instance_of
 from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
+from ..utils.test_utils import get_fake_dict, get_and_assert_zero
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
                               ResourceNotFound, UnprocessableEntity)
@@ -60,9 +60,9 @@ class CampaignsTestsHelpers(object):
         """
         This should get forbidden error because requested campaign does not belong to
         logged-in user's domain.
-        :param str method: Name of HTTP method
-        :param str url: URL to to make HTTP request
-        :param str access_token: access access_token of user
+        :param string method: Name of HTTP method
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
         :param dict|None data: Data to be passed in request
         """
         raise_if_not_instance_of(method, basestring)
@@ -75,10 +75,10 @@ class CampaignsTestsHelpers(object):
     def request_for_resource_not_found_error(cls, method, url, access_token, data=None):
         """
         This should get Resource not found error because requested resource has been deleted.
-        :param (str) method: Name of HTTP method
-        :param (str) url: URL to to make HTTP request
-        :param (str) access_token: access access_token of user
-        :param (dict | None) data: Data to be posted
+        :param string method: Name of HTTP method
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
+        :param dict | None data: Data to be posted
         """
         raise_if_not_instance_of(method, basestring)
         raise_if_not_instance_of(url, basestring)
@@ -93,12 +93,12 @@ class CampaignsTestsHelpers(object):
         """
         This is a helper function to request the given URL after deleting the given resource.
         It should result in ResourceNotFound error.
-        :param (dict | SmsCampaign | EmailCampaign | PushCampaign) campaign: Campaign object
-        :param (str) url_to_delete_campaign: URL to delete given campaign
-        :param (str) url_after_delete: URL to be requested after deleting the campaign
-        :param (str) method_after_delete: Name of method to be requested after deleting campaign
-        :param (str) access_token: access access_token of logged-in user
-        :param (dict | None) data: Data to be sent in request after deleting campaign
+        :param dict | SmsCampaign | EmailCampaign | PushCampaign campaign: Campaign object
+        :param string url_to_delete_campaign: URL to delete given campaign
+        :param string url_after_delete: URL to be requested after deleting the campaign
+        :param string method_after_delete: Name of method to be requested after deleting campaign
+        :param string access_token: access access_token of logged-in user
+        :param dict | None data: Data to be sent in request after deleting campaign
         """
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         raise_if_not_instance_of(url_to_delete_campaign, basestring)
@@ -151,10 +151,10 @@ class CampaignsTestsHelpers(object):
         """
         Here we pass start_datetime and end_datetime with invalid value i.e. in past, to schedule
         a campaign. Then we assert that we get InvalidUsage error in response.
-        :param (str) method: Name of HTTP method
-        :param (str) url: URL to to make HTTP request
-        :param (str) access_token: access access_token of user
-        :param (dict) data: Data to be posted
+        :param string method: Name of HTTP method
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
+        :param dict data: Data to be posted
         """
         raise_if_not_instance_of(method, basestring)
         raise_if_not_instance_of(url, basestring)
@@ -169,10 +169,10 @@ class CampaignsTestsHelpers(object):
         """
         Here we try to schedule a campaign with missing required fields and assert that we get
         InvalidUsage error in response.
-        :param (str) method: Name of HTTP method
-        :param (str) url: URL to to make HTTP request
-        :param (str) access_token: access access_token of user
-        :param (dict) data: Data to be posted
+        :param string method: Name of HTTP method
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
+        :param dict data: Data to be posted
         """
         # Test missing start_datetime field which is mandatory to schedule a campaign
         raise_if_not_instance_of(method, basestring)
@@ -188,10 +188,10 @@ class CampaignsTestsHelpers(object):
     def invalid_datetime_format(method, url, access_token, data):
         """
         Here we pass start_datetime and end_datetime in invalid format to schedule a campaign.
-        :param (str) method: Name of HTTP method
-        :param (str) url: URL to to make HTTP request
-        :param (str) access_token: access access_token of user
-        :param (dict) data: Data to be posted
+        :param string method: Name of HTTP method
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
+        :param dict data: Data to be posted
         """
         raise_if_not_instance_of(method, basestring)
         raise_if_not_instance_of(url, basestring)
@@ -206,9 +206,9 @@ class CampaignsTestsHelpers(object):
         """
         This is used in tests where we want to make HTTP request on given URL with invalid
         access access_token. It assert that we get ForbiddenError as a result.
-        :param (str) method: Name of HTTP method
-        :param (str) url: URL to to make HTTP request
-        :param (dict | None) data: Data to be posted
+        :param string method: Name of HTTP method
+        :param string url: URL to to make HTTP request
+        :param dict | None data: Data to be posted
         """
         raise_if_not_instance_of(method, basestring)
         raise_if_not_instance_of(url, basestring)
@@ -220,8 +220,8 @@ class CampaignsTestsHelpers(object):
         """
         This is used in campaign tests where we want to re-schedule a campaign with invalid data.
         This asserts that we get BadRequest error for every bad data we pass.
-        :param (str) url: URL to to make HTTP request
-        :param (str) access_token: access access_token of user
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
         """
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
@@ -235,10 +235,10 @@ class CampaignsTestsHelpers(object):
         that does not exist in database for given model. It then asserts to check we get status
         code 400 in case of id 0 and status code 404 in case of non-existing id.
         :param (db.Model) model: SQLAlchemy model
-        :param (str) method: Name of HTTP method
-        :param (str) url: URL to to make HTTP request
-        :param (str) access_token: access access_token of user
-        :param (dict | None) data: Data to be posted
+        :param string method: Name of HTTP method
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
+        :param dict | None data: Data to be posted
         """
         assert db.Model in model.__mro__, '`model` should be instance of db.Model'
         raise_if_not_instance_of(method, basestring)
@@ -256,7 +256,7 @@ class CampaignsTestsHelpers(object):
         """
         This methods returns the id of last record in given database table.
         If there is no record found, it returns None.
-        :param (db.Model) model: SQLAlchemy model
+        :param db.Model model: SQLAlchemy model
         """
         assert db.Model in model.__mro__, '`model` should be instance of db.Model'
         last_obj = model.query.order_by(model.id.desc()).first()
@@ -269,7 +269,7 @@ class CampaignsTestsHelpers(object):
         If last record is found, it adds 1000 in its id and return it.
         Otherwise it returns sys.maxint which ensures that returned number is a non-existing id for
         given model.
-        :param (db.Model) model: SQLAlchemy model
+        :param db.Model model: SQLAlchemy model
         """
         assert db.Model in model.__mro__, '`model` should be instance of db.Model'
         last_id = cls.get_last_id(model)
@@ -279,7 +279,7 @@ class CampaignsTestsHelpers(object):
     def get_non_existing_ids(cls, model):
         """
         This methods returns a tuple of non-existing ids for given db Model.
-        :param (db.Model) model: SQLAlchemy model
+        :param db.Model model: SQLAlchemy model
         """
         assert db.Model in model.__mro__, '`model` should be instance of db.Model'
         return get_invalid_ids(cls.get_non_existing_id(model))
@@ -290,9 +290,9 @@ class CampaignsTestsHelpers(object):
         To re-schedule a campaign, we have to use PUT HTTP method. But here we will make a
         POST HTTP request which is for first time scheduling and will validate that we get
         forbidden error.
-        :param (str) url: URL to to make HTTP request
-        :param (str) access_token: access access_token of user
-        :param (dict) data: Data to be posted
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
+        :param dict data: Data to be posted
         """
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
@@ -320,10 +320,11 @@ class CampaignsTestsHelpers(object):
     def campaign_send_with_no_smartlist(url, access_token):
         """
         This is the test to send a campaign which has no smartlist associated  with it.
-        It should get Invalid usage error. Custom error should be
-        NoSmartlistAssociatedWithCampaign.
-        :param (str) url: URL to to make HTTP request
-        :param (str) access_token: access access_token of user
+        It should get Invalid usage error is sent synchronously, Custom error should be
+        NoSmartlistAssociatedWithCampaign or we will get OK response it sent asynchronously but no campaign will
+        be sent.
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
         """
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
@@ -335,16 +336,15 @@ class CampaignsTestsHelpers(object):
         assert 'No Smartlist'.lower() in error_resp['message'].lower()
 
     @classmethod
-    def campaign_send_with_no_smartlist_candidate(cls, url, access_token, campaign,
-                                                  talent_pipeline_id):
+    def campaign_send_with_no_smartlist_candidate(cls, url, access_token, campaign, talent_pipeline_id):
         """
         User auth access_token is valid, campaign has one smart list associated. But smartlist has
         no candidate associated with it. The function tries to send the email campaign and resturns the
         response to calling function.
-        :param (SmsCampaign | EmailCampaign | PushCampaign) campaign: Campaign object
-        :param (str) url: URL to to make HTTP request
-        :param (str) access_token: access access_token of user
-        :param (int, long) talent_pipeline_id: Id of talent_pipeline
+        :param SmsCampaign | EmailCampaign | PushCampaign campaign: Campaign object
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
+        :param int | long talent_pipeline_id: Id of talent_pipeline
         """
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
@@ -377,23 +377,24 @@ class CampaignsTestsHelpers(object):
         assert len(blasts) == 0
 
     @classmethod
-    def campaign_test_with_no_valid_candidate(cls, url, access_token, campaign_id):
+    def campaign_test_with_no_valid_candidate(cls, url, access_token, campaign_id, campaign_service_urls=None):
         """
-        This is the test to send campaign to candidate(s) who do not have valid
+        This is the test to send campaign to candidate(s) which does not have valid
         data for the campaign to be sent to them. e.g. in case of email_campaign, candidate
         will have no email or for SMS campaign, candidate will not have any mobile number
-        associated. This should assert custom error NO_VALID_CANDIDATE_FOUND in response.
-        :param (str) url: URL to to make HTTP request
-        :param (str) access_token: access access_token of user
-        :param (int, long) campaign_id: Id of campaign
+        associated. We will get 200 response but campaign will not be sent over celery due to invalid data.
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
+        :param int | long campaign_id: Id of campaign
+        :param PushCampaignApiUrl | SmsCampaignApiUrl campaign_service_urls: routes url class
         """
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(access_token, basestring)
         raise_if_not_instance_of(campaign_id, (int, long))
         response_post = send_request('post', url,  access_token)
-        error_resp = cls.assert_non_ok_response(response_post)
-        assert error_resp['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
-        assert str(campaign_id) in error_resp['message']
+        assert response_post.status_code == requests.codes.OK
+        assert getattr(campaign_service_urls, 'SENDS')
+        get_and_assert_zero(getattr(campaign_service_urls, 'SENDS') % campaign_id, 'sends', access_token)
 
     @staticmethod
     def assert_for_activity(user_id, _type, source_id):
@@ -414,10 +415,10 @@ class CampaignsTestsHelpers(object):
         """
         This is the common function to assert that response is returning valid 'count'
         and 'sends' or 'replies' for a particular campaign.
-        :param (Response) response: Response object of HTTP request
-        :param (int) count: Number of expected objects
-        :param (str) entity: Name of expected entity
-        :param (bool) check_count: If True, will check number of objects
+        :param Response response: Response object of HTTP request
+        :param int count: Number of expected objects
+        :param string entity: Name of expected entity
+        :param bool check_count: If True, will check number of objects
         """
         raise_if_not_instance_of(response, Response)
         raise_if_not_instance_of(count, int)
@@ -439,10 +440,10 @@ class CampaignsTestsHelpers(object):
         This function sends the campaign via /v1/email-campaigns/:id/send or
         /v1/sms-campaigns/:id/send depending on campaign type.
         sleep_time is set to be 20s here. One can modify this by passing required value.
-        :param (str) url: URL to hit for sending given campaign
-        :param (dict | SmsCampaign | EmailCampaign | PushCampaign) campaign: Campaign object
-        :param (str) access_token: Auth access_token to make HTTP request
-        :param (str | None) blasts_url: URL to get blasts of given campaign
+        :param string url: URL to hit for sending given campaign
+        :param dict | SmsCampaign | EmailCampaign | PushCampaign campaign: Campaign object
+        :param string access_token: Auth access_token to make HTTP request
+        :param str | None blasts_url: URL to get blasts of given campaign
         """
         raise_if_not_instance_of(url, basestring)
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
@@ -462,7 +463,7 @@ class CampaignsTestsHelpers(object):
         return response
 
     @staticmethod
-    def get_blasts(campaign, access_token=None, blasts_url=None):
+    def get_blasts(campaign, access_token=None, blasts_url=None, count=None):
         """
         This returns all the blasts associated with given campaign
         """
@@ -476,6 +477,8 @@ class CampaignsTestsHelpers(object):
             blasts_get_response = send_request('get', blasts_url, access_token)
             blasts = blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
         assert blasts
+        if count and isinstance(count, int):
+            assert len(blasts) == count
         return blasts
 
     @staticmethod
@@ -630,7 +633,7 @@ class CampaignsTestsHelpers(object):
             candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                                  return_candidate_ids_only=True)
             if assert_candidates:
-                time.sleep(30)  # TODO: Need to remove this and use polling instead
+                time.sleep(30)
         smartlist_data = {'name': smartlist_name,
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}
@@ -650,7 +653,7 @@ class CampaignsTestsHelpers(object):
         """
         Create two smartlists with same candidate in both of them and returns smartlist ids in list format.
         :param TalentPipeline talent_pipeline: Talent pipeline object of user
-        :param str access_token: Access token of user
+        :param string access_token: Access token of user
         :param int count: Number of candidates in first smartlist
         :param bool create_phone: True if need to create candidate's phone
         :param bool email_list: True if need to create candidate's email
@@ -673,6 +676,8 @@ class CampaignsTestsHelpers(object):
         """
         This assign required permission to given user.
         Default roles are CAN_ADD_CANDIDATES and CAN_GET_CANDIDATES.
+        :param User user: user model object
+        :param tuple roles: a collection of permissions actually
         """
         raise_if_not_instance_of(user, User)
         raise_if_not_instance_of(roles, (list, tuple))
@@ -695,9 +700,9 @@ class CampaignsTestsHelpers(object):
         This creates or updates a campaign with unexpected fields present in the data and
         asserts that we get invalid usage error from respective API. Data passed should be a dictionary
         here.
-        :param str method: Name of HTTP method
-        :param str url: URL on which we are supposed to make HTTP request
-        :param str access_token: Access token of user
+        :param string method: Name of HTTP method
+        :param string url: URL on which we are supposed to make HTTP request
+        :param string access_token: Access token of user
         :param dict campaign_data: Data to be passed in HTTP request
         """
         campaign_data['unexpected_key'] = fake.word()
@@ -844,11 +849,11 @@ def _assert_api_response_for_missing_field(method, url, access_token, data, fiel
     """
     This function removes the field from data as specified by field_to_remove, and
     then POSTs data on given URL. It then asserts that removed filed is in error_message.
-    :param (str) method: Name of HTTP method
-    :param (str) url: URL to to make HTTP request
-    :param (str) access_token: access access_token of user
-    :param (dict) data: Data to be posted
-    :param (str) field_to_remove: Name of field we want to remove from given data
+    :param string method: Name of HTTP method
+    :param string url: URL to to make HTTP request
+    :param string access_token: access access_token of user
+    :param dict data: Data to be posted
+    :param string field_to_remove: Name of field we want to remove from given data
     """
     raise_if_not_instance_of(method, basestring)
     raise_if_not_instance_of(url, basestring)
@@ -868,11 +873,11 @@ def _assert_invalid_datetime_format(method, url, access_token, data, key):
     """
     Here we modify field of data as specified by param 'key' and then assert the invalid usage
     error in response of HTTP request.
-    :param (str) method: Name of HTTP method
-    :param (str) url: URL to to make HTTP request
-    :param (str) access_token: access access_token of user
-    :param (dict) data: Data to be posted
-    :param (str) key: Name of field we want to make invalidly formatted
+    :param string method: Name of HTTP method
+    :param string url: URL to to make HTTP request
+    :param string access_token: access access_token of user
+    :param dict data: Data to be posted
+    :param string key: Name of field we want to make invalidly formatted
     """
     raise_if_not_instance_of(method, basestring)
     raise_if_not_instance_of(url, basestring)
@@ -891,11 +896,11 @@ def _assert_invalid_datetime(method, url, access_token, data, key):
     """
     Here we set datetime field of data to as specified by param 'key' to past and then assert
     the invalid usage error in response of HTTP request.
-    :param (str) method: Name of HTTP method
-    :param (str) url: URL to to make HTTP request
-    :param (str) access_token: access access_token of user
-    :param (dict) data: Data to be posted
-    :param (str) key: Name of field we want to assert invalidity on
+    :param string method: Name of HTTP method
+    :param string url: URL to to make HTTP request
+    :param string access_token: access access_token of user
+    :param dict data: Data to be posted
+    :param string key: Name of field we want to assert invalidity on
     """
     raise_if_not_instance_of(method, basestring)
     raise_if_not_instance_of(url, basestring)
@@ -912,10 +917,10 @@ def _assert_invalid_datetime(method, url, access_token, data, key):
 def _assert_unauthorized(method, url, access_token, data=None):
     """
     For a given URL, here we request with invalid access_token and assert that we get Unauthorized error.
-    :param (str) method: Name of HTTP method
-    :param (str) url: URL to to make HTTP request
-    :param (str) access_token: access access_token of user
-    :param (dict | None) data: Data to be posted
+    :param string method: Name of HTTP method
+    :param string url: URL to to make HTTP request
+    :param string access_token: access access_token of user
+    :param dict | None data: Data to be posted
     """
     raise_if_not_instance_of(method, basestring)
     raise_if_not_instance_of(url, basestring)
@@ -930,9 +935,9 @@ def _invalid_data_test(method, url, access_token):
     """
     This is used to make HTTP request as specified by 'method' on given URL and assert invalid
     usage error in response.
-    :param (str) method: Name of HTTP method
-    :param (str) url: URL to to make HTTP request
-    :param (str) access_token: access access_token of user
+    :param string method: Name of HTTP method
+    :param string url: URL to to make HTTP request
+    :param string access_token: access access_token of user
     """
     raise_if_not_instance_of(method, basestring)
     raise_if_not_instance_of(url, basestring)
@@ -978,9 +983,9 @@ def _get_invalid_id_and_status_code_pair(invalid_ids):
 def _assert_activity(user_id, _type, source_id):
     """
     This gets that activity from database table Activity for given params
-    :param (int, long) user_id: Id of user
-    :param (int, long) _type: Type number of activity
-    :param (int, long) source_id: Id of activity source
+    :param int | long user_id: Id of user
+    :param int | long _type: Type number of activity
+    :param int | long source_id: Id of activity source
     """
     raise_if_not_instance_of(user_id, (int, long))
     raise_if_not_instance_of(_type, (int, long))

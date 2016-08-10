@@ -26,7 +26,7 @@ class SmsCampaign(db.Model):
     blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',
                           passive_deletes=True, lazy='dynamic', backref='campaign')
     smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
-                              passive_deletes=True, backref='campaign')
+                              passive_deletes=True, backref='campaign', lazy='dynamic')
 
     def __repr__(self):
         return "<SmsCampaign (id = %d, name = %s)>" % (self.id, self.name)
