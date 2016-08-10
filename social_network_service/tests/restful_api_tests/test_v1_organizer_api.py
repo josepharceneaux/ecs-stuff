@@ -3,6 +3,9 @@ import json
 
 import requests
 # App specific imports
+from datetime import datetime
+
+from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.tests.api_conftest import token_first, user_first
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
@@ -61,9 +64,10 @@ class TestOrganizers:
         """
         event_organizer = {
             "user_id": user_first['id'],
-            "name": "Test Organizer",
+            "name": datetime.now().strftime('%Y%m%dT%H%M%S'),
             "email": "testemail@gmail.com",
-            "about": "He is a testing engineer"
+            "about": "He is a testing engineer",
+
         }
         response = requests.post(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(event_organizer),
                                  headers=get_headers(token_first))
@@ -110,7 +114,7 @@ class TestOrganizers:
         :param organizer_in_db:
         :return:
         """
-        organizer_ids = {'ids': [organizer_in_db.id]}
+        organizer_ids = {'ids': [organizer_in_db['id']]}
         response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(organizer_ids),
                                    headers=get_headers(token_first))
         logger.info(response.text)

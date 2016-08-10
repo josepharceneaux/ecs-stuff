@@ -3,6 +3,8 @@
 # Third Party
 import json
 from datetime import datetime, timedelta
+from uuid import uuid4
+
 import pytest
 
 # App Settings
@@ -217,7 +219,6 @@ def meetup_event_data(user_first, meetup, meetup_venue, organizer_in_db, meetup_
     data = EVENT_DATA.copy()
     data['social_network_id'] = meetup.id
     data['venue_id'] = meetup_venue.id
-    data['organizer_id'] = organizer_in_db.id
     data['group_url_name'] = meetup_group['urlname']
     data['social_network_group_id'] = meetup_group['id']
 
@@ -230,7 +231,7 @@ def eventbrite_event_data(eventbrite, user_first, eventbrite_venue,
     data = EVENT_DATA.copy()
     data['social_network_id'] = eventbrite.id
     data['venue_id'] = eventbrite_venue.id
-    data['organizer_id'] = organizer_in_db.id
+    data['organizer_id'] = organizer_in_db['id']
 
     return data
 
@@ -238,12 +239,14 @@ def eventbrite_event_data(eventbrite, user_first, eventbrite_venue,
 @pytest.fixture()
 def meetup_event(request, user_first, test_meetup_credentials, meetup,
                  meetup_venue, organizer_in_db, token_first, meetup_event_data):
+
+    del meetup_event_data['organizer_id']
     response = send_request('post',
                             url=SocialNetworkApiUrl.EVENTS,
                             access_token=token_first,
                             data=meetup_event_data)
 
-    assert response.status_code == 201
+    assert response.status_code == 201, response.text
 
     data = response.json()
     db.session.commit()
@@ -351,14 +354,14 @@ def eventbrite_event(request, test_eventbrite_credentials,
     event['social_network_id'] = eventbrite.id
     event['venue_id'] = eventbrite_venue.id
 
-    event['organizer_id'] = organizer_in_db.id
+    event['organizer_id'] = organizer_in_db['id']
 
     response = send_request('post',
                             url=SocialNetworkApiUrl.EVENTS,
                             access_token=token_first,
                             data=event)
 
-    assert response.status_code == 201
+    assert response.status_code == 201, response.text
 
     data = response.json()
     db.session.commit()
@@ -467,18 +470,21 @@ def organizer_in_db(request, user_first, token_first):
     social_network = SocialNetwork.get_by_name('Eventbrite')
     organizer = {
         "user_id": user_first['id'],
-        "name": "Test Organizer",
+        "name": "Saad Abdullah",
         "email": "testemail@gmail.com",
         "about": "He is a testing engineer",
         "social_network_id": social_network.id,
         "social_network_organizer_id": "11000067214"
     }
 
-    organizer = EventOrganizer(**organizer)
+    organizer_obj = EventOrganizer(**organizer)
+    db.session.add(organizer_obj)
+    db.session.commit()
+    organizer = dict(id=organizer_obj.id)
 
     def fin():
         try:
-            EventOrganizer.delete(organizer.id)
+            EventOrganizer.delete(organizer['id'])
         except:
             pass
 
@@ -497,7 +503,7 @@ def get_test_events(request, user_first, meetup, eventbrite, meetup_venue,
     meetup_dict = EVENT_DATA.copy()
     meetup_dict['social_network_id'] = meetup.id
     meetup_dict['venue_id'] = meetup_venue.id
-    meetup_dict['organizer_id'] = organizer_in_db.id
+    meetup_dict['organizer_id'] = organizer_in_db['id']
     meetup_dict['user_id'] = user_first['id']
     meetup_dict['group_url_name'] = meetup_group['urlname']
     meetup_dict['social_network_group_id'] = meetup_group['id']
@@ -505,7 +511,7 @@ def get_test_events(request, user_first, meetup, eventbrite, meetup_venue,
     eventbrite_dict = EVENT_DATA.copy()
     eventbrite_dict['social_network_id'] = eventbrite.id
     eventbrite_dict['venue_id'] = eventbrite_venue.id
-    eventbrite_dict['organizer_id'] = organizer_in_db.id
+    eventbrite_dict['organizer_id'] = organizer_in_db['id']
     eventbrite_dict['user_id'] = user_first['id']
 
     def delete_test_event():
@@ -542,7 +548,11 @@ def test_event(request, get_test_events):
     events
     """
     if request.param == 'Meetup':
-        return get_test_events[0]
+        event_data = get_test_events[0]
+        # We don't have organizer_id field in case of meetup
+        if event_data.get('organizer_id'):
+            del event_data['organizer_id']
+        return event_data
 
     if request.param == 'Eventbrite':
         return get_test_events[1]
@@ -563,7 +573,7 @@ def eventbrite_missing_data(request, eventbrite_event_data):
     return request.param, eventbrite_event_data.copy()
 
 
-@pytest.fixture(params=['title', 'description', 'social_network_group_id',
+@pytest.fixture(params=['description', 'social_network_group_id',
                         'group_url_name', 'start_datetime', 'max_attendees',
                         'venue_id', 'organizer_id'], scope='function')
 def meetup_missing_data(request, meetup_event_data):

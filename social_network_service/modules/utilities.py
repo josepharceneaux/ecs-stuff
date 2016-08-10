@@ -20,6 +20,7 @@ from flask import request
 from pytz import timezone
 
 # Application Specific Imports
+from social_network_service.common.error_handling import InvalidUsage
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.models.misc import Activity
 from social_network_service.custom_exceptions import *
@@ -270,6 +271,8 @@ def process_event(data, user_id, method='Create'):
         else:
             raise SocialNetworkError('Unable to find social network')
         data['user_id'] = user_id
+        if social_network.name.lower() == 'meetup' and data.get('organizer_id'):
+            raise InvalidUsage('organizer_id is not a valid field in case of meetup')
         event_obj.event_gt_to_sn_mapping(data)
 
         activity_data = {'username': request.user.name,

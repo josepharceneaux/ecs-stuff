@@ -14,6 +14,7 @@ import requests
 import sys
 
 from social_network_service.common.models import db
+from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.misc import Activity
 from social_network_service.custom_exceptions import VenueNotFound, \
     EventInputMissing, EventOrganizerNotFound, SocialNetworkNotImplemented, SocialNetworkError
@@ -123,12 +124,17 @@ class TestResourceEvents:
         event_data = test_event
         social_network_id = event_data['social_network_id']
         event_data['social_network_id'] = social_network_id
+        social_network = SocialNetwork.get_by_id(social_network_id)
 
         # test with invalid organizer
         event_data['organizer_id'] = -1
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token_first)
         logger.info(response.text)
-        assert response.status_code == 404
+        if social_network.name.lower() == 'meetup':
+            assert response.status_code == 400, response.text
+            return
+        else:
+            assert response.status_code == 404, response.text
         response = response.json()
 
         assert 'error' in response and response['error']['code'] == EventOrganizerNotFound.error_code, \
@@ -136,7 +142,7 @@ class TestResourceEvents:
 
     def test_events_post_no_venue(self, token_first, test_event):
         """
-        Post event using invalid venue_id i.e equal to -1. response should be 500 with 4065 error code
+        Post event using invalid venue_id i.e equal to -1. response should be 404 with 4065 error code
         (Venue not found)
         :param token: access_token for oauth
         :param test_event: test_event for post a valid event data
@@ -144,10 +150,7 @@ class TestResourceEvents:
         """
         event_data = test_event
         social_network_id = event_data['social_network_id']
-        organizer_id = event_data['organizer_id']
-
         event_data['social_network_id'] = social_network_id
-        event_data['organizer_id'] = organizer_id
 
         # test with invalid venue
         event_data['venue_id'] = sys.maxint
@@ -159,7 +162,7 @@ class TestResourceEvents:
 
     def test_events_post_invalid_start_datetime(self, token_first, test_event):
         """
-        Post event using invalid start_datetime format. response should be 500 with 4064 error code
+        Post event using invalid start_datetime format. response should be 400
         (Social Network not found)
         :param token: access_token for oauth
         :param test_event: test_event for post a valid event data
@@ -167,11 +170,9 @@ class TestResourceEvents:
         """
         event_data = test_event
         social_network_id = event_data['social_network_id']
-        organizer_id = event_data['organizer_id']
         venue_id = event_data['venue_id']
 
         event_data['social_network_id'] = social_network_id
-        event_data['organizer_id'] = organizer_id
 
         event_data['venue_id'] = venue_id
         # TODO in this and the following test comment what exactly makes teh date valid OR what valid date looks like
@@ -184,7 +185,7 @@ class TestResourceEvents:
 
     def test_events_post_invalid_end_datetime(self, token_first, test_event):
         """
-        Post event using invalid end_datetime format. response should be 500 with 4064 error code
+        Post event using invalid end_datetime format. response should be 400
         (Social Network not found)
         :param token: access_token for oauth
         :param test_event: test_event for post a valid event data
@@ -192,11 +193,9 @@ class TestResourceEvents:
         """
         event_data = test_event
         social_network_id = event_data['social_network_id']
-        organizer_id = event_data['organizer_id']
         venue_id = event_data['venue_id']
 
         event_data['social_network_id'] = social_network_id
-        event_data['organizer_id'] = organizer_id
 
         event_data['venue_id'] = venue_id
 
@@ -235,7 +234,7 @@ class TestResourceEvents:
     def test_eventbrite_with_missing_required_fields(self, token_first, eventbrite_missing_data,
                                                      test_eventbrite_credentials):
         """
-        Post event data with missing required keys and response should be 500 (4053 - Missing Keys)
+        Post event data with missing required keys and response should be 400 (4053 - Missing Keys)
         :param token: accesstoken
         :param eventbrite_missing_data: eventbrite data fixture
         :param test_eventbrite_credentials:
@@ -246,22 +245,6 @@ class TestResourceEvents:
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token_first)
         logger.info(response.text)
         assert response.status_code == 400, 'It should fail'
-        response = response.json()
-        assert response['error']['code'] == EventInputMissing.error_code, 'There should be an missing field error for %s KeyError' % key
-
-    def test_meetup_with_missing_required_fields(self, token_first, meetup_missing_data, test_meetup_credentials):
-        """
-        Post meetup data with missing required keys and response should be 500 with 4053 error code (Missing Field)
-        :param token:
-        :param meetup_missing_data:
-        :param test_meetup_credentials:
-        :return:
-        """
-        key, event_data = meetup_missing_data
-        event_data[key] = ''
-        response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token_first)
-        logger.info(response.text)
-        assert response.status_code == 400, response.text
         response = response.json()
         assert response['error']['code'] == EventInputMissing.error_code, 'There should be an missing field error for %s KeyError' % key
 
@@ -282,7 +265,7 @@ class TestResourceEvents:
 
     def test_meetup_with_invalid_address(self, token_first, meetup_event_data, test_meetup_credentials):
         """
-        Send post request with invalid meetup_event data (change venue_id) and response should be 500 with error code
+        Send post request with invalid meetup_event data (change venue_id) and response should be 404 with error code
         4065 (Address invalid)
         :param token:
         :param meetup_event_data:
@@ -294,8 +277,4 @@ class TestResourceEvents:
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token_first)
         logger.info(response.text)
         assert response.status_code == 404, 'Venue not Found in database'
-        response = response.json()
-        assert response['error']['code'] == VenueNotFound.error_code, \
-            'Event should not be created, address is invalid according to Meetup API'
-
 

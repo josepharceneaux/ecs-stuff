@@ -3,6 +3,7 @@ import json
 
 import requests
 # Application specific imports
+from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.venue import Venue
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
@@ -48,8 +49,9 @@ class TestVenues:
         :param token:
         :return:
         """
+        social_network = SocialNetwork.get_by_name('eventbrite')
         venue = {
-            "social_network_id": 18,
+            "social_network_id": social_network.id,
             "zip_code": "54600",
             "address_line_2": "H# 163, Block A",
             "address_line_1": "New Muslim Town",

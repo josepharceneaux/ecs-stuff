@@ -200,11 +200,14 @@ class Test_Event_Importer:
         response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'eventbrite'),
                                  headers=headers)
         assert response.status_code == 200
-        sleep(80)
-        db.db.session.commit()
-        event = Event.get_by_user_and_social_network_event_id(user_id=user_id,
-                                                              social_network_event_id=social_network_event_id)
-        assert event
+
+        def f():
+            db.db.session.commit()
+            event = Event.get_by_user_and_social_network_event_id(user_id=user_id,
+                                                                  social_network_event_id=social_network_event_id)
+            assert event
+
+        retry(f, attempts=15, sleeptime=15, sleepscale=1, retry_exceptions=(AssertionError, ))
 
         Event.delete(event.id)
 
