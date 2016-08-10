@@ -22,10 +22,6 @@ TEST_ACCESS_TOKEN = 'uTl6zNUdoNATwwUg0GOuSFvyrtyCCW'
 TEST_REFRESH_TOKEN = 'uTl6zNUdoNATwwUg0GOuSFvyrtyCCW'
 TEST_PASSWORD = "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6"
 
-if app.config[TalentConfigKeys.ENV_KEY] != TalentEnvs.DEV:
-    print "This script is only to populate test data in dev environment."
-    raise SystemExit(0)
-
 
 def create_test_domain(names):
     ids = []
