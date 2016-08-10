@@ -35,12 +35,14 @@ class TestSetupApi(Resource):
         jenkins_ip = app.config[TalentConfigKeys.JENKINS_HOST_IP]
         is_gettalent = origin.count('gettalent.com') == 1 or origin == jenkins_ip
         is_dev = origin == localhost and app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]
+        is_alloed = is_gettalent or is_dev
         logger.info("""is_gettalent: %s,
                        id_dev: %s,
                        origin: %s,
-                       environment: %s
-                    """, is_gettalent, is_dev, origin, environment)
-        if not (is_gettalent or is_dev):
-            raise ForbiddenError('Invalid request origin')
+                       environment: %s,
+                       is_allowed: %s
+                    """, is_gettalent, is_dev, origin, environment, is_alloed)
+        if not is_alloed:
+            raise ForbiddenError('Invalid request origin : %s' % origin)
 
         return create_test_data()

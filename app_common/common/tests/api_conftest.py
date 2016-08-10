@@ -25,6 +25,7 @@ from ..utils.test_utils import (create_candidate, delete_candidate,
 
 
 response = send_request('post', UserServiceApiUrl.TEST_SETUP, '')
+print("Test Data Response: ", response.content, response.status_code)
 assert response.status_code == codes.OK
 
 test_data = response.json()
