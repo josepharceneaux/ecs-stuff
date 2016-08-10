@@ -1156,7 +1156,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         middle_name = parsed_names_object.middle
         last_name = parsed_names_object.last
 
-    update_dict = {'objective': objective, 'summary': summary, 'filename': (resume_url or '').lower(),
+    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url,
                    'source_id': source_id, 'candidate_status_id': candidate_status_id,
                    'source_product_id': source_product_id}
 
@@ -1207,7 +1207,7 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
         added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
         source_product_id=source_product_id, dice_profile_id=dice_profile_id,
         dice_social_profile_id=dice_social_profile_id, source_id=source_id, objective=objective,
-        summary=summary, filename=(resume_url or '').lower(), is_dirty=0
+        summary=summary, filename=resume_url, is_dirty=0
         # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     )
 
