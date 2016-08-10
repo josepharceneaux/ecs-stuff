@@ -320,7 +320,7 @@ def delete_candidate(candidate_id, token, expected_status=(200,)):
     """
     This method sends a DELETE request to Candidate API to delete a candidate given by candidate_id.
     :type candidate_id: int | long
-    :type token: str
+    :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """

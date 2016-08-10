@@ -17,14 +17,17 @@ import time
 from redo import retry
 from requests import codes
 
-from ..test_config_manager import load_test_config
+from ..routes import UserServiceApiUrl
 from ..utils.test_utils import (create_candidate, delete_candidate,
                                 create_smartlist, delete_smartlist, delete_talent_pool,
                                 create_talent_pools, create_talent_pipelines, get_smartlist_candidates, get_talent_pool,
-                                search_candidates)
+                                search_candidates, send_request)
 
 
-test_config = load_test_config()
+response = send_request('post', UserServiceApiUrl.TEST_SETUP, '')
+assert response.status_code == codes.OK
+
+test_data = response.json()
 
 
 @pytest.fixture(scope='session')
@@ -32,7 +35,7 @@ def token_first():
     """
     Au Authentication token for user_first.
     """
-    return test_config['USER_FIRST']['token']
+    return test_data['tokens'][0]['access_token']
 
 
 @pytest.fixture(scope='session')
@@ -40,7 +43,7 @@ def token_same_domain():
     """
     Authentication token for user that belongs to same domain as user_first.
     """
-    return test_config['USER_SAME_DOMAIN']['token']
+    return test_data['tokens'][1]['access_token']
 
 
 @pytest.fixture(scope='session')
@@ -48,7 +51,7 @@ def token_second():
     """
      Authentication token for user_second.
     """
-    return test_config['USER_SECOND']['token']
+    return test_data['tokens'][2]['access_token']
 
 
 @pytest.fixture(scope='session')
@@ -57,18 +60,7 @@ def user_first():
     This fixture will be used to get user from UserService using id from config.
     :return: user dictionary object
     """
-    user_id = test_config['USER_FIRST']['user_id']
-    return {'id': user_id}
-
-
-@pytest.fixture(scope='session')
-def user_second():
-    """
-    This fixture will be used to get user from UserService using id from config.
-    :return: user dictionary object
-    """
-    user_id = test_config['USER_SECOND']['user_id']
-    return {'id': user_id}
+    return test_data['users'][0]
 
 
 @pytest.fixture(scope='session')
@@ -77,8 +69,16 @@ def user_same_domain():
     This fixture will be used to get user from UserService using id from config.
     :return: user dictionary object
     """
-    user_id = test_config['USER_SAME_DOMAIN']['user_id']
-    return {'id': user_id}
+    return test_data['users'][1]
+
+
+@pytest.fixture(scope='session')
+def user_second():
+    """
+    This fixture will be used to get user from UserService using id from config.
+    :return: user dictionary object
+    """
+    return test_data['users'][2]
 
 
 @pytest.fixture(scope='function')

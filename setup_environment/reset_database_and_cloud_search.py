@@ -80,7 +80,7 @@ print 'DB reset is successful'
 print 'Generating initial test data'
 
 
-create_dummy_users()
+# create_dummy_users()
 
 from candidate_service.candidate_app import app
 

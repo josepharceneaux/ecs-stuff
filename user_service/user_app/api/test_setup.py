@@ -10,7 +10,7 @@ from user_service.modules.init_test_data import create_test_data
 from user_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 
 # creating blueprint
-from user_service.user_app import app
+from user_service.user_app import app, logger
 
 test_setup_blueprint = Blueprint('test_setup', __name__)
 api = TalentApi()
@@ -33,7 +33,11 @@ class TestSetupApi(Resource):
         localhost = '127.0.0.1'
         is_gettalent = origin.count('gettalent.com') == 1
         is_dev = origin == localhost and app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]
-
+        logger.info("""is_gettalent: %s,
+                       id_dev: %s,
+                       origin: %s,
+                       environment: %s
+                    """, is_gettalent, is_dev, origin, app.config[TalentConfigKeys.ENV_KEY])
         if not (is_gettalent or is_dev):
             raise ForbiddenError('Invalid request origin')
 
