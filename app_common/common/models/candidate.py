@@ -538,6 +538,7 @@ class CandidateTextComment(db.Model):
     __tablename__ = 'candidate_text_comment'
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
+    owner_user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id'))  # ID of the user that created the note
     list_order = db.Column('ListOrder', db.Integer)
     title = db.Column(db.String(255))
     comment = db.Column('Comment', db.Text)
