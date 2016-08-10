@@ -78,7 +78,7 @@ class DomainApi(Resource):
         if not isinstance(domains, list):
             raise InvalidUsage("Request body is not properly formatted")
 
-        for domain_dict in domains:
+        for index, domain_dict in enumerate(domains):
 
             name = domain_dict.get('name', '')
             default_culture_id = domain_dict.get('default_culture_id', '')
@@ -87,9 +87,17 @@ class DomainApi(Resource):
             if not name:
                 raise InvalidUsage("Domain name should be provided")
 
+            domain = Domain.query.filter_by(name=name).first()
+
             # If domain already exists then raise an exception
-            if Domain.query.filter_by(name=name).first():
-                raise InvalidUsage("Domain %s already exist" % name)
+            if domain:
+                if not domain.is_disabled:
+                    raise InvalidUsage("Domain %s already exist" % name)
+                else:
+                    domain.is_disabled = 0
+                    db.session.commit()
+                    domains.pop(index)
+                    continue
 
             # If Culture doesn't exist in database
             if default_culture_id and not Culture.query.get(default_culture_id):
@@ -140,10 +148,10 @@ class DomainApi(Resource):
             raise NotFoundError("Requested domain with domain_id %s doesn't exist" % domain_id_to_delete)
 
         # Disable the domain by setting is_disabled field to 1
-        Domain.query.filter(Domain.id == domain_id_to_delete).update({'is_disabled': '1'})
+        Domain.query.filter(Domain.id == domain_id_to_delete).update({'is_disabled': 1})
 
         # Disable all users of this domain as Domain has been disabled
-        User.query.filter(User.domain_id == domain_id_to_delete).update({'is_disabled': '1'})
+        User.query.filter(User.domain_id == domain_id_to_delete).update({'is_disabled': 1})
         db.session.commit()
 
         return {'deleted_domain': {'id': domain_id_to_delete}}
