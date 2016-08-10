@@ -1,5 +1,6 @@
 """DocString"""
 import base64
+import zlib
 from wand.image import Image
 
 
@@ -7,8 +8,7 @@ def convert_pdf_to_png(event, context):
     """
     Simple use of ImageMagick. Takes in b64 encoded PDF files and turns them into b64 encoded
     PNG files to be sent to Google Vision OCR. Print statements are used for CloudWatch logging.
-    :param event: JSON data POST'd to endpoint. With regard to the resolution, 250 generated the
-    best passable image quality that could be OCR'd and the increase to 300 is for buffer.
+    :param event: JSON data POST'd to endpoint.
     :param context: Unused param in all lambda functions.
     :return: b64 PNG data.
     :rtype: dict
@@ -37,7 +37,10 @@ def convert_pdf_to_png(event, context):
         blob = image.make_blob('png')
         print 'blob made'
 
-        png = base64.b64encode(blob)
+        compressed = zlib.compress(blob)
+        print 'compressed'
+
+        encoded = base64.b64encode(compressed)
         print 'encoded'
 
-        return {'img_data': png}
+        return {'img_data': encoded}

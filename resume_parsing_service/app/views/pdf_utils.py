@@ -1,10 +1,16 @@
 # Standard Lib
 from cStringIO import StringIO
+import base64
+import json
+import zlib
 # Third Party/Common
 from contracts import contract
+from flask import current_app
+from resume_parsing_service.app import logger
 from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.common.error_handling import InternalServerError
 import PyPDF2
+import requests
 
 
 @contract
@@ -69,3 +75,41 @@ def decrypt_pdf(pdf_file_obj):
 
     else:
         return pdf_file_obj
+
+
+def convert_pdf_to_png(file_obj):
+    logger.info('Converting pdf to png')
+    api_key, api_url = current_app.config['IMAAS_KEY'], current_app.config['IMAAS_URL']
+    headers = {'x-api-key': api_key}
+
+    pdf_data = file_obj.getvalue()
+    #file_obj.close()
+    encoded = base64.b64encode(pdf_data)
+    payload = json.dumps({'pdf_bin': encoded})
+
+    try:
+        conversion_response = requests.post(api_url, headers=headers, data=payload, timeout=30)
+
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+        logger.exception("Could not reach IMaaS Lambda")
+        raise InternalServerError(
+            error_message=error_constants.IMAAS_UNAVAILABLE['message'],
+            error_code=error_constants.IMAAS_UNAVAILABLE['code']
+        )
+
+    if conversion_response.status_code != requests.codes.ok:
+        raise InternalServerError(
+            error_message=error_constants.IMAAS_ERROR['message'],
+            error_code=error_constants.IMAAS_ERROR['code']
+        )
+
+    content = json.loads(conversion_response.content)
+    img_data = content.get('img_data')
+
+    if not img_data:
+        raise InternalServerError(
+            error_message=error_constants.IMAAS_NO_DATA['message'],
+            error_code=error_constants.IMAAS_NO_DATA['code']
+        )
+
+    return StringIO(zlib.decompress(base64.b64decode(img_data)))

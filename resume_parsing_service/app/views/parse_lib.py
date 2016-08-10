@@ -2,7 +2,6 @@
 __author__ = 'erik@gettalent.com'
 # pylint: disable=wrong-import-position, fixme, import-error
 # Standard library
-from cStringIO import StringIO
 from os.path import basename
 from os.path import splitext
 from time import time
@@ -18,7 +17,8 @@ from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.ocr_lib import google_vision_ocr
-from resume_parsing_service.app.views.pdf_utils import convert_pdf_to_text, decrypt_pdf
+from resume_parsing_service.app.views.pdf_utils import (convert_pdf_to_text, convert_pdf_to_png,
+                                                        decrypt_pdf)
 from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
 from resume_parsing_service.common.utils.talent_s3 import boto3_put
 
@@ -55,6 +55,7 @@ def parse_resume(file_obj, filename_str, cache_key):
             # If its a PDF replace file obj with a png representation of it.
             # convert_pdf_to_png will close the old StringIO instance.
             file_obj = convert_pdf_to_png(file_obj)
+
         start_time = time()
         doc_content = google_vision_ocr(file_obj)
         logger.info(
@@ -68,7 +69,7 @@ def parse_resume(file_obj, filename_str, cache_key):
     if not doc_content:
         bucket = current_app.config['S3_BUCKET_NAME']
         boto3_put(file_obj.getvalue(), bucket, filename_str, 'FailedResumes')
-        file_obj.close() # Close our file object to free memory buffer.
+        #file_obj.close() # Close our file object to free memory buffer.
         logger.exception("Unable to determine the contents of the document: {}".format(filename_str))
         raise InvalidUsage(
             error_message=error_constants.NO_TEXT_EXTRACTED['message'],
@@ -86,7 +87,7 @@ def parse_resume(file_obj, filename_str, cache_key):
         )
 
     # Close our file object to free memory buffer.
-    file_obj.close()
+    #file_obj.close()
     optic_response = fetch_optic_response(encoded_resume, filename_str)
 
     if optic_response:
@@ -134,40 +135,3 @@ def is_resume_image(file_ext, file_obj):
             resume_is_image = True
 
     return resume_is_image
-
-
-def convert_pdf_to_png(file_obj):
-    api_key, api_url = current_app.config['IMAAS_KEY'], current_app.config['IMAAS_URL']
-    headers = {'x-api-key': api_key}
-
-    pdf_data = file_obj.getvalue()
-    file_obj.close()
-    encoded = base64.b64encode(pdf_data)
-    payload = json.dumps({'pdf_bin': encoded})
-
-    try:
-        conversion_response = requests.post(api_url, headers=headers, data=payload, timeout=20)
-
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-        logger.exception("Could not reach IMaaS Lambda")
-        raise InternalServerError(
-            error_message=error_constants.IMAAS_UNAVAILABLE['message'],
-            error_code=error_constants.IMAAS_UNAVAILABLE['code']
-        )
-
-    if conversion_response.status_code != requests.codes.ok:
-        raise InternalServerError(
-            error_message=error_constants.IMAAS_ERROR['message'],
-            error_code=error_constants.IMAAS_ERROR['code']
-        )
-
-    content = json.loads(conversion_response.content)
-    img_data = content.get('img_data')
-
-    if not img_data:
-        raise InternalServerError(
-            error_message=error_constants.IMAAS_NO_DATA['message'],
-            error_code=error_constants.IMAAS_NO_DATA['code']
-        )
-
-    return StringIO(base64.b64decode(img_data))

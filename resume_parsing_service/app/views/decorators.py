@@ -31,7 +31,7 @@ def upload_failed_IO(f):
                 boto3_put(fileIO.getvalue(), current_app.config['S3_BUCKET_NAME'], key, 'FailedResumes')
                 fileIO.close()
                 raise InternalServerError(
-                    error_message=error_constants.RESUME_UNCAUGHT_EXCEPTION['mesage'],
+                    error_message=error_constants.RESUME_UNCAUGHT_EXCEPTION['message'],
                     error_code=error_constants.RESUME_UNCAUGHT_EXCEPTION['code']
                 )
 

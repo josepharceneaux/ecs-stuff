@@ -40,7 +40,7 @@ def fetch_optic_response(resume, filename_str):
     start_time = time()
     bg_url = current_app.config['BG_URL']
     oauth = OAuthClient(url=bg_url,
-                        method='POST', consumerKey='osman',
+                        method='POST', consumerKey='StevePeck',
                         consumerSecret=current_app.config['CONSUMER_SECRET'],
                         token='Utility',
                         tokenSecret=current_app.config['TOKEN_SECRET'],
@@ -54,7 +54,7 @@ def fetch_optic_response(resume, filename_str):
     }
     data = {
         'binaryData': resume,
-        'instanceType': 'TM',
+        'instanceType': 'XRAY',
         'locale': 'en_us'
     }
 
@@ -69,7 +69,7 @@ def fetch_optic_response(resume, filename_str):
         )
 
     if bg_response.status_code != requests.codes.ok:
-        logger.error(bg_response.get('content'))
+        logger.error(bg_response.content)
         raise InternalServerError(
             error_message=error_constants.BG_ERROR['message'],
             error_code=error_constants.BG_ERROR['code']

@@ -72,8 +72,8 @@ def process_resume(parse_params):
         logger.exception('Failure during s3 upload; reason: {}'.format(e.message))
 
     candidate_references = parsed_resume['candidate'].pop('references', None)
-    candidate_created, candidate_id = create_parsed_resume_candidate(
-        parsed_resume['candidate'], oauth_string, filename_str)
+    candidate_created, candidate_id = create_parsed_resume_candidate(parsed_resume['candidate'],
+                                                                     oauth_string)
 
     if not candidate_created:
         # We must update!
