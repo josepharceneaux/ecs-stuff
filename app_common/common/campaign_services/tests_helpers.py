@@ -56,7 +56,7 @@ class CampaignsTestsHelpers(object):
     def request_for_forbidden_error(cls, method, url, access_token, data=None):
         """
         This should get forbidden error because requested campaign does not belong to logged-in user's domain.
-        :param http_method method: Name of HTTP method
+        :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param dict|None data: Data to be send in HTTP request
@@ -69,7 +69,7 @@ class CampaignsTestsHelpers(object):
     def request_for_resource_not_found_error(cls, method, url, access_token, data=None):
         """
         This should get Resource not found error because requested resource has been deleted.
-        :param http_method method: Name of HTTP method
+        :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param dict|None data: Data to be posted
@@ -104,7 +104,7 @@ class CampaignsTestsHelpers(object):
     def request_for_ok_response(method, url, access_token, data=None):
         """
         This function is expected to schedule a campaign with all valid parameters.
-        :param http_method method: Name of HTTP method
+        :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param dict|None data: Data to be posted
@@ -120,7 +120,7 @@ class CampaignsTestsHelpers(object):
         """
         This function is expected to schedule a campaign with all valid parameters.
         It then gets the campaign and validates that requested fields have been saved in database.
-        :param string method: Name of HTTP method
+        :param string method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request to schedule/re-schedule campaign
         :param string access_token: access access_token of user
         :param int|long user_id: Id of user
@@ -149,7 +149,7 @@ class CampaignsTestsHelpers(object):
         """
         Here we pass start_datetime and end_datetime with invalid value i.e. in past, to schedule
         a campaign. Then we assert that we get InvalidUsage error in response.
-        :param http_method method: Name of HTTP method
+        :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param dict data: Data to be posted
@@ -164,7 +164,7 @@ class CampaignsTestsHelpers(object):
         """
         Here we try to schedule a campaign with missing required fields and assert that we get
         InvalidUsage error in response.
-        :param http_method method: Name of HTTP method
+        :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param dict data: Data to be posted
@@ -180,7 +180,7 @@ class CampaignsTestsHelpers(object):
     def invalid_datetime_format(method, url, access_token, data):
         """
         Here we pass start_datetime and end_datetime in invalid format to schedule a campaign.
-        :param http_method method: Name of HTTP method
+        :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param dict data: Data to be posted
@@ -195,7 +195,7 @@ class CampaignsTestsHelpers(object):
         """
         This is used in tests where we want to make HTTP request on given URL with invalid
         access access_token. It assert that we get ForbiddenError as a result.
-        :param http_method method: Name of HTTP method
+        :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param dict|None data: Data to be posted
         """
@@ -221,7 +221,7 @@ class CampaignsTestsHelpers(object):
         that does not exist in database for given model. It then asserts to check we get status
         code 400 in case of id 0 and status code 404 in case of non-existing id.
         :param type(t) model: SQLAlchemy model
-        :param http_method method: Name of HTTP method
+        :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param dict|None data: Data to be posted
@@ -298,8 +298,7 @@ class CampaignsTestsHelpers(object):
     def campaign_send_with_no_smartlist(url, access_token):
         """
         This is the test to send a campaign which has no smartlist associated  with it.
-        It should get Invalid usage error. Custom error should be
-        NoSmartlistAssociatedWithCampaign.
+        It should get Invalid usage error. Custom error should be NoSmartlistAssociatedWithCampaign.
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         """
@@ -366,7 +365,8 @@ class CampaignsTestsHelpers(object):
         :param positive campaign_id: Id of campaign
         :param type(t) campaign_service_urls: routes url class
         """
-        raise_if_not_instance_of(campaign_service_urls, (PushCampaignApiUrl, SmsCampaignApiUrl, None))
+        if campaign_service_urls:
+            raise_if_not_instance_of(campaign_service_urls, (PushCampaignApiUrl, SmsCampaignApiUrl))
         response_post = send_request('post', url, access_token)
         assert response_post.status_code == requests.codes.OK
         assert getattr(campaign_service_urls, 'SENDS')
@@ -665,7 +665,7 @@ class CampaignsTestsHelpers(object):
         This creates or updates a campaign with unexpected fields present in the data and
         asserts that we get invalid usage error from respective API. Data passed should be a dictionary
         here.
-        :param http_method method: Name of HTTP method
+        :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL on which we are supposed to make HTTP request
         :param string access_token: Access token of user
         :param dict campaign_data: Data to be passed in HTTP request
@@ -683,7 +683,7 @@ class CampaignsTestsHelpers(object):
         This creates or updates a campaign with unexpected fields present in the data and
         asserts that we get invalid usage error from respective API. Data passed should be a dictionary
         here.
-        :param string method: Name of HTTP method
+        :param string method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL on which we are supposed to make HTTP request
         :param string access_token: Access token of user
         :param dict campaign_data: Data to be passed in HTTP request
@@ -702,7 +702,7 @@ class CampaignsTestsHelpers(object):
         This creates or updates a campaign with invalid lists and asserts that we get invalid usage error from
         respective API. Data passed should be a dictionary.
         Invalid smartlist ids include Non-existing id, non-integer id, empty list, duplicate items in list etc.
-        :param string method: Name of HTTP method
+        :param string method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL on which we are supposed to make HTTP request
         :param string access_token: Access token of user
         :param dict campaign_data: Data to be passed in HTTP request
@@ -724,7 +724,7 @@ class CampaignsTestsHelpers(object):
         This creates or updates a campaign with unexpected fields present in the data and
         asserts that we get invalid usage error from respective API. Data passed should be a dictionary
         here.
-        :param string method: Name of HTTP method
+        :param string method: Name of HTTP method. e.g. 'get', 'post' etc
         :param string url: URL on which we are supposed to make HTTP request
         :param string access_token: Access token of user
         :param dict scheduler_data: Data to be passed in HTTP request to schedule/reschedule given campaign
@@ -784,7 +784,7 @@ class FixtureHelpers(object):
 @contract
 def send_request(method, url, access_token, data=None, is_json=True, data_dumps=True):
     """
-    :param http_method method: Name of HTTP method
+    :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
     :param string url: URL to to make HTTP request
     :param string access_token: access access_token of user
     :param dict|None data: Data to be posted
@@ -826,7 +826,7 @@ def _assert_api_response_for_missing_field(method, url, access_token, data, fiel
     """
     This function removes the field from data as specified by field_to_remove, and
     then POSTs data on given URL. It then asserts that removed filed is in error_message.
-    :param http_method method: Name of HTTP method
+    :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
     :param string url: URL to to make HTTP request
     :param string access_token: access access_token of user
     :param dict data: Data to be posted
@@ -846,7 +846,7 @@ def _assert_invalid_datetime_format(method, url, access_token, data, key):
     """
     Here we modify field of data as specified by param 'key' and then assert the invalid usage
     error in response of HTTP request.
-    :param http_method method: Name of HTTP method
+    :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
     :param string url: URL to to make HTTP request
     :param string access_token: access access_token of user
     :param dict data: Data to be posted
@@ -865,7 +865,7 @@ def _assert_invalid_datetime(method, url, access_token, data, key):
     """
     Here we set datetime field of data to as specified by param 'key' to past and then assert
     the invalid usage error in response of HTTP request.
-    :param http_method method: Name of HTTP method
+    :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
     :param string url: URL to to make HTTP request
     :param string access_token: access access_token of user
     :param dict data: Data to be posted
@@ -882,7 +882,7 @@ def _assert_invalid_datetime(method, url, access_token, data, key):
 def _assert_unauthorized(method, url, access_token, data=None):
     """
     For a given URL, here we request with invalid access_token and assert that we get Unauthorized error.
-    :param http_method method: Name of HTTP method
+    :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
     :param string url: URL to to make HTTP request
     :param string access_token: access access_token of user
     :param dict|None data: Data to be posted
@@ -897,7 +897,7 @@ def _invalid_data_test(method, url, access_token):
     """
     This is used to make HTTP request as specified by 'method' on given URL and assert invalid
     usage error in response.
-    :param http_method method: Name of HTTP method
+    :param http_method method: Name of HTTP method. e.g. 'get', 'post' etc
     :param string url: URL to to make HTTP request
     :param string access_token: access access_token of user
     """
