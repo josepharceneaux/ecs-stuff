@@ -427,12 +427,6 @@ def smartlist_with_two_candidates_with_and_without_device_associated(request, to
     smartlist_id = smartlist['id']
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_first), kwargs={'count': 2})
-
-    def tear_down():
-        delete_smartlist(smartlist_id, token_first,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -454,10 +448,4 @@ def smartlist_with_two_candidates_with_no_device_associated(request, token_first
     smartlist_id = smartlist['id']
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_first), kwargs={'count': 2})
-
-    def tear_down():
-        delete_smartlist(smartlist_id, token_first,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return smartlist
