@@ -451,6 +451,7 @@ class SmsCampaignBase(CampaignBase):
         :param candidates: list of candidates to whom we want to send campaign
         :type candidates: list[Candidate]
         """
+        candidates = super(SmsCampaignBase, self).pre_process_celery_task(candidates)
         not_owned_ids = []
         multiple_records_ids = []
         candidates_and_phones = []
@@ -475,7 +476,9 @@ class SmsCampaignBase(CampaignBase):
                                             self.user.id))
         logger.info('user_phone %s' % self.user_phone.value)
         candidates_and_phones = filter(lambda obj: obj is not None, candidates_and_phones)
-        super(SmsCampaignBase, self).pre_process_celery_task(candidates_and_phones)
+        if not candidates_and_phones:
+            logger.warn('There is no valid candidate associated with this campaign. SmsCampaign id (%s)'
+                        % self.campaign.id)
         return candidates_and_phones
 
     @celery_app.task(name='send_campaign_to_candidate')
@@ -596,6 +599,27 @@ class SmsCampaignBase(CampaignBase):
     @celery_app.task(name='celery_error_handler')
     def celery_error_handler(uuid):
         db.session.rollback()
+
+    @staticmethod
+    @celery_app.task(name='send_callback')
+    def send_callback(celery_result, campaign_obj):
+        """
+        When all celery tasks to retrieve smartlist candidates are finished, celery chord calls this function
+        with an array or data (candidates) from all tasks. This function will further call super class method
+        to process this data and send campaigns to all candidates.
+        :param list[list[Candidate]] celery_result: list of lists of candidate ids
+        :param SmsCampaignBase campaign_obj: PushCampaignBase object
+        """
+        with app.app_context():
+            campaign_obj.process_campaign_send(celery_result)
+
+    @celery_app.task(name='get_smartlist_candidates_via_celery')
+    def get_smartlist_candidates_via_celery(self, smartlist_id):
+        """
+        This method will retrieve smartlist candidate from candidate pool service in a celery task.
+        :param int | long smartlist_id: campaign smartlist id
+        """
+        return self.get_smartlist_candidates(smartlist_id)
 
     def process_urls_in_sms_body_text(self, candidate_id):
         """
