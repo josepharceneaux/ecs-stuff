@@ -10,7 +10,6 @@ import requests
 from base import SocialNetworkBase
 from social_network_service.common.error_handling import InternalServerError, InvalidUsage
 from social_network_service.common.utils.handy_functions import http_request, find_missing_items
-from social_network_service.custom_exceptions import *
 from social_network_service.modules.custom_codes import ORGANIZER_ALREADY_EXISTS
 from social_network_service.social_network_app import logger
 
@@ -24,30 +23,16 @@ class Eventbrite(SocialNetworkBase):
         1- get_member_id()
         2- validate_token()
         3- get_access_and_refresh_token()
-        4- save_user_credentials_in_db()
-
-    - It also defines following method
-            1- create_webhook()
-        to create webhook for getTalent user.
 
     :Example:
-
-        - To create the webhook for getTalent user
 
         1- Get the user credentials first
             from social_network_service.common.models.user import UserSocialNetworkCredential
             user_credentials = UserSocialNetworkCredential.get_by_id(1)
 
-        2. Call create_webhook() on class and pass user credentials in arguments
-            Eventbrite.create_webhook(user_credentials)
-
         **See Also**
             .. seealso:: ProcessAccessToken() method in
             social_network_service/app/restful/social_network.py.
-
-        .. note::
-            You can learn more about webhook and Eventbrite API from following link
-            - https://www.eventbrite.com/developer/v3/
     """
 
     def __init__(self, *args, **kwargs):
@@ -107,37 +92,6 @@ class Eventbrite(SocialNetworkBase):
         """
         self.api_relative_url = '/users/me/'
         return super(Eventbrite, self).validate_token()
-
-    @staticmethod
-    def save_user_credentials_in_db(user_credentials):
-        """
-        :param user_credentials: User's social network credentials for which
-                we need to create webhook. Webhook is created to be updated
-                about any RSVP on an event of Eventbrite.
-        :type user_credentials: dict
-
-        - This overrides the SocialNetworkBase class method
-            save_user_credentials_in_db() because in case of user credentials
-            related to Eventbrite, we also need to create webhook.
-
-        - It first saves the credentials in db, gets the webhook id by calling
-            create_webhook()using Eventbrite's API and updates the record in db.
-
-        - This method is called from POST method of end point ProcessAccessToken()
-            defined in social network Rest API inside
-            social_network_service/app/restful/social_network.py.
-
-        **See Also**
-        .. seealso:: save_user_credentials_in_db() function defined in
-            SocialNetworkBase class inside social_network_service/base.py.
-
-        .. seealso::POST method of end point ProcessAccessToken()
-            defined in social network Rest API inside
-            social_network_service/app/restful/social_network.py.
-        """
-        user_credentials_in_db = super(Eventbrite,
-                                       Eventbrite).save_user_credentials_in_db(user_credentials)
-        Eventbrite.create_webhook(user_credentials_in_db)
 
     @classmethod
     def get_access_and_refresh_token(cls, user_id, social_network,

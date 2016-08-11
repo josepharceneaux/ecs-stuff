@@ -126,12 +126,15 @@ def test_eventbrite_credentials(request, user_first, eventbrite):
     eventbrite_kv = json.loads(redis_store2.get(eventbrite_key))
 
     social_network_id = eventbrite.id
-    user_credentials = UserSocialNetworkCredential(
-        social_network_id=social_network_id,
-        user_id=user_first['id'],
-        access_token=eventbrite_kv['access_token'],
-        refresh_token='')
-    UserSocialNetworkCredential.save(user_credentials)
+    user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_first['id'],
+                                                                                     social_network_id)
+    if not user_credentials:
+        user_credentials = UserSocialNetworkCredential(
+            social_network_id=social_network_id,
+            user_id=user_first['id'],
+            access_token=eventbrite_kv['access_token'],
+            refresh_token='')
+        UserSocialNetworkCredential.save(user_credentials)
 
     def fin():
         """
@@ -165,12 +168,16 @@ def test_meetup_credentials(request, user_first, meetup):
     meetup_kv = json.loads(redis_store2.get(meetup_key))
 
     social_network_id = meetup.id
-    user_credentials = UserSocialNetworkCredential(
-        social_network_id=social_network_id,
-        user_id=int(user_first['id']),
-        access_token=meetup_kv['access_token'],
-        refresh_token=meetup_kv['refresh_token'])
-    UserSocialNetworkCredential.save(user_credentials)
+    user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_first['id'],
+                                                                                     social_network_id)
+
+    if not user_credentials:
+        user_credentials = UserSocialNetworkCredential(
+            social_network_id=social_network_id,
+            user_id=int(user_first['id']),
+            access_token=meetup_kv['access_token'],
+            refresh_token=meetup_kv['refresh_token'])
+        UserSocialNetworkCredential.save(user_credentials)
 
     # Validate token expiry and generate a new token if expired
     Meetup(user_id=int(user_first['id']))
