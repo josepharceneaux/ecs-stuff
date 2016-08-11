@@ -128,22 +128,6 @@ def test_eventbrite_credentials(request, user_first, eventbrite):
     social_network_id = eventbrite.id
     user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_first['id'],
                                                                                      social_network_id)
-    if not user_credentials:
-        user_credentials = UserSocialNetworkCredential(
-            social_network_id=social_network_id,
-            user_id=user_first['id'],
-            access_token=eventbrite_kv['access_token'],
-            refresh_token='')
-        UserSocialNetworkCredential.save(user_credentials)
-
-    def fin():
-        """
-        Delete credentials for eventbrite for test user object at the end of test session
-        """
-        with app.app_context():
-            UserSocialNetworkCredential.delete(user_credentials)
-
-    request.addfinalizer(fin)
     return user_credentials
 
 
