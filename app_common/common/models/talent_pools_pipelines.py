@@ -80,7 +80,7 @@ class TalentPoolGroup(db.Model):
 class TalentPipeline(db.Model):
     __tablename__ = 'talent_pipeline'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.TEXT)
     positions = db.Column(db.Integer, default=1, nullable=False)
     date_needed = db.Column(db.DateTime, nullable=False)

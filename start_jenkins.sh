@@ -67,15 +67,14 @@ sleep 10
 echo "Beginning tests."
 
 py.test -n 48 push_campaign_service/tests
+
 if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-# ATS tests need to run separately as parallelism causes DB collisions
-# py.test ats_service/tests
-# if [ $? -ne 0 ] ; then
-#     exit 1
-# fi
+
+# Place other tests (code complexity, etc.) here
+
 
 echo "Tests completed."
 
