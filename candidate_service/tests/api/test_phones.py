@@ -152,8 +152,9 @@ class TestAddCandidatePhones(object):
         # Create another candidate using the same phone number as above
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == requests.codes.FORBIDDEN
-        assert create_resp.json()['error']['code'] == custom_error.PHONE_FORBIDDEN
+        assert create_resp.status_code == requests.codes.BAD
+        assert create_resp.json()['error']['code'] == custom_error.CANDIDATE_ALREADY_EXISTS
+        assert 'id' in create_resp.json()['error']
 
     def test_add_multiple_default_phones(self, access_token_first, talent_pool):
         """
@@ -173,7 +174,7 @@ class TestAddCandidatePhones(object):
 
 
 class TestUpdateCandidatePhones(object):
-    def test_add_invlid_phone_number(self, access_token_first, candidate_first):
+    def test_add_invalid_phone_number(self, access_token_first, candidate_first):
         """
         Test:  Add invalid phone numbers to candidate's profile
         Expect: 400; phone numbers should not be added to candidate's profile
