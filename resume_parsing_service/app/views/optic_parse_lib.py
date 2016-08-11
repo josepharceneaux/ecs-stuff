@@ -216,8 +216,8 @@ def parse_candidate_phones(bs_contact_xml_list):
 def get_phone_type(bg_phone_type):
     """
     Provides a mapping between BurningGlass phone types to the the static values in the GT database.
-    :param str | None bg_phone_type: BG phone type (if parsed from XML).
-    :rtype: str
+    :param string | None bg_phone_type: BG phone type (if parsed from XML).
+    :rtype: string
     """
     return {
         'cell': 'Mobile',
