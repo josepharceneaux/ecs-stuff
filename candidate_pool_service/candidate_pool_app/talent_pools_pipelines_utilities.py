@@ -321,9 +321,12 @@ def campaign_json_encoder_helper(obj):
 
 
 @celery_app.task(name="update_talent_pool_stats")
-def update_talent_pool_stats():
+def update_talent_pool_stats(recompute=False):
     with app.app_context():
         # Updating TalentPool Statistics
+        if recompute:
+            delete_all_stats('talent-pool')
+
         logger.info("TalentPool statistics update process has been started at %s" % datetime.utcnow().date().isoformat())
         talent_pools = TalentPool.query.with_entities(TalentPool.id).all()
         for talent_pool_tuple in talent_pools:
@@ -337,13 +340,17 @@ def update_talent_pool_stats():
                                  "%s" % (talent_pool_tuple[0], e.message))
 
         talent_pool_ids = map(lambda talent_pool: talent_pool[0], talent_pools)
-        delete_dangling_stats(talent_pool_ids, container='talent-pool')
+        if not recompute:
+            delete_dangling_stats(talent_pool_ids, container='talent-pool')
 
 
 @celery_app.task(name="update_talent_pipeline_stats")
-def update_talent_pipeline_stats():
+def update_talent_pipeline_stats(recompute=False):
     with app.app_context():
         # Updating TalentPipeline Statistics
+        if recompute:
+            delete_all_stats('talent-pipeline')
+
         logger.info("TalentPipeline statistics update process has been started at %s" % datetime.utcnow().isoformat())
         talent_pipelines = TalentPipeline.query.with_entities(TalentPipeline.id).all()
         for talent_pipeline_tuple in talent_pipelines:
@@ -357,12 +364,16 @@ def update_talent_pipeline_stats():
                                  "%s" % (talent_pipeline_tuple[0], e.message))
 
         talent_pipeline_ids = map(lambda talent_pipeline: talent_pipeline[0], talent_pipelines)
-        delete_dangling_stats(talent_pipeline_ids, container='talent-pipeline')
+
+        if not recompute:
+            delete_dangling_stats(talent_pipeline_ids, container='talent-pipeline')
 
 
 @celery_app.task(name="update_smartlist_stats")
-def update_smartlist_stats():
+def update_smartlist_stats(recompute=False):
     with app.app_context():
+        if recompute:
+            delete_all_stats('smartlist')
         # Updating SmartList Statistics
         logger.info("SmartList statistics update process has been started at %s" % datetime.utcnow().date().isoformat())
         smartlists = Smartlist.query.with_entities(Smartlist.id).all()
@@ -377,7 +388,29 @@ def update_smartlist_stats():
                                  "%s" % (smartlist_tuple[0], e.message))
 
         smartlist_ids = map(lambda smartlist: smartlist[0], smartlists)
-        delete_dangling_stats(smartlist_ids, container='smartlist')
+
+        if not recompute:
+            delete_dangling_stats(smartlist_ids, container='smartlist')
+
+
+def delete_all_stats(container):
+    """
+    This method will delete all statistics from Redis for each of three containers
+    :param container: Container's name
+    :return:
+    """
+    if container == 'smartlist':
+        redis_key = 'smartlists_growth_stat_v2_'
+    elif container == 'talent-pool':
+        redis_key = 'pools_growth_stat_v2_'
+    elif container == 'talent-pipeline':
+        redis_key = 'pipelines_growth_stat_v2_'
+    else:
+        raise Exception("Container %s is not supported" % container)
+
+    for key in redis_store.keys(redis_key + '*'):
+        redis_store.delete(redis_store.get(key))
+        redis_store.delete(key)
 
 
 def delete_dangling_stats(id_list, container):
@@ -388,17 +421,17 @@ def delete_dangling_stats(id_list, container):
     :return:
     """
     if container == 'smartlist':
-        redist_key = 'smartlists_growth_stat_v2_'
+        redis_key = 'smartlists_growth_stat_v2_'
     elif container == 'talent-pool':
-        redist_key = 'pools_growth_stat_v2_'
+        redis_key = 'pools_growth_stat_v2_'
     elif container == 'talent-pipeline':
-        redist_key = 'pipelines_growth_stat_v2_'
+        redis_key = 'pipelines_growth_stat_v2_'
     else:
         raise Exception("Container %s is not supported" % container)
 
-    for key in redis_store.keys(redist_key + '*'):
+    for key in redis_store.keys(redis_key + '*'):
         hashed_key = redis_store.get(key)
-        if int(key.replace(redist_key, '')) not in id_list:
+        if int(key.replace(redis_key, '')) not in id_list:
             redis_store.delete(hashed_key)
             redis_store.delete(key)
         else:
