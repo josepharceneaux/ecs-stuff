@@ -57,7 +57,6 @@ def email_campaign_of_user_second(request, user_same_domain):
 def email_campaign_in_other_domain(request,
                                    access_token_other,
                                    user_from_diff_domain,
-                                   assign_roles_to_user_of_other_domain,
                                    talent_pipeline_other):
     """
     This fixture creates an email campaign in database table 'email_campaign'
@@ -76,7 +75,6 @@ def email_campaign_in_other_domain(request,
 
 @pytest.fixture()
 def campaign_with_candidate_having_no_email(request, email_campaign_of_user_first,
-                                            assign_roles_to_user_first,
                                             access_token_first, talent_pipeline):
     """
     This creates a campaign which has candidates associated having no email
@@ -94,7 +92,6 @@ def campaign_with_candidate_having_no_email(request, email_campaign_of_user_firs
 
 @pytest.fixture()
 def campaign_with_valid_candidate(request, email_campaign_of_user_first,
-                                  assign_roles_to_user_first,
                                   access_token_first, talent_pipeline):
     """
     This returns a campaign which has two candidates associated having email address.
@@ -111,7 +108,6 @@ def campaign_with_valid_candidate(request, email_campaign_of_user_first,
 
 @pytest.fixture()
 def campaign_with_multiple_candidates_email(request, email_campaign_of_user_first,
-                                            assign_roles_to_user_first,
                                             access_token_first, talent_pipeline):
     """
     This returns a campaign which has 2 candidates associated and have 2 email address.
@@ -142,7 +138,6 @@ def campaign_with_multiple_candidates_email(request, email_campaign_of_user_firs
 
 @pytest.fixture()
 def campaign_to_ten_candidates_not_sent(request, email_campaign_of_user_first,
-                                        assign_roles_to_user_first,
                                         access_token_first, talent_pipeline):
     """
     This returns a campaign which has ten candidates associated having email addresses.
@@ -160,8 +155,7 @@ def campaign_to_ten_candidates_not_sent(request, email_campaign_of_user_first,
 @pytest.fixture()
 def campaign_with_candidates_having_same_email_in_diff_domain(request,
                                                               campaign_with_valid_candidate,
-                                                              candidate_in_other_domain,
-                                                              assign_roles_to_user_first):
+                                                              candidate_in_other_domain):
     """
     This returns a campaign which has one candidate associated having email address.
     One more candidate exist in some other domain having same email address.
@@ -186,26 +180,10 @@ def campaign_with_same_candidate_in_multiple_smartlists(email_campaign_of_user_f
     same as one of the two candidates of smartlist 1).
     """
     smartlist_ids = CampaignsTestsHelpers.get_two_smartlists_with_same_candidate(talent_pipeline, access_token_first,
-                                                                                 email_list=True, assign_role=True)
+                                                                                 email_list=True)
     create_email_campaign_smartlists(smartlist_ids=smartlist_ids, email_campaign_id=email_campaign_of_user_first.id)
 
     return email_campaign_of_user_first
-
-
-@pytest.fixture()
-def assign_roles_to_user_first(user_first):
-    """
-    This assign required roles to user_first
-    """
-    CampaignsTestsHelpers.assign_roles(user_first)
-
-
-@pytest.fixture()
-def assign_roles_to_user_of_other_domain(user_from_diff_domain):
-    """
-    This assigns required roles to user_from_diff_domain
-    """
-    CampaignsTestsHelpers.assign_roles(user_from_diff_domain)
 
 
 @pytest.fixture()

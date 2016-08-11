@@ -22,14 +22,13 @@ from sms_campaign_service.modules.custom_exceptions import TwilioApiError
 from sms_campaign_service.modules.constants import (NGROK_URL, TWILIO_TEST_NUMBER)
 
 # Common utils
+from sms_campaign_service.common.routes import (GTApis, SmsCampaignApiUrl)
 from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
-from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
-                                                        ForbiddenError)
-from sms_campaign_service.common.campaign_services.campaign_utils import \
-    (raise_if_dict_values_are_not_int_or_long, CampaignUtils)
 from sms_campaign_service.common.utils.validators import format_phone_number
 from sms_campaign_service.common.utils.validators import raise_if_not_instance_of
-from sms_campaign_service.common.routes import (GTApis, SmsCampaignApi, SmsCampaignApiUrl)
+from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
+from sms_campaign_service.common.campaign_services.campaign_utils import (raise_if_dict_values_are_not_int_or_long,
+                                                                          CampaignUtils)
 
 # Database models
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast

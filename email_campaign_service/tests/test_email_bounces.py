@@ -18,7 +18,7 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 from email_campaign_service.tests.modules.handy_functions import send_campaign_email_to_candidate, TEST_EMAIL_ID
 
 
-def test_send_campaign_to_invalid_email_address(access_token_first, assign_roles_to_user_first, email_campaign_of_user_first,
+def test_send_campaign_to_invalid_email_address(access_token_first, email_campaign_of_user_first,
                                                 candidate_first, user_first, talent_pipeline):
     """
     In this test, we will send an email campaign to one candidate with invalid email address.
@@ -66,8 +66,8 @@ def assert_is_bounced(email):
     return email.is_bounced
 
 
-def test_send_campaign_to_valid_and_invalid_email_address(access_token_first, assign_roles_to_user_first,
-                                                          email_campaign_of_user_first,candidate_first,
+def test_send_campaign_to_valid_and_invalid_email_address(access_token_first,
+                                                          email_campaign_of_user_first, candidate_first,
                                                           user_first, talent_pipeline):
     """
     In this test we are sending emails to two candidate, one with valid email and one with invalid email.

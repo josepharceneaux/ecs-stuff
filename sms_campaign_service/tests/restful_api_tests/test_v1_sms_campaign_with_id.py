@@ -59,7 +59,7 @@ class TestSmsCampaignWithIdHTTPGET(object):
         # verify values of all the fields
         assert_valid_campaign_get(received_campaign, sms_campaign_of_user_first)
 
-    def test_with_campaign_of_other_domain(self, access_token_first, sms_campaign_in_other_domain):
+    def test_get_campaign_present_in_other_domain(self, access_token_first, sms_campaign_in_other_domain):
         """
         User auth token is valid. It uses 'sms_campaign_in_other_domain' fixture
         to create an SMS campaign in database. It gets that record from GET HTTP request
@@ -69,8 +69,7 @@ class TestSmsCampaignWithIdHTTPGET(object):
                                                           self.URL % sms_campaign_in_other_domain['id'],
                                                           access_token_first)
 
-    def test_with_id_of_deleted_record(self, access_token_first,
-                                       sms_campaign_of_user_first):
+    def test_get_deleted_campaign(self, access_token_first, sms_campaign_of_user_first):
         """
         User auth token is valid. It deletes the campaign and then GETs the record from db.
         It should result in ResourceNotFound error.
