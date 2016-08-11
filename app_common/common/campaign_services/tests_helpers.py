@@ -9,7 +9,7 @@ import sys
 import time
 import json
 import copy
-from datetime import datetime, timedelta
+from datetime import (datetime, timedelta)
 
 # Third Party
 import pytz
@@ -21,18 +21,18 @@ from contracts import contract
 from ..models.db import db
 from ..tests.conftest import fake
 from ..models.smartlist import Smartlist
-from ..routes import CandidatePoolApiUrl
 from custom_errors import CampaignException
-from ..utils.test_utils import get_fake_dict
 from ..models.misc import (Frequency, Activity)
 from ..utils.datetime_utils import DatetimeUtils
 from campaign_utils import get_model, CampaignUtils
 from ..utils.validators import raise_if_not_instance_of
 from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
+from ..utils.test_utils import get_fake_dict, get_and_assert_zero
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
                               ResourceNotFound, UnprocessableEntity)
+from ..routes import (CandidatePoolApiUrl, PushCampaignApiUrl, SmsCampaignApiUrl)
 from ..inter_service_calls.candidate_pool_service_calls import (create_smartlist_from_api,
                                                                 assert_smartlist_candidates)
 from ..inter_service_calls.candidate_service_calls import create_candidates_from_candidate_api
@@ -53,7 +53,7 @@ class CampaignsTestsHelpers(object):
 
     @classmethod
     @contract
-    def request_for_forbidden_error(cls, method, url, access_token,data=None):
+    def request_for_forbidden_error(cls, method, url, access_token, data=None):
         """
         This should get forbidden error because requested campaign does not belong to logged-in user's domain.
         :param http_method method: Name of HTTP method
@@ -355,20 +355,22 @@ class CampaignsTestsHelpers(object):
 
     @classmethod
     @contract
-    def campaign_test_with_no_valid_candidate(cls, url, access_token, campaign_id):
+    def campaign_test_with_no_valid_candidate(cls, url, access_token, campaign_id, campaign_service_urls=None):
         """
-        This is the test to send campaign to candidate(s) who do not have valid
+        This is the test to send campaign to candidate(s) which does not have valid
         data for the campaign to be sent to them. e.g. in case of email_campaign, candidate
         will have no email or for SMS campaign, candidate will not have any mobile number
-        associated. This should assert custom error NO_VALID_CANDIDATE_FOUND in response.
+        associated. We will get 200 response but campaign will not be sent over celery due to invalid data.
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param positive campaign_id: Id of campaign
+        :param type(t) campaign_service_urls: routes url class
         """
+        raise_if_not_instance_of(campaign_service_urls, (PushCampaignApiUrl, SmsCampaignApiUrl, None))
         response_post = send_request('post', url, access_token)
-        error_resp = cls.assert_non_ok_response(response_post)
-        assert error_resp['code'] == CampaignException.NO_VALID_CANDIDATE_FOUND
-        assert str(campaign_id) in error_resp['message']
+        assert response_post.status_code == requests.codes.OK
+        assert getattr(campaign_service_urls, 'SENDS')
+        get_and_assert_zero(getattr(campaign_service_urls, 'SENDS') % campaign_id, 'sends', access_token)
 
     @staticmethod
     @contract
@@ -431,12 +433,13 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def get_blasts(campaign, access_token=None, blasts_url=None):
+    def get_blasts(campaign, access_token=None, blasts_url=None, count=None):
         """
         This returns all the blasts associated with given campaign
         :param type(t) campaign: Campaign object
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
+        :param int|None count: Expected number of blasts
         """
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         if not blasts_url:
@@ -446,6 +449,8 @@ class CampaignsTestsHelpers(object):
             blasts_get_response = send_request('get', blasts_url, access_token)
             blasts = blasts_get_response.json()['blasts'] if blasts_get_response.ok else []
         assert blasts
+        if count and isinstance(count, int):
+            assert len(blasts) == count
         return blasts
 
     @staticmethod
@@ -604,7 +609,7 @@ class CampaignsTestsHelpers(object):
             candidate_ids = create_candidates_from_candidate_api(access_token, data,
                                                                  return_candidate_ids_only=True)
             if assert_candidates:
-                time.sleep(30)  # TODO: Need to remove this and use polling instead
+                time.sleep(30)
         smartlist_data = {'name': smartlist_name,
                           'candidate_ids': candidate_ids,
                           'talent_pipeline_id': talent_pipeline.id}
@@ -881,7 +886,7 @@ def _assert_unauthorized(method, url, access_token, data=None):
     :param string url: URL to to make HTTP request
     :param string access_token: access access_token of user
     :param dict|None data: Data to be posted
-    """
+     """
     response = send_request(method, url, access_token, data)
     assert response.status_code == UnauthorizedError.http_status_code(), \
         'It should not be authorized (401)'

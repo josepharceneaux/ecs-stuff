@@ -1,0 +1,10 @@
+"""
+This script will increase the allowable string size of TalentPipeline name to 255
+"""
+
+from sqlalchemy import text
+from candidate_pool_service.candidate_pool_app import db
+
+db.session.execute(
+    text("ALTER TABLE `talent_pipeline` MODIFY `name` VARCHAR(255)")
+)

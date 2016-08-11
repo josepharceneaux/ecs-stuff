@@ -17,6 +17,7 @@ from ats_service.app.api.ats_utils import ATS_ACCOUNT_FIELDS
 from ats_service.common.routes import ATSServiceApiUrl
 from ats_service.common.tests.conftest import *
 
+
 class TestATSCandidates(object):
     """
     Tests for the /v1/ats-candidates endpoint.
@@ -60,7 +61,7 @@ class TestATSCandidates(object):
         assert response.status_code == codes.OK
         verify_nonexistant_candidate(access_token_first, account_id, candidate_id)
 
-    def test_link_ats_candidate(self, access_token_first, account_post_data, candidate_post_data):
+    def test_link_ats_candidate(self, access_token_first, account_post_data, candidate_post_data, candidate_first):
         """
         POST /v1/ats-candidates/:account_id
         POST /v1/ats-candidates/link/:candidate_id/:ats_candidate_id
@@ -70,9 +71,9 @@ class TestATSCandidates(object):
         :param dict account_post_data: values for creating an ATS account
         :param dict candidate_post_data: values for creating an ATS account
         """
-        link_candidates(access_token_first, account_post_data, candidate_post_data)
+        link_candidates(access_token_first, account_post_data, candidate_post_data, candidate_first)
 
-    def test_unlink_ats_candidate(self, access_token_first, account_post_data, candidate_post_data):
+    def test_unlink_ats_candidate(self, access_token_first, account_post_data, candidate_post_data, candidate_first):
         """
         POST /v1/ats-candidates/:account_id
         DELETE /v1/ats-candidates/link/:candidate_id/:ats_candidate_id
@@ -82,13 +83,14 @@ class TestATSCandidates(object):
         :param dict account_post_data: values for creating an ATS account
         :param dict candidate_post_data: values for creating an ATS account
         """
-        account_id, gt_candidate_id, ats_candidate_id = link_candidates(access_token_first, account_post_data, candidate_post_data)
+        account_id, gt_candidate_id, ats_candidate_id = link_candidates(access_token_first, account_post_data,
+                                                                        candidate_post_data, candidate_first)
         response = send_request('delete', ATSServiceApiUrl.CANDIDATE_LINK % (gt_candidate_id, ats_candidate_id), access_token_first)
         assert response.status_code == codes.OK
         response = send_request('get', ATSServiceApiUrl.CANDIDATE % (account_id, ats_candidate_id), access_token_first, {}, verify=False)
         assert response.status_code == codes.OK
         values = json.loads(response.text)
-        assert values['gt_candidate_id'] == None
+        assert values['gt_candidate_id'] is None
 
     def test_update_ats_candidate(self, access_token_first, account_post_data, candidate_post_data):
         """

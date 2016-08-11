@@ -1156,7 +1156,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         middle_name = parsed_names_object.middle
         last_name = parsed_names_object.last
 
-    update_dict = {'objective': objective, 'summary': summary, 'filename': (resume_url or '').lower(),
+    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url,
                    'source_id': source_id, 'candidate_status_id': candidate_status_id,
                    'source_product_id': source_product_id}
 
@@ -1207,7 +1207,7 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
         added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
         source_product_id=source_product_id, dice_profile_id=dice_profile_id,
         dice_social_profile_id=dice_social_profile_id, source_id=source_id, objective=objective,
-        summary=summary, filename=(resume_url or '').lower(), is_dirty=0
+        summary=summary, filename=resume_url, is_dirty=0
         # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     )
 
@@ -1884,7 +1884,10 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
     if any(is_default_values):
         CandidateEmail.set_is_default_to_false(candidate_id)
 
+    # Check if any of the emails have a label
     emails_has_label = any([email.get('label') for email in emails])
+
+    # Check if any of the emails is set as the default email
     emails_has_default = any([isinstance(email.get('is_default'), bool) for email in emails])
 
     # Prevent duplicate email addresses
@@ -1894,13 +1897,15 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
                            error_code=custom_error.INVALID_USAGE,
                            additional_error_info={'duplicates': email_addresses})
 
-    for i, email in enumerate(emails):
+    for index, email in enumerate(emails):
 
-        # If there's no is_default, the first email should be default
-        is_default = i == 0 if not emails_has_default else email.get('is_default')
+        # If none of the provided emails have "is_default" set to true and none of candidate's existing emails
+        #   is set to default, then the first provided email will be a default email
+        is_default = index == 0 if (not emails_has_default and not CandidateEmail.has_default_email(candidate_id)) \
+            else email.get('is_default')
 
         # If there's no label, the first email's label will be 'Primary'; rest will be 'Other'
-        email_label = EmailLabel.PRIMARY_DESCRIPTION if (not emails_has_label and i == 0) \
+        email_label = EmailLabel.PRIMARY_DESCRIPTION if (not emails_has_label and index == 0) \
             else (email.get('label') or '').strip().title()
 
         email_address = email.get('address')
@@ -2025,8 +2030,10 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         # Phone number must not belong to any other candidate in the same domain
         matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(value, request.user)
         if matching_phone_values and matching_phone_values[0].candidate_id != candidate_id:
-            raise ForbiddenError(error_message="Phone number ({}) belongs to someone else.".format(value),
-                                 error_code=custom_error.PHONE_FORBIDDEN)
+            # TODO: this validation should be happening much earlier. For now we need this for a hotfix but should be revisited later
+            raise InvalidUsage(error_message='Candidate already exists, creation failed',
+                               error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
+                               additional_error_info={'id': candidate_id})
 
         # Clear CachedData's country_codes to prevent aggregating unnecessary data
         CachedData.country_codes = []
