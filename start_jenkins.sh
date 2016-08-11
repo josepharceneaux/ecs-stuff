@@ -30,7 +30,8 @@ cd email_campaign_service && tar -czh . | docker build -t gettalent/email-campai
 cd ats_service && tar -czh . | docker build -t gettalent/ats-service:latest - && cd ../
 
 # Build the scheduler admin image, which is a nodejs web application
-cd scheduler_service_admin && tar -czh . | docker build -t gettalent/scheduler-service-admin:latest - && cd ../
+# This is disabled temporarily due to npm issues
+# cd scheduler_service_admin && tar -czh . | docker build -t gettalent/scheduler-service-admin:latest - && cd ../
 
 # Reset Database and Amazon Cloud Search
 export PYTHONPATH=.
@@ -66,16 +67,15 @@ sleep 10
 
 echo "Beginning tests."
 
-py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests sms_campaign_service/tests resume_parsing_service/tests candidate_service/tests push_campaign_service/tests email_campaign_service/tests ats_service/tests
+py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests sms_campaign_service/tests resume_parsing_service/tests candidate_service/tests push_campaign_service/tests email_campaign_service/tests # ats_service/tests
+
 if [ $? -ne 0 ] ; then
     exit 1
 fi
 
-# ATS tests need to run separately as parallelism causes DB collisions
-# py.test ats_service/tests
-# if [ $? -ne 0 ] ; then
-#     exit 1
-# fi
+
+# Place other tests (code complexity, etc.) here
+
 
 echo "Tests completed."
 
