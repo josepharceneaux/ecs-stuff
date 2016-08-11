@@ -38,7 +38,6 @@ from onesignalsdk.one_signal_sdk import OneSignalSdk
 
 # Application Specific
 # Import all model classes from push_campaign module
-from push_campaign_service.common.error_handling import InvalidUsage
 from push_campaign_service.common.models.db import db
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.models.user import User
@@ -49,7 +48,7 @@ from push_campaign_service.common.campaign_services.campaign_base import Campaig
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from push_campaign_service.common.models.push_campaign import (PushCampaign, PushCampaignSend,
                                                                PushCampaignSendUrlConversion)
-from constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
+from push_campaign_service.modules.constants import ONE_SIGNAL_APP_ID, ONE_SIGNAL_REST_API_KEY
 
 
 class PushCampaignBase(CampaignBase):
@@ -121,10 +120,11 @@ class PushCampaignBase(CampaignBase):
         """
         Here we do any necessary processing before assigning task to Celery. Child classes
         will override this if needed.
-        :param candidates: list of candidates
-        :type candidates: list
+        :param list[Candidate] candidates: list of candidates
         :return: list of candidates and their device ids as tuple [(device_id, [device_id1, device_id2])]
+        :rtype list[tuple]
         """
+        candidates = super(PushCampaignBase, self).pre_process_celery_task(candidates)
         candidate_and_device_ids = []
         for candidate in candidates:
             devices = CandidateDevice.get_devices_by_candidate_id(candidate.id)
@@ -136,10 +136,19 @@ class PushCampaignBase(CampaignBase):
 
         # get all device ids and if there is no device associated with any candidate, raise InvalidUsage
         all_device_ids = list(itertools.chain(*map(lambda item: item[1], candidate_and_device_ids)))
-        if not all_device_ids:
-            raise InvalidUsage('There is no device associated with any candidate. Candidate Ids: %s'
-                               % [candidate.id for candidate in candidates])
+        if not all_device_ids and candidates:
+            logger.warn('There is no device associated with any candidate. Candidate Ids: %s'
+                        % [candidate.id for candidate in candidates])
+            return []
         return candidate_and_device_ids
+
+    @celery_app.task(name='get_smartlist_candidates_via_celery')
+    def get_smartlist_candidates_via_celery(self, smartlist_id):
+        """
+        This method will retrieve smartlist candidates from candidate_pool_service in a celery task.
+        :param int | long smartlist_id: Id of smartlist associated with campaign
+        """
+        return self.get_smartlist_candidates(smartlist_id)
 
     @celery_app.task(name='send_campaign_to_candidate')
     def send_campaign_to_candidate(self, candidate_and_device_ids):
@@ -259,6 +268,19 @@ class PushCampaignBase(CampaignBase):
         """
         logger.warn('Error occurred while sending push campaign.')
         db.session.rollback()
+
+    @staticmethod
+    @celery_app.task(name='callback_campaign_send')
+    def send_callback(celery_result, campaign_obj):
+        """
+        When all celery tasks to retrieve smartlist candidates are finished, celery chord calls this function
+        with an array or data (candidates) from all tasks. This function will further call super class method
+        to process this data and send campaigns to all candidates.
+        :param list[list[Candidate]] celery_result: list of lists of candidates
+        :param PushCampaignBase campaign_obj: PushCampaignBase object
+        """
+        with app.app_context():
+            campaign_obj.process_campaign_send(celery_result)
 
     def save(self, form_data):
         """

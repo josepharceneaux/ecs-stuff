@@ -39,7 +39,7 @@ from push_campaign_service.tests.test_utilities import (get_campaign,delete_camp
                                                         compare_campaign_data, generate_campaign_data, update_campaign)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.test_utils import unauthorize_test
-from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
+from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 
 
 URL = PushCampaignApiUrl.CAMPAIGN
@@ -195,7 +195,7 @@ class TestUpdateCampaign(object):
         # Test valid fields with invalid/ empty values
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
-        for key in CAMPAIGN_REQUIRED_FIELDS:
+        for key in PushCampaignBase.REQUIRED_FIELDS:
             invalid_value_test(data, key, token_first, campaign_in_db['id'])
 
     def test_put_by_id(self, token_first, campaign_in_db, smartlist_first):

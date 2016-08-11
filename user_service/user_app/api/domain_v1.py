@@ -9,7 +9,7 @@ from user_service.common.talent_api import TalentApi
 from user_service.common.routes import UserServiceApi
 from user_service.common.models.user import User, Domain, db, Permission
 from user_service.user_app.user_service_utilties import get_or_create_domain
-from user_service.common.utils.auth_utils import require_oauth, require_any_permission, require_all_permissions
+from user_service.common.utils.auth_utils import require_oauth, require_all_permissions, is_number
 
 
 class DomainApi(Resource):
@@ -34,21 +34,18 @@ class DomainApi(Resource):
 
             if requested_domain_id == request.user.domain_id or request.user.role.name == 'TALENT_ADMIN':
                 return {
-                    'domain': {
-                        'id': requested_domain.id,
-                        'name': requested_domain.name,
-                        'organization_id': requested_domain.organization_id,
-                        'dice_company_id': requested_domain.dice_company_id
-                    }
+                    'domain': requested_domain.to_dict()
                 }
         elif request.user.role.name == 'TALENT_ADMIN':
+
+            is_disabled = request.args.get('is_disabled', 0)
+            if not is_number(is_disabled) or int(is_disabled) not in (0, 1):
+                raise InvalidUsage('`is_hidden` can be either 0 or 1')
+
+            domains = Domain.query.filter(Domain.is_disabled == is_disabled).all()
+
             return {
-                'domains': [{
-                    'id': domain.id,
-                    'name': domain.name,
-                    'organization_id': domain.organization_id,
-                    'dice_company_id': domain.dice_company_id
-                } for domain in Domain.query.all()]
+                'domains': [domain.to_dict() for domain in domains]
             }
 
         raise UnauthorizedError("Either logged-in user belongs to different domain as requested_domain or it doesn't "
@@ -184,6 +181,7 @@ class DomainApi(Resource):
         default_culture_id = posted_data.get('default_culture_id', '')
         default_tracking_code = posted_data.get('default_tracking_code', '')
         dice_company_id = posted_data.get('dice_company_Id', '')
+        is_disabled = posted_data.get('is_disabled', 0)
 
         if expiration:
             try:
@@ -198,15 +196,20 @@ class DomainApi(Resource):
         if default_culture_id and not Culture.query.get(default_culture_id):
             raise InvalidUsage("Culture %s doesn't exist" % default_culture_id)
 
+        is_disabled = request.args.get('is_disabled', 0)
+        if not is_number(is_disabled) or int(is_disabled) not in (0, 1):
+            raise InvalidUsage('`is_disabled` can be either 0 or 1')
+
         # Update user
         update_domain_dict = {
             'name': name,
             'expiration': expiration,
             'default_culture_id': default_culture_id,
             'default_tracking_code': default_tracking_code,
-            'dice_company_id': dice_company_id
+            'dice_company_id': dice_company_id,
+            'is_disabled': is_disabled,
         }
-        update_domain_dict = dict((k, v) for k, v in update_domain_dict.iteritems() if v)
+        update_domain_dict = dict((k, v) for k, v in update_domain_dict.iteritems() if v is not None)
         Domain.query.filter(Domain.id == requested_domain_id).update(update_domain_dict)
         db.session.commit()
 

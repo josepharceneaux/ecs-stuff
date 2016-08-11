@@ -1156,7 +1156,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         middle_name = parsed_names_object.middle
         last_name = parsed_names_object.last
 
-    update_dict = {'objective': objective, 'summary': summary, 'filename': (resume_url or '').lower(),
+    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url,
                    'source_id': source_id, 'candidate_status_id': candidate_status_id,
                    'source_product_id': source_product_id}
 
@@ -1207,7 +1207,7 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
         added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
         source_product_id=source_product_id, dice_profile_id=dice_profile_id,
         dice_social_profile_id=dice_social_profile_id, source_id=source_id, objective=objective,
-        summary=summary, filename=(resume_url or '').lower(), is_dirty=0
+        summary=summary, filename=resume_url, is_dirty=0
         # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     )
 
@@ -2030,8 +2030,10 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         # Phone number must not belong to any other candidate in the same domain
         matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(value, request.user)
         if matching_phone_values and matching_phone_values[0].candidate_id != candidate_id:
-            raise ForbiddenError(error_message="Phone number ({}) belongs to someone else.".format(value),
-                                 error_code=custom_error.PHONE_FORBIDDEN)
+            # TODO: this validation should be happening much earlier. For now we need this for a hotfix but should be revisited later
+            raise InvalidUsage(error_message='Candidate already exists, creation failed',
+                               error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
+                               additional_error_info={'id': matching_phone_values[0].candidate_id})
 
         # Clear CachedData's country_codes to prevent aggregating unnecessary data
         CachedData.country_codes = []
