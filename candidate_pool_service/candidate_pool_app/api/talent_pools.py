@@ -670,9 +670,20 @@ def get_talent_pool_stats(talent_pool_id):
 @require_oauth()
 @require_all_permissions(Permission.PermissionNames.CAN_IMPERSONATE_USERS)
 def update_all_statistics():
-    update_talent_pipeline_stats.delay()
-    update_talent_pool_stats.delay()
-    update_smartlist_stats.delay()
+
+    container = request.args.get('talent-container', None)
+
+    if container == 'talent-pipeline':
+        update_talent_pipeline_stats.delay(True)
+    elif container == 'talent-pool':
+        update_talent_pool_stats.delay(True)
+    elif container == 'smartlist':
+        update_smartlist_stats.delay(True)
+    elif container == 'all':
+        update_talent_pipeline_stats.delay(True)
+        update_talent_pool_stats.delay(True)
+        update_smartlist_stats.delay(True)
+
     return '', 204
 
 
