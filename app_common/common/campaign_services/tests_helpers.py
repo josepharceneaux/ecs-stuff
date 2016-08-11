@@ -30,9 +30,9 @@ from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 from ..utils.test_utils import get_fake_dict, get_and_assert_zero
 from ..tests.fake_testing_data_generator import FakeCandidatesData
-from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
-                              ResourceNotFound, UnprocessableEntity)
 from ..routes import (CandidatePoolApiUrl, PushCampaignApiUrl, SmsCampaignApiUrl)
+from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
+                              ResourceNotFound, UnprocessableEntity, InternalServerError)
 from ..inter_service_calls.candidate_pool_service_calls import (create_smartlist_from_api,
                                                                 assert_smartlist_candidates)
 from ..inter_service_calls.candidate_service_calls import create_candidates_from_candidate_api
@@ -363,10 +363,10 @@ class CampaignsTestsHelpers(object):
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         :param positive campaign_id: Id of campaign
-        :param type(t) campaign_service_urls: routes url class
+        :param type(t) campaign_service_urls: routes url class. e.g PushCampaignApiUrl or SmsCampaignApiUrl
         """
-        if campaign_service_urls:
-            raise_if_not_instance_of(campaign_service_urls, (PushCampaignApiUrl, SmsCampaignApiUrl))
+        if campaign_service_urls and campaign_service_urls not in (PushCampaignApiUrl, SmsCampaignApiUrl):
+            raise InternalServerError('see docs for valid value of campaign_service_urls')
         response_post = send_request('post', url, access_token)
         assert response_post.status_code == requests.codes.OK
         assert getattr(campaign_service_urls, 'SENDS')
