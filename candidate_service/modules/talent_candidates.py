@@ -2033,7 +2033,7 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
             # TODO: this validation should be happening much earlier. For now we need this for a hotfix but should be revisited later
             raise InvalidUsage(error_message='Candidate already exists, creation failed',
                                error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
-                               additional_error_info={'id': candidate_id})
+                               additional_error_info={'id': matching_phone_values[0].candidate_id})
 
         # Clear CachedData's country_codes to prevent aggregating unnecessary data
         CachedData.country_codes = []
