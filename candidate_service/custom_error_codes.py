@@ -99,6 +99,7 @@ class CandidateCustomErrors(object):
 
     # Error codes for Candidate Source
     INVALID_SOURCE_ID = 3180
+    INVALID_SOURCE_PRODUCT_ID = 3181
 
     # Error codes for Candidate Notes
     NOTE_NOT_FOUND = 3290

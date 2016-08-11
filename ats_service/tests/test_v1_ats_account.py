@@ -2,8 +2,6 @@
 Tests for ATS Accounts.
 """
 
-import json
-
 from requests import codes
 
 from ats_service.common.utils.test_utils import send_request
@@ -11,6 +9,7 @@ from ats_service.tests.test_utils import missing_field_test, empty_database, cre
 from ats_service.app.api.ats_utils import ATS_ACCOUNT_FIELDS
 from ats_service.common.routes import ATSServiceApiUrl
 from ats_service.common.tests.conftest import *
+
 
 class TestATSAccounts(object):
     """

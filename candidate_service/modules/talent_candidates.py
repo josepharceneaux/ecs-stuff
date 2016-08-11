@@ -190,6 +190,7 @@ def fetch_candidate_info(candidate, fields=None):
         'talent_pool_ids': talent_pool_ids,
         'resume_url': resume_url,
         'source_id': candidate.source_id,
+        'source_product_id': candidate.source_product_id,
         'summary': candidate.summary,
         'objective': candidate.objective
     }
@@ -515,10 +516,16 @@ def candidate_contact_history(candidate):
                 event_datetime=event_datetime
             ))
 
+    timeline_with_valid_event_datetime = filter(lambda entry: isinstance(entry['event_datetime'],
+                                                                         datetime.datetime), timeline)
+    timeline_with_null_event_datetime = filter(lambda entry: entry['event_datetime'] is None, timeline)
+
     # Sort events by datetime and convert all date-times to ISO format
-    timeline = sorted(timeline, key=lambda entry: entry['event_datetime'], reverse=True)
+    timeline = sorted(timeline_with_valid_event_datetime, key=lambda entry: entry['event_datetime'], reverse=True)
     for event in timeline:
         event['event_datetime'] = event['event_datetime'].isoformat()
+
+    timeline += timeline_with_null_event_datetime
 
     return dict(timeline=timeline)
 
@@ -838,6 +845,7 @@ def create_or_update_candidate_from_params(
         dice_profile_id=None,
         added_datetime=None,
         source_id=None,
+        source_product_id=None,
         objective=None,
         summary=None,
         talent_pool_ids=None,
@@ -885,6 +893,7 @@ def create_or_update_candidate_from_params(
     :type   dice_profile_id:        int
     :type   added_datetime:         str
     :param  source_id:              Source of candidate's intro, e.g. job-fair
+    :param  source_product_id       int
     :type   source_id:              int
     :type   objective:              basestring
     :type   summary:                basestring
@@ -931,12 +940,12 @@ def create_or_update_candidate_from_params(
 
     if is_updating:  # Update Candidate
         candidate_id = _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
-                                         candidate_id, user_id, resume_url, source_id, status_id)
+                                         candidate_id, user_id, resume_url, source_id, source_product_id, status_id)
     else:  # Add Candidate
         candidate_id = _add_candidate(first_name, middle_name, last_name,
                                       formatted_name, added_datetime, status_id,
                                       user_id, dice_profile_id, dice_social_profile_id,
-                                      source_id, objective, summary, resume_url)
+                                      source_id, source_product_id, objective, summary, resume_url)
 
     candidate = Candidate.get_by_id(candidate_id)
     """
@@ -1125,7 +1134,7 @@ def social_network_name_from_url(url):
 
 
 def _update_candidate(first_name, middle_name, last_name, formatted_name, objective, summary,
-                      candidate_id, user_id, resume_url, source_id, candidate_status_id):
+                      candidate_id, user_id, resume_url, source_id, source_product_id, candidate_status_id):
     """
     Function will update Candidate's primary information.
     Candidate's Primary information include:
@@ -1147,8 +1156,9 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         middle_name = parsed_names_object.middle
         last_name = parsed_names_object.last
 
-    update_dict = {'objective': objective, 'summary': summary, 'filename': (resume_url or '').lower(),
-                   'source_id': source_id, 'candidate_status_id': candidate_status_id}
+    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url,
+                   'source_id': source_id, 'candidate_status_id': candidate_status_id,
+                   'source_product_id': source_product_id}
 
     # Strip each key-value and remove keys with empty-string-values
     update_dict = purge_dict(update_dict, remove_empty_strings_only=True)
@@ -1186,7 +1196,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
 def _add_candidate(first_name, middle_name, last_name, formatted_name,
                    added_time, candidate_status_id, user_id,
                    dice_profile_id, dice_social_profile_id, source_id,
-                   objective, summary, resume_url):
+                   source_product_id, objective, summary, resume_url):
     """
     Function will add Candidate and its primary information to db
     All empty values (None or empty strings) will be ignored
@@ -1195,9 +1205,10 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
     add_dict = dict(
         first_name=first_name, middle_name=middle_name, last_name=last_name, formatted_name=formatted_name,
         added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
-        dice_profile_id=dice_profile_id, dice_social_profile_id=dice_social_profile_id,
-        source_id=source_id, objective=objective, summary=summary, filename=(resume_url or '').lower(),
-        is_dirty=0  # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
+        source_product_id=source_product_id, dice_profile_id=dice_profile_id,
+        dice_social_profile_id=dice_social_profile_id, source_id=source_id, objective=objective,
+        summary=summary, filename=resume_url, is_dirty=0
+        # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     )
 
     # All empty values must be removed
@@ -1873,7 +1884,10 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
     if any(is_default_values):
         CandidateEmail.set_is_default_to_false(candidate_id)
 
+    # Check if any of the emails have a label
     emails_has_label = any([email.get('label') for email in emails])
+
+    # Check if any of the emails is set as the default email
     emails_has_default = any([isinstance(email.get('is_default'), bool) for email in emails])
 
     # Prevent duplicate email addresses
@@ -1883,13 +1897,15 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
                            error_code=custom_error.INVALID_USAGE,
                            additional_error_info={'duplicates': email_addresses})
 
-    for i, email in enumerate(emails):
+    for index, email in enumerate(emails):
 
-        # If there's no is_default, the first email should be default
-        is_default = i == 0 if not emails_has_default else email.get('is_default')
+        # If none of the provided emails have "is_default" set to true and none of candidate's existing emails
+        #   is set to default, then the first provided email will be a default email
+        is_default = index == 0 if (not emails_has_default and not CandidateEmail.has_default_email(candidate_id)) \
+            else email.get('is_default')
 
         # If there's no label, the first email's label will be 'Primary'; rest will be 'Other'
-        email_label = EmailLabel.PRIMARY_DESCRIPTION if (not emails_has_label and i == 0) \
+        email_label = EmailLabel.PRIMARY_DESCRIPTION if (not emails_has_label and index == 0) \
             else (email.get('label') or '').strip().title()
 
         email_address = email.get('address')
@@ -2014,8 +2030,10 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         # Phone number must not belong to any other candidate in the same domain
         matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(value, request.user)
         if matching_phone_values and matching_phone_values[0].candidate_id != candidate_id:
-            raise ForbiddenError(error_message="Phone number ({}) belongs to someone else.".format(value),
-                                 error_code=custom_error.PHONE_FORBIDDEN)
+            # TODO: this validation should be happening much earlier. For now we need this for a hotfix but should be revisited later
+            raise InvalidUsage(error_message='Candidate already exists, creation failed',
+                               error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
+                               additional_error_info={'id': candidate_id})
 
         # Clear CachedData's country_codes to prevent aggregating unnecessary data
         CachedData.country_codes = []

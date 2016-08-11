@@ -18,7 +18,9 @@ from faker import Faker
 from redo import retry
 from requests import codes
 
+from push_campaign_service.common.constants import SLEEP_INTERVAL, RETRY_ATTEMPTS
 from push_campaign_service.common.models.misc import Frequency
+from push_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from push_campaign_service.common.utils.test_utils import (delete_scheduler_task,
                                                            create_smartlist, get_smartlist_candidates, delete_smartlist)
 from push_campaign_service.common.test_config_manager import load_test_config
@@ -32,6 +34,7 @@ from push_campaign_service.common.tests.api_conftest import (token_first, token_
                                                              talent_pipeline_second)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.init_test_data import create_test_data
+from push_campaign_service.push_campaign_app import app
 from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
                                                         generate_campaign_schedule_data,
                                                         get_campaigns, create_campaign,
@@ -42,7 +45,9 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_data, 
 
 fake = Faker()
 # initialize test users and domains etc.
-create_test_data()
+if app.config[TalentConfigKeys.ENV_KEY] == TalentEnvs.DEV:
+    create_test_data()
+
 test_config = load_test_config()
 
 
@@ -248,10 +253,9 @@ def campaign_blast(token_first, campaign_in_db, smartlist_first, candidate_devic
     :return: campaign's blast dict object
     """
     send_campaign(campaign_in_db['id'], token_first)
-    response = get_blasts(campaign_in_db['id'], token_first)
-    blasts = response['blasts']
-    assert len(blasts) == 1
-    blast = blasts[0]
+    response = retry(get_blasts, sleeptime=SLEEP_INTERVAL, attempts=RETRY_ATTEMPTS, sleepscale=1,
+                     retry_exceptions=(AssertionError,), args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
+    blast = response['blasts'][0]
     blast['campaign_id'] = campaign_in_db['id']
     return blast
 
@@ -268,8 +272,11 @@ def campaign_blasts(campaign_in_db, token_first, smartlist_first, candidate_devi
     blasts_counts = 3
     for num in range(blasts_counts):
         send_campaign(campaign_in_db['id'], token_first)
-    blasts = get_blasts(campaign_in_db['id'], token_first)['blasts']
-    return blasts
+
+    response = retry(get_blasts, sleeptime=SLEEP_INTERVAL, attempts=RETRY_ATTEMPTS * 2, sleepscale=1,
+                     retry_exceptions=(AssertionError,), args=(campaign_in_db['id'], token_first),
+                     kwargs={'count': blasts_counts})
+    return response['blasts']
 
 
 @pytest.fixture()

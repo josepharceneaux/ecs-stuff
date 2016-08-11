@@ -97,11 +97,11 @@ To add another social network for events management, following are steps:
 # Standard Library
 from abc import ABCMeta
 from abc import abstractmethod
-# Application Specific
+
+# 3rd party
 from flask import request
 
-from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
-from social_network_service.common.models.event_organizer import EventOrganizer
+# Application Specific
 from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.misc import Activity
@@ -112,10 +112,11 @@ from social_network_service.social_network_app import logger
 from social_network_service.common.models.venue import Venue
 from social_network_service.modules.utilities import log_error
 from social_network_service.modules.utilities import get_class
-from social_network_service.custom_exceptions import NoUserFound, VenueNotFound, EventOrganizerNotFound
+from social_network_service.custom_exceptions import NoUserFound, VenueNotFound
 from social_network_service.custom_exceptions import EventNotSaveInDb
 from social_network_service.custom_exceptions import EventNotUnpublished
 from social_network_service.custom_exceptions import UserCredentialsNotFound
+from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 
 
 class EventBase(object):
@@ -267,16 +268,11 @@ class EventBase(object):
         social_network_id = data['social_network_id']
         user_id = data['user_id']
         venue_id = data['venue_id']
-        event_organizer_id = data['organizer_id']
         venue = Venue.get_by_user_id_social_network_id_venue_id(
             user_id, social_network_id, venue_id)
-        event_organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, event_organizer_id)
         if not venue:
             raise VenueNotFound('Venue not found in database. Kindly create'
                                 ' venue first.')
-        if not event_organizer:
-            raise EventOrganizerNotFound('Event organizer not found in database. Kindly create'
-                                         ' event organizer first.')
         
     @abstractmethod
     def event_gt_to_sn_mapping(self, data):

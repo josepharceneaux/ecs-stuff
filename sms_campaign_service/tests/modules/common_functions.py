@@ -24,7 +24,7 @@ from sms_campaign_service.common.campaign_services.campaign_utils import Campaig
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
     get_candidates_of_smartlist
-from sms_campaign_service.modules.sms_campaign_app_constants import (TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER)
+from sms_campaign_service.modules.constants import (TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER)
 
 
 def generate_campaign_data():
@@ -83,10 +83,8 @@ def assert_url_conversion(sms_campaign_sends):
         UrlConversion.delete(send_url_conversion.url_conversion)
 
 
-def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_sends, campaign_id,
-                                                       access_token,
-                                                       expected_blasts=1,
-                                                       blast_index=0, blast_timeout=20,
+def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_sends, campaign_id, access_token,
+                                                       expected_blasts=1, blast_index=0, blast_timeout=20,
                                                        sends_timeout=100):
     """
     This function assert the number of sends in database table "sms_campaign_blast" and
@@ -104,8 +102,7 @@ def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_sends, 
                                                  blasts_url=SmsCampaignApiUrl.BLASTS % campaign.id,
                                                  timeout=blast_timeout)
     # Get sms-campaign-blast object
-    sms_campaign_blast = CampaignsTestsHelpers.get_blast_by_index_with_polling(campaign,
-                                                                               blast_index)
+    sms_campaign_blast = CampaignsTestsHelpers.get_blast_by_index_with_polling(campaign, blast_index)
     # Poll blast sends
     CampaignsTestsHelpers.assert_blast_sends(campaign, expected_sends, blast_index=blast_index,
                                              abort_time_for_sends=sends_timeout)

@@ -34,7 +34,7 @@ import sys
 from requests import codes
 
 # Application specific imports
-from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
+from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.tests.test_utilities import (invalid_data_test,
                                                         missing_key_test, create_campaign,
                                                         get_campaigns, delete_campaign,
@@ -74,7 +74,7 @@ class TestCreateCampaign(object):
         :param smartlist_first: smartlist dict object
         """
         # First test with missing keys
-        for key in CAMPAIGN_REQUIRED_FIELDS:
+        for key in PushCampaignBase.REQUIRED_FIELDS:
             data = campaign_data.copy()
             data['smartlist_ids'] = [smartlist_first['id']]
             missing_key_test(data, key, token_first)
@@ -128,24 +128,24 @@ class TestGetListOfCampaigns(object):
         per_page = MAX_PAGE_SIZE + 1
         get_campaigns(token_first, per_page=per_page, expected_status=(codes.BAD_REQUEST,))
 
-    # TODO: Commenting this flaky test for Zohaib (basit)
-    # def test_get_all_campaigns_in_user_domain(self, token_first, token_same_domain, token_second,
-    #                                           campaign_in_db, campaign_in_db_same_domain, campaign_in_db_second,
-    #                                           ):
-    #     """
-    #     In this test, we will create three campaign for three users , two from same domain and one from
-    #     different domain and then we will get campaigns using user_first token and we will expect two campaigns,
-    #     and one campaign when using token for `user_second`.
-    #     :return:
-    #     """
-    #     response = get_campaigns(token_first, expected_status=(codes.OK,))
-    #     assert len(response['campaigns']) == 2
-    #
-    #     response = get_campaigns(token_same_domain, expected_status=(codes.OK,))
-    #     assert len(response['campaigns']) == 2
-    #
-    #     response = get_campaigns(token_second, expected_status=(codes.OK,))
-    #     assert len(response['campaigns']) == 1
+    def test_get_all_campaigns_in_user_domain(self, token_first, token_same_domain, token_second,
+                                              campaign_in_db, campaign_in_db_same_domain, campaign_in_db_second,
+                                              ):
+        """
+        In this test, we will create three campaign for three users , two from same domain and one from
+        different domain and then we will get campaigns using user_first token and we will expect two campaigns,
+        and one campaign when using token for `user_second`.
+        :return:
+        """
+        created_campaign_ids = {campaign_in_db['id'], campaign_in_db_same_domain['id']}
+        response = get_campaigns(token_first, expected_status=(codes.OK,))
+        assert created_campaign_ids.issubset({campaign['id'] for campaign in response['campaigns']})
+
+        response = get_campaigns(token_same_domain, expected_status=(codes.OK,))
+        assert created_campaign_ids.issubset({campaign['id'] for campaign in response['campaigns']})
+
+        response = get_campaigns(token_second, expected_status=(codes.OK,))
+        assert {campaign_in_db_second['id']}.issubset({campaign['id'] for campaign in response['campaigns']})
 
 
 class TestDeleteMultipleCampaigns(object):

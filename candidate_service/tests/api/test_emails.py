@@ -387,7 +387,7 @@ class TestDeleteCandidateEmail(object):
         assert resp.status_code == requests.codes.NOT_FOUND
 
     def test_delete_email_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, talent_pool,
-                                                                  user_second, access_token_second):
+                                                                  access_token_second):
         """
         Test:   Attempt to delete the email of a Candidate that belongs
                 to a different user from a different domain

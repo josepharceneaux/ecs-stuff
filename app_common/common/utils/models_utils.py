@@ -61,7 +61,7 @@ from ..routes import GTApis, HEALTH_CHECK
 from ..redis_cache import redis_store
 from ..talent_flask import TalentFlask
 from ..utils.talent_ec2 import get_ec2_instance_id
-from ..error_handling import register_error_handlers, InvalidUsage, InternalServerError
+from ..error_handling import register_error_handlers, InvalidUsage
 from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
 
@@ -297,6 +297,19 @@ def get_invalid_fields(cls, data_to_be_verified):
     return [key for key in data_to_be_verified if key not in cls.__table__.columns]
 
 
+@classmethod
+def refresh_all(cls, obj_list):
+    """
+    This takes some data in dict from and checks if there is any key which is not a ATTRIBUTE of given model.`
+    It then returns all such fields in a list format.
+    :param db.Model cls: Database model class
+    :param list obj_list: list of Model objects
+    :rtype: list
+    """
+    assert all(isinstance(obj, cls) for obj in obj_list), 'All objects should of type: %s' % cls.__name__
+    return [db.session.merge(obj) for obj in obj_list]
+
+
 def add_model_helpers(cls):
     """
     This function adds helper methods to Model class which is passed as argument.
@@ -333,6 +346,11 @@ def add_model_helpers(cls):
     # blasts = campaigns.blasts.paginate(1, 15, False).items
     # or we can call `get_paginated_response` and pass `campaign.blasts` as query.
     AppenderQuery.paginate = BaseQuery.__dict__['paginate']
+
+    # When working with celery tasks, when Model objects are passed to a celery session, object becomes detached
+    # and on accessing backref attributes casuses DetachedInstanceError. So by calling this method one can refresh the
+    # expired objects
+    cls.refresh_all = refresh_all
 
 
 def init_talent_app(app_name):
@@ -417,7 +435,6 @@ def init_talent_app(app_name):
         except Exception as e:
             logger.exception("Exception running migrations: {}".format(e.message))
             db.session.rollback()
-
         return flask_app, logger
 
     except Exception as error:

@@ -38,9 +38,6 @@ api = TalentApi(app)
 # Initialize Redis Cache
 redis_store.init_app(app)
 
-# TODO: remove this in final code
-WEBHOOK_REDIRECT_URL = 'https://729c03b1.ngrok.io'
-
 
 @app.route('/')
 def index():
