@@ -18,7 +18,7 @@ from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_
 from candidate_pool_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
     get_stats_generic_function, update_smartlist_stats, update_talent_pipeline_stats,
-    update_talent_pool_stats, get_candidates_of_talent_pool)
+    update_talent_pool_stats, get_candidates_of_talent_pool, delete_all_stats)
 from candidate_pool_service.common.utils.handy_functions import random_word
 from candidate_pool_service.common.models.user import Permission
 
@@ -672,17 +672,15 @@ def get_talent_pool_stats(talent_pool_id):
 def update_all_statistics():
 
     container = request.args.get('talent-container', None)
+    container_id = request.args.get('talent-container-id', None)
 
+    delete_all_stats(container, container_id)
     if container == 'talent-pipeline':
-        update_talent_pipeline_stats.delay(True)
+        update_talent_pipeline_stats.delay()
     elif container == 'talent-pool':
-        update_talent_pool_stats.delay(True)
+        update_talent_pool_stats.delay()
     elif container == 'smartlist':
-        update_smartlist_stats.delay(True)
-    elif container == 'all':
-        update_talent_pipeline_stats.delay(True)
-        update_talent_pool_stats.delay(True)
-        update_smartlist_stats.delay(True)
+        update_smartlist_stats.delay()
 
     return '', 204
 
