@@ -47,6 +47,9 @@ class TalentPipelineApi(Resource):
         if not is_number(candidate_count) or int(candidate_count) not in (True, False):
             raise InvalidUsage("`candidate_count` field value can be 0 or 1")
 
+        if not is_number(email_campaign_count) or int(email_campaign_count) not in (True, False):
+            raise InvalidUsage("`email_campaign_count` field value can be 0 or 1")
+
         if not is_number(interval_in_days) or int(interval_in_days) < 0:
             raise InvalidUsage("Value of interval should be positive integer")
 
@@ -62,14 +65,16 @@ class TalentPipelineApi(Resource):
             if not candidate_count:
                 return {
                     'talent_pipeline': talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
-                                                               get_growth_function=get_pipeline_growth)
+                                                               get_growth_function=get_pipeline_growth,
+                                                               email_campaign_count=email_campaign_count)
                 }
             else:
                 return {
                     'talent_pipeline': talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
                                                                get_growth_function=get_pipeline_growth,
                                                                include_candidate_count=True,
-                                                               get_candidate_count=get_talent_pipeline_stat_for_given_day)
+                                                               get_candidate_count=get_talent_pipeline_stat_for_given_day,
+                                                               email_campaign_count=email_campaign_count)
                 }
 
         else:
