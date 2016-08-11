@@ -4,13 +4,13 @@ users, client, token etc.
 
 """
 from datetime import datetime, timedelta
+import time
+from werkzeug.security import gen_salt
+
+from user_service.common.error_handling import InternalServerError
 from user_service.common.models.user import Domain, User, UserGroup, Token, Client, Role
 from user_service.user_app import logger
 
-CLIENT_ID = 'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z'
-CLIENT_SECRET = 'DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj1Z'
-TEST_ACCESS_TOKEN = 'uTl6zNUdoNATwwUg0GOuSFvyrtyCCW'
-TEST_REFRESH_TOKEN = 'uTl6zNUdoNATwwUg0GOuSFvyrtyCCW'
 TEST_PASSWORD = "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6"
 
 
@@ -22,10 +22,8 @@ def create_test_domain(names):
     """
     domains = []
     for domain_name in names:
-        domain = Domain.query.filter_by(name=domain_name).first()
-        if not domain:
-            domain = Domain(name=domain_name, organization_id=1)
-            Domain.save(domain)
+        domain = Domain(name=domain_name, organization_id=1)
+        Domain.save(domain)
         logger.debug('Domain Name %s', domain.name)
         domains.append(domain)
     return domains, [domain.id for domain in domains]
@@ -72,30 +70,25 @@ def create_test_client(client_id, client_secret):
     :param string client_secret: client secret
     :rtype Client
     """
-    client = Client.query.filter_by(client_id=client_id, client_secret=client_secret).first()
-    if not client:
-        client = Client(client_id=client_id, client_secret=client_secret, client_name='test_client')
-        Client.save(client)
-    return client
+    client = Client(client_id=client_id, client_secret=client_secret, client_name='test_client')
+    try:
+        return Client.save(client)
+    except Exception as e:
+        raise InternalServerError('Internal Serer Error: %s' % str(e))
 
 
-def create_test_token(user_id):
+def create_test_token(user_id, client_id):
     """
     This function creates a access token for given test user.
     :param int | long user_id: user primary id
+    :param string client_id: client unique id
     :rtype Token
     """
-    token = Token.get_token(TEST_ACCESS_TOKEN + str(user_id))
-    if not token:
-        token = Token(client_id=CLIENT_ID, user_id=user_id, token_type='Bearer',
-                      access_token=TEST_ACCESS_TOKEN + str(user_id),
-                      refresh_token=TEST_REFRESH_TOKEN + str(user_id), expires=datetime(2020, 12, 31))
-        Token.save(token)
-    else:
-        one_hour_later = datetime.utcnow() + timedelta(hours=1)
-        if token.expires < one_hour_later:
-            token.expires += timedelta(days=30)
-    return token
+
+    token = Token(client_id=client_id, user_id=user_id, token_type='Bearer',
+                  access_token=gen_salt(60),
+                  refresh_token=gen_salt(60), expires=datetime(2020, 12, 31))
+    return Token.save(token)
 
 
 def create_test_data():
@@ -103,16 +96,21 @@ def create_test_data():
     To create test data (Domains, Users, Groups, Client, Token etc.)
     :rtype dict
     """
+    timestamp = str(time.time()) + gen_salt(10)
     # Create two domains
     domain_names = ["test_domain_first", "test_domain_second"]
+    domain_names = [name + timestamp for name in domain_names]
     domains, domain_ids = create_test_domain(domain_names)
 
     # # Create user groups
     group_names = ["test_group_first", "test_group_second"]
+    group_names = [group_name + timestamp for group_name in group_names]
     groups, group_ids = create_user_groups(group_names, domain_ids)
 
     # Create 3 users
+
     user_emails = [("test_email@test.com", "test_email_same_domain@test.com"), ("test_email_second@test.com",)]
+    user_emails = [(timestamp + email for email in domain_emails) for domain_emails in user_emails]
     user_data = zip(user_emails, domain_ids, group_ids)
 
     users = []
@@ -122,12 +120,14 @@ def create_test_data():
     user_ids = [user.id for user in users]
 
     # Create client
-    client = create_test_client(CLIENT_ID, CLIENT_SECRET)
+    client_id = gen_salt(40)
+    client_secret = gen_salt(55)
+    client = create_test_client(client_id, client_secret)
 
     tokens = []
     # Create token for all test users
     for user_id in user_ids:
-        tokens.append(create_test_token(user_id))
+        tokens.append(create_test_token(user_id, client_id))
 
     return {
         'domains': [domain.to_json() for domain in domains],
