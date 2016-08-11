@@ -459,7 +459,7 @@ def parse_candidate_addresses(bg_xml_list):
 def parse_candidate_reference(xml_references_list):
     """
     :param bs4_ResultSet xml_references_list:
-    :rtype: str | None
+    :rtype: string | None
     """
     reference_comments = []
     comment_string = None
