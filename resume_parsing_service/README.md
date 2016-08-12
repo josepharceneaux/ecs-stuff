@@ -9,6 +9,8 @@ BG_URL
 CONSUMER SECRET
 GOOGLE_API_KEY
 GOOGLE_CLOUD_VISION_URL
+IMAAS_KEY
+IMAAS_URL
 TOKEN_SECRET
 
 ## TODOS
@@ -20,7 +22,7 @@ Please consult this code to verify that the issue lies in the Resume Parsing Ser
 
 If you believe the issue is with the parsing accuracy please first consult the raw response from Burning Glass. This can be obtained with the `raw_response` key when the `create_mode` is set to `False`. 
 
-When filing a JIRA please includce the following (where applicable):
+When filing a JIRA please include the following (where applicable):
 
  * Environment(s) where the error was observed.
  
