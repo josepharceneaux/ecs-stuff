@@ -40,7 +40,7 @@ class DomainApi(Resource):
 
             is_disabled = request.args.get('is_disabled', 0)
             if not is_number(is_disabled) or int(is_disabled) not in (0, 1):
-                raise InvalidUsage('`is_hidden` can be either 0 or 1')
+                raise InvalidUsage('`is_disabled` can be either 0 or 1')
 
             domains = Domain.query.filter(Domain.is_disabled == is_disabled).all()
 
