@@ -40,20 +40,25 @@ def convert_pdf_to_png(event, context):
     decoded = base64.b64decode(pdf_data)
     print 'Decoded'
 
+    #Creates a single large Image object from the PDF data.
     with Image(blob=decoded, resolution=300) as pdf:
+        # pdf.sequence returns an iterable ie pictures of each page from the pdf.
         grouped = grouper(pdf.sequence, GROUP_SIZE)
 
         for group in grouped:
+            # Creates a new 'blank' Image that is smaller than the above pdf context.
             image = Image(width=pdf.width, height=pdf.height * GROUP_SIZE)
             print "Base image created"
 
-            if group:
-                for i, sequence in enumerate(group):
-                    image.composite(
-                        sequence,
-                        top=pdf.height * i,
-                        left=0
-                    )
+            if not group:
+                continue
+
+            for i, sequence in enumerate(group):
+                image.composite(
+                    sequence,
+                    top=pdf.height * i,
+                    left=0
+                )
             print 'Image composed'
 
             blob = image.make_blob('png')
