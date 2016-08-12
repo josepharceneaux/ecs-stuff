@@ -256,7 +256,8 @@ class TestSmartlistResource(object):
             """Calls GET API of SmartlistResource"""
             return requests.get(
                 url=CandidatePoolApiUrl.SMARTLISTS + '/%s' % list_id if list_id else CandidatePoolApiUrl.SMARTLISTS,
-                headers={'Authorization': 'Bearer %s' % access_token}
+                headers={'Authorization': 'Bearer %s' % access_token},
+                params={'candidate_count': True}
             )
 
         def test_get_api_with_candidate_ids(self, access_token_first, user_first, talent_pipeline):
