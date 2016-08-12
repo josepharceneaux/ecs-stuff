@@ -35,17 +35,20 @@ CHANGED_PASSWORD = gen_salt(20)
 class UserAuthentication:
     def __init__(self, db):
         self.db = db
-        self.client_id = str(uuid.uuid4())[0:8]  # can be any arbitrary string
-        self.client_secret = str(uuid.uuid4())[0:8]  # can be any arbitrary string
-        self.new_client = Client(client_id=self.client_id, client_secret=self.client_secret)
+        self.client_id = None  # can be any arbitrary string
+        self.client_secret = None  # can be any arbitrary string
+        self.new_client = None
 
     def get_auth_token(self, user_row, get_bearer_token=False):
         """ Function will add new_client to the database
         :param user:    user-row
         :return:        {'client_id': '01a14510', 'client_secret': '04077ead'}
         """
-        self.db.session.add(self.new_client)
+        self.client_id = str(uuid.uuid4())[0:8]  # can be any arbitrary string
+        self.client_secret = str(uuid.uuid4())[0:8]  # can be any arbitrary string
+        self.db.session.add(Client(client_id=self.client_id, client_secret=self.client_secret))
         self.db.session.commit()
+
         # will return return access_token, refresh_token, user_id, token_type, and expiration date + time
         if get_bearer_token:
             return get_token(user_login_credentials=dict(
