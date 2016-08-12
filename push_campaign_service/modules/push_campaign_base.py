@@ -325,6 +325,6 @@ class PushCampaignBase(CampaignBase):
         **See Also**
         .. see also:: schedule() method in CampaignBase class.
         """
-        super(self, PushCampaignBase).create_activity_for_campaign_delete(source)
+        super(PushCampaignBase, self).create_activity_for_campaign_delete(source)
 
 

@@ -977,7 +977,7 @@ class SmsCampaignBase(CampaignBase):
         **See Also**
         .. see also:: schedule() method in CampaignBase class.
         """
-        super(self, SmsCampaignBase).create_activity_for_campaign_delete(source)
+        super(SmsCampaignBase, self).create_activity_for_campaign_delete(source)
 
 
 def _get_valid_user_phone(user_phone_value):
