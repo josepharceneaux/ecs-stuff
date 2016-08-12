@@ -296,7 +296,7 @@ class TestRescheduleCampaignUsingPUT(object):
         """
         In this test, we will reschedule a campaign with invalid datetime format and  it will raise an error 400.
         """
-        data = generate_campaign_schedule_data()
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
 
         start = datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
@@ -354,10 +354,10 @@ class TestRescheduleCampaignUsingPUT(object):
         :param dict campaign_in_db: campaign object
         :param dict schedule_a_campaign: a fixture to schedule a campaign
         """
-        data = generate_campaign_schedule_data(frequency_id=-1)
-        start = datetime.utcnow() - timedelta(days=20)
-        data.update({'start_datetime': DatetimeUtils.to_utc_str(start)})
-        reschedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
+        frequency_ids = CampaignsTestsHelpers.INVALID_FREQUENCY_IDS
+        for invalid_id in frequency_ids:
+            data = generate_campaign_schedule_data(frequency_id=invalid_id)
+            reschedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
 
     def test_campaign_reschedule_with_past_datetimes(self, token_first, campaign_in_db, schedule_a_campaign):
         """

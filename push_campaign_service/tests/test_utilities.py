@@ -97,7 +97,7 @@ def generate_campaign_data():
         "body_text": fake.paragraph(1),
         "url": 'https://www.google.com/'
     }
-    return data.copy()
+    return data
 
 
 @contract
@@ -105,7 +105,7 @@ def generate_campaign_schedule_data(frequency_id=1):
     """
     This method generates data (dict) for scheduling a campaign.
     This data contains start_date, end_datetime and frequency id
-    :type frequency_id: int
+    :type frequency_id: type(t)
     :return: data
     :rtype dict
     """
