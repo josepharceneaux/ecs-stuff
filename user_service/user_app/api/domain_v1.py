@@ -209,7 +209,7 @@ class DomainApi(Resource):
             'dice_company_id': dice_company_id,
             'is_disabled': is_disabled,
         }
-        update_domain_dict = dict((k, v) for k, v in update_domain_dict.iteritems() if v is not None)
+        update_domain_dict = dict((k, v) for k, v in update_domain_dict.iteritems() if v)
         Domain.query.filter(Domain.id == requested_domain_id).update(update_domain_dict)
         db.session.commit()
 
