@@ -19,6 +19,8 @@
 .idea/runConfigurations/Run_scheduler_service.xml
 .idea/runConfigurations/Test_CandidatePoolService.xml
 .idea/runConfigurations/Test_PushCampaignService.xml
+.idea/runConfigurations/Test_Scheduler_Service.xml
+
 
 # Sensitive or high-churn files:
 .idea/dataSources.ids
