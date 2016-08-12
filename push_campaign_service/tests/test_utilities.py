@@ -225,7 +225,8 @@ def send_campaign(campaign_id, token, expected_status=(200,)):
     :type expected_status: tuple[int]
     :rtype dict
     """
-    response = send_request('post', PushCampaignApiUrl.SEND % campaign_id, token)
+    url = PushCampaignApiUrl.SEND % campaign_id
+    response = send_request('post', url, token)
     logger.info('tests : send_campaign: %s', response.content)
     print('tests : send_campaign: %s', response.content)
     assert response.status_code in expected_status

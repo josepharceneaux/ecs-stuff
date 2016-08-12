@@ -9,7 +9,7 @@ from candidate_service.common.error_handling import InvalidUsage, NotFoundError,
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
-def add_notes(candidate_id, data):
+def add_notes(candidate_id, user_id, data):
     """
     Function will insert candidate notes into the db and return their IDs
     Notes must have a comment.
@@ -31,6 +31,7 @@ def add_notes(candidate_id, data):
 
         notes_dict = dict(
             candidate_id=candidate_id,
+            owner_user_id=user_id,
             title=title,
             comment=comments,
             added_time=datetime.utcnow()
@@ -74,7 +75,7 @@ def get_notes(candidate, note_id=None):
             'candidate_note': {
                 'id': note_id,
                 'candidate_id': candidate_id,
-                'owner_id': candidate.user.id,
+                'owner_user_id': note.owner_user_id,
                 'title': note.title,
                 'comment': note.comment,
                 'added_time': str(note.added_time)
@@ -83,15 +84,12 @@ def get_notes(candidate, note_id=None):
 
     # return all of candidate's notes
     else:
-        # Note's owner ID
-        owner_id = candidate.user.id
-
         candidate_notes = []
         for note in CandidateTextComment.get_by_candidate_id(candidate_id):
             candidate_notes.append({
                 'id': note.id,
                 'candidate_id': candidate_id,
-                'owner_id': owner_id,
+                'owner_user_id': note.owner_user_id,
                 'title': note.title,
                 'comment': note.comment,
                 'added_time': str(note.added_time)

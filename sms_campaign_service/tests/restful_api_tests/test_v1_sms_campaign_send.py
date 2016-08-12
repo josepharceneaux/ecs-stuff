@@ -3,14 +3,17 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     This module contains pyTests for endpoint /v1/sms-campaigns/:id/send of SMS Campaign API.
 """
+# Third party imports
+from requests import codes
+
 # Service Specific
+from sms_campaign_service.common.utils.test_utils import get_and_assert_zero
 from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.custom_exceptions import (CandidateNotFoundInUserDomain,
                                                             SmsCampaignApiException)
 # Common Utils
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.error_handling import InvalidUsage
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
@@ -58,28 +61,25 @@ class TestSendSmsCampaign(object):
         User auth token is valid but given SMS campaign has no associated smartlist with it. So
         up til this point we only have created a user and SMS campaign of that user (using fixtures
         passed in as params).
-        It should result in Invalid usage error. Custom error should be
-        NoSmartlistAssociatedWithCampaign.
+        It should result in Invalid usage error and custom error should be NoSmartlistAssociatedWithCampaign.
         """
         CampaignsTestsHelpers.campaign_send_with_no_smartlist(self.URL % invalid_sms_campaign.id,
                                                               access_token_first)
 
     def test_post_with_no_smartlist_candidate(self, access_token_first,
-                                              sms_campaign_with_no_candidate,
-                                              talent_pipeline):
+                                              sms_campaign_with_no_candidate, talent_pipeline):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
-        no candidate associated with it. It should result in invalid usage error.
-        Custom error should be NoCandidateAssociatedWithSmartlist .
+        no candidate associated with it. API will return OK response but there will be no sends
+        response.
         """
         campaign = SmsCampaign.get(sms_campaign_with_no_candidate['id'])
         with app.app_context():
             response_post = CampaignsTestsHelpers.campaign_send_with_no_smartlist_candidate(
                 self.URL % campaign.id, access_token_first,
                 campaign, talent_pipeline.id)
-            error_resp = CampaignsTestsHelpers.assert_non_ok_response(response_post)
-            assert error_resp['code'] == CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST
-            assert error_resp['message']
+            assert response_post.status_code == codes.OK
+            get_and_assert_zero(SmsCampaignApiUrl.SENDS % campaign.id, 'sends', access_token_first)
 
     def test_post_with_invalid_campaign_id(self, access_token_first):
         """
@@ -98,10 +98,10 @@ class TestSendSmsCampaign(object):
         """
         CampaignsTestsHelpers.campaign_test_with_no_valid_candidate(
             self.URL % sms_campaign_with_no_valid_candidate['id'], access_token_first,
-            sms_campaign_with_no_valid_candidate['id'])
+            sms_campaign_with_no_valid_candidate['id'], campaign_service_urls=SmsCampaignApiUrl)
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone(
-            self, user_first, sms_campaign_of_user_first, candidates_with_same_phone):
+            self, access_token_first, user_first, sms_campaign_of_user_first, candidates_with_same_phone):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. Both candidates have same phone numbers. It should get an empty list which
@@ -109,16 +109,13 @@ class TestSendSmsCampaign(object):
         """
         candidate_1, candidate_2 = candidates_with_same_phone
         with app.app_context():
-            obj = SmsCampaignBase(user_first.id, campaign_id=sms_campaign_of_user_first['id'])
-            try:
-                obj.pre_process_celery_task([candidate_1, candidate_2])
-                assert None, 'Invalid usage should occur'
-            except InvalidUsage as error:
-                assert error.status_code == CampaignException.NO_VALID_CANDIDATE_FOUND
+            campaign_id = sms_campaign_of_user_first['id']
+            obj = SmsCampaignBase(user_first.id, campaign_id=campaign_id)
+            obj.pre_process_celery_task([candidate_1, candidate_2])
+            get_and_assert_zero(SmsCampaignApiUrl.SENDS % campaign_id, 'sends', access_token_first)
 
     def test_pre_process_celery_task_with_two_candidates_having_same_phone_in_diff_domain(
-            self, user_first, sms_campaign_of_user_first,
-            candidates_with_same_phone_in_diff_domains):
+            self, user_first, sms_campaign_of_user_first, candidates_with_same_phone_in_diff_domains):
         """
         User auth token is valid. Campaign has one smartlist associated. Smartlist has two
         candidates. One candidate exists in more than one domains with same phone. It should
