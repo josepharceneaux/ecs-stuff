@@ -8,6 +8,7 @@ import zlib
 def grouper(iterable, n, fillvalue=None):
     """
     Collect data into fixed-length chunks or blocks from an interable.
+    Taken from https://docs.python.org/dev/library/itertools.html#itertools-recipes
 
     This is used to organize PDFs into manageable pictures. Three pages was the sweet spot in
     in testing before the image became to large to OCR accurately and efficiently.
