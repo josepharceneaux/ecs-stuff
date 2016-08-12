@@ -181,7 +181,6 @@ class DomainApi(Resource):
         default_culture_id = posted_data.get('default_culture_id', '')
         default_tracking_code = posted_data.get('default_tracking_code', '')
         dice_company_id = posted_data.get('dice_company_Id', '')
-        is_disabled = posted_data.get('is_disabled', 0)
 
         if expiration:
             try:
