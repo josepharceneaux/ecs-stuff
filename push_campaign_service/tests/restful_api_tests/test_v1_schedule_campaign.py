@@ -37,7 +37,7 @@ Unschedule a campaign: /v1/push-campaigns/:id/schedule [DELETE]
 # Builtin imports
 import sys
 from datetime import datetime, timedelta
-
+# TODO: Remove unused import of timedelta. Also kindly double check in every file of this PR. Thanks
 # 3rd party imports
 from requests import codes
 
@@ -55,7 +55,7 @@ from push_campaign_service.common.models.misc import Frequency
 
 URL = PushCampaignApiUrl.SCHEDULE
 
-
+# TODO: Remove unused import of DatetimeUtils. Also kindly double check in every file of this PR. Thanks
 class TestScheduleCampaignUsingPOST(object):
 
     # Test URL: /v1/push-campaigns/{id}/schedule [POST]
@@ -181,6 +181,7 @@ class TestScheduleCampaignUsingPOST(object):
         data = generate_campaign_schedule_data()
         schedule_campaign(campaign_in_db['id'], data, token_second, expected_status=(codes.FORBIDDEN,))
 
+    # TODO: You can find this test in tests_helpers.py
     def test_campaign_schedule_with_invalid_frequency_id(self, token_first, campaign_in_db):
         """
         Send a POST request to schedule a campaign with data where start datetime is in past. API
@@ -199,7 +200,6 @@ class TestScheduleCampaignUsingPOST(object):
         :param string token_first: auth token
         :param dict campaign_in_db: campaign object
         """
-
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         CampaignsTestsHelpers.request_with_past_start_and_end_datetime('post', URL % campaign_in_db['id'],
                                                                        token_first, data)
@@ -346,7 +346,8 @@ class TestRescheduleCampaignUsingPUT(object):
         match_schedule_data(data, campaign)
         # retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
         #       args=(campaign_id, token_first), kwargs={'count': 1})
-
+    # TODO: Can we make this generic as I requested earlier? so that it will be available in tests_helpers.py and
+    # TODO: can be used across campaign services
     def test_campaign_reschedule_with_invalid_frequency_ids(self, token_first, campaign_in_db, schedule_a_campaign):
         """
         Try to reschedule a campaign with invalid frequency id like -1, API will raise InvalidUsage 400

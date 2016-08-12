@@ -43,6 +43,8 @@ def validation_of_data_to_schedule_campaign(request):
         raise InvalidUsage('start_datetime must be in future. Given %s' % start_datetime)
 
     # get number of seconds from frequency_id
+    # TODO: Just a thought, I think we should add minValue and maxValue for field frequency_id to be 1 and 7
+    # TODO: (using Frequncy table) in json_schema of campaigns.
     frequency = Frequency.get_seconds_from_id(data_to_schedule_campaign.get('frequency_id'))
     # check if task to be schedule is periodic
     if frequency and not data_to_schedule_campaign.get('end_datetime'):

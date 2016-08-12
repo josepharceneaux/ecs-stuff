@@ -25,3 +25,5 @@ CAMPAIGN_SCHEDULE_SCHEMA = {
         "start_datetime"
     ]
 }
+
+# TODO: I think we should add minValue in frequency_id to be 1

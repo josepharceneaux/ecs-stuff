@@ -26,6 +26,7 @@ from sms_campaign_service.common.inter_service_calls.candidate_pool_service_call
     get_candidates_of_smartlist
 from sms_campaign_service.modules.constants import (TWILIO_TEST_NUMBER, TWILIO_INVALID_TEST_NUMBER)
 
+# TODO: This has been corrected in develop. Not sure why is this appearing in diff?
 
 def generate_campaign_data():
     """

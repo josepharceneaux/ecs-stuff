@@ -65,6 +65,7 @@ class TestCreateCampaign(object):
         """
         invalid_data_test('post', URL, token_first)
 
+    # TODO: You can find this test in tests_helpers.py
     def test_create_campaign_with_unexpected_field(self, token_first, campaign_data, smartlist_first):
         """
         Create a campaign with an extra unexpected field, API should raise InvalidUsage 400
@@ -75,6 +76,7 @@ class TestCreateCampaign(object):
         campaign_data['smartlist_ids'] = [smartlist_first['id']]
         unexpected_field_test('post', URL, campaign_data, token_first)
 
+    # TODO: You can find this test in tests_helpers.py
     def test_create_campaign_with_missing_fields(self, token_first, campaign_data, smartlist_first):
         """
         Here we will try to create campaign with some required fields missing and we will get
@@ -86,6 +88,7 @@ class TestCreateCampaign(object):
         # First test with missing keys
         missing_keys_test(PushCampaignBase.REQUIRED_FIELDS, smartlist_first, token_first)
 
+    # TODO: You can find this test in tests_helpers.py
     def test_campaign_creation_with_invalid_body_text(self, token_first, campaign_data, smartlist_first):
         """
         Create a campaign with invalid body text, it should raise InvalidUsage 400
@@ -97,6 +100,7 @@ class TestCreateCampaign(object):
         invalid_values = ['', '  ', {}, [], None, True]
         invalid_value_test(campaign_data, 'body_text', invalid_values, token_first)
 
+    # TODO: You can find this test in tests_helpers.py
     def test_campaign_creation_with_invalid_smartlist_ids(self, token_first, campaign_data):
         """
         Create campaign with invalid smartlist ids, API should raise InvalidUsage 400
@@ -106,6 +110,7 @@ class TestCreateCampaign(object):
         invalid_ids = [0, -1, '1', None, True]
         invalid_value_test(campaign_data, 'smartlist_ids', invalid_ids, token_first)
 
+    # TODO: You can find this test in tests_helpers.py
     def test_campaign_creation_with_invalid_name(self, token_first, campaign_data, smartlist_first):
         """
         Create a campaign with invalid name field, API should raise InvalidUsage 400
