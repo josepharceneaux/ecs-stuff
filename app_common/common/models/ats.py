@@ -161,6 +161,18 @@ class ATSCandidate(db.Model):
 
         return json.dumps(return_json)
 
+    @classmethod
+    def get_by_ats_id(cls, account_id, ats_id):
+        """
+        Retrive a candidate by ATS account and remote ATS id.
+
+        :param int account_id: primary key of the account.
+        :param int ats_id: Id of the candidate in the remote ATS.
+        :rtype list: A candidate.
+        """
+        # TODO Test this.
+        return cls.query.filter(cls.ats_account_id==account_id, cls.ats_remote_id==ats_id).first()
+
     def __repr__(self):
         return "<ATS Candidate (id = %r)>" % self.ats_remote_id
 

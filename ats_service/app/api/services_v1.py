@@ -16,10 +16,12 @@ from ats_service.common.utils.auth_utils import require_oauth
 
 # Modules
 from ats_service.common.routes import ATSServiceApi, ATSServiceApiUrl
+from ats_service.common.models.ats import ATSCandidate
 from ats_service.common.utils.api_utils import ApiResponse, api_route
 from ats_service.common.talent_api import TalentApi
 from ats_service.common.utils.handy_functions import get_valid_json_data
 from ats_service.common.error_handling import *
+from ats_service.app.ats.workday import *
 
 from ats_utils import (validate_ats_account_data,
                        validate_ats_candidate_data,
@@ -32,7 +34,9 @@ from ats_utils import (validate_ats_account_data,
                        delete_ats_candidate,
                        update_ats_candidate,
                        link_ats_candidate,
-                       unlink_ats_candidate)
+                       unlink_ats_candidate,
+                       fetch_auth_data,
+                       create_ats_object)
 
 # Why doesn't this work?
 # from ats_service.app import logger
@@ -399,6 +403,25 @@ class ATSCandidateRefreshService(Resource):
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
 
-        # Magic happens here
+        # Create an ATS-specific object
+        ats_name, url, user_id, credential = fetch_auth_data(account_id)
+        if not url:
+            return '{{"account_id" : {},  "status" : "inactive"}}'.format(account_id)
+
+        # Authenticate
+        ats_object = create_ats_object(ats_name, url, user_id, credential)
+        ats_object.authenticate()
+
+        # Get all candidate ids (references)
+        individual_references = ats_object.fetch_individual_references()
+
+        # For each candidate, fetch the candidate data and update our copy. Later this can be combined with the previous step.
+        for ref in individual_references:
+            individual = ats_object.fetch_individual()
+            present = ATSCandidate.get_by_ats_id (account_id, ref)
+            if present:
+                update_ats_candidate(account_id, present.id, individual)
+            else:
+                new_ats_candidate(account_id, individual)
 
         return '{{"account_id" : {},  "refresh" : "success"}}'.format(account_id)

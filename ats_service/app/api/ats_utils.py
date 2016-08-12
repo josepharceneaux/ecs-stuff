@@ -8,10 +8,19 @@ from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential, AT
 from ats_service.common.models.candidate import Candidate
 from ats_service.common.models.user import User
 from ats_service.common.error_handling import *
+from ats_service.ats.workday import Workday
 
 
 ATS_ACCOUNT_FIELDS = ['ats_name', 'ats_homepage', 'ats_login', 'ats_auth_type', 'ats_id', 'ats_credentials']
 ATS_CANDIDATE_FIELDS = ['ats_remote_id', 'profile_json']
+
+# ATS we support
+WORKDAY = 'Workday'
+GREENDAY = 'Greenday'
+ATS_LIST = [WORKDAY, GREENDAY]
+
+# Constructors
+ATS_CONSTRUCTORS = { WORKDAY : Workday }
 
 
 def validate_ats_account_data(data):
@@ -24,6 +33,9 @@ def validate_ats_account_data(data):
     missing_fields = [field for field in ATS_ACCOUNT_FIELDS if field not in data or not data[field]]
     if missing_fields:
         raise InvalidUsage('Some required fields are missing', additional_error_info=dict(missing_fields=missing_fields))
+
+    if data['ats_name'] not in ATS_LIST:
+        raise UnprocessableEntity("Invalid data", additional_error_info=dict(unsupported_ats=data['ats_name']))
 
 
 def invalid_account_fields_check(data):
@@ -276,3 +288,42 @@ def unlink_ats_candidate(gt_candidate_id, ats_candidate_id):
 
     update_dict = {'gt_candidate_id': None}
     ats_candidate.update(**update_dict)
+
+
+def fetch_auth_data(account_id):
+    """
+    Return the values needed to authenticate to an ATS account.
+
+    :param int account_id: Primary key of the account.
+    :rtype string: ATS name.
+    :rtype string: Login URL.
+    :rtype string: User id.
+    :rtype string: Authentication credentials.
+    """
+    # Validate ATS Account
+    account = ATSAccount.get(account_id)
+    if not account:
+        raise InvalidUsage("ATS account {} not found.".format(account_id))
+
+    if not account.active:
+        return None, None, None, None
+
+    ats = ATS.get(account.ats_id)
+    if not ats:
+        raise UnprocessableEntity("Invalid ats id", additional_error_info=dict(id=account.ats_id))
+
+    return ats.name, account.login_url, account.user_id, account.ats_credential_credential
+
+
+def create_ats_object(ats_name, url, user_id, credentials):
+    """
+    Authenticate to the specified ATS
+    :param string ats_name: ATS name.
+    :param string url: Login URL.
+    :param string user_id: User id.
+    :param string credentials: Authentication credentials.
+    """
+    if ats_name not in ATS_LIST:
+        raise UnprocessableEntity("Invalid data", additional_error_info=dict(unsupported_ats=data['ats_name']))
+
+    return ATS_CONSTRUCTORS[ats_name](ats_name, url, user_id, credentials)
