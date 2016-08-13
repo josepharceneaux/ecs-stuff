@@ -35,11 +35,11 @@ import sys
 from requests import codes
 
 # Application specific imports
-from push_campaign_service.tests.test_utilities import (get_campaign, delete_campaign, invalid_value_test,
-                                                        compare_campaign_data, generate_campaign_data, update_campaign,
+from push_campaign_service.tests.test_utilities import (get_campaign, delete_campaign, compare_campaign_data,
+                                                        generate_campaign_data, update_campaign,
                                                         invalid_data_test, missing_keys_test)
 from push_campaign_service.common.routes import PushCampaignApiUrl
-from push_campaign_service.common.utils.test_utils import unauthorize_test
+from push_campaign_service.common.utils.test_utils import unauthorize_test, invalid_value_test
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 
 
@@ -193,7 +193,6 @@ class TestUpdateCampaign(object):
         :param smartlist_first: smartlist object
         :param campaign_in_db: campaign object
         """
-        # TODO: I think smartlist_first is a dict, not smartlist object. Maybe need to correct docs?
         missing_keys_test(PushCampaignBase.REQUIRED_FIELDS, smartlist_first, token_first, campaign_in_db['id'],
                           method='put')
 
@@ -202,8 +201,8 @@ class TestUpdateCampaign(object):
         We will try to update a campaign with invalid data (empty, invalid json, without json dump)
         and expect 400 status code
         :param token_first: auth token
+        :param campaign_in_db: campaign object
         """
-        # TODO: Kindly see point-9 on doc for code review.
         invalid_data_test('put', URL % campaign_in_db['id'], token_first)
 
     # TODO: You can find this test in tests_helpers.py
@@ -213,8 +212,8 @@ class TestUpdateCampaign(object):
         """
         campaign_data['smartlist_ids'] = [smartlist_first['id']]
         invalid_values = ['', '  ', {}, [], None, True]
-        invalid_value_test(campaign_data, 'body_text', invalid_values, token_first, campaign_id=campaign_in_db['id'],
-                           method='put')
+        url = URL % campaign_in_db['id']
+        invalid_value_test(url,  campaign_data, 'body_text', invalid_values, token_first, method='put')
 
     # TODO: You can find this test in tests_helpers.py
     def test_campaign_update_with_invalid_smartlist_ids(self, token_first, campaign_data, campaign_in_db):
@@ -222,8 +221,8 @@ class TestUpdateCampaign(object):
         Update campaign with invalid smartlist ids, API should raise InvalidUsage 400
         """
         invalid_ids = [0, -1, '1', None, True]
-        invalid_value_test(campaign_data, 'smartlist_ids', invalid_ids, token_first, campaign_id=campaign_in_db['id'],
-                           method='put')
+        url = URL % campaign_in_db['id']
+        invalid_value_test(url, campaign_data, 'smartlist_ids', invalid_ids, token_first, method='put')
 
     # TODO: You can find this test in tests_helpers.py
     def test_campaign_update_with_invalid_name(self, token_first, campaign_data, smartlist_first, campaign_in_db):
@@ -235,7 +234,6 @@ class TestUpdateCampaign(object):
         invalid_value_test(campaign_data, 'name', invalid_names, token_first, campaign_id=campaign_in_db['id'],
                            method='put')
 
-    # TODO: I think this is missing from tests_helpers.py. Would be great if you double check and add there.
     def test_campaign_update_with_invalid_url(self, token_first, campaign_data, smartlist_first, campaign_in_db):
         """
         Update a campaign with invalid uel field, API should raise InvalidUsage 400

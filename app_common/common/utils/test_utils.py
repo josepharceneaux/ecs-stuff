@@ -43,9 +43,7 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
     :param bool is_json: a flag to determine, whether we need to dump given data or not.
             default value is true because most of the APIs are using json content-type.
     :param bool verify: set this to false
-    :return:
     """
-    # TODO: remove empty return
     method = method.lower()
     request_method = getattr(requests, method)
     headers = dict(Authorization='Bearer %s' % access_token)
@@ -53,6 +51,24 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
         headers['Content-Type'] = 'application/json'
         data = json.dumps(data)
     return request_method(url, data=data, params=params, headers=headers, verify=verify)
+
+
+@contract
+def invalid_value_test(url, data, key, values, token, method='post'):
+    """
+    This function sends a request to given url with required field
+    having an invalid value and checks that it returns InvalidUsage 400
+    :param dict data: campaign data
+    :param string url: api endpoint url
+    :param string key: field key
+    :param list values: possible invalid values
+    :param string token: auth token
+    :param http_method method: http request method, post/put
+    """
+    for val in values:
+        data[key] = val
+        response = send_request(method, url, data, token, expected_status=(codes.BAD_REQUEST,))
+        assert response.status_code == codes.BAD_REQUEST
 
 
 def response_info(response):

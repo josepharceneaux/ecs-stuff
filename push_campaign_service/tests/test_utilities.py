@@ -51,26 +51,6 @@ def unexpected_field_test(method, url, data, token):
 
 
 @contract
-def invalid_value_test(data, key, values, token, campaign_id=None, method='post'):
-    """
-    This function sends a request to api with required field
-    with an invalid value and checks that it returns InvalidUsage 400
-    :param dict data: campaign data
-    :param string key: field key
-    :param list values: possible invalid values
-    :param string token: auth token
-    :param int | long | None campaign_id: push campaign id
-    :param http_method method: http request method, post/put
-    """
-    for val in values:
-        data[key] = val
-        if method == 'post':
-            create_campaign(data, token, expected_status=(codes.BAD_REQUEST,))
-        elif campaign_id:
-            update_campaign(campaign_id, data, token, expected_status=(codes.BAD_REQUEST,))
-
-
-@contract
 def invalid_data_test(method, url, token):
     """
     This functions sends http request to a given url with different
