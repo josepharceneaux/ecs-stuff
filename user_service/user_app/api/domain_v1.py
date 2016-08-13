@@ -9,7 +9,7 @@ from user_service.common.talent_api import TalentApi
 from user_service.common.routes import UserServiceApi
 from user_service.common.models.user import User, Domain, db, Permission
 from user_service.user_app.user_service_utilties import get_or_create_domain
-from user_service.common.utils.auth_utils import require_oauth, require_any_permission, require_all_permissions
+from user_service.common.utils.auth_utils import require_oauth, require_all_permissions, is_number
 
 
 class DomainApi(Resource):
@@ -34,21 +34,20 @@ class DomainApi(Resource):
 
             if requested_domain_id == request.user.domain_id or request.user.role.name == 'TALENT_ADMIN':
                 return {
-                    'domain': {
-                        'id': requested_domain.id,
-                        'name': requested_domain.name,
-                        'organization_id': requested_domain.organization_id,
-                        'dice_company_id': requested_domain.dice_company_id
-                    }
+                    'domain': requested_domain.to_dict()
                 }
         elif request.user.role.name == 'TALENT_ADMIN':
+
+            is_disabled = request.args.get('is_disabled', 0)
+            search_keyword = request.args.get('search', '').strip()
+            if not is_number(is_disabled) or int(is_disabled) not in (0, 1):
+                raise InvalidUsage('`is_disabled` can be either 0 or 1')
+
+            domains = Domain.query.filter(Domain.is_disabled == is_disabled, Domain.name.ilike(
+                    '%' + search_keyword + '%')).all()
+
             return {
-                'domains': [{
-                    'id': domain.id,
-                    'name': domain.name,
-                    'organization_id': domain.organization_id,
-                    'dice_company_id': domain.dice_company_id
-                } for domain in Domain.query.all()]
+                'domains': [domain.to_dict() for domain in domains]
             }
 
         raise UnauthorizedError("Either logged-in user belongs to different domain as requested_domain or it doesn't "
@@ -78,7 +77,7 @@ class DomainApi(Resource):
         if not isinstance(domains, list):
             raise InvalidUsage("Request body is not properly formatted")
 
-        for domain_dict in domains:
+        for index, domain_dict in enumerate(domains):
 
             name = domain_dict.get('name', '')
             default_culture_id = domain_dict.get('default_culture_id', '')
@@ -87,9 +86,17 @@ class DomainApi(Resource):
             if not name:
                 raise InvalidUsage("Domain name should be provided")
 
+            domain = Domain.query.filter_by(name=name).first()
+
             # If domain already exists then raise an exception
-            if Domain.query.filter_by(name=name).first():
-                raise InvalidUsage("Domain %s already exist" % name)
+            if domain:
+                if not domain.is_disabled:
+                    raise InvalidUsage("Domain %s already exist" % name)
+                else:
+                    domain.is_disabled = 0
+                    db.session.commit()
+                    domains.pop(index)
+                    continue
 
             # If Culture doesn't exist in database
             if default_culture_id and not Culture.query.get(default_culture_id):
@@ -140,10 +147,10 @@ class DomainApi(Resource):
             raise NotFoundError("Requested domain with domain_id %s doesn't exist" % domain_id_to_delete)
 
         # Disable the domain by setting is_disabled field to 1
-        Domain.query.filter(Domain.id == domain_id_to_delete).update({'is_disabled': '1'})
+        Domain.query.filter(Domain.id == domain_id_to_delete).update({'is_disabled': 1})
 
         # Disable all users of this domain as Domain has been disabled
-        User.query.filter(User.domain_id == domain_id_to_delete).update({'is_disabled': '1'})
+        User.query.filter(User.domain_id == domain_id_to_delete).update({'is_disabled': 1})
         db.session.commit()
 
         return {'deleted_domain': {'id': domain_id_to_delete}}
@@ -190,13 +197,18 @@ class DomainApi(Resource):
         if default_culture_id and not Culture.query.get(default_culture_id):
             raise InvalidUsage("Culture %s doesn't exist" % default_culture_id)
 
+        is_disabled = request.args.get('is_disabled', 0)
+        if not is_number(is_disabled) or int(is_disabled) not in (0, 1):
+            raise InvalidUsage('`is_disabled` can be either 0 or 1')
+
         # Update user
         update_domain_dict = {
             'name': name,
             'expiration': expiration,
             'default_culture_id': default_culture_id,
             'default_tracking_code': default_tracking_code,
-            'dice_company_id': dice_company_id
+            'dice_company_id': dice_company_id,
+            'is_disabled': is_disabled,
         }
         update_domain_dict = dict((k, v) for k, v in update_domain_dict.iteritems() if v)
         Domain.query.filter(Domain.id == requested_domain_id).update(update_domain_dict)
