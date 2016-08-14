@@ -234,7 +234,7 @@ class Test_Event_Importer:
         for usercredential in usercredentials:
             usercredential.update(updated_datetime=None)
 
-        rsvps = RSVP.filter_by(**{'social_network_rsvp_id': rsvp_id,
+        rsvps = RSVP.filter_by_keywords(**{'social_network_rsvp_id': rsvp_id,
                                   'social_network_id': eventbrite_obj.id})
 
         for rsvp in rsvps:

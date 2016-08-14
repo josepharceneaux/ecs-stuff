@@ -481,7 +481,8 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
     :param bool is_json: a flag to determine, whether we need to dump given data or not.
             default value is true because most of the APIs are using json content-type.
     :param bool verify: set this to false
-    :return:
+    :return: request method i.e POST, GET, DELETE, PATCH
+    :rtype: Response
     """
     method = method.lower()
     request_method = getattr(requests, method)

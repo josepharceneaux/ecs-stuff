@@ -46,7 +46,7 @@ class Event(db.Model):
     @classmethod
     def filter_by(cls, **kwargs):
         """
-        Filter query w.r.t kwrargs
+        Filter query w.r.t kwargs
         """
         return cls.query.filter_by(**kwargs).all()
 

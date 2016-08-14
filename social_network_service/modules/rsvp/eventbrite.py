@@ -86,7 +86,7 @@ class Eventbrite(RSVPBase):
         all_rsvps.extend(data['attendees'])
         current_page = 1
         total_pages = total_records / page_size
-        for page in range(1, total_pages):
+        for page in xrange(1, total_pages):
             params = {'page': current_page}
             current_page += 1
             # get data for every page

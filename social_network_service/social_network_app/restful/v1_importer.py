@@ -83,28 +83,24 @@ class RsvpEventImporter(Resource):
             raise InvalidUsage("No social network with name %s found." % social_network)
 
         social_network_name = social_network.lower()
-        try:
-            social_network_obj = SocialNetwork.get_by_name(social_network_name)
-            if not social_network_obj:
-                raise InvalidUsage('Social Network with name %s doesn\'t exist.' % social_network)
-            social_network_id = social_network_obj.id
-        except Exception:
-            raise NotImplementedError('Social Network "%s" is not allowed for now, '
-                                      'please implement code for this social network.'
-                                      % social_network_name)
+        social_network_obj = SocialNetwork.get_by_name(social_network_name)
+        if not social_network_obj:
+            raise InvalidUsage('Social Network with name %s doesn\'t exist.' % social_network)
+        social_network_id = social_network_obj.id
 
         all_user_credentials = UserSocialNetworkCredential.get_all_credentials(social_network_id)
 
         if all_user_credentials:
-            logger.info('Got %s users for %s' % (len(all_user_credentials), social_network))
+            logger.info('Got {} users for {}'.format(len(all_user_credentials), social_network))
             for user_credentials in all_user_credentials:
                 datetime_range = {}
                 if mode == EVENT:
                     # Get last updated time of current user_credentials if NULL, then run event importer for that user
                     # first time and get all events otherwise get events from last_updated date
-                    last_updated = \
-                        user_credentials.updated_datetime if user_credentials.updated_datetime else datetime.datetime(
-                            2000, 1, 1)
+                    if user_credentials.updated_datetime:
+                        last_updated = user_credentials.updated_datetime
+                    else:
+                        last_updated = datetime.datetime(2000, 1, 1)
                     datetime_range.update({
                         'date_range_start': DatetimeUtils.get_utc_datetime(last_updated, 'utc'),
                         'date_range_end': DatetimeUtils.get_utc_datetime(datetime.datetime.utcnow(), 'utc')
