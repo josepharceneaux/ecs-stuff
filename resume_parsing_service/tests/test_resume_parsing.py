@@ -443,7 +443,7 @@ def test_already_exists_candidate(token_fixture, user_fixture):
         'Foti Resume May 2016.pdf', 'James_Xie_Resume_2016.doc',
         'Mondal_Tej_20140522_dev.docx', 'My Resume.docx',
         'NealMcMillenResumeJan2016-2.pdf',
-        'Resume (CA) .pdf',
+        'Resume (CA) .pdf', 'summary.docx'
         'Resume Nikhil Moorjani.pdf',
         'Resume-3.doc', 'Resume-Patrick-Ritz-2016(FE).docx', 'Resume.pdf',
         'resume_fan updated.docx', 'resume_hong.pdf', 'Sean Whitcomb_Resume_2016_R2.docx',

@@ -97,6 +97,7 @@ def parse_optic_xml(resume_xml_text):
     experience_xml_list = bs4(resume_xml_text, 'lxml').findAll('experience')
     educations_xml_list = bs4(resume_xml_text, 'lxml').findAll('education')
     skill_xml_list = bs4(resume_xml_text, 'lxml').findAll('canonskill')
+    summary_xml_list = bs4(resume_xml_text, 'lxml').findAll('summary')
     references_xml = bs4(resume_xml_text, 'lxml').findAll('references')
     name = parse_candidate_name(contact_xml_list)
     emails = parse_candidate_emails(contact_xml_list)
@@ -106,6 +107,7 @@ def parse_optic_xml(resume_xml_text):
     skills = parse_candidate_skills(skill_xml_list)
     addresses = parse_candidate_addresses(contact_xml_list)
     references = parse_candidate_reference(references_xml)
+    summary = parse_candidate_summary(summary_xml_list)
     return dict(
         first_name=name['first_name'],
         last_name=name['last_name'],
@@ -116,7 +118,8 @@ def parse_optic_xml(resume_xml_text):
         skills=skills,
         addresses=addresses,
         talent_pool_ids={'add': None},
-        references=references
+        references=references,
+        summary=summary
     )
 
 
@@ -332,7 +335,7 @@ def parse_candidate_educations(bg_educations_xml_list):
     :rtype: list(dict)
     """
     EDU_DATE_FORMAT = '%Y-%m-%d'
-    start_month, start_year, end_month, end_year = None, None, None, None
+    start_month, start_year, end_month, end_year, start_dt, end_dt = None, None, None, None, None, None
     output = []
     for education in bg_educations_xml_list:
         for school in education.findAll('school'):
@@ -476,6 +479,19 @@ def parse_candidate_reference(xml_references_list):
     if reference_comments:
         comment_string = ' '.join(reference_comments)
     return comment_string
+
+
+@contract
+def parse_candidate_summary(xml_summary_tags):
+    """
+    :param bs4_ResultSet xml_summary_tags:
+    :rtype: string | None
+    """
+    summary = ''
+    for summary_tag in xml_summary_tags:
+        summary += summary_tag.text.strip()
+
+    return summary
 
 
 ###################################################################################################
