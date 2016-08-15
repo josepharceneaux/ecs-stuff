@@ -312,10 +312,14 @@ def fetch_auth_data(account_id):
     if not ats:
         raise UnprocessableEntity("Invalid ats id", additional_error_info=dict(id=account.ats_id))
 
-    return ats.name, account.login_url, account.user_id, account.ats_credential_credential
+    credentials = ATSCredential.get(account.ats_credential_id)
+    if not credentials:
+        raise UnprocessableEntity("No credentials for account", additional_error_info=dict(id=account.ats_id))
+
+    return ats.name, ats.login_url, account.user_id, credentials
 
 
-def create_ats_object(ats_name, url, user_id, credentials):
+def create_ats_object(logger, ats_name, url, user_id, credentials):
     """
     Authenticate to the specified ATS
     :param string ats_name: ATS name.
@@ -326,4 +330,4 @@ def create_ats_object(ats_name, url, user_id, credentials):
     if ats_name not in ATS_LIST:
         raise UnprocessableEntity("Invalid data", additional_error_info=dict(unsupported_ats=data['ats_name']))
 
-    return ATS_CONSTRUCTORS[ats_name](ats_name, url, user_id, credentials)
+    return ATS_CONSTRUCTORS[ats_name](logger, ats_name, url, user_id, credentials)
