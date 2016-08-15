@@ -15,6 +15,7 @@ import requests
 from flask import request, jsonify
 from spreadsheet_import_service.app import logger, app, celery_app
 from spreadsheet_import_service.common.utils.talent_s3 import *
+from spreadsheet_import_service.common.utils.validators import is_valid_email
 from spreadsheet_import_service.common.models.user import User, db
 from spreadsheet_import_service.common.models.misc import AreaOfInterest
 from spreadsheet_import_service.common.models.candidate import CandidateSource
@@ -142,6 +143,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
                 number_of_educations = 0
 
+                invalid_email = False
                 for column_index, column in enumerate(row):
                     if column_index >= len(header_row):
                         continue
@@ -160,6 +162,12 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                     elif column_name == 'candidate.lastName':
                         last_name = column
                     elif column_name == 'candidate_email.address':
+                        if not is_valid_email(column):
+                            error_messages.append({
+                                "message": "{} is an invalid email address".format(column)
+                            })
+                            invalid_email = True
+                            break
                         emails.append({'address': column})
                     elif column_name == 'candidate_phone.value':
                             phones.append({'value': column})
@@ -247,6 +255,9 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                             talent_pool_dict['add'].append(int(column_name.split('.')[1]))
 
                     number_of_educations = max(len(degrees), len(school_names))
+
+                if invalid_email:
+                    continue
 
                 # Prepare candidate educational data
                 for index in range(0, number_of_educations):
