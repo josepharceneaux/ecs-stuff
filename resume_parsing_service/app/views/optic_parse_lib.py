@@ -355,6 +355,10 @@ def parse_candidate_educations(bg_educations_xml_list):
                 end_month = end_dt.month
                 end_year = end_dt.year
 
+            # A Resume or BG may give us bad dates that get invalidated by Candidate Service.
+            if (start_dt and end_dt) and (start_dt > end_dt):
+                start_month, start_year, end_month, end_year = None, None, None, None
+
             degree_tag = school.find('degree')
             degree_type = degree_tag.get('name') if degree_tag else None
             gpa_tag = school.find('gpa')

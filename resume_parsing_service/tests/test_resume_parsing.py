@@ -447,15 +447,13 @@ def test_already_exists_candidate(token_fixture, user_fixture):
         'Resume Nikhil Moorjani.pdf',
         'Resume-3.doc', 'Resume-Patrick-Ritz-2016(FE).docx', 'Resume.pdf',
         'resume_fan updated.docx', 'resume_hong.pdf', 'Sean Whitcomb_Resume_2016_R2.docx',
-        'Sergey Ostrovsky Resume 2016.docx', 'SteveSun-Resume.pdf', 'TD bio.pdf',
+        'Sergey Ostrovsky Resume 2016.docx', 'SteveSun-Resume.pdf', 'TD bio.pdf', 'Bharani Krishna Resume.docx'
         # The following resumes cannot be updated due to current candidate_edit table rules.
         # 'Yehle - Resume Java  ECM.DOCX','Aparna_Resume.pdf', 'kennyyee_cv.pdf',
         # 'NamrataOjhaSoftwareDevloper .pdf', 'NikhilSyavasyaResumeV4.0.pdf', 'Resume (CS).pdf',
         # 'Resume_SDE_VickyYang.pdf', 'Supriya Grandhi Resume.docx.rtf', 'VivekTiwari.pdf',
         # 'Waheed Chuahdary - Web Analytics.pdf'
     ]
-
-    invalid_resume = ['Bharani Krishna Resume.docx']
 
     for resume in resumes_to_update:
         unused_create_response = fetch_resume_post_response(token_fixture, resume, create_mode=True)
