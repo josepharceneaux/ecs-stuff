@@ -264,6 +264,10 @@ def parse_candidate_experiences(bg_experience_xml_list):
                 end_month = end_datetime.month
                 end_year = end_datetime.year
 
+            # A Resume or BG may give us bad dates that get invalidated by Candidate Service.
+            if (start_datetime and end_datetime) and (start_datetime > end_datetime):
+                start_month, start_year, end_month, end_year = None, None, None, None
+
             try:
                 today_date = datetime.date.today().isoformat()
                 is_current_job = True if today_date == end_date_str else False
