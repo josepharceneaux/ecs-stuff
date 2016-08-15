@@ -42,18 +42,25 @@ def convert_pdf_to_png(event, context):
 
     #Creates a single large Image object from the PDF data.
     with Image(blob=decoded, resolution=300) as pdf:
-        # pdf.sequence returns an iterable ie pictures of each page from the pdf.
+        """
+        pdf.sequence returns an iterable ie pictures of each page from the pdf.
+        When the iterable is 3 or less:
+            ((<wand.sequence.SingleImage: dc1d561 (2470x3281)>, None, None))
+        When the iterable is more than 3:
+            (
+                (<wand.sequence>, (<wand.sequence>, (<wand.sequence>),
+                (<wand.sequence>, None, None)
+            )
+        """
         grouped = grouper(pdf.sequence, GROUP_SIZE)
 
         for group in grouped:
             # Creates a new 'blank' Image that is smaller than the above pdf context.
-            image = Image(width=pdf.width, height=pdf.height * GROUP_SIZE)
+            trimmed = [item for item in group if item]
+            image = Image(width=pdf.width, height=pdf.height * len(trimmed))
             print "Base image created"
 
-            if not group:
-                continue
-
-            for i, sequence in enumerate(group):
+            for i, sequence in enumerate(trimmed):
                 image.composite(
                     sequence,
                     top=pdf.height * i,
