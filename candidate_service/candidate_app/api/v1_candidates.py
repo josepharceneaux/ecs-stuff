@@ -11,6 +11,7 @@ from datetime import date
 
 # Third Party
 from redo import retry
+from _mysql_exceptions import OperationalError
 
 # Flask specific
 from flask import request
@@ -1637,7 +1638,13 @@ class CandidateDeviceResource(Resource):
             candidate_device = CandidateDevice(candidate_id=candidate.id,
                                                one_signal_device_id=one_signal_device_id,
                                                registered_at_datetime=datetime.datetime.utcnow())
-            CandidateDevice.save(candidate_device)
+            try:
+                CandidateDevice.save(candidate_device)
+            except OperationalError as e:
+                logger.info('Try again, Error occurred while saving candidate device. Error: %s', e)
+                db.session.rollback()
+                CandidateDevice.save(candidate_device)
+
             return dict(message='Device (id: %s) registered successfully with candidate (id: %s)'
                                 % (candidate_device.id, candidate.id)), 201
         else:
