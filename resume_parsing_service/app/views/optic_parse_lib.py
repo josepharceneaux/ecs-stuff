@@ -243,6 +243,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
     for experiences in bg_experience_xml_list:
         jobs = experiences.findAll('job')
         for employement in jobs:
+            start_month, start_year, end_month, end_year, start_datetime, end_datetime = (None,) * 6
             organization = _tag_text(employement, 'employer')
             # If it's 5 or less chars, keep the given capitalization, because it may be an acronym.
             # TODO revisit this logic. `Many XYZ Services` companies are becoming Xyz Services.
@@ -252,7 +253,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
             position_title = _tag_text(employement, 'title')
             # Start date
             start_date_str = get_date_from_date_tag(employement, 'start')
-            start_month, start_year = None, None
+
             if start_date_str:
                 start_datetime = datetime.datetime.strptime(start_date_str, ISO8601_DATE_FORMAT)
                 start_year = start_datetime.year
@@ -261,7 +262,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
             is_current_job = False
             # End date
             end_date_str = get_date_from_date_tag(employement, 'end')
-            end_month, end_year = None, None
+
             if end_date_str:
                 end_datetime = datetime.datetime.strptime(end_date_str, ISO8601_DATE_FORMAT)
                 end_month = end_datetime.month
