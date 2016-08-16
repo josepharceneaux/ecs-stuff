@@ -107,10 +107,14 @@ def create_or_update_candidate(oauth_token, data, return_candidate_ids_only=Fals
     Call candidate api using oauth token or user_id
 
     :param oauth_token: Oauth token, if None, then create a secret X-Talent-Key oauth token (JWT)
+    :type oauth_token: str
     :param data: Candidates object data to create candidate
+    :type data: dict
     :param return_candidate_ids_only: If true it will only return the created candidate ids
+    :type return_candidate_ids_only: bool
     else it will return the created candidate response json object
     Returns: list of created candidate ids
+    :rtype: list
     """
     resp = send_request('post',
                         url=CandidateApiUrl.CANDIDATES, access_token=oauth_token,

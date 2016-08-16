@@ -59,9 +59,3 @@ class RSVP(db.Model):
             )
         ).first()
 
-    @classmethod
-    def filter_by(cls, **kwargs):
-        """
-        Filter RSVPs by kwargs
-        """
-        return cls.query.filter_by(**kwargs).all()
