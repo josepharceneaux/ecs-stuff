@@ -486,7 +486,7 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
     """
     method = method.lower()
     request_method = getattr(requests, method)
-    headers = dict(Authorization='Bearer %s' % access_token if 'Bearer' in access_token else 'Bearer %s' % access_token)
+    headers = dict(Authorization=access_token if 'Bearer' in access_token else 'Bearer %s' % access_token)
     if is_json:
         headers['Content-Type'] = 'application/json'
         data = json.dumps(data)
