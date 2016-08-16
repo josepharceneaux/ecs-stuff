@@ -131,9 +131,9 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
         domain_areas_of_interest = get_or_create_areas_of_interest(user.domain_id, include_child_aois=True)
 
         candidate_ids, error_messages = [], []
-        for i in xrange(0, len(table), 50):
+        for i in xrange(0, len(table), 1):
             candidates_list = []
-            for row in table[i: i + 50]:
+            for row in table[i: i + 1]:
                 first_name, middle_name, last_name, formatted_name, status_id,  = None, None, None, None, None
                 emails, phones, areas_of_interest, addresses, degrees = [], [], [], [], []
                 school_names, work_experiences, educations, custom_fields = [], [], [], []
