@@ -125,4 +125,6 @@ def get_or_store_bgxml(resume_file, filename_str):
                                                                                    cache_key_from_file))
         parsed_resume = parse_resume(resume_file, filename_str, cache_key_from_file)
 
+    # Free memory buffer if not done already
+    resume_file.close()
     return parsed_resume

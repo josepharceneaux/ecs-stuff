@@ -36,8 +36,6 @@ def convert_pdf_to_text(pdf_file_obj):
 
     """
     For the time being (8/13/16) we are assuming it is a picture based resume.
-    Abbyy OCR can handle PDFs with images and text and deals with encrypted files.
-    See GET-1463 for more info.
     """
     if pages_with_text < page_count:
         return ''
@@ -78,12 +76,12 @@ def decrypt_pdf(pdf_file_obj):
 
 
 def convert_pdf_to_png(file_obj):
+    results = []
     logger.info('Converting pdf to png')
     api_key, api_url = current_app.config['IMAAS_KEY'], current_app.config['IMAAS_URL']
     headers = {'x-api-key': api_key}
 
     pdf_data = file_obj.getvalue()
-    #file_obj.close()
     encoded = base64.b64encode(pdf_data)
     payload = json.dumps({'pdf_bin': encoded})
 
@@ -112,4 +110,9 @@ def convert_pdf_to_png(file_obj):
             error_code=error_constants.IMAAS_NO_DATA['code']
         )
 
-    return StringIO(zlib.decompress(base64.b64decode(img_data)))
+    for img in img_data:
+        # This seems ugly and redundant but our results are compressed and then encoded.
+        # Open to suggestions.
+        results.append(StringIO(zlib.decompress(base64.b64decode(img))))
+
+    return results

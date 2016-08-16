@@ -50,14 +50,15 @@ def parse_resume(file_obj, filename_str, cache_key):
     is_image = is_resume_image(file_ext, file_obj)
 
     if is_image:
+        files = [file_obj]
     # If file is an image, OCR it
         if file_ext == '.pdf':
             # If its a PDF replace file obj with a png representation of it.
             # convert_pdf_to_png will close the old StringIO instance.
-            file_obj = convert_pdf_to_png(file_obj)
+            files = convert_pdf_to_png(file_obj)
 
         start_time = time()
-        doc_content = google_vision_ocr(file_obj)
+        doc_content = google_vision_ocr(files)
         logger.info(
             "Benchmark: google_vision_ocr for {}: took {}s to process".format(
                 filename_str, time() - start_time)
@@ -69,7 +70,6 @@ def parse_resume(file_obj, filename_str, cache_key):
     if not doc_content:
         bucket = current_app.config['S3_BUCKET_NAME']
         boto3_put(file_obj.getvalue(), bucket, filename_str, 'FailedResumes')
-        #file_obj.close() # Close our file object to free memory buffer.
         logger.exception("Unable to determine the contents of the document: {}".format(filename_str))
         raise InvalidUsage(
             error_message=error_constants.NO_TEXT_EXTRACTED['message'],
@@ -86,8 +86,6 @@ def parse_resume(file_obj, filename_str, cache_key):
             error_code=error_constants.ERROR_ENCODING_TEXT['code']
         )
 
-    # Close our file object to free memory buffer.
-    #file_obj.close()
     optic_response = fetch_optic_response(encoded_resume, filename_str)
 
     if optic_response:
