@@ -246,7 +246,6 @@ def filter_by_keywords(cls, **kwargs):
     """
     This method filters the model using kwargs
     :param cls: model class, some child class of db.Model
-    :type cls:
     :param kwargs:
     :type kwargs: dict
     :return: list of Model instances

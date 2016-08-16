@@ -1,8 +1,7 @@
-from .constants import REDIS2
-
 __author__ = 'ufarooqi'
 from flask.ext.redis import FlaskRedis
 from redis_collections import Dict
+from .constants import REDIS2
 
 redis_store = FlaskRedis()
 redis_store2 = FlaskRedis(config_prefix=REDIS2)

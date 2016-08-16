@@ -143,8 +143,8 @@ def schedule_job(url, task_name):
         'Authorization': access_token
     }
     data = {
-        'start_datetime': start_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
-        'end_datetime': end_datetime.strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
+        'start_datetime': start_datetime.strftime(DatetimeUtils.ISO8601_FORMAT),
+        'end_datetime': end_datetime.strftime(DatetimeUtils.ISO8601_FORMAT),
         'frequency': frequency,
         'is_jwt_request': True
     }

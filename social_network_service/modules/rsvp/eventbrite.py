@@ -4,7 +4,6 @@ Eventbrite contains methods like get_rsvps(), get_attendee() etc.
 """
 
 # Standard Library
-import re
 from datetime import datetime
 from base import RSVPBase
 
@@ -135,7 +134,6 @@ class Eventbrite(RSVPBase):
             self.user.id, self.social_network.id,
             social_network_event_id)
         if not event:
-            # logger.error?
             logger.info('Event is not present in db, '
                         'social_network_event_id is '
                         '%s. User Id: %s'

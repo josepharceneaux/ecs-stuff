@@ -29,7 +29,6 @@ def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetim
     :type user_credentials_id: id
     :param datetime_range:
     :type datetime_range: dict
-    :return:
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
