@@ -4,6 +4,7 @@ Library for integrating with Workday accounts.
 
 
 import requests
+import json
 
 
 class Workday(object):
@@ -18,7 +19,8 @@ class Workday(object):
         self.login_url = login_url
         self.user_id = user_id
         self.credentials = credentials
-        self.fetch_candidates = "https://faux-workday.gettalent.com/all-individuals"
+        self.fetch_candidates_url = "https://faux-workday.gettalent.com/all-individuals"
+        self.fetch_individual_url = "https://faux-workday.gettalent.com/individual"
 
     def authenticate(self):
         """
@@ -28,12 +30,13 @@ class Workday(object):
     def fetch_individual_references(self):
         """
         """
-        self.logger.info("GET {}".format(self.fetch_candidates))
-        response = requests.request('GET', self.fetch_candidates)
-        self.logger.info("Got: {}".format(response.text))
-        return response.text
+        self.logger.info("GET {}".format(self.fetch_candidates_url))
+        response = requests.request('GET', self.fetch_candidates_url)
+        return json.loads(response.text)
 
     def fetch_individual(self, reference):
         """
         """
-        pass
+        self.logger.info("GET {}".format(self.fetch_individual_url))
+        response = requests.request('GET', self.fetch_individual_url + "/{}".format(reference))
+        return response.text
