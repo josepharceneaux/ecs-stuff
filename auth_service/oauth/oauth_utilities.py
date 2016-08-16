@@ -193,9 +193,9 @@ def save_token_v1(token, request, *args, **kwargs):
                 return latest_token
             else:
                 db.session.delete(latest_token)
-                db.session.flush()
+                db.session.commit()
         except Exception:
-            pass
+            db.session.rollback()
 
     expires = datetime.utcnow() + timedelta(seconds=token.get('expires_in'))
     token['expires_at'] = expires.strftime("%d/%m/%Y %H:%M:%S")
