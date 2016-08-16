@@ -457,7 +457,7 @@ class EventBase(object):
         or incase date is None, return all events
         :param start_date:
         :type start_date: datetime
-        :return:
+        :return: list of events
         """
         if start_date:
             return Event.get_by_user_id_vendor_id_start_date(

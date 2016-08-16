@@ -99,7 +99,6 @@ class Eventbrite(EventBase):
 
         :param args:
         :param kwargs: datetime range dict or None
-        :return:
         """
         super(Eventbrite, self).__init__(*args, **kwargs)
         # calling super constructor sets the api_url and access_token

@@ -15,7 +15,6 @@ import traceback
 from datetime import datetime
 
 # Third Party
-import pytz
 from flask import request
 from pytz import timezone
 
@@ -26,6 +25,7 @@ from social_network_service.common.models.misc import Activity
 from social_network_service.custom_exceptions import *
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.candidate import SocialNetwork
+from social_network_service.modules.constants import MEETUP
 from social_network_service.social_network_app import logger
 
 
@@ -271,7 +271,7 @@ def process_event(data, user_id, method='Create'):
         else:
             raise SocialNetworkError('Unable to find social network')
         data['user_id'] = user_id
-        if social_network.name.lower() == 'meetup' and data.get('organizer_id'):
+        if social_network.name.lower() == MEETUP and data.get('organizer_id'):
             raise InvalidUsage('organizer_id is not a valid field in case of meetup')
         event_obj.event_gt_to_sn_mapping(data)
 

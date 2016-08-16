@@ -55,6 +55,7 @@ from flask.ext.sqlalchemy import BaseQuery
 from sqlalchemy.orm.dynamic import AppenderQuery
 
 # Application Specific
+from ..constants import REDIS2
 from ..models.db import db
 from ..models import migrations
 from ..routes import GTApis, HEALTH_CHECK
@@ -428,11 +429,10 @@ def init_talent_app(app_name):
         # Initialize Redis Cache
         redis_store.init_app(flask_app)
 
-        redis2 = 'REDIS2'
-        flask_app.config[redis2 + '_URL'] = flask_app.config[TalentConfigKeys.REDIS_URL_KEY]
-        flask_app.config['{0}_DATABASE'.format(redis2)] = 1
+        flask_app.config[REDIS2 + '_URL'] = flask_app.config[TalentConfigKeys.REDIS_URL_KEY]
+        flask_app.config['{0}_DATABASE'.format(REDIS2)] = 1
         # Initialize Redis Cache for db 2
-        redis_store2.init_app(flask_app, redis2)
+        redis_store2.init_app(flask_app, REDIS2)
 
         # noinspection PyProtectedMember
         logger.info("Redis connection pool on app startup: %s", repr(redis_store._redis_client.connection_pool))
