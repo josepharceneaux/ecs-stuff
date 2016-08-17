@@ -35,7 +35,7 @@ callback URL when it is time to execute the campaign.
         ├── modules/
             ├── custom_exceptions.py (Contains custom error codes/exceptions for SmsCampaignBase)
             ├── handy_functions.py (handy functions for this service)
-            ├── sms_campaign_app_constants.py (constants used in this service)
+            ├── constants.py (constants used in this service)
             ├── sms_campaign_base.py (Contains SMsCampaignBase class inherited from CampaignBase class)
             ├── validators.py
         ├── sms_campaign_app/

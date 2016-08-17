@@ -91,6 +91,7 @@ class CandidateCustomErrors(object):
     # Error codes for Candidate Reference
     REFERENCE_NOT_FOUND = 3160
     REFERENCE_FORBIDDEN = 3161
+    REFERENCE_EXISTS = 3162
 
     # Error codes for Candidate Tags
     TAG_NOT_FOUND = 3170
