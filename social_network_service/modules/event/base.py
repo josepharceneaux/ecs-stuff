@@ -451,19 +451,22 @@ class EventBase(object):
         """
         pass
 
-    def get_events_from_db(self, start_date):
+    def get_events_from_db(self, start_date=None):
         """
-        This gets the events from database which starts after the specified
-        start_date
+        This gets the events from database which starts after the specified start_date
+        or incase date is None, return all events
         :param start_date:
         :type start_date: datetime
-        :return:
+        :return: list of events
         """
         if start_date:
             return Event.get_by_user_id_vendor_id_start_date(
                 self.user.id, self.social_network.id, start_date)
+        else:
+            return Event.filter_by(**{'user_id': self.user.id,
+                                      'social_network_id': self.social_network.id})
 
-    def process_events_rsvps(self, user_credentials, rsvp_data=None):
+    def process_events_rsvps(self, user_credentials, **kwargs):
         """
         We get events against a particular user_credential.
         Then we get the rsvps of all events present in database and process
@@ -477,7 +480,8 @@ class EventBase(object):
         # create object of selected rsvp class
         sn_rsvp_obj = sn_rsvp_class(user_credentials=user_credentials,
                                     headers=self.headers,
-                                    social_network=self.social_network
+                                    social_network=self.social_network,
+                                    **kwargs
                                     )
 
         # gets events of given Social Network from database

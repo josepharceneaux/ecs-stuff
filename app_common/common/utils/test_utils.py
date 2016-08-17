@@ -24,6 +24,7 @@ from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
                       CandidatePoolApiUrl, SchedulerApiUrl)
 from ..custom_contracts import define_custom_contracts
 from ..error_handling import NotFoundError
+from handy_functions import send_request
 
 define_custom_contracts()
 fake = Faker()

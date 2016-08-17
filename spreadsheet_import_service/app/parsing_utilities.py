@@ -15,6 +15,7 @@ import requests
 from flask import request, jsonify
 from spreadsheet_import_service.app import logger, app, celery_app
 from spreadsheet_import_service.common.utils.talent_s3 import *
+from spreadsheet_import_service.common.utils.validators import is_valid_email
 from spreadsheet_import_service.common.models.user import User, db
 from spreadsheet_import_service.common.models.misc import AreaOfInterest
 from spreadsheet_import_service.common.models.candidate import CandidateSource
@@ -130,9 +131,9 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
         domain_areas_of_interest = get_or_create_areas_of_interest(user.domain_id, include_child_aois=True)
 
         candidate_ids, error_messages = [], []
-        for i in xrange(0, len(table), 50):
+        for i in xrange(0, len(table), 1):
             candidates_list = []
-            for row in table[i: i + 50]:
+            for row in table[i: i + 1]:
                 first_name, middle_name, last_name, formatted_name, status_id,  = None, None, None, None, None
                 emails, phones, areas_of_interest, addresses, degrees = [], [], [], [], []
                 school_names, work_experiences, educations, custom_fields = [], [], [], []
@@ -142,6 +143,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
                 number_of_educations = 0
 
+                invalid_email = False
                 for column_index, column in enumerate(row):
                     if column_index >= len(header_row):
                         continue
@@ -160,6 +162,12 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                     elif column_name == 'candidate.lastName':
                         last_name = column
                     elif column_name == 'candidate_email.address':
+                        if not is_valid_email(column):
+                            error_messages.append({
+                                "message": "{} is an invalid email address".format(column)
+                            })
+                            invalid_email = True
+                            break
                         emails.append({'address': column})
                     elif column_name == 'candidate_phone.value':
                             phones.append({'value': column})
@@ -248,6 +256,9 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
                     number_of_educations = max(len(degrees), len(school_names))
 
+                if invalid_email:
+                    continue
+
                 # Prepare candidate educational data
                 for index in range(0, number_of_educations):
                     education = {}
@@ -274,15 +285,16 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                                             areas_of_interest=areas_of_interest,
                                             custom_fields=custom_fields))
 
-            status_code, response = create_candidates_from_parsed_spreadsheet(candidates_list, oauth_token)
+            created, response = create_candidates_from_parsed_spreadsheet(candidates_list, oauth_token)
 
-            if status_code == 201:
-                response_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
+            if created:
+                response_candidate_ids = [candidate.get('id') for candidate in response.get('candidates', [])]
                 candidate_ids += response_candidate_ids
                 logger.info("Successfully imported %s candidates with ids: (%s)", len(response_candidate_ids), response_candidate_ids)
             else:  # continue with the rest of the spreadsheet imports despite errors returned from candidate-service
-                error_messages.append(response.get('error'))
-                logger.error(response.get('error'))
+                if response.get('error', ''):
+                    error_messages.append(response.get('error'))
+                    logger.error(response.get('error'))
                 continue
 
         delete_from_s3(spreadsheet_filename, 'CSVResumes')
@@ -339,10 +351,40 @@ def create_candidates_from_parsed_spreadsheet(candidate_dicts, oauth_token):
     r = requests.post(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': candidate_dicts}),
                       headers={'Authorization': oauth_token, 'content-type': 'application/json'})
 
+    status_code = r.status_code
     try:
-        return r.status_code, r.json()
+        response = r.json()
+        if status_code != 201:
+            if response.get('error', {}).get('id'):
+                candidate_dicts[0]['id'] = response.get('error', {}).get('id')
+                is_updated, update_response = update_candidate_from_parsed_spreadsheet(candidate_dicts, oauth_token)
+                if is_updated:
+                    return True, update_response
+                else:
+                    return False, update_response
+            else:
+                return False, response
+        else:
+            return True, response
+
     except:
-        return r.status_code, {"error": "Couldn't create candidate from candidate dict %s" % candidate_dicts}
+        return False, {"error": "Couldn't create/update candidate from candidate dict %s" % candidate_dicts}
+
+
+def update_candidate_from_parsed_spreadsheet(candidate_dicts, oauth_token):
+    """
+    This method will update an already existing candidates from candidate dict
+    :param candidate_dicts: Dictionaries of candidates to be cretaed
+    :param oauth_token:
+    :return:
+    """
+    r = requests.patch(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': candidate_dicts}),
+                       headers={'Authorization': oauth_token, 'content-type': 'application/json'})
+
+    if r.status_code == 200:
+        return True, {}
+    else:
+        return False, r.json()
 
 
 def prepare_candidate_data(data_array, key, value):
