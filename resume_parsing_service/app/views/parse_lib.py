@@ -67,7 +67,7 @@ def parse_resume(file_obj, filename_str, cache_key):
     else:
         doc_content = file_obj.getvalue()
 
-    if not doc_content or len(doc_content) < 20:
+    if not doc_content or len(doc_content) < 10:
         bucket = current_app.config['S3_BUCKET_NAME']
         boto3_put(file_obj.getvalue(), bucket, filename_str, 'FailedResumes')
         logger.exception("Unable to determine the contents of the document: {}".format(filename_str))
