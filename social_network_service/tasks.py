@@ -21,14 +21,10 @@ from social_network_service.social_network_app import celery_app as celery, app
 def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetime_range):
     """
     Imports RSVPs or events of a user, create candidates store them in db and also upload them on Cloud search
-    :param social_network_name: Facebook, Eventbrite, Meetup
-    :type social_network_name: str
-    :param mode: rsvp or event
-    :type mode: str
-    :param user_credentials_id: user credentials entry
-    :type user_credentials_id: id
-    :param datetime_range:
-    :type datetime_range: dict
+    :param str social_network_name: Facebook, Eventbrite, Meetup
+    :param str mode: rsvp or event
+    :param int user_credentials_id: user credentials entry
+    :param dict datetime_range:
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
@@ -46,6 +42,7 @@ def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetim
                          ' Social Network is %s.'
                          % (mode.title(), sn.user.name, sn.user.id,
                             social_network.name))
+            # Call social network process method to start importing rsvps/event
             sn.process(mode, user_credentials=user_credentials, **datetime_range)
             # Update last_updated of each user_credentials.
             user_credentials.update(updated_datetime=datetime.datetime.utcnow())

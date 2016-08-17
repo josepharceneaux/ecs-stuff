@@ -126,6 +126,7 @@ class Test_Event_Importer:
         social_network_rsvp_id = response.json()['rsvp_id']
         sn.headers = {'Authorization': 'Bearer invalid_token'}
         logger.debug('Access Token has been malformed.')
+        # Call process method of social network class to start importing RSVPs
         sn.process('rsvp', user_credentials=user_credentials)
         # get the imported RSVP by social_network_rsvp_id and social_network_id
         rsvp_in_db = RSVP.get_by_social_network_rsvp_id_and_social_network_id(

@@ -77,15 +77,15 @@ class RsvpEventImporter(Resource):
             raise InvalidUsage('Importer is locked at the moment. Please try again later.')
         # Start celery rsvp importer method here.
         if mode.lower() not in [EVENT, RSVP]:
-            raise InvalidUsage("There is no mode with name %s found" % mode)
+            raise InvalidUsage("There is no mode with name {} found".format(mode))
 
         if not (social_network.lower() in [MEETUP, EVENTBRITE]):
-            raise InvalidUsage("No social network with name %s found." % social_network)
+            raise InvalidUsage("No social network with name {} found.".format(social_network))
 
         social_network_name = social_network.lower()
         social_network_obj = SocialNetwork.get_by_name(social_network_name)
         if not social_network_obj:
-            raise InvalidUsage('Social Network with name %s doesn\'t exist.' % social_network)
+            raise InvalidUsage('Social Network with name {} doesn\'t exist.'.format(social_network))
         social_network_id = social_network_obj.id
 
         all_user_credentials = UserSocialNetworkCredential.get_all_credentials(social_network_id)
@@ -107,20 +107,20 @@ class RsvpEventImporter(Resource):
                     })
                 rsvp_events_importer.apply_async([social_network, mode, user_credentials.id, datetime_range])
         else:
-            logger.error('User Credentials not found for social network %s'
-                         % social_network)
+            logger.error('User Credentials not found for social network {}'
+                         .format(social_network))
 
-        return dict(message="%s are being imported." % mode.upper())
+        return dict(message="{} are being imported.".format(mode.upper()))
 
 
 def schedule_importer_job():
     """
     Schedule 4 general jobs that hits Event and RSVP importer endpoint every hour.
     """
-    task_name = 'Retrieve_%s_%ss'
+    task_name = 'Retrieve_{}_{}s'
     for mode, sn in itertools.product([RSVP, EVENT], [MEETUP, EVENTBRITE]):
         url = SocialNetworkApiUrl.IMPORTER % (mode, sn)
-        schedule_job(task_name=task_name % (sn.title(), mode), url=url)
+        schedule_job(task_name=task_name.format(sn.title(), mode), url=url)
 
 
 def schedule_job(url, task_name):
@@ -149,11 +149,11 @@ def schedule_job(url, task_name):
         'is_jwt_request': True
     }
 
-    logger.info('Checking if %s task already running...' % task_name)
+    logger.info('Checking if {} task already running...'.format(task_name))
     response = requests.get(SchedulerApiUrl.TASK_NAME % task_name, headers=headers)
     # If job is not scheduled then schedule it
     if response.status_code == requests.codes.not_found:
-        logger.info('Task %s not scheduled. Scheduling %s task.' % (task_name, task_name))
+        logger.info('Task {} not scheduled. Scheduling {} task.'.format(task_name, task_name))
         data.update({'url': url})
         data.update({'task_name': task_name, 'task_type': 'periodic'})
 
@@ -166,6 +166,6 @@ def schedule_job(url, task_name):
             logger.error(response.text)
             raise InternalServerError(error_message='Unable to schedule Meetup importer job')
     elif response.status_code == requests.codes.ok:
-        logger.info('Job already scheduled. %s' % response.text)
+        logger.info('Job already scheduled. {}'.format(response.text))
     else:
         logger.error(response.text)

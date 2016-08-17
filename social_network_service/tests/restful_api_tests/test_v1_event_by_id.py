@@ -28,6 +28,7 @@ class TestEventById(object):
     - try deleting event data using id and pass invalid access token                - 401 response
     - try deleting event data using id and pass valid token                         - 200 response
     """
+
     def test_get_by_id_with_invalid_token(self):
         """
         - Get event using id and pass invalid token and it should throw exception 401 un-authorize
@@ -142,19 +143,21 @@ class TestEventById(object):
         response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token_first, data=event)
         logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok, Resource Modified (200)'
-        event_db = Event.get_by_id(event['id'])
+        event_occurrence_in_db = Event.get_by_id(event['id'])
         Event.session.commit()  # needed to refresh session otherwise it will show old objects
-        event_db = event_db.to_json()
-        assert event['title'] == event_db['title'], 'event_title is modified'
-        assert event['start_datetime'].split('.')[0] + 'Z' == event_db['start_datetime'].replace(' ', 'T') + 'Z', \
+        event_occurrence_in_db = event_occurrence_in_db.to_json()
+        assert event['title'] == event_occurrence_in_db['title'], 'event_title is modified'
+        assert event['start_datetime'].split('.')[0] + 'Z' == event_occurrence_in_db['start_datetime'] \
+                                                                  .replace(' ', 'T') + 'Z', \
             'start_datetime is modified'
-        assert (event['end_datetime']).split('.')[0] + 'Z' == event_db['end_datetime'].replace(' ', 'T') + 'Z', \
+        assert (event['end_datetime']).split('.')[0] + 'Z' == event_occurrence_in_db['end_datetime'] \
+                                                                  .replace(' ', 'T') + 'Z', \
             'end_datetime is modified'
 
         # Check activity updated
         activity = Activity.get_by_user_id_type_source_id(source_id=event['id'],
                                                           type_=Activity.MessageIds.EVENT_UPDATE,
-                                                          user_id=event_db['user_id'])
+                                                          user_id=event_occurrence_in_db['user_id'])
 
         data = json.loads(activity.params)
         assert data['event_title'] == event['title']

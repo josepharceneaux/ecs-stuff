@@ -117,6 +117,7 @@ class TestResourceEvents:
         """
         Post event using invalid event_organizer i.e equal to -1. response should be 500 with 4054 error code
         (Event organizer not found)
+            url -> localhost:8007/v1/events
         :param token: access_token for oauth
         :param test_event: test_event for post a valid event data
         :return:
