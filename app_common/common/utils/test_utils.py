@@ -75,7 +75,7 @@ def invalid_value_test(url, data, key, values, token, method='post', expected_st
     for val in values:
         data[key] = val
         response = send_request(method, url, token, data)
-        assert response.status_code in expected_status
+        assert response.status_code in expected_status, 'Invalid field %s with value %s' % (key, val)
 
 
 @contract
@@ -88,9 +88,10 @@ def unexpected_field_test(method, url, data, token):
     :param dict data: request data
     :param string token: access token
     """
-    data[fake.word()] = fake.word()
+    fake_word = fake.word()
+    data[fake_word] = fake_word
     response = send_request(method, url, token, data)
-    assert response.status_code == codes.BAD_REQUEST
+    assert response.status_code == codes.BAD_REQUEST, 'Unexpected field name: %s' % fake_word
 
 
 @contract

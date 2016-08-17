@@ -219,7 +219,7 @@ class TestUpdateCampaign(object):
         """
         url = URL % campaign_in_db['id']
         campaign_data['smartlist_ids'] = [smartlist_first['id']]
-        invalid_values = CampaignsTestsHelpers.INVALID_ID
+        invalid_values = ['', '  ', {}, [], None, True]
         invalid_value_test(url,  campaign_data, 'body_text', invalid_values, token_first, method='put')
 
     def test_campaign_update_with_invalid_smartlist_ids(self, token_first, campaign_data, campaign_in_db):
@@ -244,8 +244,7 @@ class TestUpdateCampaign(object):
         campaign_data['smartlist_ids'] = [smartlist_first['id']]
         invalid_names = [0, -1, None, True, '', '    ']
         url = URL % campaign_in_db['id']
-        invalid_value_test(url, campaign_data, 'name', invalid_names, token_first, campaign_id=campaign_in_db['id'],
-                           method='put')
+        invalid_value_test(url, campaign_data, 'name', invalid_names, token_first, method='put')
 
     def test_campaign_update_with_invalid_url(self, token_first, campaign_data, smartlist_first, campaign_in_db):
         """
@@ -258,8 +257,7 @@ class TestUpdateCampaign(object):
         campaign_data['smartlist_ids'] = [smartlist_first['id']]
         invalid_names = ['localhost.com', 'abc',  '',  '  ', None, True]
         url = URL % campaign_in_db['id']
-        invalid_value_test(url, campaign_data, 'url', invalid_names, token_first, campaign_id=campaign_in_db['id'],
-                           method='put')
+        invalid_value_test(url, campaign_data, 'url', invalid_names, token_first, method='put')
 
     def test_put_by_id(self, token_first, campaign_in_db, smartlist_first):
         """
