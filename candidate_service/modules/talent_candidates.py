@@ -1188,8 +1188,8 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
                 user_id=user_id, query_obj=candidate_object)
 
     # TODO: Created a JIRA and assigned it to Umar -> https://gtdice.atlassian.net/browse/GET-1552
-    if 'source_product_id' in update_dict:
-        del update_dict['source_product_id']
+    # if 'source_product_id' in update_dict:
+    #     del update_dict['source_product_id']
 
     # Update
     candidate_object.update(**update_dict)
