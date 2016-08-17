@@ -124,8 +124,8 @@ def missing_keys_test(url, data, keys, token, method='post'):
     for key in keys:
         new_data = data.copy()
         new_data.pop(key)
-        response = send_request(method, url, token, data)
-        assert response.status_code == codes.BAD_REQUEST
+        response = send_request(method, url, token, new_data)
+        assert response.status_code == codes.BAD_REQUEST, 'Test failed for key: %s' % key
 
 
 def response_info(response):
