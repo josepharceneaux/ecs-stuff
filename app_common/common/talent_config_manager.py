@@ -125,6 +125,7 @@ def _set_environment_specific_configurations(environment, app_config):
 
     if environment == TalentEnvs.DEV:
         app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
+        app_config['REDIS2_DB'] = 1
         app_config['DEBUG'] = True
         app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200
         app_config['JWT_OAUTH_EXPIRATION'] = 3600 * 24 * 7  # One week expiry time for bearer token

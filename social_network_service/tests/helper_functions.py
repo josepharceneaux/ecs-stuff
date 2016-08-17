@@ -8,7 +8,9 @@ import datetime
 import json
 
 import requests
+
 # Service imports
+from social_network_service.common.utils.handy_functions import send_request
 from social_network_service.common.models.event import Event
 from social_network_service.social_network_app import logger
 
@@ -33,7 +35,7 @@ def get_headers(token):
 
 
 def unauthorize_test(method, url, data=None):
-    response = send_request(method, url, 'invalid_token',  data)
+    response = send_request(method, url, 'invalid_token', data)
     assert response.status_code == 401, 'It should be unauthorized (401)'
     return response
 
@@ -82,17 +84,6 @@ def event_data_tests(method, url, data, token):
         'start_datetime is modified'
     assert event['end_datetime'] == event_db['end_datetime'].replace(' ', 'T') + 'Z', \
         'end_datetime is modified'
-
-
-def send_request(method, url, access_token, data=None, is_json=True):
-    # This method is being used for test cases, so it is sure that method has
-    #  a valid value like 'get', 'post' etc.
-    request_method = getattr(requests, method)
-    headers = dict(Authorization='Bearer %s' % access_token)
-    if is_json:
-        headers['Content-Type'] = 'application/json'
-        data = json.dumps(data)
-    return request_method(url, data=data, headers=headers)
 
 
 def send_post_request(url, data, access_token):
