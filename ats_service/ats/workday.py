@@ -24,15 +24,16 @@ class Workday(object):
         url_object = urlparse(login_url)
         self.service = url_object.scheme + '://' + url_object.netloc
         self.user_id = user_id
+        self.auth_token = None
         self.credentials = credentials
         self.fetch_candidates_url = "{}/all-individuals".format(self.service)
         self.fetch_individual_url = "{}/individual".format(self.service)
 
-    def authenticate(self):
+    def authenticate(self, credentials):
         """
         Perform authencation using our credentials, and store any tokens on this object.
         """
-        pass
+        auth_token = 'auth_token'
 
     def fetch_individual_references(self):
         """

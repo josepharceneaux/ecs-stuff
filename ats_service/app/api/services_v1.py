@@ -404,13 +404,13 @@ class ATSCandidateRefreshService(Resource):
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
 
         # Create an ATS-specific object
-        ats_name, url, user_id, credential = fetch_auth_data(account_id)
+        ats_name, url, user_id, credentials = fetch_auth_data(account_id)
         if not url:
             return '{{"account_id" : {},  "status" : "inactive"}}'.format(account_id)
 
         # Authenticate
-        ats_object = create_ats_object(ats_service.app.logger, ats_name, url, user_id, credential)
-        ats_object.authenticate()
+        ats_object = create_ats_object(ats_service.app.logger, ats_name, url, user_id, credentials)
+        ats_object.authenticate(credentials)
 
         # Get all candidate ids (references)
         individual_references = ats_object.fetch_individual_references()
