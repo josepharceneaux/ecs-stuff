@@ -167,11 +167,16 @@ class CandidatesResource(Resource):
                 elif candidate_id in candidate_ids_from_candidate_email_obj:
                     continue
 
-            # Provided source ID must belong to candidate's domain
+            # Provided source ID must be recognized & belong to candidate's domain
             source_id = candidate_dict_.get('source_id')
             if source_id:
+
                 candidate_source = CandidateSource.get(source_id)
-                if candidate_source.domain_id != domain_id:
+
+                if not candidate_source:
+                    raise NotFoundError("Source ID ({}) not recognized", custom_error.SOURCE_NOT_FOUND)
+
+                if candidate_source and candidate_source.domain_id != domain_id:
                     raise ForbiddenError("Provided source ID ({source_id}) not "
                                          "recognized for candidate's domain (id = {domain_id})"
                                          .format(source_id=source_id, domain_id=domain_id),
@@ -398,10 +403,15 @@ class CandidatesResource(Resource):
             # this is because this API will treat NULL values as "delete the record"
             source_id = _candidate_dict.get('source_id', '')
 
-            # Provided source ID must belong to candidate's domain
+            # Provided source ID must be recognized & belong to candidate's domain
             if source_id:
+
                 candidate_source = CandidateSource.get(source_id)
-                if candidate_source.domain_id != domain_id:
+
+                if not candidate_source:
+                    raise NotFoundError("Source ID ({}) not recognized", custom_error.SOURCE_NOT_FOUND)
+
+                if candidate_source and candidate_source.domain_id != domain_id:
                     raise ForbiddenError("Provided source ID ({source_id}) not "
                                          "recognized for candidate's domain (id = {domain_id})"
                                          .format(source_id=source_id, domain_id=domain_id),
