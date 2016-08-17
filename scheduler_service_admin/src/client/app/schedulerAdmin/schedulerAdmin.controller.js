@@ -2,7 +2,7 @@
  * Scheduler Admin controller which get data from external talent-flask services (i.e. scheduler service) and then
  * using filters and show them in UI
  */
-(function() {
+(function () {
   'use strict';
 
   angular
@@ -23,23 +23,23 @@
     /**
      * Get filtered jobs from scheduler service and show them in data table (UI)
      */
-    vm.applyFilter = function(){
+    vm.applyFilter = function () {
 
       var filterDict = {};
 
-      if(vm.selectedTaskType !== both_tasks){
+      if (vm.selectedTaskType !== both_tasks) {
         filterDict['task_type'] = vm.selectedTaskType;
       }
 
-      if(vm.selectedTaskCategory !== both_tasks) {
+      if (vm.selectedTaskCategory !== both_tasks) {
         filterDict['task_category'] = vm.selectedTaskCategory;
       }
 
-      if(typeof vm.userId === 'number' && vm.userId >= 1 && vm.selectedTaskCategory !== general_tasks) {
+      if (typeof vm.userId === 'number' && vm.userId >= 1 && vm.selectedTaskCategory !== general_tasks) {
         filterDict['user_id'] = vm.userId;
       }
 
-      if(vm.paused.enabled) {
+      if (vm.paused.enabled) {
         filterDict['paused'] = vm.paused.enabled;
       }
 
@@ -47,17 +47,17 @@
       filterDict['page'] = vm.currentPage;
 
       SchedulerClientService.getTasks(filterDict)
-      .then(function (response) {
-        if ('tasks' in response.data) {
+        .then(function (response) {
+          if ('tasks' in response.data) {
 
-          vm.tasks = response.data.tasks;
-          vm.totalItems = response.headers('X-Total');
-          vm.currentPage = response.headers('X-Page');
-          vm.itemsPerPage = response.headers('X-Per-Page');
-        }
-      }, function (error) {
-        logger.error('error', error);
-      });
+            vm.tasks = response.data.tasks;
+            vm.totalItems = response.headers('X-Total');
+            vm.currentPage = response.headers('X-Page');
+            vm.itemsPerPage = response.headers('X-Per-Page');
+          }
+        }, function (error) {
+          logger.error('error', error);
+        });
     };
 
     // Active Responsive plugin
@@ -76,13 +76,13 @@
       vm.currentPage = pageNo;
     };
 
-    vm.pageChanged = function() {
+    vm.pageChanged = function () {
       vm.applyFilter();
     };
 
     vm.itemsPerPage = 15;
 
-    vm.paused = { name: 'Paused only', enabled: false };
+    vm.paused = {name: 'Paused only', enabled: false};
 
     vm.selectedTaskType = both_tasks;
 
@@ -103,7 +103,7 @@
       logger.info('Activated Scheduler Admin View');
 
       $rootScope.$on('loggedIn', function (events, args) {
-          vm.currentPage = 1;
+        vm.currentPage = 1;
         vm.applyFilter()
       });
     }

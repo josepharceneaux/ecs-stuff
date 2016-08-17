@@ -1,6 +1,8 @@
 """
 This file contains JSON schema for campaigns' scheduling API.
 """
+from ...models.misc import Frequency
+
 __author__ = 'basit'
 
 CAMPAIGN_SCHEDULE_SCHEMA = {
@@ -9,7 +11,9 @@ CAMPAIGN_SCHEDULE_SCHEMA = {
     "additionalProperties": False,
     "properties": {
         "frequency_id": {
-            "type": "integer"
+            "type": "integer",
+            "minimum": 1,
+            "maximum": Frequency.CUSTOM
         },
         "start_datetime": {
             "type": "string",

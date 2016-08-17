@@ -36,21 +36,19 @@ Unschedule a campaign: /v1/push-campaigns/:id/schedule [DELETE]
 """
 # Builtin imports
 import sys
-from datetime import datetime, timedelta
-
+from datetime import datetime
 # 3rd party imports
 from requests import codes
 
 # Application specific imports
 from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from push_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
-                                                        schedule_campaign, invalid_data_test,
-                                                        reschedule_campaign, unschedule_campaign,
-                                                        unexpected_field_test, get_campaign, match_schedule_data)
-from push_campaign_service.common.utils.test_utils import send_request
+                                                        schedule_campaign, reschedule_campaign, unschedule_campaign,
+                                                        get_campaign, match_schedule_data)
+from push_campaign_service.common.utils.test_utils import (send_request, invalid_data_test, unexpected_field_test,
+                                                           missing_keys_test)
 from push_campaign_service.common.routes import PushCampaignApiUrl
-from push_campaign_service.common.utils.test_utils import unauthorize_test
+from push_campaign_service.common.utils.test_utils import unauthorize_test, invalid_value_test
 from push_campaign_service.common.models.misc import Frequency
 
 URL = PushCampaignApiUrl.SCHEDULE
@@ -103,16 +101,7 @@ class TestScheduleCampaignUsingPOST(object):
         """
         # Test missing start_datetime field which is mandatory to schedule a campaign
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
-        del data['start_datetime']
-        schedule_campaign(campaign_in_db['id'], data, token_first,
-                          expected_status=(codes.BAD_REQUEST,))
-
-        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
-        del data['end_datetime']
-        response = schedule_campaign(campaign_in_db['id'], data, token_first,
-                                     expected_status=(codes.BAD_REQUEST,))
-        error = response['error']
-        assert 'end_datetime' in error['message']
+        missing_keys_test(URL % campaign_in_db['id'], data, ['start_datetime', 'end_datetime'], token_first)
 
     def test_schedule_compaign_with_invalid_datetime_format(self, token_first, campaign_in_db,
                                                            smartlist_first):
@@ -188,9 +177,9 @@ class TestScheduleCampaignUsingPOST(object):
         :param string token_first: auth token
         :param dict campaign_in_db: campaign object
         """
-        some_invalid_frequency = -1
-        data = generate_campaign_schedule_data(frequency_id=some_invalid_frequency)
-        schedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
+        url = URL % campaign_in_db['id']
+        data = generate_campaign_schedule_data()
+        invalid_value_test(url, data, 'frequency_id', CampaignsTestsHelpers.INVALID_FREQUENCY_IDS, token_first)
 
     def test_campaign_schedule_with_past_datetimes(self, token_first, campaign_in_db):
         """
@@ -199,7 +188,6 @@ class TestScheduleCampaignUsingPOST(object):
         :param string token_first: auth token
         :param dict campaign_in_db: campaign object
         """
-
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         CampaignsTestsHelpers.request_with_past_start_and_end_datetime('post', URL % campaign_in_db['id'],
                                                                        token_first, data)
@@ -296,7 +284,7 @@ class TestRescheduleCampaignUsingPUT(object):
         """
         In this test, we will reschedule a campaign with invalid datetime format and  it will raise an error 400.
         """
-        data = generate_campaign_schedule_data()
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
 
         start = datetime.utcnow()
         data['start_datetime'] = str(start)  # Invalid datetime format
@@ -354,10 +342,10 @@ class TestRescheduleCampaignUsingPUT(object):
         :param dict campaign_in_db: campaign object
         :param dict schedule_a_campaign: a fixture to schedule a campaign
         """
-        data = generate_campaign_schedule_data(frequency_id=-1)
-        start = datetime.utcnow() - timedelta(days=20)
-        data.update({'start_datetime': DatetimeUtils.to_utc_str(start)})
-        reschedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
+        url = URL % campaign_in_db['id']
+        data = generate_campaign_schedule_data()
+        invalid_value_test(url, data, 'frequency_id', CampaignsTestsHelpers.INVALID_FREQUENCY_IDS, token_first,
+                           method='put')
 
     def test_campaign_reschedule_with_past_datetimes(self, token_first, campaign_in_db, schedule_a_campaign):
         """

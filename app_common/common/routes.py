@@ -647,8 +647,10 @@ class SocialNetworkApi(object):
     VENUE = '/' + VERSION + '/venues/<int:venue_id>'
     EVENT_ORGANIZERS = '/' + VERSION + '/event-organizers'
     EVENT_ORGANIZER = '/' + VERSION + '/event-organizers/<int:organizer_id>'
+    # TODO: This should be /timezones in place of /data/timezones as data is not a resource of social network service (Verify is it timezone or timezones)
     TIMEZONES = '/' + VERSION + '/data/timezones'
     RSVP = '/' + VERSION + '/rsvp'
+    IMPORTER = '/' + VERSION + '/import/<string:mode>/<string:social_network>'
     CODE = '/' + VERSION + '/code'
     # URL for Twitter authentication
     TWITTER_AUTH = '/' + VERSION + '/twitter-auth'
@@ -683,7 +685,8 @@ class SocialNetworkApiUrl(object):
     USER_SOCIAL_NETWORK_CREDENTIALS = HOST_NAME % ('/' + VERSION + '/social-networks/%s/user/credentials')
     RSVP = HOST_NAME % ('/' + VERSION + '/rsvp')
     CODE = HOST_NAME % ('/' + VERSION + '/code')
-    TWITTER_CALLBACK= HOST_NAME % ('/' + VERSION + '/twitter-callback/%s')
+    IMPORTER = HOST_NAME % ('/' + VERSION + '/import/%s/%s')
+    TWITTER_CALLBACK = HOST_NAME % ('/' + VERSION + '/twitter-callback/%s')
 
 
 class SmsCampaignApi(object):

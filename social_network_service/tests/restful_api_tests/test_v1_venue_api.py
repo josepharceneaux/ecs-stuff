@@ -3,8 +3,8 @@ import json
 
 import requests
 # Application specific imports
+from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.venue import Venue
-from social_network_service.common.tests.conftest import first_group, domain_first, sample_user
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.tests.helper_functions import auth_header, get_headers
@@ -22,13 +22,13 @@ class TestVenues:
         assert response.status_code == 401, 'It should be unauthorized (401)'
         assert 'venues' not in response.json()
 
-    def test_get_with_valid_token(self, token):
+    def test_get_with_valid_token(self, token_first):
         """
         Send GET request to venues and response should be 200.
         :param token:
         :return:
         """
-        response = requests.get(SocialNetworkApiUrl.VENUES, headers=auth_header(token))
+        response = requests.get(SocialNetworkApiUrl.VENUES, headers=auth_header(token_first))
         logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok (200)'
         results = response.json()
@@ -43,14 +43,15 @@ class TestVenues:
         logger.info(response.text)
         assert response.status_code == 401, 'It should be unauthorized (401)'
 
-    def test_post_with_valid_token(self, token):
+    def test_post_with_valid_token(self, token_first):
         """
         Send POST request with valid venue data to create venue endpoint and response should be 201
         :param token:
         :return:
         """
+        social_network = SocialNetwork.get_by_name('eventbrite')
         venue = {
-            "social_network_id": 18,
+            "social_network_id": social_network.id,
             "zip_code": "54600",
             "address_line_2": "H# 163, Block A",
             "address_line_1": "New Muslim Town",
@@ -61,7 +62,7 @@ class TestVenues:
             "country": "Pakistan"
         }
         response = requests.post(SocialNetworkApiUrl.VENUES, data=json.dumps(venue),
-                                 headers=get_headers(token))
+                                 headers=get_headers(token_first))
         logger.info(response.text)
         assert response.status_code == 201, 'Status should be Ok, Resource created (201)'
         assert 'Location' in response.headers
@@ -82,7 +83,7 @@ class TestVenues:
         logger.info(response.text)
         assert response.status_code == 401, 'It should be unauthorized (401)'
 
-    def test_delete_with_invalid_values(self, token):
+    def test_delete_with_invalid_values(self, token_first):
         """
         Send DELETE request with invalid values in ids(post data) and response should be 207
         :param token:
@@ -90,7 +91,7 @@ class TestVenues:
         """
         venue_ids = {'ids': [-1]}  # event id which does not exists, test 207 status
         response = requests.delete(SocialNetworkApiUrl.VENUES,  data=json.dumps(venue_ids),
-                                   headers=get_headers(token))
+                                   headers=get_headers(token_first))
         logger.info(response.text)
         assert response.status_code == 207, 'Unable to delete all venues (207)'
         response = response.json()
@@ -98,7 +99,7 @@ class TestVenues:
         assert 'not_deleted' in response and len(response['not_deleted']) == 1
         assert 'message' in response
 
-    def test_delete_with_valid_token(self, token, venue_in_db):
+    def test_delete_with_valid_token(self, token_first, venue_in_db):
         """
         Create venue using endpoint and send DELETE that venue using id
         :param token:
@@ -107,13 +108,13 @@ class TestVenues:
         """
         venue_ids = {'ids': [venue_in_db.id]}
         response = requests.delete(SocialNetworkApiUrl.VENUES,  data=json.dumps(venue_ids),
-                                   headers=get_headers(token))
+                                   headers=get_headers(token_first))
         logger.info(response.text)
         assert response.status_code == 200, 'Status should be Ok (200)'
 
         venue_ids = {'ids': -1}  # invalid ids format to test 400 status code
         response = requests.delete(SocialNetworkApiUrl.VENUES,  data=json.dumps(venue_ids),
-                                   headers=get_headers(token))
+                                   headers=get_headers(token_first))
         logger.info(response.text)
         assert response.status_code == 400, 'Bad Request'
         response = response.json()

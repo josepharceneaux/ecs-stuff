@@ -35,12 +35,12 @@ from requests import codes
 
 # Application specific imports
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
-from push_campaign_service.tests.test_utilities import (invalid_data_test, create_campaign,
-                                                        get_campaigns, delete_campaign,
-                                                        delete_campaigns, invalid_value_test, missing_keys_test,
-                                                        unexpected_field_test)
+from push_campaign_service.tests.test_utilities import (create_campaign, get_campaigns,
+                                                        delete_campaign, delete_campaigns)
 from push_campaign_service.common.routes import PushCampaignApiUrl
-from push_campaign_service.common.utils.test_utils import send_request
+from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from push_campaign_service.common.utils.test_utils import (send_request, invalid_data_test, missing_keys_test,
+                                                           unexpected_field_test, invalid_value_test)
 from push_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
 
 
@@ -84,7 +84,8 @@ class TestCreateCampaign(object):
         :param dict smartlist_first: Smartlist object
         """
         # First test with missing keys
-        missing_keys_test(PushCampaignBase.REQUIRED_FIELDS, smartlist_first, token_first)
+        campaign_data['smartlist_ids'] = [smartlist_first['id']]
+        missing_keys_test(URL, campaign_data, PushCampaignBase.REQUIRED_FIELDS, token_first)
 
     def test_campaign_creation_with_invalid_body_text(self, token_first, campaign_data, smartlist_first):
         """
@@ -95,7 +96,7 @@ class TestCreateCampaign(object):
         """
         campaign_data['smartlist_ids'] = [smartlist_first['id']]
         invalid_values = ['', '  ', {}, [], None, True]
-        invalid_value_test(campaign_data, 'body_text', invalid_values, token_first)
+        invalid_value_test(URL, campaign_data, 'body_text', invalid_values, token_first)
 
     def test_campaign_creation_with_invalid_smartlist_ids(self, token_first, campaign_data):
         """
@@ -103,8 +104,8 @@ class TestCreateCampaign(object):
         :param string token_first: auth token
         :param dict campaign_data: data to create campaign
         """
-        invalid_ids = [0, -1, '1', None, True]
-        invalid_value_test(campaign_data, 'smartlist_ids', invalid_ids, token_first)
+        invalid_ids = CampaignsTestsHelpers.INVALID_ID
+        invalid_value_test(URL, campaign_data, 'smartlist_ids', invalid_ids, token_first)
 
     def test_campaign_creation_with_invalid_name(self, token_first, campaign_data, smartlist_first):
         """
@@ -115,7 +116,7 @@ class TestCreateCampaign(object):
         """
         campaign_data['smartlist_ids'] = [smartlist_first['id']]
         invalid_names = [0, -1, None, True, '', '    ']
-        invalid_value_test(campaign_data, 'name', invalid_names, token_first)
+        invalid_value_test(URL, campaign_data, 'name', invalid_names, token_first)
 
     def test_create_campaign(self, token_first, campaign_data, smartlist_first):
         """

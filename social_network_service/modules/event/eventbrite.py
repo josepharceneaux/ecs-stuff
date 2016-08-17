@@ -14,7 +14,6 @@ from social_network_service.modules.utilities import logger
 from social_network_service.modules.utilities import log_error
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.event import Event
-from social_network_service.modules.utilities import get_class
 from social_network_service.modules.event.base import EventBase
 from social_network_service.custom_exceptions import EventNotCreated
 from social_network_service.custom_exceptions import TicketsNotCreated
@@ -97,10 +96,10 @@ class Eventbrite(EventBase):
                 event id of event on eventbrite
             - start_date_in_utc:
                 utc start_date for event importer
+            - end_date_in_utc:
+                utc start_date for event importer
 
-        :param args:
-        :param kwargs:
-        :return:
+        :param kwargs: datetime range dict or None
         """
         super(Eventbrite, self).__init__(*args, **kwargs)
         # calling super constructor sets the api_url and access_token
@@ -109,28 +108,12 @@ class Eventbrite(EventBase):
         self.ticket_payload = None
         self.venue_payload = None
         self.start_date_in_utc =\
-            kwargs.get('start_date') \
-            or (datetime.now() -
+            kwargs.get('date_range_start') \
+            or (datetime.utcnow() -
                 timedelta(days=60)).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-    def process_events_rsvps(self, user_credentials, rsvp_data=None):
-        """
-        We get events against a particular user_credential.
-        Then we get the rsvps of all events present in database and process
-        them to save in database.
-        :param user_credentials: are the credentials of user for
-                                    a specific social network in db.
-        :type user_credentials: common.models.user.UserSocialNetworkCredential
-        """
-        # get_required class under rsvp/ to process rsvps
-        sn_rsvp_class = get_class(self.social_network.name, 'rsvp')
-        # create object of selected rsvp class
-        sn_rsvp_obj = sn_rsvp_class(user_credentials=user_credentials,
-                                    headers=self.headers,
-                                    social_network=self.social_network
-                                    )
-        # process RSVPs and save in database
-        sn_rsvp_obj.process_rsvp_via_webhook(rsvp_data)
+        self.end_date_in_utc =\
+            kwargs.get('date_range_end') \
+            or datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def get_events(self):
         """
@@ -144,7 +127,8 @@ class Eventbrite(EventBase):
         # create url to fetch events from eventbrite.com
         events_url = self.api_url + '/events/search/'
         params = {'user.id': self.member_id,
-                  # 'date_created.range_start': self.start_date_in_utc
+                  'date_created.range_start': self.start_date_in_utc,
+                  'date_created.range_end': self.end_date_in_utc
                   }
         # initialize event list to empty
         all_events = []
@@ -265,6 +249,7 @@ class Eventbrite(EventBase):
                 about=organizer['description']
                 if organizer.has_key('description') else ''
             )
+
             organizer_data['about'] = organizer_data['about'].get('html', '') if type(organizer_data['about']) == dict \
                 else ''
             organizer_in_db = EventOrganizer.get_by_user_id_and_name(
