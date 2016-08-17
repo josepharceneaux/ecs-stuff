@@ -418,17 +418,17 @@ class ATSCandidateRefreshService(Resource):
         # For each candidate, fetch the candidate data and update our copy. Later this can be combined with the previous step.
         return_list = []
         for ref in individual_references:
-
-            # ats_service.app.logger.info("DIR: {} {}".format(type(ats_object.fetch_individual_references), type(ats_object.fetch_individual)))
-            # return_list.append(ref)
             individual = ats_object.fetch_individual(ref)
             return_list.append(individual)
+            # ats_service.app.logger.info("Individual: {}".format(individual))
+            data = { 'profile_json' : individual, 'ats_remote_id' : ref }
 
-            # present = ATSCandidate.get_by_ats_id (account_id, ref)
-            # if present:
-            #     update_ats_candidate(account_id, present.id, individual)
-            # else:
-            #     new_ats_candidate(account_id, individual)
+            present = ATSCandidate.get_by_ats_id (account_id, ref)
+            if present:
+                ats_service.app.logger.info("PRESENT: {}".format(ref))
+                update_ats_candidate(account_id, present.id, data)
+            else:
+                new_ats_candidate(account_id, data)
+                ats_service.app.logger.info("NEW")
 
-        # return '{{"account_id" : {},  "refresh" : "success"}}'.format(account_id)
         return return_list

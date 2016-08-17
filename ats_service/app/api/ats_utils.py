@@ -4,6 +4,8 @@ Utility functions for the ATS service.
 
 __author__ = 'Joseph Arceneaux'
 
+import datetime
+
 from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
 from ats_service.common.models.candidate import Candidate
 from ats_service.common.models.user import User
@@ -183,7 +185,7 @@ def delete_ats_account(user_id, ats_account_id):
         db.session.commit()
 
 
-def new_ats_candidate(account, data):
+def new_ats_candidate(account_id, data):
     """
     Register an ATS candidate with an ATS account.
 
@@ -191,7 +193,12 @@ def new_ats_candidate(account, data):
     :param dict data: keys and values describing the candidate.
     :rtype: ATSCandidate
     """
-    gt_candidate_id = data.get('gt_candidate_id', None)
+    gt_candidate_id = None
+    if 'gt_candidate_id' in data:
+        gt_candidate_id = data.get('gt_candidate_id', None)
+    account = ATSAccount.get(account_id)
+    if not account:
+        raise InvalidUsage("ATS account {} not found.".format(account_id))
     profile = ATSCandidateProfile(active=True, profile_json=data['profile_json'], ats_id=account.ats_id)
     profile.save()
     candidate = ATSCandidate(ats_account_id=account.id, ats_remote_id=data['ats_remote_id'], gt_candidate_id=gt_candidate_id, profile_id=profile.id)
@@ -245,8 +252,12 @@ def update_ats_candidate(account_id, candidate_id, new_data):
     if not profile:
         raise UnprocessableEntity("Invalid candidate profile id", additional_error_info=dict(id=candidate.profile_id))
 
-    update_dict = {'profile_json' : new_data['profile_json']}
+    now = datetime.datetime.utcnow()
+    update_dict = {'updated_at' : now}
+    candidate.update(**update_dict)
+    update_dict = {'profile_json' : new_data['profile_json'], 'updated_at' : now}
     profile.update(**update_dict)
+
     return candidate
 
 
