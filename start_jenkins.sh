@@ -16,18 +16,18 @@ docker images -qf "dangling=true" | xargs docker rmi
 # Build the micro service images
 cd base_service_container && tar -czh . | docker build -t gettalent/base-service-container:latest - && cd ../
 cd auth_service && tar -czh . | docker build -t gettalent/auth-service:latest - && cd ../
-cd resume_parsing_service && tar -czh . | docker build -t gettalent/resume-parsing-service:latest - && cd ../
+#cd resume_parsing_service && tar -czh . | docker build -t gettalent/resume-parsing-service:latest - && cd ../
 cd activity_service && tar -czh . | docker build -t gettalent/activity-service:latest - && cd ../
 cd user_service && tar -czh . | docker build -t gettalent/user-service:latest - && cd ../
 cd candidate_service && tar -czh . | docker build -t gettalent/candidate-service:latest - && cd ../
 cd social_network_service && tar -czh . | docker build -t gettalent/social-network-service:latest - && cd ../
 cd candidate_pool_service && tar -czh . | docker build -t gettalent/candidate-pool-service:latest - && cd ../
-cd spreadsheet_import_service && tar -czh . | docker build -t gettalent/spreadsheet-import-service:latest - && cd ../
+#cd spreadsheet_import_service && tar -czh . | docker build -t gettalent/spreadsheet-import-service:latest - && cd ../
 cd scheduler_service && tar -czh . | docker build -t gettalent/scheduler-service:latest - && cd ../
-cd sms_campaign_service && tar -czh . | docker build -t gettalent/sms-campaign-service:latest - && cd ../
-cd push_campaign_service && tar -czh . | docker build -t gettalent/push-campaign-service:latest - && cd ../
-cd email_campaign_service && tar -czh . | docker build -t gettalent/email-campaign-service:latest - && cd ../
-cd ats_service && tar -czh . | docker build -t gettalent/ats-service:latest - && cd ../
+#cd sms_campaign_service && tar -czh . | docker build -t gettalent/sms-campaign-service:latest - && cd ../
+#cd push_campaign_service && tar -czh . | docker build -t gettalent/push-campaign-service:latest - && cd ../
+#cd email_campaign_service && tar -czh . | docker build -t gettalent/email-campaign-service:latest - && cd ../
+#cd ats_service && tar -czh . | docker build -t gettalent/ats-service:latest - && cd ../
 
 # Build the scheduler admin image, which is a nodejs web application
 # This is disabled temporarily due to npm issues
@@ -67,7 +67,9 @@ sleep 10
 
 echo "Beginning tests."
 
-py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests sms_campaign_service/tests resume_parsing_service/tests candidate_service/tests email_campaign_service/tests # push_campaign_service/tests ats_service/tests
+#py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests sms_campaign_service/tests resume_parsing_service/tests candidate_service/tests email_campaign_service/tests # push_campaign_service/tests ats_service/tests
+
+py.test -n 4 social_network_service/tests
 
 if [ $? -ne 0 ] ; then
     exit 1
