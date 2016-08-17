@@ -15,58 +15,6 @@ API_URL = PushCampaignApiUrl.HOST_NAME
 VERSION = PushCampaignApi.VERSION
 
 
-@contract
-def missing_keys_test(keys, smartlist, token, campaign_id=None, method='post'):
-    """
-    This function sends a request to api with required field
-    with an invalid value and checks that it returns InvalidUsage 400
-    :param list | tuple keys: required fields
-    :param dict smartlist: smartlist dict object
-    :param string token: auth token
-    :param int | long | None campaign_id: push campaign id
-    :param http_method method: http request method, post/put
-    """
-    for key in keys:
-        data = generate_campaign_data()
-        data['smartlist_ids'] = [smartlist['id']]
-        data.pop(key)
-        if method == 'post':
-            create_campaign(data, token, expected_status=(codes.BAD_REQUEST,))
-        elif campaign_id:
-            update_campaign(campaign_id, data, token, expected_status=(codes.BAD_REQUEST,))
-
-
-@contract
-def unexpected_field_test(method, url, data, token):
-    """
-    This function send a request to API with an unexpected field in request body. API should raise InvalidUsage 400
-    :param http_method method: request method, POST/PUT
-    :param string url: API resource url
-    :param dict data: request data
-    :param string token: access token
-    """
-    data[fake.word()] = fake.word()
-    response = send_request(method, url, token, data)
-    assert response.status_code == codes.BAD_REQUEST
-
-
-@contract
-def invalid_data_test(method, url, token):
-    """
-    This functions sends http request to a given url with different
-    invalid data and checks for InvalidUsage
-    :param http_method method: http method e.g. POST, PUT
-    :param string url: api url
-    :param string token: auth token
-    """
-    data_set = [None, {}, get_fake_dict(), '',  '  ', []]
-    for data in data_set:
-        response = send_request(method, url, token, data, is_json=False)
-        assert response.status_code == codes.BAD_REQUEST
-        response = send_request(method, url, token, data, is_json=True)
-        assert response.status_code == codes.BAD_REQUEST
-
-
 def generate_campaign_data():
     """
     Generates random campaign data

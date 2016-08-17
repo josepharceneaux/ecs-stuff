@@ -36,26 +36,24 @@ Unschedule a campaign: /v1/push-campaigns/:id/schedule [DELETE]
 """
 # Builtin imports
 import sys
-from datetime import datetime, timedelta
-# TODO: Remove unused import of timedelta. Also kindly double check in every file of this PR. Thanks
+from datetime import datetime
 # 3rd party imports
 from requests import codes
 
 # Application specific imports
 from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from push_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
-                                                        schedule_campaign, invalid_data_test,
-                                                        reschedule_campaign, unschedule_campaign,
-                                                        unexpected_field_test, get_campaign, match_schedule_data)
-from push_campaign_service.common.utils.test_utils import send_request
+                                                        schedule_campaign, reschedule_campaign, unschedule_campaign,
+                                                        get_campaign, match_schedule_data)
+from push_campaign_service.common.utils.test_utils import (send_request, invalid_data_test, unexpected_field_test,
+                                                           missing_keys_test)
 from push_campaign_service.common.routes import PushCampaignApiUrl
-from push_campaign_service.common.utils.test_utils import unauthorize_test
+from push_campaign_service.common.utils.test_utils import unauthorize_test, invalid_value_test
 from push_campaign_service.common.models.misc import Frequency
 
 URL = PushCampaignApiUrl.SCHEDULE
 
-# TODO: Remove unused import of DatetimeUtils. Also kindly double check in every file of this PR. Thanks
+
 class TestScheduleCampaignUsingPOST(object):
 
     # Test URL: /v1/push-campaigns/{id}/schedule [POST]
@@ -103,16 +101,7 @@ class TestScheduleCampaignUsingPOST(object):
         """
         # Test missing start_datetime field which is mandatory to schedule a campaign
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
-        del data['start_datetime']
-        schedule_campaign(campaign_in_db['id'], data, token_first,
-                          expected_status=(codes.BAD_REQUEST,))
-
-        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
-        del data['end_datetime']
-        response = schedule_campaign(campaign_in_db['id'], data, token_first,
-                                     expected_status=(codes.BAD_REQUEST,))
-        error = response['error']
-        assert 'end_datetime' in error['message']
+        missing_keys_test(URL % campaign_in_db['id'], data, ['start_datetime', 'end_datetime'], token_first)
 
     def test_schedule_compaign_with_invalid_datetime_format(self, token_first, campaign_in_db,
                                                            smartlist_first):
@@ -181,7 +170,6 @@ class TestScheduleCampaignUsingPOST(object):
         data = generate_campaign_schedule_data()
         schedule_campaign(campaign_in_db['id'], data, token_second, expected_status=(codes.FORBIDDEN,))
 
-    # TODO: You can find this test in tests_helpers.py
     def test_campaign_schedule_with_invalid_frequency_id(self, token_first, campaign_in_db):
         """
         Send a POST request to schedule a campaign with data where start datetime is in past. API
@@ -189,9 +177,9 @@ class TestScheduleCampaignUsingPOST(object):
         :param string token_first: auth token
         :param dict campaign_in_db: campaign object
         """
-        some_invalid_frequency = -1
-        data = generate_campaign_schedule_data(frequency_id=some_invalid_frequency)
-        schedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
+        url = URL % campaign_in_db['id']
+        data = generate_campaign_schedule_data()
+        invalid_value_test(url, data, 'frequency_id', CampaignsTestsHelpers.INVALID_FREQUENCY_IDS, token_first)
 
     def test_campaign_schedule_with_past_datetimes(self, token_first, campaign_in_db):
         """
@@ -346,8 +334,7 @@ class TestRescheduleCampaignUsingPUT(object):
         match_schedule_data(data, campaign)
         # retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
         #       args=(campaign_id, token_first), kwargs={'count': 1})
-    # TODO: Can we make this generic as I requested earlier? so that it will be available in tests_helpers.py and
-    # TODO: can be used across campaign services
+
     def test_campaign_reschedule_with_invalid_frequency_ids(self, token_first, campaign_in_db, schedule_a_campaign):
         """
         Try to reschedule a campaign with invalid frequency id like -1, API will raise InvalidUsage 400
@@ -355,10 +342,10 @@ class TestRescheduleCampaignUsingPUT(object):
         :param dict campaign_in_db: campaign object
         :param dict schedule_a_campaign: a fixture to schedule a campaign
         """
-        frequency_ids = CampaignsTestsHelpers.INVALID_FREQUENCY_IDS
-        for invalid_id in frequency_ids:
-            data = generate_campaign_schedule_data(frequency_id=invalid_id)
-            reschedule_campaign(campaign_in_db['id'], data, token_first, expected_status=(codes.BAD_REQUEST,))
+        url = URL % campaign_in_db['id']
+        data = generate_campaign_schedule_data()
+        invalid_value_test(url, data, 'frequency_id', CampaignsTestsHelpers.INVALID_FREQUENCY_IDS, token_first,
+                           method='put')
 
     def test_campaign_reschedule_with_past_datetimes(self, token_first, campaign_in_db, schedule_a_campaign):
         """
