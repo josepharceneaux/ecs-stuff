@@ -3,6 +3,7 @@ from apscheduler.jobstores.redis import RedisJobStore
 from redis._compat import urlparse
 
 from scheduler_service import SchedulerUtils, TalentConfigKeys
+from scheduler_service.common.talent_config_manager import TalentEnvs
 from scheduler_service.modules.scheduler import flask_app
 
 __author__ = 'saad'
@@ -10,7 +11,10 @@ __author__ = 'saad'
 MAX_THREAD_POOLS = 12
 
 url = urlparse(flask_app.config[TalentConfigKeys.REDIS_URL_KEY])
-job_store = RedisJobStore(host=url.hostname, password=url.password)
+if flask_app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
+    job_store = RedisJobStore(db=1, host=url.hostname, password=url.password)
+else:
+    job_store = RedisJobStore(db=0, host=url.hostname, password=url.password)
 
 executors = {
     'default': ThreadPoolExecutor(MAX_THREAD_POOLS),

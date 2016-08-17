@@ -24,34 +24,10 @@ from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
                       CandidatePoolApiUrl, SchedulerApiUrl)
 from ..custom_contracts import define_custom_contracts
 from ..error_handling import NotFoundError
+from handy_functions import send_request
 
 define_custom_contracts()
 fake = Faker()
-
-
-@contract
-def send_request(method, url, access_token, data=None, params=None, is_json=True, verify=True):
-    """
-    This is a generic method to send HTTP request. We can just pass our data/ payload
-    and it will make it json and send it to target url with application/json as content-type
-    header.
-    :param http_method method: standard HTTP method like post, get (in lowercase)
-    :param string url: target url
-    :param (string | None)  access_token: authentication token, token can be empty, None or invalid
-    :param (dict | None) data: payload data for request
-    :param (dict | None) params: query params
-    :param bool is_json: a flag to determine, whether we need to dump given data or not.
-            default value is true because most of the APIs are using json content-type.
-    :param bool verify: set this to false
-    :return:
-    """
-    method = method.lower()
-    request_method = getattr(requests, method)
-    headers = dict(Authorization='Bearer %s' % access_token)
-    if is_json:
-        headers['Content-Type'] = 'application/json'
-        data = json.dumps(data)
-    return request_method(url, data=data, params=params, headers=headers, verify=verify)
 
 
 def response_info(response):

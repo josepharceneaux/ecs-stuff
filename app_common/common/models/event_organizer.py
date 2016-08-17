@@ -10,7 +10,7 @@ class EventOrganizer(db.Model):
     email = db.Column(db.String(200))
     about = db.Column(db.String(1000))
     social_network_id = db.Column(db.Integer, db.ForeignKey('social_network.Id'), nullable=False)
-    social_network_organizer_id = db.Column(db.String(10))
+    social_network_organizer_id = db.Column(db.String(20), nullable=True)
 
     # Relationships
     event = db.relationship('Event', backref='event_organizer', lazy='dynamic')

@@ -15,6 +15,7 @@ from itertools import izip_longest
 from requests import ConnectionError
 from flask import current_app, request
 from werkzeug.exceptions import BadRequest
+from contracts import contract
 
 # Application Specific
 from ..models.user import User
@@ -22,6 +23,10 @@ from ..talent_config_manager import TalentConfigKeys
 from ..utils.validators import raise_if_not_positive_int_or_long
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
+from ..custom_contracts import define_custom_contracts
+
+
+define_custom_contracts()
 
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
@@ -461,3 +466,31 @@ def normalize_value(value):
     assert isinstance(value, basestring), "value must be of type string"
     return value.strip().lower()
 
+
+@contract
+def send_request(method, url, access_token, data=None, params=None, is_json=True, verify=True):
+    """
+    This is a generic method to send HTTP request. We can just pass our data/ payload
+    and it will make it json and send it to target url with application/json as content-type
+    header.
+    :param http_method method: standard HTTP method like post, get (in lowercase)
+    :param string url: target url
+    :param (string | None)  access_token: authentication token, token can be empty, None or invalid
+    :param (dict | None) data: payload data for request
+    :param (dict | None) params: query params
+    :param bool is_json: a flag to determine, whether we need to dump given data or not.
+            default value is true because most of the APIs are using json content-type.
+    :param bool verify: set this to false
+    :return: request method i.e POST, GET, DELETE, PATCH
+    :rtype: Response
+    """
+    method = method.lower()
+    request_method = getattr(requests, method)
+    if access_token:
+        headers = dict(Authorization=access_token if 'Bearer' in access_token else 'Bearer %s' % access_token)
+    else:
+        headers = dict(Authorization='Bearer %s' % access_token)
+    if is_json:
+        headers['Content-Type'] = 'application/json'
+        data = json.dumps(data)
+    return request_method(url, data=data, params=params, headers=headers, verify=verify)
