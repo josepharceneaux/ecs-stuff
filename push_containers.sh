@@ -81,12 +81,14 @@ else
 	fi
 
 	# Push the image to our repository
-	push_command="docker push ${ecr_registry_url}/gettalent/${app}:${timestamp_tag}"
+	echo `date`
+	push_command="time docker push ${ecr_registry_url}/gettalent/${app}:${timestamp_tag}"
 	echo $push_command
         eval $push_command
 	if [ $? -ne 0 ] ; then
 	    continue
 	fi
+	echo `date`
 
 	# Update task definition for this service and restart staging services
 	move_command="python scripts/ecs_task_update.py ${app} ${timestamp_tag} stage restart"
