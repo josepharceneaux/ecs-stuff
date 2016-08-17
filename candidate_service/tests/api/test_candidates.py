@@ -25,7 +25,7 @@ class TestCandidateSourceId(object):
     CANDIDATE_URL = CandidateApiUrl.CANDIDATE
     CANDIDATES_URL = CandidateApiUrl.CANDIDATES
 
-    def test_add_candidate_with_invalid_source_id(self, user_first, access_token_first, talent_pool):
+    def test_add_candidate_with_invalid_source_id(self, access_token_first, talent_pool):
         """
         Test: Add a candidate using an invalid source ID
         """

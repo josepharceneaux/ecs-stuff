@@ -12,18 +12,20 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import get_country_code_from_name, order_military_services, order_work_experiences
 from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.routes import UserServiceApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.utils.validators import get_phone_number_extension_if_exists
 from candidate_service.common.utils.iso_standards import get_country_name
 
 # Sample data
 from candidate_sample_data import (
-    GenerateCandidateData, generate_single_candidate_data, candidate_phones, candidate_military_service,
+    GenerateCandidateData, generate_single_candidate_data, candidate_military_service,
     candidate_preferred_locations, candidate_skills, candidate_social_network
 )
 
 # Models
 from candidate_service.common.models.candidate import CandidateEmail
+from candidate_service.common.models.user import Role
 
 # Custom errors
 from candidate_service.custom_error_codes import CandidateCustomErrors as candidate_errors
@@ -481,12 +483,11 @@ class TestCreateInvalidCandidates(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == candidate_errors.INVALID_INPUT
 
-    def test_create_candidates_in_bulk_with_one_erroneous_data(self, access_token_first, user_first, talent_pool):
+    def test_create_candidates_in_bulk_with_one_erroneous_data(self, access_token_first, talent_pool):
         """
         Test: Attempt to create few candidates, one of which will have bad data
         Expect: 400, no record should be added to the db
         """
-
         # Candidate data with one erroneous email address
         email_1, email_2 = fake.safe_email(), fake.safe_email()
         data = {'candidates': [
@@ -501,9 +502,37 @@ class TestCreateInvalidCandidates(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == candidate_errors.INVALID_EMAIL
 
+    def test_create_candidates_with_unauthorized_source_id(self, access_token_first, talent_pool,
+                                                           user_second, access_token_second):
+        """
+        Test: Attempt to add candidate with a source ID that belongs to a different domain
+        """
+        user_second.role_id = Role.get_by_name('TALENT_ADMIN').id
+        db.session.commit()
+
+        # Create new source in a different domain
+        data = {"source": {"description": str(uuid.uuid4())[0:5], "notes": "2016 summer event"}}
+        resp = send_request('post', UserServiceApiUrl.DOMAIN_SOURCES, access_token_second, data)
+        print response_info(resp)
+        assert resp.status_code == requests.codes.CREATED
+
+        other_domain_source_id = resp.json()['source']['id']
+        data = {'candidates': [
+            {
+                'talent_pool_ids': {'add': [talent_pool.id]},
+                'source_id': other_domain_source_id
+            }
+        ]}
+
+        # Add candidate with unauthorized source ID
+        create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.FORBIDDEN
+        assert create_resp.json()['error']['code'] == candidate_errors.INVALID_SOURCE_ID
+
 
 class TestCreateHiddenCandidate(object):
-    def test_create_hidden_candidate(self, access_token_first, user_first, talent_pool):
+    def test_create_hidden_candidate(self, access_token_first, talent_pool):
         """
         Test: Create a candidate that was previously web-hidden
         Expect: 201, candidate should no longer be web hidden.

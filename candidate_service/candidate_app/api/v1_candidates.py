@@ -170,11 +170,12 @@ class CandidatesResource(Resource):
             # Provided source ID must belong to candidate's domain
             source_id = candidate_dict_.get('source_id')
             if source_id:
-                if not CandidateSource.get_domain_source(source_id=source_id, domain_id=domain_id):
-                    raise InvalidUsage("Provided source ID ({source_id}) not "
-                                       "recognized for candidate's domain (id = {domain_id})"
-                                       .format(source_id=source_id, domain_id=domain_id),
-                                       error_code=custom_error.INVALID_SOURCE_ID)
+                candidate_source = CandidateSource.get(source_id)
+                if candidate_source.domain_id != domain_id:
+                    raise ForbiddenError("Provided source ID ({source_id}) not "
+                                         "recognized for candidate's domain (id = {domain_id})"
+                                         .format(source_id=source_id, domain_id=domain_id),
+                                         error_code=custom_error.INVALID_SOURCE_ID)
 
             source_product_id = candidate_dict_.get('source_product_id', 2)
             if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in (1, 2, 3, 4)):
@@ -399,11 +400,12 @@ class CandidatesResource(Resource):
 
             # Provided source ID must belong to candidate's domain
             if source_id:
-                if not CandidateSource.get_domain_source(source_id=source_id, domain_id=domain_id):
-                    raise InvalidUsage("Provided source ID ({source_id}) not "
-                                       "recognized for candidate's domain (id = {domain_id})"
-                                       .format(source_id=source_id, domain_id=domain_id),
-                                       error_code=custom_error.INVALID_SOURCE_ID)
+                candidate_source = CandidateSource.get(source_id)
+                if candidate_source.domain_id != domain_id:
+                    raise ForbiddenError("Provided source ID ({source_id}) not "
+                                         "recognized for candidate's domain (id = {domain_id})"
+                                         .format(source_id=source_id, domain_id=domain_id),
+                                         error_code=custom_error.INVALID_SOURCE_ID)
 
             source_product_id = _candidate_dict.get('source_product_id')
             if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in (1, 2, 3, 4)):
