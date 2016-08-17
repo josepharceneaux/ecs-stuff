@@ -72,7 +72,10 @@ def google_vision_ocr(file_array):
 
         if google_api_errors:
             logger.warn('Error parsing with Google Vision. Trying Abby parse. Errors: {}'.format(google_api_errors))
-            raise InternalServerError('Nice Message Needed.')
+            raise InternalServerError(
+                error_message=error_constants.GOOGLE_OCR_ERROR_IN_RESPONSE['message'],
+                error_code=error_constants.GOOGLE_OCR_ERROR_IN_RESPONSE['code'],
+            )
 
         logger.info("google_vision_ocr: Google API response JSON: %s", ocr_results)
 
