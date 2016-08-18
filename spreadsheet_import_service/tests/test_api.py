@@ -74,7 +74,7 @@ def test_health_check():
     assert response.status_code == 200
 
 
-def test_import_candidates_from_file(access_token_first, user_first, talent_pool, domain_custom_fields):
+def test_import_candidates_from_file(access_token_first, talent_pool, domain_custom_fields):
 
     # Logged-in user trying to import 15 candidates from a csv spreadsheet
     # Candidates with erroneous data will not be added, so the count will reflect only successfully added candidates
@@ -98,12 +98,11 @@ def test_import_candidates_from_file(access_token_first, user_first, talent_pool
     assert response.get('status') == 'complete'
 
 
-def test_create_candidate_from_excel_file(access_token_first, user_first, talent_pool, domain_custom_fields):
+def test_create_candidate_from_excel_file(access_token_first, talent_pool, domain_custom_fields):
     """
     Test:  Import, parse, and create candidates from excel file. If a candidate already exists, it should
              still continue with the rest of the candidates
     """
-
     # Create candidate
     data = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]},
                             'emails': [{'address': 'Wadlejitu86+22222@gmail.com'}]}]}
@@ -119,3 +118,23 @@ def test_create_candidate_from_excel_file(access_token_first, user_first, talent
     print "\nresponse_content: {}".format(response)
     assert status_code == 201
     assert response.get('status') == 'complete'
+
+
+class TestCreateCandidateFromExcelFile(object):
+    """
+    Class contains functional tests that attempt to create candidate(s) via an excel file
+    """
+    def test_candidate_with_tags_and_skills(self, access_token_first, talent_pool, domain_custom_fields):
+        """
+        Test: Add candidates with tags & skills column
+        """
+        response, status_code = import_spreadsheet_candidates(talent_pool_id=talent_pool.id,
+                                                              access_token=access_token_first,
+                                                              spreadsheet_file_name="tags_skills.xls",
+                                                              is_csv=False,
+                                                              import_candidates=True,
+                                                              domain_custom_field=domain_custom_fields[0])
+        print "\nstatus_code: {}".format(status_code)
+        print "\nresponse: {}".format(response)
+        assert status_code == requests.codes.CREATED
+        assert response.get('status') == 'complete'
