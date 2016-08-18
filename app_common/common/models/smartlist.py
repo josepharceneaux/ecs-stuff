@@ -8,7 +8,7 @@ class Smartlist(db.Model):
     __tablename__ = 'smart_list'
     id = db.Column('Id', db.Integer, primary_key=True)
     name = db.Column('Name', db.String(127))
-    search_params = db.Column('SearchParams', db.String(1023))
+    search_params = db.Column('SearchParams', db.TEXT)
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
     talent_pipeline_id = db.Column('talentPipelineId', db.Integer, db.ForeignKey('talent_pipeline.id'))
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.utcnow)

@@ -86,7 +86,7 @@ class TalentPipeline(db.Model):
     date_needed = db.Column(db.DateTime, nullable=False)
     user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id'), nullable=False)
-    search_params = db.Column(db.String(1023))
+    search_params = db.Column(db.TEXT)
     is_hidden = db.Column(TINYINT, default='0', nullable=False)
     added_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow,

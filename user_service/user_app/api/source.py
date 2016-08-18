@@ -87,7 +87,7 @@ class DomainSourceResource(Resource):
         domain_id = authed_user.domain_id  # User's domain ID
 
         # Return a single source If source ID is provided
-        if source_id:
+        if source_id is not None:
             source = CandidateSource.get(source_id)
             # Source ID must be recognized
             if not source_id:
