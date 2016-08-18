@@ -301,10 +301,10 @@ class PushCampaignBase(CampaignBase):
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
             for created Campaign.
         - Activity will appear as (e.g)
-           "'Harvey Specter' created an SMS campaign: 'Hiring at getTalent'"
+           "'Harvey Specter' created an Push campaign: 'Hiring at getTalent'"
         - This method is called from save() method of class
-            CampaignBase inside common/campaign_services/sms_campaign_base.py.
-        :param source: "sms_campaign" obj
+            CampaignBase inside common/campaign_services/campaign_base.py.
+        :param source: "push_campaign" obj
         :type source: PushCampaign
         :param User user: User object
         :exception: InvalidUsage
@@ -316,7 +316,7 @@ class PushCampaignBase(CampaignBase):
         """
         - when a user deletes a campaign, here we set "params" and "type" of activity to
             be stored in db table "Activity" when a user deletes a campaign.
-        - Activity will appear as " Michal has deleted an SMS campaign 'Jobs at Oculus'.
+        - Activity will appear as " Michal has deleted an Push campaign 'Jobs at Oculus'.
         - This method is called from delete() method of class CampaignBase.
         :param source: push_campaign obj
         :type source: PushCampaign
