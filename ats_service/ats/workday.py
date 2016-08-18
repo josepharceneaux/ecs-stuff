@@ -8,10 +8,12 @@ import json
 
 from urlparse import urlparse
 
+from ats_service.common.models.workday import WorkdayTable
+
 
 class Workday(object):
     """
-    Class representing datq we need to use the Workday API.
+    Class representing data we need to use the Workday API.
     """
 
     def __init__(self, logger, ats_name, login_url, user_id, credentials):

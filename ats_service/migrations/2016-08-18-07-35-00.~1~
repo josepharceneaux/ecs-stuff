@@ -1,0 +1,33 @@
+"""
+Add Workday table
+"""
+
+
+from sqlalchemy import text
+
+from ats_service.app import db
+from ats_service.common.models.workday import Workday
+
+
+table_name = ATS.__tablename__
+query = "select * from information_schema.tables where table_name = '{}'".format(table_name)
+result = db.session.execute(query)
+tables = list(result)
+if len(tables) == 0:
+    db.session.execute(
+        text("create table `{}` ( \
+                                 `id` int auto_increment key, \
+                                 `workday_reference` text not null, \
+                                 `pre_hire_reference` text not null, \
+                                 `worker_reference` text not null, \
+                                 `name_data` text not null, \
+                                 `contact_data` text not null, \
+                                 `social_media_data` text not null, \
+                                 `status_data` text not null, \
+                                 `job_application_data` text not null, \
+                                 `prospect_data` text not null, \
+                                 `candidate_id_data` text not null, \
+                                 )".format(table_name))
+        )
+
+db.session.commit()
