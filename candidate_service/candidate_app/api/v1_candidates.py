@@ -1647,8 +1647,8 @@ class CandidateDeviceResource(Resource):
                     db.session.rollback()
                     raise
             if os.getenv(TalentConfigKeys.ENV_KEY) == TalentEnvs.JENKINS:
-                return retry(save_device, sleeptime=1, attempts=5, sleepscale=1,
-                             retry_exceptions=(OperationalError,), args=(candidate_device,))
+                retry(save_device, sleeptime=1, attempts=5, sleepscale=1, retry_exceptions=(OperationalError,),
+                      args=(candidate_device,))
             else:
                 CandidateDevice.save(candidate_device)
 
