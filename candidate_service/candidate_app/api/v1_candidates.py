@@ -1659,21 +1659,12 @@ class CandidateDeviceResource(Resource):
                     logger.info('Try again, Error occurred while saving candidate device. Error: %s', e)
                     db.session.rollback()
                     db.session.commit()
-                    raise
+                    raise Exception('Failed to save')
             if os.getenv(TalentConfigKeys.ENV_KEY) == TalentEnvs.JENKINS:
-                retry(save_device, sleeptime=1, attempts=5, sleepscale=1, retry_exceptions=(OperationalError,),
+                retry(save_device, sleeptime=1, attempts=5, sleepscale=1, retry_exceptions=(Exception,),
                       args=(candidate_device,))
-                # q = """INSERT INTO candidate_device (one_signal_device_id, candidate_id, registered_at_datetime)
-                #         VALUES ('%s', '%s', '%s')""" % (one_signal_device_id, candidate.id, datetime.datetime.utcnow())
-                # sql = text(q)
-                # result = db.engine.execute(sql)
-                # print(result)
-                # return dict(message='Device (id: %s) registered successfully with candidate (id: %s)'
-                #
-                #
-                #                     % (result.lastrowid, candidate.id)), 201
-
-            CandidateDevice.save(candidate_device)
+            else:
+                CandidateDevice.save(candidate_device)
 
             return dict(message='Device (id: %s) registered successfully with candidate (id: %s)'
                                 % (candidate_device.id, candidate.id)), 201
