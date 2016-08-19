@@ -7,7 +7,6 @@ import datetime
 
 # Third-Part imports
 import json
-
 import requests
 
 # App specific imports

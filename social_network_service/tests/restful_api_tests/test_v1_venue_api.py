@@ -99,14 +99,14 @@ class TestVenues:
         assert 'not_deleted' in response and len(response['not_deleted']) == 1
         assert 'message' in response
 
-    def test_delete_with_valid_token(self, token_first, venue_in_db):
+    def test_delete_with_valid_token(self, token_first, venue_in_db_second):
         """
         Create venue using endpoint and send DELETE that venue using id
         :param token:
-        :param venue_in_db:
+        :param venue_in_db_second:
         :return:
         """
-        venue_ids = {'ids': [venue_in_db.id]}
+        venue_ids = {'ids': [venue_in_db_second.id]}
         response = requests.delete(SocialNetworkApiUrl.VENUES,  data=json.dumps(venue_ids),
                                    headers=get_headers(token_first))
         logger.info(response.text)

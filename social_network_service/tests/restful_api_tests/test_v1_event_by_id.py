@@ -6,6 +6,7 @@ Test cases for meetup and eventbrite event i.e get/delete event by id or using w
 import datetime
 import json
 import sys
+from copy import deepcopy
 
 import requests
 # Application imports
@@ -171,13 +172,13 @@ class TestEventById(object):
         """
         unauthorize_test('delete', url=SocialNetworkApiUrl.EVENT % event_in_db.id)
 
-    def test_delete_with_valid_token(self, token_first, event_in_db):
+    def test_delete_with_valid_token(self, token_first, event_in_db_second):
         """
         - Try to delete event data using id, if deleted you expect 200 response
         - Then again try to delete event using same event id and expect 403 response
         """
-        event_id = event_in_db.id
-        event_data = event_in_db.to_json()
+        event_id = event_in_db_second.id
+        event_data = event_in_db_second.to_json()
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id,
                                    headers=auth_header(token_first))
         logger.info(response.text)
