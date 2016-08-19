@@ -16,6 +16,8 @@ from _mysql_exceptions import OperationalError
 # Flask specific
 from flask import request
 from flask_restful import Resource
+from sqlalchemy import text
+
 from candidate_service.candidate_app import logger
 
 # Database connection
@@ -1646,23 +1648,31 @@ class CandidateDeviceResource(Resource):
         # Send a GET request to OneSignal API to confirm that this device id is valid
         response = one_signal_client.get_player(one_signal_device_id)
         if response.ok:
-            # Device exists with id
+
+
+            # def save_device(device):
+            #     try:
+            #         CandidateDevice.save(device)
+            #     except OperationalError as e:
+            #         logger.info('Try again, Error occurred while saving candidate device. Error: %s', e)
+            #         db.session.rollback()
+            #         raise
+            if os.getenv(TalentConfigKeys.ENV_KEY) == TalentEnvs.JENKINS:
+                #     retry(save_device, sleeptime=1, attempts=5, sleepscale=1, retry_exceptions=(OperationalError,),
+                #           args=(candidate_device,))
+                q = """INSERT INTO candidate_device (one_signal_device_id, candidate_id, registered_at_datetime)
+                        VALUES ('%s', '%s', '%s')""" % (one_signal_device_id, candidate.id, datetime.datetime.utcnow())
+                sql = text(q)
+                result = db.engine.execute(sql)
+                print(result)
+                return dict(message='Device (id: %s) registered successfully with candidate (id: %s)'
+
+            
+                                    % (result.lastrowid, candidate.id)), 201
             candidate_device = CandidateDevice(candidate_id=candidate.id,
                                                one_signal_device_id=one_signal_device_id,
                                                registered_at_datetime=datetime.datetime.utcnow())
-
-            def save_device(device):
-                try:
-                    CandidateDevice.save(device)
-                except OperationalError as e:
-                    logger.info('Try again, Error occurred while saving candidate device. Error: %s', e)
-                    db.session.rollback()
-                    raise
-            if os.getenv(TalentConfigKeys.ENV_KEY) == TalentEnvs.JENKINS:
-                retry(save_device, sleeptime=1, attempts=5, sleepscale=1, retry_exceptions=(OperationalError,),
-                      args=(candidate_device,))
-            else:
-                CandidateDevice.save(candidate_device)
+            CandidateDevice.save(candidate_device)
 
             return dict(message='Device (id: %s) registered successfully with candidate (id: %s)'
                                 % (candidate_device.id, candidate.id)), 201
