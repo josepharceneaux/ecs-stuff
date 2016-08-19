@@ -7,7 +7,7 @@ import json
 from _mysql_exceptions import IntegrityError
 import pytest
 # Application Specific
-from activity_service.activities_app import db
+from activity_service.app import db
 from activity_service.common.models.candidate import Candidate
 from activity_service.common.models.candidate import CandidateSource
 from activity_service.common.models.misc import Activity

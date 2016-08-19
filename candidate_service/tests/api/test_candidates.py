@@ -25,17 +25,16 @@ class TestCandidateSourceId(object):
     CANDIDATE_URL = CandidateApiUrl.CANDIDATE
     CANDIDATES_URL = CandidateApiUrl.CANDIDATES
 
-    def test_add_candidate_with_invalid_source_id(self, user_first, access_token_first, talent_pool):
+    def test_add_candidate_with_invalid_source_id(self, access_token_first, talent_pool):
         """
-        Test: Add a candidate using an invalid source ID
+        Test: Add a candidate using an unrecognized source ID
         """
-
         # Create candidate
         data = {'candidates': [{'source_id': sys.maxint, 'talent_pool_ids': {'add': [talent_pool.id]}}]}
         create_resp = send_request('post', self.CANDIDATES_URL, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == http_status_codes.bad_request
-        assert create_resp.json()['error']['code'] == custom_errors.INVALID_SOURCE_ID
+        assert create_resp.status_code == http_status_codes.NOT_FOUND
+        assert create_resp.json()['error']['code'] == custom_errors.SOURCE_NOT_FOUND
 
     def test_add_candidate_with_source_id_not_belonging_to_domain(self, user_second, access_token_first,
                                                                   talent_pool, access_token_second):
@@ -57,7 +56,7 @@ class TestCandidateSourceId(object):
         data = {'candidates': [{'source_id': source_id, 'talent_pool_ids': {'add': [talent_pool.id]}}]}
         create_resp = send_request('post', self.CANDIDATES_URL, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == http_status_codes.bad_request
+        assert create_resp.status_code == http_status_codes.FORBIDDEN
         assert create_resp.json()['error']['code'] == custom_errors.INVALID_SOURCE_ID
 
     def test_add_candidate_with_source_id(self, user_first, access_token_first, talent_pool):
