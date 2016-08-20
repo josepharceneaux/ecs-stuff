@@ -35,7 +35,10 @@ class Workday(object):
         """
         Perform authencation using our credentials, and store any tokens on this object.
         """
+        self.logger.info("GET {}".format(self.login_url))
         auth_token = 'auth_token'
+        response = requests.request('GET', self.login_url)
+        self.logger.info("GET {}".format(response.text))
 
     def fetch_individual_references(self):
         """
@@ -52,3 +55,16 @@ class Workday(object):
         self.logger.info("GET {}".format(self.fetch_individual_url))
         response = requests.request('GET', self.fetch_individual_url + "/{}".format(reference))
         return response.text
+
+    def save_individual(self, data, candidate_id):
+        """
+        Save an individual to the Workday table.
+
+        :param string data: Jason description of individual.
+        :param int candidate_id: id into the ATS Candidate table.
+        """
+        data_dict = json.loads(data)
+        reference = data_dict['ats_remote_id']
+        profile = json.loads(data_dict['profile_json'])['data']
+        self.logger.info("SAVE {} {}".format(reference, profile))
+        self.logger.info("SOCIAL {}".format(profile['social_media_account_data']))

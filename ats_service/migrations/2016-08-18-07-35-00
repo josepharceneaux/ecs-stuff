@@ -6,9 +6,10 @@ Add Workday table
 from sqlalchemy import text
 
 from ats_service.app import db
+from ats_service.common.models.workday import WorkdayTable
 
 
-table_name = ATS.__tablename__
+table_name = WorkdayTable.__tablename__
 query = "select * from information_schema.tables where table_name = '{}'".format(table_name)
 result = db.session.execute(query)
 tables = list(result)

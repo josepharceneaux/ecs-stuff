@@ -420,15 +420,17 @@ class ATSCandidateRefreshService(Resource):
         for ref in individual_references:
             individual = ats_object.fetch_individual(ref)
             return_list.append(individual)
-            # ats_service.app.logger.info("Individual: {}".format(individual))
+            ats_service.app.logger.info("Individual: {}".format(individual))
             data = { 'profile_json' : individual, 'ats_remote_id' : ref }
 
             present = ATSCandidate.get_by_ats_id (account_id, ref)
             if present:
                 ats_service.app.logger.info("PRESENT: {}".format(ref))
                 update_ats_candidate(account_id, present.id, data)
+                ats_object.save_individual(json.dumps(data), present.id)
             else:
-                new_ats_candidate(account_id, data)
+                candidate = new_ats_candidate(account_id, data)
                 ats_service.app.logger.info("NEW")
+                ats_object.save_individual(json.dumps(data), candidate.id)
 
         return return_list

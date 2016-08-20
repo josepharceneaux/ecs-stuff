@@ -23,6 +23,7 @@ class WorkdayTable(db.Model):
     status_data = db.Column(db.Text)
     job_application_data = db.Column(db.Text)
     prospect_data = db.Column(db.Text)
+    # This is the id into the ATS candidate table, not GT candidate table
     candidate_id_data = db.Column(db.Text)
 
     def __repr__(self):
