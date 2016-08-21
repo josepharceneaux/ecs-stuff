@@ -4,8 +4,6 @@ import json
 import requests
 # App specific imports
 from datetime import datetime
-
-from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.tests.api_conftest import token_first, user_first
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
@@ -13,7 +11,7 @@ from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.tests.helper_functions import auth_header, get_headers
 
 
-class TestOrganizers:
+class TestOrganizers(object):
     def test_get_with_invalid_token(self):
         """
         Send GET request with invalid token in header and response should be unauthorize access
@@ -66,8 +64,7 @@ class TestOrganizers:
             "user_id": user_first['id'],
             "name": datetime.now().strftime('%Y%m%dT%H%M%S'),
             "email": "testemail@gmail.com",
-            "about": "He is a testing engineer",
-
+            "about": "He is a testing engineer"
         }
         response = requests.post(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(event_organizer),
                                  headers=get_headers(token_first))

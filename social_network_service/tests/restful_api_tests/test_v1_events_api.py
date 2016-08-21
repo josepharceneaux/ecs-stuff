@@ -24,7 +24,7 @@ from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.tests.helper_functions import auth_header, send_post_request
 
 
-class TestResourceEvents:
+class TestResourceEvents(object):
 
     def test_get_with_invalid_token(self):
         """

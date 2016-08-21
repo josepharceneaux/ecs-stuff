@@ -6,7 +6,6 @@ Test cases for meetup and eventbrite event i.e get/delete event by id or using w
 import datetime
 import json
 import sys
-from copy import deepcopy
 
 import requests
 # Application imports

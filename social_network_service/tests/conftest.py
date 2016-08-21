@@ -609,9 +609,39 @@ def organizer_in_db(request, user_first, token_first):
 
 
 @pytest.fixture()
-def get_test_events(request, user_first, meetup, eventbrite, meetup_venue,
-                    eventbrite_venue, test_eventbrite_credentials, meetup_group,
-                    test_meetup_credentials, organizer_in_db, token_first):
+def get_test_event_eventbrite(request, user_first, eventbrite,
+                    eventbrite_venue,
+                    organizer_in_db, token_first):
+    """
+    This fixture returns data (dictionary) to create eventbrite events
+    """
+    # Data for Eventbrite
+    eventbrite_dict = EVENT_DATA.copy()
+    eventbrite_dict['social_network_id'] = eventbrite.id
+    eventbrite_dict['venue_id'] = eventbrite_venue.id
+    eventbrite_dict['organizer_id'] = organizer_in_db['id']
+    eventbrite_dict['user_id'] = user_first['id']
+
+    def delete_test_event():
+
+        if 'id' in eventbrite_dict:
+            event_id = eventbrite_dict['id']
+            del eventbrite_dict['id']
+            response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id,
+                                    access_token=token_first)
+
+            # If event is found and deleted successfully => 200
+            # If event is not found => 403
+            assert response.status_code == 200 or response.status_code == 403
+
+    request.addfinalizer(delete_test_event)
+    return eventbrite_dict
+
+
+@pytest.fixture()
+def get_test_event_meetup(request, user_first, meetup, meetup_venue,
+                    meetup_group,
+                    organizer_in_db, token_first):
     """
     This fixture returns data (dictionary) to create meetup and eventbrite events
     """
@@ -619,16 +649,9 @@ def get_test_events(request, user_first, meetup, eventbrite, meetup_venue,
     meetup_dict = EVENT_DATA.copy()
     meetup_dict['social_network_id'] = meetup.id
     meetup_dict['venue_id'] = meetup_venue.id
-    meetup_dict['organizer_id'] = organizer_in_db['id']
     meetup_dict['user_id'] = user_first['id']
     meetup_dict['group_url_name'] = meetup_group['urlname']
     meetup_dict['social_network_group_id'] = meetup_group['id']
-    # Data for Eventbrite
-    eventbrite_dict = EVENT_DATA.copy()
-    eventbrite_dict['social_network_id'] = eventbrite.id
-    eventbrite_dict['venue_id'] = eventbrite_venue.id
-    eventbrite_dict['organizer_id'] = organizer_in_db['id']
-    eventbrite_dict['user_id'] = user_first['id']
 
     def delete_test_event():
         # delete event if it was created by API. In that case, data contains id of that event
@@ -642,36 +665,23 @@ def get_test_events(request, user_first, meetup, eventbrite, meetup_venue,
             # If event is not found => 403
             assert response.status_code == 200 or response.status_code == 403
 
-        if 'id' in eventbrite_dict:
-            event_id = eventbrite_dict['id']
-            del eventbrite_dict['id']
-            response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id,
-                                    access_token=token_first)
-
-            # If event is found and deleted successfully => 200
-            # If event is not found => 403
-            assert response.status_code == 200 or response.status_code == 403
-
     request.addfinalizer(delete_test_event)
-    return meetup_dict, eventbrite_dict
+    return meetup_dict
 
 
 @pytest.fixture(params=VENDORS)
-def test_event(request, get_test_events):
+def test_event(request):
     """
     This fixture returns parameter based meetup or eventbrite data to create event
     :param get_test_events: a tuple containing data for both meetup and eventbrite with user_id
     events
     """
     if request.param == 'Meetup':
-        event_data = get_test_events[0]
-        # We don't have organizer_id field in case of meetup
-        if event_data.get('organizer_id'):
-            del event_data['organizer_id']
+        event_data = request.getfuncargvalue('get_test_event_meetup')
         return event_data
 
     if request.param == 'Eventbrite':
-        return get_test_events[1]
+        return request.getfuncargvalue('get_test_event_eventbrite')
 
 
 @pytest.fixture(params=['title', 'description',
