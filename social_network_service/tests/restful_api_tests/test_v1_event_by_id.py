@@ -1,21 +1,24 @@
 """
 Test cases for meetup and eventbrite event i.e get/delete event by id or using with valid and invalid token.
 """
-
 # Std imports
-import datetime
 import json
 import sys
 
+# Third Party
+import datetime
 import requests
+from requests import codes
+
 # Application imports
 from social_network_service.common.models import db
+from social_network_service.social_network_app import logger
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.routes import SocialNetworkApiUrl
-from social_network_service.social_network_app import logger
-from social_network_service.tests.helper_functions import auth_header, unauthorize_test
 from social_network_service.common.utils.handy_functions import send_request
+from social_network_service.common.utils.datetime_utils import DatetimeUtils
+from social_network_service.tests.helper_functions import auth_header, unauthorize_test
 
 
 class TestEventById(object):
@@ -33,11 +36,8 @@ class TestEventById(object):
         """
         - Get event using id and pass invalid token and it should throw exception 401 un-authorize
         - Also make sure if event is present in response data
-        :return:
         """
-        response = unauthorize_test(url=SocialNetworkApiUrl.EVENT % 1,
-                                    method='get'
-                                    )
+        response = unauthorize_test(url=SocialNetworkApiUrl.EVENT % 1, method='get')
         assert 'event' not in response.json()
 
     def test_get_by_id_with_valid_token(self, token_first, event_in_db):
@@ -45,16 +45,12 @@ class TestEventById(object):
         - Get event using id and response should be 200
         - Delete venue_id and organizer_id from event response data
         - Then compare values from the event data in db table and response event data
-        :param token:
-        :param event_in_db:
-        :return:
         """
         event = event_in_db
 
-        response = requests.get(SocialNetworkApiUrl.EVENT % event.id,
-                                headers=auth_header(token_first))
+        response = requests.get(SocialNetworkApiUrl.EVENT % event.id, headers=auth_header(token_first))
         logger.info(response.text)
-        assert response.status_code == 200, 'Status should be Ok (200)'
+        assert response.status_code == codes.OK, 'Status should be Ok (200)'
         results = response.json()
         assert 'event' in results
         api_event = results['event']
@@ -77,17 +73,12 @@ class TestEventById(object):
     def test_put_with_invalid_token(self):
         """
         - Try to send data using invalid access_token in header and it should give 401 (unauthorized error)
-        :return:
         """
-        unauthorize_test('put', url=SocialNetworkApiUrl.EVENT % 1,
-                         data={})
+        unauthorize_test('put', url=SocialNetworkApiUrl.EVENT % 1, data={})
 
     def test_put_with_invalid_event_id(self, token_first, event_in_db):
         """
         - Get event data from db (using fixture - event_in_db)
-        :param token:
-        :param event_in_db:
-        :return:
         """
         event = event_in_db.to_json()
 
@@ -96,16 +87,13 @@ class TestEventById(object):
         response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token_first, data=event)
 
         logger.info(response.text)
-        assert response.status_code == 404, 'Event not found with this id'
+        assert response.status_code == codes.NOT_FOUND, 'Event not found with this id'
 
     def test_put_with_invalid_event_id_and_sn(self, token_first, event_in_db):
         """
         - Get event data from db (using fixture - event_in_db)
         - Modify social_network_id to max int value in event data object
         - Send request to update event data. response should be 404 as there is no social network id = max int
-        :param token:
-        :param event_in_db:
-        :return:
         """
         event = event_in_db.to_json()
         event_id = event['id']
@@ -118,7 +106,7 @@ class TestEventById(object):
         event['social_network_event_id'] = sys.maxint
         response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token_first, data=event)
         logger.info(response.text)
-        assert response.status_code == 404, 'Event not found with this social network event id'
+        assert response.status_code == codes.NOT_FOUND, 'Event not found with this social network event id'
 
     def test_put_with_valid_token(self, token_first, event_in_db):
         """
@@ -127,7 +115,6 @@ class TestEventById(object):
         - Should get 200 response
         - Check if activity is created or not
         """
-
         event = event_in_db.to_json()
         social_network_event_id = event['social_network_event_id']
 
@@ -137,12 +124,12 @@ class TestEventById(object):
         datetime_now = datetime.datetime.now()
         datetime_now = datetime_now.replace(microsecond=0)
         event['title'] = 'Test update event'
-        datetime_format = '%Y-%m-%dT%H:%M:%S.%fZ'
+        datetime_format = DatetimeUtils.ISO8601_FORMAT
         event['start_datetime'] = (datetime_now + datetime.timedelta(days=50)).strftime(datetime_format)
         event['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime(datetime_format)
         response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token_first, data=event)
         logger.info(response.text)
-        assert response.status_code == 200, 'Status should be Ok, Resource Modified (200)'
+        assert response.status_code == codes.OK, 'Status should be Ok, Resource Modified (200)'
         event_occurrence_in_db = Event.get_by_id(event['id'])
         Event.session.commit()  # needed to refresh session otherwise it will show old objects
         event_occurrence_in_db = event_occurrence_in_db.to_json()
@@ -166,8 +153,6 @@ class TestEventById(object):
         """
         - Try to delete event data using id and pass invalid access token in header
         - it should throw 401 un-authorized exception
-        :param event_in_db:
-        :return:
         """
         unauthorize_test('delete', url=SocialNetworkApiUrl.EVENT % event_in_db.id)
 
@@ -178,21 +163,18 @@ class TestEventById(object):
         """
         event_id = event_in_db_second.id
         event_data = event_in_db_second.to_json()
-        response = requests.delete(SocialNetworkApiUrl.EVENT % event_id,
-                                   headers=auth_header(token_first))
+        response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
         logger.info(response.text)
-        assert response.status_code == 200, 'Status should be Ok (200)'
-        response = requests.delete(SocialNetworkApiUrl.EVENT % event_id,
-                                   headers=auth_header(token_first))
+        assert response.status_code == codes.OK, 'Status should be Ok (200)'
+        response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
 
         # check if event delete activity
         user_id = event_data['user_id']
         db.db.session.commit()
-        activity = Activity.get_by_user_id_type_source_id(user_id=user_id,
-                                                          source_id=event_id,
+        activity = Activity.get_by_user_id_type_source_id(user_id=user_id, source_id=event_id,
                                                           type_=Activity.MessageIds.EVENT_DELETE)
         data = json.loads(activity.params)
         assert data['event_title'] == event_data['title']
 
         logger.info(response.text)
-        assert response.status_code == 403, 'Unable to delete event as it is not present there (403)'
+        assert response.status_code == codes.FORBIDDEN, 'Unable to delete event as it is not present there (403)'

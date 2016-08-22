@@ -106,7 +106,7 @@ class Meetup(SocialNetworkBase):
                     Meetup API)
         **See Also**
         .. seealso:: GET method of class MeetupGroups() inside
-            social_network_service/app/restful/social_network.py7
+            social_network_service/app/restful/social_network.py
         """
         url = self.api_url + '/groups/'
         params = {'member_id': 'self'}

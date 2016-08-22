@@ -185,9 +185,9 @@ class CampaignsTestsHelpers(object):
         :param string access_token: access access_token of user
         :param dict data: Data to be posted
         """
-        _assert_invalid_datetime_format(method, url, access_token, data, 'start_datetime')
+        assert_invalid_datetime_format(method, url, access_token, data, 'start_datetime')
         if not data['frequency_id'] or not data['frequency_id'] == Frequency.ONCE:
-            _assert_invalid_datetime_format(method, url, access_token, data, 'end_datetime')
+            assert_invalid_datetime_format(method, url, access_token, data, 'end_datetime')
 
     @staticmethod
     @contract
@@ -842,7 +842,7 @@ def _assert_api_response_for_missing_field(method, url, access_token, data, fiel
 
 
 @contract
-def _assert_invalid_datetime_format(method, url, access_token, data, key):
+def assert_invalid_datetime_format(method, url, access_token, data, key):
     """
     Here we modify field of data as specified by param 'key' and then assert the invalid usage
     error in response of HTTP request.
