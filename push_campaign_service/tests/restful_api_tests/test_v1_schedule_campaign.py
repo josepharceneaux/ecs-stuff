@@ -45,10 +45,10 @@ from push_campaign_service.common.campaign_services.tests_helpers import Campaig
 from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
                                                         schedule_campaign, reschedule_campaign, unschedule_campaign,
                                                         get_campaign, match_schedule_data)
-from push_campaign_service.common.utils.test_utils import (send_request, invalid_data_test, unexpected_field_test,
-                                                           missing_keys_test)
+from push_campaign_service.common.utils.test_utils import (invalid_data_test, unexpected_field_test,
+                                                           missing_keys_test, unauthorize_test, invalid_value_test)
+from push_campaign_service.common.utils.handy_functions import (send_request)
 from push_campaign_service.common.routes import PushCampaignApiUrl
-from push_campaign_service.common.utils.test_utils import unauthorize_test, invalid_value_test
 from push_campaign_service.common.models.misc import Frequency
 
 URL = PushCampaignApiUrl.SCHEDULE

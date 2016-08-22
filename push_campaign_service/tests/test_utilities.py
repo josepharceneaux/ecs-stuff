@@ -1,12 +1,11 @@
 from datetime import datetime, timedelta
 from dateutil.parser import parse
 from faker import Faker
-from requests import codes
 from contracts import contract
 from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi, CandidateApiUrl
 from push_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from push_campaign_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
-from push_campaign_service.common.utils.test_utils import (send_request, get_fake_dict)
+from push_campaign_service.common.utils.handy_functions import (send_request)
 from push_campaign_service.push_campaign_app import logger
 
 fake = Faker()

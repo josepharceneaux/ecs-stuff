@@ -39,8 +39,11 @@ from push_campaign_service.tests.test_utilities import (create_campaign, get_cam
                                                         delete_campaign, delete_campaigns)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from push_campaign_service.common.utils.test_utils import (send_request, invalid_data_test, missing_keys_test,
+from push_campaign_service.common.utils.test_utils import (invalid_data_test, missing_keys_test,
                                                            unexpected_field_test, invalid_value_test)
+from push_campaign_service.common.utils.handy_functions import (send_request)
+
+
 from push_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
 
 
