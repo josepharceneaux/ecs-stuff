@@ -131,12 +131,17 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
         domain_areas_of_interest = get_or_create_areas_of_interest(user.domain_id, include_child_aois=True)
 
         candidate_ids, error_messages = [], []
+        candidate_tags = []
+
         for i in xrange(0, len(table), 1):
             candidates_list = []
             for row in table[i: i + 1]:
+
+                # Format candidate data
                 first_name, middle_name, last_name, formatted_name, status_id,  = None, None, None, None, None
                 emails, phones, areas_of_interest, addresses, degrees = [], [], [], [], []
                 school_names, work_experiences, educations, custom_fields = [], [], [], []
+                skills = []
                 talent_pool_dict = {'add': talent_pool_ids}
 
                 this_source_id = source_id
@@ -243,6 +248,11 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                         prepare_candidate_data(addresses, 'zip_code', column)
                     elif column_name == 'candidate_address.country_code':
                         prepare_candidate_data(addresses, 'country_code', column)
+                    elif column_name == 'candidate.tags':
+                        prepare_candidate_data(candidate_tags, 'name', column)
+                    elif column_name == 'candidate.skills':
+                        prepare_candidate_data(skills, 'name', column)
+
                     elif 'custom_field.' in column_name:
                         custom_fields_dict = {}
                         if isinstance(column, basestring):
@@ -283,9 +293,11 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                                             source_id=this_source_id,
                                             talent_pool_ids=talent_pool_dict,
                                             areas_of_interest=areas_of_interest,
-                                            custom_fields=custom_fields))
+                                            custom_fields=custom_fields,
+                                            skills=skills))
 
-            created, response = create_candidates_from_parsed_spreadsheet(candidates_list, oauth_token)
+            created, response = create_candidates_from_parsed_spreadsheet(candidates_list, oauth_token,
+                                                                          tags=candidate_tags)
 
             if created:
                 response_candidate_ids = [candidate.get('id') for candidate in response.get('candidates', [])]
@@ -340,7 +352,7 @@ def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
     return areas
 
 
-def create_candidates_from_parsed_spreadsheet(candidate_dicts, oauth_token):
+def create_candidates_from_parsed_spreadsheet(candidate_dicts, oauth_token, tags=None):
     """
     Create a new candidate using candidate_service
     :param candidate_dicts: A list of dicts containing information for new candidates
@@ -348,24 +360,34 @@ def create_candidates_from_parsed_spreadsheet(candidate_dicts, oauth_token):
     :return: A dictionary containing IDs of newly created candidates
     :rtype: dict
     """
-    r = requests.post(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': candidate_dicts}),
-                      headers={'Authorization': oauth_token, 'content-type': 'application/json'})
+    headers = {'Authorization': oauth_token, 'content-type': 'application/json'}
+    r = requests.post(CandidateApiUrl.CANDIDATES,
+                      data=json.dumps({'candidates': candidate_dicts}),
+                      headers=headers)
 
     status_code = r.status_code
+
+    candidate_id = r.json()['candidates'][0]['id'] if status_code == 201 else None
+
+    # Creating candidate's tags
+    # For now we will ignore errors obtained by this endpoint - Amir
+    if tags and candidate_id:
+        requests.post(CandidateApiUrl.TAGS % str(candidate_id), headers=headers, data=json.dumps({'tags': tags}))
+
     try:
-        response = r.json()
-        if status_code != 201:
-            if response.get('error', {}).get('id'):
-                candidate_dicts[0]['id'] = response.get('error', {}).get('id')
+        candidates_response = r.json()
+        if status_code != requests.codes.CREATED:
+            if candidates_response.get('error', {}).get('id'):
+                candidate_dicts[0]['id'] = candidates_response.get('error', {}).get('id')
                 is_updated, update_response = update_candidate_from_parsed_spreadsheet(candidate_dicts, oauth_token)
                 if is_updated:
                     return True, update_response
                 else:
                     return False, update_response
             else:
-                return False, response
+                return False, candidates_response
         else:
-            return True, response
+            return True, candidates_response
 
     except:
         return False, {"error": "Couldn't create/update candidate from candidate dict %s" % candidate_dicts}

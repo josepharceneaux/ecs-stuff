@@ -1,0 +1,16 @@
+"""
+This script increases the permissible size of `old_value` and `new_value` columns in `candidate_edit` table
+
+This is to conform with saving large text blobs such as candidate's resume text, notes, etc.
+"""
+
+from candidate_service.common.models.db import db
+from candidate_service.common.models.candidate_edit import CandidateEdit
+from sqlalchemy import text
+from sqlalchemy.dialects.mysql import VARCHAR
+
+db.session.execute("""
+                   ALTER TABLE `candidate_edit`
+                    MODIFY COLUMN old_value VARCHAR(10000),
+                    MODIFY COLUMN new_value VARCHAR(10000);
+                   """)
