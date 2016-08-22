@@ -99,27 +99,26 @@ def parse_optic_xml(resume_xml_text):
     skill_xml_list = bs4(resume_xml_text, 'lxml').findAll('canonskill')
     summary_xml_list = bs4(resume_xml_text, 'lxml').findAll('summary')
     references_xml = bs4(resume_xml_text, 'lxml').findAll('references')
-    name = parse_candidate_name(contact_xml_list)
     emails = parse_candidate_emails(contact_xml_list)
-    phones = parse_candidate_phones(contact_xml_list)
-    work_experiences = parse_candidate_experiences(experience_xml_list)
-    educations = parse_candidate_educations(educations_xml_list)
-    skills = parse_candidate_skills(skill_xml_list)
-    addresses = parse_candidate_addresses(contact_xml_list)
+    first_name, last_name = parse_candidate_name(contact_xml_list)
     references = parse_candidate_reference(references_xml)
-    summary = parse_candidate_summary(summary_xml_list)
+
+    if emails and not first_name:
+        first_name = emails[0].get('address')
+        last_name = None
+
     return dict(
-        first_name=name['first_name'],
-        last_name=name['last_name'],
+        first_name=first_name,
+        last_name=last_name,
         emails=emails,
-        phones=phones,
-        work_experiences=work_experiences,
-        educations=educations,
-        skills=skills,
-        addresses=addresses,
+        phones=parse_candidate_phones(contact_xml_list),
+        work_experiences=parse_candidate_experiences(experience_xml_list),
+        educations=parse_candidate_educations(educations_xml_list),
+        skills=parse_candidate_skills(skill_xml_list),
+        addresses=parse_candidate_addresses(contact_xml_list),
         talent_pool_ids={'add': None},
         references=references,
-        summary=summary
+        summary=parse_candidate_summary(summary_xml_list)
     )
 
 
@@ -129,11 +128,11 @@ def parse_candidate_name(bs_contact_xml_list):
     Parses a name from a list of contact tags found in a BGXML response.
     :param bs4_ResultSet bs_contact_xml_list:
     :return: Formatted name strings using title() in a dictionary.
-    :rtype: dict
+    :rtype: tuple
     """
 
-    givenname = None
-    surname = None
+    givenname = None # Placeholder for a `first_name`.
+    surname = None # Placeholder for a `last_name`.
 
     for contact in bs_contact_xml_list:
         # If a name is already parsed we do not want to reassign it.
@@ -149,10 +148,7 @@ def parse_candidate_name(bs_contact_xml_list):
     if surname:
         surname = scrub_candidate_name(surname)
 
-    first_name = givenname or 'Unknown'
-    last_name = surname or 'Unknown'
-
-    return {'first_name': first_name, 'last_name': last_name}
+    return (givenname, surname)
 
 
 @contract
@@ -166,8 +162,8 @@ def parse_candidate_emails(bs_contact_xml_list):
     output = []
     for contact in bs_contact_xml_list:
         emails = contact.findAll('email')
-        for e in emails:
-            email_addr = normalize_value(e.text)
+        for email in emails:
+            email_addr = normalize_value(email.text)
             output.append(email_addr)
 
     unique_emails = set(output)
@@ -192,9 +188,9 @@ def parse_candidate_phones(bs_contact_xml_list):
     for contact in bs_contact_xml_list:
         phones = contact.findAll('phone')
 
-        for p in phones:
-            raw_phone = p.text.strip()
-            phone_type = p.get('type')
+        for phone in phones:
+            raw_phone = phone.text.strip()
+            phone_type = phone.get('type')
 
             # JSON_SCHEMA for candidates phone is max:20
             # This fixes issues with numbers like '1-123-45            67'
@@ -335,7 +331,7 @@ def parse_candidate_educations(bg_educations_xml_list):
     :return: List of dicts containing education data.
     :rtype: list(dict)
     """
-    EDU_DATE_FORMAT = '%Y-%m-%d'
+    edu_date_format = '%Y-%m-%d'
     start_month, start_year, end_month, end_year, start_dt, end_dt = None, None, None, None, None, None
     output = []
     for education in bg_educations_xml_list:
@@ -354,12 +350,12 @@ def parse_candidate_educations(bg_educations_xml_list):
                 end_date = completion_date
 
             if start_date:
-                start_dt = datetime.datetime.strptime(start_date, EDU_DATE_FORMAT)
+                start_dt = datetime.datetime.strptime(start_date, edu_date_format)
                 start_month = start_dt.month
                 start_year = start_dt.year
 
             if end_date:
-                end_dt = datetime.datetime.strptime(end_date, EDU_DATE_FORMAT)
+                end_dt = datetime.datetime.strptime(end_date, edu_date_format)
                 end_month = end_dt.month
                 end_year = end_dt.year
 
@@ -580,6 +576,9 @@ def scrub_candidate_name(name_unicode):
 
 
 def get_country_code_from_address_tag(address):
+    """
+    Gets a country code from an address tag.
+    """
     if address:
         country_tag = address.find('country')
 
