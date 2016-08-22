@@ -141,7 +141,7 @@ class TestResourceEvents(object):
 
     def test_events_post_invalid_datetime_format(self, token_first, test_event):
         """
-        Post event using invalid start_datetime format. Response should be 400.
+        Post event using invalid start_datetime and start_datetime formats. Response should be 400.
         Valid format is "%Y-%m-%dT%H:%M:%S.%fZ".
         """
         event_data = test_event
