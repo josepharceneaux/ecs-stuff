@@ -150,7 +150,7 @@ class TestResourceEvents(object):
         event_data['social_network_id'] = social_network_id
         event_data['venue_id'] = venue_id
         # Now test with invalid start datetime UTC format
-        assert_invalid_datetime_format('post', SocialNetworkApiUrl.EVENTS, token_first, event_data.copu(),
+        assert_invalid_datetime_format('post', SocialNetworkApiUrl.EVENTS, token_first, event_data.copy(),
                                        'start_datetime')
         assert_invalid_datetime_format('post', SocialNetworkApiUrl.EVENTS, token_first, event_data, 'end_datetime')
 
