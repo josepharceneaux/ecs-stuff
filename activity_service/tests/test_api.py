@@ -84,7 +84,7 @@ def test_bulk_create_and_read(user_fixture, token_fixture):
     }
 
     # Test `bulk` async write
-    for _ in xrange(100):
+    for i in xrange(200):
         payload = json.dumps(
             dict(
                  user_id=user_fixture.id,
@@ -98,7 +98,7 @@ def test_bulk_create_and_read(user_fixture, token_fixture):
         assert response.status_code == requests.codes.created
 
     # Test `bulk` async read
-    for _ in xrange(10):
+    for _ in xrange(5):
         response = requests.get(
             READ_URL, headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)}
         )
