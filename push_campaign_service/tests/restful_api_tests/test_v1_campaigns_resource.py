@@ -39,8 +39,11 @@ from push_campaign_service.tests.test_utilities import (create_campaign, get_cam
                                                         delete_campaign, delete_campaigns)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from push_campaign_service.common.utils.test_utils import (send_request, invalid_data_test, missing_keys_test,
+from push_campaign_service.common.utils.test_utils import (invalid_data_test, missing_keys_test,
                                                            unexpected_field_test, invalid_value_test)
+from push_campaign_service.common.utils.handy_functions import (send_request)
+
+
 from push_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
 
 
@@ -95,7 +98,7 @@ class TestCreateCampaign(object):
         :param dict smartlist_first: Smartlist object
         """
         campaign_data['smartlist_ids'] = [smartlist_first['id']]
-        invalid_values = ['', '  ', {}, [], None, True]
+        invalid_values = CampaignsTestsHelpers.INVALID_TEXT_VALUES
         invalid_value_test(URL, campaign_data, 'body_text', invalid_values, token_first)
 
     def test_campaign_creation_with_invalid_smartlist_ids(self, token_first, campaign_data):
@@ -115,7 +118,7 @@ class TestCreateCampaign(object):
         :param dict smartlist_first: Smartlist object
         """
         campaign_data['smartlist_ids'] = [smartlist_first['id']]
-        invalid_names = [0, -1, None, True, '', '    ']
+        invalid_names = CampaignsTestsHelpers.INVALID_TEXT_VALUES
         invalid_value_test(URL, campaign_data, 'name', invalid_names, token_first)
 
     def test_create_campaign_with_valid_data(self, token_first, campaign_data, smartlist_first):

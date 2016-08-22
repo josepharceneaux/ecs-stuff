@@ -12,7 +12,7 @@ CAMPAIGN_SCHEDULE_SCHEMA = {
     "properties": {
         "frequency_id": {
             "type": "integer",
-            "minimum": 1,
+            "minimum": Frequency.ONCE,
             "maximum": Frequency.CUSTOM
         },
         "start_datetime": {
