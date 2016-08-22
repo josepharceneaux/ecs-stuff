@@ -26,7 +26,7 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_pho
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_skills
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_reference
 # JSON Schemas
-from json_schemas import (NAME_SCHEMA, EMAIL_SCHEMA, PHONE_SCHEMA, EXPERIENCE_SCHEMA, EDU_SCHEMA,\
+from json_schemas import (EMAIL_SCHEMA, PHONE_SCHEMA, EXPERIENCE_SCHEMA, EDU_SCHEMA,\
                           SKILL_SCHEMA, ADDRESS_SCHEMA)
 # XML Combinations:
 import edu_combinations
@@ -77,10 +77,9 @@ def test_name_parsing():
         resume = xml['tree_name']
         contact_xml_list = bs4(resume, 'lxml').findAll('contact')
         if contact_xml_list:
-            name = parse_candidate_name(contact_xml_list)
-            assert validate(name, NAME_SCHEMA, format_checker=FormatChecker()) is None
-            assert name['first_name'] == xml['name'].split()[0]
-            assert name['last_name'] == xml['name'].split()[1]
+            first, last = parse_candidate_name(contact_xml_list)
+            assert first == xml['name'].split()[0]
+            assert last == xml['name'].split()[1]
 
 
 def test_email_parsing():
@@ -189,12 +188,12 @@ def test_address_parsing():
 def test_docx_accuracy():
     # Contact Parsing.
     contact_xml_list = bs4(DOCX, 'lxml').findAll('contact')
-    contact_xml = parse_candidate_name(contact_xml_list)
+    first, last = parse_candidate_name(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
     addresses = parse_candidate_addresses(contact_xml_list)
     assert DOCX_ADDRESS in addresses
-    assert contact_xml['first_name'] == 'Veena'
-    assert contact_xml['last_name'] == 'Nithoo'
+    assert first == 'Veena'
+    assert last == 'Nithoo'
     assert {'value': u'(215) 412-0817', 'label': 'Other'} in phones
     # Experience parsing.
     experience_xml_list = bs4(DOCX, 'lxml').findAll('experience')
@@ -243,11 +242,11 @@ def test_docx_accuracy():
 def test_g642_accuracy():
     # Contact Parsing.
     contact_xml_list = bs4(GET_642, 'lxml').findAll('contact')
-    contact_xml = parse_candidate_name(contact_xml_list)
+    first, last = parse_candidate_name(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
     addresses = parse_candidate_addresses(contact_xml_list)
-    assert contact_xml['first_name'] == u'Bobby'
-    assert contact_xml['last_name'] == u'Breland'
+    assert first == u'Bobby'
+    assert last == u'Breland'
     assert {'value': u'513-759-5877', 'label': 'Home'} in phones
     assert {'value': u'513-477-3784', 'label': 'Mobile'} in phones
     assert GET_642_ADDRESS in addresses
@@ -340,11 +339,11 @@ def test_g642_accuracy():
 def test_g646_accuracy():
     # Contact Parsing.
     contact_xml_list = bs4(GET_646, 'lxml').findAll('contact')
-    contact_xml = parse_candidate_name(contact_xml_list)
+    first, last = parse_candidate_name(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
     addresses = parse_candidate_addresses(contact_xml_list)
-    assert contact_xml['first_name'] == 'Patrick'
-    assert contact_xml['last_name'] == 'Kaldawy'
+    assert first == 'Patrick'
+    assert last == 'Kaldawy'
     assert GET_646_ADDRESS in addresses
     assert {'value': u'(858) 353-1111', 'label': 'Home'} in phones
     assert {'value': u'(858) 353-2222', 'label': 'Mobile'} in phones
@@ -500,11 +499,11 @@ def test_g626a_accuracy():
 def test_g626b_accuracy():
     # Contact Parsing.
     contact_xml_list = bs4(GET_626b, 'lxml').findAll('contact')
-    contact_xml = parse_candidate_name(contact_xml_list)
+    first, last = parse_candidate_name(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
     addresses = parse_candidate_addresses(contact_xml_list)
-    assert contact_xml['first_name'] == 'Kate'
-    assert contact_xml['last_name'] == 'Begonia'
+    assert first == 'Kate'
+    assert last == 'Begonia'
     assert GET_626b_ADDRESS in addresses
     # assert {'value': u'503.493.1548'} in phones
     # Experience parsing.
@@ -547,11 +546,11 @@ def test_g626b_accuracy():
 def test_pdf_accuracy():
     # Contact Parsing.
     contact_xml_list = bs4(PDF, 'lxml').findAll('contact')
-    contact_xml = parse_candidate_name(contact_xml_list)
+    first, last = parse_candidate_name(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
     addresses = parse_candidate_addresses(contact_xml_list)
-    assert contact_xml['first_name'] == 'Mark'
-    assert contact_xml['last_name'] == 'Greene'
+    assert first == 'Mark'
+    assert last == 'Greene'
     assert PDF_ADDRESS in addresses
     assert {'value': u'727.565.1234', 'label': 'Other'} in phones
     experience_xml_list = bs4(PDF, 'lxml').findAll('experience')
@@ -639,10 +638,10 @@ def test_pdf_accuracy():
 def test_pdf13_accuracy():
     # Contact Parsing.
     contact_xml_list = bs4(PDF_13, 'lxml').findAll('contact')
-    contact_xml = parse_candidate_name(contact_xml_list)
+    first, last = parse_candidate_name(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
-    assert contact_xml['first_name'] == 'Bruce'
-    assert contact_xml['last_name'] == 'Parkey'
+    assert first == 'Bruce'
+    assert last == 'Parkey'
     assert {'value': u'630-930-2756', 'label': 'Other'} in phones
     experience_xml_list = bs4(PDF_13, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
@@ -685,15 +684,15 @@ def test_pdf13_accuracy():
 def test_pdf14_accuracy():
     # Contact Parsing.
     contact_xml_list = bs4(PDF_14, 'lxml').findAll('contact')
-    contact_xml = parse_candidate_name(contact_xml_list)
+    first, last = parse_candidate_name(contact_xml_list)
     phones = parse_candidate_phones(contact_xml_list)
     addresses = parse_candidate_addresses(contact_xml_list)
     experience_xml_list = bs4(PDF_14, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
     educations_xml_list = bs4(PDF_14, 'lxml').findAll('education')
     educations = parse_candidate_educations(educations_xml_list)
-    assert contact_xml['first_name'] == 'Jose'
-    assert contact_xml['last_name'] == 'Chavez'
+    assert first == 'Jose'
+    assert last == 'Chavez'
     # assert {'value': u'604.609.0921'} in phones
     # exp1 = next((org for org in experiences if (
     #     org["organization"] == u'Organization Committee Commonwelath Games 2010' and
@@ -752,9 +751,8 @@ def test_parsing_names():
     xml_combos = [xml for xml in dir(contact_combinations) if "__" not in xml]
     for combo in xml_combos:
         combo_to_parse = bs4(getattr(contact_combinations, combo), 'lxml').findAll('contact')
-        name = parse_candidate_name(combo_to_parse)
-        # Sometime it may return an empty array so we cannot just assert on this.
-        assert validate(name, NAME_SCHEMA, format_checker=FormatChecker()) is None
+        first, last = parse_candidate_name(combo_to_parse)
+        pass
 
 
 def test_parsing_phones():
