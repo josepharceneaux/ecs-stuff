@@ -135,7 +135,7 @@ def test_associate_device_with_valid_data(token_first, candidate_first, delete_d
 
 
 def test_associate_device_to_two_candidate_in_same_domain(token_first, candidate_first,
-                                                          candidate_second, delete_device):
+                                                          candidate_same_domain, delete_device):
     """
     Try to associate a valid device id to a valid candidate.
     API should assign that device id to candidate in CandidateDevice table and return a success
@@ -145,11 +145,11 @@ def test_associate_device_to_two_candidate_in_same_domain(token_first, candidate
     :return:
     """
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
-    response = send_request('post', CandidateApiUrl.DEVICES % candidate_first['id'], token_first, data)
+    response = send_request('post', CandidateApiUrl.DEVICES % candidate_same_domain['id'], token_first, data)
     logger.info(response.content)
     assert response.status_code == requests.codes.CREATED
 
-    response = send_request('post', CandidateApiUrl.DEVICES % candidate_second['id'], token_first, data)
+    response = send_request('post', CandidateApiUrl.DEVICES % candidate_same_domain['id'], token_first, data)
     logger.info(response.content)
     # api raises invalid usage in production if we want to associate same device id to multiple candidates
     # but in dev or jenkins, this restriction is not applicable.
@@ -218,7 +218,7 @@ def test_delete_candidate_device_in_same_domain(token_same_domain, candidate_fir
 
 def test_delete_candidate_device_in_diff_domain(token_second, candidate_first, candidate_device_first):
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
-    response = send_request('delete', CandidateApiUrl.DEVICES % candidate_first.id, token_second, data)
+    response = send_request('delete', CandidateApiUrl.DEVICES % candidate_first['id'], token_second, data)
     logger.info(response.content)
     assert response.status_code == requests.codes.FORBIDDEN
 
