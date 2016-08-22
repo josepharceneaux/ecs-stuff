@@ -1,12 +1,12 @@
 # Std imports
 import json
+from datetime import datetime
 
 # Third Party
 import pytest
 import requests
 from redo import retry
 from requests import codes
-from datetime import datetime
 
 # Application Specific
 from social_network_service.common.models import db

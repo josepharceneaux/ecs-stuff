@@ -4,9 +4,9 @@ Test cases for meetup and eventbrite event i.e get/delete event by id or using w
 # Std imports
 import json
 import sys
+import datetime
 
 # Third Party
-import datetime
 import requests
 from requests import codes
 
@@ -19,6 +19,7 @@ from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.utils.handy_functions import send_request
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.tests.helper_functions import auth_header, unauthorize_test
+from social_network_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 
 class TestEventById(object):
@@ -37,7 +38,8 @@ class TestEventById(object):
         - Get event using id and pass invalid token and it should throw exception 401 un-authorize
         - Also make sure if event is present in response data
         """
-        response = unauthorize_test(url=SocialNetworkApiUrl.EVENT % 1, method='get')
+        non_existing_id = CampaignsTestsHelpers.get_non_existing_id(Event)
+        response = unauthorize_test(url=SocialNetworkApiUrl.EVENT % non_existing_id, method='get')
         assert 'event' not in response.json()
 
     def test_get_by_id_with_valid_token(self, token_first, event_in_db):
@@ -74,7 +76,8 @@ class TestEventById(object):
         """
         - Try to send data using invalid access_token in header and it should give 401 (unauthorized error)
         """
-        unauthorize_test('put', url=SocialNetworkApiUrl.EVENT % 1, data={})
+        non_existing_id = CampaignsTestsHelpers.get_non_existing_id(Event)
+        unauthorize_test('put', url=SocialNetworkApiUrl.EVENT % non_existing_id, data={})
 
     def test_put_with_invalid_event_id(self, token_first, event_in_db):
         """

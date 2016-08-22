@@ -1,10 +1,10 @@
 # Std imports
 import json
+from datetime import datetime
 
 # Third Party
 import requests
 from requests import codes
-from datetime import datetime
 
 # App specific imports
 from social_network_service.social_network_app import logger

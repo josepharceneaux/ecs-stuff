@@ -243,6 +243,7 @@ class CampaignsTestsHelpers(object):
         last_obj = model.query.order_by(model.id.desc()).first()
         return last_obj.id if last_obj else None
 
+    # TODO: Move to common/utils/test_utils.py
     @classmethod
     def get_non_existing_id(cls, model):
         """
@@ -841,6 +842,7 @@ def _assert_api_response_for_missing_field(method, url, access_token, data, fiel
     data[field_to_remove] = removed_value
 
 
+# TODO: Move to common/utils/test_utils.py
 @contract
 def assert_invalid_datetime_format(method, url, access_token, data, key):
     """

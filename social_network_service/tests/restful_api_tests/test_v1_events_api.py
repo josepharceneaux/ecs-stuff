@@ -12,6 +12,7 @@ from requests import codes
 
 # App specific imports
 from social_network_service.common.models import db
+from social_network_service.modules.constants import MEETUP
 from social_network_service.social_network_app import logger
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.routes import SocialNetworkApiUrl
@@ -112,7 +113,7 @@ class TestResourceEvents(object):
         event_data['organizer_id'] = -1
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token_first)
         logger.info(response.text)
-        if social_network.name.lower() == 'meetup':
+        if social_network.name.lower() == MEETUP:
             assert response.status_code == codes.BAD_REQUEST, response.text
             return
         else:

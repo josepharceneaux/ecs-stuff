@@ -1,37 +1,45 @@
-# Standard Library
-from copy import deepcopy
+"""
+Author:
+        - Saad Abdullah, QC-Technologies, <saadfast.qc@gmail.com>
+        - Zohaib Ijaz, QC-Technologies, <mzohaib.qc@gmail.com>
+        - Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
-# Third Party
+    This file contains pyTest fixtures for tests of social-network-service.
+"""
+# Standard Library
 import json
-import pytest
-from requests import codes
+from copy import deepcopy
 from datetime import datetime, timedelta
 
-# App Settings
-from social_network_service.common.redis_cache import redis_store2
+# Third Party
+import pytest
+from requests import codes
+
+# Common conftests
 from social_network_service.common.tests.api_conftest import (user_first, token_first, talent_pool_session_scope,
                                                               user_same_domain, token_same_domain)
 from social_network_service.common.tests.conftest import (sample_user, domain_first, first_group, user_auth)
 
-# Application Specific
+# Models
 from social_network_service.common.models.db import db
-from social_network_service.social_network_app import app
-from social_network_service.common.models.user import User
-from social_network_service.common.models.user import Token
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.venue import Venue
-from social_network_service.common.models.user import Client
-from social_network_service.common.models.user import Domain
 from social_network_service.common.models.misc import Organization
+from social_network_service.common.models.event_organizer import EventOrganizer
+from social_network_service.common.models.user import (User, Token, Client, Domain, UserSocialNetworkCredential)
+
+# Common utils
+from social_network_service.common.redis_cache import redis_store2
 from social_network_service.common.routes import SocialNetworkApiUrl
-from social_network_service.modules.social_network.meetup import Meetup
 from social_network_service.common.models.candidate import SocialNetwork
-from social_network_service.modules.constants import (EVENTBRITE, MEETUP, FACEBOOK)
 from social_network_service.common.utils.handy_functions import send_request
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
-from social_network_service.common.models.event_organizer import EventOrganizer
-from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.talent_config_manager import TalentConfigKeys
+
+# Application Specific
+from social_network_service.social_network_app import app
+from social_network_service.modules.social_network.meetup import Meetup
+from social_network_service.modules.constants import (EVENTBRITE, MEETUP, FACEBOOK)
 
 
 # This is common data for creating test events
@@ -193,7 +201,7 @@ def test_meetup_credentials(request, user_first, meetup):
 @pytest.fixture(scope="session")
 def meetup_group(test_meetup_credentials, token_first):
     """
-    This gets all the groups of user_first created on Meetup account. It then picks first group and return it.
+    This gets all the groups of user_first created on Meetup website. It then picks first group and returns it.
     """
     resp = send_request('get', SocialNetworkApiUrl.MEETUP_GROUPS, token_first)
     assert resp.status_code == codes.OK
@@ -259,7 +267,7 @@ def meetup_event(request, test_meetup_credentials, meetup, meetup_venue, organiz
         and from our database.
         """
         response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id, access_token=token_first)
-        assert response.status_code == codes.OK or response.status_code == codes.FORBIDDEN
+        assert response.status_code in [codes.OK, codes.FORBIDDEN]
 
     request.addfinalizer(fin)
     return event
@@ -289,7 +297,7 @@ def meetup_event_second(request, test_meetup_credentials, meetup, meetup_venue, 
         """
         response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id,
                                 access_token=token_first)
-        assert response.status_code == codes.OK or response.status_code == codes.FORBIDDEN
+        assert response.status_code in [codes.OK, codes.FORBIDDEN]
 
     request.addfinalizer(fin)
     return event
@@ -298,10 +306,10 @@ def meetup_event_second(request, test_meetup_credentials, meetup, meetup_venue, 
 @pytest.fixture()
 def auth_header(token_first):
     """
-    returns the header which contains bearer token and content type
+    Returns the header which contains bearer token and content type
     :return: header dict object
     """
-    header = {'Authorization': 'Bearer ' + token_first,
+    header = {'Authorization': 'Bearer %s' % token_first,
               'Content-Type': 'application/json'}
     return header
 
@@ -367,8 +375,8 @@ def eventbrite_event(request, test_eventbrite_credentials,
         response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id, access_token=token_first)
 
         # If event is found and deleted successfully => 200
-        # If event is not found => 403
-        assert response.status_code == codes.OK or response.status_code == codes.FORBIDDEN
+        # If event does not belong to requested user => 403
+        assert response.status_code in [codes.OK, codes.FORBIDDEN]
 
     request.addfinalizer(fin)
     return event
@@ -409,8 +417,8 @@ def eventbrite_event_second(request, test_eventbrite_credentials, eventbrite, ev
         response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id, access_token=token_first)
 
         # If event is found and deleted successfully => 200
-        # If event is not found => 403
-        assert response.status_code == codes.OK or response.status_code == codes.FORBIDDEN
+        # If event does not belong to requested user => 403
+        assert response.status_code in [codes.OK, codes.FORBIDDEN]
 
     request.addfinalizer(fin)
     return event
@@ -598,8 +606,8 @@ def get_test_event_eventbrite(request, user_first, eventbrite, eventbrite_venue,
             response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id, access_token=token_first)
 
             # If event is found and deleted successfully => 200
-            # If event is not found => 403
-            assert response.status_code == codes.OK or response.status_code == codes.FORBIDDEN
+            # If event does not belong to requested user => 403
+            assert response.status_code in [codes.OK, codes.FORBIDDEN]
 
     request.addfinalizer(delete_test_event)
     return eventbrite_dict
@@ -626,8 +634,8 @@ def get_test_event_meetup(request, user_first, meetup, meetup_venue, meetup_grou
             response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id, access_token=token_first)
 
             # If event is found and deleted successfully => 200
-            # If event is not found => 403
-            assert response.status_code == codes.OK or response.status_code == codes.FORBIDDEN
+            # If event does not belong to requested user => 403
+            assert response.status_code in [codes.OK, codes.FORBIDDEN]
 
     request.addfinalizer(delete_test_event)
     return meetup_dict
