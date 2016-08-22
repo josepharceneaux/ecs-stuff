@@ -364,8 +364,8 @@ def test_no_name_defaults_to_email_or_none(token_fixture, user_fixture):
     """Adds test case for old previously crashing resume. Adding for code coverage"""
     content, status = fetch_resume_post_response(token_fixture, 'noname.doc')
     assert_non_create_content_and_status(content, status)
-    assert content['candidate']['first_name'] == None
-    assert content['candidate']['last_name'] == None
+    assert content['candidate']['first_name'] is None
+    assert content['candidate']['last_name'] is None
 
 ####################################################################################################
 # Test Candidate Creation

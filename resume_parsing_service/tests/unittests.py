@@ -752,7 +752,7 @@ def test_parsing_names():
     for combo in xml_combos:
         combo_to_parse = bs4(getattr(contact_combinations, combo), 'lxml').findAll('contact')
         first, last = parse_candidate_name(combo_to_parse)
-        pass
+        pass # simply testing we run without error as first, last can be (None, None)
 
 
 def test_parsing_phones():
