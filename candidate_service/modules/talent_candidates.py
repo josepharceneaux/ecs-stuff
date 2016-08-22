@@ -1318,9 +1318,14 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
     Function will update CandidateCustomField or create a new one.
     """
     candidate_id = candidate.id
+
     for custom_field in custom_fields:
+
+        # In case a list of custom field values are provided, we must remove all white spaces and all empty/none values
+        values = filter(None, [value.strip() for value in custom_field.get('values') if value])
+
         custom_field_dict = dict(
-            value=custom_field['value'].strip() if custom_field.get('value') else None,
+            values=values or [(custom_field.get('value') or '').strip()],
             custom_field_id=custom_field.get('custom_field_id')
         )
 
@@ -1342,21 +1347,36 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                                      error_code=custom_error.CUSTOM_FIELD_FORBIDDEN)
 
             # Track all updates
-            track_edits(update_dict=custom_field_dict, table_name='candidate_custom_field',
-                        candidate_id=candidate_id, user_id=user_id, query_obj=can_custom_field_obj)
+            track_edits(update_dict=custom_field_dict,
+                        table_name='candidate_custom_field',
+                        candidate_id=candidate_id,
+                        user_id=user_id,
+                        query_obj=can_custom_field_obj)
 
             # Update CandidateCustomField
             can_custom_field_obj.update(**custom_field_dict)
 
         else:  # Add
-            custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
-            # Prevent duplicate insertions
-            if not does_candidate_cf_exist(candidate, custom_field_dict):
-                db.session.add(CandidateCustomField(**custom_field_dict))
+            for value in custom_field_dict.get('values'):
+
+                custom_field_id = custom_field_dict.get('custom_field_id')
+
+                # Prevent duplicate insertions
+                if does_candidate_cf_exist(candidate, custom_field_id, value):
+                    continue
+
+                db.session.add(CandidateCustomField(
+                    candidate_id=candidate_id,
+                    custom_field_id=custom_field_id,
+                    value=value,
+                    added_time=added_time
+                ))
 
                 if is_updating:  # Track all updates
-                    track_edits(update_dict=custom_field_dict, table_name='candidate_custom_field',
-                                candidate_id=candidate_id, user_id=user_id)
+                    track_edits(update_dict=custom_field_dict,
+                                table_name='candidate_custom_field',
+                                candidate_id=candidate_id,
+                                user_id=user_id)
 
 
 def _add_or_update_educations(candidate, educations, added_datetime, user_id, is_updating):
