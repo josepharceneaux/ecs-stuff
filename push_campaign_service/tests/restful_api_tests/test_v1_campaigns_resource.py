@@ -79,7 +79,7 @@ class TestCreateCampaign(object):
             data['smartlist_ids'] = [smartlist_first['id']]
             missing_key_test(data, key, token_first)
 
-    def test_create_campaign(self, token_first, campaign_data, smartlist_first):
+    def test_create_campaign_with_valid_data(self, token_first, campaign_data, smartlist_first):
         """
         Here we will send a valid data to create a campaign and we are expecting 201 (created)
         :param token_first: auth token
