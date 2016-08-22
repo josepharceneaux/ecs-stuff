@@ -119,10 +119,6 @@ class TestEventById(object):
         - Check if activity is created or not
         """
         event = event_in_db.to_json()
-        social_network_event_id = event['social_network_event_id']
-
-        event['social_network_event_id'] = social_network_event_id
-
         # Success case, event should be updated
         datetime_now = datetime.datetime.utcnow()
         datetime_now = datetime_now.replace(microsecond=0)

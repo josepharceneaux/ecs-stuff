@@ -394,11 +394,8 @@ def eventbrite_event_second(request, test_eventbrite_credentials, eventbrite, ev
     event['title'] = 'Eventbrite ' + event['title']
     event['social_network_id'] = eventbrite.id
     event['venue_id'] = eventbrite_venue.id
-
     event['organizer_id'] = organizer_in_db['id']
-
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=event)
-
     assert response.status_code == codes.CREATED, response.text
 
     data = response.json()
@@ -523,7 +520,7 @@ def eventbrite_venue(user_first, eventbrite):
 @pytest.fixture(scope="session", params=VENDORS)
 def event_in_db(request):
     """
-    This fixture returns fixture for creating event depending upon param.
+    This fixture creates an event on vendor basis and returns it.
     e.g. In case of Eventbrite, it will return fixture named as "eventbrite_event"
     """
     return deepcopy(request.getfuncargvalue("{}_event".format(request.param.lower())))
@@ -532,7 +529,7 @@ def event_in_db(request):
 @pytest.fixture(scope="function", params=VENDORS)
 def event_in_db_second(request):
     """
-    This fixture returns fixture for creating another event depending upon param.
+    This fixture creates another event on vendor basis and returns it.
     e.g. In case of Eventbrite, it will return fixture named as "eventbrite_event_second"
     """
     return deepcopy(request.getfuncargvalue("{}_event_second".format(request.param.lower())))
@@ -541,7 +538,7 @@ def event_in_db_second(request):
 @pytest.fixture(scope="session", params=VENDORS)
 def venue_in_db(request):
     """
-    This fixture returns fixture for creating venue depending upon param.
+    This fixture creates a venue on vendor basis and returns it.
     e.g. In case of Eventbrite, it will return fixture named as "eventbrite_venue"
     """
     return request.getfuncargvalue("{}_venue".format(request.param.lower()))
@@ -550,7 +547,7 @@ def venue_in_db(request):
 @pytest.fixture(scope="function", params=VENDORS)
 def venue_in_db_second(request):
     """
-    This fixture returns fixture for creating another venue depending upon param.
+    This fixture creates another venue on vendor basis and returns it.
     e.g. In case of Eventbrite, it will return fixture named as "eventbrite_venue_second"
     """
     return request.getfuncargvalue("{}_venue_second".format(request.param.lower()))
@@ -561,7 +558,6 @@ def organizer_in_db(request, user_first):
     """
     This fixture returns an organizer in getTalent database
     """
-
     social_network = SocialNetwork.get_by_name(EVENTBRITE.title())
     organizer = {
         "user_id": user_first['id'],
@@ -644,10 +640,10 @@ def get_test_event_meetup(request, user_first, meetup, meetup_venue, meetup_grou
 @pytest.fixture(params=VENDORS)
 def test_event(request):
     """
-    This fixture returns parameter based meetup or eventbrite data to create event events.
+    This fixture creates an event (function based scope) on vendor basis and returns it.
     e.g. In case of Eventbrite, it will return fixture named as "get_test_event_eventbrite"
     """
-    return request.getfuncargvalue( "get_test_event_{}".format(request.param.lower()))
+    return request.getfuncargvalue("get_test_event_{}".format(request.param.lower()))
 
 
 @pytest.fixture(params=['title', 'description', 'end_datetime', 'timezone', 'start_datetime', 'currency',

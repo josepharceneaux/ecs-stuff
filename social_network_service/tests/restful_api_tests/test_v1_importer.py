@@ -21,6 +21,7 @@ from social_network_service.modules.utilities import get_class
 from social_network_service.social_network_app import logger
 from social_network_service.common.utils.handy_functions import send_request
 from social_network_service.social_network_app import app
+from social_network_service.tests.helper_functions import assert_event
 
 
 @pytest.mark.skipif(True, reason='TODO: Modify following tests when meetup sandbox testing issue is resovled')
@@ -197,13 +198,13 @@ class Test_Event_Importer(object):
                                  headers=headers)
         assert response.status_code == codes.OK
 
-        def f():
+        def assert_event():
             db.db.session.commit()
             event = Event.get_by_user_and_social_network_event_id(user_id=user_id,
                                                                   social_network_event_id=social_network_event_id)
             assert event
 
-        retry(f, attempts=15, sleeptime=15, sleepscale=1, retry_exceptions=(AssertionError, ))
+        retry(assert_event, attempts=15, sleeptime=15, sleepscale=1, retry_exceptions=(AssertionError, ))
 
         Event.delete(event.id)
 
@@ -246,13 +247,8 @@ class Test_Event_Importer(object):
             response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'eventbrite'),
                                      headers=headers)
             assert response.status_code == codes.OK
-
-            def f():
-                db.db.session.commit()
-                _event = Event.get_by_user_and_social_network_event_id(user_id, social_network_event_id)
-                assert _event
-
-            retry(f, sleeptime=15, attempts=15, sleepscale=1, retry_exceptions=(AssertionError,))
+            retry(assert_event, args=(user_id, social_network_event_id), sleeptime=15, attempts=15, sleepscale=1,
+                  retry_exceptions=(AssertionError,))
 
         eventbrite_event = Event.get_by_user_and_social_network_event_id(user_id, social_network_event_id)
         assert eventbrite_event
@@ -330,13 +326,5 @@ class Test_Event_Importer(object):
             response = requests.post(url=SocialNetworkApiUrl.IMPORTER % ('event', 'meetup'),
                                      headers=headers)
             assert response.status_code == codes.OK
-
-            def f():
-                db.db.session.commit()
-                event = Event.get_by_user_and_social_network_event_id(user_first['id'],
-                                                                      social_network_event_id=social_network_event_id)
-                assert event
-
-            retry(f, attempts=15, sleeptime=15, sleepscale=1, retry_exceptions=(AssertionError,))
-
-            assert event
+            retry(assert_event, args=(user_first['id'], social_network_event_id), attempts=15, sleeptime=15,
+                  sleepscale=1, retry_exceptions=(AssertionError,))
