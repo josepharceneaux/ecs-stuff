@@ -294,4 +294,37 @@ class PushCampaignBase(CampaignBase):
         form_data['user_id'] = self.user.id
         return super(PushCampaignBase, self).save(form_data)
 
+    @classmethod
+    @celery_app.task(name='create_activity_for_campaign_creation')
+    def create_activity_for_campaign_creation(cls, source, user):
+        """
+        - Here we set "params" and "type" of activity to be stored in db table "Activity"
+            for created Campaign.
+        - Activity will appear as (e.g)
+           "'Harvey Specter' created an Push campaign: 'Hiring at getTalent'"
+        - This method is called from save() method of class
+            CampaignBase inside common/campaign_services/campaign_base.py.
+        :param source: "push_campaign" obj
+        :type source: PushCampaign
+        :param User user: User object
+        :exception: InvalidUsage
+        """
+        CampaignBase.create_activity_for_campaign_creation(source, user)
+
+    @celery_app.task(name='create_activity_for_campaign_delete')
+    def create_activity_for_campaign_delete(self, source):
+        """
+        - when a user deletes a campaign, here we set "params" and "type" of activity to
+            be stored in db table "Activity" when a user deletes a campaign.
+        - Activity will appear as " Michal has deleted an Push campaign 'Jobs at Oculus'.
+        - This method is called from delete() method of class CampaignBase.
+        :param source: push_campaign obj
+        :type source: PushCampaign
+        :exception: InvalidUsage
+
+        **See Also**
+        .. see also:: schedule() method in CampaignBase class.
+        """
+        super(PushCampaignBase, self).create_activity_for_campaign_delete(source)
+
 

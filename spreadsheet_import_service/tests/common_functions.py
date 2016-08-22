@@ -37,7 +37,8 @@ def import_spreadsheet_candidates(talent_pool_id, access_token, candidate_data=N
         'candidate_address.zipCode', 'candidate_address.country_code', 'candidate.objective',
         'candidate_experience.organization', 'candidate_experience.position',
         'candidate_education.schoolName', 'candidate_education_degree_bullet.concentrationType', 'student_year',
-        'candidate.source', 'area_of_interest.description', 'candidate.notes', custom_field
+        'candidate.source', 'area_of_interest.description', 'candidate.notes', custom_field, 'candidate.tags',
+        'candidate.skills'
     ]
 
     headers = {'Authorization': 'Bearer %s' % access_token, 'Content-Type': 'application/json'}
