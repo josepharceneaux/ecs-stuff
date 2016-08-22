@@ -121,12 +121,11 @@ class TestEventById(object):
         event['social_network_event_id'] = social_network_event_id
 
         # Success case, event should be updated
-        datetime_now = datetime.datetime.now()
+        datetime_now = datetime.datetime.utcnow()
         datetime_now = datetime_now.replace(microsecond=0)
         event['title'] = 'Test update event'
-        datetime_format = DatetimeUtils.ISO8601_FORMAT
-        event['start_datetime'] = (datetime_now + datetime.timedelta(days=50)).strftime(datetime_format)
-        event['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime(datetime_format)
+        event['start_datetime'] = (datetime_now + datetime.timedelta(days=50)).strftime(DatetimeUtils.ISO8601_FORMAT)
+        event['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime(DatetimeUtils.ISO8601_FORMAT)
         response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token_first, data=event)
         logger.info(response.text)
         assert response.status_code == codes.OK, 'Status should be Ok, Resource Modified (200)'

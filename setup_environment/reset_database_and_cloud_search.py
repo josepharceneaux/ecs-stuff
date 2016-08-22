@@ -8,9 +8,10 @@ Run:
 python setup_environment/reset_database_and_cloud_search.py
 
 """
-# Third Party
+# Standard library
 import json
 
+# Third Party
 from sqlalchemy import text
 
 # App specific
