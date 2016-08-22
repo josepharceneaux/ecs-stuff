@@ -24,6 +24,9 @@ from user_service.common.utils.auth_utils import require_oauth, require_all_perm
 # Error handling
 from user_service.common.error_handling import (ForbiddenError, InvalidUsage)
 
+# Utilities
+from user_service.common.utils.datetime_utils import DatetimeUtils
+
 
 class DomainSourceResource(Resource):
     decorators = [require_oauth()]
@@ -61,11 +64,16 @@ class DomainSourceResource(Resource):
                                additional_error_info=dict(source_id=source.id))
 
         new_source = CandidateSource(
-            description=description, notes=notes, domain_id=domain_id, added_datetime=datetime.datetime.utcnow()
+            description=description,
+            notes=notes,
+            domain_id=domain_id,
+            added_datetime=datetime.datetime.utcnow()
         )
+
         db.session.add(new_source)
         db.session.commit()
-        return {'source': {'id': new_source.id}}, 201
+
+        return {'source': {'id': new_source.id}}, requests.codes.CREATED
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_DOMAINS)
     def get(self, **kwargs):
@@ -87,7 +95,7 @@ class DomainSourceResource(Resource):
         domain_id = authed_user.domain_id  # User's domain ID
 
         # Return a single source If source ID is provided
-        if source_id:
+        if source_id is not None:
             source = CandidateSource.get(source_id)
             # Source ID must be recognized
             if not source_id:
@@ -103,7 +111,7 @@ class DomainSourceResource(Resource):
                 'description': source.description,
                 'notes': source.notes,
                 'domain_id': source.domain_id,
-                'added_datetime': str(source.added_datetime)
+                'added_datetime': DatetimeUtils.utc_isoformat(source.added_datetime) if source.added_datetime else None
             }}
 
         # Get all of user's domain sources
@@ -113,5 +121,5 @@ class DomainSourceResource(Resource):
                 'description': source.description,
                 'notes': source.notes,
                 'domain_id': source.domain_id,
-                'added_datetime': str(source.added_datetime)
+                'added_datetime': DatetimeUtils.utc_isoformat(source.added_datetime) if source.added_datetime else None
             } for source in CandidateSource.domain_sources(domain_id=domain_id)]}

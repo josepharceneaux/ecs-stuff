@@ -118,7 +118,7 @@ class TestCreateCampaign(object):
         invalid_names = CampaignsTestsHelpers.INVALID_TEXT_VALUES
         invalid_value_test(URL, campaign_data, 'name', invalid_names, token_first)
 
-    def test_create_campaign(self, token_first, campaign_data, smartlist_first):
+    def test_create_campaign_with_valid_data(self, token_first, campaign_data, smartlist_first):
         """
         Here we will send a valid data to create a campaign and we are expecting 201 (created)
         :param string token_first: auth token
