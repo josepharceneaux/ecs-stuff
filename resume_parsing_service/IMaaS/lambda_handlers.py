@@ -38,6 +38,7 @@ def convert_pdf_to_png(event, context):
         return {'error': 'No PDF data passed'}
 
     decoded = base64.b64decode(pdf_data)
+    del pdf_data
     print 'Decoded'
 
     #Creates a single large Image object from the PDF data.
@@ -52,6 +53,7 @@ def convert_pdf_to_png(event, context):
                 (<wand.sequence>, None, None)
             )
         """
+        del decoded
         grouped = grouper(pdf.sequence, GROUP_SIZE)
 
         for group in grouped:
@@ -66,17 +68,21 @@ def convert_pdf_to_png(event, context):
                     top=pdf.height * i,
                     left=0
                 )
+            del trimmed
             print 'Image composed'
 
             blob = image.make_blob('png')
             print 'Blob made'
 
             compressed = zlib.compress(blob)
+            del blob
             print 'Compressed'
 
             encoded = base64.b64encode(compressed)
+            del compressed
             print 'Encoded'
 
             img_data.append(encoded)
+            del encoded
 
     return {'img_data': img_data}
