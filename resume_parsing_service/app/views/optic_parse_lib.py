@@ -148,7 +148,7 @@ def parse_candidate_name(bs_contact_xml_list):
     if surname:
         surname = scrub_candidate_name(surname)
 
-    return (givenname, surname)
+    return givenname, surname
 
 
 @contract
