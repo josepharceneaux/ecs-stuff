@@ -21,8 +21,7 @@ Hit endpoint:
 from requests import codes
 
 # Application specific
-from push_campaign_service.tests.test_utilities import send_request,delete_campaign
-from push_campaign_service.common.utils.test_utils import delete_candidate
+from push_campaign_service.common.utils.handy_functions import send_request
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.tests.test_utilities import get_blasts
 

@@ -51,6 +51,9 @@ class CampaignsTestsHelpers(object):
     # Remove 0 from list as it is valid frequency_id and replace it with three digit frequency_id
     INVALID_FREQUENCY_IDS[1] = int(fake.numerify())
 
+    # Invalid values for required text field
+    INVALID_TEXT_VALUES = ['', '  ', 0,  {}, [], None, True]
+
     @classmethod
     @contract
     def request_for_forbidden_error(cls, method, url, access_token, data=None):
