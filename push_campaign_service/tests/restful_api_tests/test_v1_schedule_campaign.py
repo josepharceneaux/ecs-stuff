@@ -372,14 +372,14 @@ class TestRescheduleCampaignUsingPUT(object):
 class TestUnscheduleCamapignUsingDELETE(object):
 
     # Test URL: /v1/push-campaigns/{id}/schedule [DELETE]
-    def test_unschedule_campaign_with_invalid_token(self, campaign_in_db, smartlist_first):
-        """
-         Try to unschedule a campaign with invalid aut token nd  API will raise 401 error.
-        """
-        # data not needed here but just to be consistent with other requests of
-        # this resource test
-        data = generate_campaign_schedule_data()
-        unauthorize_test('delete',  URL % campaign_in_db['id'], data)
+    # def test_unschedule_campaign_with_invalid_token(self, campaign_in_db, smartlist_first):
+    #     """
+    #      Try to unschedule a campaign with invalid aut token nd  API will raise 401 error.
+    #     """
+    #     # data not needed here but just to be consistent with other requests of
+    #     # this resource test
+    #     data = generate_campaign_schedule_data()
+    #     unauthorize_test('delete',  URL % campaign_in_db['id'], data)
 
     def test_unschedule_campaign_with_other_user(self, token_second, campaign_in_db):
         """
