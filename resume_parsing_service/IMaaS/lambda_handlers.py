@@ -72,6 +72,7 @@ def convert_pdf_to_png(event, context):
             print 'Image composed'
 
             blob = image.make_blob('png')
+            del image
             print 'Blob made'
 
             compressed = zlib.compress(blob)
