@@ -96,6 +96,7 @@ def convert_pdf_to_png(file_obj):
         )
 
     if conversion_response.status_code != requests.codes.ok:
+        logger.error('Non 200 received from IMaaS - {}'.format(conversion_response.content))
         raise InternalServerError(
             error_message=error_constants.IMAAS_ERROR['message'],
             error_code=error_constants.IMAAS_ERROR['code']
@@ -105,6 +106,7 @@ def convert_pdf_to_png(file_obj):
     img_data = content.get('img_data')
 
     if not img_data:
+        logger.error('No img_data received from IMaaS - {}'.format(conversion_response.content))
         raise InternalServerError(
             error_message=error_constants.IMAAS_NO_DATA['message'],
             error_code=error_constants.IMAAS_NO_DATA['code']
