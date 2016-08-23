@@ -186,7 +186,8 @@ class CampaignsTestsHelpers(object):
         :param dict data: Data to be posted
         """
         assert_invalid_datetime_format(method, url, access_token, data, 'start_datetime')
-        if not data['frequency_id'] or not data['frequency_id'] == Frequency.ONCE:
+        # It means it is periodic, so end_datetime will also be required
+        if not data['frequency_id'] == Frequency.ONCE:
             assert_invalid_datetime_format(method, url, access_token, data, 'end_datetime')
 
     @staticmethod

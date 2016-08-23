@@ -34,12 +34,12 @@ class TestResourceEvents(object):
         assert response.status_code == codes.UNAUTHORIZED, 'It should be unauthorized (401)'
         assert 'events' not in response.json()
 
-    def test_event_get_with_valid_token(self, auth_token):
+    def test_event_get_with_valid_token(self, token_second):
         """
         - Get events using valid access_token
         - As the test user is newly created. so, initially there will be no events
         """
-        response = requests.get(SocialNetworkApiUrl.EVENTS, headers=auth_header(auth_token))
+        response = requests.get(SocialNetworkApiUrl.EVENTS, headers=auth_header(token_second))
         logger.info(response.text)
         assert response.status_code == codes.OK, 'Status should be Ok (200)'
         events = response.json()['events']

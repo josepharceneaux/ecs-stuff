@@ -237,21 +237,14 @@ def talent_pool(request, token_first):
 
 
 @pytest.fixture(scope='session')
-def talent_pool_session_scope(request, token_first):
+def talent_pool_session_scope(token_first):
     """
     This fixture created a talent pool that is associated to user_first
-    :param request: request object
     :param token_first: authentication token for user_first
     """
     talent_pools = create_talent_pools(token_first)
     talent_pool_id = talent_pools['talent_pools'][0]
     talent_pool_obj = get_talent_pool(talent_pool_id, token_first)['talent_pool']
-
-    def tear_down():
-        delete_talent_pool(talent_pool_id, token_first,
-                           expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return talent_pool_obj
 
 

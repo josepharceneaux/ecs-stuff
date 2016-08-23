@@ -16,9 +16,10 @@ import pytest
 from requests import codes
 
 # Common conftests
+from social_network_service.common.tests.conftest import user_auth
 from social_network_service.common.tests.api_conftest import (user_first, token_first, talent_pool_session_scope,
-                                                              user_same_domain, token_same_domain)
-from social_network_service.common.tests.conftest import (sample_user, domain_first, first_group, user_auth)
+                                                              user_same_domain, token_same_domain, user_second,
+                                                              token_second)
 
 # Models
 from social_network_service.common.models.db import db
@@ -72,17 +73,6 @@ def base_url():
     return SocialNetworkApiUrl.HOST_NAME
 
 
-@pytest.fixture(scope='function')
-def auth_token(user_auth, sample_user):
-    """
-    returns the access token using pytest fixture defined in common/tests/conftest.py
-    :param user_auth: fixture in common/tests/conftest.py
-    :param sample_user: fixture in common/tests/conftest.py
-    """
-    auth_token_row = user_auth.get_auth_token(sample_user, get_bearer_token=True)
-    return auth_token_row['access_token']
-
-
 @pytest.fixture()
 def token(user_auth, user_first, talent_pool_session_scope):
     """
@@ -122,16 +112,13 @@ def test_eventbrite_credentials(user_first, eventbrite):
     Create eventbrite social network credentials for this user so
     we can create event on Eventbrite.com
     """
-
     eventbrite_key = EVENTBRITE.title()
-
     # Store and use redis for eventbrite access_token
     if not redis_store2.get(eventbrite_key):
         redis_store2.set(eventbrite_key,
                          json.dumps(dict(
                              access_token=app.config[TalentConfigKeys.EVENTBRITE_ACCESS_TOKEN]
                          )))
-
     social_network_id = eventbrite.id
     user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_first['id'],
                                                                                      social_network_id)
