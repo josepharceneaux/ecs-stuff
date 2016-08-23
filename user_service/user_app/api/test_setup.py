@@ -1,3 +1,8 @@
+"""
+This module contains API endpoint to create test data like test users, domain, tokens, client.
+In this we will be able to run tests on jenkins and setting any environment `qa` or `prod`, we can test APIs on those
+environments. So instead of testing manually, jenkins will do the task up to some extent.
+"""
 import types
 from flask_restful import Resource
 from flask import Blueprint, request
@@ -26,7 +31,7 @@ class TestSetupApi(Resource):
         POST /test-setup/
         This endpoint will create test data required to run tests.
 
-        Users created by this endpoint have ability to Create, Read and Update (CRU).
+        Users created by this endpoint have ability to Create, Read and Update (CRU). (Not delete)
         Users are assigned `TEST_ADMIN` role.
         """
         origin = request.remote_addr
@@ -36,13 +41,15 @@ class TestSetupApi(Resource):
         is_gettalent = origin.count('gettalent.com') == 1 or origin == jenkins_ip
         is_dev = origin == localhost and app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]
         is_alloed = is_gettalent or is_dev
-        logger.info("""is_gettalent: %s,
+        message = """is_gettalent: %s,
                        id_dev: %s,
                        origin: %s,
                        environment: %s,
                        is_allowed: %s
-                    """, is_gettalent, is_dev, origin, environment, is_alloed)
+                    """ % (is_gettalent, is_dev, origin, environment, is_alloed)
         if not is_alloed:
+            logger.warn(message)
             raise ForbiddenError('Invalid request origin : %s' % origin)
 
+        logger.info(message)
         return create_test_data()

@@ -18,10 +18,17 @@ from redo import retry
 from requests import codes
 
 from ..routes import UserServiceApiUrl
+from ..utils.handy_functions import send_request
 from ..utils.test_utils import (create_candidate, delete_candidate,
                                 create_smartlist, delete_smartlist, delete_talent_pool,
                                 create_talent_pools, create_talent_pipelines, get_smartlist_candidates, get_talent_pool,
-                                search_candidates, send_request)
+                                search_candidates)
+
+# Data returned from UserService contains lists of users, tokens etc. At 0 index, there is user first, at index 1,
+# user_same_domain and at index 2, user_second. Same is the order for other entities.
+FIRST = 0
+SAME_DOMAIN = 1
+SECOND = 2
 
 
 @pytest.fixture(scope='session')
@@ -43,7 +50,7 @@ def token_first(test_data):
     Authentication token for user_first.
     :param dict test_data: a collection of test users, domains, groups, tokens data.
     """
-    return test_data['tokens'][0]['access_token']
+    return test_data['tokens'][FIRST]['access_token']
 
 
 @pytest.fixture(scope='session')
@@ -52,7 +59,7 @@ def token_same_domain(test_data):
     Authentication token for user that belongs to same domain as user_first.
     :param dict test_data: a collection of test users, domains, groups, tokens data.
     """
-    return test_data['tokens'][1]['access_token']
+    return test_data['tokens'][SAME_DOMAIN]['access_token']
 
 
 @pytest.fixture(scope='session')
@@ -61,7 +68,7 @@ def token_second(test_data):
      Authentication token for user_second.
      :param dict test_data: a collection of test users, domains, groups, tokens data.
     """
-    return test_data['tokens'][2]['access_token']
+    return test_data['tokens'][SECOND]['access_token']
 
 
 @pytest.fixture(scope='session')
@@ -71,7 +78,7 @@ def user_first(test_data):
     :param dict test_data: a collection of test users, domains, groups, tokens data.
     :return: user dictionary object
     """
-    return test_data['users'][0]
+    return test_data['users'][FIRST]
 
 
 @pytest.fixture(scope='session')
@@ -81,7 +88,7 @@ def user_same_domain(test_data):
     :param dict test_data: a collection of test users, domains, groups, tokens data.
     :return: user dictionary object
     """
-    return test_data['users'][1]
+    return test_data['users'][SAME_DOMAIN]
 
 
 @pytest.fixture(scope='session')
@@ -91,7 +98,7 @@ def user_second(test_data):
     :param dict test_data: a collection of test users, domains, groups, tokens data.
     :return: user dictionary object
     """
-    return test_data['users'][2]
+    return test_data['users'][SECOND]
 
 
 @pytest.fixture(scope='function')
