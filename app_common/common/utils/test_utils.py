@@ -30,6 +30,81 @@ define_custom_contracts()
 fake = Faker()
 
 
+@contract
+def invalid_value_test(url, data, key, values, token, method='post', expected_status=(codes.BAD_REQUEST,)):
+    """
+    This function sends a request to given url with required field
+    having an invalid value and checks that it returns InvalidUsage 400
+    :param dict data: campaign data
+    :param string url: api endpoint url
+    :param string key: field key
+    :param list values: possible invalid values
+    :param string token: auth token
+    :param http_method method: http request method, post/put
+    :param tuple(int)  expected_status: what can be possible expected status for this request
+
+    :Example:
+
+        >>> invalid_values = ['', '  ', {}, [], None, True]
+        >>> invalid_value_test(URL, campaign_data, 'body_text', invalid_values, token_first)
+    """
+    for val in values:
+        data[key] = val
+        response = send_request(method, url, token, data)
+        assert response.status_code in expected_status, 'Invalid field %s with value %s' % (key, val)
+
+
+@contract
+def unexpected_field_test(method, url, data, token):
+    """
+    This function send a request to given URL with an unexpected field in request body.
+    API should raise InvalidUsage 400
+    :param http_method method: request method, POST/PUT
+    :param string url: API resource url
+    :param dict data: request data
+    :param string token: access token
+    """
+    fake_word = fake.word()
+    data[fake_word] = fake_word
+    response = send_request(method, url, token, data)
+    assert response.status_code == codes.BAD_REQUEST, 'Unexpected field name: %s' % fake_word
+
+
+@contract
+def invalid_data_test(method, url, token):
+    """
+    This functions sends http request to a given URL with different
+    invalid data and checks for InvalidUsage (400 status code)
+    :param http_method method: http method e.g. POST, PUT, DELETE
+    :param string url: api url
+    :param string token: auth token
+    """
+    data_set = [None, {}, get_fake_dict(), '',  '  ', []]
+    for data in data_set:
+        response = send_request(method, url, token, data, is_json=False)
+        assert response.status_code == codes.BAD_REQUEST
+        response = send_request(method, url, token, data, is_json=True)
+        assert response.status_code == codes.BAD_REQUEST
+
+
+@contract
+def missing_keys_test(url, data, keys, token, method='post'):
+    """
+    This function sends a request to given url after removing required field from given (valid) data.
+    We are expecting that API should raise InvalidUsage error (400 status code)
+    :param string url: api endpoint url
+    :param dict data: request body data
+    :param list | tuple keys: required fields
+    :param string token: auth token
+    :param http_method method: http request method, post/put
+    """
+    for key in keys:
+        new_data = data.copy()
+        new_data.pop(key)
+        response = send_request(method, url, token, new_data)
+        assert response.status_code == codes.BAD_REQUEST, 'Test failed for key: %s' % key
+
+
 def response_info(response):
     """
     Function returns the following response information if available:
@@ -516,15 +591,17 @@ def get_response(access_token, arguments_to_url, expected_count=1, attempts=20, 
     raise NotFoundError('Unable to get expected number of candidates')
 
 
+@contract
 def get_and_assert_zero(url, key, token, sleep_time=SLEEP_TIME):
     """
     This function gets list of objects from given url and asserts that length of objects under a given key is zero.
     It keeps on retrying this process until it founds some records or sleep_time is over
-    :param url: URL of requested resource
-    :param key: key in response that has resource list
-    :param token: user access token
-    :param sleep_time: maximum time to wait
+    :param string url: URL of requested resource
+    :param string key: key in response that has resource list
+    :param string token: user access token
+    :param int sleep_time: maximum time to wait
     """
     attempts = sleep_time / SLEEP_INTERVAL
     for _ in retrier(attempts=attempts, sleeptime=SLEEP_INTERVAL, sleepscale=1):
         assert len(send_request('get', url, token).json()[key]) == 0
+

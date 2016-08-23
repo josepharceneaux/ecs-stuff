@@ -1,71 +1,17 @@
 from datetime import datetime, timedelta
+from dateutil.parser import parse
 from faker import Faker
-from requests import codes
 from contracts import contract
 from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi, CandidateApiUrl
 from push_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from push_campaign_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
-from push_campaign_service.common.utils.test_utils import (send_request, get_fake_dict)
+from push_campaign_service.common.utils.handy_functions import (send_request)
 from push_campaign_service.push_campaign_app import logger
 
 fake = Faker()
 
 API_URL = PushCampaignApiUrl.HOST_NAME
 VERSION = PushCampaignApi.VERSION
-
-
-@contract
-def missing_key_test(data, key, token):
-    """
-    This function sends a put request to api with data with one required field
-    missing and checks that it InvalidUsage 400
-    :param dict data: campaign data
-    :param string key: field key
-    :param string token: auth token
-    """
-    data.pop(key, None)
-    response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
-    assert response.status_code == codes.BAD_REQUEST
-
-
-@contract
-def invalid_value_test(data, key, token, campaign_id):
-    """
-    This function sends a put request to api with required one required field
-    with an invalid value (empty string) and checks that it returns InvalidUsage 400
-    :param dict data: campaign data
-    :param string key: field key
-    :param string token: auth token
-    :param int | long campaign_id: push campaign id
-    """
-    data.update(**generate_campaign_data())
-    data[key] = ''
-    response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_id, token, data)
-    assert response.status_code == codes.BAD_REQUEST
-
-
-@contract
-def invalid_data_test(method, url, token):
-    """
-    This functions sends http request to a given url with different
-    invalid data and checks for InvalidUsage
-    :param http_method method: http method e.g. POST, PUT
-    :param string url: api url
-    :param string token: auth token
-    """
-    data = None
-    response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == codes.BAD_REQUEST
-    response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == codes.BAD_REQUEST
-    data = {}
-    response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == codes.BAD_REQUEST
-    response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == codes.BAD_REQUEST
-    data = get_fake_dict()
-    response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == codes.BAD_REQUEST
 
 
 def generate_campaign_data():
@@ -86,7 +32,7 @@ def generate_campaign_schedule_data(frequency_id=1):
     """
     This method generates data (dict) for scheduling a campaign.
     This data contains start_date, end_datetime and frequency id
-    :type frequency_id: int
+    :type frequency_id: type(t)
     :return: data
     :rtype dict
     """
@@ -111,6 +57,20 @@ def compare_campaign_data(campaign_first, campaign_second):
     assert campaign_first['body_text'] == campaign_second['body_text']
     assert campaign_first['name'] == campaign_second['name']
     assert campaign_first['url'] == campaign_second['url']
+
+
+@contract
+def match_schedule_data(schedule_data, campaign):
+    """
+    This function takes schedule data and campaign object and matched schedule values like start_datetine,
+    end_datetime and frequency_id.
+    :param dict schedule_data: data used to schedule a campaign
+    :param dict campaign: campaign object
+    """
+    diff = timedelta(seconds=1)
+    assert (parse(schedule_data['start_datetime'].split('.')[0]) - parse(campaign['start_datetime'])) < diff
+    assert (parse(schedule_data['end_datetime'].split('.')[0]) - parse(campaign['end_datetime'])) < diff
+    assert schedule_data['frequency_id'] == campaign['frequency_id']
 
 
 @contract
