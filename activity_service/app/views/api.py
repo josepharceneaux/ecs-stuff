@@ -318,7 +318,7 @@ class TalentActivityManager(object):
         }
         return activities_response
 
-    # Like 'get' but gets the last N consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
+    # Like 'get' but gets the last 200 consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
     def get_recent_readable(self, user_id, start_datetime=None, end_datetime=None, limit=3):
         logger.info("{} getting recent readable for {} - {}".format(
             self.call_id, start_datetime or 'N/A', end_datetime or 'N/A'
@@ -328,20 +328,22 @@ class TalentActivityManager(object):
         current_user = User.query.filter_by(id=user_id).first()
         logger.info("{} fetched current user in {} seconds".format(self.call_id, time() - start_time))
 
-        # Get the last 25 activities and aggregate them by type, with order.
+        # Get the last 200 activities and aggregate them by type, with order.
         user_domain_id = current_user.domain_id
         user_ids = User.query.filter_by(domain_id=user_domain_id).values('id')
         logger.info("{} fetched domain IDs in {} seconds".format(self.call_id, time() - start_time))
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
         logger.info("{} flattened domain IDs in {} seconds".format(self.call_id, time() - start_time))
         filters = [Activity.user_id.in_(flattened_user_ids)]
+
         if start_datetime:
             filters.append(Activity.added_time>=start_datetime)
         if end_datetime:
             filters.append(Activity.added_time<=end_datetime)
-        activities = Activity.query.filter(*filters)
-        logger.info("{} fetched {} activities in {} seconds".format(
-            self.call_id, len(activities.all()), time() - start_time)
+
+        activities = Activity.query.filter(*filters).limit(200)
+        logger.info("{} fetched activities in {} seconds".format(
+            self.call_id, time() - start_time)
         )
 
         aggregated_activities = []
