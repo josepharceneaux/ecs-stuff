@@ -751,8 +751,11 @@ def test_parsing_names():
     xml_combos = [xml for xml in dir(contact_combinations) if "__" not in xml]
     for combo in xml_combos:
         combo_to_parse = bs4(getattr(contact_combinations, combo), 'lxml').findAll('contact')
+        # Below is testing that the parse_candidate_name function can handle multiple xml tree
+        # structures without raising an exception. We are not concerned about the returned values as
+        # it can be (string, string), (None, string), (string, None), or (None, None)
         first, last = parse_candidate_name(combo_to_parse)
-        pass # simply testing we run without error as first, last can be (None, None)
+
 
 
 def test_parsing_phones():
