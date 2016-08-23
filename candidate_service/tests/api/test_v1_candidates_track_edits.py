@@ -90,7 +90,7 @@ class TestTrackCandidateAddressEdits(object):
 
 
 class TestTrackCandidateCustomFieldEdits(object):
-    def test_edit_candidate_custom_field(self, access_token_first, user_first, talent_pool, domain_custom_fields):
+    def test_edit_candidate_custom_field(self, access_token_first, talent_pool, domain_custom_fields):
         """
         Test:   Change Candidate's custom fields
         Expect: 200
@@ -126,7 +126,7 @@ class TestTrackCandidateCustomFieldEdits(object):
 
 
 class TestTrackCandidateEducationEdits(object):
-    def test_edit_candidate_education(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_education(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's education records
         Expect: 200
