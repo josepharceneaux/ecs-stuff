@@ -280,7 +280,7 @@ def request_to_email_template_resource(access_token, request, email_template_id,
     :param email_template_id: Id of email template
     :param data: data in form of dictionary
     """
-    url = EmailCampaignApiUrl.TEMPLATES + '/' + str(email_template_id)
+    url = EmailCampaignApiUrl.TEMPLATE % email_template_id
     return define_and_send_request(access_token, request, url, data)
 
 
@@ -293,17 +293,16 @@ def get_template_folder(token):
     template_folder_name = 'test_template_folder_%i' % datetime.datetime.now().microsecond
 
     data = {'name': template_folder_name}
-    response = requests.post(url=EmailCampaignApiUrl.TEMPLATES_FOLDER, data=json.dumps(data),
+    response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
                              headers={'Authorization': 'Bearer %s' % token,
                                       'Content-type': 'application/json'})
     assert response.status_code == requests.codes.CREATED
     response_obj = response.json()
-    template_folder_id = response_obj["template_folder_id"][0]
-    return template_folder_id['id'], template_folder_name
+    template_folder_id = response_obj["id"]
+    return template_folder_id, template_folder_name
 
 
-def create_email_template(token, user_id, template_name, body_html, body_text, is_immutable=1,
-                          folder_id=None):
+def create_email_template(token, user_id, template_name, body_html, body_text, is_immutable=1, folder_id=None):
     """
     Creates a email campaign template with params provided
 
@@ -374,9 +373,9 @@ def add_email_template(token, template_owner, template_body):
                                  folder_id=template_folder_id)
     db.session.commit()
     resp_obj = resp.json()
-    resp_dict = resp_obj['template_id'][0]
+    template_id = resp_obj['id']
 
-    return {"template_id": resp_dict['id'],
+    return {"template_id": template_id,
             "template_folder_id": template_folder_id,
             "template_folder_name": template_folder_name,
             "template_name": template_name,

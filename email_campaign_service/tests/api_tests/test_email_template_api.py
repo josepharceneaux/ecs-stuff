@@ -1,9 +1,13 @@
 """Test Email Template API: Contains tests for Email Templates and Email Template Folders endpoints
 """
+# Standard Library
 import json
 import datetime
+
+# Third Party
 import requests
 
+# Application Specific
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.email_campaign import (EmailTemplateFolder, UserEmailTemplate)
@@ -14,54 +18,38 @@ from email_campaign_service.tests.modules.handy_functions import (request_to_ema
 ON = 1  # Global variable for comparing value of is_immutable in the functions to avoid hard-coding 1
 
 
-def test_create_email_template_folder(user_first, access_token_first):
+def test_create_email_template_folder(access_token_first):
     """
     Test for creating new email template folder
     It creates a test folder and asserts that it is created with correct name.
-    :param user_first: we would use this to create the template.
     :param access_token_first: For user authorization
     """
-
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(access_token_first)
-
     db.session.commit()
-
     # Assert that folder is created with correct name
     folder_row = EmailTemplateFolder.get_by_id(template_folder_id)
     assert folder_row.name == template_folder_name
 
 
-def test_delete_email_template_folder(user_first, user_same_domain, access_token_first, access_token_same):
+def test_delete_email_template_folder(access_token_first, headers_same):
     """
     Test for deleting email template folder.
     It creates a test folder by user_first and deletes that by the user_same_domain of same domain.
     This verifies that the users of the same domain having appropriate privileges are able to delete
     email template folders created by users of same domain. Deletion should be successful and
     a response of 204 (NO_CONTENT) must be returned.
-
-    :param user_first: we would use this to create the template folder.
-    :param user_same_domain: This is the user from same domain as user_first and would be used to delete the folder.
-    :param access_token_first: For user_first authorization
-    :param access_token_same: For user_same_domain authorization
     """
-
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(access_token_first)
-
     db.session.commit()
-
     # Assert that folder is created with correct name
     folder_row = EmailTemplateFolder.get_by_id(template_folder_id)
     assert folder_row.name == template_folder_name
 
-
     data = {'name': template_folder_name}
-    response = requests.delete(
-            url=EmailCampaignApiUrl.TEMPLATES_FOLDER + '/' + str(template_folder_id), data=json.dumps(data),
-            headers={'Authorization': 'Bearer %s' % access_token_same,
-                     'Content-type': 'application/json'}
-    )
+    response = requests.delete(url=EmailCampaignApiUrl.TEMPLATE_FOLDER % template_folder_id, data=json.dumps(data),
+                               headers=headers_same)
     assert response.status_code == requests.codes.NO_CONTENT
 
 
@@ -90,13 +78,10 @@ def test_create_email_template_without_name(user_first, access_token_first):
     :param user_first: sample user
     :param access_token_first: For user authentication
     """
-
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(access_token_first)
-
     # Empty template name
     template_name = ''
-
     resp = create_email_template(access_token_first, user_first.id, template_name, template_body(), template_name,
                                  is_immutable=ON, folder_id=template_folder_id)
     assert resp.status_code == requests.codes.BAD_REQUEST
@@ -110,7 +95,6 @@ def test_create_template_without_email_body(user_first, access_token_first):
     :param user_first: sample user
     :param access_token_first: For user authentication
     """
-
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(access_token_first)
 
@@ -122,13 +106,12 @@ def test_create_template_without_email_body(user_first, access_token_first):
     assert resp.status_code == requests.codes.BAD_REQUEST
 
 
-def test_delete_email_template(user_first, user_same_domain, access_token_first, access_token_same):
+def test_delete_email_template(user_first, access_token_first, access_token_same):
     """
     Tests deleting user's email template. Template should be deleted successfully returning
     204 (NO CONTENT) response.
 
     :param user_first: user1
-    :param user_same_domain: user2
     :param access_token_first: For user_first authorization
     :param access_token_same: For user_same_domain authorization
     """
@@ -136,20 +119,18 @@ def test_delete_email_template(user_first, user_same_domain, access_token_first,
     template = add_email_template(access_token_first, user_first, template_body())
     template_id = template['template_id']
 
-    resp = request_to_email_template_resource(access_token_same, 'delete', template['template_id'])
+    resp = request_to_email_template_resource(access_token_same, 'delete', template_id)
     assert resp.status_code == requests.codes.NO_CONTENT
     template_after_delete = UserEmailTemplate.get_by_id(template_id)
     assert template_after_delete is None
 
 
-def test_delete_template_with_non_existing_template_id(user_first, user_same_domain, access_token_first,
-                                                       access_token_same):
+def test_delete_template_with_non_existing_template_id(user_first, access_token_first, access_token_same):
     """
     Tests deleting user's email template with non existing template_id. The response should be Not Found - 404
     as we are trying to delete a template which does not exist.
 
     :param user_first: we would use this to create the template.
-    :param user_same_domain: This is the user from same domain as user_first and would be used to delete the template.
     :param access_token_first: For user authorization
     :param access_token_same: For user_same_domain authorization
     """
@@ -162,16 +143,13 @@ def test_delete_template_with_non_existing_template_id(user_first, user_same_dom
     assert resp.status_code == requests.codes.NOT_FOUND
 
 
-def test_delete_template_from_different_domain(user_first, user_from_diff_domain, access_token_first,
-                                               access_token_other):
+def test_delete_template_from_different_domain(user_first, access_token_first, access_token_other):
     """
     Tests deleting user's email template from different domain. The response should be Forbidden error - 403
     as a user with a different domain than template owner user is not allowed to delete the email template.
 
     :param access_token_first: For user authorization
     :param user_first: user whose token will be used to create the template.
-    :param user_from_diff_domain: user2 with a different domain from user_first. We will try
-                                  to delete the template using the token for user2.
     :param access_token_other: For user_from_diff_domain authorization
     """
     # Add Email template
@@ -182,7 +160,7 @@ def test_delete_template_from_different_domain(user_first, user_from_diff_domain
     assert resp.status_code == requests.codes.FORBIDDEN
 
 
-def test_get_email_template_via_id(user_first, user_same_domain, access_token_first, access_token_same):
+def test_get_email_template_via_id(user_first, access_token_first, headers_same):
     """
     Retrieve email_template via template's ID. We will create the email template using user_first
     and try to retrieve it using the template id returned in the response. user_same_domain with the same domain
@@ -190,28 +168,22 @@ def test_get_email_template_via_id(user_first, user_same_domain, access_token_fi
     allowed to access the templates created by fellow domain users. Response should be 200 (OK).
 
     :param user_first: we would use this to create the template.
-    :param user_same_domain: This is the user from same domain as user_first and would be used to retrieve the template.
     :param access_token_first: For user_first authorization
-    :param access_token_same: For user_same_domain authorization
+    :param headers_same: For user_same_domain authorization
     """
-
     # Add Email template
     template = add_email_template(access_token_first, user_first, template_body())
     template_id = template['template_id']
-
-    url = EmailCampaignApiUrl.TEMPLATES + '/' + str(template_id)
+    url = EmailCampaignApiUrl.TEMPLATE % template_id
     # Get email_template via template ID using token for 2nd user
-    response = requests.get(
-            url=url, headers={
-                'Authorization': 'Bearer %s' % access_token_same, 'Content-type': 'application/json'}
-    )
+    response = requests.get(url=url, headers=headers_same)
     assert response.status_code == requests.codes.OK
     resp_dict = response.json()['template']
     assert isinstance(resp_dict, dict)
     assert resp_dict['id'] == template_id
 
 
-def test_get_email_template_with_non_existing_id(user_first, user_same_domain, access_token_first, access_token_same):
+def test_get_email_template_with_non_existing_id(user_first, access_token_first, headers_same):
     """
     Retrieve email_template via ID for which email template doesn't exist.We will create the email
     template using user_first and try to retrieve it by appending some random value to the template id returned
@@ -220,19 +192,16 @@ def test_get_email_template_with_non_existing_id(user_first, user_same_domain, a
     Response should be 400 (NOT FOUND) as template id we are using to get is non-existent.
 
     :param user_first: we would use this to create the template.
-    :param user_same_domain: This is the user from same domain as user_first and would be used to retrieve the template.
     :param access_token_first: For user authorization
+    :param access_token_same: For user authorization
     """
     # Add Email template
     template = add_email_template(access_token_first, user_first, template_body())
     template_id = template['template_id']
 
-    url = EmailCampaignApiUrl.TEMPLATES + '/' + str(template_id) + str(datetime.datetime.now().microsecond)
+    url = EmailCampaignApiUrl.TEMPLATE % template_id + str(datetime.datetime.now().microsecond)
     # Get email_template via template ID
-    response = requests.get(
-            url=url, headers={
-                'Authorization': 'Bearer %s' % access_token_same, 'Content-type': 'application/json'}
-    )
+    response = requests.get(url=url, headers=headers_same)
     assert response.status_code == requests.codes.NOT_FOUND
 
 
