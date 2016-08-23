@@ -16,7 +16,6 @@ from _mysql_exceptions import OperationalError
 # Flask specific
 from flask import request
 from flask_restful import Resource
-from sqlalchemy import text
 
 from candidate_service.candidate_app import logger
 
