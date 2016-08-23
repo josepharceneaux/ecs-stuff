@@ -73,15 +73,6 @@ def base_url():
     return SocialNetworkApiUrl.HOST_NAME
 
 
-@pytest.fixture()
-def token(user_auth, user_first, talent_pool_session_scope):
-    """
-    Returns the access token for a different user so that we can test forbidden error etc.
-    """
-    auth_token_obj = user_auth.get_auth_token(user_first, get_bearer_token=True)
-    return auth_token_obj['access_token']
-
-
 @pytest.fixture(scope="session")
 def meetup():
     """
@@ -126,7 +117,7 @@ def test_eventbrite_credentials(user_first, eventbrite):
 
 
 @pytest.fixture(scope="session")
-def test_meetup_credentials(request, user_first, meetup):
+def test_meetup_credentials(user_first, meetup):
     """
     Create meetup social network credentials for this user so
     we can create event on Meetup.com
@@ -173,15 +164,6 @@ def test_meetup_credentials(request, user_first, meetup):
                              access_token=user_credentials.access_token,
                              refresh_token=user_credentials.refresh_token
                          )))
-
-    def fin():
-        """
-        Delete credentials for meetup for test user object at the end of test session
-        """
-        with app.app_context():
-            UserSocialNetworkCredential.delete(user_credentials)
-
-    request.addfinalizer(fin)
     return user_credentials
 
 
@@ -541,7 +523,7 @@ def venue_in_db_second(request):
 
 
 @pytest.fixture(scope="session")
-def organizer_in_db(request, user_first):
+def organizer_in_db(user_first):
     """
     This fixture returns an organizer in getTalent database
     """
@@ -560,13 +542,6 @@ def organizer_in_db(request, user_first):
     db.session.commit()
     organizer = dict(id=organizer_obj.id)
 
-    def fin():
-        try:
-            EventOrganizer.delete(organizer['id'])
-        except:
-            pass
-
-    request.addfinalizer(fin)
     return organizer
 
 
@@ -654,7 +629,7 @@ def meetup_missing_data(request, meetup_event_data):
 
 
 @pytest.fixture()
-def is_subscribed_test_data(request, user_first):
+def is_subscribed_test_data(user_first):
     """
     This fixture creates two social networks and add credentials for first social network.
     We actually want to test 'is_subscribed' field in social networks data from API.
@@ -677,16 +652,6 @@ def is_subscribed_test_data(request, user_first):
         access_token='lorel ipsum',
         refresh_token='lorel ipsum')
     UserSocialNetworkCredential.save(test_social_network1_credentials)
-
-    def fin():
-        """
-        Delete social networks created for tests and UserSocialNetworkCredential record.
-        """
-        UserSocialNetworkCredential.delete(test_social_network1_credentials.id)
-        SocialNetwork.delete(test_social_network1.id)
-        SocialNetwork.delete(test_social_network2.id)
-
-    request.addfinalizer(fin)
     return test_social_network1, test_social_network2, test_social_network1_credentials
 
 
