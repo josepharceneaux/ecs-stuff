@@ -87,4 +87,3 @@ class Event(db.Model):
                 Event.id == event_id
             )).first()
 
-

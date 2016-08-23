@@ -107,26 +107,28 @@ def parse_optic_xml(resume_xml_text):
     experience_xml_list = bs4(resume_xml_text, 'lxml').findAll('experience')
     educations_xml_list = bs4(resume_xml_text, 'lxml').findAll('education')
     skill_xml_list = bs4(resume_xml_text, 'lxml').findAll('canonskill')
+    summary_xml_list = bs4(resume_xml_text, 'lxml').findAll('summary')
     references_xml = bs4(resume_xml_text, 'lxml').findAll('references')
-    name = parse_candidate_name(contact_xml_list)
     emails = parse_candidate_emails(contact_xml_list)
-    phones = parse_candidate_phones(contact_xml_list)
-    work_experiences = parse_candidate_experiences(experience_xml_list)
-    educations = parse_candidate_educations(educations_xml_list)
-    skills = parse_candidate_skills(skill_xml_list)
-    addresses = parse_candidate_addresses(contact_xml_list)
+    first_name, last_name = parse_candidate_name(contact_xml_list)
     references = parse_candidate_reference(references_xml)
+
+    if emails and not first_name:
+        first_name = emails[0].get('address')
+        last_name = None
+
     return dict(
-        first_name=name['first_name'],
-        last_name=name['last_name'],
+        first_name=first_name,
+        last_name=last_name,
         emails=emails,
-        phones=phones,
-        work_experiences=work_experiences,
-        educations=educations,
-        skills=skills,
-        addresses=addresses,
+        phones=parse_candidate_phones(contact_xml_list),
+        work_experiences=parse_candidate_experiences(experience_xml_list),
+        educations=parse_candidate_educations(educations_xml_list),
+        skills=parse_candidate_skills(skill_xml_list),
+        addresses=parse_candidate_addresses(contact_xml_list),
         talent_pool_ids={'add': None},
-        references=references
+        references=references,
+        summary=parse_candidate_summary(summary_xml_list)
     )
 
 
@@ -136,11 +138,11 @@ def parse_candidate_name(bs_contact_xml_list):
     Parses a name from a list of contact tags found in a BGXML response.
     :param bs4_ResultSet bs_contact_xml_list:
     :return: Formatted name strings using title() in a dictionary.
-    :rtype: dict
+    :rtype: tuple
     """
 
-    givenname = None
-    surname = None
+    givenname = None # Placeholder for a `first_name`.
+    surname = None # Placeholder for a `last_name`.
 
     for contact in bs_contact_xml_list:
         # If a name is already parsed we do not want to reassign it.
@@ -156,10 +158,7 @@ def parse_candidate_name(bs_contact_xml_list):
     if surname:
         surname = scrub_candidate_name(surname)
 
-    first_name = givenname or 'Unknown'
-    last_name = surname or 'Unknown'
-
-    return {'first_name': first_name, 'last_name': last_name}
+    return givenname, surname
 
 
 @contract
@@ -173,8 +172,8 @@ def parse_candidate_emails(bs_contact_xml_list):
     output = []
     for contact in bs_contact_xml_list:
         emails = contact.findAll('email')
-        for e in emails:
-            email_addr = normalize_value(e.text)
+        for email in emails:
+            email_addr = normalize_value(email.text)
             output.append(email_addr)
 
     unique_emails = set(output)
@@ -199,9 +198,9 @@ def parse_candidate_phones(bs_contact_xml_list):
     for contact in bs_contact_xml_list:
         phones = contact.findAll('phone')
 
-        for p in phones:
-            raw_phone = p.text.strip()
-            phone_type = p.get('type')
+        for phone in phones:
+            raw_phone = phone.text.strip()
+            phone_type = phone.get('type')
 
             # JSON_SCHEMA for candidates phone is max:20
             # This fixes issues with numbers like '1-123-45            67'
@@ -250,6 +249,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
     for experiences in bg_experience_xml_list:
         jobs = experiences.findAll('job')
         for employement in jobs:
+            start_month, start_year, end_month, end_year, start_datetime, end_datetime = (None,) * 6
             organization = _tag_text(employement, 'employer')
             # If it's 5 or less chars, keep the given capitalization, because it may be an acronym.
             # TODO revisit this logic. `Many XYZ Services` companies are becoming Xyz Services.
@@ -259,7 +259,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
             position_title = _tag_text(employement, 'title')
             # Start date
             start_date_str = get_date_from_date_tag(employement, 'start')
-            start_month, start_year = None, None
+
             if start_date_str:
                 start_datetime = datetime.datetime.strptime(start_date_str, ISO8601_DATE_FORMAT)
                 start_year = start_datetime.year
@@ -268,11 +268,15 @@ def parse_candidate_experiences(bg_experience_xml_list):
             is_current_job = False
             # End date
             end_date_str = get_date_from_date_tag(employement, 'end')
-            end_month, end_year = None, None
+
             if end_date_str:
                 end_datetime = datetime.datetime.strptime(end_date_str, ISO8601_DATE_FORMAT)
                 end_month = end_datetime.month
                 end_year = end_datetime.year
+
+            # A Resume or BG may give us bad dates that get invalidated by Candidate Service.
+            if (start_datetime and end_datetime) and (start_datetime > end_datetime):
+                start_month, start_year, end_month, end_year = None, None, None, None
 
             try:
                 today_date = datetime.date.today().isoformat()
@@ -337,8 +341,8 @@ def parse_candidate_educations(bg_educations_xml_list):
     :return: List of dicts containing education data.
     :rtype: list(dict)
     """
-    EDU_DATE_FORMAT = '%Y-%m-%d'
-    start_month, start_year, end_month, end_year = None, None, None, None
+    edu_date_format = '%Y-%m-%d'
+    start_month, start_year, end_month, end_year, start_dt, end_dt = None, None, None, None, None, None
     output = []
     for education in bg_educations_xml_list:
         for school in education.findAll('school'):
@@ -356,14 +360,18 @@ def parse_candidate_educations(bg_educations_xml_list):
                 end_date = completion_date
 
             if start_date:
-                start_dt = datetime.datetime.strptime(start_date, EDU_DATE_FORMAT)
+                start_dt = datetime.datetime.strptime(start_date, edu_date_format)
                 start_month = start_dt.month
                 start_year = start_dt.year
 
             if end_date:
-                end_dt = datetime.datetime.strptime(end_date, EDU_DATE_FORMAT)
+                end_dt = datetime.datetime.strptime(end_date, edu_date_format)
                 end_month = end_dt.month
                 end_year = end_dt.year
+
+            # A Resume or BG may give us bad dates that get invalidated by Candidate Service.
+            if (start_dt and end_dt) and (start_dt > end_dt):
+                start_month, start_year, end_month, end_year = None, None, None, None
 
             degree_tag = school.find('degree')
             degree_type = degree_tag.get('name') if degree_tag else None
@@ -480,6 +488,19 @@ def parse_candidate_reference(xml_references_list):
     return comment_string
 
 
+@contract
+def parse_candidate_summary(xml_summary_tags):
+    """
+    :param bs4_ResultSet xml_summary_tags:
+    :rtype: string | None
+    """
+    summary = ''
+    for summary_tag in xml_summary_tags:
+        summary += summary_tag.text.strip()
+
+    return summary
+
+
 ###################################################################################################
 # Utility functions.*
 ###################################################################################################
@@ -565,6 +586,9 @@ def scrub_candidate_name(name_unicode):
 
 
 def get_country_code_from_address_tag(address):
+    """
+    Gets a country code from an address tag.
+    """
     if address:
         country_tag = address.find('country')
 

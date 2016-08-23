@@ -8,10 +8,18 @@ Run:
 python setup_environment/reset_database_and_cloud_search.py
 
 """
+# Standard library
+import json
+
+# Third Party
+from sqlalchemy import text
+
+# App specific
+from candidate_service.common.models.candidate import SocialNetwork
 from common.talent_config_manager import load_gettalent_config, TalentConfigKeys
 from common.talent_flask import TalentFlask
 # Flush redis-cache
-from common.redis_cache import redis_store
+from common.redis_cache import redis_store, redis_store2
 from common.models.db import db
 from candidate_service.candidate_app import app
 from setup_environment.create_dummy_users import create_dummy_users
@@ -31,13 +39,12 @@ if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'jenkins']:
     raise SystemExit(0)
 
 
-def save_meetup_token_and_flushredis(_redis):
-    if _redis.get('Meetup'):
-        _token = _redis.get('Meetup')
-        # Commenting this out because we need persistence in redis to store parsed resumes to save our
-        # BG transactions.
-        # _redis.flushall()
-        _redis.set('Meetup', _token)
+def save_sn_token_and_flushredis(_redis):
+    _token_meetup = _redis.get('Meetup')
+    _token_eventbrite = _redis.get('Eventbrite')
+    _redis.flushall()
+    _redis.set('Meetup', _token_meetup)
+    _redis.set('Eventbrite', _token_eventbrite)
 
 
 # Delete entries of redis given in a list (entries)
@@ -53,8 +60,15 @@ def delete_entries(_redis, entries):
             print e.message
 
 
+redis2 = 'REDIS2'
+app.config[redis2 + '_URL'] = app.config[TalentConfigKeys.REDIS_URL_KEY]
+app.config['{0}_DATABASE'.format(redis2)] = 1
+
 redis_store.init_app(app)
+redis_store2.init_app(app)
+
 # save_meetup_token_and_flushredis(redis_store)
+save_sn_token_and_flushredis(redis_store2)
 delete_entries(redis_store, flush_redis_entries)
 
 db.init_app(app)
@@ -80,7 +94,18 @@ print 'DB reset is successful'
 print 'Generating initial test data'
 
 
+# Create dummy users for tests and insert user social network credentials of eventbrite and associate it with user_id 1
 create_dummy_users()
+eventbrite = SocialNetwork.get_by_name('Eventbrite')
+access_token_eventbrite = redis_store2.get('Eventbrite')
+access_token_eventbrite = json.loads(access_token_eventbrite)['access_token']
+
+query = '''INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '1', '%s', NULL, '217041', '164351364314', '%s');
+INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '2', '%s', NULL, '217041', '164351364314', '%s');''' % (eventbrite.id,
+                                                                                                                                                                                            access_token_eventbrite, eventbrite.id,
+                                                                                                                                                                                            access_token_eventbrite)
+sql = text(query)
+result = db.engine.execute(sql)
 
 from candidate_service.candidate_app import app
 

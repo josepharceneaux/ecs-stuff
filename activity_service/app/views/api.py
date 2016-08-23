@@ -5,24 +5,25 @@
 __author__ = 'erikfarmer'
 # stdlib
 from datetime import datetime
+from uuid import uuid4
 import json
 import re
 from time import time
-from dateutil import parser
-# framework specific
+# framework specific/third party
 from flask import jsonify
 from flask import request
 from flask import Blueprint
+from requests import codes as STATUS_CODES
 
 # application specific
 from activity_service.common.models.user import User
-from activity_service.activities_app import db, logger
+from activity_service.app import db, logger
 from activity_service.common.routes import ActivityApi
 from activity_service.common.models.misc import Activity
 from activity_service.common.utils.auth_utils import require_oauth
 from activity_service.common.campaign_services.campaign_utils import CampaignUtils
 
-DATE_FORMAT = '%Y-%m-%d %H:%M:%S'
+DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 POSTS_PER_PAGE = 20
 mod = Blueprint('activities_api', __name__)
 
@@ -39,21 +40,31 @@ def get_activities(page):
     is_aggregate_request = request.args.get('aggregate') == '1'
     start_param = request.args.get('start_datetime')
     end_param = request.args.get('end_datetime')
+    api_id = uuid4()
+    tam = TalentActivityManager(api_id)
+
     if start_param:
-        start_datetime = parser.parse(start_param).strftime(DATE_FORMAT)
+        start_datetime = datetime.strptime(start_param, DATE_FORMAT)
+
     if end_param:
-        end_datetime = parser.parse(end_param).strftime(DATE_FORMAT)
-    tam = TalentActivityManager()
+        end_datetime = datetime.strptime(end_param, DATE_FORMAT)
+
     if is_aggregate_request:
-        return jsonify({'activities': tam.get_recent_readable(valid_user_id,
-                                                              start_datetime=start_datetime,
-                                                              end_datetime=end_datetime)})
+        return jsonify({
+            'activities': tam.get_recent_readable(
+                valid_user_id, start_datetime=start_datetime, end_datetime=end_datetime
+            )
+        })
+
     else:
         post_qty = request.args.get('post_qty') if request.args.get('post_qty') else POSTS_PER_PAGE
+
         try:
             request_page = int(page)
+
         except ValueError:
-            return jsonify({'error': {'message': 'page parameter must be an integer'}}), 400
+            return jsonify({'error': {'message': 'page parameter must be an integer'}}), STATUS_CODES.bad
+
         return jsonify(tam.get_activities(user_id=valid_user_id, post_qty=post_qty,
                                           start_datetime=start_datetime,
                                           end_datetime=end_datetime, page=request_page))
@@ -92,6 +103,7 @@ def get_activity_messages():
 def post_activity():
     valid_user_id = request.user.id
     content = request.get_json()
+
     return create_activity(valid_user_id, content.get('type'), content.get('source_table'),
                            content.get('source_id'), content.get('params'))
 
@@ -116,10 +128,10 @@ def create_activity(user_id, type_, source_table=None, source_id=None, params=No
     try:
         db.session.add(activity)
         db.session.commit()
-        return json.dumps({'activity': {'id': activity.id}}), 200
+        return json.dumps({'activity': {'id': activity.id}}), STATUS_CODES.created
     except Exception:
         # TODO logging
-        return json.dumps({'error': 'There was an error saving your log entry'}), 500
+        return json.dumps({'error': 'There was an error saving your log entry'}), STATUS_CODES.internal_server_error
 
 
 class TalentActivityManager(object):
@@ -268,8 +280,9 @@ class TalentActivityManager(object):
             "campaign.png")
     }
 
-    def __init__(self):
+    def __init__(self, call_id):
         self._check_format_string_regexp = re.compile(r'%\((\w+)\)s')
+        self.call_id = call_id
 
     def get_activities(self, user_id, post_qty, start_datetime=None, end_datetime=None, page=1):
         """Method for retrieving activity logs based on a domain ID that is extracted via an
@@ -305,24 +318,33 @@ class TalentActivityManager(object):
         }
         return activities_response
 
-    # Like 'get' but gets the last N consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
+    # Like 'get' but gets the last 200 consecutive activity types. can't use GROUP BY because it doesn't respect ordering.
     def get_recent_readable(self, user_id, start_datetime=None, end_datetime=None, limit=3):
+        logger.info("{} getting recent readable for {} - {}".format(
+            self.call_id, start_datetime or 'N/A', end_datetime or 'N/A'
+        ))
+
         start_time = time()
         current_user = User.query.filter_by(id=user_id).first()
-        logger.info("Fetched current user in {} seconds".format(time() - start_time))
-        # Get the last 25 activities and aggregate them by type, with order.
+        logger.info("{} fetched current user in {} seconds".format(self.call_id, time() - start_time))
+
+        # Get the last 200 activities and aggregate them by type, with order.
         user_domain_id = current_user.domain_id
         user_ids = User.query.filter_by(domain_id=user_domain_id).values('id')
-        logger.info("Fetched domain IDs in {} seconds".format(time() - start_time))
+        logger.info("{} fetched domain IDs in {} seconds".format(self.call_id, time() - start_time))
         flattened_user_ids = [item for sublist in user_ids for item in sublist]
-        logger.info("Flattened domain IDs in {} seconds".format(time() - start_time))
+        logger.info("{} flattened domain IDs in {} seconds".format(self.call_id, time() - start_time))
         filters = [Activity.user_id.in_(flattened_user_ids)]
+
         if start_datetime:
             filters.append(Activity.added_time>=start_datetime)
         if end_datetime:
             filters.append(Activity.added_time<=end_datetime)
-        activities = Activity.query.filter(*filters)
-        logger.info("Fetched limit activities in {} seconds".format(time() - start_time))
+
+        activities = Activity.query.filter(*filters).limit(200)
+        logger.info("{} fetched activities in {} seconds".format(
+            self.call_id, time() - start_time)
+        )
 
         aggregated_activities = []
         current_activity_count = 0
@@ -350,7 +372,7 @@ class TalentActivityManager(object):
                     break
 
                 current_activity_count = 0
-        logger.info("Finsihed making readable in {} seconds".format(time() - start_time))
+        logger.info("{} finished making readable in {} seconds".format(self.call_id, time() - start_time))
 
         return aggregated_activities
 

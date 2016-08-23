@@ -55,10 +55,11 @@ from flask.ext.sqlalchemy import BaseQuery
 from sqlalchemy.orm.dynamic import AppenderQuery
 
 # Application Specific
+from ..constants import REDIS2
 from ..models.db import db
 from ..models import migrations
 from ..routes import GTApis, HEALTH_CHECK
-from ..redis_cache import redis_store
+from ..redis_cache import redis_store, redis_store2
 from ..talent_flask import TalentFlask
 from ..utils.talent_ec2 import get_ec2_instance_id
 from ..error_handling import register_error_handlers, InvalidUsage
@@ -241,6 +242,19 @@ def get_by_id(cls, _id):
 
 
 @classmethod
+def filter_by_keywords(cls, **kwargs):
+    """
+    This method filters the model using kwargs
+    :param cls: model class, some child class of db.Model
+    :param kwargs:
+    :type kwargs: dict
+    :return: list of Model instances
+    :rtype: list
+    """
+    return cls.query.filter_by(**kwargs).all()
+
+
+@classmethod
 def delete(cls, ref, app=None, commit_session=True):
     """
     This method deletes a record from database given by id and the calling Model class.
@@ -335,6 +349,8 @@ def add_model_helpers(cls):
     # this method returns model instance given by id
     cls.get_by_id = get_by_id
     cls.get = get_by_id
+
+    cls.filter_by_keywords = filter_by_keywords
     # This method deletes an instance
     cls.delete = delete
     # Register get_unexpected_fields() on model instance
@@ -411,6 +427,12 @@ def init_talent_app(app_name):
 
         # Initialize Redis Cache
         redis_store.init_app(flask_app)
+
+        flask_app.config[REDIS2 + '_URL'] = flask_app.config[TalentConfigKeys.REDIS_URL_KEY]
+        flask_app.config['{0}_DATABASE'.format(REDIS2)] = 1
+        # Initialize Redis Cache for db 2
+        redis_store2.init_app(flask_app, REDIS2)
+
         # noinspection PyProtectedMember
         logger.info("Redis connection pool on app startup: %s", repr(redis_store._redis_client.connection_pool))
         # noinspection PyProtectedMember
