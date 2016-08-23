@@ -188,9 +188,10 @@ class CampaignsTestsHelpers(object):
         :param string access_token: access access_token of user
         :param dict data: Data to be posted
         """
-        _assert_invalid_datetime_format(method, url, access_token, data, 'start_datetime')
-        if not data['frequency_id'] or not data['frequency_id'] == Frequency.ONCE:
-            _assert_invalid_datetime_format(method, url, access_token, data, 'end_datetime')
+        assert_invalid_datetime_format(method, url, access_token, data, 'start_datetime')
+        # It means it is periodic, so end_datetime will also be required
+        if not data['frequency_id'] == Frequency.ONCE:
+            assert_invalid_datetime_format(method, url, access_token, data, 'end_datetime')
 
     @staticmethod
     @contract
@@ -246,6 +247,7 @@ class CampaignsTestsHelpers(object):
         last_obj = model.query.order_by(model.id.desc()).first()
         return last_obj.id if last_obj else None
 
+    # TODO: Move to common/utils/test_utils.py
     @classmethod
     def get_non_existing_id(cls, model):
         """
@@ -844,8 +846,9 @@ def _assert_api_response_for_missing_field(method, url, access_token, data, fiel
     data[field_to_remove] = removed_value
 
 
+# TODO: Move to common/utils/test_utils.py
 @contract
-def _assert_invalid_datetime_format(method, url, access_token, data, key):
+def assert_invalid_datetime_format(method, url, access_token, data, key):
     """
     Here we modify field of data as specified by param 'key' and then assert the invalid usage
     error in response of HTTP request.
