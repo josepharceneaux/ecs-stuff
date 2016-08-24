@@ -97,3 +97,6 @@ pyparsing==2.1.0
 
 # Twitter Auth
 tweepy==3.5.0
+
+# Mocking
+httmock

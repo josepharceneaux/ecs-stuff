@@ -2,18 +2,21 @@
 Helper methods used in social network service test cases. like to create event test data for event creation
 or send request
 """
-
 # Std Imports
 import json
 import datetime
 
 # Third Party
 import requests
+from requests import codes
+from httmock import urlmatch, response
 
 # Service imports
 from social_network_service.common.models.db import db
+from social_network_service.modules.constants import MEETUP
 from social_network_service.common.models.event import Event
 from social_network_service.social_network_app import logger
+from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.utils.handy_functions import send_request
 
 
@@ -108,3 +111,22 @@ def assert_event(user_id, social_network_event_id):
     event = Event.get_by_user_and_social_network_event_id(user_id=user_id,
                                                           social_network_event_id=social_network_event_id)
     assert event
+
+
+@urlmatch(netloc=r'^((?!%s).)*$' % MEETUP)
+def meetup_mock(url, request):
+    status_code = codes.OK
+    headers = {'content-type': 'application/json'}
+    content = {
+        'groups':
+            [
+                {
+                    'urlname': 'QC-Python-Learning',
+                    'id': 18837246
+                }
+            ]
+    }
+    if SocialNetworkApiUrl.EVENTS in request.url and request.method == 'POST':
+        content['id'] = Event.filter_by_keywords(**{'user_id': 1, 'social_network_id': 13})[0].id
+        status_code = codes.CREATED
+    return response(status_code, content, headers, request=request)
