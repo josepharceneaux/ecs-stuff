@@ -2436,11 +2436,16 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
 
     if candidate_experience:
         previous_start_year, previous_end_year = candidate_experience.start_year, candidate_experience.end_year
-        previous_start_month, previous_end_month = candidate_experience.start_month, candidate_experience.end_month
 
-        if deleted:  # A CandidateExperience has been removed
-            total_months_experience = - (previous_end_year - previous_start_year) * 12 + \
-                                      (previous_end_month - previous_start_month)
+        # If start month and/or end month is not provided, we assume it was January
+        previous_start_month = candidate_experience.start_month or 1
+        previous_end_month = candidate_experience.end_month or 1
+
+        # A CandidateExperience has been removed
+        if deleted:
+            if previous_end_year and previous_start_year:
+                total_months_experience = - (previous_end_year - previous_start_year) * 12 + \
+                                          (previous_end_month - previous_start_month)
 
         else:  # An existing CandidateExperience's dates have been updated
             if start_year and end_year:

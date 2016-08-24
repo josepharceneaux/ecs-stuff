@@ -1,20 +1,3 @@
-NAME_SCHEMA = {
-  "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "object",
-  "properties": {
-    "first_name": {
-      "type": "string"
-    },
-    "last_name": {
-      "type": "string"
-    }
-  },
-  "required": [
-    "first_name",
-    "last_name"
-  ]
-}
-
 EMAIL_SCHEMA = {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
