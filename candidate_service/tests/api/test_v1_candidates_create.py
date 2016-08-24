@@ -118,12 +118,15 @@ class TestCreateCandidateSuccessfully(object):
         assert areas_of_interest[1]['id'] == data_sent_in['areas_of_interest'][1]['area_of_interest_id']
 
         # Candidate's custom fields
-        custom_fields = candidate_data['custom_fields']
-        assert isinstance(custom_fields, list)
-        assert custom_fields[0]['value'] == data_sent_in['custom_fields'][0]['value']
-        assert custom_fields[0]['custom_field_id'] == data_sent_in['custom_fields'][0]['custom_field_id']
-        assert custom_fields[1]['value'] == data_sent_in['custom_fields'][1]['value']
-        assert custom_fields[1]['custom_field_id'] == data_sent_in['custom_fields'][1]['custom_field_id']
+        created_custom_field_values = [cf['value'] for cf in candidate_data['custom_fields']]
+
+        custom_field_values_from_data = []
+        for custom_field in data_sent_in['custom_fields']:
+            for value in custom_field.get('values'):
+                custom_field_values_from_data.append(value)
+
+        assert isinstance(created_custom_field_values, list)
+        assert set(custom_field_values_from_data).issubset(created_custom_field_values)
 
         # Candidate's educations
         educations = candidate_data['educations']
@@ -821,12 +824,11 @@ class TestCreateAOI(object):
 
 
 class TestCreateCandidateCustomField(object):
-    def test_create_candidate_custom_fields(self, access_token_first, user_first, talent_pool, domain_custom_fields):
+    def test_create_candidate_custom_fields(self, access_token_first, talent_pool, domain_custom_fields):
         """
         Test:   Create CandidateCustomField
         Expect: 201
         """
-
         # Create Candidate + CandidateCustomField
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
@@ -838,12 +840,19 @@ class TestCreateCandidateCustomField(object):
         print response_info(get_resp)
 
         can_custom_fields = get_resp.json()['candidate']['custom_fields']
+
         assert isinstance(can_custom_fields, list)
-        assert can_custom_fields[0]['value'] == data['candidates'][0]['custom_fields'][0]['value']
-        assert can_custom_fields[1]['value'] == data['candidates'][0]['custom_fields'][1]['value']
+
+        # Candidate custom fields values sent in request body
+        candidate_custom_field_values = []
+        for candidate_custom_field in data['candidates'][0]['custom_fields']:
+            for value in candidate_custom_field['values']:
+                candidate_custom_field_values.append(value)
+
+        assert set([ccf['value'] for ccf in can_custom_fields]).issubset(candidate_custom_field_values)
 
     def test_create_candidate_custom_fields_outside_of_domain(self, access_token_second, talent_pool,
-                                                              user_second, domain_custom_fields):
+                                                              domain_custom_fields):
         """
         Test: Attempt to create candidate's custom fields outside of user's domain
         Expect: 403
@@ -851,7 +860,7 @@ class TestCreateCandidateCustomField(object):
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
         create_resp = send_request('post', CANDIDATES_URL, access_token_second, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 403
+        assert create_resp.status_code == requests.codes.FORBIDDEN
         assert create_resp.json()['error']['code'] == candidate_errors.CUSTOM_FIELD_FORBIDDEN
 
 

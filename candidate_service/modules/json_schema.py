@@ -154,6 +154,13 @@ candidates_resource_schema_post = {
                                 "value": {
                                     "type": ["string", "null"],
                                     "maxLength": 255
+                                },
+                                "values": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    }
                                 }
                             }
                         }

@@ -1318,45 +1318,69 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
     Function will update CandidateCustomField or create a new one.
     """
     candidate_id = candidate.id
+
     for custom_field in custom_fields:
+
+        # In case a list of custom field values are provided, we must remove all white spaces and all empty/none values
+        values = filter(None, [value.strip() for value in (custom_field.get('values') or []) if value])
+
         custom_field_dict = dict(
-            value=custom_field['value'].strip() if custom_field.get('value') else None,
+            values=values or [(custom_field.get('value') or '').strip()],
             custom_field_id=custom_field.get('custom_field_id')
         )
 
         candidate_custom_field_id = custom_field.get('id')
-        if candidate_custom_field_id:   # Update
 
-            # Remove keys with None values
-            custom_field_dict = purge_dict(custom_field_dict)
+        for value in custom_field_dict.get('values'):
 
-            # CandidateCustomField must be recognized
-            can_custom_field_obj = CandidateCustomField.get_by_id(candidate_custom_field_id)
-            if not can_custom_field_obj:
-                error_message = 'Candidate custom field you are requesting to update does not exist'
-                raise InvalidUsage(error_message, custom_error.CUSTOM_FIELD_NOT_FOUND)
+            if candidate_custom_field_id:   # Update
 
-            # CandidateCustomField must belong to Candidate
-            if can_custom_field_obj.candidate_id != candidate_id:
-                raise ForbiddenError(error_message="Unauthorized candidate custom field",
-                                     error_code=custom_error.CUSTOM_FIELD_FORBIDDEN)
+                # Remove keys with None values
+                custom_field_dict = purge_dict(custom_field_dict)
 
-            # Track all updates
-            track_edits(update_dict=custom_field_dict, table_name='candidate_custom_field',
-                        candidate_id=candidate_id, user_id=user_id, query_obj=can_custom_field_obj)
+                # CandidateCustomField must be recognized
+                can_custom_field_obj = CandidateCustomField.get_by_id(candidate_custom_field_id)
+                if not can_custom_field_obj:
+                    error_message = 'Candidate custom field you are requesting to update does not exist'
+                    raise InvalidUsage(error_message, custom_error.CUSTOM_FIELD_NOT_FOUND)
 
-            # Update CandidateCustomField
-            can_custom_field_obj.update(**custom_field_dict)
+                # CandidateCustomField must belong to Candidate
+                if can_custom_field_obj.candidate_id != candidate_id:
+                    raise ForbiddenError(error_message="Unauthorized candidate custom field",
+                                         error_code=custom_error.CUSTOM_FIELD_FORBIDDEN)
+
+                # Track all updates
+                track_edits(update_dict=custom_field_dict,
+                            table_name='candidate_custom_field',
+                            candidate_id=candidate_id,
+                            user_id=user_id,
+                            query_obj=can_custom_field_obj,
+                            value=value,
+                            column_name='value')
+
+                # Update CandidateCustomField
+                can_custom_field_obj.update(**dict(value=value))
 
         else:  # Add
             custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
-            # Prevent duplicate insertions
-            if not does_candidate_cf_exist(candidate, custom_field_dict):
-                db.session.add(CandidateCustomField(**custom_field_dict))
 
-                if is_updating:  # Track all updates
-                    track_edits(update_dict=custom_field_dict, table_name='candidate_custom_field',
-                                candidate_id=candidate_id, user_id=user_id)
+            for value in custom_field_dict.get('values'):
+
+                custom_field_id = custom_field_dict.get('custom_field_id')
+
+                # Prevent duplicate insertions
+                if not does_candidate_cf_exist(candidate, custom_field_id, value):
+                    custom_field_dict['value'] = value
+                    custom_field_dict.pop('values', None)
+                    db.session.add(CandidateCustomField(**custom_field_dict))
+
+                    if is_updating:  # Track all updates
+                        track_edits(update_dict=custom_field_dict,
+                                    table_name='candidate_custom_field',
+                                    candidate_id=candidate_id,
+                                    user_id=user_id,
+                                    value=value,
+                                    column_name='value')
 
 
 def _add_or_update_educations(candidate, educations, added_datetime, user_id, is_updating):

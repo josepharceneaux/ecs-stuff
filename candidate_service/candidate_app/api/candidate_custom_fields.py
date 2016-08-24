@@ -1,5 +1,9 @@
 # Standard library
-import requests, json, datetime
+import requests
+import json
+import datetime
+from requests import codes as http_status_codes
+
 # Flask specific
 from flask import request
 from flask_restful import Resource
@@ -44,17 +48,19 @@ class CandidateCustomFieldResource(Resource):
         # Candidate must exists and must belong to user's domain
         candidate = get_candidate_if_validated(authed_user, candidate_id)
 
-        created_ccf_ids = []  # aggregate created CandidateCustomField IDs
+        created_candidate_custom_field_ids = []  # aggregate created CandidateCustomField IDs
         candidate_custom_fields = body_dict['candidate_custom_fields']
-        for ccf_dict in candidate_custom_fields:
 
-            # Custom field value must not be empty
-            value = ccf_dict['value'].strip()
-            if not value:
+        for candidate_custom_field in candidate_custom_fields:
+
+            # Custom field value(s) must not be empty
+            values = filter(None, [value.strip() for value in (candidate_custom_field.get('values') or []) if value]) \
+                     or [candidate_custom_field['value'].strip()]
+            if not values:
                 raise InvalidUsage("Custom field value must be provided.", custom_error.INVALID_USAGE)
 
             # Custom Field must be recognized
-            custom_field_id = ccf_dict['custom_field_id']
+            custom_field_id = candidate_custom_field['custom_field_id']
             custom_field = CustomField.get_by_id(custom_field_id)
             if not custom_field:
                 raise NotFoundError("Custom field ID ({}) not recognized".format(custom_field_id),
@@ -65,17 +71,37 @@ class CandidateCustomFieldResource(Resource):
                 raise ForbiddenError("Custom field ID ({}) does not belong to user ({})".format(
                     custom_field_id, authed_user.id), custom_error.CUSTOM_FIELD_FORBIDDEN)
 
-            # Prevent duplicate entries
-            if not does_candidate_cf_exist(candidate=candidate, custom_field_dict=ccf_dict):
-                # Add candidate_id, added_time to ccf_dict; and strip value
-                ccf_dict.update(candidate_id=candidate_id, added_time=datetime.datetime.utcnow(), value=value)
-                candidate_custom_field = CandidateCustomField(**ccf_dict)
-                db.session.add(candidate_custom_field)
-                db.session.commit()
-                created_ccf_ids.append(candidate_custom_field.id)
+            custom_field_dict = dict(
+                values=values,
+                custom_field_id=custom_field_id
+            )
 
+            for value in custom_field_dict.get('values'):
+
+                custom_field_id = candidate_custom_field.get('custom_field_id')
+
+                # Prevent duplicate insertions
+                if not does_candidate_cf_exist(candidate, custom_field_id, value):
+
+                    added_time = datetime.datetime.utcnow()
+
+                    candidate_custom_field = CandidateCustomField(
+                        candidate_id=candidate_id,
+                        custom_field_id=custom_field_id,
+                        value=value,
+                        added_time=added_time
+                    )
+                    db.session.add(candidate_custom_field)
+                    db.session.flush()
+
+                    created_candidate_custom_field_ids.append(candidate_custom_field.id)
+
+        db.session.commit()
         upload_candidate_documents([candidate_id])
-        return {'candidate_custom_fields': [{'id': custom_field_id} for custom_field_id in created_ccf_ids]}, 201
+        return {
+                   'candidate_custom_fields': [
+                       {'id': custom_field_id} for custom_field_id in created_candidate_custom_field_ids]
+               }, http_status_codes.CREATED
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
