@@ -1,5 +1,9 @@
 # Standard library
-import requests, json, datetime
+import requests
+import json
+import datetime
+from requests import codes as http_status_codes
+
 # Flask specific
 from flask import request
 from flask_restful import Resource
@@ -44,7 +48,7 @@ class CandidateCustomFieldResource(Resource):
         # Candidate must exists and must belong to user's domain
         candidate = get_candidate_if_validated(authed_user, candidate_id)
 
-        created_ccf_ids = []  # aggregate created CandidateCustomField IDs
+        created_candidate_custom_field_ids = []  # aggregate created CandidateCustomField IDs
         candidate_custom_fields = body_dict['candidate_custom_fields']
 
         for candidate_custom_field in candidate_custom_fields:
@@ -88,12 +92,16 @@ class CandidateCustomFieldResource(Resource):
                         added_time=added_time
                     )
                     db.session.add(candidate_custom_field)
+                    db.session.flush()
 
-                    db.session.commit()
-                    created_ccf_ids.append(candidate_custom_field.id)
+                    created_candidate_custom_field_ids.append(candidate_custom_field.id)
 
+        db.session.commit()
         upload_candidate_documents([candidate_id])
-        return {'candidate_custom_fields': [{'id': custom_field_id} for custom_field_id in created_ccf_ids]}, 201
+        return {
+                   'candidate_custom_fields': [
+                       {'id': custom_field_id} for custom_field_id in created_candidate_custom_field_ids]
+               }, http_status_codes.CREATED
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):

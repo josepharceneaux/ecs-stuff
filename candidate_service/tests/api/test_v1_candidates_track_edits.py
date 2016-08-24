@@ -111,8 +111,7 @@ class TestTrackCandidateCustomFieldEdits(object):
                 {'id': old_custom_field_dict['id'], 'value': 'foobar'}
             ]}
         ]}
-        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(update_resp)
+        send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
         # Retrieve Candidate custom fields
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
