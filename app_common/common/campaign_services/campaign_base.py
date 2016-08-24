@@ -394,11 +394,10 @@ class CampaignBase(object):
         campaign_model.save(campaign_obj)
         # Create record in database table e.g. "sms_campaign_smartlist"
         self.create_campaign_smartlist(campaign_obj, form_data['smartlist_ids'])
-        # Create activity, and If we get any error, we log it.
-        try:
-            self.create_activity_for_campaign_creation(campaign_obj, self.user)
-        except Exception:
-            logger.exception('Error creating campaign creation activity.')
+        # Create activity, and if we get any error, we log it.
+        klass = self.__class__
+        klass.create_activity_for_campaign_creation.apply_async((klass, campaign_obj,
+                                                                 self.user), queue=self.campaign_type)
         return campaign_obj.id
 
     def update(self, form_data, campaign_id):
@@ -457,6 +456,7 @@ class CampaignBase(object):
                 campaign_smartlist_model.save(new_record)
 
     @classmethod
+    @abstractmethod
     def create_activity_for_campaign_creation(cls, source, user):
         """
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
@@ -464,14 +464,17 @@ class CampaignBase(object):
         - Activity will appear as (e.g)
            "'Harvey Specter' created an SMS campaign: 'Hiring at getTalent'"
         - This method is called from save() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+            CampaignBase inside campaign_services/campaign_base.py.
         :param source: "sms_campaign" obj
         :type source: SmsCampaign
+        :param User user: User object
         :exception: InvalidUsage
 
         **See Also**
         .. see also:: save() method in SmsCampaignBase class.
         """
+        source = db.session.merge(source)
+        user = db.session.merge(user)
         CampaignUtils.raise_if_not_instance_of_campaign_models(source)
         raise_if_not_instance_of(user, User)
         # set params
@@ -668,13 +671,11 @@ class CampaignBase(object):
             logger.error("%s(id:%s) couldn't be deleted." % (self.campaign_type, self.campaign.id))
             raise InternalServerError("%s(id:%s) couldn't be deleted." % (self.campaign_type, self.campaign.id),
                                       error_code=CampaignException.ERROR_DELETING_CAMPAIGN)
-        try:
-            self.create_activity_for_campaign_delete(self.campaign)
-        except Exception:
-            # In case activity_service is not running, we proceed normally and log the error.
-            logger.exception('delete: Error creating campaign delete activity.')
+
+        self.create_activity_for_campaign_delete.apply_async((self, self.campaign), queue=self.campaign_type)
         logger.info('delete: %s(id:%s) has been deleted successfully.' % (self.campaign_type, self.campaign.id))
 
+    @abstractmethod
     def create_activity_for_campaign_delete(self, source):
         """
         - when a user deletes a campaign, here we set "params" and "type" of activity to
@@ -688,6 +689,8 @@ class CampaignBase(object):
         **See Also**
         .. see also:: schedule() method in CampaignBase class.
         """
+        self.refresh_all_db_objects()
+        source = db.session.merge(source)
         # any other campaign will update this line
         CampaignUtils.raise_if_not_instance_of_campaign_models(source)
         raise_if_not_instance_of(self.user, User)
@@ -1829,7 +1832,9 @@ class CampaignBase(object):
         objects that are attributes on self and attaching them to current session and updating existing with
         updated values.
         """
-        for key in dir(self):
+        # filter self properties that are are not model objects.
+        # filter properties that start with `--` and `auth_token` property
+        for key in [prop for prop in dir(self) if not (prop.startswith('__') or prop == 'auth_token')]:
             obj = getattr(self, key)
             if isinstance(obj, db.Model):
                 setattr(self, key, db.session.merge(obj))

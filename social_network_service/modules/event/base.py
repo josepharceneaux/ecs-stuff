@@ -463,7 +463,7 @@ class EventBase(object):
             return Event.get_by_user_id_vendor_id_start_date(
                 self.user.id, self.social_network.id, start_date)
         else:
-            return Event.filter_by(**{'user_id': self.user.id,
+            return Event.filter_by_keywords(**{'user_id': self.user.id,
                                       'social_network_id': self.social_network.id})
 
     def process_events_rsvps(self, user_credentials, **kwargs):
