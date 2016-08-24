@@ -8,6 +8,9 @@ Run:
 python setup_environment/reset_database_and_cloud_search.py
 
 """
+# Standard library
+import json
+
 # Third Party
 from sqlalchemy import text
 
@@ -94,9 +97,14 @@ print 'Generating initial test data'
 # Create dummy users for tests and insert user social network credentials of eventbrite and associate it with user_id 1
 create_dummy_users()
 eventbrite = SocialNetwork.get_by_name('Eventbrite')
-q = '''INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '1', '%s', NULL, '217041', '164351364314', 'YZASRSWZO5CWKSEXMELQ');
-INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '2', '%s', NULL, '217041', '164351364314', 'YZASRSWZO5CWKSEXMELQ');''' % (eventbrite.id, eventbrite.id)
-sql = text(q)
+access_token_eventbrite = redis_store2.get('Eventbrite')
+access_token_eventbrite = json.loads(access_token_eventbrite)['access_token']
+
+query = '''INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '1', '%s', NULL, '217041', '164351364314', '%s');
+INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '2', '%s', NULL, '217041', '164351364314', '%s');''' % (eventbrite.id,
+                                                                                                                                                                                            access_token_eventbrite, eventbrite.id,
+                                                                                                                                                                                            access_token_eventbrite)
+sql = text(query)
 result = db.engine.execute(sql)
 
 from candidate_service.candidate_app import app

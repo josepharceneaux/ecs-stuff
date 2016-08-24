@@ -104,7 +104,7 @@ class TalentPipelineApi(Resource):
             if owner_user_id:
                 talent_pipelines = TalentPipeline.query.join(User).filter(and_(
                         TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id,
-                        TalentPipeline.user.id == int(owner_user_id), or_(TalentPipeline.name.ilike(
+                        User.id == int(owner_user_id), or_(TalentPipeline.name.ilike(
                                 '%' + search_keyword + '%'), TalentPipeline.description.ilike(
                                 '%' + search_keyword + '%')))).all()
             else:
