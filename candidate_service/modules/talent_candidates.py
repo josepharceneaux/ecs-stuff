@@ -1896,10 +1896,10 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
 
     # If duplicate email addresses are provided, we will only use one of them
     seen = set()
-    for index, email in enumerate(emails):
+    for email in emails:
         email_address = email.get('address')
         if email_address and email_address in seen:
-            del emails[index]
+            emails.remove(email)
         seen.add(email_address)
 
     for index, email in enumerate(emails):
@@ -1996,10 +1996,10 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
 
     # If duplicate phone numbers are provided, we will only use one of them
     seen = set()
-    for index, phone in enumerate(phones):
+    for phone in phones:
         phone_value = phone.get('value')
         if phone_value and phone_value in seen:
-            del phones[index]
+            phones.remove(phone)
         seen.add(phone_value)
 
     for i, phone in enumerate(phones):
