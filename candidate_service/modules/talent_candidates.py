@@ -1918,12 +1918,13 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
     # Check if any of the emails is set as the default email
     emails_has_default = any([isinstance(email.get('is_default'), bool) for email in emails])
 
-    # Prevent duplicate email addresses
-    email_addresses = [email.get('address') for email in emails]
-    if len(set(email_addresses)) < len(emails):
-        raise InvalidUsage(error_message='Identical email addresses provided',
-                           error_code=custom_error.INVALID_USAGE,
-                           additional_error_info={'duplicates': email_addresses})
+    # If duplicate email addresses are provided, we will only use one of them
+    seen = set()
+    for email in emails:
+        email_address = email.get('address')
+        if email_address and email_address in seen:
+            emails.remove(email)
+        seen.add(email_address)
 
     for index, email in enumerate(emails):
 
@@ -2017,12 +2018,13 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
     phones_has_label = any([phone.get('label') for phone in phones])
     phones_has_default = any([isinstance(phone.get('is_default'), bool) for phone in phones])
 
-    # Check for duplicate values
-    phone_numbers = [(phone.get('value') or '').strip() for phone in phones]
-    if len(set(phone_numbers)) < len(phones):
-        raise InvalidUsage(error_message='Identical phone numbers provided',
-                           error_code=custom_error.INVALID_USAGE,
-                           additional_error_info={'Duplicates': phone_numbers})
+    # If duplicate phone numbers are provided, we will only use one of them
+    seen = set()
+    for phone in phones:
+        phone_value = phone.get('value')
+        if phone_value and phone_value in seen:
+            phones.remove(phone)
+        seen.add(phone_value)
 
     for i, phone in enumerate(phones):
 
