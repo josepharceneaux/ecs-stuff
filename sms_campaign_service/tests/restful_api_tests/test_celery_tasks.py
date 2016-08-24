@@ -66,22 +66,22 @@ class TestCeleryTasks(object):
                                                             blasts_url=SmsCampaignApiUrl.BLASTS)
         return response_send
 
-    def test_campaign_send_with_two_candidates_with_different_phones_multiple_links_in_text(
-            self, access_token_first, user_first, sms_campaign_of_user_first):
-        """
-        User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates. Both candidates have different phone numbers associated. SMS Campaign
-        should be sent to both of the candidates. Body text of SMS campaign has multiple URLs
-        present.
-        """
-        campaign_id = sms_campaign_of_user_first['id']
-        campaign = SmsCampaign.get_by_id(str(campaign_id))
-        campaign.update(body_text='Hi all, please visit http://www.abc.com or '
-                                  'http://www.123.com or http://www.xyz.com')
-        response_send = self.send_campaign(campaign, access_token_first)
-        assert_api_send_response(campaign, response_send, codes.OK)
-        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
-                                                           campaign_id, access_token_first)
+    # def test_campaign_send_with_two_candidates_with_different_phones_multiple_links_in_text(
+    #         self, access_token_first, user_first, sms_campaign_of_user_first):
+    #     """
+    #     User auth token is valid, campaign has one smart list associated. Smartlist has two
+    #     candidates. Both candidates have different phone numbers associated. SMS Campaign
+    #     should be sent to both of the candidates. Body text of SMS campaign has multiple URLs
+    #     present.
+    #     """
+    #     campaign_id = sms_campaign_of_user_first['id']
+    #     campaign = SmsCampaign.get_by_id(str(campaign_id))
+    #     campaign.update(body_text='Hi all, please visit http://www.abc.com or '
+    #                               'http://www.123.com or http://www.xyz.com')
+    #     response_send = self.send_campaign(campaign, access_token_first)
+    #     assert_api_send_response(campaign, response_send, codes.OK)
+    #     assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
+    #                                                        campaign_id, access_token_first)
 
     def test_campaign_send_with_two_candidates_with_one_phone(
             self, access_token_first, user_first, sms_campaign_with_one_valid_candidate):

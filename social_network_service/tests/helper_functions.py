@@ -4,15 +4,17 @@ or send request
 """
 
 # Std Imports
-import datetime
 import json
+import datetime
 
+# Third Party
 import requests
 
 # Service imports
-from social_network_service.common.utils.handy_functions import send_request
+from social_network_service.common.models.db import db
 from social_network_service.common.models.event import Event
 from social_network_service.social_network_app import logger
+from social_network_service.common.utils.handy_functions import send_request
 
 
 def auth_header(token):
@@ -96,3 +98,13 @@ def send_post_request(url, data, access_token):
     """
     return requests.post(url, data=json.dumps(data),
                          headers=get_headers(access_token))
+
+
+def assert_event(user_id, social_network_event_id):
+    """
+    This asserts we get event in database for given user_id and social_network_event_id
+    """
+    db.session.commit()
+    event = Event.get_by_user_and_social_network_event_id(user_id=user_id,
+                                                          social_network_event_id=social_network_event_id)
+    assert event

@@ -5,6 +5,7 @@ MEETUP_CODE_LENGTH = 32
 QUEUE_NAME = 'social_network'
 MEETUP = 'meetup'
 EVENTBRITE = 'eventbrite'
+FACEBOOK = 'facebook'
 TASK_ALREADY_SCHEDULED = 6057
 EVENT = 'event'
 RSVP = 'rsvp'
