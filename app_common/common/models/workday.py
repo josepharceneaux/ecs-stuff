@@ -14,6 +14,7 @@ class WorkdayTable(db.Model):
     """
     __tablename__ = 'workday_ats'
     id = db.Column(db.Integer, primary_key=True)
+    ats_candidate_id = db.Column(db.Integer)
     workday_reference = db.Column(db.Text)
     pre_hire_reference = db.Column(db.Text)
     worker_reference = db.Column(db.Text)
@@ -23,7 +24,6 @@ class WorkdayTable(db.Model):
     status_data = db.Column(db.Text)
     job_application_data = db.Column(db.Text)
     prospect_data = db.Column(db.Text)
-    # This is the id into the ATS candidate table, not GT candidate table
     candidate_id_data = db.Column(db.Text)
 
     def __repr__(self):

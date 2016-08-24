@@ -115,10 +115,16 @@ class ATSCandidate(db.Model):
     """
     __tablename__ = 'ats_candidate'
     id = db.Column(db.Integer, primary_key=True)
+    # ID in ATS table
     ats_account_id = db.Column(db.Integer)
+    # Candidate ID in the remote ATS
     ats_remote_id = db.Column(db.String(100))
+    # getTalent candidate ID, if linked
     gt_candidate_id = db.Column(db.Integer)
+    # ID into the ATSCandidateProfile table
     profile_id = db.Column(db.Integer)
+    # ID into an ATS-specific table
+    ats_table_id = db.Column(db.Integer)
     added_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 

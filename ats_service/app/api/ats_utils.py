@@ -202,6 +202,8 @@ def new_ats_candidate(account_id, data):
     profile = ATSCandidateProfile(active=True, profile_json=data['profile_json'], ats_id=account.ats_id)
     profile.save()
     candidate = ATSCandidate(ats_account_id=account.id, ats_remote_id=data['ats_remote_id'], gt_candidate_id=gt_candidate_id, profile_id=profile.id)
+    if 'ats_table_id' in data:
+        candidate.ats_table_id = data.get('ats_table_id', None)
     candidate.save()
 
     return candidate
@@ -221,8 +223,6 @@ def delete_ats_candidate(candidate_id):
     profile = ATSCandidateProfile.get(candidate.profile_id)
     if profile:
         ATSCandidateProfile.delete(profile)
-
-    Candidate.delete(profile)
 
 
 def update_ats_candidate(account_id, candidate_id, new_data):
@@ -251,6 +251,9 @@ def update_ats_candidate(account_id, candidate_id, new_data):
     profile = ATSCandidateProfile.get(candidate.profile_id)
     if not profile:
         raise UnprocessableEntity("Invalid candidate profile id", additional_error_info=dict(id=candidate.profile_id))
+
+    if 'ats_table_id' in new_data:
+        candidate.ats_table_id = data.get('ats_table_id', None)
 
     now = datetime.datetime.utcnow()
     update_dict = {'updated_at' : now}

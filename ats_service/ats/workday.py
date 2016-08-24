@@ -7,6 +7,7 @@ import requests
 import json
 
 from urlparse import urlparse
+from sqlalchemy import text
 
 from ats_service.common.models.workday import WorkdayTable
 
@@ -51,6 +52,8 @@ class Workday(object):
     def fetch_individual(self, reference):
         """
         Fetch the data for one individual. To be combined with previous method.
+
+        :param string reference: The Workday reference (i.e., identifier) for this individual.
         """
         self.logger.info("GET {}".format(self.fetch_individual_url))
         response = requests.request('GET', self.fetch_individual_url + "/{}".format(reference))
@@ -67,4 +70,30 @@ class Workday(object):
         reference = data_dict['ats_remote_id']
         profile = json.loads(data_dict['profile_json'])['data']
         self.logger.info("SAVE {} {}".format(reference, profile))
-        self.logger.info("SOCIAL {}".format(profile['social_media_account_data']))
+
+        individual = WorkdayTable.get_by_reference(reference)
+        if individual:
+            individual.pre_hire_reference = str(profile['pre_hire_reference'])
+            individual.worker_reference = str(profile['worker_reference'])
+            individual.name_data = str(profile['name_data'])
+            individual.contact_data = str(profile['contact_data'])
+            individual.social_media_data = str(profile['social_media_account_data'])
+            individual.status_data = str(profile['status_data'])
+            individual.job_application_data = str(profile['job_application_data'])
+            individual.prospect_data = str(profile['prospect_data'])
+            individual.candidate_id_data = str(profile['candidate_id_data'])
+        else:
+            individual = WorkdayTable(ats_candidate_id=candidate_id,
+                                      workday_reference=reference,
+                                      pre_hire_reference=str(profile['pre_hire_reference']),
+                                      worker_reference=str(profile['worker_reference']),
+                                      name_data=str(profile['name_data']),
+                                      contact_data=str(profile['contact_data']),
+                                      social_media_data=str(profile['social_media_account_data']),
+                                      status_data=str(profile['status_data']),
+                                      job_application_data=str(profile['job_application_data']),
+                                      prospect_data=str(profile['prospect_data']),
+                                      candidate_id_data=str(profile['candidate_id_data']))
+
+        individual.save()
+        return individual
