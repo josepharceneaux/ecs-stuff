@@ -22,8 +22,7 @@ URL = CandidateApiUrl.CUSTOM_FIELDS
 
 
 class TestCreateCandidateCustomField(object):
-    def test_add_and_retrieve_candidate_custom_field(self, access_token_first, user_first, domain_custom_fields,
-                                                     candidate_first):
+    def test_add_and_retrieve_candidate_custom_field(self, access_token_first, domain_custom_fields, candidate_first):
         """
         Test:  Add candidate custom field & retrieve it
         Expect:  201
@@ -44,8 +43,7 @@ class TestCreateCandidateCustomField(object):
         assert get_resp.status_code == requests.codes.OK
         assert get_resp.json()['candidate_custom_field']['value'] == data['candidate_custom_fields'][0]['value'].strip()
 
-    def test_add_candidate_custom_field_with_whitespaced_value(self, access_token_first, user_first,
-                                                               domain_custom_fields,
+    def test_add_candidate_custom_field_with_whitespaced_value(self, access_token_first, domain_custom_fields,
                                                                candidate_first):
         """
         Test:  Add candidate custom field with a value that contains whitespaces
@@ -112,7 +110,7 @@ class TestCreateCandidateCustomField(object):
 
 
 class TestGetCandidateCustomField(object):
-    def test_get_ccf_of_forbidden_candidate(self, access_token_first, user_first, domain_custom_fields,
+    def test_get_ccf_of_forbidden_candidate(self, access_token_first, domain_custom_fields,
                                             candidate_first, candidate_second):
         """
         Test:  Attempt to retrieve the ccf of a different candidate
@@ -144,8 +142,8 @@ class TestGetCandidateCustomField(object):
         assert get_resp.status_code == requests.codes.NOT_FOUND
         assert get_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_NOT_FOUND
 
-    def test_get_ccf_outside_of_users_domain(self, access_token_second, user_second, domain_custom_fields,
-                                             user_second_candidate, candidate_first, user_first, access_token_first):
+    def test_get_ccf_outside_of_users_domain(self, access_token_second, domain_custom_fields,
+                                             user_second_candidate, candidate_first, access_token_first):
         """
         Test:  Attempt to retrieve ccf that do not belong to user's domain
         Expect: 403
@@ -166,8 +164,8 @@ class TestGetCandidateCustomField(object):
 
 
 class TestDeleteCandidateCustomField(object):
-    def test_delete_ccf_of_forbidden_candidate(self, access_token_first, user_first, domain_custom_fields,
-                                               candidate_first, candidate_second):
+    def test_delete_ccf_of_forbidden_candidate(self, access_token_first, domain_custom_fields, candidate_first,
+                                               candidate_second):
         """
         Test:  Attempt to delete the ccf of a different candidate
         Expect: 403
@@ -186,7 +184,7 @@ class TestDeleteCandidateCustomField(object):
         assert del_resp.status_code == requests.codes.FORBIDDEN
         assert del_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
 
-    def test_delete_non_existing_ccf(self, access_token_first, user_first, candidate_first):
+    def test_delete_non_existing_ccf(self, access_token_first, candidate_first):
         """
         Test:  Attempt to delete a ccf that isn't yet created
         Expect: 404
@@ -199,8 +197,8 @@ class TestDeleteCandidateCustomField(object):
         assert del_resp.status_code == requests.codes.NOT_FOUND
         assert del_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_NOT_FOUND
 
-    def test_delete_ccf_outside_of_users_domain(self, user_first, access_token_first,
-                                                user_second, access_token_second, candidate_first,
+    def test_delete_ccf_outside_of_users_domain(self, access_token_first,
+                                                access_token_second, candidate_first,
                                                 domain_custom_fields, user_second_candidate):
         """
         Test:  Attempt to delete ccf that do not belong to user's domain

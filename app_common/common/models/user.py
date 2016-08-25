@@ -244,7 +244,7 @@ class Domain(db.Model):
     default_tracking_code = db.Column('DefaultTrackingCode', db.SmallInteger)
     default_culture_id = db.Column('DefaultCultureId', db.Integer, default=1)
     settings_json = db.Column('SettingsJson', db.Text)
-    expiration = db.Column('Expiration', db.DateTime)
+    expiration = db.Column('Expiration', db.TIMESTAMP)
     added_time = db.Column('AddedTime', db.DateTime)
     default_from_name = db.Column('DefaultFromName', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)

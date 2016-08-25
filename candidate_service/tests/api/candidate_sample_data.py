@@ -99,7 +99,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                     } for area_of_interest in aois],
                 'custom_fields': [
                     {
-                        'custom_field_id': custom_field.id, 'value': custom_field.name
+                        'custom_field_id': custom_field.id, 'values': [fake.word() for _ in range(3)]
                     } for custom_field in cfs],
                 'educations': [
                     {
