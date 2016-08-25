@@ -754,7 +754,7 @@ def test_parsing_names():
         # Below is testing that the parse_candidate_name function can handle multiple xml tree
         # structures without raising an exception. We are not concerned about the returned values as
         # it can be (string, string), (None, string), (string, None), or (None, None)
-        first, last = parse_candidate_name(combo_to_parse)
+        assert parse_candidate_name(combo_to_parse)
 
 
 
