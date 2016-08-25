@@ -170,7 +170,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                     elif column_name == 'candidate_email.address':
                         if not is_valid_email(column):
                             error_messages.append({
-                                "message": "{} is an invalid email address".format(column)
+                                "message": "{} is an invalid email address".format(column.encode('utf8') if column else "")
                             })
                             invalid_email = True
                             break
@@ -322,8 +322,13 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
         email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s, S3_URL: %s" %
                               (user_id, spreadsheet_filename, get_s3_url('CSVResumes', spreadsheet_filename)),
                               subject="import_from_csv")
-        logger.error("Error importing from CSV. User ID: %s, S3 filename: %s. Reason: %s" % (
-            user_id, spreadsheet_filename, e.message))
+
+        message = "Error importing from CSV. User ID: %s, S3 filename: %s. Reason: %s" % (
+            user_id, spreadsheet_filename, e)
+
+        logger.error(message)
+        if not is_scheduled:
+            raise InternalServerError(message)
 
 
 def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
