@@ -254,7 +254,7 @@ def update_ats_candidate(account_id, candidate_id, new_data):
         raise UnprocessableEntity("Invalid candidate profile id", additional_error_info=dict(id=candidate.profile_id))
 
     if 'ats_table_id' in new_data:
-        candidate.ats_table_id = data.get('ats_table_id', None)
+        candidate.ats_table_id = new_data.get('ats_table_id', None)
 
     now = datetime.datetime.utcnow()
     update_dict = {'updated_at' : now}
