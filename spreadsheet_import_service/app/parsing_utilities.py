@@ -137,7 +137,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
         for i in xrange(0, len(table), 1):
             candidates_list = []
             for row in table[i: i + 1]:
-
+                logger.info("SpreadSheet Import: Data of the Candidate to be imported is: %s" % row)
                 # Format candidate data
                 first_name, middle_name, last_name, formatted_name, status_id = None, None, None, None, None
                 emails, phones, areas_of_interest, addresses, degrees = [], [], [], [], []
