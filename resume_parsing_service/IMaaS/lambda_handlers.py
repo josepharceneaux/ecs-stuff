@@ -1,8 +1,8 @@
 """DocString"""
 from itertools import izip_longest
 from wand.image import Image
-import base64
-import zlib
+from base64 import b64encode, b64decode
+from zlib import compress
 
 
 def grouper(iterable, n, fillvalue=None):
@@ -37,7 +37,7 @@ def convert_pdf_to_png(event, context):
     if not pdf_data:
         return {'error': 'No PDF data passed'}
 
-    decoded = base64.b64decode(pdf_data)
+    decoded = b64decode(pdf_data)
     del pdf_data
     print 'Decoded'
 
@@ -59,31 +59,31 @@ def convert_pdf_to_png(event, context):
         for group in grouped:
             # Creates a new 'blank' Image that is smaller than the above pdf context.
             trimmed = [item for item in group if item]
-            image = Image(width=pdf.width, height=pdf.height * len(trimmed))
-            print "Base image created"
+            with Image(width=pdf.width, height=pdf.height * len(trimmed)) as image:
+                print "Base image created"
 
-            for i, sequence in enumerate(trimmed):
-                image.composite(
-                    sequence,
-                    top=pdf.height * i,
-                    left=0
-                )
-            del trimmed
-            print 'Image composed'
+                for i, sequence in enumerate(trimmed):
+                    image.composite(
+                        sequence,
+                        top=pdf.height * i,
+                        left=0
+                    )
+                del trimmed
+                print 'Image composed'
 
-            blob = image.make_blob('png')
-            del image
-            print 'Blob made'
+                blob = image.make_blob('png')
+                del image
+                print 'Blob made'
 
-            compressed = zlib.compress(blob)
-            del blob
-            print 'Compressed'
+                compressed = compress(blob)
+                del blob
+                print 'Compressed'
 
-            encoded = base64.b64encode(compressed)
-            del compressed
-            print 'Encoded'
+                encoded = b64encode(compressed)
+                del compressed
+                print 'Encoded'
 
-            img_data.append(encoded)
-            del encoded
+                img_data.append(encoded)
+                del encoded
 
     return {'img_data': img_data}
