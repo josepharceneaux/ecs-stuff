@@ -54,6 +54,7 @@ def invalid_account_fields_check(data):
 
 
 def validate_ats_candidate_data(data):
+    # type: (object) -> object
     """
     Verify that POST data contains all required fields for dealing with an ATS candidate.
 

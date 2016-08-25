@@ -259,7 +259,7 @@ class ATSCandidatesService(Resource):
             raise NotFoundError('Account id not found', additional_error_info=dict(account_id=account_id))
 
         # Create the candidate. No attempt to determine if duplicate.
-        candidate = new_ats_candidate(account, data)
+        candidate = new_ats_candidate(account_id, data)
 
         response = json.dumps(dict(id=candidate.id, message="ATS candidate successfully created."))
         headers = dict(Location=ATSServiceApiUrl.CANDIDATES % candidate.id)
@@ -420,19 +420,17 @@ class ATSCandidateRefreshService(Resource):
         for ref in individual_references:
             individual = ats_object.fetch_individual(ref)
             return_list.append(individual)
-            ats_service.app.logger.info("Individual: {}".format(individual))
             data = { 'profile_json' : individual, 'ats_remote_id' : ref }
 
             present = ATSCandidate.get_by_ats_id(account_id, ref)
             if present:
-                ats_service.app.logger.info("PRESENT: {}".format(ref))
+
                 if present.ats_table_id:
                     data['ats_table_id'] = present.ats_table_id
                 update_ats_candidate(account_id, present.id, data)
                 ats_object.save_individual(json.dumps(data), present.id)
             else:
                 candidate = new_ats_candidate(account_id, data)
-                ats_service.app.logger.info("NEW")
                 i = ats_object.save_individual(json.dumps(data), candidate.id)
                 data['ats_table_id'] = i.id
                 update_ats_candidate(account_id, candidate.id, data)
