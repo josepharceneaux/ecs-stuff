@@ -118,108 +118,132 @@ class CandidatesResource(Resource):
 
         candidates = body_dict.get('candidates')
 
+        # Check if request body contains data for multiple candidates or not; yield: boolean
+        multiple_candidates = len(candidates) > 1
+
+        # Accumulate response errors when bypassing exceptions in bulk candidate creation
+        response_errors = []
+
+        # We need track which dict contained the erroneous data so that it will be passed in the next loop
+        dict_position = set()
+
         # Input validations
         is_creating, is_updating, candidate_id = True, False, None
         all_cf_ids, all_aoi_ids = [], []
-        email_addresses = []
-        for candidate_dict_ in candidates:
+        all_email_addresses = []
 
-            candidate_ids_from_candidate_email_obj = []
+        for position, candidate_dict_ in enumerate(candidates, start=1):
+            try:
+                email_addresses = []
 
-            email_addresses.extend(email.get('address') for email in candidate_dict_.get('emails') or [])
+                candidate_ids_from_candidate_email_obj = []
 
-            # Strip, lower, and remove empty email addresses
-            email_addresses = filter(None, map(normalize_value, email_addresses))
+                email_addresses.extend(email.get('address') for email in candidate_dict_.get('emails') or [])
 
-            # All email addresses must be valid emails
-            if not all(map(is_valid_email, email_addresses)):
-                raise InvalidUsage('Invalid email address/format: {}'.format(email_addresses),
-                                   error_code=custom_error.INVALID_EMAIL)
+                # Strip, lower, and remove empty email addresses
+                email_addresses = filter(None, map(normalize_value, email_addresses))
 
-            candidate_email_objects = CandidateEmail.get_emails_in_domain(domain_id, email_addresses)
-            for candidate_email_obj in candidate_email_objects:
+                # All email addresses must be valid emails
+                if not all(map(is_valid_email, email_addresses)):
+                    raise InvalidUsage('Invalid email address/format: {}'.format(email_addresses),
+                                       error_code=custom_error.INVALID_EMAIL)
 
-                # Cache candidate's email
-                CachedData.candidate_emails.append(candidate_email_obj)
+                all_email_addresses.extend(email.get('address') for email in candidate_dict_.get('emails') or [])
 
-                candidate_id = candidate_email_obj.candidate_id
+                candidate_email_objects = CandidateEmail.get_emails_in_domain(domain_id, email_addresses)
+                for candidate_email_obj in candidate_email_objects:
 
-                # We need to prevent duplicate creation in case candidate has multiple email addresses in db
-                candidate_ids_from_candidate_email_obj.append(candidate_id)
-                candidate = Candidate.get_by_id(candidate_id)
+                    # Cache candidate's email
+                    CachedData.candidate_emails.append(candidate_email_obj)
 
-                # Raise error if candidate is not hidden and its email matches another candidate's email
-                if not candidate.is_web_hidden and (candidate_email_obj not in CachedData.candidate_emails):
-                    # Clear cached data
-                    CachedData.candidate_emails = []
+                    candidate_id = candidate_email_obj.candidate_id
 
-                    raise InvalidUsage('Candidate with email: {}, already exists'.format(candidate_email_obj.address),
-                                       error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
-                                       additional_error_info={'id': candidate_id})
+                    # We need to prevent duplicate creation in case candidate has multiple email addresses in db
+                    candidate_ids_from_candidate_email_obj.append(candidate_id)
+                    candidate = Candidate.get_by_id(candidate_id)
 
-                # Un-hide candidate from web, if found
-                if candidate.is_web_hidden:
-                    candidate.is_web_hidden = 0
+                    # Raise error if candidate is not hidden and its email matches another candidate's email
+                    if not candidate.is_web_hidden and (candidate_email_obj not in CachedData.candidate_emails):
+                        # Clear cached data
+                        CachedData.candidate_emails = []
 
-                    # If candidate's web-hidden is set to false, it will be treated as an update
-                    is_creating, is_updating = False, True
+                        raise InvalidUsage('Candidate with email: {}, already exists'.format(candidate_email_obj.address),
+                                           error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
+                                           additional_error_info={'id': candidate_id})
 
-                elif candidate_id in candidate_ids_from_candidate_email_obj:
+                    # Un-hide candidate from web, if found
+                    if candidate.is_web_hidden:
+                        candidate.is_web_hidden = 0
+
+                        # If candidate's web-hidden is set to false, it will be treated as an update
+                        is_creating, is_updating = False, True
+
+                    elif candidate_id in candidate_ids_from_candidate_email_obj:
+                        continue
+
+                # Provided source ID must be recognized & belong to candidate's domain
+                source_id = candidate_dict_.get('source_id')
+                if source_id:
+
+                    candidate_source = CandidateSource.get(source_id)
+
+                    if not candidate_source:
+                        raise NotFoundError("Source ID ({}) not recognized", custom_error.SOURCE_NOT_FOUND)
+
+                    if candidate_source and candidate_source.domain_id != domain_id:
+                        raise ForbiddenError("Provided source ID ({source_id}) not "
+                                             "recognized for candidate's domain (id = {domain_id})"
+                                             .format(source_id=source_id, domain_id=domain_id),
+                                             error_code=custom_error.INVALID_SOURCE_ID)
+
+                source_product_id = candidate_dict_.get('source_product_id', 2)
+                if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in (1, 2, 3, 4)):
+                    raise InvalidUsage("Provided source product id ({source_product_id}) not recognized".format(
+                            source_product_id=source_product_id),  error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
+
+                candidate_dict_['source_product_id'] = int(source_product_id)
+
+                for custom_field in candidate_dict_.get('custom_fields') or []:
+                    custom_field_id = custom_field.get('custom_field_id')
+                    if custom_field_id:
+                        if not CustomField.get_by_id(_id=custom_field_id):
+                            raise NotFoundError('Custom field not recognized: {}'.format(custom_field_id),
+                                                custom_error.CUSTOM_FIELD_NOT_FOUND)
+                    all_cf_ids.append(custom_field_id)
+
+                for aoi in candidate_dict_.get('areas_of_interest') or []:
+                    aoi_id = aoi.get('area_of_interest_id')
+                    if aoi_id:
+                        if not AreaOfInterest.get_by_id(_id=aoi_id):
+                            raise NotFoundError('Area of interest not recognized: {}'.format(aoi_id),
+                                                custom_error.AOI_NOT_FOUND)
+                    all_aoi_ids.append(aoi_id)
+
+                # to_date & from_date in military_service dict must be formatted properly
+                for military_service in candidate_dict_.get('military_services') or []:
+                    from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
+                    if from_date:
+                        if not is_date_valid(date=from_date):
+                            raise InvalidUsage("Military service's date must be in a date format",
+                                               error_code=custom_error.MILITARY_INVALID_DATE)
+                    elif to_date:
+                        if not is_date_valid(date=to_date):
+                            raise InvalidUsage("Military service's date must be in a date format",
+                                               error_code=custom_error.MILITARY_INVALID_DATE)
+                    country_code = military_service['country_code'].upper() if military_service.get('country_code') else None
+                    if country_code:
+                        if not is_country_code_valid(country_code):
+                            raise InvalidUsage("Country code not recognized: {}".format(country_code))
+            except Exception as e:
+                # If it's a bulk import, we want to ignore the individual candidate errors
+                if multiple_candidates:
+                    error_message = "Failed to create candidate. Error message: {}".format(e.message)
+                    logger.info(error_message)
+                    response_errors.append(dict(candidate_data=candidate_dict_, error_message=error_message))
+                    dict_position.add(position)
                     continue
-
-            # Provided source ID must be recognized & belong to candidate's domain
-            source_id = candidate_dict_.get('source_id')
-            if source_id:
-
-                candidate_source = CandidateSource.get(source_id)
-
-                if not candidate_source:
-                    raise NotFoundError("Source ID ({}) not recognized", custom_error.SOURCE_NOT_FOUND)
-
-                if candidate_source and candidate_source.domain_id != domain_id:
-                    raise ForbiddenError("Provided source ID ({source_id}) not "
-                                         "recognized for candidate's domain (id = {domain_id})"
-                                         .format(source_id=source_id, domain_id=domain_id),
-                                         error_code=custom_error.INVALID_SOURCE_ID)
-
-            source_product_id = candidate_dict_.get('source_product_id', 2)
-            if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in (1, 2, 3, 4)):
-                raise InvalidUsage("Provided source product id ({source_product_id}) not recognized".format(
-                        source_product_id=source_product_id),  error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
-
-            candidate_dict_['source_product_id'] = int(source_product_id)
-
-            for custom_field in candidate_dict_.get('custom_fields') or []:
-                custom_field_id = custom_field.get('custom_field_id')
-                if custom_field_id:
-                    if not CustomField.get_by_id(_id=custom_field_id):
-                        raise NotFoundError('Custom field not recognized: {}'.format(custom_field_id),
-                                            custom_error.CUSTOM_FIELD_NOT_FOUND)
-                all_cf_ids.append(custom_field_id)
-
-            for aoi in candidate_dict_.get('areas_of_interest') or []:
-                aoi_id = aoi.get('area_of_interest_id')
-                if aoi_id:
-                    if not AreaOfInterest.get_by_id(_id=aoi_id):
-                        raise NotFoundError('Area of interest not recognized: {}'.format(aoi_id),
-                                            custom_error.AOI_NOT_FOUND)
-                all_aoi_ids.append(aoi_id)
-
-            # to_date & from_date in military_service dict must be formatted properly
-            for military_service in candidate_dict_.get('military_services') or []:
-                from_date, to_date = military_service.get('from_date'), military_service.get('to_date')
-                if from_date:
-                    if not is_date_valid(date=from_date):
-                        raise InvalidUsage("Military service's date must be in a date format",
-                                           error_code=custom_error.MILITARY_INVALID_DATE)
-                elif to_date:
-                    if not is_date_valid(date=to_date):
-                        raise InvalidUsage("Military service's date must be in a date format",
-                                           error_code=custom_error.MILITARY_INVALID_DATE)
-                country_code = military_service['country_code'].upper() if military_service.get('country_code') else None
-                if country_code:
-                    if not is_country_code_valid(country_code):
-                        raise InvalidUsage("Country code not recognized: {}".format(country_code))
+                else:
+                    raise e
 
         # Custom fields must belong to user's domain
         if all_cf_ids:
@@ -231,9 +255,11 @@ class CandidatesResource(Resource):
             if not is_area_of_interest_authorized(domain_id, all_aoi_ids):
                 raise ForbiddenError("Unauthorized area of interest IDs", custom_error.AOI_FORBIDDEN)
 
-        # Create candidate(s)
         created_candidate_ids = []
-        for candidate_dict in candidates:
+        for i, candidate_dict in enumerate(candidates, start=1):
+
+            if i in dict_position:
+                continue
 
             user_id = authed_user.id
             emails = [
@@ -242,12 +268,12 @@ class CandidatesResource(Resource):
                     'address': email['address'].strip(),
                     'is_default': email.get('is_default')
                 } for email in candidate_dict.get('emails') or []
-            ] if email_addresses else None  # CandidateEmail object must only be created if email has an address
+            ] if all_email_addresses else None  # CandidateEmail object must only be created if email has an address
 
             added_datetime = DatetimeUtils.isoformat_to_mysql_datetime(candidate_dict['added_datetime']) \
                 if candidate_dict.get('added_datetime') else None
 
-            resp_dict = create_or_update_candidate_from_params(
+            candidate_data = dict(
                 user_id=user_id,
                 is_creating=is_creating,
                 is_updating=is_updating,
@@ -279,7 +305,19 @@ class CandidatesResource(Resource):
                 talent_pool_ids=candidate_dict.get('talent_pool_ids', {'add': [], 'delete': []}),
                 resume_url=candidate_dict.get('resume_url')
             )
-            created_candidate_ids.append(resp_dict['candidate_id'])
+
+            if multiple_candidates:
+                try:
+                    resp_dict = create_or_update_candidate_from_params(**candidate_data)
+                    created_candidate_ids.append(resp_dict['candidate_id'])
+                except Exception as e:
+                    error_message = "Failed to create candidate. Error message: {}".format(e.message)
+                    logger.info(error_message)
+                    response_errors.append(dict(candidate_data=candidate_dict, error_message=error_message))
+                    continue
+            else:
+                resp_dict = create_or_update_candidate_from_params(**candidate_data)
+                created_candidate_ids.append(resp_dict['candidate_id'])
 
         # Add candidates to cloud search
         upload_candidate_documents.delay(created_candidate_ids)
@@ -287,7 +325,10 @@ class CandidatesResource(Resource):
         logger.info('BENCHMARK - candidate POST: \nuser_id: {user_id}\ndomain_id: {domain_id}\ntime: {t}'.
                     format(user_id=authed_user.id, domain_id=authed_user.domain_id, t=time() - start_time))
 
-        return {'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids]}, requests.codes.CREATED
+        return {
+                   'candidates': [{'id': candidate_id} for candidate_id in created_candidate_ids],
+                   'errors': response_errors
+               }, requests.codes.CREATED
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
