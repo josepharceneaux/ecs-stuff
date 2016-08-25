@@ -38,6 +38,12 @@ def get_custom_field_if_validated(custom_field_id, user):
 
 
 def create_custom_fields(custom_fields, domain_id):
+    """
+    Function will insert domain custom fields after passing validation
+    :type custom_fields:  dict
+    :type domain_id:  int | long
+    :rtype: list[dict]
+    """
     created_custom_fields = []
     for custom_field in custom_fields:
 
