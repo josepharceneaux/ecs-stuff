@@ -1,6 +1,6 @@
 # Base container modules. These are common modules required by all services, or modules that take a long time to install
 boto==2.36.0
-Flask-Cors
+Flask-Cors==2.1.2
 Flask-Migrate
 Flask-OAuthlib==0.9.1
 flask-restful
