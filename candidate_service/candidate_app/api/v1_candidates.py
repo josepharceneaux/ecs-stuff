@@ -1660,7 +1660,7 @@ class CandidateDeviceResource(Resource):
                     db.session.commit()
                     raise Exception('Failed to save')
             if os.getenv(TalentConfigKeys.ENV_KEY) == TalentEnvs.JENKINS:
-                retry(save_device, sleeptime=1, attempts=5, sleepscale=1, retry_exceptions=(Exception,),
+                retry(save_device, sleeptime=2, attempts=10, sleepscale=1, retry_exceptions=(Exception,),
                       args=(candidate_device,))
             else:
                 CandidateDevice.save(candidate_device)
