@@ -1,7 +1,9 @@
 from resume_parsing_service.app import app
 import json
 import pytest
+from cStringIO import StringIO
 from resume_parsing_service.app.views.param_builders import build_params_from_json
+from resume_parsing_service.app.views.param_builders import build_params_from_form
 from resume_parsing_service.common.error_handling import InvalidUsage
 
 
@@ -65,3 +67,28 @@ def test_invalid_json_params():
             build_params_from_json(request.request)
 
 
+def test_valid_form_params():
+    fake_file = StringIO('I\'ve got a bad feeling about this')
+    test_data = {
+        'resume_file_name': 'Han_Brolo.doc',
+        'create_candidate': 'true',
+        'talent_pool_ids': None,
+        'resume_file': (fake_file, 'Han_Brolo.doc')
+    }
+
+    #  Params derived from http://werkzeug.pocoo.org/docs/0.11/test/#testing-api
+    with app.test_request_context(
+            path='/v1/parse_resume', method='POST', content_type='multipart/form-data', data=test_data) as request:
+        params = build_params_from_form(request.request)
+        assert params['create_candidate'] == True
+        assert params['filename'] == 'Han_Brolo.doc'
+        assert params['filepicker_key'] is None
+        assert params['talent_pools'] == []
+        assert params['resume_file'].read() == 'I\'ve got a bad feeling about this'
+        # assert build_params_from_form(request.request) == {
+        #     'create_candidate': True,
+        #     'filename': 'Han_Brolo.doc',
+        #     'filepicker_key': None,
+        #     'resume_file': fake_file,
+        #     'talent_pools': []
+        # }
