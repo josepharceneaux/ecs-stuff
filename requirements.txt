@@ -1,14 +1,14 @@
 # Base container modules. These are common modules required by all services, or modules that take a long time to install
 boto==2.36.0
 Flask-Cors==2.1.2
-Flask-Migrate
+Flask-Migrate==1.8.0
 Flask-OAuthlib==0.9.1
-flask-restful
+flask-restful==0.3.5
 Flask-Script==2.0.5
 Flask-SQLAlchemy==2.0
 Flask==0.10.1
 gevent==1.0.2
-IPython
+IPython==4.2.0
 itsdangerous==0.24
 Jinja2==2.8
 mysql-python==1.2.5
@@ -28,7 +28,7 @@ wsgiref==0.1.2
 beautifulsoup4==4.4.0
 boto3==1.3.0 # used in emailReciever Lambda tests
 ghostscript==0.4.1
-libmagic
+libmagic==1.0
 # brew install libxml2 required on OSX for this.
 lxml==3.4.4
 MarkupSafe==0.23
@@ -50,7 +50,7 @@ greenlet==0.4.7
 loggly-python-handler==1.0.0
 
 # SMS Campaign code
-twilio
+twilio==5.4.0
 ska==1.5
 
 # Various common packages
@@ -58,18 +58,18 @@ mixer==5.2.2
 python-dateutil==2.4.2
 pytz==2015.4
 simple-crypt==4.1.7
-Flask-Limiter
-newrelic
-healthcheck
+Flask-Limiter==0.9.3
+newrelic==2.66.0.49
+healthcheck==1.3.1
 simplejson==3.8.0
 pycountry==1.20
 
-enum34
+enum34==1.1.6
 xlrd==0.9.2
 chardet==2.3.0
 flask-redis==0.1.0
-pylama
-pylama_pylint
+pylama==7.0.9
+pylama-pylint==2.2.1
 
 # Scheduling Service
 #APScheduler branch
@@ -79,7 +79,7 @@ kombu==3.0.33
 flower==0.8.3
 redis==2.10.5
 jsonschema==2.5.1
-functools32
+functools32==3.2.3-2
 strict-rfc3339==0.6
 Flask-Cache==0.13.1
 
