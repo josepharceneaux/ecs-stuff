@@ -326,11 +326,11 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
             return jsonify(dict(count=len(candidate_ids), status='complete', error_messages=error_messages)), 201
 
     except Exception as e:
-        email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s, S3_URL: %s" %
-                              (user_id, spreadsheet_filename, get_s3_url('CSVResumes', spreadsheet_filename)),
+        email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s, S3_URL: %s, Reason: %s" %
+                              (user_id, spreadsheet_filename, get_s3_url('CSVResumes', spreadsheet_filename), e.message),
                               subject="import_from_csv")
-        raise InvalidUsage(error_message="Error importing from CSV. User ID: %s, S3 filename: %s. Reason: %s" %
-                                         (user_id, spreadsheet_filename, e.message))
+        logger.error("Error importing from CSV. User ID: %s, S3 filename: %s. Reason: %s" % (
+            user_id, spreadsheet_filename, e.message))
 
 
 def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
