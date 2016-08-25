@@ -19,7 +19,7 @@ from requests import codes
 from social_network_service.common.tests.conftest import user_auth
 from social_network_service.common.tests.api_conftest import (user_first, token_first, talent_pool_session_scope,
                                                               user_same_domain, token_same_domain, user_second,
-                                                              token_second)
+                                                              token_second, test_data)
 
 # Models
 from social_network_service.common.models.db import db
