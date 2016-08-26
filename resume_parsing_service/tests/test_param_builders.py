@@ -85,10 +85,3 @@ def test_valid_form_params():
         assert params['filepicker_key'] is None
         assert params['talent_pools'] == []
         assert params['resume_file'].read() == 'I\'ve got a bad feeling about this'
-        # assert build_params_from_form(request.request) == {
-        #     'create_candidate': True,
-        #     'filename': 'Han_Brolo.doc',
-        #     'filepicker_key': None,
-        #     'resume_file': fake_file,
-        #     'talent_pools': []
-        # }
