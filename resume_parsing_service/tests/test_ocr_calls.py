@@ -13,10 +13,8 @@ def test_valid_ocr_response():
         with open(os.path.join(current_dir, 'files/{}'.format('han.png')), 'rb') as img:
             img_data = StringIO(img.read())
         google_response = google_vision_ocr(img_data)
-        assert google_response == u'''Han Solo
-            am the best smuggler in all of the galaxy.
-            I was once frozen by Boba Fett
-            It was not very fun.'''
+        desired_strs = u'Han Solo best smuggler galaxy frozen Boba Fett'.split()
+        assert all(substr in google_response for substr in desired_strs)
 
 
 def test_invalid_ocr_response():
