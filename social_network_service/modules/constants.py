@@ -9,3 +9,8 @@ FACEBOOK = 'facebook'
 TASK_ALREADY_SCHEDULED = 6057
 EVENT = 'event'
 RSVP = 'rsvp'
+
+# API URL for Meetup venues
+# For creating venue for event, Meetup uses url which is
+# different than the url we use in other API calls of Meetup.
+MEETUP_VENUE = 'https://api.meetup.com/{}'

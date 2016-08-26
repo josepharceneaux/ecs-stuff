@@ -15,6 +15,7 @@ from social_network_service.common.error_handling import InvalidUsage
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.utils.validators import raise_if_not_positive_int_or_long
+from social_network_service.modules.urls import SocialNetworkUrls
 from social_network_service.modules.utilities import get_class
 from social_network_service.modules.utilities import log_error
 from social_network_service.common.models.user import User
@@ -184,6 +185,7 @@ class SocialNetworkBase(object):
         """
         self.events = []
         self.api_relative_url = None
+        self.mock_flag = kwargs.get('mock_flag', False)
         self.user, self.social_network = self.get_user_and_social_network(user_id, social_network_id)
         self.user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(self.user.id,
                                                                                               self.social_network.id)
@@ -466,7 +468,7 @@ class SocialNetworkBase(object):
         :return status of of access token either True or False.
         """
         status = False
-        url = self.api_url + self.api_relative_url
+        url = SocialNetworkUrls.get_url(self, SocialNetworkUrls.VALIDATE_TOKEN)
         logger.info("%s access_token validation url: %s", self.social_network.name, url)
         try:
             response = requests.get(url, headers=self.headers, params=payload)

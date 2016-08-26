@@ -16,6 +16,7 @@ from social_network_service.common.error_handling import InternalServerError, In
 from social_network_service.modules import custom_codes
 from social_network_service.modules.custom_codes import (VENUE_EXISTS_IN_GT_DATABASE, MATCHING_VENUE_FOUND_IN_MEETUP,
                                                          INVALID_MEETUP_RESPONSE)
+from social_network_service.modules.urls import SocialNetworkUrls
 from social_network_service.modules.utilities import logger
 from base import SocialNetworkBase
 from social_network_service.social_network_app import app
@@ -56,7 +57,8 @@ class Meetup(SocialNetworkBase):
             - https://secure.meetup.com/meetup_api/
     """
     def __init__(self, *args, **kwargs):
-        super(Meetup, self).__init__(*args, **kwargs)
+        mock_flag = True if SocialNetworkUrls.IS_DEV else False
+        super(Meetup, self).__init__(*args, mock_flag=mock_flag, **kwargs)
 
     def get_member_id(self):
         """
@@ -108,45 +110,42 @@ class Meetup(SocialNetworkBase):
         .. seealso:: GET method of class MeetupGroups() inside
             social_network_service/app/restful/social_network.py
         """
-        url = self.api_url + '/groups/'
+        url = SocialNetworkUrls.get_url(self, SocialNetworkUrls.GROUPS)
         params = {'member_id': 'self'}
-        response = http_request('GET', url, params=params,
-                                headers=self.headers,
-                                user_id=self.user.id)
+        response = http_request('GET', url, params=params, headers=self.headers, user_id=self.user.id)
         if response.ok:
             # If some error occurs during HTTP call,
             # we log it inside http_request()
             meta_data = json.loads(response.text)['meta']
             member_id = meta_data['url'].split('=')[1].split('&')[0]
             data = json.loads(response.text)['results']
-            groups = filter(lambda item: item['organizer']['member_id']
-                                         == int(member_id), data)
+            groups = filter(lambda item: item['organizer']['member_id'] == int(member_id), data)
             return groups
 
-    def validate_token(self, payload=None):
-        """
-        :param payload is None in case of Meetup as we pass access token
-                    in headers:
-        :return: True if access token is valid otherwise False
-        :rtype: bool
-        - Here we set the value of "self.api_relative_url". We then call super
-            class method validate_token() to validate the access token.
-            validate_token() in SocialNetworkBase makes url like
-                url = self.social_network.api_url + self.api_relative_url
-            (This will evaluate in case of Meetup as
-                url = 'https://api.meetup.com/2' + '/member/self')
-            After this, it makes a POST call on this url and check if status
-            of response is 2xx.
-
-        - This method is called from validate_and_refresh_access_token() defined in
-            SocialNetworkBase class inside social_network_service/base.py.
-
-        **See Also**
-        .. seealso:: validate_token() function defined in SocialNetworkBase
-            class inside social_network_service/base.py.
-        """
-        self.api_relative_url = '/member/self'
-        return super(Meetup, self).validate_token()
+    # def validate_token(self, payload=None):
+    #     """
+    #     :param payload is None in case of Meetup as we pass access token
+    #                 in headers:
+    #     :return: True if access token is valid otherwise False
+    #     :rtype: bool
+    #     - Here we set the value of "self.api_relative_url". We then call super
+    #         class method validate_token() to validate the access token.
+    #         validate_token() in SocialNetworkBase makes url like
+    #             url = self.social_network.api_url + self.api_relative_url
+    #         (This will evaluate in case of Meetup as
+    #             url = 'https://api.meetup.com/2' + '/member/self')
+    #         After this, it makes a POST call on this url and check if status
+    #         of response is 2xx.
+    #
+    #     - This method is called from validate_and_refresh_access_token() defined in
+    #         SocialNetworkBase class inside social_network_service/base.py.
+    #
+    #     **See Also**
+    #     .. seealso:: validate_token() function defined in SocialNetworkBase
+    #         class inside social_network_service/base.py.
+    #     """
+    #     self.api_relative_url = '/member/self'
+    #     return super(Meetup, self).validate_token()
 
     def refresh_access_token(self):
         """

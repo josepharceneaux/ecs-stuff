@@ -203,6 +203,7 @@ class EventBase(object):
         self.events = []
         self.rsvps = []
         self.data = None
+        self.mock_flag = False
         self.headers = kwargs.get('headers')
         if kwargs.get('user_credentials') or kwargs.get('user'):
             self.user_credentials = kwargs.get('user_credentials')
@@ -429,8 +430,7 @@ class EventBase(object):
         # create url to publish event
         url = self.url_to_delete_event
         # params are None. Access token is present in self.headers
-        response = http_request(method, url, headers=self.headers,
-                                user_id=self.user.id)
+        response = http_request(method, url, headers=self.headers, user_id=self.user.id)
         if response.ok:
             logger.info('|  Event has been unpublished (deleted)  |')
         else:

@@ -21,12 +21,15 @@ from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.models.candidate import SocialNetwork
 
 # Register Blueprints for different APIs
+from social_network_service.social_network_app.mock.v1_meetup import meetup_mock_blueprint
 from social_network_service.social_network_app.restful.v1_importer import rsvp_blueprint
 
 app.register_blueprint(data_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(social_network_blueprint)
 app.register_blueprint(rsvp_blueprint)
+# TODO: only register if is_dev
+app.register_blueprint(meetup_mock_blueprint)
 
 api = TalentApi(app)
 

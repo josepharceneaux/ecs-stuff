@@ -14,7 +14,6 @@ from datetime import datetime, timedelta
 # Third Party
 import pytest
 from requests import codes
-from httmock import HTTMock
 
 # Common conftests
 from social_network_service.common.tests.conftest import user_auth
@@ -174,11 +173,10 @@ def meetup_group(test_meetup_credentials, token_first):
     """
     This gets all the groups of user_first created on Meetup website. It then picks first group and returns it.
     """
-    with HTTMock(meetup_mock):
-        resp = send_request('get', SocialNetworkApiUrl.MEETUP_GROUPS, token_first)
-        assert resp.status_code == codes.OK
-        # return first group
-        return resp.json()['groups'][0]
+    resp = send_request('get', SocialNetworkApiUrl.MEETUP_GROUPS, token_first)
+    assert resp.status_code == codes.OK
+    # return first group
+    return resp.json()['groups'][0]
 
 
 @pytest.fixture(scope="session")
@@ -221,29 +219,26 @@ def meetup_event(request, test_meetup_credentials, meetup, meetup_venue, organiz
     This creates an event for Meetup for user_first
     """
     del meetup_event_data['organizer_id']
-    with HTTMock(meetup_mock):
-        response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=meetup_event_data)
+    response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=meetup_event_data)
+    assert response.status_code == codes.CREATED, response.text
+    data = response.json()
+    db.session.commit()
+    event = Event.get_by_id(data['id'])
+    event_id = event.id
 
-        assert response.status_code == codes.CREATED, response.text
+    def fin():
+        """
+        This is finalizer for meetup event. Once test is passed, we need to
+        delete the newly created event from website of social network. After
+        test has been passed, we call
+        delete_event() function to delete the event both from social network
+        and from our database.
+        """
+        response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id, access_token=token_first)
+        assert response.status_code in [codes.OK, codes.FORBIDDEN]
 
-        data = response.json()
-        db.session.commit()
-        event = Event.get_by_id(data['id'])
-        event_id = event.id
-
-        def fin():
-            """
-            This is finalizer for meetup event. Once test is passed, we need to
-            delete the newly created event from website of social network. After
-            test has been passed, we call
-            delete_event() function to delete the event both from social network
-            and from our database.
-            """
-            response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id, access_token=token_first)
-            assert response.status_code in [codes.OK, codes.FORBIDDEN]
-
-        request.addfinalizer(fin)
-        return event
+    request.addfinalizer(fin)
+    return event
 
 
 @pytest.fixture(scope="function")

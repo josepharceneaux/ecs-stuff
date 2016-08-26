@@ -113,7 +113,8 @@ def assert_event(user_id, social_network_event_id):
     assert event
 
 
-@urlmatch(netloc=r'^((?!%s).)*$' % MEETUP)
+# @urlmatch(netloc=r'^((?!%s).)*$' % MEETUP)
+@urlmatch(path=r'google.com')
 def meetup_mock(url, request):
     status_code = codes.OK
     headers = {'content-type': 'application/json'}

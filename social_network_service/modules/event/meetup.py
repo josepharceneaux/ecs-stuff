@@ -13,6 +13,8 @@ from datetime import timedelta
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.event_organizer import EventOrganizer
+from social_network_service.modules.constants import MEETUP_VENUE
+from social_network_service.modules.urls import SocialNetworkUrls as Urls, SocialNetworkUrls
 from social_network_service.social_network_app import logger
 from social_network_service.modules.utilities import log_error
 from social_network_service.modules.event.base import EventBase
@@ -104,10 +106,9 @@ class Meetup(EventBase):
         self.group_url_name = None
         self.social_network_group_ids = []
         self.social_network_event_id = None
-        self.start_date = kwargs.get('start_date') \
-                          or (datetime.now() - timedelta(days=5))
-        self.end_date = kwargs.get('end_date') \
-                        or (datetime.now() + timedelta(days=5))
+        self.mock_flag = True if SocialNetworkUrls.IS_DEV else False
+        self.start_date = kwargs.get('start_date') or (datetime.utcnow() - timedelta(days=5))
+        self.end_date = kwargs.get('end_date') or (datetime.utcnow() + timedelta(days=5))
         self.start_time_since_epoch = milliseconds_since_epoch_local_time(self.start_date)
         self.end_time_since_epoch = milliseconds_since_epoch_local_time(self.end_date)
 
@@ -337,69 +338,6 @@ class Meetup(EventBase):
                           event.get('waitlist_count', 0)
         )
 
-    def create_event(self):
-        """
-        This function is used to create Meetup event using vendor's API.
-        It first creates a venue for event. Then venue_id is passed to
-        event_payload.
-        Then a POST request to Meetup API creates event on Meetup.com
-        :exception EventNotCreated: raises exception if unable to
-        publish/create event on Meetup.com.
-        :return: id of event in db
-        :rtype: int
-        """
-        url = self.api_url + "/event"
-        venue_id = self.add_location()
-        self.payload.update({'venue_id': venue_id,
-                             'publish_status': 'published'})
-        response = http_request('POST', url, params=self.payload,
-                                headers=self.headers,
-                                user_id=self.user.id)
-        if response.ok:
-            event_id = response.json().get('id')
-            logger.info('|  Event %s created Successfully  |'
-                        % self.payload['name'])
-            self.data['social_network_event_id'] = event_id
-            return self.save_event()
-        else:
-            error_message = 'Event was not Created. Error occurred during' \
-                            ' draft creation'
-            log_error({'user_id': self.user.id,
-                       'error': error_message})
-            raise EventNotCreated('ApiError: Unable to create event on Meetup')
-
-    def update_event(self):
-        """
-        It first creates/ updates a venue on Meetup.com and then passes that
-        venue's id in event's payload to update event location along with event
-        data.
-        :exception EventNotCreated: raises exception if unable to update event
-                on Meetup.com
-        :return: id of event
-        :rtype: int
-        """
-        # create url to update event
-        url = self.api_url + "/event/" + str(self.social_network_event_id)
-        # create or update venue for event
-        venue_id = self.add_location()
-        # add venue id in event payload to update event venue on Meetup.com
-        self.payload.update({'venue_id': venue_id})
-        response = http_request('POST', url, params=self.payload,
-                                headers=self.headers,
-                                user_id=self.user.id)
-        if response.ok:
-            event_id = response.json().get('id')
-            logger.info('|  Event %s updated Successfully  |'
-                        % self.payload['name'])
-            self.data['social_network_event_id'] = event_id
-            return self.save_event()
-        else:
-            error_message = 'Event was not created. Error occurred during ' \
-                            'event update on Meetup'
-            log_error({'user_id': self.user.id,
-                       'error': error_message})
-            raise EventNotCreated('ApiError: Unable to update event on Meetup')
-
     def add_location(self):
         """
         This function adds the location of event.
@@ -427,61 +365,108 @@ class Meetup(EventBase):
         """
         venue_in_db = Venue.get_by_user_id_social_network_id_venue_id(
             self.user.id, self.social_network.id, self.venue_id)
-        if venue_in_db:
-            if venue_in_db.social_network_venue_id:
-                return venue_in_db.social_network_venue_id
+        if not venue_in_db:
+            error_message = 'Venue does not exist in db. Venue id is %s' % self.venue_id
+            log_error({'user_id': self.user.id, 'error': error_message})
+            raise VenueNotFound('Venue not found in database. Kindly specify a valid venue.')
 
-            # For creating venue for event, Meetup uses url which is
-            # different than the url we use in other API calls of Meetup.
-            # So class variable 'api_url' is not used here.
-            url = 'https://api.meetup.com/' + self.group_url_name + '/venues'
-            payload = {
-                'address_1': venue_in_db.address_line_1,
-                'address_2': venue_in_db.address_line_2,
-                'city': venue_in_db.city,
-                'country': venue_in_db.country,
-                'state': venue_in_db.state,
-                'name': venue_in_db.address_line_1
-            }
-            response = http_request('POST', url, params=payload,
-                                    headers=self.headers,
-                                    user_id=self.user.id)
-            if response.ok:
-                venue_id = json.loads(response.text)['id']
-                logger.info('|  Venue has been Added  |')
-            elif response.status_code == 409:
-                # 409 is returned when our venue is matching existing
-                # venue/venues. So we pick the first one in potential
-                # matches.
-                try:
-                    venue_id = json.loads(response.text)[
-                        'errors'][0]['potential_matches'][0]['id']
-                    logger.info('|  Venue was picked from matched records  |')
-                except Exception as e:
-                    raise EventLocationNotCreated('ApiError: Unable to create'
-                                                  ' venue for event',
-                                                  additional_error_info=
-                                                  dict(venue_error=str(e)))
-            else:
-                error_message = 'Venue was not Added. There are some errors.'
-                errors = response.json().get('errors')
-                message = '\nErrors from the social network:\n'
-                message += '\n'.join(error['message'] + ', ' + error['code']
-                                     for error in errors) if errors else ''
-                error_message += message
-                log_error({'user_id': self.user.id,
-                           'error': error_message})
-                raise EventLocationNotCreated('ApiError: Unable to create '
-                                              'venue for event\n %s' % message)
-            venue_in_db.update(social_network_venue_id=venue_id)
-            return venue_id
+        if venue_in_db.social_network_venue_id:
+            return venue_in_db.social_network_venue_id
+        url = Urls.get_url(self, Urls.VENUES, custom_url=MEETUP_VENUE.format(self.group_url_name))
+        logger.debug('Creating venue for %s(user id:%s) using url:%s of API of %s.'
+                     % (self.user.name, self.user.id, url, self.social_network.name))
+        payload = {
+            'address_1': venue_in_db.address_line_1,
+            'address_2': venue_in_db.address_line_2,
+            'city': venue_in_db.city,
+            'country': venue_in_db.country,
+            'state': venue_in_db.state,
+            'name': venue_in_db.address_line_1
+        }
+        response = http_request('POST', url, params=payload, headers=self.headers, user_id=self.user.id)
+        if response.ok:
+            venue_id = json.loads(response.text)['id']
+            logger.info('|  Venue has been Added  |')
+        elif response.status_code == 409:
+            # 409 is returned when our venue is matching existing
+            # venue/venues. So we pick the first one in potential
+            # matches.
+            try:
+                venue_id = json.loads(response.text)[
+                    'errors'][0]['potential_matches'][0]['id']
+                logger.info('|  Venue was picked from matched records  |')
+            except Exception as e:
+                raise EventLocationNotCreated('ApiError: Unable to create venue for event',
+                                              additional_error_info=dict(venue_error=str(e)))
         else:
-            error_message = 'Venue does not exist in db. Venue id is %s' \
-                            % self.venue_id
+            error_message = 'Venue was not Added. There are some errors.'
+            errors = response.json().get('errors')
+            message = '\nErrors from the social network:\n'
+            message += '\n'.join(error['message'] + ', ' + error['code'] for error in errors) if errors else ''
+            error_message += message
+            log_error({'user_id': self.user.id, 'error': error_message})
+            raise EventLocationNotCreated('ApiError: Unable to create venue for event\n %s' % message)
+        venue_in_db.update(social_network_venue_id=venue_id)
+        return venue_id
+
+    def create_event(self):
+        """
+        This function is used to create Meetup event using vendor's API.
+        It first creates a venue for event. Then venue_id is passed to
+        event_payload.
+        Then a POST request to Meetup API creates event on Meetup.com
+        :exception EventNotCreated: raises exception if unable to
+        publish/create event on Meetup.com.
+        :return: id of event in db
+        :rtype: int
+        """
+        venue_id = self.add_location()
+        url = Urls.get_url(self, Urls.EVENTS)
+        self.payload.update({'venue_id': venue_id, 'publish_status': 'published'})
+        logger.debug('Creating event for %s(user id:%s) using url:%s of API of %s.'
+                     % (self.user.name, self.user.id, url, self.social_network.name))
+        response = http_request('POST', url, params=self.payload, headers=self.headers, user_id=self.user.id)
+        if response.ok:
+            event_id = response.json().get('id')
+            logger.info('|  Event %s created Successfully  |' % self.payload['name'])
+            self.data['social_network_event_id'] = event_id
+            return self.save_event()
+        else:
+            error_message = 'Event was not Created. Error occurred during draft creation'
+            log_error({'user_id': self.user.id, 'error': error_message})
+            raise EventNotCreated('ApiError: Unable to create event on Meetup')
+
+    def update_event(self):
+        """
+        It first creates/ updates a venue on Meetup.com and then passes that
+        venue's id in event's payload to update event location along with event
+        data.
+        :exception EventNotCreated: raises exception if unable to update event
+                on Meetup.com
+        :return: id of event
+        :rtype: int
+        """
+        # create url to update event
+        url = Urls.get_url(self, Urls.EVENTS) + ('/%s' % self.social_network_event_id)
+        # create or update venue for event
+        venue_id = self.add_location()
+        # add venue id in event payload to update event venue on Meetup.com
+        self.payload.update({'venue_id': venue_id})
+        response = http_request('POST', url, params=self.payload,
+                                headers=self.headers,
+                                user_id=self.user.id)
+        if response.ok:
+            event_id = response.json().get('id')
+            logger.info('|  Event %s updated Successfully  |'
+                        % self.payload['name'])
+            self.data['social_network_event_id'] = event_id
+            return self.save_event()
+        else:
+            error_message = 'Event was not created. Error occurred during ' \
+                            'event update on Meetup'
             log_error({'user_id': self.user.id,
                        'error': error_message})
-            raise VenueNotFound('Venue not found in database. Kindly specify '
-                                'a valid venue.')
+            raise EventNotCreated('ApiError: Unable to update event on Meetup')
 
     def unpublish_event(self, social_network_event_id, method='DELETE'):
         """
@@ -493,10 +478,8 @@ class Meetup(EventBase):
         :return: True if event is deleted from vendor, False otherwise.
         :rtype Boolean
         """
-        self.url_to_delete_event = self.api_url + "/event/" \
-                                   + str(social_network_event_id)
-        super(Meetup, self).unpublish_event(social_network_event_id,
-                                            method=method)
+        self.url_to_delete_event = Urls.get_url(self, Urls.EVENTS) + ('/%s' % social_network_event_id)
+        super(Meetup, self).unpublish_event(social_network_event_id, method=method)
 
     @staticmethod
     def validate_required_fields(data):
@@ -587,7 +570,7 @@ class Meetup(EventBase):
         if data['group_url_name']:
             self.group_url_name = data['group_url_name']
         else:
-            error_message = 'Group UrlName is None for eventName: %s' \
+            error_message = 'Group UrlName imock_flag = True if SocialNetworkUrls.IS_DEV else Falses None for eventName: %s' \
                             % data['title']
             log_error({'user_id': self.user.id,
                        'error': error_message})
