@@ -410,7 +410,7 @@ class ATSCandidateRefreshService(Resource):
 
         # Authenticate
         ats_object = create_ats_object(ats_service.app.logger, ats_name, url, user_id, credentials)
-        ats_object.authenticate(credentials)
+        ats_object.authenticate()
 
         # Get all candidate ids (references)
         individual_references = ats_object.fetch_individual_references()
@@ -424,12 +424,13 @@ class ATSCandidateRefreshService(Resource):
 
             present = ATSCandidate.get_by_ats_id(account_id, ref)
             if present:
-
+                # Update this individual
                 if present.ats_table_id:
                     data['ats_table_id'] = present.ats_table_id
                 update_ats_candidate(account_id, present.id, data)
                 ats_object.save_individual(json.dumps(data), present.id)
             else:
+                # Create a new individual
                 candidate = new_ats_candidate(account_id, data)
                 i = ats_object.save_individual(json.dumps(data), candidate.id)
                 data['ats_table_id'] = i.id

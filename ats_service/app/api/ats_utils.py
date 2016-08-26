@@ -6,11 +6,20 @@ __author__ = 'Joseph Arceneaux'
 
 import datetime
 
-from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
-from ats_service.common.models.candidate import Candidate
-from ats_service.common.models.user import User
-from ats_service.common.error_handling import *
-from ats_service.ats.workday import Workday
+if __name__ == 'ats_service.app.api.ats_utils':
+    # Imports for the web app.
+    from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
+    from ats_service.common.models.candidate import Candidate
+    from ats_service.common.models.user import User
+    from ats_service.common.error_handling import *
+    from ats_service.ats.workday import Workday
+else:
+    # Imports for the refresh script
+    from common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
+    from common.models.candidate import Candidate
+    from common.models.user import User
+    from common.error_handling import *
+    from ats.workday import Workday
 
 
 ATS_ACCOUNT_FIELDS = ['ats_name', 'ats_homepage', 'ats_login', 'ats_auth_type', 'ats_id', 'ats_credentials']
@@ -134,6 +143,8 @@ def update_ats_account(account_id, new_data):
         ats.update(**update_dict)
 
     update_dict = {}
+    now = datetime.datetime.utcnow()
+    update_dict = {'updated_at' : now}
     if 'active' in new_data:
         if new_data['active'] == "False":
             update_dict['active'] = False
@@ -207,6 +218,11 @@ def new_ats_candidate(account_id, data):
         candidate.ats_table_id = data.get('ats_table_id', None)
     candidate.save()
 
+    update_dict = {}
+    now = datetime.datetime.utcnow()
+    update_dict = {'updated_at' : now}
+    account.update(**update_dict)
+
     return candidate
  
 
@@ -224,6 +240,13 @@ def delete_ats_candidate(candidate_id):
     profile = ATSCandidateProfile.get(candidate.profile_id)
     if profile:
         ATSCandidateProfile.delete(profile)
+
+    account = ATSAccount.get(candidate.ats_account_id)
+    if not account:
+        raise InvalidUsage("ATS account {} not found.".format(candidate.ats_account_id))
+    now = datetime.datetime.utcnow()
+    update_dict = {'updated_at' : now}
+    account.update(**update_dict)
 
 
 def update_ats_candidate(account_id, candidate_id, new_data):
@@ -257,10 +280,12 @@ def update_ats_candidate(account_id, candidate_id, new_data):
         candidate.ats_table_id = new_data.get('ats_table_id', None)
 
     now = datetime.datetime.utcnow()
-    update_dict = {'updated_at' : now}
-    candidate.update(**update_dict)
     update_dict = {'profile_json' : new_data['profile_json'], 'updated_at' : now}
     profile.update(**update_dict)
+
+    update_dict = {'updated_at' : now}
+    candidate.update(**update_dict)
+    account.update(**update_dict)
 
     return candidate
 

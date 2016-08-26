@@ -9,7 +9,11 @@ import json
 from urlparse import urlparse
 from sqlalchemy import text
 
-from ats_service.common.models.workday import WorkdayTable
+# Import path is different if we're loaded from script (as opposed to uswgi app)
+if __name__ == 'ats.workday':
+    from common.models.workday import WorkdayTable
+else:
+    from ats_service.common.models.workday import WorkdayTable
 
 
 class Workday(object):
@@ -25,6 +29,7 @@ class Workday(object):
         self.ats_name = ats_name
         self.login_url = login_url
         url_object = urlparse(login_url)
+        # Server location without URL components
         self.service = url_object.scheme + '://' + url_object.netloc
         self.user_id = user_id
         self.auth_token = None
@@ -32,13 +37,14 @@ class Workday(object):
         self.fetch_candidates_url = "{}/all-individuals".format(self.service)
         self.fetch_individual_url = "{}/individual".format(self.service)
 
-    def authenticate(self, credentials):
+    def authenticate(self):
         """
         Perform authencation using our credentials, and store any tokens on this object.
         """
         self.logger.info("GET {}".format(self.login_url))
-        auth_token = 'auth_token'
         response = requests.request('GET', self.login_url)
+        # TODO: self.auth_token = json.loads(response.text)['token']
+        self.auth_token = 'auth_token'
         self.logger.info("GET {}".format(response.text))
 
     def fetch_individual_references(self):
@@ -63,7 +69,7 @@ class Workday(object):
         """
         Save an individual to the Workday table.
 
-        :param string data: Jason description of individual.
+        :param string data: JASON description of individual.
         :param int candidate_id: id into the ATS Candidate table.
         """
         data_dict = json.loads(data)
