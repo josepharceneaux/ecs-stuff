@@ -57,10 +57,10 @@ def google_vision_ocr(file_string_io, timeout=20):
                                                            current_app.config['GOOGLE_API_KEY']),
                                         json.dumps(req_data),
                                         timeout=timeout,
-                                        headers={'content-type': 'application/json'})
+                                        headers={'content-type': 'application/json'}, verify=True)
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout)as exc:
         logger.exception("Could not reach Google API")
-        print 'Message - '.format(exc.message())
+        print 'Message - '.format(exc)
         raise InternalServerError(
             error_message=error_constants.GOOGLE_OCR_UNAVAILABLE['message'],
             error_code=error_constants.GOOGLE_OCR_UNAVAILABLE['code'],
