@@ -12,7 +12,22 @@ def test_valid_ocr_response():
     with app.app_context():
         with open(os.path.join(current_dir, 'files/{}'.format('han.png')), 'rb') as img:
             img_data = StringIO(img.read())
-        google_response = google_vision_ocr(img_data)
+        google_response = google_vision_ocr(img_data, timeout=60)
+        desired_strs = u'Han Solo best smuggler galaxy frozen Boba Fett'.split()
+        assert all(substr in google_response for substr in desired_strs)
+
+
+def test_ocr_doesnt_req_seek():
+    """
+    Test that Google OCR returns mostly accurate text from an image file containing text after being
+    read already.
+    """
+    current_dir = os.path.dirname(__file__)
+    with app.app_context():
+        with open(os.path.join(current_dir, 'files/{}'.format('han.png')), 'rb') as img:
+            img_data = StringIO(img.read())
+        unused_str = img_data.read() #  Put file pointer at EOF.
+        google_response = google_vision_ocr(img_data, timeout=60)
         desired_strs = u'Han Solo best smuggler galaxy frozen Boba Fett'.split()
         assert all(substr in google_response for substr in desired_strs)
 
@@ -27,6 +42,6 @@ def test_invalid_ocr_response():
     with app.app_context():
         with open(os.path.join(current_dir, 'files/{}'.format('hanPopcicle.png')), 'rb') as img:
             img_data = StringIO(img.read())
-        google_response = google_vision_ocr(img_data)
+        google_response = google_vision_ocr(img_data, timeout=60)
         assert isinstance(google_response, unicode)
         assert len(google_response) < 5
