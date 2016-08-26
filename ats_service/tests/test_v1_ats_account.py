@@ -99,7 +99,7 @@ class TestATSAccounts(object):
         """
         account_id = create_and_validate_account(access_token_first, account_post_data)
         key = 'ats_homepage'
-        value =  'https://someotherhost.com/loginpage'
+        value =  'https://someotherhost.com/authenticate'
         new_data = { key : value }
         response = send_request('put', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first, new_data)
         assert response.status_code == codes.CREATED
