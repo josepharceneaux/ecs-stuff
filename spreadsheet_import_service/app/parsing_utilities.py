@@ -54,7 +54,6 @@ def convert_spreadsheet_to_table(spreadsheet_file, filename):
                 cell_value = str(int(cell_value))
             if isinstance(cell_value, basestring):
                 cell_value = cell_value.strip()
-
             cell_values.append(cell_value)
 
         table.append(cell_values)
@@ -138,10 +137,8 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
         for i in xrange(0, len(table), 1):
             candidates_list = []
             for row in table[i: i + 1]:
-
                 # Format candidate data
-                first_name, middle_name, last_name, formatted_name, status_id, linkedin_url = \
-                    None, None, None, None, None, None
+                first_name, middle_name, last_name, formatted_name, status_id = None, None, None, None, None
                 emails, phones, areas_of_interest, addresses, degrees = [], [], [], [], []
                 school_names, work_experiences, educations, custom_fields = [], [], [], []
                 skills = []
@@ -172,19 +169,13 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                     elif column_name == 'candidate_email.address':
                         if not is_valid_email(column):
                             error_messages.append({
-                                "message": "{} is an invalid email address".format(column)
+                                "message": "{} is an invalid email address".format(column.encode('utf8') if column else "")
                             })
                             invalid_email = True
                             break
                         emails.append({'address': column})
                     elif column_name == 'candidate_phone.value':
                         phones.append({'value': column})
-                    elif column_name == 'candidate_home_phone.value':
-                        phones.append({'value': column, 'label': 'Home'})
-                    elif column_name == 'candidate_mobile_phone.value':
-                        phones.append({'value': column, 'label': 'Mobile', 'is_default': True})
-                    elif column_name == 'candidate.linkedinUrl':
-                        linkedin_url = column
                     elif column_name == 'candidate.source':
                         source = CandidateSource.query.filter_by(description=column, domain_id=domain_id).all()
                         if len(source):
@@ -315,7 +306,8 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
             else:  # continue with the rest of the spreadsheet imports despite errors returned from candidate-service
                 if response.get('error', ''):
                     error_messages.append(response.get('error'))
-                    logger.error(response.get('error'))
+                    logger.error("SpreadhSheet Import Service: Error while importing candidate because: %s" %
+                                 response.get('error', ""))
                 continue
 
         delete_from_s3(spreadsheet_filename, 'CSVResumes')
@@ -326,11 +318,16 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
             return jsonify(dict(count=len(candidate_ids), status='complete', error_messages=error_messages)), 201
 
     except Exception as e:
-        email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s, S3_URL: %s, Reason: %s" %
-                              (user_id, spreadsheet_filename, get_s3_url('CSVResumes', spreadsheet_filename), e.message),
+        email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s, S3_URL: %s" %
+                              (user_id, spreadsheet_filename, get_s3_url('CSVResumes', spreadsheet_filename)),
                               subject="import_from_csv")
-        logger.error("Error importing from CSV. User ID: %s, S3 filename: %s. Reason: %s" % (
-            user_id, spreadsheet_filename, e.message))
+
+        message = "Error importing from CSV. User ID: %s, S3 filename: %s. Reason: %s" % (
+            user_id, spreadsheet_filename, e)
+
+        logger.error(message)
+        if not is_scheduled:
+            raise InternalServerError(message)
 
 
 def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
@@ -453,4 +450,5 @@ def schedule_spreadsheet_import(import_args):
     except Exception as e:
         raise InternalServerError("Couldn't schedule Spreadsheet import using scheduling service "
                                   "because: %s" % e.message)
+
 
