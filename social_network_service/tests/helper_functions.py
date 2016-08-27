@@ -9,7 +9,6 @@ import datetime
 # Third Party
 import requests
 from requests import codes
-from httmock import urlmatch, response
 
 # Service imports
 from social_network_service.common.models.db import db
@@ -112,22 +111,23 @@ def assert_event(user_id, social_network_event_id):
                                                           social_network_event_id=social_network_event_id)
     assert event
 
-
-# @urlmatch(netloc=r'^((?!%s).)*$' % MEETUP)
-@urlmatch(path=r'google.com')
-def meetup_mock(url, request):
-    status_code = codes.OK
-    headers = {'content-type': 'application/json'}
-    content = {
-        'groups':
-            [
-                {
-                    'urlname': 'QC-Python-Learning',
-                    'id': 18837246
-                }
-            ]
-    }
-    if SocialNetworkApiUrl.EVENTS in request.url and request.method == 'POST':
-        content['id'] = Event.filter_by_keywords(**{'user_id': 1, 'social_network_id': 13})[0].id
-        status_code = codes.CREATED
-    return response(status_code, content, headers, request=request)
+#
+# from httmock import urlmatch, response
+# # @urlmatch(netloc=r'^((?!%s).)*$' % MEETUP)
+# @urlmatch(path=r'google.com')
+# def meetup_mock(url, request):
+#     status_code = codes.OK
+#     headers = {'content-type': 'application/json'}
+#     content = {
+#         'groups':
+#             [
+#                 {
+#                     'urlname': 'QC-Python-Learning',
+#                     'id': 18837246
+#                 }
+#             ]
+#     }
+#     if SocialNetworkApiUrl.EVENTS in request.url and request.method == 'POST':
+#         content['id'] = Event.filter_by_keywords(**{'user_id': 1, 'social_network_id': 13})[0].id
+#         status_code = codes.CREATED
+#     return response(status_code, content, headers, request=request)
