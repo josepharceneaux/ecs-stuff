@@ -43,7 +43,7 @@ from social_network_service.modules.constants import (EVENTBRITE, MEETUP, FACEBO
 
 
 # This is common data for creating test events
-from social_network_service.tests.helper_functions import meetup_mock
+# from social_network_service.tests.helper_functions import meetup_mock
 
 EVENT_DATA = {
     "organizer_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
