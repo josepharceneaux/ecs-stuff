@@ -23,12 +23,22 @@ fake = Faker()
 
 
 def import_spreadsheet_candidates(talent_pool_id, access_token, candidate_data=None,
-                                  spreadsheet_file_name=None, is_csv=True,
-                                  import_candidates=False, domain_custom_field=None):
+                                  spreadsheet_file_name=None, is_csv=True, tags=None,
+                                  import_candidates=False, domain_custom_field=None,):
+    """
+    Function will open the excel/csv file and use its data to send a post request to spreadsheet import
+      service API.
+    NOTE: The columns provided in the excel/csv file must be in the same order as the header_row shown below.
+    :rtype: tuple
+    :returns response text in json format, http status code
+    """
     if domain_custom_field:
         custom_field = 'custom_field.{}'.format(domain_custom_field.id)
     else:
         custom_field = 'custom_field.3'
+
+    if tags:
+        assert isinstance(tags, list)
 
     header_row = [
         'candidate.formattedName', 'candidate.firstName', 'candidate.middleName', 'candidate.lastName',
@@ -66,9 +76,8 @@ def import_spreadsheet_candidates(talent_pool_id, access_token, candidate_data=N
         upload_to_filepicker_s3(file_content=spreadsheet_file_data, file_name=s3_key_name)
 
     if import_candidates:
-        response = requests.post(SpreadsheetImportApiUrl.IMPORT_CANDIDATES, headers=headers,
-                                 data=json.dumps({"file_picker_key": s3_key_name, 'header_row': header_row,
-                                                  'talent_pool_ids': [talent_pool_id]}))
+        data = dict(file_picker_key=s3_key_name, header_row=header_row, talent_pool_ids=[talent_pool_id], tags=tags)
+        response = requests.post(SpreadsheetImportApiUrl.IMPORT_CANDIDATES, headers=headers, data=json.dumps(data))
     else:
         response = requests.get(SpreadsheetImportApiUrl.CONVERT_TO_TABLE, headers=headers,
                                 params={'file_picker_key': s3_key_name})
