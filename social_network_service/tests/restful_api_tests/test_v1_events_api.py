@@ -176,7 +176,6 @@ class TestResourceEvents(object):
         assert event_id > 0, 'Event id should be a positive number'
         test_event['id'] = event_id  # Add created event id  in test_event so it can be deleted in tear_down
 
-    @pytest.mark.skipif(True, reason='TODO: Modify following tests when separate URLs for Eventbrite')
     def test_eventbrite_with_missing_required_fields(self, token_first, eventbrite_missing_data,
                                                      test_eventbrite_credentials):
         """
@@ -191,7 +190,6 @@ class TestResourceEvents(object):
         assert response['error']['code'] == EventInputMissing.error_code, \
             'There should be an missing field error for %s KeyError' % key
 
-    # @pytest.mark.skipif(True, reason='TODO: Modify following tests when meetup sandbox testing issue is resolved')
     def test_meetup_with_valid_address(self, token_first, meetup_event_data, test_meetup_credentials):
         """
         Send Post request with meetup_event data and response should be 201 (event created)

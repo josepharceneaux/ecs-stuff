@@ -8,10 +8,11 @@ import requests
 
 # Application Specific
 from base import SocialNetworkBase
+from social_network_service.social_network_app import logger
+from social_network_service.modules.urls import SocialNetworkUrls as Urls
+from social_network_service.modules.custom_codes import ORGANIZER_ALREADY_EXISTS
 from social_network_service.common.error_handling import InternalServerError, InvalidUsage
 from social_network_service.common.utils.handy_functions import http_request, find_missing_items
-from social_network_service.modules.custom_codes import ORGANIZER_ALREADY_EXISTS
-from social_network_service.social_network_app import logger
 
 
 class Eventbrite(SocialNetworkBase):
@@ -66,32 +67,6 @@ class Eventbrite(SocialNetworkBase):
         """
         self.api_relative_url = "/users/me/"
         super(Eventbrite, self).get_member_id()
-
-    def validate_token(self, payload=None):
-        """
-        :param payload is None in case of Eventbrite as we pass access token
-            in headers:
-        :return: True if access token is valid otherwise False
-        :rtype: bool
-        - Here we set the value of "self.api_relative_url". We then call super
-            class method validate_token() to validate the access token.
-            validate_token() in SocialNetworkBase makes url like
-                url = self.social_network.api_url + self.api_relative_url
-            (This will evaluate in case of Eventbrite as
-                url = 'https://www.eventbriteapi.com/v3' + '/users/me/')
-            After this, it makes a POST call on this url and check if status
-            of response is 2xx.
-
-        - This method is called from validate_and_refresh_access_token()
-            defined in SocialNetworkBase class inside
-            social_network_service/base.py.
-
-        **See Also**
-        .. seealso:: validate_token() function defined in SocialNetworkBase
-            class inside social_network_service/base.py.
-        """
-        self.api_relative_url = '/users/me/'
-        return super(Eventbrite, self).validate_token()
 
     @classmethod
     def get_access_and_refresh_token(cls, user_id, social_network,
@@ -197,7 +172,7 @@ class Eventbrite(SocialNetworkBase):
                 'organizer.description.html': data['about']
             }
         # create url to send post request to create organizer
-        url = "%s/organizers/" % self.api_url
+        url = Urls.get_url(self, Urls.ORGANIZERS)
         response = http_request('POST', url, params=payload,
                                 headers=self.headers,
                                 user_id=self.user.id)

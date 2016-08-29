@@ -19,6 +19,7 @@ from social_network_service.custom_exceptions import EventNotCreated
 from social_network_service.custom_exceptions import TicketsNotCreated
 from social_network_service.custom_exceptions import EventNotPublished
 from social_network_service.custom_exceptions import EventInputMissing
+from social_network_service.modules.urls import SocialNetworkUrls as Urls
 from social_network_service.custom_exceptions import EventLocationNotCreated
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.common.utils.handy_functions import http_request
@@ -341,7 +342,7 @@ class Eventbrite(EventBase):
 
         """
         # create url to post/create event on eventbrite.com
-        url = self.api_url + "/events/"
+        url = Urls.get_url(self, Urls.EVENTS)
         # adding venue for the event or reuse if already created on
         # eventbrite.com
         venue_id = self.add_location()
@@ -488,7 +489,7 @@ class Eventbrite(EventBase):
                 'venue.address.longitude': venue.longitude,
             }
             # create url to send post request to create venue
-            url = self.api_url + "/venues/"
+            url = Urls.get_url(self, Urls.VENUES)
             response = http_request('POST', url, params=payload,
                                     headers=self.headers,
                                     user_id=self.user.id)

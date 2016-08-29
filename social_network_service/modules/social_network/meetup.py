@@ -57,8 +57,7 @@ class Meetup(SocialNetworkBase):
             - https://secure.meetup.com/meetup_api/
     """
     def __init__(self, *args, **kwargs):
-        mock_flag = True if SocialNetworkUrls.IS_DEV else False
-        super(Meetup, self).__init__(*args, mock_flag=mock_flag, **kwargs)
+        super(Meetup, self).__init__(*args, **kwargs)
 
     def get_member_id(self):
         """
@@ -121,31 +120,6 @@ class Meetup(SocialNetworkBase):
             data = json.loads(response.text)['results']
             groups = filter(lambda item: item['organizer']['member_id'] == int(member_id), data)
             return groups
-
-    # def validate_token(self, payload=None):
-    #     """
-    #     :param payload is None in case of Meetup as we pass access token
-    #                 in headers:
-    #     :return: True if access token is valid otherwise False
-    #     :rtype: bool
-    #     - Here we set the value of "self.api_relative_url". We then call super
-    #         class method validate_token() to validate the access token.
-    #         validate_token() in SocialNetworkBase makes url like
-    #             url = self.social_network.api_url + self.api_relative_url
-    #         (This will evaluate in case of Meetup as
-    #             url = 'https://api.meetup.com/2' + '/member/self')
-    #         After this, it makes a POST call on this url and check if status
-    #         of response is 2xx.
-    #
-    #     - This method is called from validate_and_refresh_access_token() defined in
-    #         SocialNetworkBase class inside social_network_service/base.py.
-    #
-    #     **See Also**
-    #     .. seealso:: validate_token() function defined in SocialNetworkBase
-    #         class inside social_network_service/base.py.
-    #     """
-    #     self.api_relative_url = '/member/self'
-    #     return super(Meetup, self).validate_token()
 
     def refresh_access_token(self):
         """

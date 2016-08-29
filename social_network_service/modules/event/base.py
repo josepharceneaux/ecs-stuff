@@ -203,7 +203,6 @@ class EventBase(object):
         self.events = []
         self.rsvps = []
         self.data = None
-        self.mock_flag = False
         self.headers = kwargs.get('headers')
         if kwargs.get('user_credentials') or kwargs.get('user'):
             self.user_credentials = kwargs.get('user_credentials')

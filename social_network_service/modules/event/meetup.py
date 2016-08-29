@@ -14,7 +14,7 @@ from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.modules.constants import MEETUP_VENUE
-from social_network_service.modules.urls import SocialNetworkUrls as Urls, SocialNetworkUrls
+from social_network_service.modules.urls import SocialNetworkUrls as Urls
 from social_network_service.social_network_app import logger
 from social_network_service.modules.utilities import log_error
 from social_network_service.modules.event.base import EventBase
@@ -106,7 +106,6 @@ class Meetup(EventBase):
         self.group_url_name = None
         self.social_network_group_ids = []
         self.social_network_event_id = None
-        self.mock_flag = True if SocialNetworkUrls.IS_DEV else False
         self.start_date = kwargs.get('start_date') or (datetime.utcnow() - timedelta(days=5))
         self.end_date = kwargs.get('end_date') or (datetime.utcnow() + timedelta(days=5))
         self.start_time_since_epoch = milliseconds_since_epoch_local_time(self.start_date)

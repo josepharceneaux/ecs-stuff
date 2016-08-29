@@ -1,32 +1,39 @@
 """
 This file contains URLs of different vendors e.g. Meetup, Eventbrite for social-network-service
 """
+
 __author__ = 'basit'
 
+import os
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.error_handling import InternalServerError
-from social_network_service.common.campaign_services.campaign_utils import CampaignUtils
+from social_network_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 
 
 class SocialNetworkUrls(object):
-
-    IS_DEV = CampaignUtils.IS_DEV
-    MOCK_API = 'mock_api'
-    MEETUP_MOCK = '/meetup-mock'
+    """
+    Here we have URLs for different vendors used in social-network-service
+    """
     VALIDATE_TOKEN = 'validate_token'
     GROUPS = 'groups'
     VENUES = 'venues'
     EVENTS = 'events'
-    EVENT = 'event'
+    ORGANIZERS = 'organizers'
 
     """ Social-Networks """
-    MEETUP = {MOCK_API: SocialNetworkApiUrl.HOST_NAME % MEETUP_MOCK,
-              VALIDATE_TOKEN: '{}/member/self',
+    MEETUP = {VALIDATE_TOKEN: '{}/member/self',
               GROUPS: '{}/groups/',
               VENUES: '{}/venues',
               EVENTS: '{}/event',  # This is singular on Meetup website,
               }
+
+    EVENTBRITE = {
+        VALIDATE_TOKEN: '{}/users/me/',
+        VENUES: '{}/venues/',
+        EVENTS: '{}/events/',
+        ORGANIZERS: '{}/organizers/'
+    }
 
     @classmethod
     def get_url(cls, class_object, key, custom_url=None):
@@ -38,11 +45,7 @@ class SocialNetworkUrls(object):
         :rtype: string
         """
         social_network = getattr(cls, class_object.social_network.name.upper())
-        if class_object.mock_flag:
-            api_url = social_network[cls.MOCK_API]
-        else:
-            api_url = class_object.api_url if not custom_url else custom_url
-
+        api_url = class_object.api_url if not custom_url else custom_url
         try:
             relative_url = social_network[key.lower()]
         except AttributeError as error:

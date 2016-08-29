@@ -185,7 +185,6 @@ class SocialNetworkBase(object):
         """
         self.events = []
         self.api_relative_url = None
-        self.mock_flag = kwargs.get('mock_flag', False)
         self.user, self.social_network = self.get_user_and_social_network(user_id, social_network_id)
         self.user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(self.user.id,
                                                                                               self.social_network.id)
