@@ -32,3 +32,12 @@ def test_text_only_pdfs_are_not_images():
         with open(os.path.join(current_dir, 'files/{}'.format(pdf)), 'rb') as infile:
             data = StringIO(infile.read())
             assert is_resume_image('.pdf', data) is False
+
+
+def test_pdfs_with_images_are_images():
+    current_dir = os.path.dirname(__file__)
+    text_pdfs = ['GET-1319.pdf', 'pic_in_encrypted.pdf']
+    for pdf in text_pdfs:
+        with open(os.path.join(current_dir, 'files/{}'.format(pdf)), 'rb') as infile:
+            data = StringIO(infile.read())
+            assert is_resume_image('.pdf', data)
