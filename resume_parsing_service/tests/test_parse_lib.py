@@ -1,5 +1,5 @@
-import os
 from cStringIO import StringIO
+import os
 
 from resume_parsing_service.app.views.parse_lib import is_resume_image
 
