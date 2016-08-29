@@ -13,6 +13,7 @@ from candidate_service.common.tests.fake_testing_data_generator import generate_
 
 from candidate_service.common.tests.fake_testing_data_generator import college_majors
 from candidate_service.common.models.candidate import EmailLabel, PhoneLabel, CandidateStatus
+from candidate_service.common.models.misc import Product
 
 # Faker
 from faker import Faker
@@ -33,6 +34,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
     :type source_id: int
     :rtype: dict
     """
+    # Format data for areas of interest and custom fields
     aois, cfs = [], []
     if areas_of_interest:
         aois = areas_of_interest
@@ -47,6 +49,9 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
     discipline_2 = random.choice(college_majors().keys())
     major_2 = random.choice(college_majors()[discipline_2])
 
+    # Product IDs are from a static table so 1 should always be available
+    source_product_id = 1  # Mobile
+
     data = {'candidates':
         [
             {
@@ -57,6 +62,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                 'summary': fake.bs(),
                 'status_id': CandidateStatus.DEFAULT_STATUS_ID,
                 'source_id': source_id,
+                'source_product_id': source_product_id,
                 'emails': [
                     {
                         'label': EmailLabel.PRIMARY_DESCRIPTION,

@@ -8,6 +8,7 @@ import pycountry
 
 # Models
 from candidate_service.common.models.candidate import CandidateEmail
+from candidate_service.common.models.misc import Product
 
 # Conftest
 from candidate_service.common.tests.conftest import *
@@ -33,7 +34,6 @@ class TestUpdateCandidateSuccessfully(object):
         """
         Test: Edit the primary information of a full candidate's profile
         """
-        candidate_data_before_update = test_candidate_1
         candidate_id = test_candidate_1['candidate']['id']
 
         update_data = {
@@ -44,7 +44,8 @@ class TestUpdateCandidateSuccessfully(object):
                     'middle_name': fake.first_name(),
                     'last_name': fake.last_name(),
                     'source_id': domain_source_2['source']['id'],
-                    'objective': fake.sentence()
+                    'objective': fake.sentence(),
+                    'source_product_id': 2  # Web
                 }
             ]
         }
@@ -66,6 +67,7 @@ class TestUpdateCandidateSuccessfully(object):
         assert candidate_data['last_name'] == update_data['candidates'][0]['last_name']
         assert candidate_data['source_id'] == update_data['candidates'][0]['source_id']
         assert candidate_data['objective'] == update_data['candidates'][0]['objective']
+        assert candidate_data['source_product_id'] == update_data['candidates'][0]['source_product_id']
 
 
 class TestUpdateCandidate(object):
