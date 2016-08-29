@@ -21,7 +21,7 @@ fake = Faker()
 CURRENT_DATE = datetime.datetime.utcnow()
 
 
-def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, custom_fields=None):
+def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, custom_fields=None, source_id=None):
     """
     Function creates a sample data for Candidate and all of candidate's related fields.
     If domain_id is provided, areas_of_interest and custom_fields will also be created. This is
@@ -30,6 +30,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
     :type talent_pool_ids:      list[int]
     :type areas_of_interest:    list[int]
     :type custom_fields:        list[int]
+    :type source_id: int
     :rtype: dict
     """
     aois, cfs = [], []
@@ -55,6 +56,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
                 'objective': fake.bs(),
                 'summary': fake.bs(),
                 'status_id': CandidateStatus.DEFAULT_STATUS_ID,
+                'source_id': source_id,
                 'emails': [
                     {
                         'label': EmailLabel.PRIMARY_DESCRIPTION,
