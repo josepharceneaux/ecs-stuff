@@ -69,7 +69,7 @@ def import_from_table():
     header_row = posted_data.get('header_row')
     source_id = posted_data.get('source_id')
     talent_pool_ids = posted_data.get('talent_pool_ids', [])
-    tags = posted_data.get('tags', [])
+    tags = posted_data.get('tags') or []
 
     candidate_tags = [{'name': tag_name} for tag_name in tags]
 
