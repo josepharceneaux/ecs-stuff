@@ -105,7 +105,8 @@ def convert_csv_to_table(csv_file):
 
 @celery_app.task()
 def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool_ids,
-                            oauth_token, user_id, is_scheduled=False, source_id=None):
+                            oauth_token, user_id, is_scheduled=False, source_id=None,
+                            formatted_candidate_tags=None):
     """
     This function will create new candidates from information of candidates given in a csv file
     :param source_id: Id of candidates source
@@ -116,6 +117,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
     :param oauth_token: OAuth token of logged-in user
     :param is_scheduled: Is this method called asynchronously ?
     :param user_id: User id of logged-in user
+    :type formatted_candidate_tags: list[dict[str]]
     :return: A dictionary containing number of candidates successfully imported
     :rtype: dict
     """
@@ -132,7 +134,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
         domain_areas_of_interest = get_or_create_areas_of_interest(user.domain_id, include_child_aois=True)
 
         candidate_ids, error_messages = [], []
-        candidate_tags = []
+        candidate_tags = formatted_candidate_tags or []
 
         for i in xrange(0, len(table), 1):
             candidates_list = []
