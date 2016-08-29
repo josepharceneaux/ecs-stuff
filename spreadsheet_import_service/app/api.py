@@ -64,10 +64,14 @@ def import_from_table():
     if not posted_data or 'file_picker_key' not in posted_data or 'header_row' not in posted_data:
         raise InvalidUsage(error_message="Request body is empty or not provided")
 
+    # Format data
     file_picker_key = posted_data.get('file_picker_key')
     header_row = posted_data.get('header_row')
     source_id = posted_data.get('source_id')
     talent_pool_ids = posted_data.get('talent_pool_ids', [])
+    tags = posted_data.get('tags') or []
+
+    candidate_tags = [{'name': tag_name} for tag_name in tags]
 
     if not header_row or not file_picker_key:
         raise InvalidUsage(error_message="FilePicker key or header_row is missing")
@@ -96,8 +100,10 @@ def import_from_table():
 
     if len(candidates_table) > 100:
         import_from_spreadsheet.delay(candidates_table, file_picker_key, header_row, talent_pool_ids,
-                                      request.oauth_token, request.user.id, True, source_id)
+                                      request.oauth_token, request.user.id, True, source_id,
+                                      formatted_candidate_tags=candidate_tags)
         return jsonify(dict(count=len(candidates_table), status='pending')), 201
     else:
         return import_from_spreadsheet(candidates_table, file_picker_key, header_row, talent_pool_ids,
-                                       request.oauth_token, request.user.id, False, source_id)
+                                       request.oauth_token, request.user.id, False, source_id,
+                                       formatted_candidate_tags=candidate_tags)
