@@ -1,5 +1,8 @@
 # Standard Imports
+import urllib
+import os
 import json
+import uuid
 import HTMLParser
 from urllib import urlencode
 from datetime import datetime
@@ -13,7 +16,10 @@ from dateutil.relativedelta import relativedelta
 from email_campaign_service.email_campaign_app import (logger, celery_app)
 
 # Common Utils
-from email_campaign_service.common.models.user import User
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
+from email_campaign_service.email_campaign_app import cache, app
+from email_campaign_service.common.redis_cache import redis_store
+from email_campaign_service.common.models.user import User, Serializer
 from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
@@ -27,6 +33,7 @@ from email_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 
+SIX_MONTHS_EXPIRATION_TIME = 15768000
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
 DEFAULT_LAST_NAME_MERGETAG = "*|LASTNAME|*"
 DEFAULT_PREFERENCES_URL_MERGETAG = "*|PREFERENCES_URL|*"
@@ -54,6 +61,18 @@ def get_candidates_from_smartlist(list_id, candidate_ids_only=False, user_id=Non
     candidates = get_candidates_of_smartlist(list_id=list_id, candidate_ids_only=candidate_ids_only,
                                              access_token=None, user_id=user_id)
     return candidates
+
+
+@cache.cached(timeout=86400, key_prefix="X-TALENT-SERVER-KEY")
+def jwt_security_key():
+    """
+    This function will return secret_key_id against which a secret_id will be stored in redis
+    :return:
+    """
+    secret_key_id = str(uuid.uuid4())[0:10]
+    secret_key = os.urandom(24).encode('hex')
+    redis_store.setex(secret_key_id, secret_key, SIX_MONTHS_EXPIRATION_TIME)
+    return secret_key_id
 
 
 def do_mergetag_replacements(texts, candidate=None):
@@ -86,11 +105,26 @@ def do_mergetag_replacements(texts, candidate=None):
 
 
 def do_prefs_url_replacement(text, candidate_id):
-    unsubscribe_url = CandidateApiUrl.CANDIDATE_PREFERENCE
-    # unsubscribe_url = current.HOST_NAME + URL(scheme=False, host=False, a='web',
-    #                                           c='candidate', f='prefs',
-    #                                           args=[candidate_id],
-    #                                           hmac_key=current.HMAC_KEY)
+
+    assert candidate_id
+
+    if app.config[TalentConfigKeys.ENV_KEY] == 'prod':
+        host_name = 'https://app.gettalent.com/'
+    else:
+        host_name = 'http://staging.gettalent.com/'
+
+    secret_key_id = jwt_security_key()
+    secret_key = redis_store.get(secret_key_id)
+    s = Serializer(secret_key, expires_in=SIX_MONTHS_EXPIRATION_TIME)
+
+    payload = {
+        "candidate_id": candidate_id
+    }
+
+    unsubscribe_url = host_name + ('candidates/%s/preferences?%s' % (str(candidate_id), urllib.urlencode({
+        'secret_key_id': secret_key_id,
+        'token': s.dumps(payload)
+    })))
 
     # In case the user accidentally wrote http://*|PREFERENCES_URL|* or https://*|PREFERENCES_URL|*
     text = text.replace("http://" + DEFAULT_PREFERENCES_URL_MERGETAG, unsubscribe_url)
