@@ -124,6 +124,7 @@ class TestCreateCandidateFromExcelFile(object):
     """
     Class contains functional tests that attempt to create candidate(s) via an excel file
     """
+    #  TODO: flaky tests in builds 5258-5260+
     # def test_candidate_with_tags_and_skills(self, access_token_first, talent_pool, domain_custom_fields):
     #     """
     #     Test: Add candidates with tags & skills column

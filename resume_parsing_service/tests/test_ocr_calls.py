@@ -8,6 +8,7 @@ from resume_parsing_service.common.error_handling import InternalServerError
 
 
 CURRENT_DIR = os.path.dirname(__file__)
+OCR_CHAR_MIN = 5  # Some non-text pictures may have characters returned from OCR.
 
 
 def test_valid_ocr_response():
@@ -54,6 +55,6 @@ def test_invalid_ocr_response():
         try:
             google_response = google_vision_ocr(img_data, timeout=60)
             assert isinstance(google_response, unicode)
-            assert len(google_response) < 5
+            assert len(google_response) < OCR_CHAR_MIN
         except InternalServerError:
             pass
