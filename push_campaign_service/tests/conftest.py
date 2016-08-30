@@ -359,8 +359,9 @@ def candidate_device_first(request, token_first, candidate_first):
     """
     candidate_id = candidate_first['id']
     device_id = test_config['PUSH_CONFIG']['device_id_1']
-    device = {'id':  associate_device_to_candidate(candidate_id, device_id, token_first),
-              'one_signal_id': device_id}
+    retry(associate_device_to_candidate, sleeptime=SLEEP_INTERVAL * 2, attempts=RETRY_ATTEMPTS, sleepscale=1,
+          retry_exceptions=(AssertionError,), args=(candidate_id, device_id, token_first))
+    device = {'one_signal_id': device_id}
 
     def tear_down():
         delete_candidate_device(candidate_id, device_id, token_first, expected_status=(codes.OK,
@@ -380,8 +381,10 @@ def candidate_device_same_domain(request, token_same_domain, candidate_same_doma
     """
     candidate_id = candidate_same_domain['id']
     device_id = test_config['PUSH_CONFIG']['device_id_1']
-    device = {'id':  associate_device_to_candidate(candidate_id, device_id, token_same_domain),
-              'one_signal_id': device_id}
+
+    retry(associate_device_to_candidate, sleeptime=SLEEP_INTERVAL * 2, attempts=RETRY_ATTEMPTS, sleepscale=1,
+          retry_exceptions=(AssertionError,), args=(candidate_id, device_id, token_same_domain))
+    device = {'one_signal_id': device_id}
 
     def tear_down():
         delete_candidate_device(candidate_id, device_id, token_same_domain,
@@ -401,8 +404,10 @@ def candidate_device_second(request, token_second, candidate_second):
     """
     candidate_id = candidate_second['id']
     device_id = test_config['PUSH_CONFIG']['device_id_1']
-    device = {'id':  associate_device_to_candidate(candidate_id, device_id, token_second),
-              'one_signal_id': device_id}
+
+    retry(associate_device_to_candidate, sleeptime=SLEEP_INTERVAL * 2, attempts=RETRY_ATTEMPTS, sleepscale=1,
+          retry_exceptions=(AssertionError,), args=(candidate_id, device_id, token_second))
+    device = {'one_signal_id': device_id}
 
     def tear_down():
         delete_candidate_device(candidate_id, device_id, token_second, expected_status=(codes.OK,
