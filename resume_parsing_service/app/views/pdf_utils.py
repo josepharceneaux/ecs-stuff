@@ -13,7 +13,7 @@ def convert_pdf_to_text(pdf_file_obj):
     Attempts to extract text from an unencrypted PDF file. This is to see if the PDF has text
     contents or if it is an embedded picture.
     :param cStringIO pdf_file_obj: PDF file object to be converted
-    :rtype: str
+    :rtype: string
     """
     pdf_file_obj.seek(0)
     pdf_reader = PyPDF2.PdfFileReader(pdf_file_obj)
@@ -26,7 +26,7 @@ def convert_pdf_to_text(pdf_file_obj):
 
         if new_text:
             text += new_text
-            pages_with_text =+ 1
+            pages_with_text += 1
 
     """
     For the time being (8/13/16) we are assuming it is a picture based resume.

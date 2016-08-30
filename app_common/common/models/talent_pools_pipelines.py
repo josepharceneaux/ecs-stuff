@@ -80,13 +80,13 @@ class TalentPoolGroup(db.Model):
 class TalentPipeline(db.Model):
     __tablename__ = 'talent_pipeline'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.TEXT)
     positions = db.Column(db.Integer, default=1, nullable=False)
     date_needed = db.Column(db.DateTime, nullable=False)
     user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id'), nullable=False)
-    search_params = db.Column(db.String(1023))
+    search_params = db.Column(db.TEXT)
     is_hidden = db.Column(TINYINT, default='0', nullable=False)
     added_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow,
@@ -129,7 +129,8 @@ class TalentPipeline(db.Model):
         db.session.commit()
 
     def to_dict(self, include_stats=False, get_stats_function=None, include_growth=False, interval=None,
-                get_growth_function=None):
+                get_growth_function=None, include_candidate_count=False, get_candidate_count=None,
+                email_campaign_count=False):
 
         talent_pipeline = {
             'id': self.id,
@@ -145,6 +146,10 @@ class TalentPipeline(db.Model):
             'added_time': self.added_time.isoformat(),
             'updated_time': self.updated_time.isoformat()
         }
+        if email_campaign_count:
+            talent_pipeline['total_email_campaigns'] = self.get_email_campaigns_count()
+        if include_candidate_count and get_candidate_count:
+            talent_pipeline['total_candidates'] = get_candidate_count(self, datetime.utcnow())
         if include_growth and interval and get_growth_function:
             talent_pipeline['growth'] = get_growth_function(self, int(interval))
         if include_stats and get_stats_function:

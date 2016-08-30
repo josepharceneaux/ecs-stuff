@@ -124,8 +124,14 @@ class TestCreateCandidateEmail(object):
         }
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == requests.codes.BAD
-        assert create_resp.json()['error']['code'] == custom_error.INVALID_USAGE
+        assert create_resp.status_code == requests.codes.CREATED
+
+        # Retrieve candidate's emails and assert that only one email has been added
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+
+        assert len(get_resp.json()['candidate']['emails']) == 1
+
 
     def test_add_duplicate_candidate_with_same_email(self, access_token_first, talent_pool):
         """
@@ -387,7 +393,7 @@ class TestDeleteCandidateEmail(object):
         assert resp.status_code == requests.codes.NOT_FOUND
 
     def test_delete_email_of_a_candidate_belonging_to_a_diff_user(self, access_token_first, talent_pool,
-                                                                  user_second, access_token_second):
+                                                                  access_token_second):
         """
         Test:   Attempt to delete the email of a Candidate that belongs
                 to a different user from a different domain

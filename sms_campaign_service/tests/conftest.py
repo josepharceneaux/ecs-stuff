@@ -78,7 +78,6 @@ def data_for_different_users_of_same_domain(request, access_token_first, access_
     if request.param == 'user_first':
         return {'access_token': access_token_first, 'user': user_first, 'headers': headers}
     elif request.param == 'user_same_domain':
-        CampaignsTestsHelpers.assign_roles(user_same_domain)
         return {'access_token': access_token_same, 'user': user_same_domain, 'headers': headers_same_domain}
 
 
@@ -155,7 +154,7 @@ def smartlist_with_two_candidates(access_token_first, talent_pipeline):
     This creates a smartlist with two candidates
     """
     smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_first, talent_pipeline, count=2, create_phone=True, assign_role=True)
+        access_token_first, talent_pipeline, count=2, create_phone=True)
     return smartlist_id, candidate_ids
 
 
@@ -165,7 +164,7 @@ def smartlist_with_two_candidates_in_other_domain(access_token_other, talent_pip
     This creates a smartlist with two candidates for user_from_diff_domain
     """
     smartlist_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token_other, talent_pipeline_other, count=2, create_phone=True, assign_role=True)
+        access_token_other, talent_pipeline_other, count=2, create_phone=True)
     return smartlist_id, candidate_ids
 
 

@@ -27,10 +27,10 @@ def test_call_requires_auth(token_fixture):
     test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1'
     response = requests.get(test_url, headers={'Authorization': 'Bearer {}'.format(
         token_fixture.access_token)})
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.ok
     #this should become its own test
     response = requests.get(test_url, headers={'Authorization': 'Bearer bad_token'})
-    assert response.status_code == 401
+    assert response.status_code == requests.codes.unauthorized
 
 
 def test_reponse_is_user_filtered(token_fixture):
@@ -56,24 +56,53 @@ def test_basic_post(user_fixture, token_fixture):
                                  'content-type': 'application/json'},
                              data=json.dumps(dict(
                                  user_id=user_fixture.id,
-                                 type=99,
+                                 type=Activity.MessageIds.CANDIDATE_CREATE_WEB,
                                  source_table='test',
                                  source_id='1337',
                                  params={'lastName': random_word(6), 'firstName': random_word(8)}
                              )))
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.created
 
 
 def test_recent_readable(token_fixture):
     test_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
     response = requests.get(test_url,
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.ok
     assert len(json.loads(response.content)['activities']) == 1
     assert json.loads(response.content)['activities'][0]['count'] == 4
     assert json.loads(response.content)['activities'][0]['image'] == 'notification.png'
     assert json.loads(response.content)['activities'][0]['readable_text'] == '4 users have joined'
 
+
+def test_bulk_create_and_read(user_fixture, token_fixture):
+    CREATE_URL = ActivityApiUrl.ACTIVITIES
+    READ_URL = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
+    HEADERS = {
+         'Authorization': 'Bearer {}'.format(token_fixture.access_token),
+         'content-type': 'application/json'
+    }
+
+    # Test `bulk` async write
+    for i in xrange(200):
+        payload = json.dumps(
+            dict(
+                 user_id=user_fixture.id,
+                 type=Activity.MessageIds.CANDIDATE_CREATE_WEB,
+                 source_table='test',
+                 source_id='1337',
+                 params={'lastName': random_word(6), 'firstName': random_word(8)}
+            )
+        )
+        response = requests.post(CREATE_URL, headers=HEADERS, data=payload)
+        assert response.status_code == requests.codes.created
+
+    # Test `bulk` async read
+    for _ in xrange(5):
+        response = requests.get(
+            READ_URL, headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)}
+        )
+        assert response.status_code == requests.codes.ok
 
 def test_pipeline_create_and_read(user_fixture, token_fixture):
     # Create a pipeline activity.
@@ -89,12 +118,12 @@ def test_pipeline_create_and_read(user_fixture, token_fixture):
                                  source_id='1337',
                                  params={'username': user_fixture.first_name, 'name': 'test_PL1'}
                              )))
-    assert post_response.status_code == 200
+    assert post_response.status_code == requests.codes.created
     # Fetch the recent readable data
     aggregate_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
     aggregate_response = requests.get(aggregate_url,
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
-    assert aggregate_response.status_code == 200
+    assert aggregate_response.status_code == requests.codes.ok
     activities = json.loads(aggregate_response.content)
     assert {u'count': 1, u'image': u'pipeline.png', u'readable_text': u'You created a pipeline: <b>test_PL1</b>.'} in activities['activities']
 
@@ -112,12 +141,12 @@ def test_talentPool_create_and_read(user_fixture, token_fixture):
                                  source_id='1337',
                                  params={'username': user_fixture.first_name, 'name': 'test_pool1'}
                              )))
-    assert post_response.status_code == 200
+    assert post_response.status_code == requests.codes.created
     # Fetch the recent readable data
     aggregate_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
     aggregate_response = requests.get(aggregate_url,
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
-    assert aggregate_response.status_code == 200
+    assert aggregate_response.status_code == requests.codes.ok
     activities = json.loads(aggregate_response.content)
     assert {u'count': 1, u'image': u'talent_pool.png', u'readable_text': u'You created a Talent Pool: <b>test_pool1</b>.'} in activities['activities']
 
@@ -136,20 +165,20 @@ def test_dumblist_create_and_read(user_fixture, token_fixture):
                                  source_id='1337',
                                  params={'name': 'dumblist1'}
                              )))
-    assert post_response.status_code == 200
+    assert post_response.status_code == requests.codes.created
     # Fetch the recent readable data
     aggregate_url = ActivityApiUrl.ACTIVITIES_PAGE % '1?aggregate=1'
     aggregate_response = requests.get(aggregate_url,
                             headers={'Authorization': 'Bearer {}'.format(token_fixture.access_token)})
-    assert aggregate_response.status_code == 200
+    assert aggregate_response.status_code == requests.codes.ok
     activities = json.loads(aggregate_response.content)
     assert {u'count': 1, u'image': u'dumblist.png', u'readable_text': u'You created a list: <b>dumblist1</b>.'} in activities['activities']
 
 
 def test_health_check():
     response = requests.get(ActivityApiUrl.HEALTH_CHECK)
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.ok
 
     # Testing Health Check URL with trailing slash
     response = requests.get(ActivityApiUrl.HEALTH_CHECK + '/')
-    assert response.status_code == 200
+    assert response.status_code == requests.codes.ok

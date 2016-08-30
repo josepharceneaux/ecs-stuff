@@ -101,13 +101,18 @@ def create_or_update_references(candidate_id, references, is_creating=False,
     """
     created_or_updated_reference_ids = []
     for reference in references:
+
+        person_name = (reference.get('name') or '').strip()
+        position_title = (reference.get('position_title') or '').strip()
+        comments = (reference.get('comments') or '').strip()
+
         candidate_reference_dict = dict(
-            person_name=reference.get('name'),
-            position_title=reference.get('position_title'),
-            comments=reference.get('comments')
+            person_name=person_name,
+            position_title=position_title,
+            comments=comments
         )
         # Strip each value & remove keys with empty values
-        candidate_reference_dict = purge_dict(candidate_reference_dict)
+        candidate_reference_dict = purge_dict(candidate_reference_dict, strip=False)
 
         # Prevent inserting empty records in db
         if not candidate_reference_dict:
@@ -130,7 +135,8 @@ def create_or_update_references(candidate_id, references, is_creating=False,
 
         if reference_email:  # add reference's email info
             default_label = EmailLabel.PRIMARY_DESCRIPTION
-            email_label = default_label if not reference_email.get('label') else reference_email['label'].strip().title()
+            email_label = default_label if not reference_email.get('label') else reference_email[
+                'label'].strip().title()
             value = reference_email['address'].strip() if reference_email.get('address') else None
             reference_email_dict = dict(
                 email_label_id=EmailLabel.email_label_id_from_email_label(email_label) if value else None,
@@ -147,7 +153,8 @@ def create_or_update_references(candidate_id, references, is_creating=False,
 
         if reference_phone:  # add reference's phone info if provided
             default_label = PhoneLabel.DEFAULT_LABEL
-            phone_label = default_label if not reference_phone.get('label') else reference_phone['label'].strip().title()
+            phone_label = default_label if not reference_phone.get('label') else reference_phone[
+                'label'].strip().title()
             value = reference_phone['value'].strip() if reference_phone.get('value') else None
             phone_number_dict = format_phone_number(value) if value else None
             reference_phone_dict = dict(
@@ -190,12 +197,22 @@ def add_reference(candidate_id, reference_dict):
     :rtype  int | None
     """
     reference_name = reference_dict.get('person_name')
-    if not CandidateReference.query.filter_by(candidate_id=candidate_id, person_name=reference_name).first():
+    if not reference_name:
+        raise InvalidUsage("Reference's name is required", custom_error.INVALID_USAGE)
+
+    duplicate_reference_note = CandidateReference.query.filter_by(candidate_id=candidate_id,
+                                                                  person_name=reference_name,
+                                                                  comments=reference_dict.get('comments')).first()
+    if not duplicate_reference_note:
         candidate_reference = CandidateReference(**reference_dict)
         db.session.add(candidate_reference)
         db.session.flush()
         return candidate_reference.id
-    return None
+    else:
+        raise InvalidUsage(error_message="Reference already exists for candidate",
+                           error_code=custom_error.REFERENCE_EXISTS,
+                           additional_error_info={'reference_id': duplicate_reference_note.id,
+                                                  'candidate_id': candidate_id})
 
 
 def update_reference(candidate_id, reference_id, reference_dict):

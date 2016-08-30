@@ -1,3 +1,6 @@
+# Standard library
+import requests
+
 # Flask specific
 from flask import request
 from flask_restful import Resource
@@ -45,11 +48,12 @@ class CandidateNotesResource(Resource):
         if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
             raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
 
-        note_ids = add_notes(candidate_id=candidate_id, data=body_dict['notes'])
+        note_ids = add_notes(candidate_id=candidate_id, user_id=authed_user.id, data=body_dict['notes'])
 
         # Update cloud search
         upload_candidate_documents([candidate_id])
-        return {'candidate_notes': [{'id': note_id} for note_id in note_ids]}, 201
+
+        return {'candidate_notes': [{'id': note_id} for note_id in note_ids]}, requests.codes.CREATED
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATE_NOTES)
     def get(self, **kwargs):

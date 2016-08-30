@@ -359,6 +359,14 @@ def test_626b(token_fixture, user_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'GET_626b.doc')
     assert_non_create_content_and_status(content, status)
 
+
+def test_no_name_defaults_to_email_or_none(token_fixture, user_fixture):
+    """Adds test case for old previously crashing resume. Adding for code coverage"""
+    content, status = fetch_resume_post_response(token_fixture, 'noname.doc')
+    assert_non_create_content_and_status(content, status)
+    assert content['candidate']['first_name'] is None
+    assert content['candidate']['last_name'] is None
+
 ####################################################################################################
 # Test Candidate Creation
 ####################################################################################################
@@ -438,10 +446,27 @@ def test_create_from_jpgTxtPdf(token_fixture, user_fixture):
 ####################################################################################################
 def test_already_exists_candidate(token_fixture, user_fixture):
     """Test that v1.5 pdf files can be posted."""
-    unused_create_response = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
-    print "\nunused_create_response: {}".format(unused_create_response)
-    update_content, status = fetch_resume_post_response(token_fixture, 'test_bin.pdf', create_mode=True)
-    assert_create_or_update_content_and_status(update_content, status)
+    resumes_to_update = ['Aleksandr_Tenishev_2016_02.doc',
+        'Apoorva-Resume_SynergesticIT.pdf',
+        'Foti Resume May 2016.pdf', 'James_Xie_Resume_2016.doc',
+        'Mondal_Tej_20140522_dev.docx', 'My Resume.docx',
+        'NealMcMillenResumeJan2016-2.pdf',
+        'Resume (CA) .pdf', 'summary.docx',
+        'Resume Nikhil Moorjani.pdf',
+        'Resume-3.doc', 'Resume-Patrick-Ritz-2016(FE).docx', 'Resume.pdf',
+        'resume_fan updated.docx', 'resume_hong.pdf', 'Sean Whitcomb_Resume_2016_R2.docx',
+        'Sergey Ostrovsky Resume 2016.docx', 'SteveSun-Resume.pdf', 'TD bio.pdf', 'Bharani Krishna Resume.docx'
+        # The following resumes cannot be updated due to current candidate_edit table rules.
+        # 'Yehle - Resume Java  ECM.DOCX','Aparna_Resume.pdf', 'kennyyee_cv.pdf',
+        # 'NamrataOjhaSoftwareDevloper .pdf', 'NikhilSyavasyaResumeV4.0.pdf', 'Resume (CS).pdf',
+        # 'Resume_SDE_VickyYang.pdf', 'Supriya Grandhi Resume.docx.rtf', 'VivekTiwari.pdf',
+        # 'Waheed Chuahdary - Web Analytics.pdf'
+    ]
+
+    for resume in resumes_to_update:
+        unused_create_response = fetch_resume_post_response(token_fixture, resume, create_mode=True)
+        update_content, status = fetch_resume_post_response(token_fixture, resume, create_mode=True)
+        assert_create_or_update_content_and_status(update_content, status)
 
 
 ####################################################################################################
@@ -450,7 +475,7 @@ def test_already_exists_candidate(token_fixture, user_fixture):
 def fetch_resume_post_response(token_fixture, file_name, create_mode=False):
     """Posts file to local test auth server for json formatted resumes."""
     current_dir = os.path.dirname(__file__)
-    with open(os.path.join(current_dir, 'resume_files/{}'.format(file_name)), 'rb') as resume_file:
+    with open(os.path.join(current_dir, 'files/{}'.format(file_name)), 'rb') as resume_file:
         response = requests.post(ResumeApiUrl.PARSE,
                                  headers={'Authorization': 'Bearer {}'.format(
                                      token_fixture.access_token)},

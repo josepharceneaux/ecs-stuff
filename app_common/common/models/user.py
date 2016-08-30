@@ -254,7 +254,7 @@ class Domain(db.Model):
     default_tracking_code = db.Column('DefaultTrackingCode', db.SmallInteger)
     default_culture_id = db.Column('DefaultCultureId', db.Integer, default=1)
     settings_json = db.Column('SettingsJson', db.Text)
-    expiration = db.Column('Expiration', db.DateTime)
+    expiration = db.Column('Expiration', db.TIMESTAMP)
     added_time = db.Column('AddedTime', db.DateTime)
     default_from_name = db.Column('DefaultFromName', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
@@ -286,6 +286,25 @@ class Domain(db.Model):
         session.add(domain)
         session.commit()
         return domain
+
+    def to_dict(self):
+        """
+        This method will convert a domain object in JSON dictionary
+        :return:
+        """
+
+        return {
+            "id": self.id,
+            "name": self.name,
+            "organization_id": self.organization_id,
+            "default_culture_id": self.default_culture_id,
+            "added_time": self.added_time.replace(
+                    tzinfo=pytz.UTC).isoformat() if self.added_time else None,
+            "updated_time": self.updated_time.replace(
+                    tzinfo=pytz.UTC).isoformat() if self.updated_time else None,
+            "dice_company_id": self.dice_company_id,
+            "is_disabled": True if self.is_disabled == 1 else False
+        }
 
 
 class WebAuthGroup(db.Model):
@@ -743,6 +762,7 @@ class UserSocialNetworkCredential(db.Model):
     access_token = db.Column('AccessToken', db.String(1000))
     social_network = db.relationship("SocialNetwork", backref=db.backref(
         'user_social_network_credential', cascade="all, delete-orphan"))
+    updated_datetime = db.Column('UpdatedDatetime', db.DateTime, nullable=True)
 
     @classmethod
     def get_all_credentials(cls, social_network_id=None):

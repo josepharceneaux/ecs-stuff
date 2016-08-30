@@ -6,6 +6,7 @@ from datetime import datetime
 
 MAX_INT = sys.maxint
 CURRENT_YEAR = datetime.now().year
+MAX_SOURCE_PRODUCT_ID = 4
 
 candidates_resource_schema_post = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -49,6 +50,11 @@ candidates_resource_schema_post = {
                         "type": ["integer", "null"],
                         "minimum": 1,
                         "maximum": MAX_INT
+                    },
+                    "source_product_id": {
+                        "type": ["integer", "null"],
+                        "minimum": 1,
+                        "maximum": MAX_SOURCE_PRODUCT_ID
                     },
                     "objective": {
                         "type": ["string", "null"]
@@ -154,6 +160,13 @@ candidates_resource_schema_post = {
                                 "value": {
                                     "type": ["string", "null"],
                                     "maxLength": 255
+                                },
+                                "values": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    }
                                 }
                             }
                         }
@@ -605,6 +618,11 @@ candidates_resource_schema_patch = {
                         "type": ["integer", "null"],
                         "minimum": 1,
                         "maximum": MAX_INT
+                    },
+                    "source_product_id": {
+                        "type": ["integer", "null"],
+                        "minimum": 1,
+                        "maximum": MAX_SOURCE_PRODUCT_ID
                     },
                     "objective": {
                         "type": ["string", "null"]

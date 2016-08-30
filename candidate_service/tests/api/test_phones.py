@@ -127,8 +127,8 @@ class TestAddCandidatePhones(object):
     def test_add_candidate_with_duplicate_phone_number(self, access_token_first, talent_pool):
         """
         Test: Add candidate using identical phone numbers
+        Expect: Successful response but only one of the phone numbers should be added to the candidate's profile
         """
-
         # Create candidate with identical phone numbers
         phone_number = fake.phone_number()
         data = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]}, 'phones': [
@@ -136,8 +136,15 @@ class TestAddCandidatePhones(object):
         ]}]}
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == requests.codes.BAD
-        assert create_resp.json()['error']['code'] == custom_error.INVALID_USAGE
+        assert create_resp.status_code == requests.codes.CREATED
+
+        # Retrieve candidate and assert that it has only one phone number
+        candidate_id = create_resp.json()['candidates'][0]['id']
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_resp)
+
+        candidate_created_phones = get_resp.json()['candidate']['phones']
+        assert len(candidate_created_phones) == 1
 
     def test_add_candidate_using_an_existing_number(self, access_token_first, talent_pool):
         """
@@ -152,8 +159,9 @@ class TestAddCandidatePhones(object):
         # Create another candidate using the same phone number as above
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == requests.codes.FORBIDDEN
-        assert create_resp.json()['error']['code'] == custom_error.PHONE_FORBIDDEN
+        assert create_resp.status_code == requests.codes.BAD
+        assert create_resp.json()['error']['code'] == custom_error.CANDIDATE_ALREADY_EXISTS
+        assert 'id' in create_resp.json()['error']
 
     def test_add_multiple_default_phones(self, access_token_first, talent_pool):
         """
@@ -173,7 +181,7 @@ class TestAddCandidatePhones(object):
 
 
 class TestUpdateCandidatePhones(object):
-    def test_add_invlid_phone_number(self, access_token_first, candidate_first):
+    def test_add_invalid_phone_number(self, access_token_first, candidate_first):
         """
         Test:  Add invalid phone numbers to candidate's profile
         Expect: 400; phone numbers should not be added to candidate's profile

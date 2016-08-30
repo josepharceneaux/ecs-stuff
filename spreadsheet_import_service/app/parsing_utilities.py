@@ -15,6 +15,7 @@ import requests
 from flask import request, jsonify
 from spreadsheet_import_service.app import logger, app, celery_app
 from spreadsheet_import_service.common.utils.talent_s3 import *
+from spreadsheet_import_service.common.utils.validators import is_valid_email
 from spreadsheet_import_service.common.models.user import User, db
 from spreadsheet_import_service.common.models.misc import AreaOfInterest
 from spreadsheet_import_service.common.models.candidate import CandidateSource
@@ -51,8 +52,9 @@ def convert_spreadsheet_to_table(spreadsheet_file, filename):
             cell_value = cell.value
             if isinstance(cell_value, float):  # there should be no float-type data
                 cell_value = str(int(cell_value))
-            if cell_value:
-                cell_values.append(cell_value)
+            if isinstance(cell_value, basestring):
+                cell_value = cell_value.strip()
+            cell_values.append(cell_value)
 
         table.append(cell_values)
     table = [row for row in table if row]
@@ -103,7 +105,8 @@ def convert_csv_to_table(csv_file):
 
 @celery_app.task()
 def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool_ids,
-                            oauth_token, user_id, is_scheduled=False, source_id=None):
+                            oauth_token, user_id, is_scheduled=False, source_id=None,
+                            formatted_candidate_tags=None):
     """
     This function will create new candidates from information of candidates given in a csv file
     :param source_id: Id of candidates source
@@ -114,6 +117,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
     :param oauth_token: OAuth token of logged-in user
     :param is_scheduled: Is this method called asynchronously ?
     :param user_id: User id of logged-in user
+    :type formatted_candidate_tags: list[dict[str]]
     :return: A dictionary containing number of candidates successfully imported
     :rtype: dict
     """
@@ -129,13 +133,17 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
         domain_areas_of_interest = get_or_create_areas_of_interest(user.domain_id, include_child_aois=True)
 
-        candidate_ids, error_messages = [], []
-        for i in xrange(0, len(table), 50):
+        candidate_ids, erroneous_data = [], []
+        candidate_tags = formatted_candidate_tags or []
+
+        for i in xrange(0, len(table), 1):
             candidates_list = []
-            for row in table[i: i + 50]:
-                first_name, middle_name, last_name, formatted_name, status_id,  = None, None, None, None, None
+            for row in table[i: i + 1]:
+                # Format candidate data
+                first_name, middle_name, last_name, formatted_name, status_id = None, None, None, None, None
                 emails, phones, areas_of_interest, addresses, degrees = [], [], [], [], []
                 school_names, work_experiences, educations, custom_fields = [], [], [], []
+                skills = []
                 talent_pool_dict = {'add': talent_pool_ids}
 
                 this_source_id = source_id
@@ -162,7 +170,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                     elif column_name == 'candidate_email.address':
                         emails.append({'address': column})
                     elif column_name == 'candidate_phone.value':
-                            phones.append({'value': column})
+                        phones.append({'value': column})
                     elif column_name == 'candidate.source':
                         source = CandidateSource.query.filter_by(description=column, domain_id=domain_id).all()
                         if len(source):
@@ -235,6 +243,11 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                         prepare_candidate_data(addresses, 'zip_code', column)
                     elif column_name == 'candidate_address.country_code':
                         prepare_candidate_data(addresses, 'country_code', column)
+                    elif column_name == 'candidate.tags':
+                        prepare_candidate_data(candidate_tags, 'name', column)
+                    elif column_name == 'candidate.skills':
+                        prepare_candidate_data(skills, 'name', column)
+
                     elif 'custom_field.' in column_name:
                         custom_fields_dict = {}
                         if isinstance(column, basestring):
@@ -272,32 +285,44 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                                             source_id=this_source_id,
                                             talent_pool_ids=talent_pool_dict,
                                             areas_of_interest=areas_of_interest,
-                                            custom_fields=custom_fields))
+                                            custom_fields=custom_fields,
+                                            skills=skills))
 
-            status_code, response = create_candidates_from_parsed_spreadsheet(candidates_list, oauth_token)
+            created, response = create_candidates_from_parsed_spreadsheet(candidates_list, oauth_token,
+                                                                          tags=candidate_tags)
 
-            if status_code == 201:
-                response_candidate_ids = [candidate.get('id') for candidate in response.get('candidates')]
+            if created:
+                response_candidate_ids = [candidate.get('id') for candidate in response.get('candidates', [])]
                 candidate_ids += response_candidate_ids
-                logger.info("Successfully imported %s candidates with ids: (%s)", len(response_candidate_ids), response_candidate_ids)
+                logger.info("Successfully imported %s candidates with ids: (%s)",
+                            len(response_candidate_ids), response_candidate_ids)
             else:  # continue with the rest of the spreadsheet imports despite errors returned from candidate-service
-                error_messages.append(response.get('error'))
-                logger.error(response.get('error'))
+                logger.error("SpreadSheet Import Service: Error while importing candidate: `%s` in file: `%s`" % (
+                    table[i], get_s3_url('CSVResumes', spreadsheet_filename)))
+                erroneous_data.append(table[i])
                 continue
 
-        delete_from_s3(spreadsheet_filename, 'CSVResumes')
+        logger.info("SpreadSheet Import Service: Successfully imported %s candidates from CSV: User %s" % (
+            len(candidate_ids), user.id))
 
-        logger.info("Successfully imported %s candidates from CSV: User %s, Error Messages %s" % (len(
-                candidate_ids), user.id, error_messages))
+        if erroneous_data:
+            email_error_to_admins("Error importing from CSV. User ID: %s, S3_URL: %s, Candidate_Data: %s" % (
+                user_id, get_s3_url('CSVResumes', spreadsheet_filename), erroneous_data), subject="import_from_csv")
+
         if not is_scheduled:
-            return jsonify(dict(count=len(candidate_ids), status='complete', error_messages=error_messages)), 201
+            return jsonify(dict(count=len(candidate_ids), status='complete')), 201
 
     except Exception as e:
-        email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s, S3_URL: %s" %
-                              (user_id, spreadsheet_filename, get_s3_url('CSVResumes', spreadsheet_filename)),
-                              subject="import_from_csv")
-        raise InvalidUsage(error_message="Error importing from CSV. User ID: %s, S3 filename: %s. Reason: %s" %
-                                         (user_id, spreadsheet_filename, e.message))
+
+        email_error_to_admins("Error importing from CSV. User ID: %s, S3_URL: %s, Error: %s" % (
+            user_id, get_s3_url('CSVResumes', spreadsheet_filename), e), subject="import_from_csv")
+
+        message = "Error importing from CSV. User ID: %s, S3 filename: %s. Reason: %s" % (
+            user_id, spreadsheet_filename, e)
+
+        logger.error(message)
+        if not is_scheduled:
+            raise InternalServerError(message)
 
 
 def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
@@ -328,7 +353,7 @@ def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
     return areas
 
 
-def create_candidates_from_parsed_spreadsheet(candidate_dicts, oauth_token):
+def create_candidates_from_parsed_spreadsheet(candidate_dicts, oauth_token, tags=None):
     """
     Create a new candidate using candidate_service
     :param candidate_dicts: A list of dicts containing information for new candidates
@@ -336,13 +361,53 @@ def create_candidates_from_parsed_spreadsheet(candidate_dicts, oauth_token):
     :return: A dictionary containing IDs of newly created candidates
     :rtype: dict
     """
-    r = requests.post(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': candidate_dicts}),
-                      headers={'Authorization': oauth_token, 'content-type': 'application/json'})
+    headers = {'Authorization': oauth_token, 'content-type': 'application/json'}
+    r = requests.post(CandidateApiUrl.CANDIDATES,
+                      data=json.dumps({'candidates': candidate_dicts}),
+                      headers=headers)
+
+    status_code = r.status_code
+
+    candidate_id = r.json()['candidates'][0]['id'] if status_code == 201 else None
+
+    # Creating candidate's tags
+    # For now we will ignore errors obtained by this endpoint - Amir
+    if tags and candidate_id:
+        requests.post(CandidateApiUrl.TAGS % str(candidate_id), headers=headers, data=json.dumps({'tags': tags}))
 
     try:
-        return r.status_code, r.json()
+        candidates_response = r.json()
+        if status_code != requests.codes.CREATED:
+            if candidates_response.get('error', {}).get('id'):
+                candidate_dicts[0]['id'] = candidates_response.get('error', {}).get('id')
+                is_updated, update_response = update_candidate_from_parsed_spreadsheet(candidate_dicts, oauth_token)
+                if is_updated:
+                    return True, update_response
+                else:
+                    return False, update_response
+            else:
+                return False, candidates_response
+        else:
+            return True, candidates_response
+
     except:
-        return r.status_code, {"error": "Couldn't create candidate from candidate dict %s" % candidate_dicts}
+        return False, {"error": "Couldn't create/update candidate from candidate dict %s" % candidate_dicts}
+
+
+def update_candidate_from_parsed_spreadsheet(candidate_dicts, oauth_token):
+    """
+    This method will update an already existing candidates from candidate dict
+    :param candidate_dicts: Dictionaries of candidates to be cretaed
+    :param oauth_token:
+    :return:
+    """
+    r = requests.patch(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': candidate_dicts}),
+                       headers={'Authorization': oauth_token, 'content-type': 'application/json'})
+
+    if r.status_code == 200:
+        return True, {}
+    else:
+        return False, r.json()
 
 
 def prepare_candidate_data(data_array, key, value):
@@ -380,3 +445,5 @@ def schedule_spreadsheet_import(import_args):
     except Exception as e:
         raise InternalServerError("Couldn't schedule Spreadsheet import using scheduling service "
                                   "because: %s" % e.message)
+
+

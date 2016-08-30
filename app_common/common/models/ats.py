@@ -115,10 +115,16 @@ class ATSCandidate(db.Model):
     """
     __tablename__ = 'ats_candidate'
     id = db.Column(db.Integer, primary_key=True)
+    # ID in ATS table
     ats_account_id = db.Column(db.Integer)
+    # Candidate ID in the remote ATS
     ats_remote_id = db.Column(db.String(100))
+    # getTalent candidate ID, if linked
     gt_candidate_id = db.Column(db.Integer)
+    # ID into the ATSCandidateProfile table
     profile_id = db.Column(db.Integer)
+    # ID into an ATS-specific table
+    ats_table_id = db.Column(db.Integer)
     added_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
@@ -160,6 +166,18 @@ class ATSCandidate(db.Model):
             return_json.append({c.id : item})
 
         return json.dumps(return_json)
+
+    @classmethod
+    def get_by_ats_id(cls, account_id, ats_id):
+        """
+        Retrive a candidate by ATS account and remote ATS id.
+
+        :param int account_id: primary key of the account.
+        :param int ats_id: Id of the candidate in the remote ATS.
+        :rtype list: A candidate.
+        """
+        # TODO Test this.
+        return cls.query.filter(cls.ats_account_id==account_id, cls.ats_remote_id==ats_id).first()
 
     def __repr__(self):
         return "<ATS Candidate (id = %r)>" % self.ats_remote_id

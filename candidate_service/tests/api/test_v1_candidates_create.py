@@ -12,18 +12,20 @@ from candidate_service.common.tests.conftest import *
 # Helper functions
 from helpers import get_country_code_from_name, order_military_services, order_work_experiences
 from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.common.routes import UserServiceApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.utils.validators import get_phone_number_extension_if_exists
 from candidate_service.common.utils.iso_standards import get_country_name
 
 # Sample data
 from candidate_sample_data import (
-    GenerateCandidateData, generate_single_candidate_data, candidate_phones, candidate_military_service,
+    GenerateCandidateData, generate_single_candidate_data, candidate_military_service,
     candidate_preferred_locations, candidate_skills, candidate_social_network
 )
 
 # Models
 from candidate_service.common.models.candidate import CandidateEmail
+from candidate_service.common.models.user import Role
 
 # Custom errors
 from candidate_service.custom_error_codes import CandidateCustomErrors as candidate_errors
@@ -53,7 +55,6 @@ class TestCreateCandidateSuccessfully(object):
         """
         Test:  Create candidate with all fields populated and assert on every data retrieved
         """
-
         # Generate candidate's data
         data = generate_single_candidate_data([talent_pool.id], areas_of_interest=domain_aois,
                                               custom_fields=domain_custom_fields)
@@ -85,6 +86,7 @@ class TestCreateCandidateSuccessfully(object):
         assert candidate_data['status_id'] == data_sent_in['status_id']
         assert candidate_data['objective'] == data_sent_in['objective']
         assert candidate_data['summary'] == data_sent_in['summary']
+        assert candidate_data['source_product_id'] == data_sent_in['source_product_id']
         # assert candidate_data['resume_url'] == data_sent_in['resume_url']  # TODO: point to s3 bucket
 
         # Candidate's addresses
@@ -116,12 +118,15 @@ class TestCreateCandidateSuccessfully(object):
         assert areas_of_interest[1]['id'] == data_sent_in['areas_of_interest'][1]['area_of_interest_id']
 
         # Candidate's custom fields
-        custom_fields = candidate_data['custom_fields']
-        assert isinstance(custom_fields, list)
-        assert custom_fields[0]['value'] == data_sent_in['custom_fields'][0]['value']
-        assert custom_fields[0]['custom_field_id'] == data_sent_in['custom_fields'][0]['custom_field_id']
-        assert custom_fields[1]['value'] == data_sent_in['custom_fields'][1]['value']
-        assert custom_fields[1]['custom_field_id'] == data_sent_in['custom_fields'][1]['custom_field_id']
+        created_custom_field_values = [cf['value'] for cf in candidate_data['custom_fields']]
+
+        custom_field_values_from_data = []
+        for custom_field in data_sent_in['custom_fields']:
+            for value in custom_field.get('values'):
+                custom_field_values_from_data.append(value)
+
+        assert isinstance(created_custom_field_values, list)
+        assert set(custom_field_values_from_data).issubset(created_custom_field_values)
 
         # Candidate's educations
         educations = candidate_data['educations']
@@ -330,12 +335,11 @@ class TestCreateInvalidCandidates(object):
         - forbidden access (403)
         - non existing data (404)
     """
-    def test_create_candidate_with_expired_token(self, access_token_first, user_first):
+    def test_create_candidate_with_expired_token(self, access_token_first):
         """
         Test: Attempt to create a candidate using an expired bearer token
         Expect: 401; failed authentication
         """
-
         # Set access_token_first's expiration to 10 seconds ago
         db.session.commit()
         token = Token.get_token(access_token_first)
@@ -349,12 +353,11 @@ class TestCreateInvalidCandidates(object):
         assert resp.status_code == requests.codes.UNAUTHORIZED
         assert resp.json()['error']['code'] == auth_errors.TOKEN_EXPIRED
 
-    def test_create_with_invalid_access_token(self, user_first):
+    def test_create_with_invalid_access_token(self):
         """
         Test: Attempt to create a candidate using an invalid access token
         Expect: 401; failed authentication
         """
-
         # Create candidate with invalid access token
         data = {}  # since an error should be raised early on, the content of data is irrelevant
         resp = send_request('post', CANDIDATES_URL, 'invalid_access_token', data)
@@ -362,12 +365,11 @@ class TestCreateInvalidCandidates(object):
         assert resp.status_code == requests.codes.UNAUTHORIZED
         assert resp.json()['error']['code'] == auth_errors.TOKEN_NOT_FOUND
 
-    def test_create_candidate_with_empty_dict(self, user_first, access_token_first):
+    def test_create_candidate_with_empty_dict(self, access_token_first):
         """
         Test: Attempt to create a candidate without providing any content in data
         Expect: 400
         """
-
         # Create candidate with empty data
         data = {}
         resp = send_request('post', CANDIDATES_URL, access_token_first, data)
@@ -380,12 +382,11 @@ class TestCreateInvalidCandidates(object):
         assert resp.status_code == requests.codes.BAD
         assert resp.json()['error']['code'] == candidate_errors.INVALID_INPUT
 
-    def test_create_candidate_without_talent_pools(self, access_token_first, user_first):
+    def test_create_candidate_without_talent_pools(self, access_token_first):
         """
         Test: Attempt to create a candidate without providing talent pool IDs
         Expect: 400
         """
-
         # Create Candidate without providing talent pool ID
         data = {'candidates': [{'first_name': fake.first_name()}]}
         resp = send_request('post', CANDIDATES_URL, access_token_first, data)
@@ -393,12 +394,11 @@ class TestCreateInvalidCandidates(object):
         assert resp.status_code == requests.codes.BAD
         assert resp.json()['error']['code'] == candidate_errors.INVALID_INPUT
 
-    def test_create_candidate_with_incorrect_value_for_source_id(self, user_first, access_token_first, talent_pool):
+    def test_create_candidate_with_incorrect_value_for_source_id(self, access_token_first, talent_pool):
         """
         Test: Attempt to Create candidate by providing a string value for source ID
         Expect: 400
         """
-
         # Create candidate using non integer data type for source ID
         incorrect_data_types = ['2', 'string', [], {}, 5.3]
         data = {'candidates': [{
@@ -410,12 +410,11 @@ class TestCreateInvalidCandidates(object):
         assert resp.status_code == requests.codes.BAD
         assert resp.json()['error']['code'] == candidate_errors.INVALID_INPUT
 
-    def test_create_candidate_with_incorrect_name_data_type(self, user_first, access_token_first, talent_pool):
+    def test_create_candidate_with_incorrect_name_data_type(self, access_token_first, talent_pool):
         """
         Test: Attempt to create a candidate by using incorrect data type for candidate's names
         Expect: 400
         """
-
         # Create candidate using a non string value for candidate's names
         incorrect_data_types = [2, False, [], {}, 4.3]
         data = {'candidates': [{
@@ -427,12 +426,11 @@ class TestCreateInvalidCandidates(object):
         assert resp.status_code == requests.codes.BAD
         assert resp.json()['error']['code'] == candidate_errors.INVALID_INPUT
 
-    def test_create_an_existing_candidate(self, access_token_first, user_first, talent_pool):
+    def test_create_an_existing_candidate(self, access_token_first, talent_pool):
         """
         Test:   Attempt to recreate an existing Candidate
         Expect: 400
         """
-
         # Create same Candidate twice
         data = {'candidates': [{'emails': [{'address': fake.safe_email()}],
                                 'talent_pool_ids': {'add': [talent_pool.id]}}]}
@@ -445,7 +443,7 @@ class TestCreateInvalidCandidates(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == candidate_errors.CANDIDATE_ALREADY_EXISTS
 
-    def test_create_candidate_without_providing_talent_pool_ids(self, access_token_first, user_first):
+    def test_create_candidate_without_providing_talent_pool_ids(self, access_token_first):
         """
         Test:   Create a Candidate without talent pool ID
         """
@@ -455,11 +453,10 @@ class TestCreateInvalidCandidates(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == candidate_errors.INVALID_INPUT
 
-    def test_update_candidate_via_post(self, access_token_first, user_first):
+    def test_update_candidate_via_post(self, access_token_first):
         """
         Test:   Attempt to update a Candidate via post()
         """
-
         # Send Candidate object with candidate_id to post
         # candidate's ID is arbitrary since the API should raise an error early on
         candidate_id = random.randint(1, 100)
@@ -469,7 +466,7 @@ class TestCreateInvalidCandidates(object):
         assert resp.status_code == requests.codes.BAD
         assert resp.json()['error']['code'] == candidate_errors.INVALID_INPUT
 
-    def test_create_candidate_with_invalid_fields(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_with_invalid_fields(self, access_token_first, talent_pool):
         """
         Test:   Attempt to create a Candidate with bad fields/keys
         """
@@ -481,12 +478,11 @@ class TestCreateInvalidCandidates(object):
         assert create_resp.status_code == requests.codes.BAD
         assert create_resp.json()['error']['code'] == candidate_errors.INVALID_INPUT
 
-    def test_create_candidates_in_bulk_with_one_erroneous_data(self, access_token_first, user_first, talent_pool):
+    def test_create_candidates_in_bulk_with_one_erroneous_data(self, access_token_first, talent_pool):
         """
         Test: Attempt to create few candidates, one of which will have bad data
         Expect: 400, no record should be added to the db
         """
-
         # Candidate data with one erroneous email address
         email_1, email_2 = fake.safe_email(), fake.safe_email()
         data = {'candidates': [
@@ -497,13 +493,73 @@ class TestCreateInvalidCandidates(object):
         ]}
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
         print response_info(create_resp)
+        # db.session.commit()
+        # assert create_resp.status_code == requests.codes.BAD
+        # assert create_resp.json()['error']['code'] == candidate_errors.INVALID_EMAIL
+
+    def test_create_candidates_with_unauthorized_source_id(self, access_token_first, talent_pool,
+                                                           user_second, access_token_second):
+        """
+        Test: Attempt to add candidate with a source ID that belongs to a different domain
+        """
+        user_second.role_id = Role.get_by_name('TALENT_ADMIN').id
         db.session.commit()
-        assert create_resp.status_code == requests.codes.BAD
-        assert create_resp.json()['error']['code'] == candidate_errors.INVALID_EMAIL
+
+        # Create new source in a different domain
+        data = {"source": {"description": str(uuid.uuid4())[0:5], "notes": "2016 summer event"}}
+        resp = send_request('post', UserServiceApiUrl.DOMAIN_SOURCES, access_token_second, data)
+        print response_info(resp)
+        assert resp.status_code == requests.codes.CREATED
+
+        other_domain_source_id = resp.json()['source']['id']
+        data = {'candidates': [
+            {
+                'talent_pool_ids': {'add': [talent_pool.id]},
+                'source_id': other_domain_source_id
+            }
+        ]}
+
+        # Add candidate with unauthorized source ID
+        create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
+        print response_info(create_resp)
+        assert create_resp.status_code == requests.codes.FORBIDDEN
+        assert create_resp.json()['error']['code'] == candidate_errors.INVALID_SOURCE_ID
+
+    def test_create_multiple_candidates_with_bad_input(self, talent_pool, access_token_first):
+        """
+        Test: Add multiple candidates, some with bad inputs, others good.
+        Expect: Successful. Response should include any aggregated errors
+        """
+        candidates_data = {
+            "candidates": [
+                {
+                    "talent_pool_ids": {"add": [talent_pool.id]},
+                    "full_name": fake.name(),
+                    "emails": [{"address": "bad_email_at_gmail.com"}]
+                },
+                {
+                    "talent_pool_ids": {"add": [talent_pool.id]},
+                    "full_name": fake.name(),
+                    "emails": [{"address": fake.safe_email()}]
+                },
+                {
+                    "talent_pool_ids": {"add": [talent_pool.id]},
+                    "full_name": fake.name(),
+                    "emails": [{"address": fake.safe_email()}]
+                }
+            ]
+        }
+
+        # Send request & assert that only two of the candidates were created. The error must be response object
+        response = send_request('post', CANDIDATES_URL, access_token_first, candidates_data)
+        print response_info(response)
+        assert response.status_code == requests.codes.CREATED
+        assert len(response.json()['candidates']) == len(candidates_data['candidates']) - 1
+        assert response.json()['errors']
 
 
 class TestCreateHiddenCandidate(object):
-    def test_create_hidden_candidate(self, access_token_first, user_first, talent_pool):
+    def test_create_hidden_candidate(self, access_token_first, talent_pool):
         """
         Test: Create a candidate that was previously web-hidden
         Expect: 201, candidate should no longer be web hidden.
@@ -792,12 +848,11 @@ class TestCreateAOI(object):
 
 
 class TestCreateCandidateCustomField(object):
-    def test_create_candidate_custom_fields(self, access_token_first, user_first, talent_pool, domain_custom_fields):
+    def test_create_candidate_custom_fields(self, access_token_first, talent_pool, domain_custom_fields):
         """
         Test:   Create CandidateCustomField
         Expect: 201
         """
-
         # Create Candidate + CandidateCustomField
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
         create_resp = send_request('post', CANDIDATES_URL, access_token_first, data)
@@ -809,12 +864,19 @@ class TestCreateCandidateCustomField(object):
         print response_info(get_resp)
 
         can_custom_fields = get_resp.json()['candidate']['custom_fields']
+
         assert isinstance(can_custom_fields, list)
-        assert can_custom_fields[0]['value'] == data['candidates'][0]['custom_fields'][0]['value']
-        assert can_custom_fields[1]['value'] == data['candidates'][0]['custom_fields'][1]['value']
+
+        # Candidate custom fields values sent in request body
+        candidate_custom_field_values = []
+        for candidate_custom_field in data['candidates'][0]['custom_fields']:
+            for value in candidate_custom_field['values']:
+                candidate_custom_field_values.append(value)
+
+        assert set([ccf['value'] for ccf in can_custom_fields]).issubset(candidate_custom_field_values)
 
     def test_create_candidate_custom_fields_outside_of_domain(self, access_token_second, talent_pool,
-                                                              user_second, domain_custom_fields):
+                                                              domain_custom_fields):
         """
         Test: Attempt to create candidate's custom fields outside of user's domain
         Expect: 403
@@ -822,7 +884,7 @@ class TestCreateCandidateCustomField(object):
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
         create_resp = send_request('post', CANDIDATES_URL, access_token_second, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 403
+        assert create_resp.status_code == requests.codes.FORBIDDEN
         assert create_resp.json()['error']['code'] == candidate_errors.CUSTOM_FIELD_FORBIDDEN
 
 

@@ -2,5 +2,10 @@ __author__ = 'basit'
 # URL to be hit in case of application based authentication
 APPLICATION_BASED_AUTH_URL = 'https://api.twitter.com/oauth2/token'
 MEETUP_CODE_LENGTH = 32
-# TODO: Saad kindly remove this before creating RSVP importer PR
-WEBHOOK_REDIRECT_URL = 'https://729c03b1.ngrok.io'
+QUEUE_NAME = 'social_network'
+MEETUP = 'meetup'
+EVENTBRITE = 'eventbrite'
+FACEBOOK = 'facebook'
+TASK_ALREADY_SCHEDULED = 6057
+EVENT = 'event'
+RSVP = 'rsvp'

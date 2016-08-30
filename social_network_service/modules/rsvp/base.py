@@ -7,19 +7,29 @@ etc.
 
 # Standard Library
 import json
+import requests
 from abc import ABCMeta
 from abc import abstractmethod
+from datetime import datetime, timedelta
 
 # Application Specific
+from social_network_service.common.utils.test_utils import refresh_token
+from social_network_service.modules.utilities import Attendee
+from social_network_service.common.error_handling import InternalServerError
+from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
+from social_network_service.common.inter_service_calls.candidate_service_calls import create_or_update_candidate
 from social_network_service.common.models.rsvp import RSVP
-from social_network_service.common.models.user import User
+from social_network_service.common.models.talent_pools_pipelines import TalentPool
+from social_network_service.common.models.user import User, Token, UserSocialNetworkCredential
 from social_network_service.common.models.misc import Product
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.candidate import Candidate
-from social_network_service.common.models.candidate import CandidateSource
 from social_network_service.common.models.candidate import CandidateSocialNetwork
+from social_network_service.common.routes import UserServiceApiUrl
+from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.custom_exceptions import UserCredentialsNotFound, ProductNotFound
 from social_network_service.social_network_app import logger
+from social_network_service.common.constants import REQUEST_TIMEOUT
 
 
 class RSVPBase(object):
@@ -111,7 +121,7 @@ class RSVPBase(object):
 
     - To understand how the RSVP importer works, we have an example here.
         We make the object of this class while importing RSVPs both through
-        manager and webhook.
+        social_network.
 
         :Example:
 
@@ -144,9 +154,12 @@ class RSVPBase(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, *args, **kwargs):
-        if kwargs.get('user_credentials'):
+        if isinstance(kwargs.get('user_credentials'), UserSocialNetworkCredential):
             self.user_credentials = kwargs.get('user_credentials')
             self.user = User.get_by_id(self.user_credentials.user_id)
+            self.user_token = Token.get_by_user_id(self.user_credentials.user_id)
+            if not self.user_token.access_token:
+                raise InternalServerError('Unable to create candidate candidateaccess_token is null')
         else:
             raise UserCredentialsNotFound('User Credentials are empty/none')
 
@@ -156,6 +169,7 @@ class RSVPBase(object):
         self.access_token = self.user_credentials.access_token
         self.start_date_dt = None
         self.rsvps = []
+        self.flag_create_activity = True
 
     @abstractmethod
     def get_rsvps(self, event):
@@ -215,8 +229,8 @@ class RSVPBase(object):
         - We use this method inside process_events_rsvps() defined in
             EventBase class inside social_network_service/event/base.py.
 
-        - We use this method while importing RSVPs via social network manager.
-
+        - We use this method while importing RSVPs through social_network either by direct hitting endpoint or
+        by running an hourly job scheduled by scheduler service.
         **See Also**
             .. seealso:: process_events_rsvps() method in EventBase class
             inside social_network_service/event/base.py
@@ -315,8 +329,8 @@ class RSVPBase(object):
         - This method is called from process_rsvps() defined in
             RSVPBase class inside social_network_service/rsvp/base.py.
 
-        - We use this method while importing RSVPs via social network manager
-            or webhook.
+        - We use this method while importing RSVPs through social network
+        # TODO: Through nightly script which fetches data from different social networks
 
         :Example:
             - rsvp_obj = Meetup(social_network=self.social_network,
@@ -332,6 +346,10 @@ class RSVPBase(object):
         """
         try:
             attendee = self.get_attendee(rsvp)
+            if not attendee:
+                logger.info('Attendee object couldn\'t be created because event is not imported yet. RSVP data: %s'
+                            % rsvp)
+                return
             # following picks the source product id for attendee
             attendee = self.pick_source_product(attendee)
             # following will store candidate info in attendees
@@ -343,7 +361,7 @@ class RSVPBase(object):
             # finally we store info in table activity
             attendee = self.save_rsvp_in_activity_table(attendee)
             return attendee
-        except:
+        except Exception:
             # Shouldn't raise an exception, just log it and move to
             # process next RSVP
             logger.exception('post_process_rsvps: user_id: %s, RSVP data: %s, '
@@ -367,7 +385,6 @@ class RSVPBase(object):
           RSVPBase class inside social_network_service/rsvp/base.py.
 
         - We use this method while importing RSVPs through social network
-          manager or webhook.
 
         :Example:
 
@@ -395,7 +412,6 @@ class RSVPBase(object):
           RSVPBase class inside social_network_service/rsvp/base.py.
 
         - We use this method while importing RSVPs through social network
-          manager or webhook.
 
         :Example:
 
@@ -430,7 +446,6 @@ class RSVPBase(object):
           RSVPBase class inside social_network_service/rsvp/base.py.
 
         - We use this method while importing RSVPs through social network
-          manager or webhook.
 
         :Example:
 
@@ -439,28 +454,33 @@ class RSVPBase(object):
         **See Also**
             .. seealso:: process_rsvps() method in EventBase class
         :return attendee:
-        :rtype: object
+        :rtype: Attendee
         """
-        entry_in_db = CandidateSource.get_by_description_and_notes(
-            attendee.event.title,
-            attendee.event.description)
+        headers = {'Authorization': 'Bearer {}'.format(self.user_token.access_token),
+                   "Content-Type": "application/json"}
 
-        data = {'description': attendee.event.title,
-                'notes': attendee.event.description[:495] if attendee.event.description else None,
-                # field is 500 chars
-                'domain_id': self.user.domain_id}
-        if entry_in_db:
-            entry_in_db.update(**data)
-            entry_id = entry_in_db.id
+        candidate_source = {
+            "source": {
+                "description": attendee.event.description[:495] if attendee.event.description else 'Not given',
+                "notes": attendee.event.title
+            }
+        }
+        response = http_request('POST', UserServiceApiUrl.DOMAIN_SOURCES,
+                                headers=headers,
+                                data=json.dumps(candidate_source))
+
+        # Source already exists
+        if response.status_code == requests.codes.bad:
+            attendee.candidate_source_id = response.json()['error']['source_id']
+        elif response.status_code != requests.codes.created:
+            logger.exception(response.text)
+            raise InternalServerError(error_message="Error while creating candidate source")
         else:
-            entry = CandidateSource(**data)
-            CandidateSource.save(entry)
-            entry_id = entry.id
-        attendee.candidate_source_id = entry_id
+            attendee.candidate_source_id = response.json()['source']['id']
+
         return attendee
 
-    @staticmethod
-    def save_attendee_as_candidate(attendee):
+    def save_attendee_as_candidate(self, attendee):
         """
         :param attendee: attendees is a utility object we share in calls that
          contains pertinent data.
@@ -475,8 +495,6 @@ class RSVPBase(object):
           RSVPBase class inside social_network_service/rsvp/base.py.
 
         - We use this method while importing RSVPs through social network
-          manager or webhook.
-
         :Example:
 
             attendee = self.save_attendee_as_candidate(attendee)
@@ -484,10 +502,8 @@ class RSVPBase(object):
         **See Also**
             .. seealso:: process_rsvps() method in EventBase class
         :return attendee:
-        :rtype: object
+        :rtype: Attendee
         """
-        # TODO - May be need to use candidate_service here to save data in db
-        newly_added_candidate = 1  # 1 represents entity is new candidate
         candidate_in_db = \
             Candidate.get_by_first_last_name_owner_user_id_source_id_product(
                 attendee.first_name,
@@ -495,37 +511,57 @@ class RSVPBase(object):
                 attendee.gt_user_id,
                 attendee.candidate_source_id,
                 attendee.source_product_id)
+
+        # To create candidates, user must have be associated with talent_pool
+        talent_pools = TalentPool.filter_by_keywords(**{'user_id': attendee.gt_user_id})
+        talent_pool_ids = map(lambda talent_pool: talent_pool.id, talent_pools)
+
+        if not talent_pool_ids:
+            raise InternalServerError("save_attendee_as_candidate: user doesn't have any talent_pool")
+
+        # Create data dictionary
         data = {'first_name': attendee.first_name,
                 'last_name': attendee.last_name,
-                'added_time': attendee.added_time,
-                'user_id': attendee.gt_user_id,
-                'candidate_status_id': newly_added_candidate,
                 'source_id': attendee.candidate_source_id,
-                'source_product_id': attendee.source_product_id}
+                'talent_pool_ids': dict(add=talent_pool_ids)
+                }
+        social_network_data = {
+            'name': attendee.event.social_network.name,
+            'profile_url': attendee.social_profile_url
+        }
+
+        # Update if already exist
         if candidate_in_db:
-            candidate_in_db.update(**data)
             candidate_id = candidate_in_db.id
-        else:
-            candidate = Candidate(**data)
-            Candidate.save(candidate)
-            candidate_id = candidate.id
-        attendee.candidate_id = candidate_id
-        # Creating entry in CandidateSocialNetwork Table
-        candidate_social_network_in_db = \
-            CandidateSocialNetwork.get_by_candidate_id_and_sn_id(
-                candidate_id, attendee.social_network_id)
-        data = {'candidate_id': attendee.candidate_id,
-                'social_network_id': attendee.social_network_id,
-                'social_profile_url': attendee.social_profile_url}
-        if candidate_social_network_in_db:
-            candidate_social_network_in_db.update(**data)
-        else:
-            candidate_data = CandidateSocialNetwork(**data)
-            CandidateSocialNetwork.save(candidate_data)
+            data = dict(candidates=[data])
+
+            # Get candidate's social network if already exist
+            candidate_social_network_in_db = \
+                CandidateSocialNetwork.get_by_candidate_id_and_sn_id(
+                    candidate_id, attendee.social_network_id)
+            if candidate_social_network_in_db:
+                social_network_data.update({'id': candidate_social_network_in_db.id})
+
+        if attendee.email:
+            data.update({'emails': [{'address': attendee.email,
+                                     'label': 'Primary',
+                                     'is_default': True}]})
+
+        # Update social network data to be sent with candidate
+        data.update({'social_networks': [social_network_data]})
+
+        # We need to refresh token if token is expired. For that send request to auth service and request a
+        # refresh token.
+        if self.user_token and (self.user_token.expires - timedelta(seconds=REQUEST_TIMEOUT)) < datetime.utcnow():
+            self.user_token.access_token = refresh_token(self.user_token)
+
+        attendee.candidate_id = create_or_update_candidate(oauth_token=self.user_token.access_token,
+                                                           data=dict(candidates=[data]),
+                                                           return_candidate_ids_only=True)
+
         return attendee
 
-    @staticmethod
-    def save_rsvp(attendee):
+    def save_rsvp(self, attendee):
         """
         :param attendee: attendees is a utility object we share in calls that
          contains pertinent data.
@@ -540,7 +576,6 @@ class RSVPBase(object):
           RSVPBase class inside social_network_service/rsvp/base.py.
 
         - We use this method while importing RSVPs through social network
-          manager or webhook.
 
         :Example:
 
@@ -549,14 +584,15 @@ class RSVPBase(object):
         **See Also**
             .. seealso:: process_rsvps() method in EventBase class
         :return attendee:
-        :rtype: object
+        :rtype: Attendee
         """
+
         rsvp_in_db = \
             RSVP.get_by_vendor_rsvp_id_candidate_id_vendor_id_event_id(
-            attendee.vendor_rsvp_id,
-            attendee.candidate_id,
-            attendee.social_network_id,
-            attendee.event.id)
+                attendee.vendor_rsvp_id,
+                attendee.candidate_id,
+                attendee.social_network_id,
+                attendee.event.id)
         data = {
             'candidate_id': attendee.candidate_id,
             'event_id': attendee.event.id,
@@ -568,6 +604,7 @@ class RSVPBase(object):
         if rsvp_in_db:
             rsvp_in_db.update(**data)
             rsvp_id_db = rsvp_in_db.id
+            self.flag_create_activity = False
         else:
             rsvp = RSVP(**data)
             RSVP.save(rsvp)
@@ -588,7 +625,6 @@ class RSVPBase(object):
           RSVPBase class inside social_network_service/rsvp/base.py.
 
         - We use this method while importing RSVPs through social network
-          manager or webhook.
 
         :Example:
 
@@ -597,13 +633,13 @@ class RSVPBase(object):
         **See Also**
             .. seealso:: process_rsvps() method in EventBase class
         :return attendee:
-        :rtype: object
+        :rtype: Attendee
         """
         assert attendee.event.title is not None
         event_title = attendee.event.title
-        gt_user_first_name = self.user_credentials.user.first_name
-        gt_user_last_name = self.user_credentials.user.last_name
-        type_of_rsvp = 23  # to show message on activity feed
+        gt_user_first_name = self.user.first_name
+        gt_user_last_name = self.user.last_name
+
         first_name = attendee.first_name
         last_name = attendee.last_name
         params = {'firstName': first_name,
@@ -613,20 +649,10 @@ class RSVPBase(object):
                   'img': attendee.vendor_img_link,
                   'creator': '%s' % gt_user_first_name + ' %s'
                                                          % gt_user_last_name}
-        activity_in_db = Activity.get_by_user_id_params_type_source_id(
-            attendee.gt_user_id,
-            json.dumps(params),
-            type_of_rsvp,
-            attendee.rsvp_id)
-        data = {'source_table': 'rsvp',
-                'source_id': attendee.rsvp_id,
-                'added_time': attendee.added_time,
-                'type': type_of_rsvp,
-                'user_id': attendee.gt_user_id,
-                'params': json.dumps(params)}
-        if activity_in_db:
-            activity_in_db.update(**data)
-        else:
-            candidate_activity = Activity(**data)
-            Activity.save(candidate_activity)
+        if self.flag_create_activity:
+            add_activity(user_id=attendee.gt_user_id,
+                         activity_type=Activity.MessageIds.RSVP_EVENT,
+                         source_id=attendee.rsvp_id,
+                         source_table=RSVP.__tablename__,
+                         params=json.dumps(params))
         return attendee

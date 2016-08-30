@@ -16,7 +16,8 @@ from candidate_pool_service.common.utils.auth_utils import require_oauth, requir
 from candidate_pool_service.common.utils.api_utils import ApiResponse, generate_pagination_headers
 from candidate_pool_service.candidate_pool_app.talent_pools_pipelines_utilities import (
     get_pipeline_growth, TALENT_PIPELINE_SEARCH_PARAMS, get_candidates_of_talent_pipeline, engagement_score_of_pipeline,
-    get_stats_generic_function, top_most_engaged_candidates_of_pipeline, top_most_engaged_pipelines_of_candidate)
+    get_stats_generic_function, top_most_engaged_candidates_of_pipeline, top_most_engaged_pipelines_of_candidate,
+    get_talent_pipeline_stat_for_given_day)
 from candidate_pool_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 
 talent_pipeline_blueprint = Blueprint('talent_pipeline_api', __name__)
@@ -40,6 +41,14 @@ class TalentPipelineApi(Resource):
 
         talent_pipeline_id = kwargs.get('id')
         interval_in_days = request.args.get('interval', 30)
+        candidate_count = request.args.get('candidate-count', False)
+        email_campaign_count = request.args.get('email-campaign-count', False)
+
+        if not is_number(candidate_count) or int(candidate_count) not in (True, False):
+            raise InvalidUsage("`candidate_count` field value can be 0 or 1")
+
+        if not is_number(email_campaign_count) or int(email_campaign_count) not in (True, False):
+            raise InvalidUsage("`email_campaign_count` field value can be 0 or 1")
 
         if not is_number(interval_in_days) or int(interval_in_days) < 0:
             raise InvalidUsage("Value of interval should be positive integer")
@@ -53,10 +62,21 @@ class TalentPipelineApi(Resource):
             if request.user.role.name != 'TALENT_ADMIN' and talent_pipeline.user.domain_id != request.user.domain_id:
                 raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
-            return {
-                'talent_pipeline': talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
-                                                           get_growth_function=get_pipeline_growth)
-            }
+            if not candidate_count:
+                return {
+                    'talent_pipeline': talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
+                                                               get_growth_function=get_pipeline_growth,
+                                                               email_campaign_count=email_campaign_count)
+                }
+            else:
+                return {
+                    'talent_pipeline': talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
+                                                               get_growth_function=get_pipeline_growth,
+                                                               include_candidate_count=True,
+                                                               get_candidate_count=get_talent_pipeline_stat_for_given_day,
+                                                               email_campaign_count=email_campaign_count)
+                }
+
         else:
             sort_by = request.args.get('sort_by', 'added_time')
             sort_type = request.args.get('sort_type', 'DESC')
@@ -84,7 +104,7 @@ class TalentPipelineApi(Resource):
             if owner_user_id:
                 talent_pipelines = TalentPipeline.query.join(User).filter(and_(
                         TalentPipeline.is_hidden == is_hidden, User.domain_id == request.user.domain_id,
-                        TalentPipeline.user.id == int(owner_user_id), or_(TalentPipeline.name.ilike(
+                        User.id == int(owner_user_id), or_(TalentPipeline.name.ilike(
                                 '%' + search_keyword + '%'), TalentPipeline.description.ilike(
                                 '%' + search_keyword + '%')))).all()
             else:
@@ -93,10 +113,19 @@ class TalentPipelineApi(Resource):
                                 TalentPipeline.name.ilike('%' + search_keyword + '%'),
                                 TalentPipeline.description.ilike('%' + search_keyword + '%')))).all()
 
-            talent_pipelines_data = [talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
-                                                             get_growth_function=get_pipeline_growth
-                                                             ) for talent_pipeline in talent_pipelines
-            ]
+            if not candidate_count:
+                talent_pipelines_data = [
+                    talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
+                                            get_growth_function=get_pipeline_growth,
+                                            email_campaign_count=email_campaign_count)
+                    for talent_pipeline in talent_pipelines]
+            else:
+                talent_pipelines_data = [
+                    talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
+                                            get_growth_function=get_pipeline_growth, include_candidate_count=True,
+                                            get_candidate_count=get_talent_pipeline_stat_for_given_day,
+                                            email_campaign_count=email_campaign_count)
+                    for talent_pipeline in talent_pipelines]
 
             if sort_by == 'engagement_score':
                 for talent_pipeline_data in talent_pipelines_data:

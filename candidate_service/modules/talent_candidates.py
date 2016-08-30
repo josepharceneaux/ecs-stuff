@@ -893,7 +893,7 @@ def create_or_update_candidate_from_params(
     :type   dice_profile_id:        int
     :type   added_datetime:         str
     :param  source_id:              Source of candidate's intro, e.g. job-fair
-    :param  source_product_id       int
+    :type   source_product_id       int
     :type   source_id:              int
     :type   objective:              basestring
     :type   summary:                basestring
@@ -1156,7 +1156,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
         middle_name = parsed_names_object.middle
         last_name = parsed_names_object.last
 
-    update_dict = {'objective': objective, 'summary': summary, 'filename': (resume_url or '').lower(),
+    update_dict = {'objective': objective, 'summary': summary, 'filename': resume_url,
                    'source_id': source_id, 'candidate_status_id': candidate_status_id,
                    'source_product_id': source_product_id}
 
@@ -1207,7 +1207,7 @@ def _add_candidate(first_name, middle_name, last_name, formatted_name,
         added_time=added_time, candidate_status_id=candidate_status_id, user_id=user_id,
         source_product_id=source_product_id, dice_profile_id=dice_profile_id,
         dice_social_profile_id=dice_social_profile_id, source_id=source_id, objective=objective,
-        summary=summary, filename=(resume_url or '').lower(), is_dirty=0
+        summary=summary, filename=resume_url, is_dirty=0
         # TODO: is_dirty cannot be null. This should be removed once the column is successfully removed.
     )
 
@@ -1314,45 +1314,69 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
     Function will update CandidateCustomField or create a new one.
     """
     candidate_id = candidate.id
+
     for custom_field in custom_fields:
+
+        # In case a list of custom field values are provided, we must remove all white spaces and all empty/none values
+        values = filter(None, [value.strip() for value in (custom_field.get('values') or []) if value])
+
         custom_field_dict = dict(
-            value=custom_field['value'].strip() if custom_field.get('value') else None,
+            values=values or [(custom_field.get('value') or '').strip()],
             custom_field_id=custom_field.get('custom_field_id')
         )
 
         candidate_custom_field_id = custom_field.get('id')
-        if candidate_custom_field_id:   # Update
 
-            # Remove keys with None values
-            custom_field_dict = purge_dict(custom_field_dict)
+        for value in custom_field_dict.get('values'):
 
-            # CandidateCustomField must be recognized
-            can_custom_field_obj = CandidateCustomField.get_by_id(candidate_custom_field_id)
-            if not can_custom_field_obj:
-                error_message = 'Candidate custom field you are requesting to update does not exist'
-                raise InvalidUsage(error_message, custom_error.CUSTOM_FIELD_NOT_FOUND)
+            if candidate_custom_field_id:   # Update
 
-            # CandidateCustomField must belong to Candidate
-            if can_custom_field_obj.candidate_id != candidate_id:
-                raise ForbiddenError(error_message="Unauthorized candidate custom field",
-                                     error_code=custom_error.CUSTOM_FIELD_FORBIDDEN)
+                # Remove keys with None values
+                custom_field_dict = purge_dict(custom_field_dict)
 
-            # Track all updates
-            track_edits(update_dict=custom_field_dict, table_name='candidate_custom_field',
-                        candidate_id=candidate_id, user_id=user_id, query_obj=can_custom_field_obj)
+                # CandidateCustomField must be recognized
+                can_custom_field_obj = CandidateCustomField.get_by_id(candidate_custom_field_id)
+                if not can_custom_field_obj:
+                    error_message = 'Candidate custom field you are requesting to update does not exist'
+                    raise InvalidUsage(error_message, custom_error.CUSTOM_FIELD_NOT_FOUND)
 
-            # Update CandidateCustomField
-            can_custom_field_obj.update(**custom_field_dict)
+                # CandidateCustomField must belong to Candidate
+                if can_custom_field_obj.candidate_id != candidate_id:
+                    raise ForbiddenError(error_message="Unauthorized candidate custom field",
+                                         error_code=custom_error.CUSTOM_FIELD_FORBIDDEN)
+
+                # Track all updates
+                track_edits(update_dict=custom_field_dict,
+                            table_name='candidate_custom_field',
+                            candidate_id=candidate_id,
+                            user_id=user_id,
+                            query_obj=can_custom_field_obj,
+                            value=value,
+                            column_name='value')
+
+                # Update CandidateCustomField
+                can_custom_field_obj.update(**dict(value=value))
 
         else:  # Add
             custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
-            # Prevent duplicate insertions
-            if not does_candidate_cf_exist(candidate, custom_field_dict):
-                db.session.add(CandidateCustomField(**custom_field_dict))
 
-                if is_updating:  # Track all updates
-                    track_edits(update_dict=custom_field_dict, table_name='candidate_custom_field',
-                                candidate_id=candidate_id, user_id=user_id)
+            for value in custom_field_dict.get('values'):
+
+                custom_field_id = custom_field_dict.get('custom_field_id')
+
+                # Prevent duplicate insertions
+                if not does_candidate_cf_exist(candidate, custom_field_id, value):
+                    custom_field_dict['value'] = value
+                    custom_field_dict.pop('values', None)
+                    db.session.add(CandidateCustomField(**custom_field_dict))
+
+                    if is_updating:  # Track all updates
+                        track_edits(update_dict=custom_field_dict,
+                                    table_name='candidate_custom_field',
+                                    candidate_id=candidate_id,
+                                    user_id=user_id,
+                                    value=value,
+                                    column_name='value')
 
 
 def _add_or_update_educations(candidate, educations, added_datetime, user_id, is_updating):
@@ -1884,23 +1908,29 @@ def _add_or_update_emails(candidate, emails, user_id, is_updating):
     if any(is_default_values):
         CandidateEmail.set_is_default_to_false(candidate_id)
 
+    # Check if any of the emails have a label
     emails_has_label = any([email.get('label') for email in emails])
+
+    # Check if any of the emails is set as the default email
     emails_has_default = any([isinstance(email.get('is_default'), bool) for email in emails])
 
-    # Prevent duplicate email addresses
-    email_addresses = [email.get('address') for email in emails]
-    if len(set(email_addresses)) < len(emails):
-        raise InvalidUsage(error_message='Identical email addresses provided',
-                           error_code=custom_error.INVALID_USAGE,
-                           additional_error_info={'duplicates': email_addresses})
+    # If duplicate email addresses are provided, we will only use one of them
+    seen = set()
+    for email in emails:
+        email_address = email.get('address')
+        if email_address and email_address in seen:
+            emails.remove(email)
+        seen.add(email_address)
 
-    for i, email in enumerate(emails):
+    for index, email in enumerate(emails):
 
-        # If there's no is_default, the first email should be default
-        is_default = i == 0 if not emails_has_default else email.get('is_default')
+        # If none of the provided emails have "is_default" set to true and none of candidate's existing emails
+        #   is set to default, then the first provided email will be a default email
+        is_default = index == 0 if (not emails_has_default and not CandidateEmail.has_default_email(candidate_id)) \
+            else email.get('is_default')
 
         # If there's no label, the first email's label will be 'Primary'; rest will be 'Other'
-        email_label = EmailLabel.PRIMARY_DESCRIPTION if (not emails_has_label and i == 0) \
+        email_label = EmailLabel.PRIMARY_DESCRIPTION if (not emails_has_label and index == 0) \
             else (email.get('label') or '').strip().title()
 
         email_address = email.get('address')
@@ -1984,12 +2014,13 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
     phones_has_label = any([phone.get('label') for phone in phones])
     phones_has_default = any([isinstance(phone.get('is_default'), bool) for phone in phones])
 
-    # Check for duplicate values
-    phone_numbers = [(phone.get('value') or '').strip() for phone in phones]
-    if len(set(phone_numbers)) < len(phones):
-        raise InvalidUsage(error_message='Identical phone numbers provided',
-                           error_code=custom_error.INVALID_USAGE,
-                           additional_error_info={'Duplicates': phone_numbers})
+    # If duplicate phone numbers are provided, we will only use one of them
+    seen = set()
+    for phone in phones:
+        phone_value = phone.get('value')
+        if phone_value and phone_value in seen:
+            phones.remove(phone)
+        seen.add(phone_value)
 
     for i, phone in enumerate(phones):
 
@@ -2025,8 +2056,10 @@ def _add_or_update_phones(candidate, phones, user_id, is_updating):
         # Phone number must not belong to any other candidate in the same domain
         matching_phone_values = CandidatePhone.search_phone_number_in_user_domain(value, request.user)
         if matching_phone_values and matching_phone_values[0].candidate_id != candidate_id:
-            raise ForbiddenError(error_message="Phone number ({}) belongs to someone else.".format(value),
-                                 error_code=custom_error.PHONE_FORBIDDEN)
+            # TODO: this validation should be happening much earlier. For now we need this for a hotfix but should be revisited later
+            raise InvalidUsage(error_message='Candidate already exists, creation failed',
+                               error_code=custom_error.CANDIDATE_ALREADY_EXISTS,
+                               additional_error_info={'id': matching_phone_values[0].candidate_id})
 
         # Clear CachedData's country_codes to prevent aggregating unnecessary data
         CachedData.country_codes = []
@@ -2425,11 +2458,16 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
 
     if candidate_experience:
         previous_start_year, previous_end_year = candidate_experience.start_year, candidate_experience.end_year
-        previous_start_month, previous_end_month = candidate_experience.start_month, candidate_experience.end_month
 
-        if deleted:  # A CandidateExperience has been removed
-            total_months_experience = - (previous_end_year - previous_start_year) * 12 + \
-                                      (previous_end_month - previous_start_month)
+        # If start month and/or end month is not provided, we assume it was January
+        previous_start_month = candidate_experience.start_month or 1
+        previous_end_month = candidate_experience.end_month or 1
+
+        # A CandidateExperience has been removed
+        if deleted:
+            if previous_end_year and previous_start_year:
+                total_months_experience = - (previous_end_year - previous_start_year) * 12 + \
+                                          (previous_end_month - previous_start_month)
 
         else:  # An existing CandidateExperience's dates have been updated
             if start_year and end_year:

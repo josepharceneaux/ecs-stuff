@@ -176,8 +176,7 @@ class TestCreateCampaign(object):
                                                          self.URL,
                                                          None)
 
-    def test_create_email_campaign_without_client_id(self, access_token_first, talent_pipeline,
-                                                     assign_roles_to_user_first):
+    def test_create_email_campaign_without_client_id(self, access_token_first, talent_pipeline):
         """
         Here we provide valid data to create an email-campaign without email_client_id.
         It should get OK response.
@@ -191,8 +190,7 @@ class TestCreateCampaign(object):
         assert 'campaign' in resp_object
         assert resp_object['campaign']['id']
 
-    def test_create_email_campaign_with_client_id(self, access_token_first, talent_pipeline,
-                                                  assign_roles_to_user_first):
+    def test_create_email_campaign_with_client_id(self, access_token_first, talent_pipeline):
         """
         Here we provide valid data to create an email-campaign without email_client_id.
         It should get OK response.
@@ -215,9 +213,7 @@ class TestCreateCampaign(object):
                                                  {'campaign_data': 'data'}, is_json=False)
         assert response.status_code == InvalidUsage.http_status_code()
 
-    def test_create_email_campaign_with_whitespace_campaign_name(self, assign_roles_to_user_first,
-                                                                 access_token_first,
-                                                                 talent_pipeline):
+    def test_create_email_campaign_with_whitespace_campaign_name(self, access_token_first, talent_pipeline):
         """
         This tries to create an email campaign with whitespace as campaign name.
         It should result in invalid usage error as campaign_name is required field.
@@ -247,8 +243,7 @@ class TestCreateCampaign(object):
         assert missing_key in json_response['error']['message']
 
     def test_create_email_campaign_with_invalid_format_of_smartlist_ids(self, access_token_first,
-                                                                        talent_pipeline,
-                                                                        assign_roles_to_user_first):
+                                                                        talent_pipeline):
         """
         Here we try to create an email-campaign with list_ids not in list format. It should
         result in invalid usage error.
@@ -264,8 +259,7 @@ class TestCreateCampaign(object):
         assert 'list_ids' in json_response['error']['message']
 
     def test_create_email_campaign_with_invalid_smartlist_ids(self, access_token_first,
-                                                              talent_pipeline,
-                                                              assign_roles_to_user_first):
+                                                              talent_pipeline):
         """
         Here we try to create an email-campaign with list_ids other than int or long. It should
         result in invalid usage error.
@@ -282,8 +276,7 @@ class TestCreateCampaign(object):
         assert 'list_ids' in json_response['error']['message']
 
     def test_create_email_campaign_with_no_start_datetime(self, access_token_first,
-                                                          talent_pipeline,
-                                                          assign_roles_to_user_first):
+                                                          talent_pipeline):
         """
         Here we try to create an email-campaign with frequency DAILY for which start_datetime will be
         a required field. But we are not giving start_datetime. It should result in
@@ -298,8 +291,7 @@ class TestCreateCampaign(object):
         assert response.status_code == UnprocessableEntity.http_status_code()
 
     def test_create_email_campaign_with_invalid_start_and_end_datetime(self, access_token_first,
-                                                                       talent_pipeline,
-                                                                       assign_roles_to_user_first):
+                                                                       talent_pipeline):
         """
         Here we try to create an email-campaign with frequency DAILY. Here we provide start_datetime
         to be ahead of end_datetime. It should result in UnprocessableEntity error.
@@ -316,8 +308,7 @@ class TestCreateCampaign(object):
         assert response.status_code == UnprocessableEntity.http_status_code()
 
     def test_create_email_campaign_with_invalid_email_client_id(self, access_token_first,
-                                                                talent_pipeline,
-                                                                assign_roles_to_user_first):
+                                                                talent_pipeline):
         """
         Here we try to create an email-campaign with invalid email-client-id. It should
         result in invalid usage error.
@@ -335,8 +326,7 @@ class TestCreateCampaign(object):
     def test_create_email_campaign_with_smartlist_id_of_other_domain(self,
                                                                      talent_pipeline_other,
                                                                      access_token_first,
-                                                                     access_token_other,
-                                                                     assign_roles_to_user_of_other_domain):
+                                                                     access_token_other):
         """
         Here we try to create an email-campaign with smartlist_ids belonging to some other domain.
         It should result in ForbiddenError.
@@ -377,7 +367,7 @@ class TestSendCampaign(object):
 
     def test_post_with_no_smartlist_candidate(self, access_token_first,
                                               email_campaign_of_user_first,
-                                              assign_roles_to_user_first, talent_pipeline):
+                                              talent_pipeline):
         """
         User auth token is valid, campaign has one smart list associated. But smartlist has
         no candidate associated with it. Campaign sending should fail and no blasts should be
@@ -443,23 +433,23 @@ class TestSendCampaign(object):
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, no_of_sends)
 
-    def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
-            self, access_token_first, user_first, campaign_with_valid_candidate):
-        """
-        User auth token is valid, campaign has one smart list associated. Smartlist has two
-        candidates associated (with same email addresses). Email Campaign should not be sent to
-        any candidate.
-        """
-        same_email = fake.email()
-        for candidate in user_first.candidates:
-            candidate.emails[0].update(address=same_email)
-        response = requests.post(
-            self.URL % campaign_with_valid_candidate.id,
-            headers=dict(Authorization='Bearer %s' % access_token_first))
-        assert_campaign_send(response, campaign_with_valid_candidate, user_first, 1)
-        if not campaign_with_valid_candidate.email_client_id:
-            json_resp = response.json()
-            assert str(campaign_with_valid_candidate.id) in json_resp['message']
+    # def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
+    #         self, access_token_first, user_first, campaign_with_valid_candidate):
+    #     """
+    #     User auth token is valid, campaign has one smart list associated. Smartlist has two
+    #     candidates associated (with same email addresses). Email Campaign should not be sent to
+    #     any candidate.
+    #     """
+    #     same_email = fake.email()
+    #     for candidate in user_first.candidates:
+    #         candidate.emails[0].update(address=same_email)
+    #     response = requests.post(
+    #         self.URL % campaign_with_valid_candidate.id,
+    #         headers=dict(Authorization='Bearer %s' % access_token_first))
+    #     assert_campaign_send(response, campaign_with_valid_candidate, user_first, 1)
+    #     if not campaign_with_valid_candidate.email_client_id:
+    #         json_resp = response.json()
+    #         assert str(campaign_with_valid_candidate.id) in json_resp['message']
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_diff_domain(
             self, access_token_first, user_first,
@@ -540,8 +530,7 @@ class TestSendCampaign(object):
         UrlConversion.delete(url_conversion)
 
     def test_send_campaign_with_two_smartlists(
-            self, access_token_first, user_first, talent_pipeline, email_campaign_of_user_first,
-            assign_roles_to_user_first):
+            self, access_token_first, user_first, talent_pipeline, email_campaign_of_user_first):
         """
         This function creates two smartlists with 20 candidates each and associates them
         with a campaign. Sends that campaign and tests if emails are sent to all 40 candidates.
@@ -549,7 +538,6 @@ class TestSendCampaign(object):
         :param user_first: Valid user from fist domain
         :param talent_pipeline: valid talent pipeline
         :param email_campaign_of_user_first: email campaign associated with user first
-        :param assign_roles_to_user_first: Assign required roles to user of first domain.
         """
         smartlist_id1, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
                                                                                  talent_pipeline,

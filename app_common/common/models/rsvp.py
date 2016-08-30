@@ -48,9 +48,9 @@ class RSVP(db.Model):
 
     @classmethod
     def get_by_social_network_rsvp_id_and_social_network_id(cls,
-                                                              social_network_rsvp_id,
-                                                              social_network_id,
-                                                              ):
+                                                            social_network_rsvp_id,
+                                                            social_network_id,
+                                                            ):
         assert social_network_id and social_network_rsvp_id
         return cls.query.filter(
             db.and_(
@@ -58,3 +58,4 @@ class RSVP(db.Model):
                 RSVP.social_network_id == social_network_id
             )
         ).first()
+
