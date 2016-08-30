@@ -1,4 +1,9 @@
+"""
+This file consists constants used in social-network-service
+"""
+
 __author__ = 'basit'
+
 # URL to be hit in case of application based authentication
 APPLICATION_BASED_AUTH_URL = 'https://api.twitter.com/oauth2/token'
 MEETUP_CODE_LENGTH = 32
@@ -14,3 +19,6 @@ RSVP = 'rsvp'
 # For creating venue for event, Meetup uses url which is
 # different than the url we use in other API calls of Meetup.
 MEETUP_VENUE = 'https://api.meetup.com/{}'
+
+# Vendors to be mocked goes here
+MOCK_VENDORS = [MEETUP]
