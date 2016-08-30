@@ -1,7 +1,6 @@
 from cStringIO import StringIO
 import os
 
-from requests.exceptions import SSLError
 from resume_parsing_service.app import app
 from resume_parsing_service.app.views.ocr_lib import google_vision_ocr
 from resume_parsing_service.common.error_handling import InternalServerError
