@@ -219,6 +219,12 @@ class Product(db.Model):
     notes = db.Column('Notes', db.String(500))
     updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.utcnow)
 
+    # This is a static table and below are constants that will be created
+    MOBILE = 1
+    WEB = 2
+    WIDGET = 3
+    OPENWEB = 4
+
     def __repr__(self):
         return "<Product (name=' %r')>" % self.name
 

@@ -893,7 +893,7 @@ def create_or_update_candidate_from_params(
     :type   dice_profile_id:        int
     :type   added_datetime:         str
     :param  source_id:              Source of candidate's intro, e.g. job-fair
-    :param  source_product_id       int
+    :type   source_product_id       int
     :type   source_id:              int
     :type   objective:              basestring
     :type   summary:                basestring
@@ -1186,10 +1186,6 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
     # Track all edits
     track_edits(update_dict=update_dict, table_name='candidate', candidate_id=candidate_id,
                 user_id=user_id, query_obj=candidate_object)
-
-    # TODO: Created a JIRA and assigned it to Umar -> https://gtdice.atlassian.net/browse/GET-1552
-    # if 'source_product_id' in update_dict:
-    #     del update_dict['source_product_id']
 
     # Update
     candidate_object.update(**update_dict)
