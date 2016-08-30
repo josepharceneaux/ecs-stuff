@@ -5,6 +5,9 @@ WORKDIR /root/base_service_container
 ADD . ats_service
 WORKDIR /root/base_service_container/ats_service
 
+# Add the cron job to refresh our ATS data
+ADD ats_refresh.py /etc/cron.hourly/ats_refresh.py
+
 # Replace app name in config Loggly and NewRelic config files
 RUN sed -i -e 's/APP_NAME/ats_service/g' newrelic.ini /etc/rsyslog.d/*loggly.conf
 
