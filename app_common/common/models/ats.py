@@ -77,6 +77,15 @@ class ATSAccount(db.Model):
                  'ats_credential_id' : self.ats_credential_id }
 
     @classmethod
+    def get_user_accounts(cls, user_id):
+        """
+        Retrieve all ATS accounts of a user.
+        :param int user_id: id of the GT user.
+        :rtype list[ATSAccount]:
+        """
+        return cls.query.filter_by(user_id=user_id).all()
+
+    @classmethod
     def get_account(cls, user_id, ats_name):
         """
         Retrieve a specific ATS account of a user.

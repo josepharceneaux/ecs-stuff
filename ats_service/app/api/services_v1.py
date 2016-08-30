@@ -71,6 +71,11 @@ class ATSService(Resource):
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
 
+        response = ATS.get_all_as_json()
+        ats_service.app.logger.info("RESPONSE: {}".format(response))
+        headers = dict(Location=ATSServiceApiUrl.ATS)
+        # TODO
+        # return ApiResponse(response, headers=headers, status=codes.OK)
         return ATS.get_all_as_json()
 
 
@@ -104,7 +109,12 @@ class ATSAccountService(Resource):
                              'ats_name' : ats.name, 'ats_homepage' : ats.homepage_url,
                              'ats_login' : ats.login_url})
 
-        return json.dumps(account_dict)
+        # TODO: Normalize response format; add values per Apiary doc.
+        response = json.dumps(account_dict)
+        headers = dict(Location=ATSServiceApiUrl.ACCOUNT % account_id)
+        # TODO:
+        # return ApiResponse(response, headers=headers, status=codes.OK)
+        return response
 
     def delete(self, account_id):
         """
@@ -164,9 +174,11 @@ class ATSAccountsService(Resource):
         """
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
-        authenticated_user = request.user
 
-        return authenticated_user.to_json()
+        account_list = ATSAccount.get_user_accounts(request.user.id)
+        response = json.dumps(account_list)
+        headers = dict(Location=ATSServiceApiUrl.ACCOUNT % request.user.id)
+        return ApiResponse(response, headers=headers, status=codes.OK)
 
     def post(self):
         """
@@ -230,6 +242,8 @@ class ATSCandidatesService(Resource):
 
         candidates = ATSCandidate.get_all_as_json(account_id)
         if candidates:
+            # TODO: Normalize this response
+            # TODO: Add the ATS-particular entry.
             return candidates
 
         ats_service.app.logger.info("No candidates in ATS account {}".format(account_id))
@@ -337,7 +351,10 @@ class ATSCandidateService(Resource):
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         delete_ats_candidate(candidate_id)
-        return '{"delete" : "success"}'
+
+        response = json.dumps(dict(delete='success'))
+        headers = dict(Location=ATSServiceApiUrl.CANDIDATES % candidate_id)
+        return ApiResponse(response, headers=headers, status=codes.OK)
 
 
 @api.route(ATSServiceApi.CANDIDATE_LINK)
@@ -380,7 +397,9 @@ class ATSCandidateLinkService(Resource):
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         unlink_ats_candidate(candidate_id, ats_candidate_id)
 
-        return '{"unlink" : "success"}'
+        response = json.dumps(dict(unlink='success'))
+        headers = dict(Location=ATSServiceApiUrl.CANDIDATE_LINK % (candidate_id, ats_candidate_id))
+        return ApiResponse(response, headers=headers, status=codes.OK)
 
 
 @api.route(ATSServiceApi.CANDIDATES_REFRESH)
@@ -417,6 +436,8 @@ class ATSCandidateRefreshService(Resource):
 
         # For each candidate, fetch the candidate data and update our copy. Later this can be combined with the previous step.
         return_list = []
+        created_count = 0
+        updated_count = 0
         for ref in individual_references:
             individual = ats_object.fetch_individual(ref)
             return_list.append(individual)
@@ -429,11 +450,15 @@ class ATSCandidateRefreshService(Resource):
                     data['ats_table_id'] = present.ats_table_id
                 update_ats_candidate(account_id, present.id, data)
                 ats_object.save_individual(json.dumps(data), present.id)
+                updated_count += 1
             else:
                 # Create a new individual
                 candidate = new_ats_candidate(account_id, data)
                 i = ats_object.save_individual(json.dumps(data), candidate.id)
                 data['ats_table_id'] = i.id
                 update_ats_candidate(account_id, candidate.id, data)
+                created_count += 1
 
-        return return_list
+        response = json.dumps(dict(updated_count=updated_count, created_count=created_count))
+        headers = dict(Location=ATSServiceApiUrl.CANDIDATES_REFRESH % account_id)
+        return ApiResponse(response, headers=headers, status=codes.OK)
