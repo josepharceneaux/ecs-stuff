@@ -19,7 +19,7 @@ from redo import retry
 from requests import codes
 
 # Application specific imports
-from push_campaign_service.tests.test_utilities import get_blast, get_blast_sends
+from push_campaign_service.tests.test_utilities import get_blast
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
 URL = PushCampaignApiUrl.BLAST

@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 # 3rd party imports
 import requests
 from faker import Faker
-from redo import retrier
+from redo import retrier, retry
 from requests import codes
 from contracts import contract
 from dateutil.parser import parse
@@ -19,9 +19,9 @@ from dateutil.parser import parse
 # Service specific imports
 from ..error_codes import ErrorCodes
 from ..tests.conftest import randomword
-from ..constants import SLEEP_TIME, SLEEP_INTERVAL
+from ..constants import SLEEP_TIME, SLEEP_INTERVAL, RETRY_ATTEMPTS
 from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
-                      CandidatePoolApiUrl, SchedulerApiUrl)
+                      CandidatePoolApiUrl, SchedulerApiUrl, ActivityApiUrl)
 from ..custom_contracts import define_custom_contracts
 from ..error_handling import NotFoundError
 from handy_functions import send_request
@@ -548,6 +548,40 @@ def delete_talent_pool(talent_pool_id, token, expected_status=(200,)):
     print('common_tests : delete_talent_pool: ', response.content)
     assert response.status_code in expected_status
     return response.json()
+
+
+@contract
+def get_activity(type_id, source_id, source_table, token, expected_status=(200,)):
+    """
+    This method sends a GET request to Activity Service API to get specific activity.
+    :param int | long type_id: activity type id, like 4 for campaign creation
+    :param int | long source_id: id of source object like push campaign id
+    :param string source_table: source table name, like push_campaign
+    :param string token: access token
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
+    url = "{}?type={}&source_id={}&source_table={}".format(ActivityApiUrl.ACTIVITIES, type_id, source_id, source_table)
+    response = send_request('get', url, token)
+    print('common_tests : get_activity: ', response.content)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+@contract
+def assert_activity(type_id, source_id, source_table, token, expected_status=(200,)):
+    """
+    This function uses retry to retrieve activity specified by query params.
+    :param int | long type_id: activity type id, like 4 for campaign creation
+    :param int | long source_id: id of source object like push campaign id
+    :param string source_table: source table name, like push_campaign
+    :param string token: access token
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
+    retry(get_activity, sleeptime=SLEEP_INTERVAL * 2, attempts=RETRY_ATTEMPTS, sleepscale=1,
+          retry_exceptions=(AssertionError,), args=(type_id, source_id, source_table, token),
+          kwargs={"expected_status": expected_status})
 
 
 def get_response(access_token, arguments_to_url, expected_count=1, attempts=20, pause=3, comp_operator='>='):
