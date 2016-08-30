@@ -14,6 +14,7 @@ from social_network_service.modules.urls import SocialNetworkUrls
 from social_network_service.common.routes import SocialNetworkApi
 from social_network_service.mock.vendors.meetup import meetup_vendor
 from social_network_service.common.talent_config_manager import TalentConfigKeys
+from social_network_service.common.tests.fake_testing_data_generator import fake
 from social_network_service.common.error_handling import (NotFoundError, InternalServerError,
                                                           UnauthorizedError)
 
@@ -28,7 +29,7 @@ def register_vendor(vendor_name, vendor_json_data):
     :param vendor_name: Meetup
     :type vendor_name: str | basestring
     :param vendor_json_data: See meetup.py
-    :type vendor_json_data: dict
+    :type vendor_json_data: Callable function
     """
     vendor_hub.update({vendor_name: vendor_json_data})
 
@@ -41,22 +42,29 @@ register_vendor(MEETUP, meetup_vendor)
 def mock_endpoint(social_network, relative_url):
     """
     Mock endpoint
-    :param social_network:
-    :type social_network:
+    :param string social_network: Name of social-network. e.g. "meetup"
+    :param string relative_url: Relative URL for given social-network API
     """
     # We need to mock third party vendors in case of jenkins or dev environment.
     if not SocialNetworkUrls.IS_DEV:
         raise UnauthorizedError('This endpoint is not accessible in `%s` env.'
                                 % app.config[TalentConfigKeys.ENV_KEY])
 
-    vendor_dict = vendor_hub.get(social_network)
-    if not vendor_dict:
+    vendor_data = vendor_hub.get(social_network)
+    if not vendor_data:
         raise NotFoundError("Vendor '{}' not found or mocked yet." % social_network)
-
     request_method = request.method
+    splitted_data = relative_url.split('/')
+    if len(splitted_data) > 1 and splitted_data[1].isdigit():
+        relative_url = splitted_data[0]
+        resource_id = splitted_data[1]
+        if request_method == 'POST':
+            request_method = 'PUT'
+    else:
+        resource_id = None
     try:
-        data = vendor_dict['/' + relative_url][request_method.upper()][codes.ok]
+        data = vendor_data(resource_id)['/' + relative_url][request_method.upper()][codes.ok]
         status_code = data['status_code']
     except KeyError:
-        raise InternalServerError('No Data found. Method:%s, Url:%s ' % request_method, relative_url)
+        raise InternalServerError('No Data found. Method:%s, Url:%s.' % (request_method, relative_url))
     return jsonify(data), status_code

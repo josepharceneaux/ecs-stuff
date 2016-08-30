@@ -123,8 +123,7 @@ class Meetup(EventBase):
         # page size is 100 so if we have 500 records we will make
         # 5 requests (using pagination where each response will contain
         # 100 records).
-        events_url = \
-            self.api_url + '/events/?sign=true&page=100&fields=timezone'
+        events_url = Urls.get_url(self, Urls.EVENTS) + '/?sign=true&page=100&fields=timezone'
         # we can specify status=upcoming,past,draft,cancelled etc. By default we
         # have status=upcoming, so we are not explicitly specifying in fields.
         params = {
@@ -177,7 +176,7 @@ class Meetup(EventBase):
         if social_network_group_id:
             if social_network_group_id in self.social_network_group_ids:
                 return True
-            url = self.api_url + '/groups/?sign=true'
+            url = Urls.get_url(self, Urls.GROUPS)+ '/?sign=true'
             response = http_request('GET', url,
                                     params={
                                         'group_id': social_network_group_id
@@ -231,7 +230,7 @@ class Meetup(EventBase):
         if event.has_key('group') and \
                 event['group'].has_key('id'):
 
-            url = self.api_url + '/groups/?sign=true'
+            url = Urls.get_url(self, Urls.GROUPS) + '/?sign=true'
             response = http_request('GET', url,
                                     params={
                                         'group_id': event['group']['id']
@@ -246,6 +245,7 @@ class Meetup(EventBase):
                     # Organizer data looks like
                     # { u'name': u'Waqas Younas', u'member_id': 183366764}
                     group_organizer = group['results'][0]['organizer']
+                    # TODO: Need to add this for mocking while fixing importer tests
                     url = '{}/member/{}'.format(self.api_url, str(group_organizer['member_id']) + '?sign=true')
                     response = http_request('GET', url, headers=self.headers,
                                             user_id=self.user.id)
@@ -446,7 +446,7 @@ class Meetup(EventBase):
         :rtype: int
         """
         # create url to update event
-        url = Urls.get_url(self, Urls.EVENTS) + ('/%s' % self.social_network_event_id)
+        url = Urls.get_url(self, Urls.EVENT).format(self.social_network_event_id)
         # create or update venue for event
         venue_id = self.add_location()
         # add venue id in event payload to update event venue on Meetup.com
@@ -477,7 +477,7 @@ class Meetup(EventBase):
         :return: True if event is deleted from vendor, False otherwise.
         :rtype Boolean
         """
-        self.url_to_delete_event = Urls.get_url(self, Urls.EVENTS) + ('/%s' % social_network_event_id)
+        self.url_to_delete_event = Urls.get_url(self, Urls.EVENT).format(social_network_event_id)
         super(Meetup, self).unpublish_event(social_network_event_id, method=method)
 
     @staticmethod

@@ -138,7 +138,7 @@ class Eventbrite(SocialNetworkBase):
             'venue.address.longitude': venue_data.get('longitude')
         }
         # create url to send post request to create venue
-        url = self.api_url + "/venues/"
+        url = Urls.get_url(self, Urls.VENUES)
         response = http_request('POST', url, params=payload,
                                 headers=self.headers,
                                 user_id=self.user.id)

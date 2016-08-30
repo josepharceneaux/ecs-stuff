@@ -126,7 +126,7 @@ class Eventbrite(EventBase):
         :rtype all_events: list
         """
         # create url to fetch events from eventbrite.com
-        events_url = self.api_url + '/events/search/'
+        events_url = Urls.get_url(self, Urls.EVENT).format('search/')
         params = {'user.id': self.member_id,
                   'date_created.range_start': self.start_date_in_utc,
                   'date_created.range_end': self.end_date_in_utc
@@ -195,8 +195,7 @@ class Eventbrite(EventBase):
             try:
                 # Get venues from Eventbrite API for this event.
                 response = http_request('GET',
-                                        self.api_url + '/venues/'
-                                        + event['venue_id'],
+                                        Urls.get_url(self, Urls.VENUE).format(event['venue_id']),
                                         headers=self.headers,
                                         user_id=self.user.id)
             except:
@@ -213,8 +212,7 @@ class Eventbrite(EventBase):
                         # Get organizer of the event from Eventbrite API.
                         response = http_request(
                             'GET',
-                            self.api_url + '/organizers/' +
-                            event['organizer_id'],
+                            Urls.get_url(self, Urls.ORGANIZER).format(event['organizer_id']),
                             headers=self.headers,
                             user_id=self.user.id)
                     except:
@@ -229,7 +227,7 @@ class Eventbrite(EventBase):
                         try:
                             response = http_request(
                                 'GET',
-                                self.api_url + '/users/' + self.member_id,
+                                Urls.get_url(self, Urls.USER).format(self.member_id),
                                 headers=self.headers,
                                 user_id=self.user.id)
                         except:
@@ -412,8 +410,7 @@ class Eventbrite(EventBase):
                 This method returns id of updated getTalent event.
         """
         # create url to update event
-        url = \
-            self.api_url + "/events/" + str(self.social_network_event_id) + '/'
+        url = Urls.get_url(self, Urls.EVENT).format(str(self.social_network_event_id) + '/')
         venue_id = self.add_location()  # adding venue for the event
         self.event_payload['event.venue_id'] = venue_id
         response = http_request('POST', url, params=self.event_payload,
@@ -537,8 +534,7 @@ class Eventbrite(EventBase):
             eventbrite.com
         :rtype: str
         """
-        tickets_url = self.api_url + "/events/" + social_network_event_id \
-                      + "/ticket_classes/"
+        tickets_url = Urls.get_url(self, Urls.TICKETS).format(social_network_event_id)
         return self.manage_event_tickets(tickets_url)
 
     def update_tickets(self, social_network_event_id):
@@ -557,8 +553,7 @@ class Eventbrite(EventBase):
             eventbrite.com)
         :rtype: str
         """
-        tickets_url = self.api_url + "/events/" + social_network_event_id \
-                      + "/ticket_classes/"
+        tickets_url = Urls.get_url(self, Urls.TICKETS).format(social_network_event_id)
         event = Event.get_by_user_and_social_network_event_id(
             self.user.id, social_network_event_id)
         if event.tickets_id:
@@ -616,8 +611,7 @@ class Eventbrite(EventBase):
             publish event on Eventbrite.com
         """
         # create url to publish event
-        url = self.api_url + "/events/" + str(social_network_event_id) \
-              + "/publish/"
+        url = Urls.get_url(self, Urls.PUBLISH_EVENT).format(str(social_network_event_id))
         # params are None. Access token is present in self.headers
         response = http_request('POST', url, headers=self.headers,
                                 user_id=self.user.id)
@@ -642,8 +636,7 @@ class Eventbrite(EventBase):
         :type social_network_event_id: int
         """
         # we will only set specific url here
-        self.url_to_delete_event = self.api_url + "/events/" + \
-                                   str(social_network_event_id) + "/unpublish/"
+        self.url_to_delete_event = Urls.get_url(self, Urls.UNPUBLISH_EVENT).format(social_network_event_id)
         # common unpublish functionality is in EventBase class'
         # unpublish_event() method.
         # Removes event from Eventbrite and from local database

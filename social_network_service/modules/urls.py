@@ -20,21 +20,36 @@ class SocialNetworkUrls(object):
     VALIDATE_TOKEN = 'validate_token'
     GROUPS = 'groups'
     VENUES = 'venues'
+    VENUE = 'venue'
     EVENTS = 'events'
+    EVENT = 'event'
     ORGANIZERS = 'organizers'
+    ORGANIZER = 'organizer'
+    TICKETS = 'tickets'
+    PUBLISH_EVENT = 'publish_event'
+    UNPUBLISH_EVENT = 'unpublish_event'
+    USER = 'user'
 
     """ Social-Networks """
     MEETUP = {VALIDATE_TOKEN: '{}/member/self',
               GROUPS: '{}/groups',
               VENUES: '{}/venues',
               EVENTS: '{}/event',  # This is singular on Meetup website,
+              EVENT: '{}/event/{}',
               }
 
     EVENTBRITE = {
         VALIDATE_TOKEN: '{}/users/me/',
         VENUES: '{}/venues/',
+        VENUE: '{}/venues/{}',
         EVENTS: '{}/events/',
-        ORGANIZERS: '{}/organizers/'
+        EVENT: '{}/events/{}',
+        ORGANIZERS: '{}/organizers/',
+        ORGANIZER: '{}/organizers/{}',
+        TICKETS: '{}/events/{}/ticket_classes/',
+        PUBLISH_EVENT: '{}/events/{}/publish/',
+        UNPUBLISH_EVENT: '{}/events/{}/unpublish/',
+        USER: '{}/users/{}'
     }
 
     @classmethod
@@ -55,8 +70,9 @@ class SocialNetworkUrls(object):
             api_url = class_object.api_url if not custom_url else custom_url
         try:
             relative_url = social_network_urls[key.lower()]
-        except AttributeError as error:
+        except KeyError as error:
             logger.error(error.message)
-            raise InternalServerError('Error occurred while getting URL for required action')
+            raise InternalServerError('Error occurred while getting URL for %s. (SocialNetwork:%s)'
+                                      % (key, social_network_name))
 
-        return relative_url.format(api_url)
+        return relative_url.format(api_url, '{}')

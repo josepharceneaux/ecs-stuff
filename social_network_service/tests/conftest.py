@@ -62,8 +62,7 @@ EVENT_DATA = {
 }
 
 # Add new vendor here to run tests for that particular social-network
-# VENDORS = [EVENTBRITE.title(), MEETUP.title()]
-VENDORS = [MEETUP.title()]
+VENDORS = [EVENTBRITE.title(), MEETUP.title()]
 
 
 @pytest.fixture(scope='session')
