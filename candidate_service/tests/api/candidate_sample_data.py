@@ -13,7 +13,7 @@ from candidate_service.common.tests.fake_testing_data_generator import generate_
 
 from candidate_service.common.tests.fake_testing_data_generator import college_majors
 from candidate_service.common.models.candidate import EmailLabel, PhoneLabel, CandidateStatus
-from candidate_service.common.models.misc import Product
+from candidate_service.common.models.misc import Product, CustomField, AreaOfInterest
 
 # Faker
 from faker import Faker
@@ -29,10 +29,14 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
     because areas_of_interest and custom_fields must be created for user's domain first before
     they can be used for candidate's sample data.
     :type talent_pool_ids:      list[int]
-    :type areas_of_interest:    list[int]
-    :type custom_fields:        list[int]
+    :param talent_pool_ids: domain talent pool ID(s)
+    :type areas_of_interest:    list[AreaOfInterest]
+    :param areas_of_interest: area of interest objects belonging to domain
+    :type custom_fields:        list[CustomField]
+    :param custom_fields: custom field objects belonging to domain
     :type source_id: int
-    :rtype: dict
+    :param source_id: the ID of the source where the candidate was found/created
+    :rtype: dict[list]
     """
     # Format data for areas of interest and custom fields
     aois, cfs = [], []
@@ -50,7 +54,7 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
     major_2 = random.choice(college_majors()[discipline_2])
 
     # Product IDs are from a static table so 1 should always be available
-    source_product_id = 1  # Mobile
+    source_product_id = Product.MOBILE
 
     data = {'candidates':
         [
