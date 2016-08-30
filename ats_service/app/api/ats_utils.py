@@ -28,7 +28,7 @@ ATS_CANDIDATE_FIELDS = ['ats_remote_id', 'profile_json']
 # ATS we support
 WORKDAY = 'Workday'
 GREENDAY = 'Greenday'
-ATS_LIST = [WORKDAY, GREENDAY]
+ATS_SET = {WORKDAY, GREENDAY}
 
 # Constructors
 ATS_CONSTRUCTORS = { WORKDAY : Workday }
@@ -45,7 +45,7 @@ def validate_ats_account_data(data):
     if missing_fields:
         raise InvalidUsage('Some required fields are missing', additional_error_info=dict(missing_fields=missing_fields))
 
-    if data['ats_name'] not in ATS_LIST:
+    if data['ats_name'] not in ATS_SET:
         raise UnprocessableEntity("Invalid data", additional_error_info=dict(unsupported_ats=data['ats_name']))
 
 
@@ -337,8 +337,7 @@ def fetch_auth_data(account_id):
     :param int account_id: Primary key of the account.
     :rtype string: ATS name.
     :rtype string: Login URL.
-    :rtype string: User id.
-    :rtype string: Authentication credentials.
+    :rtype: tuple[str] | tuple[str] | tuple[int] | tuple[ATSCredential]:
     """
     # Validate ATS Account
     account = ATSAccount.get(account_id)
@@ -367,7 +366,7 @@ def create_ats_object(logger, ats_name, url, user_id, credentials):
     :param string user_id: User id.
     :param string credentials: Authentication credentials.
     """
-    if ats_name not in ATS_LIST:
+    if ats_name not in ATS_SET:
         raise UnprocessableEntity("Invalid data", additional_error_info=dict(unsupported_ats=data['ats_name']))
 
     return ATS_CONSTRUCTORS[ats_name](logger, ats_name, url, user_id, credentials)

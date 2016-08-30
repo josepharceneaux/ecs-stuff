@@ -9,6 +9,7 @@ import json
 from urlparse import urlparse
 from sqlalchemy import text
 
+
 # Import path is different if we're loaded from script (as opposed to uswgi app)
 if __name__ == 'ats.workday':
     from common.models.workday import WorkdayTable
