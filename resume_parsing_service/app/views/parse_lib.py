@@ -2,16 +2,13 @@
 __author__ = 'erik@gettalent.com'
 # pylint: disable=wrong-import-position, fixme, import-error
 # Standard library
-from cStringIO import StringIO
 from os.path import basename
 from os.path import splitext
 from time import time
 import base64
-import json
 # Third Party/Framework Specific.
 from contracts import contract
 from flask import current_app
-import PyPDF2
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.constants import error_constants
@@ -62,7 +59,7 @@ def parse_resume(file_obj, filename_str, cache_key):
     if not doc_content:
         bucket = current_app.config['S3_BUCKET_NAME']
         boto3_put(file_obj.getvalue(), bucket, filename_str, 'FailedResumes')
-        logger.exception("Unable to determine the contents of the document: {}".format(filename_str))
+        logger.exception("Unable to determine the documents contents of: {}".format(filename_str))
         raise InvalidUsage(
             error_message=error_constants.NO_TEXT_EXTRACTED['message'],
             error_code=error_constants.NO_TEXT_EXTRACTED['code']
