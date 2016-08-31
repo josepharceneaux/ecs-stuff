@@ -1701,10 +1701,15 @@ class CandidateDeviceResource(Resource):
             #         db.session.commit()
             #         raise Exception('Failed to save')
             # if os.getenv(TalentConfigKeys.ENV_KEY) == TalentEnvs.JENKINS:
-            #     retry(save_device, sleeptime=2, attempts=10, sleepscale=1, retry_exceptions=(Exception,),
-            #           args=(candidate_device,))
+            try:
+                CandidateDevice.save(device)
+            except OperationalError as e:
+                logger.info('Try again, Error occurred while saving candidate device. Error: %s', e)
+                db.session.rollback()
+                db.session.commit()
+                raise
             # else:
-            CandidateDevice.save(candidate_device)
+            # CandidateDevice.save(candidate_device)
 
             return dict(message='Device (id: %s) registered successfully with candidate (id: %s)'
                                 % (candidate_device.id, candidate.id)), 201
