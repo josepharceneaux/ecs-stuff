@@ -68,14 +68,17 @@ def create_and_validate_account(token, post_data):
     account_id = response.headers['location'].split('/')[-1]
     response = send_request('get', ATSServiceApiUrl.ACCOUNT % account_id, token, {}, verify=False)
     assert response.status_code == codes.OK
-    values = json.loads(json.loads(response.text))
+    values = json.loads(response.text)
     assert values['credentials'] == post_data['ats_credentials']
+
+    # Get all ATS - there should only be one - then validate the first (and only) one
     response = send_request('get', ATSServiceApiUrl.ATS, token, {}, verify=False)
     assert response.status_code == codes.OK
-    values = json.loads(json.loads(response.text))
+    values = json.loads(response.text)
     # This fails occasionally in parallel tests due to a race condition.
     # assert len(values) == 1
-    assert values[0]['login_url'] == post_data['ats_login']
+    print "\n\nVALUES: {}\n".format(values['ats_list'])
+    assert values['ats_list'][0]['login_url'] == post_data['ats_login']
     return account_id
 
 
@@ -108,11 +111,11 @@ def create_and_validate_candidate(token, account_id, post_data):
     # Now fetch all the candidates from the account
     response = send_request('get', ATSServiceApiUrl.CANDIDATES % account_id, token, {}, verify=False)
     assert response.status_code == codes.OK
-    values = json.loads(json.loads(response.text))
-    assert len(values) == 1
+    values = json.loads(response.text)
+    assert len(values['candidate_list']) == 1
     # Extract the returned field
-    key = values[0].keys()[0]
-    profile = json.loads(values[0][key]['profile_json'])
+    key = values['candidate_list'][0].keys()[0]
+    profile = json.loads(values['candidate_list'][0][key]['profile_json'])
     assert profile['some'] == profile_dict.values()[0]
     return candidate_id
 

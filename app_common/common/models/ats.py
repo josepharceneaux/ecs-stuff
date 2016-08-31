@@ -45,14 +45,22 @@ class ATS(db.Model):
         return cls.query.filter_by(name=ats_name).first()
 
     @classmethod
+    def get_all(cls):
+        """
+        Retrieve all ATS entries and return as JSON.
+        :rtype: str
+        """
+        return [ats.to_dict() for ats in ATS.query.all()]
+
+    @classmethod
     def get_all_as_json(cls):
         """
         Retrieve all ATS entries and return as JSON.
         :rtype: str
         """
-        return_json = [ats.to_dict() for ats in ATS.query.all()]
+        return_list = [ats.to_dict() for ats in ATS.query.all()]
 
-        return json.dumps(return_json)
+        return json.dumps(return_list)
 
 
 class ATSAccount(db.Model):
@@ -153,7 +161,18 @@ class ATSCandidate(db.Model):
         :param int account_id: primary key of the account.
         :rtype list: list of candidates.
         """
-        return cls.query.filter_by(ats_account_id=account_id).all()
+        candidate_list = cls.query.filter_by(ats_account_id=account_id).all()
+        if not candidate_list:
+            return
+
+        return_list = []
+        for candidate in candidate_list:
+            item = candidate.to_dict()
+            profile = ATSCandidateProfile.get(candidate.profile_id)
+            item.update(profile.to_dict())
+            return_list.append({candidate.id : item})
+
+        return return_list
 
     @classmethod
     def get_all_as_json(cls, account_id):
@@ -167,14 +186,7 @@ class ATSCandidate(db.Model):
         if not candidates:
             return
 
-        return_json = []
-        for c in candidates:
-            item = c.to_dict()
-            profile = ATSCandidateProfile.get(c.profile_id)
-            item.update(profile.to_dict())
-            return_json.append({c.id : item})
-
-        return json.dumps(return_json)
+        return json.dumps(candidates)
 
     @classmethod
     def get_by_ats_id(cls, account_id, ats_id):

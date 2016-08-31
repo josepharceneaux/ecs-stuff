@@ -71,12 +71,10 @@ class ATSService(Resource):
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
 
-        response = ATS.get_all_as_json()
+        response = json.dumps(dict(ats_list=ATS.get_all()))
         ats_service.app.logger.info("RESPONSE: {}".format(response))
         headers = dict(Location=ATSServiceApiUrl.ATS)
-        # TODO
-        # return ApiResponse(response, headers=headers, status=codes.OK)
-        return ATS.get_all_as_json()
+        return ApiResponse(response, headers=headers, status=codes.OK)
 
 
 @api.route(ATSServiceApi.ACCOUNT)
@@ -109,12 +107,9 @@ class ATSAccountService(Resource):
                              'ats_name' : ats.name, 'ats_homepage' : ats.homepage_url,
                              'ats_login' : ats.login_url})
 
-        # TODO: Normalize response format; add values per Apiary doc.
         response = json.dumps(account_dict)
         headers = dict(Location=ATSServiceApiUrl.ACCOUNT % account_id)
-        # TODO:
-        # return ApiResponse(response, headers=headers, status=codes.OK)
-        return response
+        return ApiResponse(response, headers=headers, status=codes.OK)
 
     def delete(self, account_id):
         """
@@ -129,7 +124,9 @@ class ATSAccountService(Resource):
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         delete_ats_account(request.user.id, account_id)
 
-        return '{"delete" : "success"}'
+        response = json.dumps(dict(delete='success'))
+        headers = dict(Location=ATSServiceApiUrl.ACCOUNT % account_id)
+        return ApiResponse(response, headers=headers, status=codes.OK)
 
     def put(self, account_id):
         """
@@ -175,9 +172,9 @@ class ATSAccountsService(Resource):
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
 
-        account_list = ATSAccount.get_user_accounts(request.user.id)
+        account_list = dict(ats_accounts=ATSAccount.get_user_accounts(request.user.id))
         response = json.dumps(account_list)
-        headers = dict(Location=ATSServiceApiUrl.ACCOUNT % request.user.id)
+        headers = dict(Location=ATSServiceApiUrl.ACCOUNTS)
         return ApiResponse(response, headers=headers, status=codes.OK)
 
     def post(self):
@@ -240,15 +237,16 @@ class ATSCandidatesService(Resource):
         if not account:
             raise NotFoundError('Account id not found', additional_error_info=dict(account_id=account_id))
 
-        candidates = ATSCandidate.get_all_as_json(account_id)
+        candidates = ATSCandidate.get_all(account_id)
         if candidates:
-            # TODO: Normalize this response
             # TODO: Add the ATS-particular entry.
-            return candidates
+            response = json.dumps(dict(candidate_list=candidates))
+            headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account_id)
+            return ApiResponse(response, headers=headers, status=codes.OK)
 
         ats_service.app.logger.info("No candidates in ATS account {}".format(account_id))
         response = json.dumps(dict(account_id=account_id, message="No candidates in ATS account {}".format(account_id)))
-        headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account)
+        headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account_id)
         return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
 
     def post(self, account_id):
