@@ -17,11 +17,12 @@ import time
 from redo import retry
 from requests import codes
 
+from ..constants import SLEEP_INTERVAL, RETRY_ATTEMPTS
 from ..test_config_manager import load_test_config
 from ..utils.test_utils import (create_candidate, delete_candidate,
                                 create_smartlist, delete_smartlist, delete_talent_pool,
                                 create_talent_pools, create_talent_pipelines, get_smartlist_candidates, get_talent_pool,
-                                search_candidates)
+                                search_candidates, associate_device_to_candidate, delete_candidate_device)
 
 
 test_config = load_test_config()
@@ -293,3 +294,25 @@ def talent_pipeline_second(request, token_second, talent_pool_second):
     talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
 
     return {'id': talent_pipeline_id}
+
+
+@pytest.fixture(scope='function')
+def candidate_device_first(request, token_first, candidate_first):
+    """
+    This fixture associates a device with test candidate which is required to
+    send push campaign to candidate.
+    :param token_first: authentication token
+    :param candidate_first: candidate dict object
+    """
+    candidate_id = candidate_first['id']
+    device_id = test_config['PUSH_CONFIG']['device_id_1']
+    retry(associate_device_to_candidate, sleeptime=SLEEP_INTERVAL * 2, attempts=RETRY_ATTEMPTS, sleepscale=1,
+          retry_exceptions=(AssertionError,), args=(candidate_id, device_id, token_first))
+    device = {'one_signal_id': device_id}
+
+    def tear_down():
+        delete_candidate_device(candidate_id, device_id, token_first, expected_status=(codes.OK,
+                                                                                       codes.NOT_FOUND))
+
+    request.addfinalizer(tear_down)
+    return device

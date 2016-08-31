@@ -16,6 +16,8 @@ from _mysql_exceptions import OperationalError
 # Flask specific
 from flask import request
 from flask_restful import Resource
+from sqlalchemy import text
+
 from candidate_service.candidate_app import logger
 
 # Database connection
@@ -1687,7 +1689,6 @@ class CandidateDeviceResource(Resource):
         # Send a GET request to OneSignal API to confirm that this device id is valid
         response = one_signal_client.get_player(one_signal_device_id)
         if response.ok:
-            # Device exists with id
             candidate_device = CandidateDevice(candidate_id=candidate.id,
                                                one_signal_device_id=one_signal_device_id,
                                                registered_at_datetime=datetime.datetime.utcnow())
