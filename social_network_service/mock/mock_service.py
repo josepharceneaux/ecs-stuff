@@ -4,17 +4,14 @@ Here we have endpoint which is treated as Mock-Service for different social-netw
 # Third party
 from flask import Blueprint, request, jsonify
 
-# App specific import
-from requests import codes
-
 # Application Specific
+from social_network_service.mock.mock_api import MockApi
 from social_network_service.social_network_app import app
 from social_network_service.modules.constants import MEETUP
 from social_network_service.modules.urls import SocialNetworkUrls
 from social_network_service.common.routes import SocialNetworkApi
-from social_network_service.mock.vendors.meetup import meetup_vendor
+from social_network_service.mock.vendors.meetup_mock import meetup_vendor
 from social_network_service.common.talent_config_manager import TalentConfigKeys
-from social_network_service.common.tests.fake_testing_data_generator import fake
 from social_network_service.common.error_handling import (NotFoundError, InternalServerError,
                                                           UnauthorizedError)
 
@@ -39,9 +36,11 @@ register_vendor(MEETUP, meetup_vendor)
 
 
 @mock_blueprint.route(SocialNetworkApi.MOCK_SERVICE, methods=['PUT', 'PATCH', 'GET', 'POST', 'DELETE'])
-def mock_endpoint(social_network, relative_url):
+def mock_endpoint(url_type, social_network, relative_url):
     """
     Mock endpoint
+    :param url_type: auth url or api url
+    :type url_type: str | basestring
     :param string social_network: Name of social-network. e.g. "meetup"
     :param string relative_url: Relative URL for given social-network API
     """
@@ -54,6 +53,7 @@ def mock_endpoint(social_network, relative_url):
     if not vendor_data:
         raise NotFoundError("Vendor '{}' not found or mocked yet." % social_network)
     request_method = request.method
+
     splitted_data = relative_url.split('/')
     if len(splitted_data) > 1 and splitted_data[1].isdigit():
         relative_url = splitted_data[0]
@@ -62,9 +62,18 @@ def mock_endpoint(social_network, relative_url):
             request_method = 'PUT'
     else:
         resource_id = None
+
     try:
-        data = vendor_data(resource_id)['/' + relative_url][request_method.upper()][codes.ok]
-        status_code = data['status_code']
+        if request.content_type == 'application/x-www-form-urlencoded':
+            data = dict()
+            [data.update({k: v}) for k, v in request.values.iteritems()]
+        elif request.content_type == 'application/json':
+            data = request.json()
+        else:
+            data = request.data
+        mocked_json = vendor_data(url_type, resource_id)['/' + relative_url][request_method]
+        mock_api = MockApi(mocked_json, payload=data, headers=request.headers)
+        response, status_code = mock_api.get_response()
     except KeyError:
         raise InternalServerError('No Data found. Method:%s, Url:%s.' % (request_method, relative_url))
-    return jsonify(data), status_code
+    return jsonify(response), status_code

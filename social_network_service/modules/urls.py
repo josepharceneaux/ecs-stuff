@@ -18,6 +18,7 @@ class SocialNetworkUrls(object):
     """
     IS_DEV = app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]
     VALIDATE_TOKEN = 'validate_token'
+    REFRESH_TOKEN = 'refresh_token'
     GROUPS = 'groups'
     VENUES = 'venues'
     VENUE = 'venue'
@@ -32,6 +33,7 @@ class SocialNetworkUrls(object):
 
     """ Social-Networks """
     MEETUP = {VALIDATE_TOKEN: '{}/member/self',
+              REFRESH_TOKEN: '{}/access',
               GROUPS: '{}/groups',
               VENUES: '{}/venues',
               EVENTS: '{}/event',  # This is singular on Meetup website,
@@ -53,21 +55,24 @@ class SocialNetworkUrls(object):
     }
 
     @classmethod
-    def get_url(cls, class_object, key, custom_url=None):
+    def get_url(cls, class_object, key, custom_url=None, is_auth=None):
         """
         This returns the required URL to make HTTP request on some social-network website
         :param class_object: SocialNetwork class object
         :param string key: Requested Key
         :param custom_url: Custom API URL different from class_object.api_url
+        :param bool is_auth: if is_auth is true then use vendor auth url, otherwise use api url
         :rtype: string
         """
         social_network_name = class_object.social_network.name
         social_network_urls = getattr(cls, social_network_name.upper())
         if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS] \
                 and social_network_name.lower() in MOCK_VENDORS:
-            api_url = SocialNetworkApiUrl.MOCK_SERVICE % social_network_name.lower()
+            # There are currently two types of URLs. i.e Auth and API url.
+            auth_part = 'auth' if is_auth else 'api'
+            api_url = SocialNetworkApiUrl.MOCK_SERVICE % (auth_part, social_network_name.lower())
         else:
-            api_url = class_object.api_url if not custom_url else custom_url
+            api_url = (class_object.auth_url if is_auth else class_object.api_url) if not custom_url else custom_url
         try:
             relative_url = social_network_urls[key.lower()]
         except KeyError as error:
