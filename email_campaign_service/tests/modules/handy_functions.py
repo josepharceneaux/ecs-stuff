@@ -13,7 +13,6 @@ from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import fake
-from email_campaign_service.common.models.user import Permission
 from email_campaign_service.common.models.misc import (Activity,
                                                        UrlConversion,
                                                        Frequency)
@@ -31,6 +30,7 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 
 __author__ = 'basit'
 TEST_EMAIL_ID = 'test.gettalent@gmail.com'
+
 
 def create_email_campaign(user):
     """
@@ -190,7 +190,10 @@ def assert_and_delete_email(subject):
     try:
         mail_connection.login(app.config[TalentConfigKeys.GT_GMAIL_ID],
                               app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
-    except Exception as error:
+    except imaplib.IMAP4_SSL.abort as error:
+        print error.message
+        raise  # Raise any error raised by server
+    except imaplib.IMAP4_SSL.error as error:
         print error.message
         pass  # Maybe already login when running on Jenkins on multiple cores
     print "Checking for Email with subject: %s" % subject
@@ -246,9 +249,9 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
                                                   campaign.id)
         if not email_client:
             assert retry(assert_and_delete_email, sleeptime=3, attempts=130, sleepscale=1,
-                         args=(campaign.subject,), retry_exceptions=(AssertionError,)),\
-                   "Email with subject %s was not found at time: %s." % (campaign.subject,
-                                                                         str(datetime.datetime.utcnow()))
+                         args=(campaign.subject,), retry_exceptions=(AssertionError, imaplib.IMAP4_SSL.abort)), \
+                "Email with subject %s was not found at time: %s." % (campaign.subject,
+                                                                      str(datetime.datetime.utcnow()))
 
     # For each url_conversion record we assert that source_url is saved correctly
     for send_url_conversion in sends_url_conversions:

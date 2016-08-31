@@ -433,23 +433,22 @@ class TestSendCampaign(object):
             self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
         assert_campaign_send(response, campaign, user_first, no_of_sends)
 
-    # def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
-    #         self, access_token_first, user_first, campaign_with_valid_candidate):
-    #     """
-    #     User auth token is valid, campaign has one smart list associated. Smartlist has two
-    #     candidates associated (with same email addresses). Email Campaign should not be sent to
-    #     any candidate.
-    #     """
-    #     same_email = fake.email()
-    #     for candidate in user_first.candidates:
-    #         candidate.emails[0].update(address=same_email)
-    #     response = requests.post(
-    #         self.URL % campaign_with_valid_candidate.id,
-    #         headers=dict(Authorization='Bearer %s' % access_token_first))
-    #     assert_campaign_send(response, campaign_with_valid_candidate, user_first, 1)
-    #     if not campaign_with_valid_candidate.email_client_id:
-    #         json_resp = response.json()
-    #         assert str(campaign_with_valid_candidate.id) in json_resp['message']
+    def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
+            self, access_token_first, user_first, campaign_with_valid_candidate):
+        """
+        User auth token is valid, campaign has one smart list associated. Smartlist has two
+        candidates associated (with same email addresses). Email Campaign should not be sent to
+        any candidate.
+        """
+        same_email = fake.email()
+        for candidate in user_first.candidates:
+            candidate.emails[0].update(address=same_email)
+        response = requests.post(self.URL % campaign_with_valid_candidate.id,
+                                 headers=dict(Authorization='Bearer %s' % access_token_first))
+        assert_campaign_send(response, campaign_with_valid_candidate, user_first, 1)
+        if not campaign_with_valid_candidate.email_client_id:
+            json_resp = response.json()
+            assert str(campaign_with_valid_candidate.id) in json_resp['message']
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_diff_domain(
             self, access_token_first, user_first,
