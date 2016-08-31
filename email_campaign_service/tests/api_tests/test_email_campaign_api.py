@@ -404,14 +404,13 @@ class TestSendCampaign(object):
                                                                None)
 
     def test_post_with_one_smartlist_one_candidate_with_no_email(
-            self, access_token_first, campaign_with_candidate_having_no_email):
+            self, headers, campaign_with_candidate_having_no_email):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has one
         candidate having no email associated. So, sending email campaign should fail.
         """
         response = requests.post(
-            self.URL % campaign_with_candidate_having_no_email.id,
-            headers=dict(Authorization='Bearer %s' % access_token_first))
+            self.URL % campaign_with_candidate_having_no_email.id, headers=headers)
         CampaignsTestsHelpers.assert_campaign_failure(response, campaign_with_candidate_having_no_email,
                                                       requests.codes.OK)
         if not campaign_with_candidate_having_no_email.email_client_id:
@@ -420,21 +419,19 @@ class TestSendCampaign(object):
 
 
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
-            self, access_token_first, user_first, campaign_with_valid_candidate):
+            self, headers, user_first, campaign_with_valid_candidate):
         """
         Tests sending a campaign with one smartlist. That smartlist has, in turn,
         two candidates associated with it. Those candidates have unique email addresses.
         Campaign emails should be sent to 2 candidates so number of sends should be 2.
         """
-
         no_of_sends = 2
         campaign = campaign_with_valid_candidate
-        response = requests.post(
-            self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+        response = requests.post(self.URL % campaign.id, headers=headers)
         assert_campaign_send(response, campaign, user_first, no_of_sends)
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(
-            self, access_token_first, user_first, campaign_with_valid_candidate):
+            self, headers, user_first, campaign_with_valid_candidate):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates associated (with same email addresses). Email Campaign should not be sent to
@@ -443,15 +440,14 @@ class TestSendCampaign(object):
         same_email = fake.email()
         for candidate in user_first.candidates:
             candidate.emails[0].update(address=same_email)
-        response = requests.post(self.URL % campaign_with_valid_candidate.id,
-                                 headers=dict(Authorization='Bearer %s' % access_token_first))
+        response = requests.post(self.URL % campaign_with_valid_candidate.id, headers=headers)
         assert_campaign_send(response, campaign_with_valid_candidate, user_first, 1)
         if not campaign_with_valid_candidate.email_client_id:
             json_resp = response.json()
             assert str(campaign_with_valid_candidate.id) in json_resp['message']
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_diff_domain(
-            self, access_token_first, user_first,
+            self, headers, user_first,
             campaign_with_candidates_having_same_email_in_diff_domain):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
@@ -459,12 +455,10 @@ class TestSendCampaign(object):
         address. Email Campaign should be sent to 2 candidates only.
         """
         campaign = campaign_with_candidates_having_same_email_in_diff_domain
-        response = requests.post(
-            self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+        response = requests.post(self.URL % campaign.id, headers=headers)
         assert_campaign_send(response, campaign, user_first, 2, abort_time_for_sends=300)
 
-    def test_campaign_send_with_email_client_id(
-            self, send_email_campaign_by_client_id_response, user_first):
+    def test_campaign_send_with_email_client_id(self, send_email_campaign_by_client_id_response, user_first):
         """
         Email client can be Outlook Plugin, Browser etc.
         User auth token is valid, campaign has one smart list associated. Smartlist has two
@@ -528,8 +522,8 @@ class TestSendCampaign(object):
         assert hit_count_after == hit_count_before + 1
         UrlConversion.delete(url_conversion)
 
-    def test_send_campaign_with_two_smartlists(
-            self, access_token_first, user_first, talent_pipeline, email_campaign_of_user_first):
+    def test_send_campaign_with_two_smartlists(self, access_token_first, headers, user_first, talent_pipeline,
+                                               email_campaign_of_user_first):
         """
         This function creates two smartlists with 20 candidates each and associates them
         with a campaign. Sends that campaign and tests if emails are sent to all 40 candidates.
@@ -549,21 +543,17 @@ class TestSendCampaign(object):
         campaign = email_campaign_of_user_first
         create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2],
                                          email_campaign_id=campaign.id)
-        response = requests.post(
-            self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+        response = requests.post(self.URL % campaign.id, headers=headers)
         assert_campaign_send(response, campaign, user_first, 40, abort_time_for_sends=300)
 
     def test_send_campaign_with_two_smartlists_having_same_candidate(
-            self, access_token_first, user_first, campaign_with_same_candidate_in_multiple_smartlists):
+            self, headers, user_first, campaign_with_same_candidate_in_multiple_smartlists):
         """
         This function creates two smartlists with 1 candidate each, candidate is same in both smartlists and
         associates them with a campaign. Sends that campaign and tests if email is sent to the candidate only once.
-        :param access_token_first: Access token of user_first
-        :param user_first: Valid user from fist domain
-        :param campaign_with_same_candidate_in_multiple_smartlists: Fixture to create required email-campaign
         """
         campaign = campaign_with_same_candidate_in_multiple_smartlists
-        response = requests.post(self.URL % campaign.id, headers=dict(Authorization='Bearer %s' % access_token_first))
+        response = requests.post(self.URL % campaign.id, headers=headers)
         assert_campaign_send(response, campaign, user_first, expected_count=1)
 
 

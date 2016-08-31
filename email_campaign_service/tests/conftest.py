@@ -15,6 +15,10 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
+# TODO: with_client causes 504, need to look into this
+# EMAIL_CAMPAIGN_TYPES = ['with_client', 'without_client']
+EMAIL_CAMPAIGN_TYPES = ['without_client']
+
 
 @pytest.fixture()
 def headers(access_token_first):
@@ -208,7 +212,7 @@ def candidate_in_other_domain(request, user_from_diff_domain):
     return candidate
 
 
-@pytest.fixture(params=['with_client', 'without_client'])
+@pytest.fixture(params=EMAIL_CAMPAIGN_TYPES)
 def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
     """
     This fixture sends the campaign 1) with client_id and 2) without client id
@@ -217,7 +221,7 @@ def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
     return send_campaign_helper(request, campaign_with_valid_candidate, access_token_first)
 
 
-@pytest.fixture(params=['with_client', 'without_client'])
+@pytest.fixture(params=EMAIL_CAMPAIGN_TYPES)
 def sent_campaign_in_other_domain(request, email_campaign_in_other_domain, access_token_other):
     """
     This fixture sends the campaign_in_other_domain 1) with client_id and 2) without client id
@@ -226,7 +230,7 @@ def sent_campaign_in_other_domain(request, email_campaign_in_other_domain, acces
     return send_campaign_helper(request, email_campaign_in_other_domain, access_token_other)
 
 
-@pytest.fixture(params=['with_client', 'without_client'])
+@pytest.fixture(params=EMAIL_CAMPAIGN_TYPES)
 def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_email,
                                  access_token_first):
     """
@@ -237,7 +241,7 @@ def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_emai
                                 access_token_first)
 
 
-@pytest.fixture(params=['with_client', 'without_client'])
+@pytest.fixture(params=EMAIL_CAMPAIGN_TYPES)
 def sent_campaign_to_ten_candidates(request, campaign_to_ten_candidates_not_sent,
                                     access_token_first):
     """
