@@ -83,7 +83,7 @@ def google_vision_ocr(file_string_io, timeout=20):
 
     logger.info("google_vision_ocr: Google API response JSON: %s", ocr_results)
 
-    text_annotations = ocr_results['responses'][0].get('textAnnotations', {})
+    text_annotations = ocr_results['responses'][0].get('textAnnotations')
 
     if not text_annotations:
         return u''
