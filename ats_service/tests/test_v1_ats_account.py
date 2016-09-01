@@ -82,7 +82,7 @@ class TestATSAccounts(object):
         account_id = create_and_validate_account(access_token_first, account_post_data)
         response = send_request('delete', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first)
         assert response.status_code == codes.OK
-        values = json.loads(json.loads(response.text))
+        values = json.loads(response.text)
         assert values['delete'] == 'success'
         verify_nonexistant_account(access_token_first, account_id)
 
@@ -106,5 +106,5 @@ class TestATSAccounts(object):
         response = send_request('get', ATSServiceApiUrl.ACCOUNT % account_id, access_token_first, {}, verify=False)
         assert response.status_code == codes.OK
         # TODO: Normalize service output text between endpoints
-        values = json.loads(json.loads(response.text))
+        values = json.loads(response.text)
         assert values[key] == value

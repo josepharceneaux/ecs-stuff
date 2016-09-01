@@ -1000,6 +1000,7 @@ candidates_resource_schema_patch = {
                         "type": ["array", "null"],
                         "items": {
                             "type": "object",
+                            "additionalProperties": False,
                             "properties": {
                                 "id": {
                                     "type": ["integer"]
