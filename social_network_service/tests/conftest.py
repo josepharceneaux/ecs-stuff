@@ -86,7 +86,7 @@ def eventbrite():
     """
     This fixture returns Social network model object for eventbrite in getTalent database
     """
-    return SocialNetwork.get_by_name(EVENTBRITE.title())
+    return {'id': SocialNetwork.get_by_name(EVENTBRITE.title()).id}
 
 
 @pytest.fixture(scope='session')
@@ -110,7 +110,7 @@ def test_eventbrite_credentials(user_first, eventbrite):
                          json.dumps(dict(
                              access_token=app.config[TalentConfigKeys.EVENTBRITE_ACCESS_TOKEN]
                          )))
-    social_network_id = eventbrite.id
+    social_network_id = eventbrite['id']
     user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_first['id'],
                                                                                      social_network_id)
     return user_credentials
@@ -191,7 +191,7 @@ def meetup_event_data(meetup, meetup_venue, organizer_in_db, meetup_group):
     if data.get('organizer_id'):
         del data['organizer_id']
     data['social_network_id'] = meetup['id']
-    data['venue_id'] = meetup_venue.id
+    data['venue_id'] = meetup_venue['id']
     data['group_url_name'] = meetup_group['urlname']
     data['social_network_group_id'] = meetup_group['id']
 
@@ -205,8 +205,8 @@ def eventbrite_event_data(eventbrite, eventbrite_venue, test_eventbrite_credenti
     It uses eventbrite SocialNetwork model object, venue for eventbrite and an organizer to create event data
     """
     data = EVENT_DATA.copy()
-    data['social_network_id'] = eventbrite.id
-    data['venue_id'] = eventbrite_venue.id
+    data['social_network_id'] = eventbrite['id']
+    data['venue_id'] = eventbrite_venue['id']
     data['organizer_id'] = organizer_in_db['id']
 
     return data
@@ -318,8 +318,8 @@ def eventbrite_event(request, test_eventbrite_credentials,
     """
     event = EVENT_DATA.copy()
     event['title'] = 'Eventbrite ' + event['title']
-    event['social_network_id'] = eventbrite.id
-    event['venue_id'] = eventbrite_venue.id
+    event['social_network_id'] = eventbrite['id']
+    event['venue_id'] = eventbrite_venue['id']
 
     event['organizer_id'] = organizer_in_db['id']
 
@@ -360,8 +360,8 @@ def eventbrite_event_second(request, test_eventbrite_credentials, eventbrite, ev
     """
     event = EVENT_DATA.copy()
     event['title'] = 'Eventbrite ' + event['title']
-    event['social_network_id'] = eventbrite.id
-    event['venue_id'] = eventbrite_venue.id
+    event['social_network_id'] = eventbrite['id']
+    event['venue_id'] = eventbrite_venue['id']
     event['organizer_id'] = organizer_in_db['id']
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=event)
     assert response.status_code == codes.CREATED, response.text
@@ -410,7 +410,7 @@ def meetup_venue(meetup, user_first):
     venue = Venue(**venue)
     Venue.save(venue)
 
-    return venue
+    return {'id': venue.id}
 
 
 @pytest.fixture(scope="function")
@@ -442,7 +442,7 @@ def eventbrite_venue_second(user_first, eventbrite):
     """
     This fixture returns eventbrite venue in getTalent database
     """
-    social_network_id = eventbrite.id
+    social_network_id = eventbrite['id']
     venue = {
         "social_network_id": social_network_id,
         "user_id": user_first['id'],
@@ -466,7 +466,7 @@ def eventbrite_venue(user_first, eventbrite):
     """
     This fixture returns eventbrite venue in getTalent database
     """
-    social_network_id = eventbrite.id
+    social_network_id = eventbrite['id']
     venue = {
         "social_network_id": social_network_id,
         "user_id": user_first['id'],
@@ -482,7 +482,7 @@ def eventbrite_venue(user_first, eventbrite):
     venue = Venue(**venue)
     Venue.save(venue)
 
-    return venue
+    return {'id': venue.id}
 
 
 @pytest.fixture(scope="session", params=VENDORS)
@@ -551,8 +551,8 @@ def get_test_event_eventbrite(request, user_first, eventbrite, eventbrite_venue,
     """
     # Data for Eventbrite
     eventbrite_dict = EVENT_DATA.copy()
-    eventbrite_dict['social_network_id'] = eventbrite.id
-    eventbrite_dict['venue_id'] = eventbrite_venue.id
+    eventbrite_dict['social_network_id'] = eventbrite['id']
+    eventbrite_dict['venue_id'] = eventbrite_venue['id']
     eventbrite_dict['organizer_id'] = organizer_in_db['id']
     eventbrite_dict['user_id'] = user_first['id']
 
@@ -578,7 +578,7 @@ def get_test_event_meetup(request, user_first, meetup, meetup_venue, meetup_grou
     # Data for Meetup
     meetup_dict = EVENT_DATA.copy()
     meetup_dict['social_network_id'] = meetup['id']
-    meetup_dict['venue_id'] = meetup_venue.id
+    meetup_dict['venue_id'] = meetup_venue['id']
     meetup_dict['user_id'] = user_first['id']
     meetup_dict['group_url_name'] = meetup_group['urlname']
     meetup_dict['social_network_group_id'] = meetup_group['id']
