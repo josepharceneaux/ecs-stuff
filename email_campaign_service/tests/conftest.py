@@ -9,7 +9,6 @@ from email_campaign_service.common.models.email_campaign import (EmailClient, Us
                                                                  EmailTemplateFolder)
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   create_email_campaign_smartlist,
-                                                                  delete_campaign,
                                                                   send_campaign_helper,
                                                                   create_smartlist_with_given_email_candidate,
                                                                   EmailCampaignTypes)
