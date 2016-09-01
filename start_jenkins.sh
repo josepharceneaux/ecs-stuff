@@ -69,8 +69,8 @@ echo "Beginning tests."
 
 for i in $(seq 1 20)
 do
-py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests resume_parsing_service/tests social_network_service/tests candidate_service/tests ats_service/tests
-#py.test -n 48 social_network_service/tests
+#py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests resume_parsing_service/tests social_network_service/tests candidate_service/tests ats_service/tests
+py.test -n 48 social_network_service/tests
 echo "Looping $i"
 
 export PYTHONPATH=.
