@@ -259,7 +259,7 @@ class TestDeleteMultipleCampaigns(object):
         delete_campaigns(data, token_same_domain, expected_status=(codes.OK,))
 
         # Check campaign creation activity
-        assert_activity(Activity.MessageIds.CAMPAIGN_DELETE, campaign_in_db['id'], 'push_campaign', token_first)
+        assert_activity(Activity.MessageIds.CAMPAIGN_DELETE, campaign_in_db['id'], 'push_campaign', token_same_domain)
 
     def test_campaigns_delete_with_unauthorized_id(self, token_second, campaign_in_db):
         """

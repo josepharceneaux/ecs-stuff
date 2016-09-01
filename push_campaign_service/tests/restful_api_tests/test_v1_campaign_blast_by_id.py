@@ -19,7 +19,7 @@ from redo import retry
 from requests import codes
 
 # Application specific imports
-from push_campaign_service.tests.test_utilities import get_blast
+from push_campaign_service.tests.test_utilities import get_blast, fake
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
 URL = PushCampaignApiUrl.BLAST
@@ -39,17 +39,15 @@ class TestCampaignBlastById(object):
         get_blast(blast_id, campaign_id, 'invalid_token',
                   expected_status=(codes.UNAUTHORIZED,))
 
-    def test_get_campaign_blast_with_non_existing_campaign(self, token_first, campaign_blast,
-                                                           campaign_in_db):
+    def test_get_campaign_blast_with_non_existing_campaign(self, token_first, campaign_in_db):
         """
         We are trying to get a blast of a campaign that does not exist,
         we are expecting ResourceNotFound error 404
         :param token_first: auth token
-        :param campaign_blast: campaign blast object
         :param campaign_in_db: campaign object
         """
         # 404 Case, Campaign not found
-        blast_id = campaign_blast['id']
+        blast_id = fake.random_int()
         invalid_campaign_id = sys.maxint
         get_blast(blast_id, invalid_campaign_id, token_first,
                   expected_status=(codes.NOT_FOUND,))

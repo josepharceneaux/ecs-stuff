@@ -132,7 +132,8 @@ class TestScheduleCampaignUsingPOST(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        # There should be no campaign send activity
+
+        # There should be a campaign schedule activity
         assert_activity(Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_in_db['id'], 'push_campaign', token_first)
 
 
@@ -158,6 +159,10 @@ class TestScheduleCampaignUsingPOST(object):
         assert task_id
         campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
         match_schedule_data(data, campaign)
+
+        # There should be a campaign schedule activity
+        assert_activity(Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_in_db['id'], 'push_campaign', token_same_domain)
+
         # retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
         #       args=(campaign_id, token_first), kwargs={'count': 1})
 
