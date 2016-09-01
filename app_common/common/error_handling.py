@@ -4,8 +4,6 @@ This module contains our custom exception types (Errors) and error handlers for 
     TalentError is the base class for all other exceptions classes.
 """
 from sqlalchemy.orm.exc import DetachedInstanceError
-from _mysql_exceptions import OperationalError
-
 from flask import (jsonify, request, has_request_context)
 
 __author__ = 'oamasood'
@@ -142,28 +140,7 @@ def register_error_handlers(app, logger):
                         UserEmail: %s
                         Error Details: %s
                         ''', app_name, url, user_id, user_email, error)
-
         return jsonify(response), 500
-
-    @app.errorhandler(502)
-    def handle_bad_gateway(exc):
-        error = exc.message
-        if isinstance(exc, OperationalError):
-            from .models import db
-            db.session.rollback()
-            logger.info('Rolling back mysql exception. Error: %s', error)
-
-        app_name, url, user_id, user_email = get_request_info(app)
-        logger.error('''Gateway timeout error 502.
-                        App: %s,
-                        Url: %s
-                        User Id: %s
-                        UserEmail: %s
-                        Error Details: %s
-                        ''', app_name, url, user_id, user_email, error)
-
-        response = {'error': {'message': "Internal server error"}}
-        return jsonify(response), 502
 
     def handle_error(error, message):
         """

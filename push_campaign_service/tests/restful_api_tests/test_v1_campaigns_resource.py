@@ -248,7 +248,7 @@ class TestDeleteMultipleCampaigns(object):
         delete_campaigns(data, token_first, expected_status=(codes.OK,))
         assert_activity(Activity.MessageIds.CAMPAIGN_DELETE, campaign_in_db['id'], 'push_campaign', token_first)
 
-    def test_campaigns_delete_with_other_user_with_same_domain(self, token_first, token_same_domain, campaign_in_db):
+    def test_campaigns_delete_with_other_user_with_same_domain(self, token_same_domain, campaign_in_db):
         """
         User auth token is valid, data type is valid and ids are of those campaigns that
         belong to some other user. It should get unauthorized error.

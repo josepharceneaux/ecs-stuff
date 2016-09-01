@@ -11,8 +11,6 @@ from datetime import date
 
 # Third Party
 from redo import retry
-from sqlalchemy import text
-from _mysql_exceptions import OperationalError
 
 # Flask specific
 from flask import request

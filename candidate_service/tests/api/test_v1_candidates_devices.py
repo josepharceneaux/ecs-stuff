@@ -26,29 +26,6 @@ test_config = load_test_config()
 PUSH_DEVICE_ID = test_config['PUSH_CONFIG']['device_id_1']
 
 
-@pytest.fixture()
-def delete_device(request):
-    """
-    This fixture is being used to delete device association with candidate at the end of a test.
-    It is because, if a one_signal_device_id is already associated to a candidate in same domain
-    then it can not be assigned to another candidate. So we are deleting this entry before next test.
-    :param request:
-    :return:
-    """
-    # this data dict will be modified at the end of test.
-    data = {}
-
-    def tear_down():
-        if 'device_id' in data and 'candidate_id' in data:
-            device_id = data['device_id']
-            candidate_id = data['candidate_id']
-            CandidateDevice.query.filter_by(one_signal_device_id=device_id,
-                                            candidate_id=candidate_id).delete()
-
-    request.addfinalizer(tear_down)
-    return data
-
-
 def test_associate_device_with_invalid_token(candidate_first):
     """
     Try to associate a valid device id to valid candidate but with invalid token, API should
@@ -128,10 +105,6 @@ def test_associate_device_with_valid_data(token_first, candidate_first):
     assert 'devices' in response
     assert len(response['devices']) == 1
 
-    # Set data to be used in finalizer to delete device association
-    # delete_device['candidate_id'] = candidate_first['id']
-    # delete_device['device_id'] = PUSH_DEVICE_ID
-
 
 def test_associate_device_to_two_candidate_in_same_domain(token_first, candidate_first,
                                                           candidate_same_domain):
@@ -155,10 +128,6 @@ def test_associate_device_to_two_candidate_in_same_domain(token_first, candidate
     # assert response.status_code == 400
     assert response.status_code == requests.codes.CREATED
 
-    # Set data to be used in finalizer to delete device association
-    # delete_device['candidate_id'] = candidate_first['id']
-    # delete_device['device_id'] = PUSH_DEVICE_ID
-
 
 def test_associate_device_using_diff_user_token_same_domain(token_same_domain, candidate_first):
     """
@@ -180,10 +149,6 @@ def test_associate_device_using_diff_user_token_same_domain(token_same_domain, c
     response = response.json()
     assert 'devices' in response
     assert len(response['devices']) == 1
-
-    # Set data to be used in finalizer to delete device association
-    # delete_device['candidate_id'] = candidate_first['id']
-    # delete_device['device_id'] = PUSH_DEVICE_ID
 
 
 def test_associate_device_using_diff_user_token_diff_domain(token_second, candidate_first):

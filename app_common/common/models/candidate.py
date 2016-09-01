@@ -1,6 +1,6 @@
 from sqlalchemy import and_
 from db import db
-from sqlalchemy.orm import relationship, backref, relation
+from sqlalchemy.orm import relationship, backref
 import datetime
 from ..error_handling import InternalServerError
 from ..utils.validators import raise_if_not_positive_int_or_long

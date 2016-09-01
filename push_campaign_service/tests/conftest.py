@@ -360,8 +360,7 @@ def candidate_device_same_domain(request, token_same_domain, candidate_same_doma
     candidate_id = candidate_same_domain['id']
     device_id = test_config['PUSH_CONFIG']['device_id_1']
 
-    retry(associate_device_to_candidate, sleeptime=SLEEP_INTERVAL * 2, attempts=RETRY_ATTEMPTS, sleepscale=1,
-          retry_exceptions=(AssertionError,), args=(candidate_id, device_id, token_same_domain))
+    associate_device_to_candidate(candidate_id, device_id, token_same_domain)
     device = {'one_signal_id': device_id}
 
     return device
@@ -378,8 +377,7 @@ def candidate_device_second(request, token_second, candidate_second):
     candidate_id = candidate_second['id']
     device_id = test_config['PUSH_CONFIG']['device_id_1']
 
-    retry(associate_device_to_candidate, sleeptime=SLEEP_INTERVAL * 2, attempts=RETRY_ATTEMPTS, sleepscale=1,
-          retry_exceptions=(AssertionError,), args=(candidate_id, device_id, token_second))
+    associate_device_to_candidate(candidate_id, device_id, token_second)
     device = {'one_signal_id': device_id}
 
     return device
