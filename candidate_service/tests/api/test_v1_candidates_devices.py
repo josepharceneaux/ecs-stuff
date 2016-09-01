@@ -108,7 +108,7 @@ def test_associate_device_to_deleted_candidate(token_first, candidate_first):
     assert response.status_code == requests.codes.NOT_FOUND
 
 
-def test_associate_device_with_valid_data(token_first, candidate_first, delete_device):
+def test_associate_device_with_valid_data(token_first, candidate_first):
     """
     Try to associate a valid device id to a valid candidate.
     API should assign that device id to candidate in CandidateDevice table and return a success
@@ -130,12 +130,12 @@ def test_associate_device_with_valid_data(token_first, candidate_first, delete_d
     assert len(response['devices']) == 1
 
     # Set data to be used in finalizer to delete device association
-    delete_device['candidate_id'] = candidate_first['id']
-    delete_device['device_id'] = PUSH_DEVICE_ID
+    # delete_device['candidate_id'] = candidate_first['id']
+    # delete_device['device_id'] = PUSH_DEVICE_ID
 
 
 def test_associate_device_to_two_candidate_in_same_domain(token_first, candidate_first,
-                                                          candidate_same_domain, delete_device):
+                                                          candidate_same_domain):
     """
     Try to associate a valid device id to a valid candidate.
     API should assign that device id to candidate in CandidateDevice table and return a success
@@ -157,11 +157,11 @@ def test_associate_device_to_two_candidate_in_same_domain(token_first, candidate
     assert response.status_code == requests.codes.CREATED
 
     # Set data to be used in finalizer to delete device association
-    delete_device['candidate_id'] = candidate_first['id']
-    delete_device['device_id'] = PUSH_DEVICE_ID
+    # delete_device['candidate_id'] = candidate_first['id']
+    # delete_device['device_id'] = PUSH_DEVICE_ID
 
 
-def test_associate_device_using_diff_user_token_same_domain(token_same_domain, candidate_first, delete_device):
+def test_associate_device_using_diff_user_token_same_domain(token_same_domain, candidate_first):
     """
     Try to associate  a device to a candidate but authentication token belongs to a different
     user that is not owner of candidate but he is from same domain as owner user.
@@ -183,8 +183,8 @@ def test_associate_device_using_diff_user_token_same_domain(token_same_domain, c
     assert len(response['devices']) == 1
 
     # Set data to be used in finalizer to delete device association
-    delete_device['candidate_id'] = candidate_first['id']
-    delete_device['device_id'] = PUSH_DEVICE_ID
+    # delete_device['candidate_id'] = candidate_first['id']
+    # delete_device['device_id'] = PUSH_DEVICE_ID
 
 
 def test_associate_device_using_diff_user_token_diff_domain(token_second, candidate_first):

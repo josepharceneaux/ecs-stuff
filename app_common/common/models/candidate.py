@@ -1,6 +1,6 @@
 from sqlalchemy import and_
 from db import db
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, relation
 import datetime
 from ..error_handling import InternalServerError
 from ..utils.validators import raise_if_not_positive_int_or_long
@@ -1240,7 +1240,7 @@ class CandidateDevice(db.Model):
     __tablename__ = 'candidate_device'
     id = db.Column(db.Integer, primary_key=True)
     one_signal_device_id = db.Column(db.String(100))
-    candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id'))
+    candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     registered_at_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):

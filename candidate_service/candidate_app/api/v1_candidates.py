@@ -11,12 +11,12 @@ from datetime import date
 
 # Third Party
 from redo import retry
+from sqlalchemy import text
 from _mysql_exceptions import OperationalError
 
 # Flask specific
 from flask import request
 from flask_restful import Resource
-from sqlalchemy import text
 
 from candidate_service.candidate_app import logger
 
@@ -1693,24 +1693,7 @@ class CandidateDeviceResource(Resource):
                                                one_signal_device_id=one_signal_device_id,
                                                registered_at_datetime=datetime.datetime.utcnow())
 
-            # def save_device(device):
-            #     try:
-            #         CandidateDevice.save(device)
-            #     except OperationalError as e:
-            #         logger.info('Try again, Error occurred while saving candidate device. Error: %s', e)
-            #         db.session.rollback()
-            #         db.session.commit()
-            #         raise Exception('Failed to save')
-            # if os.getenv(TalentConfigKeys.ENV_KEY) == TalentEnvs.JENKINS:
-            try:
-                CandidateDevice.save(device)
-            except OperationalError as e:
-                logger.info('Try again, Error occurred while saving candidate device. Error: %s', e)
-                db.session.rollback()
-                db.session.commit()
-                raise
-            # else:
-            # CandidateDevice.save(candidate_device)
+            CandidateDevice.save(candidate_device)
 
             return dict(message='Device (id: %s) registered successfully with candidate (id: %s)'
                                 % (candidate_device.id, candidate.id)), 201
