@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify
 
 # Application Specific
 from social_network_service.mock.mock_api import MockApi
-from social_network_service.social_network_app import app
+from social_network_service.social_network_app import app, logger
 from social_network_service.modules.constants import MEETUP
 from social_network_service.modules.urls import SocialNetworkUrls
 from social_network_service.common.routes import SocialNetworkApi
@@ -44,6 +44,7 @@ def mock_endpoint(url_type, social_network, relative_url):
     :param string social_network: Name of social-network. e.g. "meetup"
     :param string relative_url: Relative URL for given social-network API
     """
+    logger.info('CODE008:Testing %s - %s - %s' % (url_type, social_network, relative_url))
     # We need to mock third party vendors in case of jenkins or dev environment.
     if not SocialNetworkUrls.IS_DEV:
         raise UnauthorizedError('This endpoint is not accessible in `%s` env.'
