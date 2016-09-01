@@ -2,9 +2,15 @@
 Here we have endpoint which is treated as Mock-Service for different social-networks, e.g. Meetup.
 """
 # Third party
+import types
+
 from flask import Blueprint, request, jsonify
 
 # Application Specific
+from flask.ext.restful import Resource
+
+from social_network_service.common.talent_api import TalentApi
+from social_network_service.common.utils.api_utils import api_route, ApiResponse
 from social_network_service.mock.mock_api import MockApi
 from social_network_service.social_network_app import app, logger
 from social_network_service.modules.constants import MEETUP
@@ -16,6 +22,9 @@ from social_network_service.common.error_handling import (NotFoundError, Interna
                                                           UnauthorizedError)
 
 mock_blueprint = Blueprint('mock_service', __name__)
+api = TalentApi()
+api.init_app(mock_blueprint)
+api.route = types.MethodType(api_route, api)
 
 vendor_hub = dict()
 
@@ -35,51 +44,68 @@ def register_vendor(vendor_name, vendor_json_data):
 register_vendor(MEETUP, meetup_vendor)
 
 
-@mock_blueprint.route(SocialNetworkApi.MOCK_SERVICE, methods=['PUT', 'PATCH', 'GET', 'POST', 'DELETE'])
-def mock_endpoint(url_type, social_network):
-    """
-    Mock endpoint
-    :param url_type: auth url or api url
-    :type url_type: str | basestring
-    :param string social_network: Name of social-network. e.g. "meetup"
-    """
-    # We need to mock third party vendors in case of jenkins or dev environment.
-    if not SocialNetworkUrls.IS_DEV:
-        raise UnauthorizedError('This endpoint is not accessible in `%s` env.'
-                                % app.config[TalentConfigKeys.ENV_KEY])
+@api.route(SocialNetworkApi.MOCK_SERVICE)
+class MockServer(Resource):
+    def get(self, url_type, social_network):
+        return self.mock_endpoint(url_type, social_network)
 
-    relative_url = request.args.get('path')
+    def put(self, url_type, social_network):
+        return self.mock_endpoint(url_type, social_network)
 
-    vendor_data = vendor_hub.get(social_network)
-    if not vendor_data:
-        raise NotFoundError("Vendor '{}' not found or mocked yet." % social_network)
-    request_method = request.method
+    def post(self, url_type, social_network):
+        return self.mock_endpoint(url_type, social_network)
 
-    logger.info('CODE008:Testing %s - %s - %s' % (url_type, social_network, relative_url))
+    def delete(self, url_type, social_network):
+        return self.mock_endpoint(url_type, social_network)
 
-    splitted_data = relative_url.split('/')
-    if len(splitted_data) > 2 and splitted_data[2].isdigit():
-        relative_url = '/' + splitted_data[1]
-        resource_id = splitted_data[2]
-        if request_method == 'POST':
-            request_method = 'PUT'
-    else:
-        resource_id = None
+    def patch(self, url_type, social_network):
+        return self.mock_endpoint(url_type, social_network)
 
-    try:
-        if request.content_type == 'application/x-www-form-urlencoded':
-            data = dict()
-            [data.update({k: v}) for k, v in request.values.iteritems()]
-        elif request.content_type == 'application/json':
-            data = request.json()
+    def mock_endpoint(self, url_type, social_network):
+        """
+        Mock endpoint
+        :param url_type: auth url or api url
+        :type url_type: str | basestring
+        :param string social_network: Name of social-network. e.g. "meetup"
+        """
+        # We need to mock third party vendors in case of jenkins or dev environment.
+        if not SocialNetworkUrls.IS_DEV:
+            raise UnauthorizedError('This endpoint is not accessible in `%s` env.'
+                                    % app.config[TalentConfigKeys.ENV_KEY])
+
+        relative_url = request.args.get('path')
+
+        vendor_data = vendor_hub.get(social_network)
+        if not vendor_data:
+            raise NotFoundError("Vendor '{}' not found or mocked yet." % social_network)
+        request_method = request.method
+
+        logger.info('CODE008:Testing %s - %s - %s' % (url_type, social_network, relative_url))
+
+        splitted_data = relative_url.split('/')
+        if len(splitted_data) > 2 and splitted_data[2].isdigit():
+            relative_url = '/' + splitted_data[1]
+            resource_id = splitted_data[2]
+            if request_method == 'POST':
+                request_method = 'PUT'
         else:
-            data = request.data
-        logger.info('CODE008:Testing 01 %s - %s - %s' % (url_type, social_network, relative_url))
-        mocked_json = vendor_data(url_type, resource_id)[relative_url][request_method]
-        mock_api = MockApi(mocked_json, payload=data, headers=request.headers)
-        logger.info('CODE008:Testing 02 %s - %s - %s' % (url_type, social_network, relative_url))
-        response, status_code = mock_api.get_response()
-        logger.info('CODE008:Testing 03 %s - %s' % (url_type, response))
-    except KeyError:
-        raise InternalServerError('No Data found. Method:%s, Url:%s.' % (request_method, relative_url))
-    return jsonify(response), status_code
+            resource_id = None
+
+        try:
+            if request.content_type == 'application/x-www-form-urlencoded':
+                data = dict()
+                [data.update({k: v}) for k, v in request.values.iteritems()]
+            elif request.content_type == 'application/json':
+                data = request.json()
+            else:
+                data = request.data
+            logger.info('CODE008:Testing 01 %s - %s - %s' % (url_type, social_network, relative_url))
+            mocked_json = vendor_data(url_type, resource_id)[relative_url][request_method]
+            mock_api = MockApi(mocked_json, payload=data, headers=request.headers)
+            logger.info('CODE008:Testing 02 %s - %s - %s' % (url_type, social_network, relative_url))
+            response, status_code = mock_api.get_response()
+            logger.info('CODE008:Testing 03 %s - %s' % (url_type, response))
+        except KeyError:
+            raise InternalServerError('No Data found. Method:%s, Url:%s.' % (request_method, relative_url))
+        # return jsonify(response), status_code
+        return ApiResponse(response=response, status=status_code)

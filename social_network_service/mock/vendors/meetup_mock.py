@@ -75,8 +75,8 @@ def meetup_vendor_api(event_id=None):
                             }
                         ],
                         "joined": fake.random_number(),
-                        "link": "%s/members/%s" % (fake.url, meetup_fake_member_id),
-                        "lon": fake.longitude(),
+                        "link": "{}/members/{}".format(fake.url(), meetup_fake_member_id),
+                        "lon": float(fake.longitude()),
                         "other_services": {},
                         "name": fake.word(),
                         "visited": fake.random_number(),
@@ -86,7 +86,7 @@ def meetup_vendor_api(event_id=None):
                         "id": meetup_fake_member_id,
                         "state": fake.word(),
                         "lang": fake.word(),
-                        "lat": fake.latitude(),
+                        "lat": float(fake.latitude()),
                         "status": fake.word()
                     },
                 },
@@ -160,7 +160,7 @@ def meetup_vendor_api(event_id=None):
                                      "link": fake.url(),
                                      "rating": fake.random_number(),
                                      "description": fake.sentence(),
-                                     "lon": fake.longitude(),
+                                     "lon": float(fake.longitude()),
                                      "join_mode": fake.word(),
                                      "organizer": {
                                          "member_id": fake.random_number() if is_last else meetup_fake_member_id,
@@ -176,7 +176,7 @@ def meetup_vendor_api(event_id=None):
                                          "id": fake.random_number(),
                                          "shortname": fake.word()
                                      },
-                                     "lat": fake.latitude(),
+                                     "lat": float(fake.latitude()),
                                      "who": fake.word()
                                      } for is_last in chain(repeat(0, randint(2, 4)), [1])
                                     # i.e [0,0 .., 1]
@@ -188,13 +188,13 @@ def meetup_vendor_api(event_id=None):
                             "link": fake.url(),
                             "count": 3,
                             "description": "None",
-                            "lon": fake.longitude(),
+                            "lon": float(fake.longitude()),
                             "title": fake.word(),
                             "url": "%smember_id=%s&offset=0&format=json&page=800&" % (
                                 fake.url(), meetup_fake_member_id),
                             "id": "",
                             "updated": fake.word(),
-                            "lat": fake.latitude()
+                            "lat": float(fake.latitude())
                         }
                     },
                 },
@@ -221,8 +221,8 @@ def meetup_vendor_api(event_id=None):
                                      "state": fake.state(),
                                      "phone": "",
                                      "name": fake.address(),
-                                     "lon": fake.longitude(),
-                                     "lat": fake.latitude(),
+                                     "lon": float(fake.longitude()),
+                                     "lat": float(fake.latitude()),
                                      "localized_country_name": fake.country(),
                                      "country": fake.country_code(),
                                      "city": fake.city(),
