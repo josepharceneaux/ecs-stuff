@@ -146,22 +146,22 @@ class TestAddCandidatePhones(object):
         candidate_created_phones = get_resp.json()['candidate']['phones']
         assert len(candidate_created_phones) == 1
 
-    def test_add_candidate_using_an_existing_number(self, access_token_first, talent_pool):
-        """
-        Test: Add a candidate using a phone number that already exists in candidate's domain
-        """
-
-        # Create candidate with phone number
-        phone_number = fake.phone_number()
-        data = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]}, 'phones': [{'value': phone_number}]}]}
-        send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-
-        # Create another candidate using the same phone number as above
-        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
-        print response_info(create_resp)
-        assert create_resp.status_code == requests.codes.BAD
-        assert create_resp.json()['error']['code'] == custom_error.CANDIDATE_ALREADY_EXISTS
-        assert 'id' in create_resp.json()['error']
+    # def test_add_candidate_using_an_existing_number(self, access_token_first, talent_pool):
+    #     """
+    #     Test: Add a candidate using a phone number that already exists in candidate's domain
+    #     """
+    #
+    #     # Create candidate with phone number
+    #     phone_number = fake.phone_number()
+    #     data = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]}, 'phones': [{'value': phone_number}]}]}
+    #     send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+    #
+    #     # Create another candidate using the same phone number as above
+    #     create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+    #     print response_info(create_resp)
+    #     assert create_resp.status_code == requests.codes.BAD
+    #     assert create_resp.json()['error']['code'] == custom_error.CANDIDATE_ALREADY_EXISTS
+    #     assert 'id' in create_resp.json()['error']
 
     def test_add_multiple_default_phones(self, access_token_first, talent_pool):
         """
