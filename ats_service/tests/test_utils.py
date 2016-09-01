@@ -68,13 +68,13 @@ def create_and_validate_account(token, post_data):
     account_id = response.headers['location'].split('/')[-1]
     response = send_request('get', ATSServiceApiUrl.ACCOUNT % account_id, token, {}, verify=False)
     assert response.status_code == codes.OK
-    values = json.loads(response.text)
+    values = response.json()
     assert values['credentials'] == post_data['ats_credentials']
 
     # Get all ATS - there should only be one - then validate the first (and only) one
     response = send_request('get', ATSServiceApiUrl.ATS, token, {}, verify=False)
     assert response.status_code == codes.OK
-    values = json.loads(response.text)
+    values = response.json()
     # This fails occasionally in parallel tests due to a race condition.
     # assert len(values) == 1
     print "\n\nVALUES: {}\n".format(values['ats_list'])
@@ -106,12 +106,12 @@ def create_and_validate_candidate(token, account_id, post_data):
     # Create an ATS account for the candidate to belong to
     response = send_request('post', ATSServiceApiUrl.CANDIDATES % account_id, token, post_data)
     assert response.status_code == codes.CREATED
-    values = json.loads(response.text)
+    values = response.json()
     candidate_id = values['id']
     # Now fetch all the candidates from the account
     response = send_request('get', ATSServiceApiUrl.CANDIDATES % account_id, token, {}, verify=False)
     assert response.status_code == codes.OK
-    values = json.loads(response.text)
+    values = response.json()
     assert len(values['candidate_list']) == 1
     # Extract the returned field
     key = values['candidate_list'][0].keys()[0]
@@ -148,6 +148,6 @@ def link_candidates(token, account_data, candidate_data, gt_candidate):
     assert response.status_code == codes.CREATED
     response = send_request('get', ATSServiceApiUrl.CANDIDATE % (account_id, candidate_id), token, {}, verify=False)
     assert response.status_code == codes.OK
-    values = json.loads(response.text)
+    values = response.json()
     assert gt_candidate.id == int(values['gt_candidate_id'])
     return account_id, gt_candidate.id, candidate_id

@@ -48,7 +48,7 @@ class ATS(db.Model):
     def get_all(cls):
         """
         Retrieve all ATS entries and return as JSON.
-        :rtype: str
+        :rtype list:
         """
         return [ats.to_dict() for ats in ATS.query.all()]
 
@@ -58,9 +58,8 @@ class ATS(db.Model):
         Retrieve all ATS entries and return as JSON.
         :rtype: str
         """
-        return_list = [ats.to_dict() for ats in ATS.query.all()]
 
-        return json.dumps(return_list)
+        return json.dumps(ATS.get_all())
 
 
 class ATSAccount(db.Model):
@@ -99,7 +98,7 @@ class ATSAccount(db.Model):
         Retrieve a specific ATS account of a user.
         :param int user_id: id of the GT user.
         :param str ats_name: name of the ATS.
-        :rtype: ATSAccount
+        :rtype ATSAccount|None:
         """
         accounts = cls.query.filter_by(user_id=user_id).all()
         for a in accounts:
@@ -159,7 +158,7 @@ class ATSCandidate(db.Model):
         Return all ATS candidates associated with this account.
 
         :param int account_id: primary key of the account.
-        :rtype list: list of candidates.
+        :rtype list|None: list of candidates.
         """
         candidate_list = cls.query.filter_by(ats_account_id=account_id).all()
         if not candidate_list:
@@ -180,7 +179,7 @@ class ATSCandidate(db.Model):
         Return all ATS candidates associated with this account as JSON.
 
         :param int account_id: primary key of the account.
-        :rtype str: JSON list of candidates.
+        :rtype str|None: JSON list of candidates.
         """
         candidates = ATSCandidate.get_all(account_id)
         if not candidates:
