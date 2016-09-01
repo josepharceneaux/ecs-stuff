@@ -309,10 +309,4 @@ def candidate_device_first(request, token_first, candidate_first):
     retry(associate_device_to_candidate, sleeptime=SLEEP_INTERVAL * 2, attempts=RETRY_ATTEMPTS, sleepscale=1,
           retry_exceptions=(AssertionError,), args=(candidate_id, device_id, token_first))
     device = {'one_signal_id': device_id}
-
-    def tear_down():
-        delete_candidate_device(candidate_id, device_id, token_first, expected_status=(codes.OK,
-                                                                                       codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return device

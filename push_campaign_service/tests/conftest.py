@@ -364,11 +364,6 @@ def candidate_device_same_domain(request, token_same_domain, candidate_same_doma
           retry_exceptions=(AssertionError,), args=(candidate_id, device_id, token_same_domain))
     device = {'one_signal_id': device_id}
 
-    def tear_down():
-        delete_candidate_device(candidate_id, device_id, token_same_domain,
-                                expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return device
 
 
@@ -387,11 +382,6 @@ def candidate_device_second(request, token_second, candidate_second):
           retry_exceptions=(AssertionError,), args=(candidate_id, device_id, token_second))
     device = {'one_signal_id': device_id}
 
-    def tear_down():
-        delete_candidate_device(candidate_id, device_id, token_second, expected_status=(codes.OK,
-                                                                                        codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return device
 
 
