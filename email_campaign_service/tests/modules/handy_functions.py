@@ -1,3 +1,7 @@
+"""
+Here we have helper function to be used in tests of email-campaign-service
+"""
+
 # Standard Imports
 import json
 import uuid
@@ -30,6 +34,14 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 
 __author__ = 'basit'
 TEST_EMAIL_ID = 'test.gettalent@gmail.com'
+
+
+class EmailCampaignTypes(object):
+    """
+    This defines 2 types of email-campaigns
+    """
+    WITH_CLIENT = 'with_client'
+    WITHOUT_CLIENT = 'without_client'
 
 
 def create_email_campaign(user):
@@ -483,9 +495,8 @@ def send_campaign_helper(request, email_campaign, access_token):
     """
     This is a helper function to send campaign with and without email_client_id
     """
-    if request.param == 'with_client':
+    if request.param == EmailCampaignTypes.WITH_CLIENT:
         email_campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
     # send campaign
-    CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND,
-                                        email_campaign, access_token)
+    CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND, email_campaign, access_token)
     return email_campaign

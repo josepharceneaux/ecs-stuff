@@ -11,13 +11,12 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   create_email_campaign_smartlist,
                                                                   delete_campaign,
                                                                   send_campaign_helper,
-                                                                  create_smartlist_with_given_email_candidate)
+                                                                  create_smartlist_with_given_email_candidate,
+                                                                  EmailCampaignTypes)
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
-# TODO: with_client causes 504, need to look into this
-# EMAIL_CAMPAIGN_TYPES = ['with_client', 'without_client']
-EMAIL_CAMPAIGN_TYPES = ['without_client']
+EMAIL_CAMPAIGN_TYPES = [EmailCampaignTypes.WITHOUT_CLIENT, EmailCampaignTypes.WITH_CLIENT]
 
 
 @pytest.fixture()
@@ -30,94 +29,61 @@ def headers(access_token_first):
 
 
 @pytest.fixture()
-def email_campaign_of_user_first(request, user_first):
+def email_campaign_of_user_first(user_first):
     """
     This fixture creates an email campaign in database table 'email_campaign'
     """
     campaign = create_email_campaign(user_first)
-
-    def fin():
-        delete_campaign(campaign)
-
-    request.addfinalizer(fin)
     return campaign
 
 
 @pytest.fixture()
-def email_campaign_of_user_second(request, user_same_domain):
+def email_campaign_of_user_second(user_same_domain):
     """
     This fixture creates an email campaign in database table 'email_campaign'
     """
     campaign = create_email_campaign(user_same_domain)
-
-    def fin():
-        delete_campaign(campaign)
-
-    request.addfinalizer(fin)
     return campaign
 
 
 @pytest.fixture()
-def email_campaign_in_other_domain(request,
-                                   access_token_other,
-                                   user_from_diff_domain,
-                                   talent_pipeline_other):
+def email_campaign_in_other_domain(access_token_other, user_from_diff_domain, talent_pipeline_other):
     """
     This fixture creates an email campaign in database table 'email_campaign'
     for user in different domain
     """
-
     campaign = create_email_campaign(user_from_diff_domain)
     create_email_campaign_smartlist(access_token_other, talent_pipeline_other, campaign)
-
-    def fin():
-        delete_campaign(campaign)
-
-    request.addfinalizer(fin)
     return campaign
 
 
 @pytest.fixture()
-def campaign_with_candidate_having_no_email(request, email_campaign_of_user_first,
-                                            access_token_first, talent_pipeline):
+def campaign_with_candidate_having_no_email(email_campaign_of_user_first, access_token_first, talent_pipeline):
     """
     This creates a campaign which has candidates associated having no email
     """
     campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline,
-                                               email_campaign_of_user_first,
-                                               emails_list=False)
-
-    def fin():
-        delete_campaign(campaign)
-
-    request.addfinalizer(fin)
+                                               email_campaign_of_user_first, emails_list=False)
     return campaign
 
 
 @pytest.fixture()
-def campaign_with_valid_candidate(request, email_campaign_of_user_first,
+def campaign_with_valid_candidate(email_campaign_of_user_first,
                                   access_token_first, talent_pipeline):
     """
     This returns a campaign which has two candidates associated having email address.
     """
     campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline,
                                                email_campaign_of_user_first, count=2)
-
-    def fin():
-        delete_campaign(campaign)
-
-    request.addfinalizer(fin)
     return campaign
 
 
 @pytest.fixture()
-def campaign_with_multiple_candidates_email(request, email_campaign_of_user_first,
-                                            access_token_first, talent_pipeline):
+def campaign_with_multiple_candidates_email(email_campaign_of_user_first, access_token_first, talent_pipeline):
     """
     This returns a campaign which has 2 candidates associated and have 2 email address.
     Email should be send to only one address of both candidates
     """
-
     _emails = [
         # Primary and work label
         [{'label': 'work', 'address': 'work' + fake.safe_email()},
@@ -127,38 +93,23 @@ def campaign_with_multiple_candidates_email(request, email_campaign_of_user_firs
          {'label': 'home', 'address': 'home' + fake.safe_email()}],
     ]
 
-    campaign = create_smartlist_with_given_email_candidate(access_token_first,
-                                                           campaign=email_campaign_of_user_first,
-                                                           talent_pipeline=talent_pipeline,
-                                                           emails=_emails,
-                                                           count=2)
-
-    def fin():
-        delete_campaign(campaign)
-
-    request.addfinalizer(fin)
+    campaign = create_smartlist_with_given_email_candidate(access_token_first, campaign=email_campaign_of_user_first,
+                                                           talent_pipeline=talent_pipeline, emails=_emails, count=2)
     return campaign
 
 
 @pytest.fixture()
-def campaign_to_ten_candidates_not_sent(request, email_campaign_of_user_first,
-                                        access_token_first, talent_pipeline):
+def campaign_to_ten_candidates_not_sent(email_campaign_of_user_first, access_token_first, talent_pipeline):
     """
     This returns a campaign which has ten candidates associated having email addresses.
     """
     campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline,
                                                email_campaign_of_user_first, count=10)
-
-    def fin():
-        delete_campaign(campaign)
-
-    request.addfinalizer(fin)
     return campaign
 
 
 @pytest.fixture()
-def campaign_with_candidates_having_same_email_in_diff_domain(request,
-                                                              campaign_with_valid_candidate,
+def campaign_with_candidates_having_same_email_in_diff_domain(campaign_with_valid_candidate,
                                                               candidate_in_other_domain):
     """
     This returns a campaign which has one candidate associated having email address.
@@ -167,11 +118,6 @@ def campaign_with_candidates_having_same_email_in_diff_domain(request,
     same_email = fake.email()
     campaign_with_valid_candidate.user.candidates[0].emails[0].update(address=same_email)
     candidate_in_other_domain.emails[0].update(address=same_email)
-
-    def fin():
-        delete_campaign(campaign_with_valid_candidate)
-
-    request.addfinalizer(fin)
     return campaign_with_valid_candidate
 
 
@@ -191,7 +137,7 @@ def campaign_with_same_candidate_in_multiple_smartlists(email_campaign_of_user_f
 
 
 @pytest.fixture()
-def candidate_in_other_domain(request, user_from_diff_domain):
+def candidate_in_other_domain(user_from_diff_domain):
     """
     Here we create a candidate for `user_from_diff_domain`
     """
@@ -201,14 +147,6 @@ def candidate_in_other_domain(request, user_from_diff_domain):
     candidate_email = CandidateEmail(candidate_id=candidate.id,
                                      address=gen_salt(20), email_label_id=1)
     CandidateEmail.save(candidate_email)
-
-    def tear_down():
-        try:
-            Candidate.delete(candidate)
-        except Exception:
-            db.session.rollback()
-
-    request.addfinalizer(tear_down)
     return candidate
 
 
