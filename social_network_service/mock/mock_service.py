@@ -4,7 +4,7 @@ Here we have endpoint which is treated as Mock-Service for different social-netw
 # Third party
 import types
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request
 
 # Application Specific
 from flask.ext.restful import Resource
