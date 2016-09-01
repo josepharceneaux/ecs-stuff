@@ -52,7 +52,7 @@ class TestEventById(object):
 
         response = requests.get(SocialNetworkApiUrl.EVENT % event.id, headers=auth_header(token_first))
         logger.info(response.text)
-        assert response.status_code == codes.OK, 'Status should be Ok (200)'
+        assert response.status_code == codes.OK, response.text
         results = response.json()
         assert 'event' in results
         api_event = results['event']
