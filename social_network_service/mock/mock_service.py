@@ -80,8 +80,6 @@ class MockServer(Resource):
             raise NotFoundError("Vendor '{}' not found or mocked yet." % social_network)
         request_method = request.method
 
-        logger.info('CODE008:Testing %s - %s - %s' % (url_type, social_network, relative_url))
-
         splitted_data = relative_url.split('/')
         if len(splitted_data) > 2 and splitted_data[2].isdigit():
             relative_url = '/' + splitted_data[1]
@@ -99,12 +97,9 @@ class MockServer(Resource):
                 data = request.json()
             else:
                 data = request.data
-            logger.info('CODE008:Testing 01 %s - %s - %s' % (url_type, social_network, relative_url))
             mocked_json = vendor_data(url_type, resource_id)[relative_url][request_method]
             mock_api = MockApi(mocked_json, payload=data, headers=request.headers)
-            logger.info('CODE008:Testing 02 %s - %s - %s' % (url_type, social_network, relative_url))
             response, status_code = mock_api.get_response()
-            logger.info('CODE008:Testing 03 %s - %s' % (url_type, response))
         except KeyError:
             raise InternalServerError('No Data found. Method:%s, Url:%s.' % (request_method, relative_url))
         # return jsonify(response), status_code

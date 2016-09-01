@@ -455,10 +455,10 @@ def eventbrite_venue_second(user_first, eventbrite, token_first):
         "city": "Lahore",
         "country": "Pakistan"
     }
-    response = send_request('POST', SocialNetworkApiUrl.VENUES, token_first, data=venue)
-    assert response.status_code == 201, response.text
+    venue = Venue(**venue)
+    Venue.save(venue)
 
-    return response.json()
+    return {'id': venue.id}
 
 
 @pytest.fixture(scope="session")
@@ -479,10 +479,10 @@ def eventbrite_venue(user_first, eventbrite, token_first):
         "city": "Lahore",
         "country": "Pakistan"
     }
-    response = send_request('POST', SocialNetworkApiUrl.VENUES, token_first, data=venue)
-    assert response.status_code == 201, response.text
+    venue = Venue(**venue)
+    Venue.save(venue)
 
-    return response.json()
+    return {'id': venue.id}
 
 
 @pytest.fixture(scope="session", params=VENDORS)
