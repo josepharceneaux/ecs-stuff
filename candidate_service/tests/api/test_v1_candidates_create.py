@@ -86,6 +86,7 @@ class TestCreateCandidateSuccessfully(object):
         assert candidate_data['status_id'] == data_sent_in['status_id']
         assert candidate_data['objective'] == data_sent_in['objective']
         assert candidate_data['summary'] == data_sent_in['summary']
+        assert candidate_data['source_product_id'] == data_sent_in['source_product_id']
         # assert candidate_data['resume_url'] == data_sent_in['resume_url']  # TODO: point to s3 bucket
 
         # Candidate's addresses

@@ -18,7 +18,6 @@ import requests
 
 from candidate_service.candidate_app import app, logger
 from candidate_service.common.models.candidate import CandidateDevice
-from candidate_service.common.test_config_manager import load_test_config
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request
 from candidate_service.common.tests.api_conftest import *

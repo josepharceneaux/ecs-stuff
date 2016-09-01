@@ -8,9 +8,11 @@ import pycountry
 
 # Models
 from candidate_service.common.models.candidate import CandidateEmail
+from candidate_service.common.models.misc import Product
 
 # Conftest
 from candidate_service.common.tests.conftest import *
+from ..conftest import test_candidate_1
 
 # Helper functions
 from candidate_service.common.utils.test_utils import send_request, response_info
@@ -23,8 +25,53 @@ from candidate_sample_data import (fake, generate_single_candidate_data, Generat
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
 
+class TestUpdateCandidateSuccessfully(object):
+    """
+    Class contains functional test that expect a 200 response
+    """
+
+    def test_primary_information(self, access_token_first, test_candidate_1, domain_source_2):
+        """
+        Test: Edit the primary information of a full candidate's profile
+        """
+        candidate_id = test_candidate_1['candidate']['id']
+
+        update_data = {
+            'candidates': [
+                {
+                    'id': candidate_id,
+                    'first_name': fake.first_name(),
+                    'middle_name': fake.first_name(),
+                    'last_name': fake.last_name(),
+                    'source_id': domain_source_2['source']['id'],
+                    'objective': fake.sentence(),
+                    'source_product_id': 2  # Web
+                }
+            ]
+        }
+
+        # Update candidate's primary information
+        update_resp = send_request('patch', CandidateApiUrl.CANDIDATES, access_token_first, update_data)
+        print response_info(update_resp)
+        assert update_resp.status_code == requests.codes.OK
+
+        # Retrieve candidate and assert its primary data have been updated
+        get_resp = send_request('get', CandidateApiUrl.CANDIDATE % str(candidate_id), access_token_first)
+        print response_info(get_resp)
+
+        candidate_data = get_resp.json()['candidate']
+
+        assert candidate_data['id'] == candidate_id
+        assert candidate_data['first_name'] == update_data['candidates'][0]['first_name']
+        assert candidate_data['middle_name'] == update_data['candidates'][0]['middle_name']
+        assert candidate_data['last_name'] == update_data['candidates'][0]['last_name']
+        assert candidate_data['source_id'] == update_data['candidates'][0]['source_id']
+        assert candidate_data['objective'] == update_data['candidates'][0]['objective']
+        assert candidate_data['source_product_id'] == update_data['candidates'][0]['source_product_id']
+
+
 class TestUpdateCandidate(object):
-    def test_hide_candidates(self, access_token_first, user_first, talent_pool):
+    def test_hide_candidates(self, access_token_first, talent_pool):
         """
         Test:  Create a candidate and hide it
         Expect: 200; candidate should not be retrievable
@@ -48,7 +95,7 @@ class TestUpdateCandidate(object):
         assert get_resp.status_code == 404
         assert get_resp.json()['error']['code'] == custom_error.CANDIDATE_IS_HIDDEN
 
-    def test_hide_and_unhide_candidates(self, access_token_first, user_first, talent_pool):
+    def test_hide_and_unhide_candidates(self, access_token_first, talent_pool):
         """
         Test:  Create candidates, hide them, and unhide them again via Patch call
         """
@@ -241,7 +288,7 @@ class TestUpdateCandidateAddress(object):
     #     assert candidate_address['city'] == data['candidates'][0]['addresses'][-1]['city']
     #     assert candidate_address['zip_code'] == data['candidates'][0]['addresses'][-1]['zip_code']
 
-    def test_multiple_is_default_addresses(self, access_token_first, user_first, talent_pool):
+    def test_multiple_is_default_addresses(self, access_token_first, talent_pool):
         """
         Test:   Add more than one CandidateAddress with is_default set to True
         Expect: 200, but only one CandidateAddress must have is_default True, the rest must be False

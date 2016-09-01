@@ -4,14 +4,34 @@ Utility functions for the ATS service.
 
 __author__ = 'Joseph Arceneaux'
 
-from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
-from ats_service.common.models.candidate import Candidate
-from ats_service.common.models.user import User
-from ats_service.common.error_handling import *
+import datetime
+
+if __name__ == 'ats_service.app.api.ats_utils':
+    # Imports for the web app.
+    from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
+    from ats_service.common.models.candidate import Candidate
+    from ats_service.common.models.user import User
+    from ats_service.common.error_handling import *
+    from ats_service.ats.workday import Workday
+else:
+    # Imports for the refresh script
+    from common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
+    from common.models.candidate import Candidate
+    from common.models.user import User
+    from common.error_handling import *
+    from ats.workday import Workday
 
 
 ATS_ACCOUNT_FIELDS = ['ats_name', 'ats_homepage', 'ats_login', 'ats_auth_type', 'ats_id', 'ats_credentials']
 ATS_CANDIDATE_FIELDS = ['ats_remote_id', 'profile_json']
+
+# ATS we support
+WORKDAY = 'Workday'
+GREENDAY = 'Greenday'
+ATS_SET = {WORKDAY, GREENDAY}
+
+# Constructors
+ATS_CONSTRUCTORS = { WORKDAY : Workday }
 
 
 def validate_ats_account_data(data):
@@ -24,6 +44,9 @@ def validate_ats_account_data(data):
     missing_fields = [field for field in ATS_ACCOUNT_FIELDS if field not in data or not data[field]]
     if missing_fields:
         raise InvalidUsage('Some required fields are missing', additional_error_info=dict(missing_fields=missing_fields))
+
+    if data['ats_name'] not in ATS_SET:
+        raise UnprocessableEntity("Invalid data", additional_error_info=dict(unsupported_ats=data['ats_name']))
 
 
 def invalid_account_fields_check(data):
@@ -40,6 +63,7 @@ def invalid_account_fields_check(data):
 
 
 def validate_ats_candidate_data(data):
+    # type: (object) -> object
     """
     Verify that POST data contains all required fields for dealing with an ATS candidate.
 
@@ -119,6 +143,8 @@ def update_ats_account(account_id, new_data):
         ats.update(**update_dict)
 
     update_dict = {}
+    now = datetime.datetime.utcnow()
+    update_dict = {'updated_at' : now}
     if 'active' in new_data:
         if new_data['active'] == "False":
             update_dict['active'] = False
@@ -171,7 +197,7 @@ def delete_ats_account(user_id, ats_account_id):
         db.session.commit()
 
 
-def new_ats_candidate(account, data):
+def new_ats_candidate(account_id, data):
     """
     Register an ATS candidate with an ATS account.
 
@@ -179,11 +205,23 @@ def new_ats_candidate(account, data):
     :param dict data: keys and values describing the candidate.
     :rtype: ATSCandidate
     """
-    gt_candidate_id = data.get('gt_candidate_id', None)
+    gt_candidate_id = None
+    if 'gt_candidate_id' in data:
+        gt_candidate_id = data.get('gt_candidate_id', None)
+    account = ATSAccount.get(account_id)
+    if not account:
+        raise InvalidUsage("ATS account {} not found.".format(account_id))
     profile = ATSCandidateProfile(active=True, profile_json=data['profile_json'], ats_id=account.ats_id)
     profile.save()
     candidate = ATSCandidate(ats_account_id=account.id, ats_remote_id=data['ats_remote_id'], gt_candidate_id=gt_candidate_id, profile_id=profile.id)
+    if 'ats_table_id' in data:
+        candidate.ats_table_id = data.get('ats_table_id', None)
     candidate.save()
+
+    update_dict = {}
+    now = datetime.datetime.utcnow()
+    update_dict = {'updated_at' : now}
+    account.update(**update_dict)
 
     return candidate
  
@@ -203,7 +241,12 @@ def delete_ats_candidate(candidate_id):
     if profile:
         ATSCandidateProfile.delete(profile)
 
-    Candidate.delete(profile)
+    account = ATSAccount.get(candidate.ats_account_id)
+    if not account:
+        raise InvalidUsage("ATS account {} not found.".format(candidate.ats_account_id))
+    now = datetime.datetime.utcnow()
+    update_dict = {'updated_at' : now}
+    account.update(**update_dict)
 
 
 def update_ats_candidate(account_id, candidate_id, new_data):
@@ -233,8 +276,17 @@ def update_ats_candidate(account_id, candidate_id, new_data):
     if not profile:
         raise UnprocessableEntity("Invalid candidate profile id", additional_error_info=dict(id=candidate.profile_id))
 
-    update_dict = {'profile_json' : new_data['profile_json']}
+    if 'ats_table_id' in new_data:
+        candidate.ats_table_id = new_data.get('ats_table_id', None)
+
+    now = datetime.datetime.utcnow()
+    update_dict = {'profile_json' : new_data['profile_json'], 'updated_at' : now}
     profile.update(**update_dict)
+
+    update_dict = {'updated_at' : now}
+    candidate.update(**update_dict)
+    account.update(**update_dict)
+
     return candidate
 
 
@@ -276,3 +328,45 @@ def unlink_ats_candidate(gt_candidate_id, ats_candidate_id):
 
     update_dict = {'gt_candidate_id': None}
     ats_candidate.update(**update_dict)
+
+
+def fetch_auth_data(account_id):
+    """
+    Return the values needed to authenticate to an ATS account.
+
+    :param int account_id: Primary key of the account.
+    :rtype string: ATS name.
+    :rtype string: Login URL.
+    :rtype: tuple[str] | tuple[str] | tuple[int] | tuple[ATSCredential]:
+    """
+    # Validate ATS Account
+    account = ATSAccount.get(account_id)
+    if not account:
+        raise InvalidUsage("ATS account {} not found.".format(account_id))
+
+    if not account.active:
+        return None, None, None, None
+
+    ats = ATS.get(account.ats_id)
+    if not ats:
+        raise UnprocessableEntity("Invalid ats id", additional_error_info=dict(id=account.ats_id))
+
+    credentials = ATSCredential.get(account.ats_credential_id)
+    if not credentials:
+        raise UnprocessableEntity("No credentials for account", additional_error_info=dict(id=account.ats_id))
+
+    return ats.name, ats.login_url, account.user_id, credentials
+
+
+def create_ats_object(logger, ats_name, url, user_id, credentials):
+    """
+    Authenticate to the specified ATS
+    :param string ats_name: ATS name.
+    :param string url: Login URL.
+    :param string user_id: User id.
+    :param string credentials: Authentication credentials.
+    """
+    if ats_name not in ATS_SET:
+        raise UnprocessableEntity("Invalid data", additional_error_info=dict(unsupported_ats=data['ats_name']))
+
+    return ATS_CONSTRUCTORS[ats_name](logger, ats_name, url, user_id, credentials)
