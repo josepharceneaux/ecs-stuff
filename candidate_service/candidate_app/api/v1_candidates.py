@@ -1490,9 +1490,8 @@ class CandidateViewResource(Resource):
 
 
 class CandidatePreferenceResource(Resource):
-    decorators = [require_oauth()]
+    decorators = [require_oauth(allow_candidate=True)]
 
-    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/preferences
@@ -1504,10 +1503,13 @@ class CandidatePreferenceResource(Resource):
         # Ensure Candidate exists & is not web-hidden
         get_candidate_if_validated(authed_user, candidate_id)
 
+        if not request.candidate or request.candidate.id != candidate_id:
+            raise ForbiddenError("You are not authorized to change subscription preference of "
+                                 "candidate: %s" % candidate_id)
+
         candidate_subs_pref = fetch_candidate_subscription_preference(candidate_id=candidate_id)
         return {'candidate': {'id': candidate_id, 'subscription_preference': candidate_subs_pref}}
 
-    @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:id/preferences
@@ -1519,6 +1521,10 @@ class CandidatePreferenceResource(Resource):
 
         # Ensure candidate exists & is not web-hidden
         get_candidate_if_validated(authed_user, candidate_id)
+
+        if not request.candidate or request.candidate.id != candidate_id:
+            raise ForbiddenError("You are not authorized to change subscription preference of "
+                                 "candidate: %s" % candidate_id)
 
         body_dict = get_json_if_exist(_request=request)
         try:
@@ -1543,7 +1549,6 @@ class CandidatePreferenceResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def put(self, **kwargs):
         """
         Endpoint:  PATCH /v1/candidates/:id/preferences
@@ -1555,6 +1560,10 @@ class CandidatePreferenceResource(Resource):
 
         # Ensure candidate exists & is not web-hidden
         get_candidate_if_validated(authed_user, candidate_id)
+
+        if not request.candidate or request.candidate.id != candidate_id:
+            raise ForbiddenError("You are not authorized to change subscription preference of "
+                                 "candidate: %s" % candidate_id)
 
         body_dict = get_json_if_exist(_request=request)
         try:
@@ -1580,7 +1589,6 @@ class CandidatePreferenceResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoint:  DELETE /v1/candidates/:id/preferences
@@ -1591,6 +1599,10 @@ class CandidatePreferenceResource(Resource):
 
         # Ensure candidate exists & is not web-hidden
         get_candidate_if_validated(authed_user, candidate_id)
+
+        if not request.candidate or request.candidate.id != candidate_id:
+            raise ForbiddenError("You are not authorized to change subscription preference of "
+                                 "candidate: %s" % candidate_id)
 
         candidate_subs_pref = CandidateSubscriptionPreference.get_by_candidate_id(candidate_id)
         if not candidate_subs_pref:
