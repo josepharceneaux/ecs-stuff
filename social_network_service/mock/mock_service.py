@@ -58,9 +58,9 @@ def mock_endpoint(url_type, social_network):
     logger.info('CODE008:Testing %s - %s - %s' % (url_type, social_network, relative_url))
 
     splitted_data = relative_url.split('/')
-    if len(splitted_data) > 1 and splitted_data[1].isdigit():
-        relative_url = splitted_data[0]
-        resource_id = splitted_data[1]
+    if len(splitted_data) > 2 and splitted_data[2].isdigit():
+        relative_url = '/' + splitted_data[1]
+        resource_id = splitted_data[2]
         if request_method == 'POST':
             request_method = 'PUT'
     else:
