@@ -434,11 +434,11 @@ def meetup_venue_second(meetup, user_first):
     venue = Venue(**venue)
     Venue.save(venue)
 
-    return venue
+    return {'id': venue.id}
 
 
 @pytest.fixture(scope="function")
-def eventbrite_venue_second(user_first, eventbrite):
+def eventbrite_venue_second(user_first, eventbrite, token_first):
     """
     This fixture returns eventbrite venue in getTalent database
     """
@@ -455,14 +455,14 @@ def eventbrite_venue_second(user_first, eventbrite):
         "city": "Lahore",
         "country": "Pakistan"
     }
-    venue = Venue(**venue)
-    Venue.save(venue)
+    response = send_request('POST', SocialNetworkApiUrl.VENUES, token_first, data=venue)
+    assert response.status_code == 201, response.text
 
-    return venue
+    return response.json()
 
 
 @pytest.fixture(scope="session")
-def eventbrite_venue(user_first, eventbrite):
+def eventbrite_venue(user_first, eventbrite, token_first):
     """
     This fixture returns eventbrite venue in getTalent database
     """
@@ -479,10 +479,10 @@ def eventbrite_venue(user_first, eventbrite):
         "city": "Lahore",
         "country": "Pakistan"
     }
-    venue = Venue(**venue)
-    Venue.save(venue)
+    response = send_request('POST', SocialNetworkApiUrl.VENUES, token_first, data=venue)
+    assert response.status_code == 201, response.text
 
-    return {'id': venue.id}
+    return response.json()
 
 
 @pytest.fixture(scope="session", params=VENDORS)
