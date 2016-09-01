@@ -52,11 +52,12 @@ from werkzeug.utils import redirect
 from flask import request, Blueprint, jsonify
 
 # Service Specific
+from email_campaign_service.common.utils.amazon_ses import get_default_email_info, send_email
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.email_marketing import (create_email_campaign,
                                                             send_email_campaign,
-                                                            update_hit_count)
+                                                            update_hit_count, send_test_email)
 from email_campaign_service.modules.validations import validate_and_format_request_data
 
 # Common utils
@@ -66,9 +67,9 @@ from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.routes import EmailCampaignApi
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.models.email_campaign import EmailCampaign
-from email_campaign_service.common.utils.validators import is_number
+from email_campaign_service.common.utils.validators import is_number, get_json_data_if_validated
 from email_campaign_service.common.error_handling import (InvalidUsage, NotFoundError,
-                                                          ForbiddenError, MethodNotAllowedError)
+                                                          ForbiddenError, MethodNotAllowedError, InternalServerError)
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response,
                                                            get_pagination_params)
@@ -183,6 +184,30 @@ class EmailCampaigns(Resource):
             raise InvalidUsage("is_hidden field should be a boolean, given: %s" % is_hidden)
         email_campaign.update(is_hidden=is_hidden)
         return dict(message="Email campaign (id: %s) updated successfully" % campaign_id), requests.codes.OK
+
+
+@api.route(EmailCampaignApi.TEST_EMAIL)
+class TestEmailResource(Resource):
+
+    # Access token decorator
+    decorators = [require_oauth()]
+
+    def post(self):
+        """
+            POST /v1/test-email
+            Send email campaign with data (subject, from, body_html, emails)
+            Sample POST Data:
+
+            {
+              "subject": "Test Email",
+              "from": "Zohaib Ijaz",
+              "body_html": "<html><body><h1>Welcome to email campaign service <a href=https://www.github.com>Github</a></h1></body></html>",
+              "emails": ["mzohaib.qc@gmail.com", "mzohaib.qc+1@gmail.com"]
+            }
+        """
+        user = request.user
+        send_test_email(user, request)
+        return {'message': 'test email has been sent to given emails'}, requests.codes.OK
 
 
 @api.route(EmailCampaignApi.SEND)

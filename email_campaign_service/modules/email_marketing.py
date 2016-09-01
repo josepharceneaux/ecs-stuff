@@ -43,7 +43,8 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailCampaignSend,
                                                                  EmailCampaignSendUrlConversion)
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
-                                                            raise_if_not_positive_int_or_long)
+                                                            raise_if_not_positive_int_or_long,
+                                                            get_json_data_if_validated)
 from email_campaign_service.common.utils.handy_functions import (http_request,
                                                                  JSON_CONTENT_TYPE_HEADER)
 from email_campaign_service.common.utils.amazon_ses import send_email, get_default_email_info
@@ -1178,3 +1179,54 @@ def celery_error_handler(uuid):
     :param uuid:
     """
     db.session.rollback()
+
+
+def send_test_email(user, request):
+    test_email_schema = {
+        "$schema": "http://json-schema.org/draft-04/schema#",
+        "type": "object",
+        "properties": {
+            "emails": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 10,
+                "uniqueItems": True,
+                "items": {
+                    "type": "string"
+                }
+            },
+            "subject": {
+                "type": "string",
+                "pattern": "\w",
+            },
+            "body_html": {
+                "type": "string",
+                "pattern": "\w",
+            },
+            "from": {
+                "type": "string",
+                "pattern": "\w",
+            }
+        },
+        "required": [
+            "emails", "subject", "body_html", "from"
+        ]
+    }
+    # Get and validate request data
+    data = get_json_data_if_validated(request, test_email_schema)
+    try:
+        default_email = get_default_email_info()['email']
+        send_email(source='"%s" <%s>' % (data['from'], default_email),
+                   subject=data['subject'],
+                   html_body=data['body_html'] or None,
+                   # Can't be '', otherwise, text_body will not show in email
+                   text_body=data['body_html'],
+                   to_addresses=data['emails'],
+                   reply_address=user.email,
+                   # BOTO doesn't seem to work with an array as to_addresses
+                   body=None,
+                   email_format='html')
+    except Exception as e:
+        logger.error('Error occurred while sending test email. Error: %s', e)
+        raise InternalServerError('Unable to send emails to test email addresses.')
+
