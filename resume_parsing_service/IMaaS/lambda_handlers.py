@@ -3,6 +3,7 @@ from itertools import izip_longest
 from wand.image import Image
 from base64 import b64encode, b64decode
 from zlib import compress
+from guppy import hpy
 
 
 def grouper(iterable, n, fillvalue=None):
@@ -30,6 +31,12 @@ def convert_pdf_to_png(event, context):
     :param context: Unused param in all lambda functions.
     :return: list of zlibcompressed/b64encoded PNG data.
     """
+    hp = hpy()
+    heapyheap = hp.heap()
+    starting = heapyheap.size
+    print 'Starting - {}'.format(starting)
+    hp.setrelheap()
+    before = hp.heap().size
     GROUP_SIZE = 3
     img_data = []
     pdf_data = event.get('pdf_bin')
@@ -53,14 +60,23 @@ def convert_pdf_to_png(event, context):
                 (<wand.sequence>, None, None)
             )
         """
+        after = hp.heap().size
+        print 'After pdf {}'.format(after - before)
+        print after
         del decoded
         grouped = grouper(pdf.sequence, GROUP_SIZE)
+
+        before, after = after, hp.heap().size
+        print 'After grouper {}'.format(after - before)
+        print after
 
         for group in grouped:
             # Creates a new 'blank' Image that is smaller than the above pdf context.
             trimmed = [item for item in group if item]
             with Image(width=pdf.width, height=pdf.height * len(trimmed)) as image:
-                print "Base image created"
+                before, after = after, hp.heap().size
+                print 'After sub Image {}'.format(after - before)
+                print after
 
                 for i, sequence in enumerate(trimmed):
                     image.composite(
@@ -68,22 +84,40 @@ def convert_pdf_to_png(event, context):
                         top=pdf.height * i,
                         left=0
                     )
+                before, after = after, hp.heap().size
+                print 'After compsite {}'.format(after - before)
+                print after
                 del trimmed
                 print 'Image composed'
 
                 blob = image.make_blob('png')
+                before, after = after, hp.heap().size
+                print 'After blobbed {}'.format(after - before)
+                print after
                 del image
                 print 'Blob made'
 
                 compressed = compress(blob)
+                before, after = after, hp.heap().size
+                print 'After compressed {}'.format(after - before)
+                print after
                 del blob
                 print 'Compressed'
 
                 encoded = b64encode(compressed)
+                before, after = after, hp.heap().size
+                print 'After encoded {}'.format(after - before)
+                print after
                 del compressed
                 print 'Encoded'
 
                 img_data.append(encoded)
                 del encoded
+                before, after = after, hp.heap().size
+                print 'After loop {}'.format(after - before)
+                print after
 
+    before, after = after, hp.heap().size
+    print '~~Fin~~ {}'.format(after - before)
+    print after
     return {'img_data': img_data}
