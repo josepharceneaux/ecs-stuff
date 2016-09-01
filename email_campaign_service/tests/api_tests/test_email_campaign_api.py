@@ -15,10 +15,10 @@ In this module, we have tests for following endpoints
 # Packages
 import re
 import requests
+from redo import retry
 from datetime import datetime, timedelta
 
 # Application Specific
-from redo import retry
 
 from email_campaign_service.common.models.db import db
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
