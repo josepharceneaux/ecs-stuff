@@ -61,7 +61,7 @@ from candidate_service.common.models.candidate import (
     CandidateStatus
 )
 from candidate_service.common.models.language import CandidateLanguage
-from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
+from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField, Product
 from candidate_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.user import User, Permission
@@ -196,10 +196,10 @@ class CandidatesResource(Resource):
                                              .format(source_id=source_id, domain_id=domain_id),
                                              error_code=custom_error.INVALID_SOURCE_ID)
 
-                source_product_id = candidate_dict_.get('source_product_id', 2)
-                if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in (1, 2, 3, 4)):
+                source_product_id = candidate_dict_.get('source_product_id') or Product.WEB
+                if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in {1, 2, 3, 4}):
                     raise InvalidUsage("Provided source product id ({source_product_id}) not recognized".format(
-                            source_product_id=source_product_id),  error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
+                        source_product_id=source_product_id), error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
 
                 candidate_dict_['source_product_id'] = int(source_product_id)
 
@@ -459,7 +459,7 @@ class CandidatesResource(Resource):
                                          error_code=custom_error.INVALID_SOURCE_ID)
 
             source_product_id = _candidate_dict.get('source_product_id')
-            if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in (1, 2, 3, 4)):
+            if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in {1, 2, 3, 4}):
                 raise InvalidUsage("Provided source product id ({source_product_id}) not recognized".format(
                         source_product_id=source_product_id),  error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
 
