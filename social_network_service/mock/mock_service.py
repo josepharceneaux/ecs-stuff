@@ -44,7 +44,6 @@ def mock_endpoint(url_type, social_network, relative_url):
     :param string social_network: Name of social-network. e.g. "meetup"
     :param string relative_url: Relative URL for given social-network API
     """
-    logger.info('CODE008:Testing %s - %s - %s' % (url_type, social_network, relative_url))
     # We need to mock third party vendors in case of jenkins or dev environment.
     if not SocialNetworkUrls.IS_DEV:
         raise UnauthorizedError('This endpoint is not accessible in `%s` env.'
@@ -54,6 +53,8 @@ def mock_endpoint(url_type, social_network, relative_url):
     if not vendor_data:
         raise NotFoundError("Vendor '{}' not found or mocked yet." % social_network)
     request_method = request.method
+
+    logger.info('CODE008:Testing %s - %s - %s' % (url_type, social_network, relative_url))
 
     splitted_data = relative_url.split('/')
     if len(splitted_data) > 1 and splitted_data[1].isdigit():
@@ -72,9 +73,12 @@ def mock_endpoint(url_type, social_network, relative_url):
             data = request.json()
         else:
             data = request.data
+        logger.info('CODE008:Testing 01 %s - %s - %s' % (url_type, social_network, relative_url))
         mocked_json = vendor_data(url_type, resource_id)['/' + relative_url][request_method]
         mock_api = MockApi(mocked_json, payload=data, headers=request.headers)
+        logger.info('CODE008:Testing 02 %s - %s - %s' % (url_type, social_network, relative_url))
         response, status_code = mock_api.get_response()
+        logger.info('CODE008:Testing 03 %s - %s' % (url_type, response))
     except KeyError:
         raise InternalServerError('No Data found. Method:%s, Url:%s.' % (request_method, relative_url))
     return jsonify(response), status_code

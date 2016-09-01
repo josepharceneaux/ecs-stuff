@@ -688,8 +688,7 @@ class SocialNetworkApiUrl(object):
     TWITTER_CALLBACK = HOST_NAME % ('/' + VERSION + '/twitter-callback/%s')
 
     # Endpoint for mock server
-    # MOCK_SERVICE = HOST_NAME % ('/' + VERSION + '/mock/%s/%s')
-    MOCK_SERVICE = 'http://localhost%s' % ('/' + VERSION + '/mock/%s/%s')
+    MOCK_SERVICE = HOST_NAME % ('/' + VERSION + '/mock/%s/%s')
 
 
 class SmsCampaignApi(object):
