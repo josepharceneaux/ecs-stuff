@@ -36,18 +36,19 @@ register_vendor(MEETUP, meetup_vendor)
 
 
 @mock_blueprint.route(SocialNetworkApi.MOCK_SERVICE, methods=['PUT', 'PATCH', 'GET', 'POST', 'DELETE'])
-def mock_endpoint(url_type, social_network, relative_url):
+def mock_endpoint(url_type, social_network):
     """
     Mock endpoint
     :param url_type: auth url or api url
     :type url_type: str | basestring
     :param string social_network: Name of social-network. e.g. "meetup"
-    :param string relative_url: Relative URL for given social-network API
     """
     # We need to mock third party vendors in case of jenkins or dev environment.
     if not SocialNetworkUrls.IS_DEV:
         raise UnauthorizedError('This endpoint is not accessible in `%s` env.'
                                 % app.config[TalentConfigKeys.ENV_KEY])
+
+    relative_url = request.args.get('path')
 
     vendor_data = vendor_hub.get(social_network)
     if not vendor_data:
@@ -74,7 +75,7 @@ def mock_endpoint(url_type, social_network, relative_url):
         else:
             data = request.data
         logger.info('CODE008:Testing 01 %s - %s - %s' % (url_type, social_network, relative_url))
-        mocked_json = vendor_data(url_type, resource_id)['/' + relative_url][request_method]
+        mocked_json = vendor_data(url_type, resource_id)[relative_url][request_method]
         mock_api = MockApi(mocked_json, payload=data, headers=request.headers)
         logger.info('CODE008:Testing 02 %s - %s - %s' % (url_type, social_network, relative_url))
         response, status_code = mock_api.get_response()
