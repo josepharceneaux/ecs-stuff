@@ -95,11 +95,42 @@ def meetup_vendor_api(event_id=None):
                         'Unauthorized': 'Unauthorized access'
                     }
                 }
+            },
+            'POST': {
+                'expected_headers':
+                    {
+                        'headers': {
+                            'Authorization': 'Bearer {}'.format(valid_access_token)
+                        },
+                        'on_fail': {
+                            codes.UNAUTHORIZED
+                        }
+                    },
+                codes.OK: {
+                    'status_code': codes.OK,
+                    'response': {
+                        'id': meetup_fake_member_id
+                    },
+                },
+                codes.UNAUTHORIZED: {
+                    'response': {
+                        'Unauthorized': 'Unauthorized access'
+                    }
+                }
             }
         },
 
         Urls.MEETUP[Urls.GROUPS].format(''): {
             'GET': {
+                'expected_headers':
+                    {
+                        'headers': {
+                            'Authorization': 'Bearer {}'.format(valid_access_token)
+                        },
+                        'on_fail': {
+                            codes.UNAUTHORIZED
+                        }
+                    },
                 codes.OK: {
                     'status_code': codes.OK,
                     'response': {
@@ -167,6 +198,11 @@ def meetup_vendor_api(event_id=None):
                         }
                     },
                 },
+                codes.UNAUTHORIZED: {
+                    'response': {
+                        'Unauthorized': 'Unauthorized access'
+                    }
+                }
             }
         },
 

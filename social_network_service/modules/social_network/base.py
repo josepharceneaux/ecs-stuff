@@ -374,7 +374,7 @@ class SocialNetworkBase(object):
             raise SNServerException('Unable to create user credentials for current'
                                             ' user')
 
-    def get_member_id(self):
+    def     get_member_id(self):
         """
         - If getTalent user has an account on some social network, like
             Meetup.com, it will have a "member id" for that social network.
@@ -417,7 +417,7 @@ class SocialNetworkBase(object):
                      % (self.user.name, self.user.id, self.social_network.name))
         try:
             user_credentials = self.user_credentials
-            url = self.api_url + self.api_relative_url
+            url = SocialNetworkUrls.get_url(self, SocialNetworkUrls.VALIDATE_TOKEN)
             # Now we have the URL, access token, and header is set too,
             get_member_id_response = http_request('POST', url,
                                                   headers=self.headers,

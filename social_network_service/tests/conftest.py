@@ -78,7 +78,7 @@ def meetup():
     """
     This fixture returns Social network model object for meetup in getTalent database
     """
-    return SocialNetwork.get_by_name(MEETUP.title())
+    return {'id': SocialNetwork.get_by_name(MEETUP.title()).id}
 
 
 @pytest.fixture(scope="session")
@@ -136,7 +136,7 @@ def test_meetup_credentials(user_first, meetup):
     # Get the key value pair of access_token and refresh_token
     meetup_kv = json.loads(redis_store2.get(meetup_key))
 
-    social_network_id = meetup.id
+    social_network_id = meetup['id']
     user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_first['id'],
                                                                                      social_network_id)
 
@@ -148,9 +148,10 @@ def test_meetup_credentials(user_first, meetup):
             refresh_token=meetup_kv['refresh_token'])
         UserSocialNetworkCredential.save(user_credentials)
 
-    # Validate token expiry and generate a new token if expired
-    Meetup(user_id=int(user_first['id']))
-    db.session.commit()
+    with app.app_context():
+        # Validate token expiry and generate a new token if expired
+        Meetup(user_id=int(user_first['id']))
+        db.session.commit()
 
     # Get the updated user_credentials
     user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
@@ -189,7 +190,7 @@ def meetup_event_data(meetup, meetup_venue, organizer_in_db, meetup_group):
     data = EVENT_DATA.copy()
     if data.get('organizer_id'):
         del data['organizer_id']
-    data['social_network_id'] = meetup.id
+    data['social_network_id'] = meetup['id']
     data['venue_id'] = meetup_venue.id
     data['group_url_name'] = meetup_group['urlname']
     data['social_network_group_id'] = meetup_group['id']
@@ -393,7 +394,7 @@ def meetup_venue(meetup, user_first):
     """
     This fixture returns meetup venue in getTalent database
     """
-    social_network_id = meetup.id
+    social_network_id = meetup['id']
     venue = {
         "social_network_id": social_network_id,
         "user_id": user_first['id'],
@@ -417,7 +418,7 @@ def meetup_venue_second(meetup, user_first):
     """
     This fixture returns meetup venue in getTalent database
     """
-    social_network_id = meetup.id
+    social_network_id = meetup['id']
     venue = {
         "social_network_id": social_network_id,
         "user_id": user_first['id'],
@@ -576,7 +577,7 @@ def get_test_event_meetup(request, user_first, meetup, meetup_venue, meetup_grou
     """
     # Data for Meetup
     meetup_dict = EVENT_DATA.copy()
-    meetup_dict['social_network_id'] = meetup.id
+    meetup_dict['social_network_id'] = meetup['id']
     meetup_dict['venue_id'] = meetup_venue.id
     meetup_dict['user_id'] = user_first['id']
     meetup_dict['group_url_name'] = meetup_group['urlname']
