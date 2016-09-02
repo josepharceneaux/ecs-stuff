@@ -1,3 +1,5 @@
+# TODO: Kindly rename const.py to constants.py
+# TODO: Kindly rename talentbot-service to talentbot_service
 BOT_NAME = "talentbot"
 AT_BOT = ""
 READ_WEB_SOCKET_DELAY = 1

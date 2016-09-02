@@ -21,12 +21,14 @@ to it and replies to specific chanel.
 # Builtin imports
 import random
 import re
+
 # App specific imports
 from const import ACCESS_TOKEN, SQLALCHEMY_DATABASE_URI,\
     ERROR_MESSAGE, BOT_IMAGE, GREETINGS, HINT,\
     OK_RESPONSE, BOT_NAME, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,\
     SLACK_BOT_TOKEN, FACEBOOK_MESSAGE_LIMIT, FACEBOOK_MESSAGE_SPLIT_COUNT,\
     TEXT_MESSAGE_MAX_LENGTH, MAILGUN_SENDING_ENDPOINT, MAILGUN_API_KEY, MAILGUN_FROM, QUESTIONS, POSITIVE_MESSAGES
+
 # 3rd party import
 import requests
 from flask import Flask
@@ -36,12 +38,15 @@ from slackclient import SlackClient
 from fuzzywuzzy import fuzz
 
 talentbot = Flask(__name__)
+# TODO: I have some code related to Twilio. Kindly see sms_campaign_service/modeuls/handy_functions.py
+# TODO: I think we can move that out of that service and put in common/ so that it is available across services.
 twilio_client = TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 slack_client = SlackClient(SLACK_BOT_TOKEN)
 AT_BOT = ""
 
 
 def set_bot_state_active():
+    # TODO: Missing docs, double check at every other place
     slack_client.rtm_connect()
     api_call_response = slack_client.api_call("users.setActive")
     print 'bot state is active: ', api_call_response.get('ok')
@@ -375,6 +380,8 @@ def get_total_sms_segments(tokens):
 
 
 def match_question(message, question):
+    # TODO: Missing docs
     partial_ratio = fuzz.partial_ratio(message.lower(), question)
+    # TODO: Use logger instead
     print message+': ', partial_ratio
     return partial_ratio
