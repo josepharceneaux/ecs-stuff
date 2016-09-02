@@ -328,6 +328,7 @@ class EventById(Resource):
                     4066 (Access token for Social Network has expired)
 
         """
+        db.session.commit()
         event_data = get_valid_json_data(request)
         # check whether given event_id exists for this user
         event = Event.get_by_user_id_event_id_social_network_event_id(
@@ -364,6 +365,7 @@ class EventById(Resource):
                     403 (Forbidden: event not found for this user)
                     500 (Internal Server Error)
         """
+        db.session.commit()
         deleted, not_deleted = delete_events(request.user.id, [event_id])
         if len(deleted) == 1:
             return dict(message='Event deleted successfully')
