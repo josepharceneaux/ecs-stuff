@@ -18,6 +18,7 @@ from sqlalchemy import desc
 from datetime import datetime, timedelta
 
 # Service Specific
+from email_campaign_service.json_schema.test_email import TEST_EMAIL_SCHEMA
 from email_campaign_service.modules.validations import get_or_set_valid_value
 from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 from email_campaign_service.modules.utils import (TRACKING_URL_TYPE,
@@ -1182,38 +1183,16 @@ def celery_error_handler(uuid):
 
 
 def send_test_email(user, request):
-    test_email_schema = {
-        "$schema": "http://json-schema.org/draft-04/schema#",
-        "type": "object",
-        "properties": {
-            "emails": {
-                "type": "array",
-                "minItems": 1,
-                "maxItems": 10,
-                "uniqueItems": True,
-                "items": {
-                    "type": "string"
-                }
-            },
-            "subject": {
-                "type": "string",
-                "pattern": "\w",
-            },
-            "body_html": {
-                "type": "string",
-                "pattern": "\w",
-            },
-            "from": {
-                "type": "string",
-                "pattern": "\w",
-            }
-        },
-        "required": [
-            "emails", "subject", "body_html", "from"
-        ]
-    }
+    """
+    This function sends a test email to given email addresses. Email sender depends on environment:
+        - local-no-reply@gettalent.com for dev
+        - staging-no-rely@gettalent.com for staging
+        - no-reply@gettalent.com for Prod
+    :param user: User model object (current user)
+    :param request: Flask request object
+    """
     # Get and validate request data
-    data = get_json_data_if_validated(request, test_email_schema)
+    data = get_json_data_if_validated(request, TEST_EMAIL_SCHEMA)
     try:
         default_email = get_default_email_info()['email']
         send_email(source='"%s" <%s>' % (data['from'], default_email),
@@ -1221,9 +1200,8 @@ def send_test_email(user, request):
                    html_body=data['body_html'] or None,
                    # Can't be '', otherwise, text_body will not show in email
                    text_body=data['body_html'],
-                   to_addresses=data['emails'],
+                   to_addresses=data['email_address_list'],
                    reply_address=user.email,
-                   # BOTO doesn't seem to work with an array as to_addresses
                    body=None,
                    email_format='html')
     except Exception as e:

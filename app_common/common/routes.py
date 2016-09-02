@@ -827,7 +827,7 @@ class EmailCampaignApi(object):
     # Gives the send object of a campaign for a particular send_id
     SEND_BY_ID = '/' + VERSION + '/email-campaigns/<int:campaign_id>/sends/<int:send_id>'
 
-    TEST_EMAIL = '/' + VERSION + '/test-email'
+    TEST_EMAIL = '/' + VERSION + '/test-email-send'
 
 
 class EmailCampaignApiUrl(object):
@@ -846,7 +846,7 @@ class EmailCampaignApiUrl(object):
     TEMPLATES_FOLDER = HOST_NAME % ('/' + VERSION + '/email-template-folders')
     SENDS = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/sends')
     SEND_BY_ID = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/sends/%s')
-    TEST_EMAIL = HOST_NAME % ('/' + VERSION + '/test-email')
+    TEST_EMAIL = HOST_NAME % ('/' + VERSION + '/test-email-send')
 
 
 class ATSServiceApi(object):

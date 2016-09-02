@@ -585,7 +585,7 @@ test_mail_data = {
       "subject": "Test Email",
       "from": "Zohaib Ijaz",
       "body_html": "<html><body><h1>Welcome to email campaign service <a href=https://www.github.com>Github</a></h1></body></html>",
-      "emails": [app.config[TalentConfigKeys.GT_GMAIL_ID]]
+      "email_address_list": [app.config[TalentConfigKeys.GT_GMAIL_ID]]
     }
 
 
@@ -614,7 +614,7 @@ def test_test_email_with_invalid_email_address(access_token_first):
     subject = "Test Email %s" % fake.uuid4()
     data = test_mail_data.copy()
     data['subject'] = subject
-    data['emails'] = ['some_invalid_email_%s' % fake.uuid4()]
+    data['email_address_list'] = ['some_invalid_email_%s' % fake.uuid4()]
     response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
     assert response.status_code == requests.codes.INTERNAL_SERVER_ERROR
 
@@ -624,20 +624,15 @@ def test_test_email_with_invalid_fields(access_token_first):
     In this test, we will send a test email with invalid values of required fields which will cause 400 error.
     :param access_token_first: access token for user_first
     """
-    subject = "Test Email %s" % fake.uuid4()
-    data = test_mail_data.copy()
-    data['subject'] = subject
 
     invalid_key_values = [('subject', ('', 0, True, None, {}, [])),
                           ('from', ('', 0, True, None, {}, [])),
                           ('body_html', ('', 0, True, None, {}, [])),
-                          ('emails', ('', 0, True, None, {}, [], ['test@gmail.com', 'test@gmail.com'],
+                          ('email_address_list', ('', 0, True, None, {}, [], ['test@gmail.com', 'test@gmail.com'],
                                       ['test%s@gmail.com' % index for index in xrange(11)]))]
     for key, values in invalid_key_values:
         for value in values:
-            subject = "Test Email %s" % fake.uuid4()
             data = test_mail_data.copy()
-            data['subject'] = subject
             data[key] = value
             response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
             assert response.status_code == requests.codes.BAD_REQUEST

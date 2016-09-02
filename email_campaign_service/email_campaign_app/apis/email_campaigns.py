@@ -52,7 +52,6 @@ from werkzeug.utils import redirect
 from flask import request, Blueprint, jsonify
 
 # Service Specific
-from email_campaign_service.common.utils.amazon_ses import get_default_email_info, send_email
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.email_marketing import (create_email_campaign,
@@ -67,9 +66,9 @@ from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.routes import EmailCampaignApi
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.models.email_campaign import EmailCampaign
-from email_campaign_service.common.utils.validators import is_number, get_json_data_if_validated
+from email_campaign_service.common.utils.validators import is_number
 from email_campaign_service.common.error_handling import (InvalidUsage, NotFoundError,
-                                                          ForbiddenError, MethodNotAllowedError, InternalServerError)
+                                                          ForbiddenError, MethodNotAllowedError)
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response,
                                                            get_pagination_params)
@@ -188,7 +187,9 @@ class EmailCampaigns(Resource):
 
 @api.route(EmailCampaignApi.TEST_EMAIL)
 class TestEmailResource(Resource):
-
+    """
+    This resource is to send test email to preview the email before sending the actual email campaign to candidates.
+    """
     # Access token decorator
     decorators = [require_oauth()]
 
