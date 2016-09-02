@@ -370,8 +370,11 @@ def meetup_venue(meetup, user_first):
         "city": "Cupertino",
         "country": "us"
     }
+
     venue = Venue(**venue)
     Venue.save(venue)
+
+    assert venue
 
     return {'id': venue.id}
 
@@ -397,6 +400,8 @@ def meetup_venue_second(meetup, user_first):
     venue = Venue(**venue)
     Venue.save(venue)
 
+    assert venue
+
     return {'id': venue.id}
 
 
@@ -421,6 +426,8 @@ def eventbrite_venue_second(user_first, eventbrite, token_first):
     venue = Venue(**venue)
     Venue.save(venue)
 
+    assert venue
+
     return {'id': venue.id}
 
 
@@ -444,6 +451,8 @@ def eventbrite_venue(user_first, eventbrite, token_first):
     }
     venue = Venue(**venue)
     Venue.save(venue)
+
+    assert venue
 
     return {'id': venue.id}
 
