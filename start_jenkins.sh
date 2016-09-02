@@ -75,7 +75,6 @@ echo "Beginning tests."
 py.test -n 48 --verbose social_network_service/tests
 echo "Looping $i"
 
-
 if [ $? -ne 0 ] ; then
     exit 1
 fi

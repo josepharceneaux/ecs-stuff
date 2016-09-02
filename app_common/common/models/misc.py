@@ -143,6 +143,11 @@ class Activity(db.Model):
         assert user_id
         return cls.query.filter_by(user_id=user_id, type=type_, source_id=source_id).first()
 
+    @classmethod
+    def get_single_activity(cls, user_id, type_id, source_id, source_table):
+        return cls.query.filter_by(user_id=user_id, type=type_id, source_id=source_id,
+                                   source_table=source_table).first()
+
 
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
