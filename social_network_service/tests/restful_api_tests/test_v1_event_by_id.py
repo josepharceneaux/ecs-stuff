@@ -48,7 +48,7 @@ class TestEventById(object):
         - Delete venue_id and organizer_id from event response data
         - Then compare values from the event data in db table and response event data
         """
-        event = event_in_db_second
+        event = event_in_db_second.to_json()
 
         response = requests.get(SocialNetworkApiUrl.EVENT % event.id, headers=auth_header(token_first))
         logger.info(response.text)
