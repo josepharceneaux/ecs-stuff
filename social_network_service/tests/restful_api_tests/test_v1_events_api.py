@@ -45,7 +45,7 @@ class TestResourceEvents(object):
         events = response.json()['events']
         assert len(events) == 0, 'There shouldn\'t be some events for test user'
 
-    def test_events_get_with_valid_token(self, token_first, event_in_db_second):
+    def test_events_get_with_valid_token(self, token_first, event_in_db):
         """
         event_in_db fixture creates an event entry in db. So, when request is made, it should return that created event
         for test user
