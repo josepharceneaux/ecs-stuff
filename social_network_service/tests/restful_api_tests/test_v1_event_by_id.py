@@ -111,14 +111,14 @@ class TestEventById(object):
         logger.info(response.text)
         assert response.status_code == codes.NOT_FOUND, 'Event not found with this social network event id'
 
-    def test_put_with_valid_token(self, token_first, event_in_db_second):
+    def test_put_with_valid_token(self, token_first, event_in_db):
         """
         - Get event data from db (using fixture - event_in_db)
         - Using event id, send PUT request to update event data
         - Should get 200 response
         - Check if activity is created or not
         """
-        event = event_in_db_second.to_json()
+        event = event_in_db.to_json()
         # Success case, event should be updated
         datetime_now = datetime.datetime.utcnow()
         datetime_now = datetime_now.replace(microsecond=0)
@@ -160,10 +160,10 @@ class TestEventById(object):
         - Then again try to delete event using same event id and expect 403 response
         """
         event_id = event_in_db_second.id
-        event_data = event_in_db_second.copy()
+        event_data = event_in_db_second.to_json()
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
         logger.info(response.text)
-        assert response.status_code == codes.OK, response.text
+        assert response.status_code == codes.OK, 'Status should be Ok (200)'
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
 
         # check if event delete activity
@@ -175,4 +175,4 @@ class TestEventById(object):
         assert data['event_title'] == event_data['title']
 
         logger.info(response.text)
-        assert response.status_code == codes.FORBIDDEN, response.text
+        assert response.status_code == codes.FORBIDDEN, 'Unable to delete event as it is not present there (403)'

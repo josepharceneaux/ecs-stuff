@@ -26,6 +26,21 @@ meetup_kv = json.loads(redis_store2.get(MEETUP.title()))
 valid_access_token = meetup_kv['access_token']
 valid_refresh_token = meetup_kv['refresh_token']
 non_existent_event_id = CampaignsTestsHelpers.get_non_existing_id(Event)
+events_id = []
+
+
+def get_random_event_id():
+    event_id = fake.random_number()
+    events_id.append(event_id)
+    return event_id
+
+
+def delete_event_id(event_id):
+    i = events_id.index(event_id)
+    try:
+        del events_id[i]
+    except IndexError:
+        pass
 
 
 def get_meetup_client():
@@ -237,14 +252,13 @@ def meetup_vendor_api(event_id=None):
             }
         }
         ,
-
         Urls.MEETUP[Urls.EVENTS].format(''): {
             'POST': {
                 codes.OK: {
                     'status_code': codes.CREATED,
                     'response': {
                         # Need to generate random number so that event won't found in database
-                        'id': fake.pyint() * 1000,
+                        'id': fake.random_number(),
                     }
                 }
             },
@@ -261,8 +275,31 @@ def meetup_vendor_api(event_id=None):
                         'id': event_id
                     }
                 }
+            },
+            'GET': {
+                codes.OK: {
+                    'status_code': codes.OK,
+                    'response': {
+                        'ids': ['']
+                    }
+                }
             }
+        },
+        Urls.MEETUP[Urls.EVENT].format('', event_id): {
+            'DELETE': {
+                codes.OK: {
+                    'status_code': codes.OK
+                }
+            },
 
+            'PUT': {
+                codes.OK: {
+                    'status_code': codes.CREATED,
+                    'response': {
+                        'id': event_id
+                    }
+                }
+            }
         }
     }
 
