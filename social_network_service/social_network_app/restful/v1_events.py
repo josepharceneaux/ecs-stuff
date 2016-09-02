@@ -259,6 +259,7 @@ class EventById(Resource):
         :param event_id: integer, unique id representing event in GT database
         :return: json for required event
         """
+        db.session.commit()
         event = Event.get_by_user_and_event_id(request.user.id, event_id)
         if not event:
             raise ResourceNotFound('Event does not exist with id %s' % event_id)
