@@ -242,7 +242,9 @@ class Meetup(SocialNetworkBase):
         if not venue_data.get('group_url_name'):
             raise InvalidUsage("Mandatory Input Missing: group_url_name",
                                error_code=custom_codes.MISSING_REQUIRED_FIELDS)
-        url = 'https://api.meetup.com/%s/venues' % venue_data['group_url_name']
+        # url = 'https://api.meetup.com/%s/venues' % venue_data['group_url_name']
+        url = SocialNetworkUrls.get_url(self, SocialNetworkUrls.VENUES, custom_url='https://api.meetup.com/{}').format(
+            venue_data['group_url_name'])
         payload = {
             'address_1': venue_data['address_line_1'],
             'address_2': venue_data.get('address_line_2'),
@@ -269,9 +271,7 @@ class Meetup(SocialNetworkBase):
             if venue:
                 raise InvalidUsage('Venue already exists in getTalent database',
                                    error_code=VENUE_EXISTS_IN_GT_DATABASE)
-            raise InvalidUsage('Matching venue already exists on Meetup.',
-                               additional_error_info=dict(venue_error=json_resp['errors'][0]['potential_matches']),
-                               error_code=MATCHING_VENUE_FOUND_IN_MEETUP)
+            venue_id = json_resp['errors'][0]['potential_matches'][0]['id']
         else:
             raise InternalServerError('ApiError: Unable to create venue for Meetup',
                                       additional_error_info=dict(venue_error=json_resp))

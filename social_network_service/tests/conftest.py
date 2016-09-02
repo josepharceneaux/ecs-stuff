@@ -223,15 +223,17 @@ def meetup_event(request, test_meetup_credentials, meetup, meetup_venue, organiz
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=meetup_event_data)
     assert response.status_code == codes.CREATED, response.text
     data = response.json()
-
     assert data['id']
 
-    db.session.commit()
-    event = Event.get_by_id(data['id'])
+    response_get = send_request('get', url=SocialNetworkApiUrl.EVENT % data['id'], access_token=token_first)
+    assert response_get.status_code == codes.OK, response_get.text
 
-    assert event
+    _event = response_get.json()['event']
+    _event['venue_id'] = _event['venue']['id']
+    del _event['venue']
+    del _event['event_organizer']
 
-    return event
+    return _event
 
 
 @pytest.fixture(scope="function")
@@ -252,7 +254,12 @@ def meetup_event_second(request, test_meetup_credentials, meetup, meetup_venue_s
 
     assert response_get.status_code == codes.OK, response_get.text
 
-    return response_get.json()['event']
+    _event = response_get.json()['event']
+    _event['venue_id'] = _event['venue']['id']
+    del _event['venue']
+    del _event['event_organizer']
+
+    return _event
 
 
 @pytest.fixture()
@@ -312,15 +319,18 @@ def eventbrite_event(request, test_eventbrite_credentials,
     assert response.status_code == codes.CREATED, response.text
 
     data = response.json()
-
     assert data['id']
 
-    db.session.commit()
-    event = Event.get_by_id(data['id'])
+    response_get = send_request('get', url=SocialNetworkApiUrl.EVENT % data['id'], access_token=token_first)
 
-    assert event
+    assert response_get.status_code == codes.OK, response_get.text
 
-    return event
+    _event = response_get.json()['event']
+    _event['venue_id'] = _event['venue']['id']
+    del _event['venue']
+    del _event['event_organizer']
+
+    return _event
 
 
 @pytest.fixture(scope="function")
@@ -340,19 +350,22 @@ def eventbrite_event_second(request, test_eventbrite_credentials, eventbrite, ev
     assert response.status_code == codes.CREATED, response.text
 
     data = response.json()
-
     assert data['id']
 
-    db.session.commit()
-    event = Event.get_by_id(data['id'])
+    response_get = send_request('get', url=SocialNetworkApiUrl.EVENT % data['id'], access_token=token_first)
 
-    assert event
+    assert response_get.status_code == codes.OK, response_get.text
 
-    return event
+    _event = response_get.json()['event']
+    _event['venue_id'] = _event['venue']['id']
+    del _event['venue']
+    del _event['event_organizer']
+
+    return _event
 
 
 @pytest.fixture(scope="session")
-def meetup_venue(meetup, user_first):
+def meetup_venue(meetup, user_first, token_first):
     """
     This fixture returns meetup venue in getTalent database
     """
@@ -361,6 +374,7 @@ def meetup_venue(meetup, user_first):
         "social_network_id": social_network_id,
         "user_id": user_first['id'],
         "zip_code": "95014",
+        # "group_url_name": 'Python-Learning-Meetup',
         "address_line_2": "",
         "address_line_1": "Infinite Loop",
         "latitude": 0,
@@ -370,17 +384,20 @@ def meetup_venue(meetup, user_first):
         "country": "us"
     }
 
+    # response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
+    #
+    # assert response_post.status_code == 201, response_post.text
+    # venue_id = response_post.json()['id']
+
     venue = Venue(**venue)
-    Venue.save(venue)
-    db.session.commit()
+    venue.save()
+    venue_id = venue.id
 
-    assert venue
-
-    return {'id': venue.id}
+    return {'id': venue_id}
 
 
 @pytest.fixture(scope="function")
-def meetup_venue_second(meetup, user_first):
+def meetup_venue_second(meetup, user_first, token_first):
     """
     This fixture returns meetup venue in getTalent database
     """
@@ -390,6 +407,7 @@ def meetup_venue_second(meetup, user_first):
         "user_id": user_first['id'],
         "zip_code": "95014",
         "address_line_2": "",
+        # "group_url_name": 'Python-Learning-Meetup',
         "address_line_1": "Infinite Loop",
         "latitude": 0,
         "longitude": 0,
@@ -397,13 +415,17 @@ def meetup_venue_second(meetup, user_first):
         "city": "Cupertino",
         "country": "us"
     }
+
+    # response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
+    #
+    # assert response_post.status_code == 201, response_post.text
+    # venue_id = response_post.json()['id']
+
     venue = Venue(**venue)
-    Venue.save(venue)
-    db.session.commit()
+    venue.save()
+    venue_id = venue.id
 
-    assert venue
-
-    return {'id': venue.id}
+    return {'id': venue_id}
 
 
 @pytest.fixture(scope="function")
@@ -424,13 +446,18 @@ def eventbrite_venue_second(user_first, eventbrite, token_first):
         "city": "Lahore",
         "country": "Pakistan"
     }
+
+    # response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
+    #
+    # assert response_post.status_code == 201, response_post.text
+    #
+    # venue_id = response_post.json()['id']
+
     venue = Venue(**venue)
-    Venue.save(venue)
-    db.session.commit()
+    venue.save()
+    venue_id = venue.id
 
-    assert venue
-
-    return {'id': venue.id}
+    return {'id': venue_id}
 
 
 @pytest.fixture(scope="session")
@@ -451,13 +478,17 @@ def eventbrite_venue(user_first, eventbrite, token_first):
         "city": "Lahore",
         "country": "Pakistan"
     }
+
+    # response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
+    #
+    # assert response_post.status_code == 201, response_post.text
+    # venue_id = response_post.json()['id']
+
     venue = Venue(**venue)
-    Venue.save(venue)
-    db.session.commit()
+    venue.save()
+    venue_id = venue.id
 
-    assert venue
-
-    return {'id': venue.id}
+    return {'id': venue_id}
 
 
 @pytest.fixture(scope="session", params=VENDORS)
