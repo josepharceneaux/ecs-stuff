@@ -163,7 +163,7 @@ class TestEventById(object):
         event_data = event_in_db_second.to_json()
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
         logger.info(response.text)
-        assert response.status_code == codes.OK, 'Status should be Ok (200)'
+        assert response.status_code == codes.OK, str(response.text) + ', Event data:' + str(event_data)
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
 
         # check if event delete activity
