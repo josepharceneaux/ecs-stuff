@@ -10,6 +10,7 @@ from flask.ext.restful import Resource
 
 # Application specific imports
 from social_network_service.common.error_handling import *
+from social_network_service.common.models.db import db
 from social_network_service.common.models.event import Event
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.routes import SocialNetworkApi
@@ -155,6 +156,7 @@ class Events(Resource):
         """
         # get json post request data
         event_data = get_valid_json_data(request)
+        db.session.commit()
         gt_event_id = process_event(event_data, request.user.id)
         headers = {'Location': '{url}/{id}'.format(url=SocialNetworkApi.EVENT_ORGANIZERS,
                                                    id=gt_event_id)}
