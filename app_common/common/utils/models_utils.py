@@ -460,6 +460,11 @@ def init_talent_app(app_name):
 
         @flask_app.teardown_request
         def teardown_request(exception):
+            """
+            This callback handles all SqlAlchemy exceptions and rolls back the previous exception to avoid further
+            code failure.
+            :param exception: exception object if there is some SqlAlchemy exception occurred otherwise None
+            """
             if exception:
                 db.session.rollback()
                 db.session.remove()
