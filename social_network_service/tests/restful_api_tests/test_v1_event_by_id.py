@@ -48,7 +48,7 @@ class TestEventById(object):
         - Delete venue_id and organizer_id from event response data
         - Then compare values from the event data in db table and response event data
         """
-        event = event_in_db.to_json()
+        event = event_in_db
 
         response = requests.get(SocialNetworkApiUrl.EVENT % event.id, headers=auth_header(token_first))
         logger.info(response.text)
@@ -160,7 +160,7 @@ class TestEventById(object):
         - Then again try to delete event using same event id and expect 403 response
         """
         event_id = event_in_db_second.id
-        event_data = event_in_db_second.to_json()
+        event_data = event_in_db_second.copy()
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
         logger.info(response.text)
         assert response.status_code == codes.OK, response.text
