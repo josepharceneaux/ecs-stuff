@@ -247,12 +247,12 @@ def meetup_event_second(request, test_meetup_credentials, meetup, meetup_venue_s
 
     data = response.json()
     assert data['id']
-    db.session.commit()
-    event = Event.get_by_id(data['id'])
 
-    assert event
+    response_get = send_request('get', url=SocialNetworkApiUrl.EVENT % data['id'], access_token=token_first)
 
-    return event
+    assert response_get.status_code == codes.OK, response_get.text
+
+    return response_get.json()['event']
 
 
 @pytest.fixture()
