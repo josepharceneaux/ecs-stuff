@@ -205,8 +205,7 @@ def meetup_vendor_api(event_id=None):
                             "description": "None",
                             "lon": float(fake.longitude()),
                             "title": fake.word(),
-                            "url": "%smember_id=%s&offset=0&format=json&page=800&" % (
-                                fake.url(), meetup_fake_member_id),
+                            "url": "www.fakeurl.com/member_id=%s&offset=0&format=json&page=800&" % (meetup_fake_member_id),
                             "id": "",
                             "updated": fake.word(),
                             "lat": float(fake.latitude())
