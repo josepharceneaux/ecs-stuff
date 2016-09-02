@@ -18,6 +18,8 @@ to it and replies to specific chanel.
  - send_mail_via_api
  - get_total_sms_segments()
 """
+
+# TODO: Add :rtype: in every function
 # Builtin imports
 import random
 import re
@@ -47,6 +49,7 @@ AT_BOT = ""
 
 def set_bot_state_active():
     # TODO: Missing docs, double check at every other place
+    # TODO:
     slack_client.rtm_connect()
     api_call_response = slack_client.api_call("users.setActive")
     print 'bot state is active: ', api_call_response.get('ok')
@@ -150,23 +153,28 @@ def create_a_response(message):
     :param str message: Message received
     :rtype str
     """
+    # TODO: Add trailing colon after :rtype
+    # TODO: I think this large function needs refactoring.
+    # TODO: We should save keywords like domain, skil etc in constants.py
     message = message.rstrip('?. ')
     message = message.lstrip(': ')
     message_tokens = re.split(' |,', message)
     if message_tokens[0].lower() in POSITIVE_MESSAGES:
         return random.choice(OK_RESPONSE)
-    if message_tokens[0].lower() in 'hints' and len(message_tokens[0]) > 3:
+    if message_tokens[0].lower() in 'hints' and len(message_tokens[0]) > 3:  # TODO: Avoid magic numbers. 3 here.
         return HINT[0]
     if message_tokens[0].lower() in GREETINGS:
         return random.choice(GREETINGS)
-    if match_question(message, QUESTIONS[0]) >= 70:
+    if match_question(message, QUESTIONS[0]) >= 70:  # TODO: Avoid magic numbers. 70 here. Or add a comment about it.
         domain = [message_tokens.index(domain) for domain
                   in message_tokens if 'domain' in domain.lower()][0]
+        # TODO: Need to remove raw queries
         query = 'SELECT COUNT(DISTINCT user.Id) as count from user,domain' \
                 ' WHERE user.domainId = domain.Id and lower(domain.Name) = "' + \
                 message_tokens[domain+1].lower()+'"'
         result = execute_query(query)
         if result:
+            # TODO: Kindly use .format() for string concatenation in place of `+` everywhere
             response_message = "Users in domain "+message_tokens[domain+1]+" : "
             for row in result:
                 count = row['count']
@@ -192,16 +200,18 @@ def create_a_response(message):
             campaign_id = None
             user_name = ""
             for row in result:
+                # TODO: Need to figure out this to avoid
                 global campaign_id, user_name
                 campaign_id = row['id']
                 user_name = row['name']
             if campaign_id and user_name != "":
                 response_message = 'Top performing email campaign from '+year+' is'\
-                               ' "%s"' % user_name
+                               ' "%s"' % user_name  # TODO: PEP08 indentation warning in this line
             else:
                 response_message = "Sorry couldn't find top email campaign from "+year
             return response_message
     if match_question(message, QUESTIONS[4]) >= 70:
+            # TODO: Remove this line if not required
             # message_tokens[6].lower() in 'import' or message_tokens[5].lower() in 'import':
         talent_index = [message_tokens.index(talent) for talent
                         in message_tokens if 'talent' in talent.lower()][0]
@@ -269,6 +279,7 @@ def create_a_response(message):
     return random.choice(ERROR_MESSAGE)
 
 
+# TODO: I think we won't need these functions now.
 def get_sqlalchemy_engine():
     """
     Executes the create engine method and returns the engine object
@@ -297,6 +308,8 @@ def execute_query(query):
     return result
 
 
+# TODO: We can use common function http_request() defined in common/utils/handy_functions.py and following function
+# TODO: will remove
 def make_a_post_call_to_the_facebook(data):
     """
     Makes a post call to the facebook with data
@@ -306,6 +319,7 @@ def make_a_post_call_to_the_facebook(data):
     print resp.content
 
 
+# TODO: It seems this is Facebook specific. So maybe renaming(including `facebook` word) would be better.
 def sender_action(user_id, action):
     """
     Lets Facebook know what bot's doing e.g: typing_on or typing_off
@@ -340,6 +354,7 @@ def send_mail_via_api(recipient, subject, message):
     :param str message: Email response message
     :return: response
     """
+    # TODO: we are using Amazon SES to send emails currently. Maybe we can use that.
     return requests.post(
         MAILGUN_SENDING_ENDPOINT,
         auth=("api", MAILGUN_API_KEY),
@@ -360,6 +375,7 @@ def get_total_sms_segments(tokens):
     :return: total number of message segments, dict of message segments
     :rtype: int, dict
     """
+    # TODO: rtype is tuple(int,dict)
     split_response_message = ""
     dict_of_segments = {}
     segments = 0

@@ -31,6 +31,7 @@ def listen_slack():
     message = request.form['text']
     global AT_BOT
     if AT_BOT == "":
+        # TODO: Avoid inline imports
         from talentbot import get_bot_id
         AT_BOT = get_bot_id()
     if AT_BOT in message or AT_BOT+':' in message:
@@ -45,6 +46,7 @@ def handle_twilio_webhook():
     Listens to the twilio callbacks
     :return: str
     """
+    # TODO: remove empty line
 
     recipient = request.form.get('From')
     message_body = request.form.get('Body')
@@ -56,7 +58,7 @@ def handle_twilio_webhook():
             segment_indexer = 1
             while segment_indexer <= total_segments:
                 segment = dict_of_segments.get(segment_indexer) + \
-                        "("+str(segment_indexer)+"/"+str(total_segments)+")"
+                        "("+str(segment_indexer)+"/"+str(total_segments)+")"  # TODO: PEP08 warning
                 message = twilio_client.messages.create(to=recipient, from_=TWILIO_NUMBER,
                                                         body=segment)
                 segment_indexer += 1
