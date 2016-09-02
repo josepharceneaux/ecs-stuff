@@ -42,13 +42,13 @@ class TestEventById(object):
         response = unauthorize_test(url=SocialNetworkApiUrl.EVENT % non_existing_id, method='get')
         assert 'event' not in response.json()
 
-    def test_get_by_id_with_valid_token(self, token_first, event_in_db_second):
+    def test_get_by_id_with_valid_token(self, token_first, event_in_db):
         """
         - Get event using id and response should be 200
         - Delete venue_id and organizer_id from event response data
         - Then compare values from the event data in db table and response event data
         """
-        event = event_in_db_second.to_json()
+        event = event_in_db.to_json()
 
         response = requests.get(SocialNetworkApiUrl.EVENT % event.id, headers=auth_header(token_first))
         logger.info(response.text)
@@ -163,7 +163,7 @@ class TestEventById(object):
         event_data = event_in_db_second.to_json()
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
         logger.info(response.text)
-        assert response.status_code == codes.OK, 'Status should be Ok (200)'
+        assert response.status_code == codes.OK, response.text
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
 
         # check if event delete activity
@@ -175,4 +175,4 @@ class TestEventById(object):
         assert data['event_title'] == event_data['title']
 
         logger.info(response.text)
-        assert response.status_code == codes.FORBIDDEN, 'Unable to delete event as it is not present there (403)'
+        assert response.status_code == codes.FORBIDDEN, response.text
