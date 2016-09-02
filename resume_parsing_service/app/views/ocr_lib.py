@@ -85,10 +85,14 @@ def google_vision_ocr(file_string_io, timeout=20):
 
     text_annotations = ocr_results['responses'][0].get('textAnnotations')
 
-    if text_annotations:
-        return text_annotations[0].get('description', u'')
-    else:
+    if not text_annotations:
         return u''
+
+    doc_content = text_annotations[0].get('description', u'')
+    if len(doc_content) < 10: #  Minimum char limit we'd like returned from OCR
+        return u''
+
+    return doc_content
 
 
 @contract
