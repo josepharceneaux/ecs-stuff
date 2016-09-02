@@ -146,16 +146,15 @@ def test_blank_file(token_fixture, user_fixture):
     assert content['error']['code'] == error_constants.NO_TEXT_EXTRACTED['code']
 
 
-# TODO: @erik Kindly uncomment this when fixed
-# def test_picture_not_resume(token_fixture, user_fixture):
-#     content, status = fetch_resume_post_response(token_fixture, 'notResume.jpg')
-#     assert content['error']['message'] == error_constants.ERROR_ENCODING_TEXT['message'], "There should be an error Because it's a picture of a backyard."
-#     # The ocr of a tree returns japanese characters and cannot be encoded.
-#     assert content['error']['code'] == error_constants.ERROR_ENCODING_TEXT['code']
-#
-#     content, status = fetch_resume_post_response(token_fixture, 'notResume2.jpg')
-#     assert content['error']['message'] == error_constants.NO_TEXT_EXTRACTED['message'], "There should be an error Because it's a picture of food."
-#     assert content['error']['code'] == error_constants.NO_TEXT_EXTRACTED['code']
+def test_picture_not_resume(token_fixture, user_fixture):
+    content, status = fetch_resume_post_response(token_fixture, 'notResume.jpg')
+    assert content['error']['message'] == error_constants.NO_TEXT_EXTRACTED['message'], "There should be an error Because it's a picture of a backyard."
+    # The ocr of a tree returns japanese characters and cannot be encoded.
+    assert content['error']['code'] == error_constants.NO_TEXT_EXTRACTED['code']
+
+    content, status = fetch_resume_post_response(token_fixture, 'notResume2.jpg')
+    assert content['error']['message'] == error_constants.NO_TEXT_EXTRACTED['message'], "There should be an error Because it's a picture of food."
+    assert content['error']['code'] == error_constants.NO_TEXT_EXTRACTED['code']
 
 
 def test_bad_create_candidate_inputs(token_fixture):
