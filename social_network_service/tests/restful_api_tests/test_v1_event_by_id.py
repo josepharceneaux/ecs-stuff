@@ -42,13 +42,13 @@ class TestEventById(object):
         response = unauthorize_test(url=SocialNetworkApiUrl.EVENT % non_existing_id, method='get')
         assert 'event' not in response.json()
 
-    def test_get_by_id_with_valid_token(self, token_first, event_in_db):
+    def test_get_by_id_with_valid_token(self, token_first, event_in_db_second):
         """
         - Get event using id and response should be 200
         - Delete venue_id and organizer_id from event response data
         - Then compare values from the event data in db table and response event data
         """
-        event = event_in_db
+        event = event_in_db_second
 
         response = requests.get(SocialNetworkApiUrl.EVENT % event.id, headers=auth_header(token_first))
         logger.info(response.text)
@@ -111,14 +111,14 @@ class TestEventById(object):
         logger.info(response.text)
         assert response.status_code == codes.NOT_FOUND, 'Event not found with this social network event id'
 
-    def test_put_with_valid_token(self, token_first, event_in_db):
+    def test_put_with_valid_token(self, token_first, event_in_db_second):
         """
         - Get event data from db (using fixture - event_in_db)
         - Using event id, send PUT request to update event data
         - Should get 200 response
         - Check if activity is created or not
         """
-        event = event_in_db.to_json()
+        event = event_in_db_second.to_json()
         # Success case, event should be updated
         datetime_now = datetime.datetime.utcnow()
         datetime_now = datetime_now.replace(microsecond=0)
