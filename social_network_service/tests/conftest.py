@@ -237,7 +237,7 @@ def meetup_event(request, test_meetup_credentials, meetup, meetup_venue, organiz
 
 
 @pytest.fixture(scope="function")
-def meetup_event_second(request, test_meetup_credentials, meetup, meetup_venue, organizer_in_db,
+def meetup_event_second(request, test_meetup_credentials, meetup, meetup_venue_second, organizer_in_db,
                         token_first, meetup_event_data):
     """
     This creates another event for Meetup for user_first
@@ -325,7 +325,7 @@ def eventbrite_event(request, test_eventbrite_credentials,
 
 
 @pytest.fixture(scope="function")
-def eventbrite_event_second(request, test_eventbrite_credentials, eventbrite, eventbrite_venue, organizer_in_db,
+def eventbrite_event_second(request, test_eventbrite_credentials, eventbrite, eventbrite_venue_second, organizer_in_db,
                             token_first):
     """
     This method create a dictionary data to create event on eventbrite.
@@ -335,7 +335,7 @@ def eventbrite_event_second(request, test_eventbrite_credentials, eventbrite, ev
     event = EVENT_DATA.copy()
     event['title'] = 'Eventbrite ' + event['title']
     event['social_network_id'] = eventbrite['id']
-    event['venue_id'] = eventbrite_venue['id']
+    event['venue_id'] = eventbrite_venue_second['id']
     event['organizer_id'] = organizer_in_db['id']
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=event)
     assert response.status_code == codes.CREATED, response.text
