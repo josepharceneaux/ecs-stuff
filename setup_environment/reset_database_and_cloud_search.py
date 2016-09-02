@@ -42,7 +42,10 @@ if app.config[TalentConfigKeys.ENV_KEY] not in ['dev', 'jenkins']:
 def save_sn_token_and_flushredis(_redis):
     _token_meetup = _redis.get('Meetup')
     _token_eventbrite = _redis.get('Eventbrite')
-    _redis.flushall()
+    # _redis.flushall()
+    for k in _redis.keys():
+        if 'parsedResume' not in k:
+            _redis.expire(k, 1)
     _redis.set('Meetup', _token_meetup)
     _redis.set('Eventbrite', _token_eventbrite)
 

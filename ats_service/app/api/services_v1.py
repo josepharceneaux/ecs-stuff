@@ -16,10 +16,12 @@ from ats_service.common.utils.auth_utils import require_oauth
 
 # Modules
 from ats_service.common.routes import ATSServiceApi, ATSServiceApiUrl
+from ats_service.common.models.ats import ATSCandidate
 from ats_service.common.utils.api_utils import ApiResponse, api_route
 from ats_service.common.talent_api import TalentApi
 from ats_service.common.utils.handy_functions import get_valid_json_data
 from ats_service.common.error_handling import *
+from ats_service.ats.workday import *
 
 from ats_utils import (validate_ats_account_data,
                        validate_ats_candidate_data,
@@ -32,7 +34,9 @@ from ats_utils import (validate_ats_account_data,
                        delete_ats_candidate,
                        update_ats_candidate,
                        link_ats_candidate,
-                       unlink_ats_candidate)
+                       unlink_ats_candidate,
+                       fetch_auth_data,
+                       create_ats_object)
 
 # Why doesn't this work?
 # from ats_service.app import logger
@@ -67,7 +71,10 @@ class ATSService(Resource):
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
 
-        return ATS.get_all_as_json()
+        response = json.dumps(dict(ats_list=ATS.get_all()))
+        ats_service.app.logger.info("RESPONSE: {}".format(response))
+        headers = dict(Location=ATSServiceApiUrl.ATS)
+        return ApiResponse(response, headers=headers, status=codes.OK)
 
 
 @api.route(ATSServiceApi.ACCOUNT)
@@ -100,7 +107,9 @@ class ATSAccountService(Resource):
                              'ats_name' : ats.name, 'ats_homepage' : ats.homepage_url,
                              'ats_login' : ats.login_url})
 
-        return json.dumps(account_dict)
+        response = json.dumps(account_dict)
+        headers = dict(Location=ATSServiceApiUrl.ACCOUNT % account_id)
+        return ApiResponse(response, headers=headers, status=codes.OK)
 
     def delete(self, account_id):
         """
@@ -115,7 +124,9 @@ class ATSAccountService(Resource):
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         delete_ats_account(request.user.id, account_id)
 
-        return '{"delete" : "success"}'
+        response = json.dumps(dict(delete='success'))
+        headers = dict(Location=ATSServiceApiUrl.ACCOUNT % account_id)
+        return ApiResponse(response, headers=headers, status=codes.OK)
 
     def put(self, account_id):
         """
@@ -160,9 +171,11 @@ class ATSAccountsService(Resource):
         """
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
-        authenticated_user = request.user
 
-        return authenticated_user.to_json()
+        account_list = dict(ats_accounts=ATSAccount.get_user_accounts(request.user.id))
+        response = json.dumps(account_list)
+        headers = dict(Location=ATSServiceApiUrl.ACCOUNTS)
+        return ApiResponse(response, headers=headers, status=codes.OK)
 
     def post(self):
         """
@@ -224,13 +237,16 @@ class ATSCandidatesService(Resource):
         if not account:
             raise NotFoundError('Account id not found', additional_error_info=dict(account_id=account_id))
 
-        candidates = ATSCandidate.get_all_as_json(account_id)
+        candidates = ATSCandidate.get_all(account_id)
         if candidates:
-            return candidates
+            # TODO: Add the ATS-particular entry.
+            response = json.dumps(dict(candidate_list=candidates))
+            headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account_id)
+            return ApiResponse(response, headers=headers, status=codes.OK)
 
         ats_service.app.logger.info("No candidates in ATS account {}".format(account_id))
         response = json.dumps(dict(account_id=account_id, message="No candidates in ATS account {}".format(account_id)))
-        headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account)
+        headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account_id)
         return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
 
     def post(self, account_id):
@@ -255,7 +271,7 @@ class ATSCandidatesService(Resource):
             raise NotFoundError('Account id not found', additional_error_info=dict(account_id=account_id))
 
         # Create the candidate. No attempt to determine if duplicate.
-        candidate = new_ats_candidate(account, data)
+        candidate = new_ats_candidate(account_id, data)
 
         response = json.dumps(dict(id=candidate.id, message="ATS candidate successfully created."))
         headers = dict(Location=ATSServiceApiUrl.CANDIDATES % candidate.id)
@@ -333,7 +349,10 @@ class ATSCandidateService(Resource):
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         delete_ats_candidate(candidate_id)
-        return '{"delete" : "success"}'
+
+        response = json.dumps(dict(delete='success'))
+        headers = dict(Location=ATSServiceApiUrl.CANDIDATES % candidate_id)
+        return ApiResponse(response, headers=headers, status=codes.OK)
 
 
 @api.route(ATSServiceApi.CANDIDATE_LINK)
@@ -376,7 +395,9 @@ class ATSCandidateLinkService(Resource):
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
         unlink_ats_candidate(candidate_id, ats_candidate_id)
 
-        return '{"unlink" : "success"}'
+        response = json.dumps(dict(unlink='success'))
+        headers = dict(Location=ATSServiceApiUrl.CANDIDATE_LINK % (candidate_id, ats_candidate_id))
+        return ApiResponse(response, headers=headers, status=codes.OK)
 
 
 @api.route(ATSServiceApi.CANDIDATES_REFRESH)
@@ -399,6 +420,43 @@ class ATSCandidateRefreshService(Resource):
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
 
-        # Magic happens here
+        # Create an ATS-specific object
+        ats_name, url, user_id, credentials = fetch_auth_data(account_id)
+        if not url:
+            return '{{"account_id" : {},  "status" : "inactive"}}'.format(account_id)
 
-        return '{{"account_id" : {},  "refresh" : "success"}}'.format(account_id)
+        # Authenticate
+        ats_object = create_ats_object(ats_service.app.logger, ats_name, url, user_id, credentials)
+        ats_object.authenticate()
+
+        # Get all candidate ids (references)
+        individual_references = ats_object.fetch_individual_references()
+
+        # For each candidate, fetch the candidate data and update our copy. Later this can be combined with the previous step.
+        return_list = []
+        created_count = 0
+        updated_count = 0
+        for ref in individual_references:
+            individual = ats_object.fetch_individual(ref)
+            return_list.append(individual)
+            data = { 'profile_json' : individual, 'ats_remote_id' : ref }
+
+            present = ATSCandidate.get_by_ats_id(account_id, ref)
+            if present:
+                # Update this individual
+                if present.ats_table_id:
+                    data['ats_table_id'] = present.ats_table_id
+                update_ats_candidate(account_id, present.id, data)
+                ats_object.save_individual(json.dumps(data), present.id)
+                updated_count += 1
+            else:
+                # Create a new individual
+                candidate = new_ats_candidate(account_id, data)
+                i = ats_object.save_individual(json.dumps(data), candidate.id)
+                data['ats_table_id'] = i.id
+                update_ats_candidate(account_id, candidate.id, data)
+                created_count += 1
+
+        response = json.dumps(dict(updated_count=updated_count, created_count=created_count))
+        headers = dict(Location=ATSServiceApiUrl.CANDIDATES_REFRESH % account_id)
+        return ApiResponse(response, headers=headers, status=codes.OK)

@@ -148,9 +148,9 @@ def test_blank_file(token_fixture, user_fixture):
 
 def test_picture_not_resume(token_fixture, user_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'notResume.jpg')
-    assert content['error']['message'] == error_constants.ERROR_ENCODING_TEXT['message'], "There should be an error Because it's a picture of a backyard."
+    assert content['error']['message'] == error_constants.NO_TEXT_EXTRACTED['message'], "There should be an error Because it's a picture of a backyard."
     # The ocr of a tree returns japanese characters and cannot be encoded.
-    assert content['error']['code'] == error_constants.ERROR_ENCODING_TEXT['code']
+    assert content['error']['code'] == error_constants.NO_TEXT_EXTRACTED['code']
 
     content, status = fetch_resume_post_response(token_fixture, 'notResume2.jpg')
     assert content['error']['message'] == error_constants.NO_TEXT_EXTRACTED['message'], "There should be an error Because it's a picture of food."
@@ -475,7 +475,7 @@ def test_already_exists_candidate(token_fixture, user_fixture):
 def fetch_resume_post_response(token_fixture, file_name, create_mode=False):
     """Posts file to local test auth server for json formatted resumes."""
     current_dir = os.path.dirname(__file__)
-    with open(os.path.join(current_dir, 'resume_files/{}'.format(file_name)), 'rb') as resume_file:
+    with open(os.path.join(current_dir, 'files/{}'.format(file_name)), 'rb') as resume_file:
         response = requests.post(ResumeApiUrl.PARSE,
                                  headers={'Authorization': 'Bearer {}'.format(
                                      token_fixture.access_token)},

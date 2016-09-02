@@ -34,12 +34,13 @@ import sys
 from requests import codes
 
 # Application specific imports
+from push_campaign_service.common.models.misc import Activity
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 from push_campaign_service.tests.test_utilities import (create_campaign, get_campaigns,
                                                         delete_campaign, delete_campaigns)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from push_campaign_service.common.utils.test_utils import (invalid_data_test, missing_keys_test,
+from push_campaign_service.common.utils.test_utils import (invalid_data_test, missing_keys_test, assert_activity,
                                                            unexpected_field_test, invalid_value_test)
 from push_campaign_service.common.utils.handy_functions import (send_request)
 
@@ -135,7 +136,7 @@ class TestCreateCampaign(object):
         _id = response['id']
         assert response['message'] == 'Push campaign was created successfully'
         assert response['headers']['Location'] == PushCampaignApiUrl.CAMPAIGN % _id
-
+        assert_activity(Activity.MessageIds.CAMPAIGN_CREATE, _id, 'push_campaign', token_first)
         # To delete this in finalizer, add id and token
         campaign_data['id'] = _id
         campaign_data['token'] = token_first
@@ -180,10 +181,10 @@ class TestGetListOfCampaigns(object):
         :return:
         """
         created_campaign_ids = {campaign_in_db['id'], campaign_in_db_same_domain['id']}
-        response = get_campaigns(token_first, expected_status=(codes.OK,))
+        response = get_campaigns(token_first, per_page=50, expected_status=(codes.OK,))
         assert created_campaign_ids.issubset({campaign['id'] for campaign in response['campaigns']})
 
-        response = get_campaigns(token_same_domain, expected_status=(codes.OK,))
+        response = get_campaigns(token_same_domain, per_page=50, expected_status=(codes.OK,))
         assert created_campaign_ids.issubset({campaign['id'] for campaign in response['campaigns']})
 
         response = get_campaigns(token_second, expected_status=(codes.OK,))
@@ -245,6 +246,7 @@ class TestDeleteMultipleCampaigns(object):
         """
         data = {'ids': [campaign_in_db['id']]}
         delete_campaigns(data, token_first, expected_status=(codes.OK,))
+        assert_activity(Activity.MessageIds.CAMPAIGN_DELETE, campaign_in_db['id'], 'push_campaign', token_first)
 
     def test_campaigns_delete_with_other_user_with_same_domain(self, token_same_domain, campaign_in_db):
         """
@@ -255,6 +257,9 @@ class TestDeleteMultipleCampaigns(object):
         """
         data = {'ids': [campaign_in_db['id']]}
         delete_campaigns(data, token_same_domain, expected_status=(codes.OK,))
+
+        # Check campaign creation activity
+        assert_activity(Activity.MessageIds.CAMPAIGN_DELETE, campaign_in_db['id'], 'push_campaign', token_same_domain)
 
     def test_campaigns_delete_with_unauthorized_id(self, token_second, campaign_in_db):
         """

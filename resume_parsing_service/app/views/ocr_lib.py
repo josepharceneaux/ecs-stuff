@@ -24,7 +24,7 @@ ABBY_URL = 'http://cloud.ocrsdk.com/processImage'
 
 
 @contract
-def google_vision_ocr(file_string_io):
+def google_vision_ocr(file_string_io, timeout=20):
     """
     Utilizes Google Vision API to OCR image with Abbyy as a fallback.
     Root Docs: https://cloud.google.com/vision/docs/
@@ -35,7 +35,6 @@ def google_vision_ocr(file_string_io):
     :return: The first `description` key from the first `textAnnotations` item in the OCR results.
     :rtype: string
     """
-    file_string_io.seek(0)
     b64_string = base64.b64encode(file_string_io.getvalue())
     req_data = {
         "requests": [
@@ -57,9 +56,9 @@ def google_vision_ocr(file_string_io):
         google_response = requests.post("{}?key={}".format(current_app.config['GOOGLE_CLOUD_VISION_URL'],
                                                            current_app.config['GOOGLE_API_KEY']),
                                         json.dumps(req_data),
-                                        timeout=20,
+                                        timeout=timeout,
                                         headers={'content-type': 'application/json'})
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, requests.exceptions.SSLError):
         logger.exception("Could not reach Google API")
         raise InternalServerError(
             error_message=error_constants.GOOGLE_OCR_UNAVAILABLE['message'],
@@ -86,10 +85,14 @@ def google_vision_ocr(file_string_io):
 
     text_annotations = ocr_results['responses'][0].get('textAnnotations')
 
-    if text_annotations:
-        return text_annotations[0].get('description', u'')
-    else:
+    if not text_annotations:
         return u''
+
+    doc_content = text_annotations[0].get('description', u'')
+    if len(doc_content) < 10: #  Minimum char limit we'd like returned from OCR
+        return u''
+
+    return doc_content
 
 
 @contract

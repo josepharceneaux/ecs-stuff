@@ -457,6 +457,13 @@ def init_talent_app(app_name):
         except Exception as e:
             logger.exception("Exception running migrations: {}".format(e.message))
             db.session.rollback()
+
+        @flask_app.teardown_request
+        def teardown_request(exception):
+            if exception:
+                db.session.rollback()
+                db.session.remove()
+
         return flask_app, logger
 
     except Exception as error:

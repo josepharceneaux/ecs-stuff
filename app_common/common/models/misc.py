@@ -143,6 +143,11 @@ class Activity(db.Model):
         assert user_id
         return cls.query.filter_by(user_id=user_id, type=type_, source_id=source_id).first()
 
+    @classmethod
+    def get_single_activity(cls, user_id, type_id, source_id, source_table):
+        return cls.query.filter_by(user_id=user_id, type=type_id, source_id=source_id,
+                                   source_table=source_table).first()
+
 
 class AreaOfInterest(db.Model):
     __tablename__ = 'area_of_interest'
@@ -218,6 +223,12 @@ class Product(db.Model):
     name = db.Column('Name', db.String(100))
     notes = db.Column('Notes', db.String(500))
     updated_time = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.utcnow)
+
+    # This is a static table and below are constants that will be created
+    MOBILE = 1
+    WEB = 2
+    WIDGET = 3
+    OPENWEB = 4
 
     def __repr__(self):
         return "<Product (name=' %r')>" % self.name

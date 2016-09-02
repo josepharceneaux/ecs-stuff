@@ -10,11 +10,11 @@ python push_campaign_service/init_test_data.py
 import os
 from datetime import datetime, timedelta
 
-from common.utils.models_utils import init_talent_app
+from push_campaign_service.common.utils.models_utils import init_talent_app
 app, logger = init_talent_app('test_app')
 
-from common.talent_config_manager import TalentConfigKeys, TalentEnvs
-from common.models.user import Domain, User, UserGroup, Token, Client, Role
+from push_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
+from push_campaign_service.common.models.user import Domain, User, UserGroup, Token, Client, Role
 
 CLIENT_ID = 'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z'
 CLIENT_SECRET = 'DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj1Z'

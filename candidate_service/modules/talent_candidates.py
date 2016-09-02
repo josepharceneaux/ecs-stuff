@@ -893,7 +893,7 @@ def create_or_update_candidate_from_params(
     :type   dice_profile_id:        int
     :type   added_datetime:         str
     :param  source_id:              Source of candidate's intro, e.g. job-fair
-    :param  source_product_id       int
+    :type   source_product_id       int
     :type   source_id:              int
     :type   objective:              basestring
     :type   summary:                basestring
@@ -1186,10 +1186,6 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
     # Track all edits
     track_edits(update_dict=update_dict, table_name='candidate', candidate_id=candidate_id,
                 user_id=user_id, query_obj=candidate_object)
-
-    # TODO: Created a JIRA and assigned it to Umar -> https://gtdice.atlassian.net/browse/GET-1552
-    # if 'source_product_id' in update_dict:
-    #     del update_dict['source_product_id']
 
     # Update
     candidate_object.update(**update_dict)
@@ -1764,11 +1760,9 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             # CandidateExperienceBullet
             experience_bullets = work_experience.get('bullets') or []
             for experience_bullet in experience_bullets:
-                experience_bullet_dict = dict(
-                    list_order=experience_bullet.get('list_order'),
-                    description=experience_bullet['description'].strip() if experience_bullet.get(
-                        'description') else None
-                )
+
+                description = (experience_bullet.get('description') or '').strip()
+                experience_bullet_dict = dict(list_order=experience_bullet.get('list_order'), description=description)
 
                 # Remove keys with None values
                 experience_bullet_dict = purge_dict(experience_bullet_dict)
@@ -1803,7 +1797,8 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                     db.session.add(CandidateExperienceBullet(**experience_bullet_dict))
 
                     if is_updating:  # Track all updates
-                        track_edits(update_dict=experience_bullet_dict, table_name='candidate_experience_bullet',
+                        track_edits(update_dict=experience_bullet_dict,
+                                    table_name='candidate_experience_bullet',
                                     candidate_id=candidate_id, user_id=user_id)
 
         else:  # Add
@@ -1826,11 +1821,10 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             # CandidateExperienceBullet
             experience_bullets = work_experience.get('bullets') or []
             for experience_bullet in experience_bullets:
-                experience_bullet_dict = dict(
-                    list_order=experience_bullet.get('list_order'),
-                    description=experience_bullet['description'].strip() if experience_bullet.get(
-                        'description') else None
-                )
+
+                description = (experience_bullet.get('description') or '').strip()
+                experience_bullet_dict = dict(list_order=experience_bullet.get('list_order'), description=description)
+
                 # Remove keys with None values
                 experience_bullet_dict = purge_dict(experience_bullet_dict)
 
@@ -2474,10 +2468,17 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
                                           (previous_end_month - previous_start_month)
 
         else:  # An existing CandidateExperience's dates have been updated
+
+            this_total_months_experience, previous_total_months_experience = None, None
             if start_year and end_year:
-                total_months_experience = ((end_year - start_year) * 12 + (end_month - start_month) -
-                                           (previous_end_year - previous_start_year) * 12 + (
-                                           previous_end_month - previous_start_month))
+                this_total_months_experience = (end_year - start_year) * 12 + (end_month - start_month)
+            if previous_end_year and previous_start_year:
+                previous_total_months_experience = (previous_end_year - previous_start_year) * 12 + (previous_end_month - previous_start_month)
+
+            if this_total_months_experience and previous_total_months_experience:
+                total_months_experience = this_total_months_experience - previous_total_months_experience
+            elif this_total_months_experience and not previous_total_months_experience:
+                total_months_experience = this_total_months_experience
 
     candidate.total_months_experience += total_months_experience
     return

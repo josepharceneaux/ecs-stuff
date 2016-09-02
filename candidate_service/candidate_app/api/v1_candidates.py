@@ -11,7 +11,6 @@ from datetime import date
 
 # Third Party
 from redo import retry
-from _mysql_exceptions import OperationalError
 
 # Flask specific
 from flask import request
@@ -62,7 +61,7 @@ from candidate_service.common.models.candidate import (
     CandidateStatus
 )
 from candidate_service.common.models.language import CandidateLanguage
-from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField
+from candidate_service.common.models.misc import AreaOfInterest, Frequency, CustomField, Product
 from candidate_service.common.models.talent_pools_pipelines import TalentPipeline, TalentPool
 from candidate_service.common.models.associations import CandidateAreaOfInterest
 from candidate_service.common.models.user import User, Permission
@@ -197,10 +196,10 @@ class CandidatesResource(Resource):
                                              .format(source_id=source_id, domain_id=domain_id),
                                              error_code=custom_error.INVALID_SOURCE_ID)
 
-                source_product_id = candidate_dict_.get('source_product_id', 2)
-                if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in (1, 2, 3, 4)):
+                source_product_id = candidate_dict_.get('source_product_id') or Product.WEB
+                if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in {1, 2, 3, 4}):
                     raise InvalidUsage("Provided source product id ({source_product_id}) not recognized".format(
-                            source_product_id=source_product_id),  error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
+                        source_product_id=source_product_id), error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
 
                 candidate_dict_['source_product_id'] = int(source_product_id)
 
@@ -460,7 +459,7 @@ class CandidatesResource(Resource):
                                          error_code=custom_error.INVALID_SOURCE_ID)
 
             source_product_id = _candidate_dict.get('source_product_id')
-            if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in (1, 2, 3, 4)):
+            if source_product_id and (not is_number(source_product_id) or int(source_product_id) not in {1, 2, 3, 4}):
                 raise InvalidUsage("Provided source product id ({source_product_id}) not recognized".format(
                         source_product_id=source_product_id),  error_code=custom_error.INVALID_SOURCE_PRODUCT_ID)
 
@@ -1692,19 +1691,7 @@ class CandidateDeviceResource(Resource):
                                                one_signal_device_id=one_signal_device_id,
                                                registered_at_datetime=datetime.datetime.utcnow())
 
-            def save_device(device):
-                try:
-                    CandidateDevice.save(device)
-                except OperationalError as e:
-                    logger.info('Try again, Error occurred while saving candidate device. Error: %s', e)
-                    db.session.rollback()
-                    db.session.commit()
-                    raise Exception('Failed to save')
-            if os.getenv(TalentConfigKeys.ENV_KEY) == TalentEnvs.JENKINS:
-                retry(save_device, sleeptime=2, attempts=10, sleepscale=1, retry_exceptions=(Exception,),
-                      args=(candidate_device,))
-            else:
-                CandidateDevice.save(candidate_device)
+            CandidateDevice.save(candidate_device)
 
             return dict(message='Device (id: %s) registered successfully with candidate (id: %s)'
                                 % (candidate_device.id, candidate.id)), 201

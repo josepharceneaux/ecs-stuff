@@ -22,7 +22,7 @@ from ..utils.handy_functions import send_request
 from ..utils.test_utils import (create_candidate, delete_candidate,
                                 create_smartlist, delete_smartlist, delete_talent_pool,
                                 create_talent_pools, create_talent_pipelines, get_smartlist_candidates, get_talent_pool,
-                                search_candidates)
+                                search_candidates, associate_device_to_candidate)
 
 # Data returned from UserService contains lists of users, tokens etc. At 0 index, there is user first, at index 1,
 # user_same_domain and at index 2, user_second. Same is the order for other entities.
@@ -313,3 +313,18 @@ def talent_pipeline_second(request, token_second, talent_pool_second):
     talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
 
     return {'id': talent_pipeline_id}
+
+
+@pytest.fixture(scope='function')
+def candidate_device_first(request, token_first, candidate_first):
+    """
+    This fixture associates a device with test candidate which is required to
+    send push campaign to candidate.
+    :param token_first: authentication token
+    :param candidate_first: candidate dict object
+    """
+    candidate_id = candidate_first['id']
+    device_id = test_config['PUSH_CONFIG']['device_id_1']
+    associate_device_to_candidate(candidate_id, device_id, token_first)
+    device = {'one_signal_id': device_id}
+    return device
