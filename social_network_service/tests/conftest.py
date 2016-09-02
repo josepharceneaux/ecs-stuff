@@ -531,17 +531,6 @@ def get_test_event_eventbrite(request, user_first, eventbrite, eventbrite_venue,
     eventbrite_dict['organizer_id'] = organizer_in_db['id']
     eventbrite_dict['user_id'] = user_first['id']
 
-    def delete_test_event():
-        if 'id' in eventbrite_dict:
-            event_id = eventbrite_dict['id']
-            del eventbrite_dict['id']
-            response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id, access_token=token_first)
-
-            # If event is found and deleted successfully => 200
-            # If event does not belong to requested user => 403
-            assert response.status_code in [codes.OK, codes.FORBIDDEN]
-
-    request.addfinalizer(delete_test_event)
     return eventbrite_dict
 
 
@@ -558,18 +547,6 @@ def get_test_event_meetup(request, user_first, meetup, meetup_venue, meetup_grou
     meetup_dict['group_url_name'] = meetup_group['urlname']
     meetup_dict['social_network_group_id'] = meetup_group['id']
 
-    def delete_test_event():
-        # delete event if it was created by API. In that case, data contains id of that event
-        if 'id' in meetup_dict:
-            event_id = meetup_dict['id']
-            del meetup_dict['id']
-            response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id, access_token=token_first)
-
-            # If event is found and deleted successfully => 200
-            # If event does not belong to requested user => 403
-            assert response.status_code in [codes.OK, codes.FORBIDDEN]
-
-    request.addfinalizer(delete_test_event)
     return meetup_dict
 
 
