@@ -20,10 +20,9 @@ from requests import codes
 from ..routes import UserServiceApiUrl
 from ..utils.handy_functions import send_request
 from ..test_config_manager import load_test_config
-from ..utils.test_utils import (create_candidate, delete_candidate,
-                                create_smartlist, delete_smartlist, delete_talent_pool,
-                                create_talent_pools, create_talent_pipelines, get_smartlist_candidates, get_talent_pool,
-                                search_candidates, associate_device_to_candidate)
+from ..utils.test_utils import (create_candidate, create_smartlist, create_talent_pools, create_talent_pipelines,
+                                get_smartlist_candidates, get_talent_pool, search_candidates,
+                                associate_device_to_candidate)
 
 # Data returned from UserService contains lists of users, tokens etc. At 0 index, there is user first, at index 1,
 # user_same_domain and at index 2, user_second. Same is the order for other entities.
@@ -134,12 +133,6 @@ def candidate_same_domain(request, talent_pool, token_same_domain):
     response = retry(search_candidates, max_sleeptime=60, retry_exceptions=(AssertionError,),
                      args=([candidate_id], token_same_domain))
     candidate = response['candidates'][0]
-
-    def tear_down():
-        delete_candidate(candidate_id, token_same_domain,
-                         expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
-
-    # request.addfinalizer(tear_down)
     return candidate
 
 
@@ -157,12 +150,6 @@ def candidate_second(request, token_second, talent_pool_second):
     response = retry(search_candidates, sleeptime=3, retry_exceptions=(AssertionError,),
                      args=([candidate_id], token_second))
     candidate = response['candidates'][0]
-
-    def tear_down():
-        delete_candidate(candidate_id, token_second,
-                         expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
-
-    # request.addfinalizer(tear_down)
     return candidate
 
 
@@ -183,11 +170,6 @@ def smartlist_first(request, token_first, candidate_first, talent_pipeline):
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_first), kwargs={'count': 1})
 
-    def tear_down():
-        delete_smartlist(smartlist_id, token_first,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-
-    # request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -208,10 +190,6 @@ def smartlist_second(request, token_second, candidate_second, talent_pipeline_se
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_second), kwargs={'count': 1})
 
-    def tear_down():
-        delete_smartlist(smartlist_id, token_second,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-    # request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -232,11 +210,6 @@ def smartlist_same_domain(request, token_same_domain, candidate_same_domain, tal
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_same_domain), kwargs={'count': 1})
 
-    def tear_down():
-        delete_smartlist(smartlist_id, token_same_domain,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-
-    # request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -250,12 +223,6 @@ def talent_pool(request, token_first):
     talent_pools = create_talent_pools(token_first)
     talent_pool_id = talent_pools['talent_pools'][0]
     talent_pool_obj = get_talent_pool(talent_pool_id, token_first)['talent_pool']
-
-    def tear_down():
-        delete_talent_pool(talent_pool_id, token_first,
-                           expected_status=(codes.OK, codes.NOT_FOUND))
-
-    # request.addfinalizer(tear_down)
     return talent_pool_obj
 
 
@@ -281,12 +248,6 @@ def talent_pool_second(request, token_second):
     talent_pools = create_talent_pools(token_second)
     talent_pool_id = talent_pools['talent_pools'][0]
     talent_pool_obj = get_talent_pool(talent_pool_id, token_second)['talent_pool']
-
-    def tear_down():
-        delete_talent_pool(talent_pool_id, token_second,
-                           expected_status=(codes.OK, codes.NOT_FOUND))
-
-    # request.addfinalizer(tear_down)
     return talent_pool_obj
 
 
