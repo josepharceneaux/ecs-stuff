@@ -1,5 +1,3 @@
-from user_service.modules.init_test_data import create_test_data
-
 __author__ = 'ufarooqi'
 from dateutil import parser
 from flask_restful import Resource

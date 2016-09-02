@@ -11,7 +11,7 @@ from user_service.common.error_handling import ForbiddenError
 from user_service.common.routes import UserServiceApi
 from user_service.common.talent_api import TalentApi
 from user_service.common.utils.api_utils import api_route
-from user_service.modules.init_test_data import create_test_data
+from user_service.modules.generate_test_data import create_test_data
 from user_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 
 # creating blueprint
@@ -25,7 +25,9 @@ api.route = types.MethodType(api_route, api)
 
 @api.route(UserServiceApi.TEST_SETUP)
 class TestSetupApi(Resource):
-
+    """
+    This resource is to setup data to be used in tests.
+    """
     def post(self):
         """
         POST /test-setup/
@@ -38,16 +40,16 @@ class TestSetupApi(Resource):
         localhost = '127.0.0.1'
         environment = app.config[TalentConfigKeys.ENV_KEY]
         jenkins_ip = app.config[TalentConfigKeys.JENKINS_HOST_IP]
-        is_gettalent = origin.count('gettalent.com') == 1 or origin == jenkins_ip
-        is_dev = origin == localhost and app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]
-        is_alloed = is_gettalent or is_dev
+        is_jenkins = origin == jenkins_ip
+        is_dev = origin == localhost and environment == TalentEnvs.DEV
+        is_allowed = is_jenkins or is_dev
         message = """is_gettalent: %s,
                        id_dev: %s,
                        origin: %s,
                        environment: %s,
                        is_allowed: %s
-                    """ % (is_gettalent, is_dev, origin, environment, is_alloed)
-        if not is_alloed:
+                    """ % (is_jenkins, is_dev, origin, environment, is_allowed)
+        if not is_allowed:
             logger.warn(message)
             raise ForbiddenError('Invalid request origin : %s' % origin)
 

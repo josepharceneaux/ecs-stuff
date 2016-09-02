@@ -3,10 +3,14 @@ This script initializes data to run tests which involves creation of domains, us
 users, client, token etc.
 
 """
-from datetime import datetime, timedelta
+# Standard imports
 import time
+from datetime import datetime
+
+# 3rd party imports
 from werkzeug.security import gen_salt
 
+# Application specific imports
 from user_service.common.error_handling import InternalServerError
 from user_service.common.models.user import Domain, User, UserGroup, Token, Client, Role
 from user_service.user_app import logger

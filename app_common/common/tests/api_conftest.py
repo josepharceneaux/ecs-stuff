@@ -19,6 +19,7 @@ from requests import codes
 
 from ..routes import UserServiceApiUrl
 from ..utils.handy_functions import send_request
+from ..test_config_manager import load_test_config
 from ..utils.test_utils import (create_candidate, delete_candidate,
                                 create_smartlist, delete_smartlist, delete_talent_pool,
                                 create_talent_pools, create_talent_pipelines, get_smartlist_candidates, get_talent_pool,
@@ -29,6 +30,8 @@ from ..utils.test_utils import (create_candidate, delete_candidate,
 FIRST = 0
 SAME_DOMAIN = 1
 SECOND = 2
+
+test_config = load_test_config()
 
 
 @pytest.fixture(scope='session')
