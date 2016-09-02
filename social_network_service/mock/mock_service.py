@@ -90,7 +90,7 @@ class MockServer(Resource):
             resource_id = None
 
         try:
-            if request.content_type == 'application/x-www-form-urlencoded':
+            if request.content_type == 'application/x-www-form-urlencoded' or request.content_type == '':
                 data = dict()
                 [data.update({k: v}) for k, v in request.values.iteritems()]
             elif request.content_type == 'application/json':
