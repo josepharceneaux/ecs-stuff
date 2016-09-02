@@ -100,7 +100,7 @@ class MockServer(Resource):
             mocked_json = vendor_data(url_type, resource_id)[relative_url][request_method]
             mock_api = MockApi(mocked_json, payload=data, headers=request.headers)
             response, status_code = mock_api.get_response()
-            logger.info('MOCK RESPONSE: ' + response)
+            logger.info('MOCK RESPONSE: ' + str(response))
         except KeyError:
             raise InternalServerError('No Data found. Method:%s, Url:%s.' % (request_method, relative_url))
         # return jsonify(response), status_code
