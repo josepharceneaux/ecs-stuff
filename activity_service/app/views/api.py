@@ -1,7 +1,6 @@
 """Activities API for getting activities for a user's domain or posting new activities
    to the database.
 """
-
 __author__ = 'erikfarmer'
 # stdlib
 from datetime import datetime
@@ -20,6 +19,8 @@ from activity_service.common.models.user import User
 from activity_service.app import db, logger
 from activity_service.common.routes import ActivityApi
 from activity_service.common.models.misc import Activity
+from activity_service.common.error_handling import NotFoundError
+from activity_service.common.utils.api_utils import ApiResponse
 from activity_service.common.utils.auth_utils import require_oauth
 from activity_service.common.campaign_services.campaign_utils import CampaignUtils
 
@@ -98,14 +99,23 @@ def get_activity_messages():
     return jsonify(dict(messages=TalentActivityManager.MESSAGES))
 
 
-@mod.route(ActivityApi.ACTIVITIES, methods=['POST'])
+@mod.route(ActivityApi.ACTIVITIES, methods=['GET', 'POST'])
 @require_oauth()
 def post_activity():
     valid_user_id = request.user.id
-    content = request.get_json()
+    if request.method == 'POST':
+        content = request.get_json()
 
-    return create_activity(valid_user_id, content.get('type'), content.get('source_table'),
-                           content.get('source_id'), content.get('params'))
+        return create_activity(valid_user_id, content.get('type'), content.get('source_table'),
+                               content.get('source_id'), content.get('params'))
+    source_table = request.args.get('source_table')
+    source_id = request.args.get('source_id')
+    type_id = request.args.get('type')
+    activity = Activity.get_single_activity(valid_user_id, type_id, source_id, source_table)
+    if not activity:
+        raise NotFoundError('Activity not found for given query params.')
+
+    return ApiResponse(json.dumps({"activity": activity.to_json()}), status=STATUS_CODES.OK)
 
 
 def create_activity(user_id, type_, source_table=None, source_id=None, params=None):
