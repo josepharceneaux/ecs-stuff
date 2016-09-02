@@ -374,7 +374,7 @@ def meetup_venue(meetup, user_first, token_first):
         "social_network_id": social_network_id,
         "user_id": user_first['id'],
         "zip_code": "95014",
-        # "group_url_name": 'Python-Learning-Meetup',
+        "group_url_name": 'Python-Learning-Meetup',
         "address_line_2": "",
         "address_line_1": "Infinite Loop",
         "latitude": 0,
@@ -384,14 +384,10 @@ def meetup_venue(meetup, user_first, token_first):
         "country": "us"
     }
 
-    # response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
-    #
-    # assert response_post.status_code == 201, response_post.text
-    # venue_id = response_post.json()['id']
+    response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
 
-    venue = Venue(**venue)
-    venue.save()
-    venue_id = venue.id
+    assert response_post.status_code == 201, response_post.text
+    venue_id = response_post.json()['id']
 
     return {'id': venue_id}
 
@@ -407,7 +403,7 @@ def meetup_venue_second(meetup, user_first, token_first):
         "user_id": user_first['id'],
         "zip_code": "95014",
         "address_line_2": "",
-        # "group_url_name": 'Python-Learning-Meetup',
+        "group_url_name": 'Python-Learning-Meetup',
         "address_line_1": "Infinite Loop",
         "latitude": 0,
         "longitude": 0,
@@ -416,14 +412,10 @@ def meetup_venue_second(meetup, user_first, token_first):
         "country": "us"
     }
 
-    # response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
-    #
-    # assert response_post.status_code == 201, response_post.text
-    # venue_id = response_post.json()['id']
+    response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
 
-    venue = Venue(**venue)
-    venue.save()
-    venue_id = venue.id
+    assert response_post.status_code == 201, response_post.text
+    venue_id = response_post.json()['id']
 
     return {'id': venue_id}
 
@@ -447,15 +439,11 @@ def eventbrite_venue_second(user_first, eventbrite, token_first):
         "country": "Pakistan"
     }
 
-    # response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
-    #
-    # assert response_post.status_code == 201, response_post.text
-    #
-    # venue_id = response_post.json()['id']
+    response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
 
-    venue = Venue(**venue)
-    venue.save()
-    venue_id = venue.id
+    assert response_post.status_code == 201, response_post.text
+
+    venue_id = response_post.json()['id']
 
     return {'id': venue_id}
 
@@ -479,14 +467,10 @@ def eventbrite_venue(user_first, eventbrite, token_first):
         "country": "Pakistan"
     }
 
-    # response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
-    #
-    # assert response_post.status_code == 201, response_post.text
-    # venue_id = response_post.json()['id']
+    response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
 
-    venue = Venue(**venue)
-    venue.save()
-    venue_id = venue.id
+    assert response_post.status_code == 201, response_post.text
+    venue_id = response_post.json()['id']
 
     return {'id': venue_id}
 
