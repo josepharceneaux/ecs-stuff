@@ -220,8 +220,6 @@ def meetup_event(request, test_meetup_credentials, meetup, meetup_venue, organiz
     """
     This creates an event for Meetup for user_first
     """
-    del meetup_event_data['organizer_id']
-    meetup_event_data['title'] = 'Eventbrite ' + meetup_event_data['title'] + uuid4().__str__()
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=meetup_event_data)
     assert response.status_code == codes.CREATED, response.text
     data = response.json()
@@ -242,6 +240,7 @@ def meetup_event_second(request, test_meetup_credentials, meetup, meetup_venue_s
     """
     This creates another event for Meetup for user_first
     """
+
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=meetup_event_data)
 
     assert response.status_code == codes.CREATED, response.text
