@@ -15,10 +15,13 @@ In this module, we have tests for following endpoints
 # Packages
 import re
 import requests
+from redo import retry
 from datetime import datetime, timedelta
 
 # Application Specific
+
 from email_campaign_service.common.models.db import db
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.tests.conftest import fake, uuid
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
@@ -26,7 +29,7 @@ from email_campaign_service.common.models.misc import (UrlConversion, Frequency)
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity,
                                                           ForbiddenError)
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, HEALTH_CHECK)
-from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers, send_request
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailClient)
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
@@ -35,7 +38,8 @@ from email_campaign_service.tests.modules.handy_functions import (assert_valid_c
                                                                   assert_campaign_send,
                                                                   create_email_campaign_via_api,
                                                                   create_data_for_campaign_creation,
-                                                                  create_email_campaign_smartlists)
+                                                                  create_email_campaign_smartlists,
+                                                                  assert_and_delete_email)
 
 
 class TestGetCampaigns(object):
@@ -576,3 +580,59 @@ def test_health_check():
     # Testing Health Check URL with trailing slash
     response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK + '/')
     assert response.status_code == requests.codes.OK
+
+test_mail_data = {
+      "subject": "Test Email",
+      "from": "Zohaib Ijaz",
+      "body_html": "<html><body><h1>Welcome to email campaign service <a href=https://www.github.com>Github</a></h1></body></html>",
+      "email_address_list": [app.config[TalentConfigKeys.GT_GMAIL_ID]]
+    }
+
+
+def test_test_email_with_valid_data(access_token_first):
+    """
+    In this test, we will send a test email to out test email account and then we will confirm by getting that email
+    from inbox with that specific subject.
+    :param access_token_first: access token
+    """
+    subject = "Test Email %s" % fake.uuid4()
+    data = test_mail_data.copy()
+    data['subject'] = subject
+    response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
+    assert response.status_code == requests.codes.OK
+
+    retry(assert_and_delete_email, sleeptime=5, attempts=10, sleepscale=1,
+          args=(subject,), retry_exceptions=(AssertionError,))
+
+
+def test_test_email_with_invalid_email_address(access_token_first):
+    """
+    In this test we will send a test email to an invalid email address which will cause failure while sending email
+    via SES (500 Error).
+    :param access_token_first: access token
+    """
+    subject = "Test Email %s" % fake.uuid4()
+    data = test_mail_data.copy()
+    data['subject'] = subject
+    data['email_address_list'] = ['some_invalid_email_%s' % fake.uuid4()]
+    response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
+    assert response.status_code == requests.codes.INTERNAL_SERVER_ERROR
+
+
+def test_test_email_with_invalid_fields(access_token_first):
+    """
+    In this test, we will send a test email with invalid values of required fields which will cause 400 error.
+    :param access_token_first: access token for user_first
+    """
+
+    invalid_key_values = [('subject', ('', 0, True, None, {}, [])),
+                          ('from', ('', 0, True, None, {}, [])),
+                          ('body_html', ('', 0, True, None, {}, [])),
+                          ('email_address_list', ('', 0, True, None, {}, [], ['test@gmail.com', 'test@gmail.com'],
+                                      ['test%s@gmail.com' % index for index in xrange(11)]))]
+    for key, values in invalid_key_values:
+        for value in values:
+            data = test_mail_data.copy()
+            data[key] = value
+            response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
+            assert response.status_code == requests.codes.BAD_REQUEST
