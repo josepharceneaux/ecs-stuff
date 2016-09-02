@@ -17,12 +17,16 @@ OK_RESPONSE = ['hmm', '**nodes**']
 TWILIO_AUTH_TOKEN = "##################################"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"
 TWILIO_NUMBER = "+12015617985"
-SLACK_BOT_TOKEN = '######################################'
+SLACK_BOT_TOKEN = '########################################'
 FACEBOOK_MESSAGE_LIMIT = 319
 FACEBOOK_MESSAGE_SPLIT_COUNT = 200
 TEXT_MESSAGE_MAX_LENGTH = 152
 STANDARD_MSG_LENGTH = 160
 MAILGUN_SENDING_ENDPOINT = "https://api.mailgun.net/v3/sandbox59cbb160934f43d7839e1788604c2c06." \
                            "mailgun.org/messages"
-MAILGUN_API_KEY = "key-#########################"
+MAILGUN_API_KEY = "key-##########################"
 MAILGUN_FROM = "TalentBot <mailgun@sandbox59cbb160934f43d7839e1788604c2c06.mailgun.org>"
+QUESTIONS = ['how many users are with domain', 'how many candidates with skills',
+             'how many candidates from zipcode', 'what is the top performing email campaign from',
+             'How many candidate leads did import into the talent pool last month', 'what is your name']
+POSITIVE_MESSAGES = ['hmmmm', 'ok', 'fine', 'whatever', 'yeah', 'ahan', 'so so']

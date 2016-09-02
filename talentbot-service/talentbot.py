@@ -26,13 +26,14 @@ from const import ACCESS_TOKEN, SQLALCHEMY_DATABASE_URI,\
     ERROR_MESSAGE, BOT_IMAGE, GREETINGS, HINT,\
     OK_RESPONSE, BOT_NAME, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,\
     SLACK_BOT_TOKEN, FACEBOOK_MESSAGE_LIMIT, FACEBOOK_MESSAGE_SPLIT_COUNT,\
-    TEXT_MESSAGE_MAX_LENGTH, MAILGUN_SENDING_ENDPOINT, MAILGUN_API_KEY, MAILGUN_FROM
+    TEXT_MESSAGE_MAX_LENGTH, MAILGUN_SENDING_ENDPOINT, MAILGUN_API_KEY, MAILGUN_FROM, QUESTIONS, POSITIVE_MESSAGES
 # 3rd party import
 import requests
 from flask import Flask
 from sqlalchemy import create_engine
 from twilio.rest import TwilioRestClient
 from slackclient import SlackClient
+from fuzzywuzzy import fuzz
 
 talentbot = Flask(__name__)
 twilio_client = TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
@@ -147,30 +148,26 @@ def create_a_response(message):
     message = message.rstrip('?. ')
     message = message.lstrip(': ')
     message_tokens = re.split(' |,', message)
-    if message_tokens[0].lower() in 'okay' or message_tokens[0].lower() \
-            in 'hmmmmmm' and len(message_tokens[0]) < 5:
+    if message_tokens[0].lower() in POSITIVE_MESSAGES:
         return random.choice(OK_RESPONSE)
     if message_tokens[0].lower() in 'hints' and len(message_tokens[0]) > 3:
         return HINT[0]
     if message_tokens[0].lower() in GREETINGS:
         return random.choice(GREETINGS)
-    if len(message_tokens) > 7 and message_tokens[0].lower() == 'how' and \
-            message_tokens[1].lower() == 'many'\
-            and message_tokens[6].lower() == 'domain' and message_tokens[7].lower():
+    if match_question(message, QUESTIONS[0]) >= 70:
+        domain = [message_tokens.index(domain) for domain
+                  in message_tokens if 'domain' in domain.lower()][0]
         query = 'SELECT COUNT(DISTINCT user.Id) as count from user,domain' \
                 ' WHERE user.domainId = domain.Id and lower(domain.Name) = "' + \
-                message_tokens[7].lower()+'"'
+                message_tokens[domain+1].lower()+'"'
         result = execute_query(query)
         if result:
-            response_message = "Users in domain "+message_tokens[7]+" : "
+            response_message = "Users in domain "+message_tokens[domain+1]+" : "
             for row in result:
                 count = row['count']
                 response_message += str(count)
             return response_message
-    if len(message_tokens) > 7 and (message_tokens[0].lower() in "what's"
-                                    or message_tokens[0].lower() in "which's")\
-            and message_tokens[1].lower() in ['is', 'the']\
-            and message_tokens[-3].lower() in 'campaigns' and message_tokens[-2].lower() == 'from':
+    if match_question(message, QUESTIONS[3]) >= 70:
         year = message_tokens[-1]
         query = "SELECT MAX( DISTINCT email_campaign_blast.Opens) as max, " \
                 "email_campaign_blast.EmailCampaignId as id" \
@@ -187,22 +184,20 @@ def create_a_response(message):
                 "LIMIT 1"
         result = execute_query(query)
         if result:
-            campaign_id = -1
+            campaign_id = None
             user_name = ""
             for row in result:
                 global campaign_id, user_name
                 campaign_id = row['id']
                 user_name = row['name']
-            if campaign_id != -1 and user_name != "":
+            if campaign_id and user_name != "":
                 response_message = 'Top performing email campaign from '+year+' is'\
                                ' "%s"' % user_name
             else:
                 response_message = "Sorry couldn't find top email campaign from "+year
             return response_message
-    if len(message_tokens) > 11 and message_tokens[0].lower() == 'how' \
-            and message_tokens[1].lower() == 'many'\
-            and message_tokens[2].lower() in 'candidates' and\
-            message_tokens[6].lower() in 'import' or message_tokens[5].lower() in 'import':
+    if match_question(message, QUESTIONS[4]) >= 70:
+            # message_tokens[6].lower() in 'import' or message_tokens[5].lower() in 'import':
         talent_index = [message_tokens.index(talent) for talent
                         in message_tokens if 'talent' in talent.lower()][0]
         import_index = [message_tokens.index(_import) for _import
@@ -231,8 +226,7 @@ def create_a_response(message):
                 count = row['count']
             response_message = response_message % count
             return response_message
-    if len(message_tokens) >= 6 and message_tokens[0].lower() == 'how' \
-            and message_tokens[1].lower() == 'many' and 'skill' in message:
+    if match_question(message, QUESTIONS[1]) >= 72:
         skill_index = [message_tokens.index(skill) for skill
                        in message_tokens if 'skil' in skill.lower()][0]
         parsed_skills = parse_skills(message_tokens[skill_index + 1::])
@@ -251,9 +245,7 @@ def create_a_response(message):
                     response_message = response_message.replace('are', 'is'). \
                         replace('candidates', 'candidate')
             return response_message
-    if len(message_tokens) > 5 and message_tokens[0].lower() == 'how'\
-            and message_tokens[1].lower() == 'many' \
-            and message_tokens[2].lower() in 'candidates' and 'zipcode' in message:
+    if match_question(message, QUESTIONS[2]) >= 70:
         zip_index = [message_tokens.index(zipcode) for zipcode
                      in message_tokens if 'zip' in zipcode][0]
         query = 'SELECT COUNT(DISTINCT candidate_address.CandidateId) as count from candidate_address,' \
@@ -267,9 +259,7 @@ def create_a_response(message):
                 count = row['count']
                 response_message += str(count)
             return response_message
-    if len(message_tokens) > 3 and message_tokens[0].lower() in 'what'\
-            and message_tokens[1].lower() in 'is' and message_tokens[2].lower() == 'your'\
-            and message_tokens[3].lower() == 'name':
+    if match_question(message, QUESTIONS[5]) >= 72:
         return "My name is "+BOT_NAME
     return random.choice(ERROR_MESSAGE)
 
@@ -382,3 +372,9 @@ def get_total_sms_segments(tokens):
                 dict_of_segments.update({segments: split_response_message})
             return segments, dict_of_segments
     return segments, dict_of_segments
+
+
+def match_question(message, question):
+    partial_ratio = fuzz.partial_ratio(message.lower(), question)
+    print message+': ', partial_ratio
+    return partial_ratio
