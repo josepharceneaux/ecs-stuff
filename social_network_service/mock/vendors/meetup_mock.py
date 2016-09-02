@@ -35,14 +35,6 @@ def get_random_event_id():
     return event_id
 
 
-def delete_event_id(event_id):
-    i = events_id.index(event_id)
-    try:
-        del events_id[i]
-    except IndexError:
-        pass
-
-
 def get_meetup_client():
     """
     Return meetup client from db
@@ -249,21 +241,15 @@ def meetup_vendor_api(event_id=None):
                     }
                 }
             }
-        }
-        ,
+        },
         Urls.MEETUP[Urls.EVENTS].format(''): {
             'POST': {
                 codes.OK: {
                     'status_code': codes.CREATED,
                     'response': {
                         # Need to generate random number so that event won't found in database
-                        'id': randint(1, 100000),
+                        'id': get_random_event_id(),
                     }
-                }
-            },
-            'DELETE': {
-                codes.OK: {
-                    'status_code': codes.OK
                 }
             },
             'PUT': {
@@ -273,15 +259,14 @@ def meetup_vendor_api(event_id=None):
                         'id': event_id
                     }
                 }
-            }
-        },
-        Urls.MEETUP[Urls.EVENT].format('', event_id): {
+            },
             'DELETE': {
                 codes.OK: {
                     'status_code': codes.OK
                 }
-            },
-
+            }
+        },
+        Urls.MEETUP[Urls.EVENT].format('', event_id): {
             'PUT': {
                 codes.OK: {
                     'status_code': codes.CREATED,
