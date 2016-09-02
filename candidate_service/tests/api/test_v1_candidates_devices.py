@@ -11,13 +11,9 @@ different scenarios like:
     - with token from a different user from different domain
 """
 import sys
-
-# this import is not used per se but without it, the test throws an app context error
-# Candidate Service app instance
 import requests
 
-from candidate_service.candidate_app import app, logger
-from candidate_service.common.models.candidate import CandidateDevice
+from candidate_service.candidate_app import logger
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request
 from candidate_service.common.tests.api_conftest import *
@@ -34,7 +30,7 @@ def test_associate_device_with_invalid_token(candidate_first):
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_first['id'], 'invalid_token', data)
     logger.info(response.content)
-    assert response.status_code == 401
+    assert response.status_code == requests.codes.UNAUTHORIZED
 
 
 def test_associate_device_to_non_existing_candidate(token_first):
@@ -57,7 +53,6 @@ def test_associate_device_with_invalid_one_signal_device_id(token_first, candida
     ResourceNotFound (404) error.
     :param token_first: authentication token
     :param candidate_first: candidate dict object
-    :return:
     """
     data = {'one_signal_device_id': 'Invalid Id'}
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_first['id'], token_first, data)
@@ -69,9 +64,8 @@ def test_associate_device_to_deleted_candidate(token_first, candidate_first):
     """
     Try to associate a valid device id to a deleted (web-hidden) candidate.
     API should raise ResourceNotFound (404) error.
-    :param token_first:
-    :param candidate_first:
-    :return:
+    :param token_first: authentication token
+    :param candidate_first: candidate dict object
     """
 
     response = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_first['id'], token_first)
@@ -89,9 +83,8 @@ def test_associate_device_with_valid_data(token_first, candidate_first):
     Try to associate a valid device id to a valid candidate.
     API should assign that device id to candidate in CandidateDevice table and return a success
     response (201).
-    :param token_first:
-    :param candidate_first:
-    :return:
+    :param token_first: authentication token
+    :param candidate_first: candidate dict object
     """
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_first['id'], token_first, data)
@@ -112,9 +105,8 @@ def test_associate_device_to_two_candidate_in_same_domain(token_first, candidate
     Try to associate a valid device id to a valid candidate.
     API should assign that device id to candidate in CandidateDevice table and return a success
     response (201).
-    :param token_first:
-    :param candidate_first:
-    :return:
+    :param token_first: authentication token
+    :param candidate_first: candidate dict object
     """
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_same_domain['id'], token_first, data)
@@ -134,9 +126,8 @@ def test_associate_device_using_diff_user_token_same_domain(token_same_domain, c
     Try to associate  a device to a candidate but authentication token belongs to a different
     user that is not owner of candidate but he is from same domain as owner user.
     We are expecting a success response (201).
-    :param token_same_domain:
-    :param candidate_first:
-    :return:
+    :param token_same_domain: authentication token
+    :param candidate_first: candidate dict object
     """
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_first['id'], token_same_domain, data)
@@ -156,9 +147,8 @@ def test_associate_device_using_diff_user_token_diff_domain(token_second, candid
     Try to associate  a device to a candidate but authentication token belongs to a different
     user that is not owner of candidate and he is from different domain.
     We are expecting a Forbidden response (403).
-    :param token_second:
-    :param candidate_first:
-    :return:
+    :param token_second: authentication token
+    :param candidate_first: candidate dict object
     """
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('post', CandidateApiUrl.DEVICES % candidate_first['id'], token_second, data)
@@ -167,6 +157,13 @@ def test_associate_device_using_diff_user_token_diff_domain(token_second, candid
 
 
 def test_delete_candidate_device(token_first, candidate_first, candidate_device_first):
+    """
+    Sending a DELETE request to /v1/candidates/:id/devices will remove candidate association with push device.
+    Expected status is 200
+    :param token_first: authentication token
+    :param candidate_first: candidate dict object
+    :param candidate_device_first: candidate push device
+    """
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('delete', CandidateApiUrl.DEVICES % candidate_first['id'], token_first, data)
     logger.info(response.content)
@@ -174,6 +171,13 @@ def test_delete_candidate_device(token_first, candidate_first, candidate_device_
 
 
 def test_delete_candidate_device_in_same_domain(token_same_domain, candidate_first, candidate_device_first):
+    """
+    In this test we will try to remove push device of a candidate from a user token that is in same domain
+    but not the owner. We will get 200 response.
+    :param token_same_domain: authentication token
+    :param candidate_first: candidate dict object
+    :param candidate_device_first: candidate push device
+    """
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('delete', CandidateApiUrl.DEVICES % candidate_first['id'], token_same_domain, data)
     logger.info(response.content)
@@ -181,6 +185,13 @@ def test_delete_candidate_device_in_same_domain(token_same_domain, candidate_fir
 
 
 def test_delete_candidate_device_in_diff_domain(token_second, candidate_first, candidate_device_first):
+    """
+    In this test we will try to remove push device of a candidate from a user token that is from different domain
+    and he is not the owner of candidate. We will get 403 response.
+    :param token_second: authentication token
+    :param candidate_first: candidate dict object
+    :param candidate_device_first: candidate push device
+    """
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     response = send_request('delete', CandidateApiUrl.DEVICES % candidate_first['id'], token_second, data)
     logger.info(response.content)
@@ -189,6 +200,13 @@ def test_delete_candidate_device_in_diff_domain(token_second, candidate_first, c
 
 def test_delete_candidate_device_with_invalid_one_signal_id(token_first, candidate_first,
                                                             candidate_device_first):
+    """
+    In this test we will try to remove push device with invalid one signal device id that does not exist.
+    We will get 404 response.
+    :param token_first: authentication token
+    :param candidate_first: candidate dict object
+    :param candidate_device_first: candidate push device
+    """
     data = {'one_signal_device_id': 'Invalid Id'}
     response = send_request('delete', CandidateApiUrl.DEVICES % candidate_first['id'], token_first, data)
     logger.info(response.content)
@@ -196,6 +214,11 @@ def test_delete_candidate_device_with_invalid_one_signal_id(token_first, candida
 
 
 def test_delete_candidate_device_with_invalid_candidate_id(token_first, candidate_device_first):
+    """
+    In this test we will try to remove push device of a candidate that does not exists. API will raise 404.
+    :param token_first: authentication token
+    :param candidate_device_first: candidate push device
+    """
     data = {'one_signal_device_id': PUSH_DEVICE_ID}
     candidate_id = sys.maxint
     response = send_request('delete', CandidateApiUrl.DEVICES % candidate_id, token_first, data)
