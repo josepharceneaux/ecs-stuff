@@ -225,8 +225,14 @@ def meetup_event(request, test_meetup_credentials, meetup, meetup_venue, organiz
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=meetup_event_data)
     assert response.status_code == codes.CREATED, response.text
     data = response.json()
+
+    assert data['id']
+
     db.session.commit()
     event = Event.get_by_id(data['id'])
+
+    assert event
+
     return event
 
 
@@ -241,22 +247,12 @@ def meetup_event_second(request, test_meetup_credentials, meetup, meetup_venue, 
     assert response.status_code == codes.CREATED, response.text
 
     data = response.json()
+    assert data['id']
     db.session.commit()
     event = Event.get_by_id(data['id'])
-    event_id = event.id
 
-    def fin():
-        """
-        This is finalizer for meetup event. Once test is passed, we need to
-        delete the newly created event from website of social network. After
-        test has been passed, we delete event using request
-        and from our database.
-        """
-        response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id,
-                                access_token=token_first)
-        assert response.status_code in [codes.OK, codes.FORBIDDEN]
+    assert event
 
-    request.addfinalizer(fin)
     return event
 
 
@@ -317,8 +313,14 @@ def eventbrite_event(request, test_eventbrite_credentials,
     assert response.status_code == codes.CREATED, response.text
 
     data = response.json()
+
+    assert data['id']
+
     db.session.commit()
     event = Event.get_by_id(data['id'])
+
+    assert event
+
     return event
 
 
@@ -339,25 +341,14 @@ def eventbrite_event_second(request, test_eventbrite_credentials, eventbrite, ev
     assert response.status_code == codes.CREATED, response.text
 
     data = response.json()
+
+    assert data['id']
+
     db.session.commit()
     event = Event.get_by_id(data['id'])
-    event_id = event.id
 
-    def fin():
-        """
-        This is finalizer for eventbrite event. Once test is passed, we need to
-        delete the newly created event from website of social network. After
-        test has been passed, we call
-        delete_event() function to delete the event both from social network
-        and from our database.
-        """
-        response = send_request('delete', url=SocialNetworkApiUrl.EVENT % event_id, access_token=token_first)
+    assert event
 
-        # If event is found and deleted successfully => 200
-        # If event does not belong to requested user => 403
-        assert response.status_code in [codes.OK, codes.FORBIDDEN]
-
-    request.addfinalizer(fin)
     return event
 
 
