@@ -24,7 +24,7 @@ from social_network_service.social_network_app import app
 from social_network_service.tests.helper_functions import assert_event
 
 
-@pytest.mark.skipif(True, reason='TODO: Modify following tests when meetup sandbox testing issue is resovled')
+@pytest.mark.skipif(True, reason='TODO: Need to create mock endpoints for importer')
 class Test_Event_Importer(object):
     """
     - This class contains tests for both event importer and RSVP importer for

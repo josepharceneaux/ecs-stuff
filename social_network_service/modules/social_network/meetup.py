@@ -242,7 +242,6 @@ class Meetup(SocialNetworkBase):
         if not venue_data.get('group_url_name'):
             raise InvalidUsage("Mandatory Input Missing: group_url_name",
                                error_code=custom_codes.MISSING_REQUIRED_FIELDS)
-        # url = 'https://api.meetup.com/%s/venues' % venue_data['group_url_name']
         url = SocialNetworkUrls.get_url(self, SocialNetworkUrls.VENUES, custom_url='https://api.meetup.com/{}').format(
             venue_data['group_url_name'])
         payload = {

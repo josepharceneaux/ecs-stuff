@@ -201,7 +201,6 @@ class TestResourceEvents(object):
         event_id = response.json()['id']
         meetup_event_data['id'] = event_id
 
-    # @pytest.mark.skipif(True, reason='TODO: Modify following tests when meetup sandbox testing issue is resolved')
     def test_meetup_with_invalid_address(self, token_first, meetup_event_data, test_meetup_credentials):
         """
         Send post request with invalid meetup_event data (change venue_id) and response should be 404 with error code

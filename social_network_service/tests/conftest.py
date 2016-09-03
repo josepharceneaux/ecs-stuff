@@ -10,10 +10,9 @@ Author:
 import json
 from copy import deepcopy
 from datetime import datetime, timedelta
-
-# Third Party
 from uuid import uuid4
 
+# Third Party
 import pytest
 from requests import codes
 
@@ -24,8 +23,6 @@ from social_network_service.common.tests.api_conftest import (user_first, token_
                                                               token_second)
 # Models
 from social_network_service.common.models.db import db
-from social_network_service.common.models.event import Event
-from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.misc import Organization
 from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.common.models.user import (User, Token, Client, Domain, UserSocialNetworkCredential)
