@@ -49,7 +49,7 @@ ENV_VARIABLES=("GT_ENVIRONMENT" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY")
 FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "social-network-service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service" "sms-campaign-service" "push-campaign-service" "email-campaign-service" "ats-service", "mock-service")
 
 # Note that port 8016 is used for scheduler admin web app
-FLASK_APP_PORTS=("8001" "8002" "8003" "8004" "8005" "8007" "8008" "8009" "8011" "8012" "8013" "8014" "8015", "8016")
+FLASK_APP_PORTS=("8001" "8002" "8003" "8004" "8005" "8007" "8008" "8009" "8011" "8012" "8013" "8014" "8015" "8016")
 
 
 env_variable_parameters=""
