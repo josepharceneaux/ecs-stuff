@@ -12,13 +12,13 @@ from itertools import repeat, chain
 from requests import codes
 
 # Application Specific
-from social_network_service.common.models.candidate import SocialNetwork
-from social_network_service.common.models.event import Event
-from social_network_service.common.redis_cache import redis_store2
-from social_network_service.common.utils.test_utils import fake
-from social_network_service.modules.constants import MEETUP
-from social_network_service.modules.urls import SocialNetworkUrls as Urls
-from social_network_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from mock_service.common.constants import MEETUP
+from mock_service.common.mock_common.sn_relative_urls import SocialNetworkUrls as Urls
+from mock_service.common.models.candidate import SocialNetwork
+from mock_service.common.models.event import Event
+from mock_service.common.redis_cache import redis_store2
+from mock_service.common.utils.test_utils import fake
+from mock_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 # Prepare data for dictionary below
 meetup_fake_member_id = randint(1, 100000)

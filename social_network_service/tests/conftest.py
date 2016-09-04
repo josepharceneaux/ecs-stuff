@@ -38,7 +38,8 @@ from social_network_service.common.talent_config_manager import TalentConfigKeys
 # Application Specific
 from social_network_service.social_network_app import app
 from social_network_service.modules.social_network.meetup import Meetup
-from social_network_service.modules.constants import (EVENTBRITE, MEETUP, FACEBOOK)
+from social_network_service.modules.constants import (EVENTBRITE, FACEBOOK)
+from social_network_service.common.constants import MEETUP
 
 
 # This is common data for creating test events

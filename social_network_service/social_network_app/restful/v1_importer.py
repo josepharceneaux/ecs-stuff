@@ -22,7 +22,8 @@ from social_network_service.common.talent_config_manager import TalentEnvs, Tale
 from social_network_service.common.utils.api_utils import api_route
 from social_network_service.common.utils.auth_utils import require_oauth
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
-from social_network_service.modules.constants import EVENTBRITE, MEETUP, TASK_ALREADY_SCHEDULED, RSVP, EVENT
+from social_network_service.modules.constants import EVENTBRITE, TASK_ALREADY_SCHEDULED, RSVP, EVENT
+from social_network_service.common.constants import MEETUP
 from social_network_service.social_network_app import logger, app
 from social_network_service.tasks import rsvp_events_importer
 

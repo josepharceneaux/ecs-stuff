@@ -13,10 +13,8 @@ from restful.v1_events import events_blueprint
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
-from social_network_service.mock.mock_service import mock_blueprint
 from social_network_service.modules.constants import MEETUP_CODE_LENGTH
 from social_network_service.modules.social_network.twitter import Twitter
-from social_network_service.modules.urls import SocialNetworkUrls
 from social_network_service.social_network_app import app
 from restful.v1_social_networks import social_network_blueprint
 from social_network_service.common.talent_api import TalentApi
@@ -29,9 +27,6 @@ app.register_blueprint(data_blueprint)
 app.register_blueprint(events_blueprint)
 app.register_blueprint(social_network_blueprint)
 app.register_blueprint(rsvp_blueprint)
-if SocialNetworkUrls.IS_DEV:
-    app.register_blueprint(mock_blueprint)
-
 api = TalentApi(app)
 
 # Initialize Redis Cache

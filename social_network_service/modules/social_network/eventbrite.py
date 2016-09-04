@@ -8,8 +8,9 @@ import requests
 
 # Application Specific
 from base import SocialNetworkBase
+from social_network_service.modules.urls import get_url
 from social_network_service.social_network_app import logger
-from social_network_service.modules.urls import SocialNetworkUrls as Urls
+from social_network_service.common.mock_common.sn_relative_urls import SocialNetworkUrls as Urls
 from social_network_service.modules.custom_codes import ORGANIZER_ALREADY_EXISTS
 from social_network_service.common.error_handling import InternalServerError, InvalidUsage
 from social_network_service.common.utils.handy_functions import http_request, find_missing_items
@@ -138,7 +139,7 @@ class Eventbrite(SocialNetworkBase):
             'venue.address.longitude': venue_data.get('longitude')
         }
         # create url to send post request to create venue
-        url = Urls.get_url(self, Urls.VENUES)
+        url = get_url(self, Urls.VENUES)
         response = http_request('POST', url, params=payload,
                                 headers=self.headers,
                                 user_id=self.user.id)
@@ -172,7 +173,7 @@ class Eventbrite(SocialNetworkBase):
                 'organizer.description.html': data['about']
             }
         # create url to send post request to create organizer
-        url = Urls.get_url(self, Urls.ORGANIZERS)
+        url = get_url(self, Urls.ORGANIZERS)
         response = http_request('POST', url, params=payload,
                                 headers=self.headers,
                                 user_id=self.user.id)

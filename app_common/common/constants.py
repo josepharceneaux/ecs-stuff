@@ -13,3 +13,9 @@ RETRY_ATTEMPTS = 10
 REQUEST_TIMEOUT = 30
 CANDIDATE_ALREADY_EXIST = 3013
 REDIS2 = 'REDIS2'
+
+
+"""
+ Mock Service and other services common constants
+"""
+MEETUP = 'meetup'

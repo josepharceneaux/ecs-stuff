@@ -25,7 +25,7 @@ from social_network_service.common.models.misc import Activity
 from social_network_service.custom_exceptions import *
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.candidate import SocialNetwork
-from social_network_service.modules.constants import MEETUP
+from social_network_service.common.constants import MEETUP
 from social_network_service.social_network_app import logger
 
 

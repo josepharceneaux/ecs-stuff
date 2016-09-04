@@ -15,7 +15,8 @@ from social_network_service.common.error_handling import InvalidUsage
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.utils.validators import raise_if_not_positive_int_or_long
-from social_network_service.modules.urls import SocialNetworkUrls
+from social_network_service.common.mock_common.sn_relative_urls import SocialNetworkUrls
+from social_network_service.modules.urls import get_url
 from social_network_service.modules.utilities import get_class
 from social_network_service.modules.utilities import log_error
 from social_network_service.common.models.user import User
@@ -374,7 +375,7 @@ class SocialNetworkBase(object):
             raise SNServerException('Unable to create user credentials for current'
                                             ' user')
 
-    def     get_member_id(self):
+    def get_member_id(self):
         """
         - If getTalent user has an account on some social network, like
             Meetup.com, it will have a "member id" for that social network.
@@ -417,7 +418,7 @@ class SocialNetworkBase(object):
                      % (self.user.name, self.user.id, self.social_network.name))
         try:
             user_credentials = self.user_credentials
-            url = SocialNetworkUrls.get_url(self, SocialNetworkUrls.VALIDATE_TOKEN)
+            url = get_url(self, SocialNetworkUrls.VALIDATE_TOKEN)
             # Now we have the URL, access token, and header is set too,
             get_member_id_response = http_request('POST', url,
                                                   headers=self.headers,
@@ -469,7 +470,7 @@ class SocialNetworkBase(object):
         :return status of of access token either True or False.
         """
         status = False
-        url = SocialNetworkUrls.get_url(self, SocialNetworkUrls.VALIDATE_TOKEN)
+        url = get_url(self, SocialNetworkUrls.VALIDATE_TOKEN)
         logger.info("%s access_token validation url: %s", self.social_network.name, url)
         try:
             response = requests.get(url, headers=self.headers, params=payload)

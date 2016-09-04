@@ -6,13 +6,12 @@ import sys
 import json
 
 # Third-Part imports
-import pytest
 import requests
 from requests import codes
 
 # App specific imports
 from social_network_service.common.models import db
-from social_network_service.modules.constants import MEETUP
+from social_network_service.common.constants import MEETUP
 from social_network_service.social_network_app import logger
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.routes import SocialNetworkApiUrl

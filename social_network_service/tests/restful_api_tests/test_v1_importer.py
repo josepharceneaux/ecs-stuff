@@ -16,7 +16,8 @@ from social_network_service.common.models.rsvp import RSVP
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.utils.handy_functions import http_request
-from social_network_service.modules.constants import EVENTBRITE, MEETUP
+from social_network_service.modules.constants import EVENTBRITE
+from social_network_service.common.constants import MEETUP
 from social_network_service.modules.utilities import get_class
 from social_network_service.social_network_app import logger
 from social_network_service.common.utils.handy_functions import send_request

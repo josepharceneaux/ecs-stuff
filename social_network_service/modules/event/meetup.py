@@ -14,7 +14,8 @@ from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.modules.constants import MEETUP_VENUE
-from social_network_service.modules.urls import SocialNetworkUrls as Urls
+from social_network_service.common.mock_common.sn_relative_urls import SocialNetworkUrls as Urls
+from social_network_service.modules.urls import get_url
 from social_network_service.social_network_app import logger
 from social_network_service.modules.utilities import log_error
 from social_network_service.modules.event.base import EventBase
@@ -123,7 +124,7 @@ class Meetup(EventBase):
         # page size is 100 so if we have 500 records we will make
         # 5 requests (using pagination where each response will contain
         # 100 records).
-        events_url = Urls.get_url(self, Urls.EVENTS) + '/?sign=true&page=100&fields=timezone'
+        events_url = get_url(self, Urls.EVENTS) + '/?sign=true&page=100&fields=timezone'
         # we can specify status=upcoming,past,draft,cancelled etc. By default we
         # have status=upcoming, so we are not explicitly specifying in fields.
         params = {
@@ -176,7 +177,7 @@ class Meetup(EventBase):
         if social_network_group_id:
             if social_network_group_id in self.social_network_group_ids:
                 return True
-            url = Urls.get_url(self, Urls.GROUPS)+ '/?sign=true'
+            url = get_url(self, Urls.GROUPS)+ '/?sign=true'
             response = http_request('GET', url,
                                     params={
                                         'group_id': social_network_group_id
@@ -230,7 +231,7 @@ class Meetup(EventBase):
         if event.has_key('group') and \
                 event['group'].has_key('id'):
 
-            url = Urls.get_url(self, Urls.GROUPS) + '/?sign=true'
+            url = get_url(self, Urls.GROUPS) + '/?sign=true'
             response = http_request('GET', url,
                                     params={
                                         'group_id': event['group']['id']
@@ -371,7 +372,7 @@ class Meetup(EventBase):
 
         if venue_in_db.social_network_venue_id:
             return venue_in_db.social_network_venue_id
-        url = Urls.get_url(self, Urls.VENUES, custom_url=MEETUP_VENUE.format(self.group_url_name))
+        url = get_url(self, Urls.VENUES, custom_url=MEETUP_VENUE.format(self.group_url_name))
         logger.debug('Creating venue for %s(user id:%s) using url:%s of API of %s.'
                      % (self.user.name, self.user.id, url, self.social_network.name))
         payload = {
@@ -420,7 +421,7 @@ class Meetup(EventBase):
         :rtype: int
         """
         venue_id = self.add_location()
-        url = Urls.get_url(self, Urls.EVENTS)
+        url = get_url(self, Urls.EVENTS)
         self.payload.update({'venue_id': venue_id, 'publish_status': 'published'})
         logger.debug('Creating event for %s(user id:%s) using url:%s of API of %s.'
                      % (self.user.name, self.user.id, url, self.social_network.name))
@@ -446,7 +447,7 @@ class Meetup(EventBase):
         :rtype: int
         """
         # create url to update event
-        url = Urls.get_url(self, Urls.EVENT).format(self.social_network_event_id)
+        url = get_url(self, Urls.EVENT).format(self.social_network_event_id)
         # create or update venue for event
         venue_id = self.add_location()
         # add venue id in event payload to update event venue on Meetup.com
@@ -477,7 +478,7 @@ class Meetup(EventBase):
         :return: True if event is deleted from vendor, False otherwise.
         :rtype Boolean
         """
-        self.url_to_delete_event = Urls.get_url(self, Urls.EVENT).format(social_network_event_id)
+        self.url_to_delete_event = get_url(self, Urls.EVENT).format(social_network_event_id)
         super(Meetup, self).unpublish_event(social_network_event_id, method=method)
 
     @staticmethod
@@ -569,7 +570,7 @@ class Meetup(EventBase):
         if data['group_url_name']:
             self.group_url_name = data['group_url_name']
         else:
-            error_message = 'Group UrlName imock_flag = True if SocialNetworkUrls.IS_DEV else Falses None for eventName: %s' \
+            error_message = 'Group UrlName for eventName: %s' \
                             % data['title']
             log_error({'user_id': self.user.id,
                        'error': error_message})
