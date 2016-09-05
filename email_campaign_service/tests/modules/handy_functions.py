@@ -364,10 +364,9 @@ def add_email_template(headers, template_owner, template_body):
     template_folder_id, template_folder_name = get_template_folder(headers)
 
     template_name = 'test_email_template%i' % datetime.datetime.now().microsecond
-    is_immutable = 1
+    is_immutable = ON
     resp = create_email_template(headers, template_owner.id, template_name, template_body, '',
-                                 is_immutable,
-                                 folder_id=template_folder_id)
+                                 is_immutable, folder_id=template_folder_id)
     db.session.commit()
     resp_obj = resp.json()
     template_id = resp_obj['id']

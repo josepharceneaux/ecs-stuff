@@ -14,8 +14,9 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 from email_campaign_service.tests.modules.handy_functions import (ON, request_to_email_template_resource,
                                                                   template_body, get_template_folder,
                                                                   create_email_template, update_email_template,
-                                                                  add_email_template, assert_valid_template_object,
-                                                                  assert_valid_template_folder)
+                                                                  add_email_template, assert_valid_template_object)
+
+# TODO: Need to add tests for negative inputs where missing
 
 
 class TestEmailTemplateFolders(object):
@@ -55,9 +56,10 @@ class TestEmailTemplates(object):
     URL = EmailCampaignApiUrl.TEMPLATES
     ENTITY = 'email_templates'
 
-    def test_create_and_get_email_template(self, user_first, headers):
+    def test_create_email_template(self, user_first, headers):
         """
-        Test for creating email template
+        Test for creating email template.
+        Here we first create email-template and then get it from API to assert on all fields.
         :param headers: For user authentication
         :param user_first: sample user
         """
@@ -67,11 +69,42 @@ class TestEmailTemplates(object):
         response = requests.get(EmailCampaignApiUrl.TEMPLATES, headers=headers)
         assert response.ok
         assert response.json()
-        # Pick first record
-        email_template_obj = response.json()[self.ENTITY][0]
-        # Assert expected field values
-        assert_valid_template_object(email_template_obj, user_first.id, [template['template_id']],
+        email_templates = response.json()[self.ENTITY]
+        assert len(email_templates) == 1
+        # Pick first record and assert expected field values
+        assert_valid_template_object(email_templates[0], user_first.id, [template['template_id']],
                                      template['template_name'])
+
+    def test_get_email_templates(self, user_first, user_same_domain, user_from_diff_domain,
+                                 headers, headers_same, headers_other):
+        """
+        Test for creating email template with different users of same domain.
+        User should get both records while requesting email-templates.
+        We create 2 email-templates in domain of user_first and 1 template in domain of user_from_diff_domain.
+        user_first should get 2 records and user_from_diff_domain should get only 1 email-template.
+        """
+        expected_records_in_domain_1 = 2
+        expected_records_in_domain_2 = 1
+        # Add Email template by user_first
+        add_email_template(headers, user_first, template_body())
+        # Add Email template by user_same_domain
+        add_email_template(headers_same, user_same_domain, template_body())
+        # Add Email template by user of different domain
+        add_email_template(headers_other, user_from_diff_domain, template_body())
+
+        # Get all email-templates in user_first's domain
+        response = requests.get(EmailCampaignApiUrl.TEMPLATES, headers=headers)
+        assert response.ok
+        assert response.json()
+        email_templates = response.json()[self.ENTITY]
+        assert len(email_templates) == expected_records_in_domain_1
+
+        # Get all email-templates in user_from_diff_domain's domain
+        response = requests.get(EmailCampaignApiUrl.TEMPLATES, headers=headers_other)
+        assert response.ok
+        assert response.json()
+        email_templates = response.json()[self.ENTITY]
+        assert len(email_templates) == expected_records_in_domain_2
 
     def test_create_and_get_email_template_without_name(self, user_first, headers):
         """

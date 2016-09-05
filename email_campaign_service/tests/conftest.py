@@ -19,24 +19,6 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 
 
 @pytest.fixture()
-def headers(access_token_first):
-    """
-    Returns the header containing access token and content-type to make POST/DELETE requests.
-    :param access_token_first: fixture to get access token of user
-    """
-    return get_auth_header(access_token_first)
-
-
-@pytest.fixture()
-def headers_same(access_token_same):
-    """
-    Returns the header containing access token and content-type to make POST/DELETE requests.
-    for second user of same domain.
-    """
-    return get_auth_header(access_token_same)
-
-
-@pytest.fixture()
 def email_campaign_of_user_first(request, user_first):
     """
     This fixture creates an email campaign in database table 'email_campaign'
