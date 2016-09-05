@@ -11,7 +11,9 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   create_email_campaign_smartlist,
                                                                   delete_campaign,
                                                                   send_campaign_helper,
-                                                                  create_smartlist_with_given_email_candidate)
+                                                                  create_smartlist_with_given_email_candidate,
+                                                                  template_body, add_email_template,
+                                                                  get_template_folder, assert_valid_template_folder)
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
@@ -324,3 +326,32 @@ def invalid_data_for_campaign_creation(request):
                      }
     del campaign_data[request.param]
     return campaign_data, request.param
+
+
+@pytest.fixture()
+def email_templates_bulk(headers, user_first):
+    """
+    Here we create 10 email-templates to test pagination.
+    """
+    email_template_ids = []
+    for _ in xrange(1, 11):
+        template = add_email_template(headers, user_first, template_body())
+        email_template_ids.append(template['template_id'])
+    return email_template_ids
+
+
+@pytest.fixture()
+def create_email_template_folder(headers, user_first):
+    """
+    Here we create email-template-folder
+    """
+    template_folder_id, template_folder_name = get_template_folder(headers)
+    # Assert that folder is created with correct name
+    response = requests.get(EmailCampaignApiUrl.TEMPLATE_FOLDER % template_folder_id,
+                            headers=headers)
+    assert response.ok
+    assert response.json()
+    json_response = response.json()
+    assert_valid_template_folder(json_response['email_template_folder'], user_first.domain.id,
+                                 template_folder_name)
+    return template_folder_id, template_folder_name

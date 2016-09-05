@@ -324,6 +324,17 @@ class UserEmailTemplate(db.Model):
     def get_by_name(cls, template_name):
         return cls.query.filter_by(name=template_name).first()
 
+    @classmethod
+    def get_by_domain_id(cls, domain_id):
+        """
+        This returns user-email-templates in given domain_id.
+        :param int|long domain_id: Id of domain of user
+        :rtype: sqlalchemy.orm.query.Query
+        """
+        assert domain_id, 'domain_id not given'
+        from user import User  # This has to be here to avoid circular import
+        return cls.query.join(User).filter(User.domain_id == domain_id)
+
 
 class EmailTemplateFolder(db.Model):
     __tablename__ = 'email_template_folder'
@@ -333,20 +344,12 @@ class EmailTemplateFolder(db.Model):
                           index=True)
     is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
-    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False,
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False,
                              server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
 
     domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
     parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                       cascade="all, delete-orphan"))
-
-    @classmethod
-    def get_by_id(cls, folder_id):
-        """
-        :type folder_id:  int | long
-        :return: EmailTemplateFolder
-        """
-        return cls.query.get(folder_id)
 
     @classmethod
     def get_by_name_and_domain_id(cls, folder_name, domain_id):

@@ -1,8 +1,9 @@
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.smartlist import Smartlist
-from email_campaign_service.common.models.email_campaign import EmailClient
+from email_campaign_service.common.models.email_campaign import EmailClient, EmailTemplateFolder
 from email_campaign_service.common.models.user import User
-from email_campaign_service.common.error_handling import InvalidUsage, UnprocessableEntity, ForbiddenError
+from email_campaign_service.common.error_handling import InvalidUsage, UnprocessableEntity, ForbiddenError, \
+    ResourceNotFound
 import datetime
 __author__ = 'jitesh'
 
@@ -126,3 +127,27 @@ def get_or_set_valid_value(required_value, required_instance, default):
     if not isinstance(required_value, required_instance):
         required_value = default
     return required_value
+
+
+def get_valid_template_folder(template_folder_id, request):
+    """
+    This validates given folder_id is int or long greater than 0
+    It raises ResourceNotFound error if requested folder is not found in database
+    It raises Forbidden error if requested template folder does not belong to user's domain
+    :param int|long template_folder_id:
+    :param flask_request request:
+    :rtype: EmailTemplateFolder
+    """
+    if not template_folder_id:
+        raise InvalidUsage('template_folder_id must be greater than 0')
+    user_id = request.user.id
+    domain_id = request.user.domain_id
+    # Get template-folder object from database
+    template_folder = EmailTemplateFolder.get_by_id(template_folder_id)
+    if not template_folder:
+        raise ResourceNotFound('Template folder not found')
+    # Verify owned by same domain
+    if not template_folder.domain_id == domain_id:
+        raise ForbiddenError("Template folder(id:%d) is not owned by user(id:%d)'s domain(id:%d)"
+                             % (template_folder_id, user_id, domain_id))
+    return template_folder
