@@ -22,23 +22,270 @@ to it and replies to specific chanel.
 import random
 import re
 # App specific imports
-from const import ACCESS_TOKEN, SQLALCHEMY_DATABASE_URI,\
-    ERROR_MESSAGE, BOT_IMAGE, GREETINGS, HINT,\
+from abc import abstractmethod
+
+from const import ACCESS_TOKEN, SQLALCHEMY_DATABASE_URI, POSITIVE_MESSAGES, \
+    ERROR_MESSAGE, BOT_IMAGE, GREETINGS, HINT, BEST_QUESTION_MATCH_RATIO,\
     OK_RESPONSE, BOT_NAME, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,\
     SLACK_BOT_TOKEN, FACEBOOK_MESSAGE_LIMIT, FACEBOOK_MESSAGE_SPLIT_COUNT,\
-    TEXT_MESSAGE_MAX_LENGTH, MAILGUN_SENDING_ENDPOINT, MAILGUN_API_KEY, MAILGUN_FROM, QUESTIONS, POSITIVE_MESSAGES
+    TEXT_MESSAGE_MAX_LENGTH, MAILGUN_SENDING_ENDPOINT, MAILGUN_API_KEY, MAILGUN_FROM, QUESTIONS
+# Common utils
+from talentbot_service.common.talent_config_manager import TalentConfigKeys
+from talentbot_service.common.models.user import User, Domain
 # 3rd party import
 import requests
-from flask import Flask
 from sqlalchemy import create_engine
 from twilio.rest import TwilioRestClient
 from slackclient import SlackClient
 from fuzzywuzzy import fuzz
 
-talentbot = Flask(__name__)
 twilio_client = TwilioRestClient(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 slack_client = SlackClient(SLACK_BOT_TOKEN)
 AT_BOT = ""
+
+
+class TalentBot:
+    def __init__(self, list_of_questions, bot_name, error_messages):
+        self.question_dict = {'0': {'question': list_of_questions[0], 'threshold': 70,
+                                    'handler': self.question_0_handler},
+                              '1': {'question': list_of_questions[1], 'threshold': 72,
+                                    'handler': self.question_1_handler},
+                              '2': {'question': list_of_questions[2], 'threshold': 70,
+                                    'handler': self.question_2_handler},
+                              '3': {'question': list_of_questions[3], 'threshold': 70,
+                                    'handler': self.question_3_handler},
+                              '4': {'question': list_of_questions[4], 'threshold': 70,
+                                    'handler': self.question_4_handler},
+                              '5': {'question': list_of_questions[5], 'threshold': 70,
+                                    'handler': self.question_5_handler}}
+        self.bot_name = bot_name
+        self.error_messages = error_messages
+
+    @classmethod
+    def append_list_with_spaces(cls, _list):
+        """
+        Append a list elements with spaces between then
+        :param _list: list
+        :return: str result
+        """
+        result = ""
+        for element in _list:
+            result += element + " "
+        return result
+
+    @classmethod
+    def clean_user_message(cls, message):
+        message = message.rstrip('?. ')
+        message = message.lstrip(': ')
+        return message
+
+    def parse_message(self, message):
+        message = self.clean_user_message(message)
+        message_tokens = self.tokenize_message(message)
+        max_match_ratio = 0
+        message_handler = None
+
+        for question_key in self.question_dict:
+            question_dict_entry = self.question_dict[question_key]
+            question = question_dict_entry['question']
+            match_ratio = self.match_question(message, question)
+            if match_ratio >= question_dict_entry['threshold'] and match_ratio > max_match_ratio:
+                max_match_ratio = match_ratio
+                message_handler = question_dict_entry['handler']
+                if match_ratio >= BEST_QUESTION_MATCH_RATIO:
+                    break
+
+        if message_handler:
+            return message_handler(message, message_tokens)
+        return random.choice(self.error_messages)
+
+    @classmethod
+    def tokenize_message(cls, message):
+        return re.split(' |,', message)
+
+    @classmethod
+    def find_word_in_message(cls, word, message_tokens):
+        word_index = [message_tokens.index(temp_word) for temp_word
+                      in message_tokens if word in temp_word.lower()][0]
+        return word_index
+
+    @classmethod
+    def question_0_handler(cls, message, message_tokens):
+        domain_index = cls.find_word_in_message('domain', message_tokens)
+        domain_name = message_tokens[domain_index + 1]
+        count = User.query.filter(User.domain_id == Domain.id).\
+            filter(Domain.name == domain_name).count()
+        response_message = "Users in domain " + message_tokens[domain_index + 1] + " : "
+        response_message += str(count)
+        return response_message
+
+    @classmethod
+    def question_1_handler(cls, message, message_tokens):
+        skill_index = cls.find_word_in_message('skill', message_tokens)
+        extracted_skills = message_tokens[skill_index + 1::]
+        parsed_skills = cls.parse_skills(extracted_skills)
+        query = 'SELECT COUNT(DISTINCT candidate.Id) as count ' \
+                'from candidate, candidate_skill WHERE candidate.Id = ' \
+                'candidate_skill.CandidateId and lower(candidate_skill.Description)' \
+                ' in ' + parsed_skills
+        result = execute_query(query)
+        response_message = "There are %d candidates with skills " + \
+                           parsed_skills.strip('("")').replace('","', ' ')
+        for row in result:
+            count = row['count']
+            response_message = response_message % count
+            if count == 1:
+                response_message = response_message.replace('are', 'is'). \
+                    replace('candidates', 'candidate')
+        return response_message
+
+    @classmethod
+    def question_2_handler(cls, message, message_tokens):
+        zip_index = cls.find_word_in_message('zip', message_tokens)
+        query = 'SELECT COUNT(DISTINCT candidate_address.CandidateId) as count from candidate_address,' \
+                ' candidate where candidate_address.CandidateId' \
+                ' = candidate.Id and candidate_address.ZipCode = ' + message_tokens[zip_index + 1]
+        result = execute_query(query)
+        response_message = "Number of candidates from zipcode " + \
+                           message_tokens[zip_index + 1] + " : "
+        for row in result:
+            count = row['count']
+            response_message += str(count)
+        return response_message
+
+    @classmethod
+    def question_3_handler(cls, message, message_tokens):
+        year = message_tokens[-1]
+        query = "SELECT MAX( DISTINCT email_campaign_blast.Opens) as max, " \
+                "email_campaign_blast.EmailCampaignId as id" \
+                ", email_campaign.Name as name " \
+                "from email_campaign_blast, email_campaign " \
+                "WHERE email_campaign_blast.EmailCampaignId = email_campaign.Id and " \
+                "((YEAR(email_campaign_blast.SentTime) = " \
+                "'" + year + "') or " \
+                             "(YEAR(email_campaign_blast.UpdatedTime) =" \
+                             " '" + year + "')) " \
+                                           "GROUP BY email_campaign_blast.EmailCampaignId, email_campaign.Name " \
+                                           "ORDER BY MAX(email_campaign_blast.Opens) " \
+                                           "DESC " \
+                                           "LIMIT 1"
+        result = execute_query(query)
+        user_name = ""
+        for row in result:
+            user_name = row['name']
+        if user_name != "":
+            response_message = 'Top performing email campaign from ' + year + ' is' \
+                                                                              ' "%s"' % user_name
+        else:
+            response_message = "Sorry couldn't find top email campaign from " + year
+        return response_message
+
+    @classmethod
+    def question_4_handler(cls, message, message_tokens):
+        talent_index = cls.find_word_in_message('talent', message_tokens)
+        import_index = cls.find_word_in_message('import', message_tokens)
+        # Extracting talent pool name from user's message
+        talent_pool_name = message_tokens[import_index + 3:talent_index:]
+        # Extracting username from user message
+        user_name = message_tokens[import_index - 1]
+        spaced_talent_pool_name = cls.append_list_with_spaces(talent_pool_name)
+        query = "SELECT COUNT(DISTINCT talent_pool_candidate.candidate_id) as count" \
+                " from talent_pool_candidate, talent_pool, user" \
+                " where talent_pool_candidate.talent_pool_id = talent_pool.id and" \
+                " talent_pool.user_id = user.id and ((YEAR(talent_pool_candidate.added_time) =" \
+                " YEAR(CURRENT_DATE - INTERVAL 1 MONTH) AND MONTH(talent_pool_candidate.added_time) = " \
+                "MONTH(CURRENT_DATE - INTERVAL 1 MONTH)) or (YEAR(talent_pool_candidate.updated_time) =" \
+                " YEAR(CURRENT_DATE - INTERVAL 1 MONTH) AND MONTH(talent_pool_candidate.updated_time) = " \
+                "MONTH(CURRENT_DATE - INTERVAL 1 MONTH)))" \
+                " and LOWER(user.firstName) = '" + user_name.lower() + "' and LOWER(talent_pool.name) = '" \
+                + spaced_talent_pool_name.lower() + "'" \
+                                                    " GROUP BY talent_pool.id"
+        result = execute_query(query)
+        response_message = user_name.title() + " added %d candidates in "\
+                                             + spaced_talent_pool_name + "talent pool last month"
+        count = 0
+        for row in result:
+            count = row['count']
+        response_message = response_message % count
+        return response_message
+
+    def question_5_handler(self, message, message_tokens):
+        return "My name is " + self.bot_name
+
+    @classmethod
+    def match_question(cls, message, question):
+        partial_ratio = fuzz.partial_ratio(message.lower(), question)
+        print message + ': ', partial_ratio
+        return partial_ratio
+
+    @classmethod
+    def parse_skills(cls, skills_list):
+        """
+        Converts space separated skills to comma separated skills
+        :param list skills_list: List which contains space separated skills
+        :return: str parsed_skills
+        """
+        parsed_skills = '('
+        for skill in skills_list:
+            temp = '"' + skill.lower() + '"'
+            if skills_list.index(skill) < len(skills_list) - 1:
+                temp += ','
+            parsed_skills += temp
+        parsed_skills += ')'
+        return parsed_skills
+
+    @abstractmethod
+    def authenticate_user(self):
+        pass
+
+
+class SlackBot(TalentBot):
+    def __init__(self, slack_bot_token, questions, bot_name, error_messages):
+        TalentBot.__init__(self, questions, bot_name, error_messages)
+        self.slack_client = SlackClient(slack_bot_token)
+        self.at_bot = self.get_bot_id()
+
+    def authenticate_user(self):
+        return True
+
+    def get_bot_id(self):
+        """
+        Gets bot Id
+        """
+        api_call = self.slack_client.api_call("users.list")
+        if api_call.get('ok'):
+            # retrieve all users so we can find our bot
+            users = api_call.get('members')
+            for user in users:
+                if 'name' in user and user.get('name') == self.bot_name:
+                    print "Bot ID for %s is %s" % (user['name'], user.get('id'))
+                    temp_at_bot = '<@' + user.get('id') + '>'
+                    return temp_at_bot
+        print("could not find bot user with the name " + self.bot_name)
+        return None
+
+    def set_bot_state_active(self):
+        self.slack_client.rtm_connect()
+        api_call_response = self.slack_client.api_call("users.setActive")
+        print 'bot state is active: ', api_call_response.get('ok')
+
+    def reply(self, chanel_id, msg):
+        """
+        Reply to user on specified slack channel
+        :param str chanel_id: Slack channel id
+        :param str msg: Message received to bot
+        """
+        print 'message:', msg
+        self.slack_client.api_call("chat.postMessage", channel=chanel_id,
+                                   text=msg, as_user=True)
+
+    def handle_communication(self, channel_id, message):
+        try:
+            response_generated = self.parse_message(message)
+            self.reply(channel_id, response_generated)
+        except Exception:
+            error_response = random.choice(self.error_messages)
+            self.reply(channel_id, error_response)
 
 
 def set_bot_state_active():
@@ -297,7 +544,8 @@ def make_a_post_call_to_the_facebook(data):
     Makes a post call to the facebook with data
     :param dict data: dict which contains params e.g: user_id, action or message
     """
-    resp = requests.post("https://graph.facebook.com/v2.6/me/messages?access_token=" + ACCESS_TOKEN, json=data)
+    resp = requests.post("https://graph.facebook.com/v2.6/me/messages?access_token="
+                         + ACCESS_TOKEN, json=data)
     print resp.content
 
 

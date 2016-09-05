@@ -370,6 +370,7 @@ def add_model_helpers(cls):
 
 
 def init_talent_app(app_name):
+    # type: (object) -> object
     """
     This method initializes the flask app by doing followings:
         1- Create app by using TalentFlask

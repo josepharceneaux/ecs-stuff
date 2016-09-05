@@ -1,11 +1,12 @@
 # Builtin imports
 import random
 # App specific imports
-from const import TWILIO_NUMBER, ERROR_MESSAGE, STANDARD_MSG_LENGTH
-from talentbot import talentbot, slack_client, twilio_client,\
+from const import TWILIO_NUMBER, ERROR_MESSAGE, STANDARD_MSG_LENGTH, SLACK_BOT_TOKEN, QUESTIONS, BOT_NAME
+from talentbot import slack_client, twilio_client,\
     create_a_response, handle_slack_messages, \
     send_mail_via_api, sender_action, handle_user_messages,\
-    reply_on_facebook, get_total_sms_segments
+    reply_on_facebook, get_total_sms_segments, SlackBot
+from talentbot_service import app
 # 3rd party imports
 from flask import request
 
@@ -13,7 +14,10 @@ TIME_STAMP = 9999999
 AT_BOT = ""
 
 
-@talentbot.route('/index')
+slack_bot = SlackBot(SLACK_BOT_TOKEN, QUESTIONS, BOT_NAME, ERROR_MESSAGE)
+
+
+@app.route('/index')
 def index():
     """
     Index page
@@ -21,25 +25,22 @@ def index():
     return "Index"
 
 
-@talentbot.route("/listen-slack/", methods=['GET', 'POST'])
+@app.route("/listen-slack", methods=['GET', 'POST'])
 def listen_slack():
     """
     Listens to the slack web hook
     :return: str
     """
-    slack_client.rtm_connect()
-    message = request.form['text']
-    global AT_BOT
-    if AT_BOT == "":
-        from talentbot import get_bot_id
-        AT_BOT = get_bot_id()
-    if AT_BOT in message or AT_BOT+':' in message:
-        message = message.lstrip(AT_BOT)
-        handle_slack_messages(request.form['channel_id'], message)
-    return "OK"
+    message = request.form.get('text')
+    channel_id = request.form.get('channel_id')
+    if message and slack_bot.at_bot and channel_id:
+        if slack_bot.at_bot in message or slack_bot.at_bot+':' in message:
+            message = message.lstrip(slack_bot.at_bot)
+            slack_bot.handle_communication(channel_id, message)
+        return "OK"
 
 
-@talentbot.route("/talentbot-message-campaign/", methods=['GET', 'POST'])
+@app.route("/talentbot-message-campaign/", methods=['GET', 'POST'])
 def handle_twilio_webhook():
     """
     Listens to the twilio callbacks
@@ -71,7 +72,7 @@ def handle_twilio_webhook():
     return str('ok')
 
 
-@talentbot.route('/mailgun/msg/', methods=['POST'])
+@app.route('/mailgun/msg/', methods=['POST'])
 def receive_mailgun_mail():
     """
     End point which listens mail gun callbacks
@@ -89,7 +90,7 @@ def receive_mailgun_mail():
     return "OK"
 
 
-@talentbot.route('/', methods=['GET'])
+@app.route('/', methods=['GET'])
 def handle_verification():
     """
     End point which handles facebook challenge code
@@ -98,7 +99,7 @@ def handle_verification():
     return request.args['hub.challenge']
 
 
-@talentbot.route('/', methods=['POST'])
+@app.route('/', methods=['POST'])
 def handle_incoming_messages():
     """
     End point to listen facebook web hooks
@@ -122,4 +123,9 @@ def handle_incoming_messages():
             reply_on_facebook(sender, random.choice(ERROR_MESSAGE))
             sender_action(sender, "typing_off")
             return "ok"
+    return "ok"
+
+
+@app.route('/slack/auth', methods=['GET', 'POST'])
+def get_new_user_credentials():
     return "ok"
