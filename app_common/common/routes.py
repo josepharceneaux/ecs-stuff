@@ -118,7 +118,7 @@ class GTApis(object):
     ATS_SERVICE_NAME = 'ats-service'
 
     # CORS headers
-    CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com",
+    CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com$",
                                        "http://127.0.0.1",
                                        "https://127.0.0.1",
                                        "http://localhost"]}}
@@ -827,6 +827,7 @@ class EmailCampaignApi(object):
     # endpoint /v1/email-campaigns/:id/sends/:id
     # Gives the send object of a campaign for a particular send_id
     SEND_BY_ID = '/' + VERSION + '/email-campaigns/<int:campaign_id>/sends/<int:send_id>'
+    TEST_EMAIL = '/' + VERSION + '/test-email-send'
 
     """ URLs for email-templates """
     TEMPLATES = '/' + VERSION + '/email-templates'
@@ -849,6 +850,7 @@ class EmailCampaignApiUrl(object):
     BLAST = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/blasts/%s')
     SENDS = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/sends')
     SEND_BY_ID = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/sends/%s')
+    TEST_EMAIL = HOST_NAME % ('/' + VERSION + '/test-email-send')
 
     """ URLs for email-templates """
     TEMPLATES = HOST_NAME % ('/' + VERSION + '/email-templates')

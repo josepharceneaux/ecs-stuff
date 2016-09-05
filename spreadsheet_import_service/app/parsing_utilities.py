@@ -52,8 +52,9 @@ def convert_spreadsheet_to_table(spreadsheet_file, filename):
             cell_value = cell.value
             if isinstance(cell_value, float):  # there should be no float-type data
                 cell_value = str(int(cell_value))
-            if cell_value:
-                cell_values.append(cell_value)
+            if isinstance(cell_value, basestring):
+                cell_value = cell_value.strip()
+            cell_values.append(cell_value)
 
         table.append(cell_values)
     table = [row for row in table if row]
@@ -104,7 +105,8 @@ def convert_csv_to_table(csv_file):
 
 @celery_app.task()
 def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool_ids,
-                            oauth_token, user_id, is_scheduled=False, source_id=None):
+                            oauth_token, user_id, is_scheduled=False, source_id=None,
+                            formatted_candidate_tags=None):
     """
     This function will create new candidates from information of candidates given in a csv file
     :param source_id: Id of candidates source
@@ -115,6 +117,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
     :param oauth_token: OAuth token of logged-in user
     :param is_scheduled: Is this method called asynchronously ?
     :param user_id: User id of logged-in user
+    :type formatted_candidate_tags: list[dict[str]]
     :return: A dictionary containing number of candidates successfully imported
     :rtype: dict
     """
@@ -130,15 +133,14 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
         domain_areas_of_interest = get_or_create_areas_of_interest(user.domain_id, include_child_aois=True)
 
-        candidate_ids, error_messages = [], []
-        candidate_tags = []
+        candidate_ids, erroneous_data = [], []
+        candidate_tags = formatted_candidate_tags or []
 
         for i in xrange(0, len(table), 1):
             candidates_list = []
             for row in table[i: i + 1]:
-
                 # Format candidate data
-                first_name, middle_name, last_name, formatted_name, status_id,  = None, None, None, None, None
+                first_name, middle_name, last_name, formatted_name, status_id = None, None, None, None, None
                 emails, phones, areas_of_interest, addresses, degrees = [], [], [], [], []
                 school_names, work_experiences, educations, custom_fields = [], [], [], []
                 skills = []
@@ -148,7 +150,6 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
                 number_of_educations = 0
 
-                invalid_email = False
                 for column_index, column in enumerate(row):
                     if column_index >= len(header_row):
                         continue
@@ -167,15 +168,9 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                     elif column_name == 'candidate.lastName':
                         last_name = column
                     elif column_name == 'candidate_email.address':
-                        if not is_valid_email(column):
-                            error_messages.append({
-                                "message": "{} is an invalid email address".format(column)
-                            })
-                            invalid_email = True
-                            break
                         emails.append({'address': column})
                     elif column_name == 'candidate_phone.value':
-                            phones.append({'value': column})
+                        phones.append({'value': column})
                     elif column_name == 'candidate.source':
                         source = CandidateSource.query.filter_by(description=column, domain_id=domain_id).all()
                         if len(source):
@@ -266,9 +261,6 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
                     number_of_educations = max(len(degrees), len(school_names))
 
-                if invalid_email:
-                    continue
-
                 # Prepare candidate educational data
                 for index in range(0, number_of_educations):
                     education = {}
@@ -302,26 +294,35 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
             if created:
                 response_candidate_ids = [candidate.get('id') for candidate in response.get('candidates', [])]
                 candidate_ids += response_candidate_ids
-                logger.info("Successfully imported %s candidates with ids: (%s)", len(response_candidate_ids), response_candidate_ids)
+                logger.info("Successfully imported %s candidates with ids: (%s)",
+                            len(response_candidate_ids), response_candidate_ids)
             else:  # continue with the rest of the spreadsheet imports despite errors returned from candidate-service
-                if response.get('error', ''):
-                    error_messages.append(response.get('error'))
-                    logger.error(response.get('error'))
+                logger.error("SpreadSheet Import Service: Error while importing candidate: `%s` in file: `%s`" % (
+                    table[i], get_s3_url('CSVResumes', spreadsheet_filename)))
+                erroneous_data.append(table[i])
                 continue
 
-        delete_from_s3(spreadsheet_filename, 'CSVResumes')
+        logger.info("SpreadSheet Import Service: Successfully imported %s candidates from CSV: User %s" % (
+            len(candidate_ids), user.id))
 
-        logger.info("Successfully imported %s candidates from CSV: User %s, Error Messages %s" % (len(
-                candidate_ids), user.id, error_messages))
+        if erroneous_data:
+            email_error_to_admins("Error importing from CSV. User ID: %s, S3_URL: %s, Candidate_Data: %s" % (
+                user_id, get_s3_url('CSVResumes', spreadsheet_filename), erroneous_data), subject="import_from_csv")
+
         if not is_scheduled:
-            return jsonify(dict(count=len(candidate_ids), status='complete', error_messages=error_messages)), 201
+            return jsonify(dict(count=len(candidate_ids), status='complete')), 201
 
     except Exception as e:
-        email_error_to_admins("Error importing from CSV. User ID: %s, S3 filename: %s, S3_URL: %s" %
-                              (user_id, spreadsheet_filename, get_s3_url('CSVResumes', spreadsheet_filename)),
-                              subject="import_from_csv")
-        raise InvalidUsage(error_message="Error importing from CSV. User ID: %s, S3 filename: %s. Reason: %s" %
-                                         (user_id, spreadsheet_filename, e.message))
+
+        email_error_to_admins("Error importing from CSV. User ID: %s, S3_URL: %s, Error: %s" % (
+            user_id, get_s3_url('CSVResumes', spreadsheet_filename), e), subject="import_from_csv")
+
+        message = "Error importing from CSV. User ID: %s, S3 filename: %s. Reason: %s" % (
+            user_id, spreadsheet_filename, e)
+
+        logger.error(message)
+        if not is_scheduled:
+            raise InternalServerError(message)
 
 
 def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
@@ -444,3 +445,5 @@ def schedule_spreadsheet_import(import_args):
     except Exception as e:
         raise InternalServerError("Couldn't schedule Spreadsheet import using scheduling service "
                                   "because: %s" % e.message)
+
+

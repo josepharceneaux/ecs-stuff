@@ -15,13 +15,10 @@ but user is different.
 import pytest
 import time
 from redo import retry
-from requests import codes
-
 from ..test_config_manager import load_test_config
-from ..utils.test_utils import (create_candidate, delete_candidate,
-                                create_smartlist, delete_smartlist, delete_talent_pool,
-                                create_talent_pools, create_talent_pipelines, get_smartlist_candidates, get_talent_pool,
-                                search_candidates)
+from ..utils.test_utils import (create_candidate, create_smartlist, create_talent_pools, create_talent_pipelines,
+                                get_smartlist_candidates, get_talent_pool, search_candidates,
+                                associate_device_to_candidate)
 
 
 test_config = load_test_config()
@@ -111,12 +108,6 @@ def candidate_same_domain(request, talent_pool, token_same_domain):
     response = retry(search_candidates, max_sleeptime=60, retry_exceptions=(AssertionError,),
                      args=([candidate_id], token_same_domain))
     candidate = response['candidates'][0]
-
-    def tear_down():
-        delete_candidate(candidate_id, token_same_domain,
-                         expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return candidate
 
 
@@ -134,12 +125,6 @@ def candidate_second(request, token_second, talent_pool_second):
     response = retry(search_candidates, sleeptime=3, retry_exceptions=(AssertionError,),
                      args=([candidate_id], token_second))
     candidate = response['candidates'][0]
-
-    def tear_down():
-        delete_candidate(candidate_id, token_second,
-                         expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return candidate
 
 
@@ -160,11 +145,6 @@ def smartlist_first(request, token_first, candidate_first, talent_pipeline):
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_first), kwargs={'count': 1})
 
-    def tear_down():
-        delete_smartlist(smartlist_id, token_first,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -185,10 +165,6 @@ def smartlist_second(request, token_second, candidate_second, talent_pipeline_se
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_second), kwargs={'count': 1})
 
-    def tear_down():
-        delete_smartlist(smartlist_id, token_second,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-    request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -209,11 +185,6 @@ def smartlist_same_domain(request, token_same_domain, candidate_same_domain, tal
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_same_domain), kwargs={'count': 1})
 
-    def tear_down():
-        delete_smartlist(smartlist_id, token_same_domain,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -228,11 +199,18 @@ def talent_pool(request, token_first):
     talent_pool_id = talent_pools['talent_pools'][0]
     talent_pool_obj = get_talent_pool(talent_pool_id, token_first)['talent_pool']
 
-    def tear_down():
-        delete_talent_pool(talent_pool_id, token_first,
-                           expected_status=(codes.OK, codes.NOT_FOUND))
+    return talent_pool_obj
 
-    request.addfinalizer(tear_down)
+
+@pytest.fixture(scope='session')
+def talent_pool_session_scope(token_first):
+    """
+    This fixture created a talent pool that is associated to user_first
+    :param token_first: authentication token for user_first
+    """
+    talent_pools = create_talent_pools(token_first)
+    talent_pool_id = talent_pools['talent_pools'][0]
+    talent_pool_obj = get_talent_pool(talent_pool_id, token_first)['talent_pool']
     return talent_pool_obj
 
 
@@ -247,11 +225,6 @@ def talent_pool_second(request, token_second):
     talent_pool_id = talent_pools['talent_pools'][0]
     talent_pool_obj = get_talent_pool(talent_pool_id, token_second)['talent_pool']
 
-    def tear_down():
-        delete_talent_pool(talent_pool_id, token_second,
-                           expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return talent_pool_obj
 
 
@@ -281,3 +254,18 @@ def talent_pipeline_second(request, token_second, talent_pool_second):
     talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
 
     return {'id': talent_pipeline_id}
+
+
+@pytest.fixture(scope='function')
+def candidate_device_first(request, token_first, candidate_first):
+    """
+    This fixture associates a device with test candidate which is required to
+    send push campaign to candidate.
+    :param token_first: authentication token
+    :param candidate_first: candidate dict object
+    """
+    candidate_id = candidate_first['id']
+    device_id = test_config['PUSH_CONFIG']['device_id_1']
+    associate_device_to_candidate(candidate_id, device_id, token_first)
+    device = {'one_signal_id': device_id}
+    return device

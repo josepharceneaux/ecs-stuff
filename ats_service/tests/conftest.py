@@ -18,7 +18,7 @@ def account_post_data():
 
     :rtype dict
     """
-    return { 'ats_name' : 'A New ATS', 'ats_homepage' : 'https://newats.com', 'ats_login' : 'https://newats.com/login',
+    return { 'ats_name' : 'Workday', 'ats_homepage' : 'https://newats.com', 'ats_login' : 'https://faux-workday.gettalent.com/authenticate',
              'ats_auth_type' : 'Basic', 'ats_id' : 'id on ATS', 'ats_credentials' : 'My ATS Credentials' }
 
 

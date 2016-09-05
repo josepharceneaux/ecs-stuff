@@ -11,6 +11,7 @@ from requests import Response
 from bs4.element import ResultSet
 from contracts import new_contract
 from werkzeug.local import LocalProxy
+from flask.wrappers import Request
 
 
 def define_custom_contracts():
@@ -28,7 +29,8 @@ def define_custom_contracts():
                                                                                                          'patch'])
         new_contract('bs4_ResultSet', lambda x: isinstance(x, ResultSet))
         new_contract('cStringIO', lambda x: isinstance(x, (cStringIO.InputType, cStringIO.OutputType)))
-        new_contract('flask_request', lambda x: isinstance(x, LocalProxy))
+        #  Request is used with the app.test_request_context contest manager.
+        new_contract('flask_request', lambda x: isinstance(x, (LocalProxy, Request)))
         new_contract('Response', lambda x: isinstance(x, Response))
 
     except ValueError:

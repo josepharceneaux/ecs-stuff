@@ -26,7 +26,7 @@ def convert_pdf_to_text(pdf_file_obj):
 
         if new_text:
             text += new_text
-            pages_with_text =+ 1
+            pages_with_text += 1
 
     """
     For the time being (8/13/16) we are assuming it is a picture based resume.
