@@ -31,6 +31,7 @@ def listen_slack():
     Listens to the slack web hook
     :return: str
     """
+<<<<<<< HEAD:talentbot_service/views.py
     message = request.form.get('text')
     channel_id = request.form.get('channel_id')
     if message and slack_bot.at_bot and channel_id:
@@ -38,6 +39,19 @@ def listen_slack():
             message = message.lstrip(slack_bot.at_bot)
             slack_bot.handle_communication(channel_id, message)
         return "OK"
+=======
+    slack_client.rtm_connect()
+    message = request.form['text']
+    global AT_BOT
+    if AT_BOT == "":
+        # TODO: Avoid inline imports
+        from talentbot import get_bot_id
+        AT_BOT = get_bot_id()
+    if AT_BOT in message or AT_BOT+':' in message:
+        message = message.lstrip(AT_BOT)
+        handle_slack_messages(request.form['channel_id'], message)
+    return "OK"
+>>>>>>> 5dbd5a4a8295243e7916f6b36a17921ce0fe29b0:talentbot-service/views.py
 
 
 @app.route("/talentbot-message-campaign/", methods=['GET', 'POST'])
@@ -46,6 +60,7 @@ def handle_twilio_webhook():
     Listens to the twilio callbacks
     :return: str
     """
+    # TODO: remove empty line
 
     recipient = request.form.get('From')
     message_body = request.form.get('Body')
@@ -57,7 +72,7 @@ def handle_twilio_webhook():
             segment_indexer = 1
             while segment_indexer <= total_segments:
                 segment = dict_of_segments.get(segment_indexer) + \
-                        "("+str(segment_indexer)+"/"+str(total_segments)+")"
+                        "("+str(segment_indexer)+"/"+str(total_segments)+")"  # TODO: PEP08 warning
                 message = twilio_client.messages.create(to=recipient, from_=TWILIO_NUMBER,
                                                         body=segment)
                 segment_indexer += 1
