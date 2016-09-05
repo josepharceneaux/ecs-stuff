@@ -2,7 +2,7 @@
 from requests import codes
 
 # App specific
-from social_network_service.common.error_handling import InternalServerError
+from mock_service.common.error_handling import InternalServerError
 
 
 class MockApi(object):
