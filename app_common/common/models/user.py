@@ -198,6 +198,16 @@ class User(db.Model):
         """
         return User.query.filter_by(email=email).first()
 
+    @staticmethod
+    def get_user_count_in_domain(domain_name):
+        """
+        This method returns count of users in a domain
+        :param str domain_name: User domain
+        :return: int : Number of users
+        """
+        return User.query.filter(User.domain_id == Domain.id).\
+            filter(Domain.name == domain_name).count()
+
 
 class UserPhone(db.Model):
     __tablename__ = 'user_phone'

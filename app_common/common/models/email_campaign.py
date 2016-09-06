@@ -2,13 +2,13 @@ import datetime
 
 from sqlalchemy import desc
 from sqlalchemy.orm import relationship
+from sqlalchemy import or_
 
 from db import db
 from ..utils.datetime_utils import DatetimeUtils
 from ..utils.validators import (raise_if_not_instance_of,
                                 raise_if_not_positive_int_or_long)
 from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError)
-
 
 __author__ = 'jitesh'
 
@@ -194,6 +194,18 @@ class EmailCampaignBlast(db.Model):
 
     def __repr__(self):
         return "<EmailCampaignBlast (Sends: %s, Opens: %s)>" % (self.sends, self.opens)
+
+    @staticmethod
+    def top_performing_email_campaign(year):
+        """
+        This method returns top performing email campaign from a specific year
+        :param year:
+        :return:
+        """
+        return EmailCampaignBlast.query.filter(or_(EmailCampaignBlast.updated_datetime.contains(year),
+                 EmailCampaignBlast.sent_datetime.contains(year))). \
+            filter(EmailCampaign.id == EmailCampaignBlast.campaign_id). \
+            order_by(desc(EmailCampaignBlast.opens)).first()
 
 
 class EmailCampaignSend(db.Model):

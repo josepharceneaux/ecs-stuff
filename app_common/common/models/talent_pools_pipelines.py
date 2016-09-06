@@ -1,5 +1,6 @@
 __author__ = 'ufarooqi'
 
+from sqlalchemy import or_, and_, extract
 import json
 from db import db
 from datetime import datetime, timedelta
@@ -53,6 +54,15 @@ class TalentPoolCandidate(db.Model):
     @classmethod
     def get(cls, candidate_id, talent_pool_id):
         return cls.query.filter_by(candidate_id=candidate_id, talent_pool_id=talent_pool_id).first()
+
+    @staticmethod
+    def candidates_added_last_month(user_name, talent_pool_name, previous_month):
+        return TalentPoolCandidate.query.filter(TalentPoolCandidate.talent_pool_id == TalentPool.id) \
+            .filter(or_((and_(extract("year", TalentPoolCandidate.added_time) == previous_month.year,
+                              extract("month", TalentPoolCandidate.added_time) == previous_month.month)), (
+                            and_(extract("year", TalentPoolCandidate.updated_time) == previous_month.year,
+                                 extract("month", TalentPoolCandidate.updated_time) == previous_month.month)))) \
+            .filter(User.first_name == user_name).filter(TalentPool.name == talent_pool_name).distinct().count()
 
 
 class TalentPoolGroup(db.Model):
