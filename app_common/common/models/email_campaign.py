@@ -313,15 +313,12 @@ class UserEmailTemplate(db.Model):
                                                                               cascade="all, delete-orphan"))
 
     @classmethod
-    def get_by_id(cls, template_id):
-        """
-        :type template_id:  int | long
-        :return: UserEmailTemplate
-        """
-        return cls.query.get(template_id)
-
-    @classmethod
     def get_by_name(cls, template_name):
+        """
+        This filters email-templates for given name and returns first object
+        :param string template_name: Name of email-template
+        :rtype: UserEmailTemplate
+        """
         return cls.query.filter_by(name=template_name).first()
 
     @classmethod
