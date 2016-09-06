@@ -31,7 +31,7 @@ cd email_campaign_service && tar -czh . | docker build -t gettalent/email-campai
 cd ats_service && tar -czh . | docker build -t gettalent/ats-service:latest - && cd ../
 cd mock_service && tar -czh . | docker build -t gettalent/mock-service:latest - && cd ../
 
-# Move scheduler service admin to another repo
+# TODO: Move scheduler service admin to another repo
 # cd scheduler_service_admin && tar -czh . | docker build -t gettalent/scheduler-service-admin:latest - && cd ../
 
 # Reset Database and Amazon Cloud Search
