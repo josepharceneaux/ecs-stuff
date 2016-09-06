@@ -301,6 +301,25 @@ class EmailTemplate(Resource):
             :param template_id: ID of of email template
             :return: Email Template with specified id
 
+    .. Response::
+
+                {
+                      "template": {
+                            "user_id": 1,
+                            "name": "test_email_template850323",
+                            "body_text": "",
+                            "template_folder_id": 23,
+                            "updated_datetime": "2016-09-06 18:14:42",
+                            "body_html": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"
+                                            \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\r\n<html>
+                                            \r\n<head>\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign
+                                            mail testing through script</p>\r\n</body>\r\n</html>\r\n",
+                            "is_immutable": 1,
+                            "type": 0,
+                            "id": 3
+                      }
+                }
+
         .. Status:: 200 (Resource found)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
@@ -320,6 +339,26 @@ class EmailTemplate(Resource):
             Required parameters:
             :param template_id: ID of of email template
             :return: Updated email template
+
+    .. Response::
+
+                {
+                      "template": {
+                            "user_id": 1,
+                            "name": "test_email_template850323",
+                            "body_text": "",
+                            "template_folder_id": 23,
+                            "updated_datetime": "2016-09-06 18:14:42",
+                            "body_html": "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"
+                                            \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\r\n<html>
+                                            \r\n<head>\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign
+                                            mail testing through script</p>\r\n</body>\r\n</html>\r\n",
+                            "is_immutable": 1,
+                            "type": 0,
+                            "id": 3
+                      }
+                }
+
 
         .. Status:: 200 (Resource updated)
                     400 (Bad request)

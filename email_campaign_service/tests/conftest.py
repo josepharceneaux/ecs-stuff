@@ -1,3 +1,11 @@
+"""
+ Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Um-I-Hani, QC-Technologies, <haniqadri.qc@gmail.com>
+         Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
+This file contains fixtures for tests of email-campaign-service
+"""
+
 __author__ = 'basit'
 
 # Standard Library

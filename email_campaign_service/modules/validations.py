@@ -1,11 +1,24 @@
-from app_common.common.utils.validators import raise_if_not_positive_int_or_long
+"""
+ Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Um-I-Hani, QC-Technologies, <haniqadri.qc@gmail.com>
+         Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
+    Here are the validator functions used in email-campaign-service
+"""
+
+# Standard Library
+import datetime
+
+# Application Specific
+from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.smartlist import Smartlist
-from email_campaign_service.common.models.email_campaign import EmailClient, EmailTemplateFolder, UserEmailTemplate
-from email_campaign_service.common.models.user import User
-from email_campaign_service.common.error_handling import InvalidUsage, UnprocessableEntity, ForbiddenError, \
-    ResourceNotFound
-import datetime
+from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from email_campaign_service.common.utils.validators import raise_if_not_positive_int_or_long
+from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity, ForbiddenError,
+                                                          ResourceNotFound)
+from email_campaign_service.common.models.email_campaign import (EmailClient, EmailTemplateFolder, UserEmailTemplate)
+
 __author__ = 'jitesh'
 
 
@@ -16,9 +29,10 @@ def validate_datetime(datetime_text, field_name=None):
     :type datetime_text: unicode | basestring
     """
     try:
-        parsed_date = datetime.datetime.strptime(datetime_text, "%Y-%m-%dT%H:%M:%S.%fZ")
+        parsed_date = datetime.datetime.strptime(datetime_text, DatetimeUtils.ISO8601_FORMAT)
     except ValueError:
-        raise InvalidUsage("%s should be in valid format `2016-03-05T04:30:00.000Z`" % field_name if field_name else 'Datetime')
+        raise InvalidUsage("%s should be in valid format `2016-03-05T04:30:00.000Z`"
+                           % field_name if field_name else 'Datetime')
     if parsed_date < datetime.datetime.utcnow():
         raise UnprocessableEntity("The %s cannot be before today.")
     return parsed_date
@@ -133,6 +147,7 @@ def get_or_set_valid_value(required_value, required_instance, default):
 def get_valid_template_folder(template_folder_id, request):
     """
     This validates given template_folder_id is int or long greater than 0
+    It raises Invalid Usage error in case of invalid template_folder_id
     It raises ResourceNotFound error if requested folder is not found in database
     It raises Forbidden error if requested template folder does not belong to user's domain
     It returns EmailTemplateFolder object if above validation does not raise any error
@@ -157,6 +172,7 @@ def get_valid_template_folder(template_folder_id, request):
 def get_valid_email_template(email_template_id, request):
     """
     This validates given email_template_id is int or long greater than 0
+    It raises Invalid Usage error in case of invalid email_template_id
     It raises ResourceNotFound error if requested template is not found in database
     It raises Forbidden error if requested template template does not belong to user's domain
     It returns EmailTemplate object if above validation does not raise any error
@@ -169,9 +185,9 @@ def get_valid_email_template(email_template_id, request):
     # Get email-template object from database
     email_template = UserEmailTemplate.get_by_id(email_template_id)
     if not email_template:
-        raise ResourceNotFound('Template with id %d not found' % email_template_id)
+        raise ResourceNotFound('Email template with id %d not found' % email_template_id)
     # Verify owned by same domain
     template_owner_user = User.get_by_id(email_template.user_id)
     if template_owner_user.domain_id != domain_id:
-        raise ForbiddenError('Template(id:%d) is not owned by domain(id:%d)' % (email_template_id, domain_id))
+        raise ForbiddenError('Email template(id:%d) is not owned by domain(id:%d)' % (email_template_id, domain_id))
     return email_template

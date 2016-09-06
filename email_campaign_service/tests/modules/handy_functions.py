@@ -1,3 +1,11 @@
+"""
+ Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Um-I-Hani, QC-Technologies, <haniqadri.qc@gmail.com>
+         Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
+    Here are the helper functions used in tests of email-campaign-service
+"""
+
 # Standard Imports
 import json
 import uuid
@@ -30,6 +38,7 @@ from email_campaign_service.common.tests.fake_testing_data_generator import Fake
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 __author__ = 'basit'
+
 TEST_EMAIL_ID = 'test.gettalent@gmail.com'
 ON = 1  # Global variable for comparing value of is_immutable in the functions to avoid hard-coding 1
 
@@ -357,9 +366,8 @@ def add_email_template(headers, template_owner):
     """
     data = data_to_create_email_template(headers, template_owner, template_body())
     response = post_to_email_template_resource(headers, data=data)
-    print response.json()
     json_response = response.json()
-    assert response.status_code == codes.CREATED
+    assert response.status_code == codes.CREATED, response.text
     assert response.json()
     assert 'id' in json_response
     return {"id": json_response['id'],
