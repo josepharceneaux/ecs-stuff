@@ -47,9 +47,9 @@ def parse_resume(file_obj, filename_str, cache_key):
 
     is_image = is_resume_image(file_ext, file_obj)
 
+    # If file is an image, OCR it
     if is_image:
         files = [file_obj]
-    # If file is an image, OCR it
         if file_ext == '.pdf':
             # If its a PDF replace file obj with a png representation of it.
             # convert_pdf_to_png will close the old StringIO instance.
