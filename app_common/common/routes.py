@@ -99,6 +99,7 @@ class GTApis(object):
     PUSH_CAMPAIGN_SERVICE_PORT = 8013
     EMAIL_CAMPAIGN_SERVICE_PORT = 8014
     ATS_SERVICE_PORT = 8015
+    TALENTBOT_PORT = 8016
 
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
