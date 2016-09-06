@@ -427,6 +427,7 @@ class CampaignsTestsHelpers(object):
         campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
         send_url = url % campaign_id
         response = send_request('post', send_url, access_token)
+        print 'Campaign object:%s' % campaign.to_dict() if hasattr(campaign, 'to_dict') else campaign
         assert response.ok, response.text
         if blasts_url:
             blasts_url = blasts_url % campaign_id
