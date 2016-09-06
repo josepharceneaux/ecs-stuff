@@ -21,11 +21,20 @@ ECS_BASE_PATH = 'gettalent'
 # How many previous Task Definitions (and related ECR images) to keep, not including the currently running one
 GC_THRESHOLD = 3
 
+
+def fatal(message):
+    """
+    Print error message and exit with 1
+    """
+    print message
+    exit(1)
+
+
 def validate_http_status(request_name, response):
     """
     Validate that we got a good status on our request.
 
-    :param str request_name: Caller name to put in error message.
+    :param string request_name: Caller name to put in error message.
     :param json response: The response to be validated.
     :return: None.
     """
@@ -33,23 +42,23 @@ def validate_http_status(request_name, response):
     try:
         http_status = response['ResponseMetadata']['HTTPStatusCode']
     except Exception as e:
-        print "Exception getting HTTP status {}: {}".format(request_name, e.message)
-        exit(1)
+        fatal("Exception getting HTTP status {}: {}".format(request_name, e.message))
 
     if http_status != 200:
-        print "Error with {}. HTTP Status: {}".format(request_name, http_status)
-        exit(1)
+        fatal("Error with {}. HTTP Status: {}".format(request_name, http_status))
 
 
+#
 # ECR (ECS Container Registry) functions
+#
 
 
 def tag_exists_in_repo(repo_path, tag):
     """
     Search for an image with a specific tag in a docker repository.
 
-    :param str repo_name: The path of the repository to search.
-    :param str tag: The tag to search for.
+    :param string repo_name: The path of the repository to search.
+    :param string tag: The tag to search for.
     :rtype: bool
     """
 
@@ -76,8 +85,8 @@ def image_exists_in_repo(name, image):
     """
     Search for an image with a specific tag in a docker repository.
 
-    :param str name: The name of the repository to search.
-    :param str image: The image and tag to search for.
+    :param string name: The name of the repository to search.
+    :param string image: The image and tag to search for.
     :rtype: bool
     """
 
@@ -90,9 +99,9 @@ def gather_images_from_repository(ecr_client, name, tags):
     """
     Collect images from repository.
 
-    :param obj ecr_client: ECR object from boto.
-    :param str name: Repository name.
-    :param str tags: Can be 'none', 'only', 'all' - return untagged, tagged, or all images.
+    :param object ecr_client: ECR object from boto.
+    :param string name: Repository name.
+    :param string tags: Can be 'none', 'only', 'all' - return untagged, tagged, or all images.
     """
 
     if tags not in [ 'none', 'only', 'all' ]:
@@ -138,7 +147,7 @@ def repository_components_from_uri(uri):
     """
     Break up and return the constituent components of a container URI.
 
-    :param str uri: URI of a container.
+    :param string uri: URI of a container.
     """
 
     components = uri.split(':')
@@ -160,7 +169,7 @@ def image_digest_from_tag(digest_list, tag):
     Look for a container image with a certain tag.
 
     :param list[str] digest_list: A list of container digests and tags in JSON.
-    :param str tag: The tag to search for.
+    :param string tag: The tag to search for.
     """
 
     entry = [ e for e in digest_list if e['imageTag'] == tag ]
@@ -176,8 +185,8 @@ def delete_images_from_repository_by_digest(ecr_client, repository_name, digest_
     """
     Delete a list of containers. ECR will only delete a certain number at a time, so we iterate.
 
-    :param obj ecr_client: The boto ECR (EC2 Container Registry) object.
-    :param str repository_name: Name of the repository we're deleting from.
+    :param object ecr_client: The boto ECR (EC2 Container Registry) object.
+    :param string repository_name: Name of the repository we're deleting from.
     :param list[str] digest_list: List of tagged containers found for the particular repository (in JSON).
 
     """
@@ -203,7 +212,7 @@ def delete_images_from_repository_by_uri(ecr_client, image_list, digest_list):
     Given a list of container URIs. Find the digest SHA for the container and delete it. It's done this way because AWS uses
     a URI to specify a container on a task definition, but deleting the container requires the digest.
 
-    :param obj ecr_client: The boto ECR (EC2 Container Registry) object.
+    :param object ecr_client: The boto ECR (EC2 Container Registry) object.
     :param list[str] image_list: List of ECR container URIs to be removed.
     :param list[str] digest_list: List of tagged containers found for the particular service (in JSON).
     """
@@ -223,16 +232,33 @@ def delete_images_from_repository_by_uri(ecr_client, image_list, digest_list):
         delete_images_from_repository_by_digest(ecr_client, repository_name, to_delete)
 
 
+def remove_untagged_containers(ecr_client, service):
+    """
+    Remove any ECR containers which don't have a tag.
+    
+    :param string service: Name of the getTalent service.
+    :param string cluster: name of the cluster to inspect.
+    """
+
+    repository_name = ECS_BASE_PATH + "/" + service
+
+    # Collect all untagged containers for this service
+    digest_list = gather_images_from_repository(ecr_client, service, 'none')
+    delete_images_from_repository_by_digest(ecr_client, repository_name, digest_list)
+
+
+#
 # Task Definition functions
+#
 
 
 def gather_task_definitions(ecs_client, service, cluster):
     """
     Collect all task definitions for getTalent service in a cluster.
 
-    :param obj ecs_client: The boto ECS object.
-    :param str service: Name of the getTalent service.
-    :param str cluster: name of the cluster to inspect.
+    :param object ecs_client: The boto ECS object.
+    :param string service: Name of the getTalent service.
+    :param string cluster: name of the cluster to inspect.
     """
 
     # Adjust to our ECS naming convention
@@ -240,12 +266,15 @@ def gather_task_definitions(ecs_client, service, cluster):
         raise Exception("gather_task_definitions called with invalid cluster name {}".format(cluster))
     service = service + TASKS_SUFFIX_DICT[cluster]
 
-    response = ecs_client.list_task_definitions(familyPrefix=service, status='ACTIVE', sort='DESC')
-    validate_http_status('list_task_definitions', response)
+    try:
+        response = ecs_client.list_task_definitions(familyPrefix=service, status='ACTIVE', sort='DESC')
+        validate_http_status('list_task_definitions', response)
+    except Exception as e:
+        print "Exception {} updating service for {}".format(e.message, service)
+        return None
 
     td_list = []
     while True:
-
         arn_list = response['taskDefinitionArns']
         for arn in arn_list:
             td_list.append(arn)
@@ -263,7 +292,7 @@ def gather_all_td_images(ecs_client, service):
     """
     Gather the images used by all ACTIVE task definitions.
 
-    :param str service: The name of the service we're collecting from.
+    :param string service: The name of the service we're collecting from.
     :rtype: list[dict] All image URIs associated with task definitions for this service.
     """
 
@@ -283,8 +312,8 @@ def task_definition_image(ecs_client, td_arn):
     """
     Return the image URI used by a task definition.
 
-    :param obj ecs_client: The boto ECS object.
-    :param str td_arn: The AWS Resource Name.
+    :param object ecs_client: The boto ECS object.
+    :param string td_arn: The AWS Resource Name.
     """
 
     response = ecs_client.describe_task_definition(taskDefinition=td_arn)
@@ -299,8 +328,8 @@ def deregister_task(ecs_client, td_arn):
     """
     Make a task definition revision inactive.
 
-    :param obj ecs_client: The boto ECS object.
-    :param str td_arn: The AWS Resource Name.
+    :param object ecs_client: The boto ECS object.
+    :param string td_arn: The AWS Resource Name.
     """
 
     print "Deactivating Task Definition {}".format(td_arn)
@@ -310,27 +339,135 @@ def deregister_task(ecs_client, td_arn):
         print "WARNING: {} not marked INACTIVE".format(td_arn)
 
 
-def remove_untagged_containers(ecr_client, service):
+#
+# Service functions
+#
+
+
+# def gt_service_name_from_arn(service_arn):
+#     """
+#     """
+#     print "ARN: {}".format(service_arn)
+#     revision = service_arn.split('/')[1].split(':')
+#     print "REVISIN: {}".format(revision)
+#     if len(revision) == 1:
+#         return revision[0], None
+#     else:
+#         return revision[0], revision[1]
+
+
+def get_all_services(ecs_client, cluster):
     """
-    Remove any ECR containers which don't have a tag.
-    
-    :param str service: Name of the getTalent service.
-    :param str cluster: name of the cluster to inspect.
+    Gather all services running in an ECS cluster.
+
+    :param object ecs_client: The boto ECS object.
+    :param string cluster: Name of the cluster.
+    :rtype list | None:
     """
+    try:
+        response = ecs_client.list_services(cluster=cluster)
+        validate_http_status('list_services', response)
+    except Exception as e:
+        print "Exception {} get_all_services for cluster {}".format(e.message, cluster)
+        return None
 
-    repository_name = ECS_BASE_PATH + "/" + service
+    service_list = []
+    while True:
+        arn_list = response['serviceArns']
+        for service_arn in arn_list:
+            service_name = service_arn.split('/')[-1]
+            service_list.append(service_name)
 
-    # Collect all untagged containers for this service
-    digest_list = gather_images_from_repository(ecr_client, service, 'none')
-    delete_images_from_repository_by_digest(ecr_client, repository_name, digest_list)
+        if 'nextToken' not in response:
+            break
 
+        response = ecs_client.list_services(cluster=cluster, nextToken=response['nextToken'])
+        validate_http_status('list_services', response)
+
+    return service_list
+
+
+def update_service_task_definition(ecs_client, cluster, service, adjustment):
+    """
+    Move the task definition used by a service forwards or backwards.
+
+    :param object ecs_client: The boto ECS client object.
+    :param string cluster: Cluster name.
+    :param string service: GT service name.
+    :param string adjustment: How much to advance or regress the tack definition. E.g., +1, -2
+    :rtype boolean:
+    """
+    if cluster not in SERVICES_SUFFIX_DICT:
+        print "update_service_task_definition called with invalid cluster name {}".format(cluster)
+        return False
+
+    service_name = service + SERVICES_SUFFIX_DICT[cluster]
+
+    # Get all active Task Definitions, in descending order
+    td_arn_list = gather_task_definitions(ecs_client, service, cluster)
+    # print "TD List Len: {}".format(len(td_arn_list))
+    # for td in td_arn_list:
+    #     print td
+
+    # Determine the current Task Definition
+    try:
+        response = ecs_client.describe_services(cluster=cluster, services=[service_name])
+        validate_http_status("describe_services: {}".format(service_name), response)
+    except Exception as e:
+        print "Exception {} updating service for {}".format(e.message, service_name)
+        return False
+
+    service_list = response['services']
+    if len(service_list) > 1:
+        # TODO: Test on multiple deployment and ensure TDs are the same
+        print "WARNING: More than one service found for {}\nUsing first.".format(service_name)
+    current_td_arn = service_list[0]['taskDefinition']
+    desired_count = response['services'][0]['desiredCount']
+    deployment_configuration = response['services'][0]['deploymentConfiguration']
+
+    # Figure out where the current TD is in the list. index() can throw an exception if not found - exit gracefully.
+    try:
+        td_index = td_arn_list.index(current_td_arn)
+    except Exception as e:
+        print "ERROR: Current Task Definition not found in active Task Definition list for {}".format(service_name)
+        return False
+
+    # Since the TD list is in descending order, reverse the sign of the offset
+    offset = int(adjustment) * -1
+    if (td_index + offset) > (len(td_arn_list) - 1) or (td_index + offset) < 0:
+        print "Adjustment {} out of range for {}".format(adjustment, service_name)
+        return False
+
+    try:
+        replacement_td_arn = td_arn_list[td_index + offset]
+    except Exception as e:
+        print "Replacement Task Definition not available for {}: {}".format(service_name, e.message)
+        return False
+
+    # Update the service
+    print "Replacing:\n    {}\nwith\n    {}".format(current_td_arn, replacement_td_arn)
+    try:
+        response = ecs_client.update_service(cluster=cluster, service=service_name, desiredCount=desired_count,
+                                             taskDefinition=replacement_td_arn, deploymentConfiguration=deployment_configuration)
+        validate_http_status("update_service: {}".format(service_name), response)
+    except Exception as e:
+        print "Exception {} updating service for {}".format(e.message, service_name)
+        return False
+
+    return True
+
+
+#
+# Garbage Collection of all the things
+#
 
 def garbage_collect_ecs(service, cluster):
     """
     Garbage collect Task Definitions revisions and their associated ECR images.
 
-    :param str service: Name of the getTalent service.
-    :param str cluster: name of the cluster to inspect.
+    :param string service: Name of the getTalent service.
+    :param string cluster: name of the cluster to inspect.
+    :rtype None:
     """
 
     # Adjust to our ECS naming convention
