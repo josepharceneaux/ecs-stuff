@@ -52,21 +52,18 @@ class TestCampaignBlastById(object):
         get_blast(blast_id, invalid_campaign_id, token_first,
                   expected_status=(codes.NOT_FOUND,))
 
-    # TODO: Commenting flaky test for Zohaib (basit)
-    # def test_get_campaign_blast_with_invalid_blast_id(self, token_first, campaign_blast,
-    #                                                   campaign_in_db):
-    #     """
-    #     Try to get a valid campaign's blast with invalid blast id,
-    #     and we are expecting ResourceNotFound error here
-    #     :param token_first: auth token
-    #     :param campaign_blast: campaign blast object
-    #     :param campaign_in_db: campaign object
-    #     """
-    #     # 404 Case, Blast not found
-    #     invalid_blast_id = sys.maxint
-    #     campaign_id = campaign_in_db['id']
-    #     get_blast(invalid_blast_id, campaign_id, token_first,
-    #               expected_status=(codes.NOT_FOUND,))
+    def test_get_campaign_blast_with_invalid_blast_id(self, token_first, campaign_in_db):
+        """
+        Try to get a valid campaign's blast with invalid blast id,
+        and we are expecting ResourceNotFound error here
+        :param token_first: auth token
+        :param campaign_in_db: campaign object
+        """
+        # 404 Case, Blast not found
+        invalid_blast_id = sys.maxint
+        campaign_id = campaign_in_db['id']
+        get_blast(invalid_blast_id, campaign_id, token_first,
+                  expected_status=(codes.NOT_FOUND,))
 
     def test_get_campaign_blast_from_diff_domain(self, token_second, campaign_blast, campaign_in_db):
         """
