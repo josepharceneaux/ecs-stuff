@@ -10,7 +10,7 @@ import requests
 from base import SocialNetworkBase
 from social_network_service.modules.urls import get_url
 from social_network_service.social_network_app import logger
-from social_network_service.common.mock_common.sn_relative_urls import SocialNetworkUrls as Urls
+from social_network_service.common.mock.sn_relative_urls import SocialNetworkUrls as Urls
 from social_network_service.modules.custom_codes import ORGANIZER_ALREADY_EXISTS
 from social_network_service.common.error_handling import InternalServerError, InvalidUsage
 from social_network_service.common.utils.handy_functions import http_request, find_missing_items

@@ -46,4 +46,3 @@ class SocialNetworkUrls(object):
         UNPUBLISH_EVENT: '{}/events/{}/unpublish/',
         USER: '{}/users/{}'
     }
-

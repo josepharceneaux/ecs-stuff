@@ -14,7 +14,7 @@ from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.modules.constants import MEETUP_VENUE
-from social_network_service.common.mock_common.sn_relative_urls import SocialNetworkUrls as Urls
+from social_network_service.common.mock.sn_relative_urls import SocialNetworkUrls as Urls
 from social_network_service.modules.urls import get_url
 from social_network_service.social_network_app import logger
 from social_network_service.modules.utilities import log_error

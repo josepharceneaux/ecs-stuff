@@ -12,25 +12,24 @@ from itertools import repeat, chain
 from requests import codes
 
 # Application Specific
-from mock_service.common.constants import MEETUP
-from mock_service.common.mock_common.sn_relative_urls import SocialNetworkUrls as Urls
+from mock_service.common.constants import MEETUP, AUTH, API
+from mock_service.common.mock.sn_relative_urls import SocialNetworkUrls as Urls
 from mock_service.common.models.candidate import SocialNetwork
-from mock_service.common.models.event import Event
 from mock_service.common.redis_cache import redis_store2
 from mock_service.common.utils.test_utils import fake
-from mock_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 # Prepare data for dictionary below
 meetup_fake_member_id = randint(1, 100000)
+# Retrieve Meetup access_token and refresh_token key value pair from redis
 meetup_kv = json.loads(redis_store2.get(MEETUP.title()))
 valid_access_token = meetup_kv['access_token']
 valid_refresh_token = meetup_kv['refresh_token']
-non_existent_event_id = CampaignsTestsHelpers.get_non_existing_id(Event)
+non_existent_event_id = sys.maxint
 events_id = []
 
 
 def get_random_event_id():
-    event_id = randint(1, 100000)
+    event_id = fake.random_int(min=1, max=100000)
     events_id.append(event_id)
     return event_id
 
@@ -50,7 +49,9 @@ def get_meetup_client():
 
 def meetup_vendor_api(event_id=None):
     """
-    Returns Meetup API URLs
+    Returns mocked dict of Meetup API.
+    Mocked dict is a collection of response, expected headers/payload and events like on_fail. This will be used
+    by MockApi class
     """
     return {
         Urls.MEETUP[Urls.VALIDATE_TOKEN].format(''): {
@@ -314,16 +315,17 @@ def meetup_vendor_auth():
 
 def meetup_vendor(url_type, event_id=None):
     """
-    Returns JSON dict for mocked data of Meetup
+    Returns JSON dict for mocked data of Meetup.
+    There will be two types of url. auth and api. See SocialNetwork model class for more details.
     :param url_type: Check if request URL is of auth type
     :type url_type: str
     :rtype: dict
     """
-    if url_type.lower() == 'auth':
+    if url_type.lower() == AUTH:
         return meetup_vendor_auth()
 
-    elif url_type.lower() == 'api':
+    elif url_type.lower() == API:
         return meetup_vendor_api(event_id=event_id)
 
     else:
-        return []
+        return {}

@@ -19,3 +19,5 @@ REDIS2 = 'REDIS2'
  Mock Service and other services common constants
 """
 MEETUP = 'meetup'
+AUTH = 'auth'
+API = 'API'

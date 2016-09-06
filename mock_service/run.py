@@ -1,3 +1,8 @@
+"""
+This modules run the service on specific port
+"""
+
+# App specific imports
 from mock_service.mock_service_app.app import app
 from mock_service.common.routes import GTApis
 

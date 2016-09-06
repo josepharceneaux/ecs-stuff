@@ -1,15 +1,23 @@
-from social_network_service.common.mock_common.sn_relative_urls import SocialNetworkUrls
+"""
+get_url method returns vendor specific absolute url.
+"""
+
+# App specific imports
+from social_network_service.common.constants import API, AUTH
+from social_network_service.common.mock.sn_relative_urls import SocialNetworkUrls
 from social_network_service.common.routes import MockServiceApiUrl
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from social_network_service.modules.constants import MOCK_VENDORS
+from social_network_service.modules.event.base import EventBase
+from social_network_service.modules.social_network.base import SocialNetworkBase
 from social_network_service.social_network_app import app, logger
 
 
 def get_url(class_object, key, custom_url=None, is_auth=None):
     """
     This returns the required URL to make HTTP request on some social-network website
-    :param class_object: SocialNetwork class object
+    :param EventBase|SocialNetworkBase class_object: SocialNetwork class object
     :param string key: Requested Key
     :param custom_url: Custom API URL different from class_object.api_url
     :param bool is_auth: if is_auth is true then use vendor auth url, otherwise use api url
@@ -20,7 +28,7 @@ def get_url(class_object, key, custom_url=None, is_auth=None):
     if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS] \
             and social_network_name.lower() in MOCK_VENDORS:
         # There are currently two types of URLs. i.e Auth and API url.
-        auth_part = 'auth' if is_auth else 'api'
+        auth_part = AUTH if is_auth else API
         api_url = MockServiceApiUrl.MOCK_SERVICE % (auth_part, social_network_name.lower())
     else:
         api_url = (class_object.auth_url if is_auth else class_object.api_url) if not custom_url else custom_url

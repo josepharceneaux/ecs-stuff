@@ -1,9 +1,10 @@
 """
 This file consists constants used in social-network-service
 """
-from social_network_service.common.constants import MEETUP
 
 __author__ = 'basit'
+
+from social_network_service.common.constants import MEETUP
 
 # URL to be hit in case of application based authentication
 APPLICATION_BASED_AUTH_URL = 'https://api.twitter.com/oauth2/token'

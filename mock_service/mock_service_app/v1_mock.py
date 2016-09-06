@@ -16,7 +16,7 @@ from mock_service.common.talent_config_manager import TalentConfigKeys, TalentEn
 from mock_service.common.error_handling import (NotFoundError, InternalServerError,
                                                 UnauthorizedError)
 from mock_service.mock_service_app import app, logger
-from mock_service.mock_service_app.mock_api import MockApi
+from mock_service.modules.mock_api import MockApi
 from mock_service.modules.vendors.meetup_mock import meetup_vendor
 
 mock_blueprint = Blueprint('mock_service', __name__)
@@ -32,8 +32,8 @@ def register_vendor(vendor_name, vendor_json_data):
     Register vendor and json data so that it can be used in mock endpoint
     :param vendor_name: Meetup
     :type vendor_name: str | basestring
-    :param vendor_json_data: See meetup.py
-    :type vendor_json_data: Callable function
+    :param vendor_json_data: See meetup_mock.py
+    :type vendor_json_data: Callable
     """
     mock_url_hub.update({vendor_name: vendor_json_data})
 
@@ -45,6 +45,12 @@ register_vendor(MEETUP, meetup_vendor)
 # TODO: Make this endpoint generic and usable for all services
 @api.route(MockServiceApi.MOCK_SERVICE)
 class MockServer(Resource):
+    """
+    Mock Server endpoint to handle mock requests and its response.
+
+    - mock_endpoint(self, url_type, social_network):
+      when a request is made then return mocked response based on vendor dict defined. (See vendors/meetup_mock.py)
+    """
     def get(self, url_type, social_network):
         return self.mock_endpoint(url_type, social_network)
 

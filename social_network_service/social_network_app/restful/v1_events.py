@@ -156,7 +156,6 @@ class Events(Resource):
         """
         # get json post request data
         event_data = get_valid_json_data(request)
-        db.session.commit()
         gt_event_id = process_event(event_data, request.user.id)
         headers = {'Location': '{url}/{id}'.format(url=SocialNetworkApi.EVENT_ORGANIZERS,
                                                    id=gt_event_id)}
@@ -259,7 +258,6 @@ class EventById(Resource):
         :param event_id: integer, unique id representing event in GT database
         :return: json for required event
         """
-        db.session.commit()
         event = Event.get_by_user_and_event_id(request.user.id, event_id)
         if not event:
             raise ResourceNotFound('Event does not exist with id %s' % event_id)
@@ -328,7 +326,6 @@ class EventById(Resource):
                     4066 (Access token for Social Network has expired)
 
         """
-        db.session.commit()
         event_data = get_valid_json_data(request)
         # check whether given event_id exists for this user
         event = Event.get_by_user_id_event_id_social_network_event_id(
@@ -365,7 +362,6 @@ class EventById(Resource):
                     403 (Forbidden: event not found for this user)
                     500 (Internal Server Error)
         """
-        db.session.commit()
         deleted, not_deleted = delete_events(request.user.id, [event_id])
         if len(deleted) == 1:
             return dict(message='Event deleted successfully')

@@ -1,9 +1,6 @@
 #!/bin/bash
 
 
-for i in $(seq 1 20)
-do
-
 # Install Requirements
 pip install -r requirements.txt
 
@@ -70,19 +67,12 @@ sleep 10
 
 echo "Beginning tests."
 
-py.test -n 48 scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests resume_parsing_service/tests social_network_service/tests candidate_service/tests ats_service/tests
-
-#if [ $? -ne 0 ] ; then
-#    exit 1
-#fi
-
-#py.test -n 48 --verbose social_network_service/tests
-echo "Looping $i"
+py.test -n 48 push_campaign_service/tests scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests resume_parsing_service/tests social_network_service/tests candidate_service/tests ats_service/tests
 
 
-#if [ $? -ne 0 ] ; then
-#    exit 1
-#fi
+if [ $? -ne 0 ] ; then
+    exit 1
+fi
 
 
 # Place other tests (code complexity, etc.) here
@@ -93,4 +83,3 @@ echo "Tests completed."
 # Declare success with this string that Jenkins looks for - see Jenkins config.
 echo "My work here is done."
 
-done

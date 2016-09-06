@@ -62,7 +62,7 @@ EVENT_DATA = {
 }
 
 # Add new vendor here to run tests for that particular social-network
-VENDORS = [MEETUP.title()]
+VENDORS = [EVENTBRITE.title(), MEETUP.title()]
 
 
 @pytest.fixture(scope='session')
@@ -76,7 +76,7 @@ def base_url():
 @pytest.fixture(scope="session")
 def meetup():
     """
-    This fixture returns Social network model object for meetup in getTalent database
+    This fixture returns Social network model object id for meetup in getTalent database
     """
     return {'id': SocialNetwork.get_by_name(MEETUP.title()).id}
 
@@ -84,7 +84,7 @@ def meetup():
 @pytest.fixture(scope="session")
 def eventbrite():
     """
-    This fixture returns Social network model object for eventbrite in getTalent database
+    This fixture returns Social network model object id for eventbrite in getTalent database
     """
     return {'id': SocialNetwork.get_by_name(EVENTBRITE.title()).id}
 
@@ -306,7 +306,7 @@ def eventbrite_event(request, test_eventbrite_credentials,
     and an organizer to create event data for
     """
     event = EVENT_DATA.copy()
-    event['title'] = 'Eventbrite ' + event['title'] + uuid4().__str__()
+    event['title'] = 'Eventbrite ' + event['title'] + str(uuid4())
     event['social_network_id'] = eventbrite['id']
     event['venue_id'] = eventbrite_venue['id']
 

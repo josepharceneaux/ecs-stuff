@@ -14,9 +14,10 @@ from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.error_handling import InternalServerError, InvalidUsage
 from social_network_service.modules import custom_codes
+from social_network_service.modules.constants import MEETUP_VENUE
 from social_network_service.modules.custom_codes import (VENUE_EXISTS_IN_GT_DATABASE,
                                                          INVALID_MEETUP_RESPONSE)
-from social_network_service.common.mock_common.sn_relative_urls import SocialNetworkUrls
+from social_network_service.common.mock.sn_relative_urls import SocialNetworkUrls
 from social_network_service.modules.urls import get_url
 from social_network_service.modules.utilities import logger
 from base import SocialNetworkBase
@@ -151,7 +152,6 @@ class Meetup(SocialNetworkBase):
         status = False
         user_refresh_token = self.user_credentials.refresh_token
 
-        # auth_url = self.social_network.auth_url + "/access?"
         auth_url = get_url(self, SocialNetworkUrls.REFRESH_TOKEN, is_auth=True)
         client_id = self.social_network.client_key
         client_secret = self.social_network.secret_key
@@ -243,7 +243,7 @@ class Meetup(SocialNetworkBase):
         if not venue_data.get('group_url_name'):
             raise InvalidUsage("Mandatory Input Missing: group_url_name",
                                error_code=custom_codes.MISSING_REQUIRED_FIELDS)
-        url = get_url(self, SocialNetworkUrls.VENUES, custom_url='https://api.meetup.com/{}').format(
+        url = get_url(self, SocialNetworkUrls.VENUES, custom_url=MEETUP_VENUE).format(
             venue_data['group_url_name'])
         payload = {
             'address_1': venue_data['address_line_1'],
