@@ -74,6 +74,8 @@ def parse_resume(file_obj, filename_str, cache_key):
             error_code=error_constants.NO_TEXT_EXTRACTED['code']
         )
 
+    file_obj.close() # Free file from memory after attempted upload caused by failure.
+
     try:
         encoded_resume = base64.b64encode(doc_content)
 
