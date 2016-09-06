@@ -22,7 +22,8 @@ from requests import codes
 
 # Application specific imports
 from push_campaign_service.common.constants import SLEEP_INTERVAL, RETRY_ATTEMPTS
-from push_campaign_service.common.utils.test_utils import get_and_assert_zero
+from push_campaign_service.common.models.misc import Activity
+from push_campaign_service.common.utils.test_utils import get_and_assert_zero, assert_activity
 from push_campaign_service.tests.test_utilities import send_campaign, get_blasts, get_blast_sends
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
@@ -60,6 +61,9 @@ class TestSendCampaign(object):
         # 200 case: Campaign Sent successfully
         send_campaign(campaign_in_db['id'], token_first, expected_status=(codes.OK,))
 
+        # Assert campaign send activity
+        assert_activity(Activity.MessageIds.CAMPAIGN_SEND, campaign_in_db['id'], 'push_campaign', token_first)
+
         response = retry(get_blasts, sleeptime=SLEEP_INTERVAL, attempts=RETRY_ATTEMPTS * 2, sleepscale=1,
                          retry_exceptions=(AssertionError,), args=(campaign_in_db['id'], token_first),
                          kwargs={'count': 1})
@@ -80,6 +84,9 @@ class TestSendCampaign(object):
         """
         # 200 case: Campaign Sent successfully
         send_campaign(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,))
+
+        # Assert campaign send activity
+        assert_activity(Activity.MessageIds.CAMPAIGN_SEND, campaign_in_db['id'], 'push_campaign', token_same_domain)
 
         response = retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(campaign_in_db['id'], token_same_domain), kwargs={'count': 1})
@@ -105,6 +112,10 @@ class TestSendCampaign(object):
         """
         campaign_id = campaign_in_db_multiple_smartlists['id']
         send_campaign(campaign_id, token_first, expected_status=(codes.OK,))
+
+        # Assert campaign send activity
+        assert_activity(Activity.MessageIds.CAMPAIGN_SEND, campaign_id, 'push_campaign', token_first)
+
         response = retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
                          args=(campaign_id, token_first), kwargs={'count': 1})
         blasts = response['blasts']
@@ -125,6 +136,10 @@ class TestSendCampaign(object):
         """
         campaign_id = campaign_with_two_candidates_with_and_without_push_device['id']
         send_campaign(campaign_id, token_first, expected_status=(codes.OK,))
+
+        # Assert campaign send activity
+        assert_activity(Activity.MessageIds.CAMPAIGN_SEND, campaign_id, 'push_campaign', token_first)
+
         response = retry(get_blasts, sleeptime=SLEEP_INTERVAL, attempts=RETRY_ATTEMPTS * 2, sleepscale=1,
                          retry_exceptions=(AssertionError,), args=(campaign_id, token_first), kwargs={'count': 1})
         blasts = response['blasts']
@@ -147,6 +162,7 @@ class TestSendCampaign(object):
         """
         campaign_id = campaign_with_two_candidates_with_no_push_device_associated['id']
         send_campaign(campaign_id, token_first, expected_status=(codes.OK,))
+
         retry(get_blasts, sleeptime=SLEEP_INTERVAL, attempts=RETRY_ATTEMPTS * 2, sleepscale=1,
               retry_exceptions=(AssertionError,), args=(campaign_id, token_first), kwargs={'count': 1})
         get_and_assert_zero(PushCampaignApiUrl.SENDS % campaign_id, 'sends', token_first)
@@ -159,6 +175,7 @@ class TestSendCampaign(object):
         """
         campaign_id = campaign_in_db['id']
         send_campaign(campaign_id, token_first, expected_status=(codes.OK,))
+
         retry(get_blasts, sleeptime=SLEEP_INTERVAL, attempts=RETRY_ATTEMPTS * 2, sleepscale=1,
               retry_exceptions=(AssertionError,), args=(campaign_id, token_first), kwargs={'count': 1})
         get_and_assert_zero(PushCampaignApiUrl.SENDS % campaign_id, 'sends', token_first)

@@ -416,15 +416,17 @@ def does_address_exist(candidate, address_dict):
     return False
 
 
-def does_candidate_cf_exist(candidate, custom_field_dict):
+def does_candidate_cf_exist(candidate, custom_field_id, value):
     """
+    Function will return true if custom field already exists for candidate, otherwise false
     :type candidate:  Candidate
-    :type custom_field_dict: dict[str]
+    :type custom_field_id: int | long
+    :param value: candidate's custom field value
+    :type value: str
     :rtype:  bool
     """
     for custom_field in candidate.custom_fields:
-        custom_field_value = (custom_field.value or '').lower()
-        if custom_field_value == (custom_field_dict.get('value') or '').lower():
+        if custom_field.id == custom_field_id and (custom_field.value or '').lower() == value.lower():
             return True
     return False
 

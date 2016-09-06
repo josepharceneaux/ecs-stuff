@@ -1,3 +1,7 @@
+"""
+Here we have helper function to be used in tests of email-campaign-service
+"""
+
 # Standard Imports
 import json
 import uuid
@@ -13,7 +17,6 @@ from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import fake
-from email_campaign_service.common.models.user import Permission
 from email_campaign_service.common.models.misc import (Activity,
                                                        UrlConversion,
                                                        Frequency)
@@ -31,6 +34,15 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 
 __author__ = 'basit'
 TEST_EMAIL_ID = 'test.gettalent@gmail.com'
+
+
+class EmailCampaignTypes(object):
+    """
+    This defines 2 types of email-campaigns
+    """
+    WITH_CLIENT = 'with_client'
+    WITHOUT_CLIENT = 'without_client'
+
 
 def create_email_campaign(user):
     """
@@ -87,21 +99,6 @@ def create_smartlist_with_given_email_candidate(access_token, campaign,
                                      email_campaign_id=campaign.id)
 
     return campaign
-
-
-def delete_campaign(campaign):
-    """
-    This deletes the campaign created during tests from database
-    :param campaign: EmailCampaign object
-    """
-    try:
-        with app.app_context():
-            if isinstance(campaign, dict):
-                EmailCampaign.delete(campaign['id'])
-            else:
-                EmailCampaign.delete(campaign.id)
-    except Exception:
-        pass
 
 
 def assert_valid_campaign_get(email_campaign_dict, referenced_campaigns, fields=None):
@@ -180,33 +177,37 @@ def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
             "Response's email campaign fields should match the expected email campaign fields"
 
 
-def assert_and_delete_email(subject):
+def assert_and_delete_email(subject, username=app.config[TalentConfigKeys.GT_GMAIL_ID],
+                            password=app.config[TalentConfigKeys.GT_GMAIL_PASSWORD]):
     """
     Asserts that the user received the email in his inbox which has the given subject.
     It then deletes the email from the inbox.
-    :param subject:       Email subject
+    :param string subject:       Email subject
+    :param string username: Username for login
+    :param string password: Password to login to given account
     """
-    mail_connection = imaplib.IMAP4_SSL('imap.gmail.com')
     try:
-        mail_connection.login(app.config[TalentConfigKeys.GT_GMAIL_ID],
-                              app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
-    except Exception as error:
+        mail_connection = imaplib.IMAP4_SSL('imap.gmail.com')
+        if mail_connection.state == 'NONAUTH':  # Makes sure not we are not logged-in already
+            mail_connection.login(username, password)
+        print "Checking for Email with subject: %s" % subject
+        mail_connection.select("inbox")  # connect to inbox.
+        # search the inbox for given email-subject
+        result, [msg_ids] = mail_connection.search(None, '(SUBJECT "%s")' % subject)
+        if msg_ids:
+            print "Email(s) found with subject: %s" % subject
+            msg_ids = ','.join(msg_ids.split(' '))
+            # Change the Deleted flag to delete the email from Inbox
+            mail_connection.store(msg_ids, '+FLAGS', r'(\Deleted)')
+            status, response = mail_connection.expunge()
+            assert status == 'OK'
+            print "Email(s) deleted with subject: %s" % subject
+            mail_connection.close()
+            mail_connection.logout()
+    except imaplib.IMAP4_SSL.error as error:
         print error.message
-        pass  # Maybe already login when running on Jenkins on multiple cores
-    print "Checking for Email with subject: %s" % subject
-    mail_connection.select("inbox")  # connect to inbox.
-    # search the inbox for given email-subject
-    result, [msg_ids] = mail_connection.search(None, '(SUBJECT "%s")' % subject)
-    if msg_ids:
-        print "Email(s) found with subject: %s" % subject
-        msg_ids = ','.join(msg_ids.split(' '))
-        # Change the Deleted flag to delete the email from Inbox
-        mail_connection.store(msg_ids, '+FLAGS', r'(\Deleted)')
-        status, response = mail_connection.expunge()
-        assert status == 'OK'
-        print "Email(s) deleted with subject: %s" % subject
-        mail_connection.close()
-        mail_connection.logout()
+        raise  # Raise any error raised by IMAP server
+
     assert msg_ids
     return msg_ids
 
@@ -246,9 +247,9 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
                                                   campaign.id)
         if not email_client:
             assert retry(assert_and_delete_email, sleeptime=3, attempts=130, sleepscale=1,
-                         args=(campaign.subject,), retry_exceptions=(AssertionError,)),\
-                   "Email with subject %s was not found at time: %s." % (campaign.subject,
-                                                                         str(datetime.datetime.utcnow()))
+                         args=(campaign.subject,), retry_exceptions=(AssertionError, imaplib.IMAP4_SSL.error)), \
+                "Email with subject %s was not found at time: %s." % (campaign.subject,
+                                                                      str(datetime.datetime.utcnow()))
 
     # For each url_conversion record we assert that source_url is saved correctly
     for send_url_conversion in sends_url_conversions:
@@ -480,9 +481,8 @@ def send_campaign_helper(request, email_campaign, access_token):
     """
     This is a helper function to send campaign with and without email_client_id
     """
-    if request.param == 'with_client':
+    if request.param == EmailCampaignTypes.WITH_CLIENT:
         email_campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
     # send campaign
-    CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND,
-                                        email_campaign, access_token)
+    CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND, email_campaign, access_token)
     return email_campaign

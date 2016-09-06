@@ -475,7 +475,7 @@ def test_already_exists_candidate(token_fixture, user_fixture):
 def fetch_resume_post_response(token_fixture, file_name, create_mode=False):
     """Posts file to local test auth server for json formatted resumes."""
     current_dir = os.path.dirname(__file__)
-    with open(os.path.join(current_dir, 'resume_files/{}'.format(file_name)), 'rb') as resume_file:
+    with open(os.path.join(current_dir, 'files/{}'.format(file_name)), 'rb') as resume_file:
         response = requests.post(ResumeApiUrl.PARSE,
                                  headers={'Authorization': 'Bearer {}'.format(
                                      token_fixture.access_token)},

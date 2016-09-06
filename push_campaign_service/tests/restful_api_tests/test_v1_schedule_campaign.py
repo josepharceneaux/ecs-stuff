@@ -46,10 +46,10 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_schedu
                                                         schedule_campaign, reschedule_campaign, unschedule_campaign,
                                                         get_campaign, match_schedule_data)
 from push_campaign_service.common.utils.test_utils import (invalid_data_test, unexpected_field_test,
-                                                           missing_keys_test, unauthorize_test, invalid_value_test)
+                                                           missing_keys_test, invalid_value_test, assert_activity)
 from push_campaign_service.common.utils.handy_functions import (send_request)
 from push_campaign_service.common.routes import PushCampaignApiUrl
-from push_campaign_service.common.models.misc import Frequency
+from push_campaign_service.common.models.misc import Frequency, Activity
 
 URL = PushCampaignApiUrl.SCHEDULE
 
@@ -132,6 +132,11 @@ class TestScheduleCampaignUsingPOST(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
+
+        # There should be a campaign schedule activity
+        assert_activity(Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_in_db['id'], 'push_campaign', token_first)
+
+
         campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
         match_schedule_data(data, campaign)
         # retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
@@ -154,6 +159,10 @@ class TestScheduleCampaignUsingPOST(object):
         assert task_id
         campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
         match_schedule_data(data, campaign)
+
+        # There should be a campaign schedule activity
+        assert_activity(Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_in_db['id'], 'push_campaign', token_same_domain)
+
         # retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
         #       args=(campaign_id, token_first), kwargs={'count': 1})
 

@@ -48,8 +48,8 @@ class CampaignsTestsHelpers(object):
     INVALID_STRING = INVALID_ID[1:]
     # This list is used to schedule/reschedule a campaign e.g. sms-campaign with invalid frequency Id.
     INVALID_FREQUENCY_IDS = copy.copy(INVALID_ID)
-    # Remove 0 from list as it is valid frequency_id and replace it with three digit frequency_id
-    INVALID_FREQUENCY_IDS[1] = int(fake.numerify())
+    # Remove 0 from list as it is valid frequency_id and replace it with sys.maxint
+    INVALID_FREQUENCY_IDS[1] = sys.maxint
 
     # Invalid values for required text field
     INVALID_TEXT_VALUES = ['', '  ', 0,  {}, [], None, True]
@@ -427,6 +427,7 @@ class CampaignsTestsHelpers(object):
         campaign_id = campaign.id if hasattr(campaign, 'id') else campaign['id']
         send_url = url % campaign_id
         response = send_request('post', send_url, access_token)
+        print 'Campaign object:%s' % campaign.to_dict() if hasattr(campaign, 'to_dict') else campaign
         assert response.ok, response.text
         if blasts_url:
             blasts_url = blasts_url % campaign_id

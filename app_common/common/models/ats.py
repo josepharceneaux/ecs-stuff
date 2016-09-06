@@ -45,14 +45,21 @@ class ATS(db.Model):
         return cls.query.filter_by(name=ats_name).first()
 
     @classmethod
+    def get_all(cls):
+        """
+        Retrieve all ATS entries and return as JSON.
+        :rtype list:
+        """
+        return [ats.to_dict() for ats in ATS.query.all()]
+
+    @classmethod
     def get_all_as_json(cls):
         """
         Retrieve all ATS entries and return as JSON.
         :rtype: str
         """
-        return_json = [ats.to_dict() for ats in ATS.query.all()]
 
-        return json.dumps(return_json)
+        return json.dumps(ATS.get_all())
 
 
 class ATSAccount(db.Model):
@@ -77,12 +84,21 @@ class ATSAccount(db.Model):
                  'ats_credential_id' : self.ats_credential_id }
 
     @classmethod
+    def get_user_accounts(cls, user_id):
+        """
+        Retrieve all ATS accounts of a user.
+        :param int user_id: id of the GT user.
+        :rtype list[ATSAccount]:
+        """
+        return cls.query.filter_by(user_id=user_id).all()
+
+    @classmethod
     def get_account(cls, user_id, ats_name):
         """
         Retrieve a specific ATS account of a user.
         :param int user_id: id of the GT user.
         :param str ats_name: name of the ATS.
-        :rtype: ATSAccount
+        :rtype ATSAccount|None:
         """
         accounts = cls.query.filter_by(user_id=user_id).all()
         for a in accounts:
@@ -115,10 +131,16 @@ class ATSCandidate(db.Model):
     """
     __tablename__ = 'ats_candidate'
     id = db.Column(db.Integer, primary_key=True)
+    # ID in ATS table
     ats_account_id = db.Column(db.Integer)
+    # Candidate ID in the remote ATS
     ats_remote_id = db.Column(db.String(100))
+    # getTalent candidate ID, if linked
     gt_candidate_id = db.Column(db.Integer)
+    # ID into the ATSCandidateProfile table
     profile_id = db.Column(db.Integer)
+    # ID into an ATS-specific table
+    ats_table_id = db.Column(db.Integer)
     added_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
@@ -136,9 +158,20 @@ class ATSCandidate(db.Model):
         Return all ATS candidates associated with this account.
 
         :param int account_id: primary key of the account.
-        :rtype list: list of candidates.
+        :rtype list|None: list of candidates.
         """
-        return cls.query.filter_by(ats_account_id=account_id).all()
+        candidate_list = cls.query.filter_by(ats_account_id=account_id).all()
+        if not candidate_list:
+            return
+
+        return_list = []
+        for candidate in candidate_list:
+            item = candidate.to_dict()
+            profile = ATSCandidateProfile.get(candidate.profile_id)
+            item.update(profile.to_dict())
+            return_list.append({candidate.id : item})
+
+        return return_list
 
     @classmethod
     def get_all_as_json(cls, account_id):
@@ -146,20 +179,25 @@ class ATSCandidate(db.Model):
         Return all ATS candidates associated with this account as JSON.
 
         :param int account_id: primary key of the account.
-        :rtype str: JSON list of candidates.
+        :rtype str|None: JSON list of candidates.
         """
         candidates = ATSCandidate.get_all(account_id)
         if not candidates:
             return
 
-        return_json = []
-        for c in candidates:
-            item = c.to_dict()
-            profile = ATSCandidateProfile.get(c.profile_id)
-            item.update(profile.to_dict())
-            return_json.append({c.id : item})
+        return json.dumps(candidates)
 
-        return json.dumps(return_json)
+    @classmethod
+    def get_by_ats_id(cls, account_id, ats_id):
+        """
+        Retrive a candidate by ATS account and remote ATS id.
+
+        :param int account_id: primary key of the account.
+        :param int ats_id: Id of the candidate in the remote ATS.
+        :rtype list: A candidate.
+        """
+        # TODO Test this.
+        return cls.query.filter(cls.ats_account_id==account_id, cls.ats_remote_id==ats_id).first()
 
     def __repr__(self):
         return "<ATS Candidate (id = %r)>" % self.ats_remote_id

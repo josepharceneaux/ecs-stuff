@@ -9,8 +9,6 @@ import base64
 # Third Party/Framework Specific.
 from contracts import contract
 from flask import current_app
-import json
-import requests
 # Module Specific
 from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.constants import error_constants
@@ -19,7 +17,7 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.ocr_lib import google_vision_ocr
 from resume_parsing_service.app.views.pdf_utils import (convert_pdf_to_text, convert_pdf_to_png,
                                                         decrypt_pdf)
-from resume_parsing_service.common.error_handling import InvalidUsage, InternalServerError
+from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.common.utils.talent_s3 import boto3_put
 
 
@@ -67,10 +65,10 @@ def parse_resume(file_obj, filename_str, cache_key):
     else:
         doc_content = file_obj.getvalue()
 
-    if not doc_content or len(doc_content) < 10:
+    if not doc_content or len(doc_content) < 10: #  If doc content is < 10 not worth parsing.
         bucket = current_app.config['S3_BUCKET_NAME']
         boto3_put(file_obj.getvalue(), bucket, filename_str, 'FailedResumes')
-        logger.exception("Unable to determine the contents of the document: {}".format(filename_str))
+        logger.exception("Unable to determine the documents contents of: {}".format(filename_str))
         raise InvalidUsage(
             error_message=error_constants.NO_TEXT_EXTRACTED['message'],
             error_code=error_constants.NO_TEXT_EXTRACTED['code']

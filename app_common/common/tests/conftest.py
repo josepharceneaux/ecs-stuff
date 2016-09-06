@@ -18,9 +18,11 @@ from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 
 # Application Specific
 from ..models.db import db
-from ..models.user import (Client, Domain, User, Token)
+from ..models.user import (Client, Domain, User, Token, Role)
 from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline)
 from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField, CustomFieldCategory)
+from ..utils.handy_functions import send_request
+from ..routes import UserServiceApiUrl
 
 fake = Faker()
 ISO_FORMAT = '%Y-%m-%d %H:%M'
@@ -154,6 +156,60 @@ def domain_aois(domain_first):
     return AreaOfInterest.get_domain_areas_of_interest(domain_id=domain_first.id)
 
 
+# TODO: Update code once the API is updated to accept a list of dicts for creating multiple domain sources - Amir
+@pytest.fixture()
+def domain_source(access_token_first, user_first):
+    """
+    Creates a source in domain_first using the API
+    :rtype:  dict
+    """
+    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+    db.session.commit()
+
+    source_1_data = {'source': {
+        'description': 'test_source_{}'.format(str(uuid.uuid4())[0:3])},
+        'notes': fake.sentence()
+    }
+
+    # Create domain source
+    create_response = send_request('post', UserServiceApiUrl.DOMAIN_SOURCES, access_token_first, source_1_data)
+    assert create_response.status_code == requests.codes.CREATED
+
+    # Retrieve domain source
+    source_id = create_response.json()['source']['id']
+    get_response = send_request('get', UserServiceApiUrl.DOMAIN_SOURCE % str(source_id), access_token_first)
+    assert get_response.status_code == requests.codes.OK
+
+    return get_response.json()
+
+
+# TODO: Update code once the API is updated to accept a list of dicts for creating multiple domain sources - Amir
+@pytest.fixture()
+def domain_source_2(access_token_first, user_first):
+    """
+    Creates a source in domain_first using the API
+    :rtype:  dict
+    """
+    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+    db.session.commit()
+
+    source_1_data = {'source': {
+        'description': 'test_source_{}'.format(str(uuid.uuid4())[0:3])},
+        'notes': fake.sentence()
+    }
+
+    # Create domain source
+    create_response = send_request('post', UserServiceApiUrl.DOMAIN_SOURCES, access_token_first, source_1_data)
+    assert create_response.status_code == requests.codes.CREATED
+
+    # Retrieve domain source
+    source_id = create_response.json()['source']['id']
+    get_response = send_request('get', UserServiceApiUrl.DOMAIN_SOURCE % str(source_id), access_token_first)
+    assert get_response.status_code == requests.codes.OK
+
+    return get_response.json()
+
+
 @pytest.fixture()
 def domain_custom_fields(domain_first):
     """
@@ -271,7 +327,7 @@ def domain_second():
 
 
 @pytest.fixture()
-def first_group(request, domain_first):
+def first_group(domain_first):
 
     user_group = UserGroup(name=gen_salt(20), domain_id=domain_first.id)
     db.session.add(user_group)
