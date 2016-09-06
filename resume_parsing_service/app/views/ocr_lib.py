@@ -27,8 +27,8 @@ def google_vision_ocr(file_array):
     :rtype: string
     """
     results = u''
-    for f in file_array:
-        b64_string = base64.b64encode(f.getvalue())
+    for resume in file_array:
+        b64_string = base64.b64encode(resume.getvalue())
         req_data = {
             "requests": [
                 {
