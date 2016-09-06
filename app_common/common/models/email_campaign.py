@@ -302,11 +302,11 @@ class UserEmailTemplate(db.Model):
     name = db.Column('Name', db.String(255), nullable=False)
     body_html = db.Column('EmailBodyHtml', db.Text)
     body_text = db.Column('EmailBodyText', db.Text)
-    template_folder_id = db.Column('EmailTemplateFolderId', db.Integer, db.ForeignKey('email_template_folder.id',
-                                                                                      ondelete=u'SET NULL'), index=True)
+    template_folder_id = db.Column('EmailTemplateFolderId', db.Integer,
+                                   db.ForeignKey('email_template_folder.id', ondelete=u'SET NULL'), index=True)
     is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text(
-            "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False,
+                                 server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
 
     # Relationships
     template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
@@ -324,7 +324,7 @@ class UserEmailTemplate(db.Model):
     @classmethod
     def get_by_domain_id(cls, domain_id):
         """
-        This returns user-email-templates in given domain_id.
+        This returns query object to get email-templates in given domain_id.
         :param int|long domain_id: Id of domain of user
         :rtype: sqlalchemy.orm.query.Query
         """

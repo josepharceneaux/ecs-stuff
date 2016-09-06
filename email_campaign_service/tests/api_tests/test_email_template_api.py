@@ -14,7 +14,7 @@ from email_campaign_service.common.models.email_campaign import UserEmailTemplat
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.tests.modules.handy_functions import (request_to_email_template_resource,
-                                                                  template_body, update_email_template,
+                                                                  EMAIL_TEMPLATE_BODY, update_email_template,
                                                                   add_email_template, assert_valid_template_object,
                                                                   data_to_create_email_template,
                                                                   post_to_email_template_resource)
@@ -66,7 +66,7 @@ class TestEmailTemplates(object):
         Here we create an email-template. Response should be OK.
         """
         # Add Email template
-        template_data = data_to_create_email_template(headers, user_first, template_body())
+        template_data = data_to_create_email_template(headers, user_first, EMAIL_TEMPLATE_BODY)
         response = post_to_email_template_resource(headers, data=template_data)
         assert response.status_code == codes.CREATED
         assert response.json()
@@ -90,8 +90,8 @@ class TestEmailTemplates(object):
         :param user_first: sample user
         """
         # Add Email template
-        template_data = data_to_create_email_template(headers, user_first, template_body())
-        template_data['name'] = fake.word()
+        template_data = data_to_create_email_template(headers, user_first, EMAIL_TEMPLATE_BODY)
+        template_data['name'] = fake.word() + str(datetime.datetime.utcnow().microsecond)
         response = post_to_email_template_resource(headers, data=template_data)
         assert response.status_code == codes.CREATED
         assert response.json()
@@ -144,7 +144,7 @@ class TestEmailTemplates(object):
         """
         # Empty template name
         template_name = ''
-        data = data_to_create_email_template(headers, user_first, template_body())
+        data = data_to_create_email_template(headers, user_first, EMAIL_TEMPLATE_BODY)
         data['name'] = template_name
         response = post_to_email_template_resource(headers, data=data)
         assert response.status_code == requests.codes.BAD_REQUEST

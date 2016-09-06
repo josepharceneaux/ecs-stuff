@@ -41,6 +41,10 @@ __author__ = 'basit'
 
 TEST_EMAIL_ID = 'test.gettalent@gmail.com'
 ON = 1  # Global variable for comparing value of is_immutable in the functions to avoid hard-coding 1
+EMAIL_TEMPLATE_BODY = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
+                      '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
+                      '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through ' \
+                      'script</p>\r\n</body>\r\n</html>\r\n'
 
 
 def create_email_campaign(user):
@@ -257,9 +261,9 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
                                                   campaign.id)
         if not email_client:
             assert retry(assert_and_delete_email, sleeptime=3, attempts=130, sleepscale=1,
-                         args=(campaign.subject,), retry_exceptions=(AssertionError,)),\
-                   "Email with subject %s was not found at time: %s." % (campaign.subject,
-                                                                         str(datetime.datetime.utcnow()))
+                         args=(campaign.subject,), retry_exceptions=(AssertionError,)), \
+                "Email with subject %s was not found at time: %s." % (campaign.subject,
+                                                                      str(datetime.datetime.utcnow()))
 
     # For each url_conversion record we assert that source_url is saved correctly
     for send_url_conversion in sends_url_conversions:
@@ -315,6 +319,7 @@ def get_template_folder(headers):
 def data_to_create_email_template(headers, template_owner, body_html='', body_text=''):
     """
     This returns data to create an email-template with params provided
+    :rtype: dict
     """
     # Get Template Folder Id
     template_folder_id, template_folder_name = get_template_folder(headers)
@@ -363,8 +368,9 @@ def update_email_template(email_template_id, request, token, user_id, template_n
 def add_email_template(headers, template_owner):
     """
     This function will create email template with valid data.
+    :rtype: dict
     """
-    data = data_to_create_email_template(headers, template_owner, template_body())
+    data = data_to_create_email_template(headers, template_owner, EMAIL_TEMPLATE_BODY)
     response = post_to_email_template_resource(headers, data=data)
     json_response = response.json()
     assert response.status_code == codes.CREATED, response.text
@@ -375,13 +381,6 @@ def add_email_template(headers, template_owner):
             "template_folder_id": data['template_folder_id'],
             "is_immutable": data['is_immutable'],
             "domain_id": template_owner.domain_id}
-
-
-def template_body():
-    return '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
-           '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
-           '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through script</p>' \
-           '\r\n</body>\r\n</html>\r\n'
 
 
 def create_email_campaign_via_api(access_token, data, is_json=True):
