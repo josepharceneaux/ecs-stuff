@@ -20,6 +20,7 @@ from talentbot_service.modules.talentbot import TalentBot
 class FacebookBot(TalentBot):
     def __init__(self, questions, bot_name, error_messages):
         TalentBot.__init__(self, questions, bot_name, error_messages)
+        self.time_stamp = None
 
     def authenticate_user(self):
         """

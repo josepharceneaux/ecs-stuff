@@ -96,8 +96,10 @@ def handle_incoming_messages():
     data = request.json
     sender = data['entry'][0]['messaging'][0]['sender']['id']
     msg = data['entry'][0]['messaging'][0].get('message')
-    # current_timestamp = data['entry'][0]['messaging'][0]['timestamp']
-    if msg:
+    current_timestamp = data['entry'][0]['messaging'][0]['timestamp']
+    print 'current timestamp:', current_timestamp, 'old timestamp:', facebook_bot.time_stamp
+    if msg and current_timestamp != facebook_bot.time_stamp:
+        facebook_bot.time_stamp = current_timestamp
         message = data['entry'][0]['messaging'][0]['message']['text']
         facebook_bot.handle_communication(sender, message)
     return "ok"

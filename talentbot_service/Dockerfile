@@ -2,11 +2,11 @@ FROM gettalent/base-service-container:latest
 
 # Add files
 WORKDIR /root/base_service_container
-ADD . email_campaign_service
-WORKDIR /root/base_service_container/email_campaign_service
+ADD . talentbot_service
+WORKDIR /root/base_service_container/talentbot_service
 
 # Replace app name in config Loggly and NewRelic config files
-RUN sed -i -e 's/APP_NAME/email_campaign_service/g' newrelic.ini /etc/rsyslog.d/*loggly.conf
+RUN sed -i -e 's/APP_NAME/talentbot_service/g' newrelic.ini /etc/rsyslog.d/*loggly.conf
 
 EXPOSE 80
 
