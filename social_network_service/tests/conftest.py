@@ -356,6 +356,7 @@ def eventbrite_event_second(request, test_eventbrite_credentials, eventbrite, ev
 
     _event = response_get.json()['event']
     _event['venue_id'] = _event['venue']['id']
+    _event['organizer_id'] = _event['event_organizer']['id']
     del _event['venue']
     del _event['event_organizer']
 

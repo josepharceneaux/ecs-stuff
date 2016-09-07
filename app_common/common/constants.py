@@ -20,4 +20,4 @@ REDIS2 = 'REDIS2'
 """
 MEETUP = 'meetup'
 AUTH = 'auth'
-API = 'API'
+API = 'api'

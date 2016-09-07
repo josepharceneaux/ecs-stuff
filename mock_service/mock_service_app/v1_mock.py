@@ -68,6 +68,7 @@ class MockServer(Resource):
 
     def mock_endpoint(self, url_type, social_network):
         """
+        #TODO:
         Mock endpoint
         :param url_type: auth url or api url
         :type url_type: str | basestring
@@ -85,6 +86,7 @@ class MockServer(Resource):
             raise NotFoundError("Vendor '{}' not found or mocked yet." % social_network)
         request_method = request.method
 
+        # TODO:
         splitted_data = relative_url.split('/')
         if len(splitted_data) > 2 and splitted_data[2].isdigit():
             relative_url = '/' + splitted_data[1]
@@ -97,11 +99,13 @@ class MockServer(Resource):
         try:
             if request.content_type == 'application/x-www-form-urlencoded' or request.content_type == '':
                 data = dict()
+                # TODO:
                 [data.update({k: v}) for k, v in request.values.iteritems()]
             elif request.content_type == 'application/json':
                 data = request.json()
             else:
                 data = request.data
+            # TODO:
             mocked_json = vendor_data(url_type, resource_id)[relative_url][request_method]
             mock_api = MockApi(mocked_json, payload=data, headers=request.headers)
             response, status_code = mock_api.get_response()
