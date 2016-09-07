@@ -136,8 +136,7 @@ def send_candidate_references(candidate_references, candidate_id, oauth_string):
     """
     post_body = {
         'candidate_references': [
-            #  Name is a required key but not parsed by Burning Glass presently.
-            {'comments': candidate_references, 'name': None}
+            {'comments': candidate_references}
         ]
     }
 

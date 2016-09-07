@@ -95,6 +95,7 @@ def convert_pdf_to_png(file_obj):
             error_code=error_constants.IMAAS_UNAVAILABLE['code']
         )
 
+    #  This lambda will return 200 on success so any non 200 should be caught.
     if conversion_response.status_code != requests.codes.ok:
         logger.error('Non 200 received from IMaaS - {}'.format(conversion_response.content))
         raise InternalServerError(
@@ -105,6 +106,8 @@ def convert_pdf_to_png(file_obj):
     content = json.loads(conversion_response.content)
     img_data = content.get('img_data')
 
+    #  Lambda may return a 200 response with json like {'error': 'Some error occurred OH NOES'.
+    #  This may happen on out of memory or lambda timeout errors (iirc).
     if not img_data:
         logger.error('No img_data received from IMaaS - {}'.format(conversion_response.content))
         raise InternalServerError(
