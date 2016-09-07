@@ -9,6 +9,7 @@ where n is incremented for each deployment based on the existing deployment dire
 This has been modified and linted from https://github.com/youngsoul/AlexaDeploymentSample
 """
 import argparse
+from shutil import copyfile
 
 from resume_parsing_service.common.utils.lambda_utils import (
     _copy_deployment_files,
@@ -19,7 +20,7 @@ from resume_parsing_service.common.utils.lambda_utils import (
 
 ROOT_DEPLOYMENTS_DIR = "./deployments"
 DEPLOYMENT_FILES = [
-    '/usr/lib64/libmysqlclient.so.18',
+    'libmysqlclient.so.18',
     'email_process.py',
     'models.py',
     'python.conf'
@@ -40,9 +41,13 @@ elif args.env == 'staging':
     print 'Building a staging deployment'
     DEPLOYMENT_FILES.append('settings/staging/settings.py')
 
+def replace_mysql_deps(NEW_DEPLOYMENT_DIR):
+    copyfile('_mysql.so', NEW_DEPLOYMENT_DIR + '/_mysql.so')
+
 
 if __name__ == "__main__":
     (NEW_DEPLOYMENT_DIR, CURRENT_DEPLOYMENT_NAME) = make_deployment_dir(ROOT_DEPLOYMENTS_DIR)
     _copy_deployment_files(NEW_DEPLOYMENT_DIR, DEPLOYMENT_FILES)
-    _copy_virtual_env_libs(NEW_DEPLOYMENT_DIR, args.venv, lib64=True)
+    _copy_virtual_env_libs(NEW_DEPLOYMENT_DIR, args.venv, lib64=False) #previously True
+    replace_mysql_deps(NEW_DEPLOYMENT_DIR)
     zipdir(NEW_DEPLOYMENT_DIR, "{0}/{1}.zip".format(ROOT_DEPLOYMENTS_DIR, CURRENT_DEPLOYMENT_NAME))
