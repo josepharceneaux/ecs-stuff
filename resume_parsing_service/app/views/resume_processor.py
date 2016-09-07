@@ -78,13 +78,10 @@ def process_resume(parse_params):
     if not candidate_created:
         # We must update!
         parsed_resume['candidate']['id'] = candidate_id
-        candidate_updated = update_candidate_from_resume(
-            parsed_resume['candidate'], oauth_string, filename_str)
+        update_candidate_from_resume(parsed_resume['candidate'], oauth_string, filename_str)
 
-    # TODO: Blocked by Get-1627.
-    # References have their own endpoint and are not part of /candidates POSTed data.
-    # if candidate_references:
-    #     send_candidate_references(candidate_references, candidate_id, oauth_string)
+    if candidate_references:
+        send_candidate_references(candidate_references, candidate_id, oauth_string)
 
     candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id,
                                           headers={'Authorization': oauth_string})
