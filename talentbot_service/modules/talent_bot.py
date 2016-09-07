@@ -13,6 +13,7 @@ from abc import abstractmethod
 # App specific imports
 from constants import BEST_QUESTION_MATCH_RATIO
 from talentbot_service.modules.question_handler import QuestionHandler
+from talentbot_service import logger
 # 3rd party imports
 from fuzzywuzzy import fuzz
 # TODO: I have some code related to Twilio. Kindly see sms_campaign_service/modeuls/handy_functions.py
@@ -40,8 +41,8 @@ class TalentBot:
         self.bot_name = bot_name
         self.error_messages = error_messages
 
-    @classmethod
-    def clean_user_message(cls, message):
+    @staticmethod
+    def clean_user_message(message):
         """
         Removes '?','.',':' and spaces from user's message
         :param str message: User's message
@@ -74,8 +75,8 @@ class TalentBot:
             return message_handler(message_tokens)
         return random.choice(self.error_messages)
 
-    @classmethod
-    def tokenize_message(cls, message):
+    @staticmethod
+    def tokenize_message(message):
         """
         Splits message using space and ',' as separators
         :param str message: User's message
@@ -83,8 +84,8 @@ class TalentBot:
         """
         return re.split(' |,', message)
 
-    @classmethod
-    def match_question(cls, message, question):
+    @staticmethod
+    def match_question(message, question):
         """
         Matches user message with predefined messages and returns matched ratio
         :param str message: User message
@@ -92,24 +93,8 @@ class TalentBot:
         :return: int partial_ratio
         """
         partial_ratio = fuzz.partial_ratio(message.lower(), question)
-        print message + ': ', partial_ratio
+        logger.info(message + ': '+partial_ratio.__str__()+'% matched')
         return partial_ratio
-
-    @classmethod
-    def parse_skills(cls, skills_list):
-        """
-        Converts space separated skills to comma separated skills
-        :param list skills_list: List which contains space separated skills
-        :return: str parsed_skills
-        """
-        parsed_skills = '('
-        for skill in skills_list:
-            temp = '"' + skill.lower() + '"'
-            if skills_list.index(skill) < len(skills_list) - 1:
-                temp += ','
-            parsed_skills += temp
-        parsed_skills += ')'
-        return parsed_skills
 
     @abstractmethod
     def authenticate_user(self):

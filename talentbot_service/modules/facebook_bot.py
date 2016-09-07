@@ -14,7 +14,7 @@ from talentbot_service.modules.constants import FACEBOOK_MESSAGE_LIMIT, FACEBOOK
 from talentbot_service import app
 from talentbot_service.common.talent_config_manager import TalentConfigKeys
 from talentbot_service.common.utils.handy_functions import send_request
-from talentbot_service.modules.talentbot import TalentBot
+from talentbot_service.modules.talent_bot import TalentBot
 
 
 class FacebookBot(TalentBot):
@@ -51,13 +51,13 @@ class FacebookBot(TalentBot):
             else:
                 self.reply(user_id, response_generated)
             self.sender_action(user_id, "typing_off")
-        except Exception:
+        except (IndexError, NameError, KeyError):
             error_response = random.choice(self.error_messages)
             self.reply(user_id, error_response)
             self.sender_action(user_id, "typing_off")
 
-    @classmethod
-    def sender_action(cls, user_id, action):
+    @staticmethod
+    def sender_action(user_id, action):
         """
         Lets Facebook know what bot's doing e.g: typing_on or typing_off
         :param str user_id: Facebook user Id
@@ -71,8 +71,8 @@ class FacebookBot(TalentBot):
                      params={'access_token': app.config[TalentConfigKeys.FACEBOOK_ACCESS_TOKEN]},
                      data=data)
 
-    @classmethod
-    def reply(cls, user_id, msg):
+    @staticmethod
+    def reply(user_id, msg):
         """
         Replies to facebook user
         :param str user_id: facebook user id who has sent us message

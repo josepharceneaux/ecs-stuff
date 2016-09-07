@@ -1,12 +1,13 @@
 __author__ = 'ufarooqi'
 
-from sqlalchemy import or_, and_, extract
 import json
 from db import db
 from datetime import datetime, timedelta
 from sqlalchemy.dialects.mysql import TINYINT
 from user import Domain, UserGroup, User
 from candidate import Candidate
+# 3rd party imports
+from sqlalchemy import or_, and_, extract
 
 
 class TalentPool(db.Model):

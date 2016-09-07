@@ -8,11 +8,11 @@ with SMS.
 """
 # Builtin import
 import random
-
+# App specific imports
 from talentbot_service.modules.constants import TEXT_MESSAGE_MAX_LENGTH
 from twilio.rest import TwilioRestClient
-
-from talentbot_service.modules.talentbot import TalentBot
+from talentbot_service.modules.talent_bot import TalentBot
+from talentbot_service import logger
 
 
 class SmsBot(TalentBot):
@@ -36,23 +36,24 @@ class SmsBot(TalentBot):
         :param str response: Response message from bot
         :param str recipient: User's mobile number
         """
+        # Twilio sms text doesn't seem to support'[' and ']'
+        response = response.replace('[', '(')
+        response = response.replace(']', ')')
         if len(response) > self.standard_sms_length:
             tokens = response.split('\n')
             total_segments, dict_of_segments = self.get_total_sms_segments(tokens)
-            segment_indexer = 1
-            while segment_indexer <= total_segments:
+            for segment_indexer in dict_of_segments:
                 segment = dict_of_segments.get(segment_indexer) + \
                         "("+str(segment_indexer)+"/"+str(total_segments) + ")"
                 message = self.twilio_client.messages.create(to=recipient, from_=self.twilio_number,
                                                              body=segment)
-                segment_indexer += 1
-                print 'Twilio response status: ', message.status
-                print 'message body:', segment
+                logger.info('Twilio response status: ' + message.status)
+                logger.info('message body:' + segment)
         else:
             message = self.twilio_client.messages.create(to=recipient, from_=self.twilio_number,
                                                          body=response)
-            print 'SMS Reply: ', response
-            print 'Twilio response status: ', message.status
+            logger.info('SMS Reply: ' + response)
+            logger.info('Twilio response status: ' + message.status)
 
     def handle_communication(self, message, recipient):
         """
@@ -63,12 +64,12 @@ class SmsBot(TalentBot):
         try:
             response_generated = self.parse_message(message)
             self.reply(response_generated, recipient)
-        except Exception:
+        except (IndexError, NameError, KeyError):
             error_response = random.choice(self.error_messages)
             self.reply(error_response, recipient)
 
-    @classmethod
-    def get_total_sms_segments(cls, tokens):
+    @staticmethod
+    def get_total_sms_segments(tokens):
         """
         Breaks list of string lines into message segments and appends
         these segments in a dict with segment numbers as keys

@@ -9,17 +9,23 @@ with Slack.
 """
 # Builtin imports
 import random
-
+# App specific import
+from talentbot_service.common.error_handling import NotFoundError
+from talentbot_service.modules.talent_bot import TalentBot
+from talentbot_service import logger
+# 3rd party imports
 from slackclient import SlackClient
-
-from talentbot_service.modules.talentbot import TalentBot
 
 
 class SlackBot(TalentBot):
     def __init__(self, slack_bot_token, questions, bot_name, error_messages):
         TalentBot.__init__(self, questions, bot_name, error_messages)
         self.slack_client = SlackClient(slack_bot_token)
-        self.at_bot = self.get_bot_id()
+        try:
+            self.at_bot = self.get_bot_id()
+            self.set_bot_state_active()
+        except NotFoundError as error:
+            logger.error(error.message)
 
     def authenticate_user(self):
         """
@@ -39,11 +45,10 @@ class SlackBot(TalentBot):
             users = api_call.get('members')
             for user in users:
                 if 'name' in user and user.get('name') == self.bot_name:
-                    print "Bot ID for %s is %s" % (user['name'], user.get('id'))
+                    logger.info("Bot ID for %s is %s" % (user['name'], user.get('id')))
                     temp_at_bot = '<@' + user.get('id') + '>'
                     return temp_at_bot
-        print("could not find bot user with the name " + self.bot_name)
-        return None
+        raise NotFoundError("could not find bot user with the name " + self.bot_name)
 
     def set_bot_state_active(self):
         """
@@ -51,7 +56,7 @@ class SlackBot(TalentBot):
         """
         self.slack_client.rtm_connect()
         api_call_response = self.slack_client.api_call("users.setActive")
-        print 'bot state is active: ', api_call_response.get('ok')
+        logger.info('bot state is active: ' + api_call_response.get('ok').__str__())
 
     def reply(self, chanel_id, msg):
         """
@@ -59,7 +64,7 @@ class SlackBot(TalentBot):
         :param str chanel_id: Slack channel id
         :param str msg: Message received to bot
         """
-        print 'message:', msg
+        logger.info('slack reply:' + msg)
         self.slack_client.api_call("chat.postMessage", channel=chanel_id,
                                    text=msg, as_user=True)
 
@@ -72,6 +77,6 @@ class SlackBot(TalentBot):
         try:
             response_generated = self.parse_message(message)
             self.reply(channel_id, response_generated)
-        except Exception:
+        except (IndexError, NameError, KeyError):
             error_response = random.choice(self.error_messages)
             self.reply(channel_id, error_response)

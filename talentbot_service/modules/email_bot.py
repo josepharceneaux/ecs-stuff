@@ -7,11 +7,10 @@ with Email.
 """
 # Builtin imports
 import random
-
 import requests
+# App specific imports
 from talentbot_service.modules.constants import MAILGUN_FROM
-
-from talentbot_service.modules.talentbot import TalentBot
+from talentbot_service.modules.talent_bot import TalentBot
 
 
 class EmailBot(TalentBot):
@@ -39,17 +38,16 @@ class EmailBot(TalentBot):
         :return: response
         """
         # TODO: we are using Amazon SES to send emails currently. Maybe we can use that.
-        return requests.post(
-            self.mailgun_sending_endpoint,
-            auth=("api", self.mailgun_api_key),
-            data={"from": sender,
-                  "to": recipient,
-                  "subject": subject,
-                  "html": '<html><img src="' + self.bot_image + '" style="width: 9%;'
-                                                                'display: inline;"><h5 '
-                                                                'style="display: table-cell;'
-                                                                'vertical-align: top;margin-left: 1%;">'
-                          + message + '</h5></html>'})
+        html = '<html><img src="' + self.bot_image + '" style="width: 9%; display:'\
+                                                     ' inline;"><h5 style="display:'\
+                                                     ' table-cell; vertical-align:'\
+                                                     ' top;margin-left: 1%;">' + message +\
+               '</h5></html>'
+        response = requests.post(self.mailgun_sending_endpoint, auth=("api", self.mailgun_api_key),
+                                 data={"from": sender, "to": recipient, "subject": subject,
+                                       "html": html
+                                       })
+        return response
 
     def handle_communication(self, recipient, subject, message):
         """
@@ -61,6 +59,6 @@ class EmailBot(TalentBot):
         try:
             response_generated = self.parse_message(message)
             self.reply(recipient, subject, "<br />".join(response_generated.split("\n")), MAILGUN_FROM)
-        except Exception:
+        except (IndexError, NameError, KeyError):
             error_response = random.choice(self.error_messages)
             self.reply(recipient, subject, error_response, MAILGUN_FROM)

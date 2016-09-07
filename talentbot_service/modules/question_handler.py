@@ -26,8 +26,8 @@ class QuestionHandler:
     def __init__(self):
         pass
 
-    @classmethod
-    def find_word_in_message(cls, word, message_tokens):
+    @staticmethod
+    def find_word_in_message(word, message_tokens):
         """
         Finds a specific word in user message and returns it's index
         :param word:
@@ -38,8 +38,8 @@ class QuestionHandler:
                       in message_tokens if word in temp_word.lower()][0]
         return word_index
 
-    @classmethod
-    def append_list_with_spaces(cls, _list):
+    @staticmethod
+    def append_list_with_spaces(_list):
         """
         Append a list elements with spaces between then
         :param _list: list
@@ -96,20 +96,23 @@ class QuestionHandler:
         response_message += str(count)
         return response_message
 
-    @classmethod
-    def question_3_handler(cls, message_tokens):
+    def question_3_handler(self, message_tokens):
         """
             Handles question 'what's the top performing email campaign from [year]'
             :param message_tokens: User message tokens
             :return: str response_message
         """
         year = message_tokens[-1]
-        email_campaign_blast = EmailCampaignBlast.top_performing_email_campaign(year)
-        if email_campaign_blast:
-            response_message = 'Top performing email campaign from ' + year + \
-                               ' is "%s"' % email_campaign_blast.campaign.name
+        is_valid_year = self.is_valid_year(year)
+        if is_valid_year:
+            email_campaign_blast = EmailCampaignBlast.top_performing_email_campaign(year)
+            if email_campaign_blast:
+                response_message = 'Top performing email campaign from ' + year + \
+                                   ' is "%s"' % email_campaign_blast.campaign.name
+            else:
+                response_message = "Sorry couldn't find top email campaign from " + year
         else:
-            response_message = "Sorry couldn't find top email campaign from " + year
+            response_message = "Please Enter a Valid Year"
         return response_message
 
     def question_4_handler(self, message_tokens):
@@ -151,3 +154,17 @@ class QuestionHandler:
         :rtype: str
         """
         return HINT[0]
+
+    @staticmethod
+    def is_valid_year(year):
+        """
+        Validates that string is a valid year
+        :param str year: User's entered year string
+        :return: True|False
+        """
+        if year.isdigit():
+            year_in_number = int(year)
+            if year_in_number >= 1900:
+                return True
+            return False
+        return False
