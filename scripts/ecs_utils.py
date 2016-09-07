@@ -185,7 +185,7 @@ def delete_images_from_repository_by_digest(ecr_client, repository_name, digest_
     """
     Delete a list of containers. ECR will only delete a certain number at a time, so we iterate.
 
-    :param object ecr_client: The boto ECR (EC2 Container Registry) object.
+    :param boto3.client ecr_client: The boto ECR (EC2 Container Registry) object.
     :param string repository_name: Name of the repository we're deleting from.
     :param list[str] digest_list: List of tagged containers found for the particular repository (in JSON).
 
@@ -256,7 +256,7 @@ def gather_task_definitions(ecs_client, service, cluster):
     """
     Collect all task definitions for getTalent service in a cluster.
 
-    :param object ecs_client: The boto ECS object.
+    :param boto3.client ecs_client: The boto ECS object.
     :param string service: Name of the getTalent service.
     :param string cluster: name of the cluster to inspect.
     """
@@ -292,6 +292,7 @@ def gather_all_td_images(ecs_client, service):
     """
     Gather the images used by all ACTIVE task definitions.
 
+    :param boto3.client ecs_client: ECS client object
     :param string service: The name of the service we're collecting from.
     :rtype: list[dict] All image URIs associated with task definitions for this service.
     """
@@ -312,7 +313,7 @@ def task_definition_image(ecs_client, td_arn):
     """
     Return the image URI used by a task definition.
 
-    :param object ecs_client: The boto ECS object.
+    :param boto3.client ecs_client: ECS client object
     :param string td_arn: The AWS Resource Name.
     """
 
@@ -328,7 +329,7 @@ def deregister_task(ecs_client, td_arn):
     """
     Make a task definition revision inactive.
 
-    :param object ecs_client: The boto ECS object.
+    :param boto3.client ecs_client: ECS client object
     :param string td_arn: The AWS Resource Name.
     """
 
@@ -346,6 +347,9 @@ def deregister_task(ecs_client, td_arn):
 
 # def gt_service_name_from_arn(service_arn):
 #     """
+#     Extract the getTalent service name from an AWS service ARN.
+#
+#     :param string service_arn: Amazon Resource Name
 #     """
 #     print "ARN: {}".format(service_arn)
 #     revision = service_arn.split('/')[1].split(':')
@@ -360,9 +364,9 @@ def get_all_services(ecs_client, cluster):
     """
     Gather all services running in an ECS cluster.
 
-    :param object ecs_client: The boto ECS object.
+    :param boto3.client ecs_client: ECS client object
     :param string cluster: Name of the cluster.
-    :rtype list | None:
+    :rtype list | None
     """
     try:
         response = ecs_client.list_services(cluster=cluster)
@@ -391,7 +395,7 @@ def update_service_task_definition(ecs_client, cluster, service, adjustment):
     """
     Move the task definition used by a service forwards or backwards.
 
-    :param object ecs_client: The boto ECS client object.
+    :param boto3.client ecs_client: ECS client object
     :param string cluster: Cluster name.
     :param string service: GT service name.
     :param string adjustment: How much to advance or regress the tack definition. E.g., +1, -2
@@ -405,9 +409,6 @@ def update_service_task_definition(ecs_client, cluster, service, adjustment):
 
     # Get all active Task Definitions, in descending order
     td_arn_list = gather_task_definitions(ecs_client, service, cluster)
-    # print "TD List Len: {}".format(len(td_arn_list))
-    # for td in td_arn_list:
-    #     print td
 
     # Determine the current Task Definition
     try:
@@ -445,6 +446,7 @@ def update_service_task_definition(ecs_client, cluster, service, adjustment):
         return False
 
     # Update the service
+    # TODO: This is also used in move-stage-to-prod.py - refactor into a function.
     print "Replacing:\n    {}\nwith\n    {}".format(current_td_arn, replacement_td_arn)
     try:
         response = ecs_client.update_service(cluster=cluster, service=service_name, desiredCount=desired_count,

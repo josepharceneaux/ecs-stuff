@@ -1,4 +1,10 @@
 """
+Script to move the task definition for a service (or all services) forward or backward in staging or production clusters.
+E.g., the following command:
+
+python change-task-definition.py stage sms-campaign-service -1
+
+Will switch the current task definition for sms-campaign-service to the previous one.
 """
 
 
@@ -29,7 +35,7 @@ adjustment = vars(args)[ADJUSTMENT]
 print "{} {} {}".format(cluster, service, adjustment)
 
 # Validate adjustment
-if adjustment[0] != '-' and adjustment[0] != '+':
+if adjustment[0] not in '-+':
     fatal("Adjustment must begin with + or -")
 amount = adjustment[1:(len(adjustment))]
 if not amount.isdigit():
