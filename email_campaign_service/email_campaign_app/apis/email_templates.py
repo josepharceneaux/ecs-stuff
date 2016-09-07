@@ -15,8 +15,6 @@ from flask_restful import Resource
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.models.user import Permission
 from email_campaign_service.common.error_handling import InvalidUsage
-from email_campaign_service.modules.validations import (get_valid_template_folder,
-                                                        get_valid_email_template)
 from email_campaign_service.common.utils.handy_functions import get_valid_json_data
 from email_campaign_service.common.routes import (EmailCampaignApi, EmailCampaignApiUrl)
 from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response,
@@ -84,7 +82,7 @@ class TemplateFolders(Resource):
         parent_id = data.get('parent_id')
         if parent_id:
             # Validate parent_id is valid
-            get_valid_template_folder(parent_id, request)
+            EmailTemplateFolder.get_valid_template_folder(parent_id, request)
         # If is_immutable value is not passed, make it as 0
         is_immutable = data.get('is_immutable', 0)
         is_immutable = validate_and_return_immutable_value(is_immutable)
@@ -139,7 +137,7 @@ class TemplateFolder(Resource):
                     404 (Requested email-template-folder not found)
                     500 (Internal server error)
         """
-        template_folder = get_valid_template_folder(folder_id, request)
+        template_folder = EmailTemplateFolder.get_valid_template_folder(folder_id, request)
         return {"email_template_folder": template_folder.to_json()}, codes.OK
 
     @require_all_permissions(Permission.PermissionNames.CAN_DELETE_CAMPAIGNS)
@@ -165,7 +163,7 @@ class TemplateFolder(Resource):
                     404 (Requested email-template-folder not found)
                     500 (Internal server error)
         """
-        template_folder = get_valid_template_folder(folder_id, request)
+        template_folder = EmailTemplateFolder.get_valid_template_folder(folder_id, request)
         # Delete the requested template-folder
         EmailTemplateFolder.delete(template_folder)
         return '', codes.NO_CONTENT
@@ -271,7 +269,7 @@ class EmailTemplates(Resource):
         template_folder_id = data.get('template_folder_id')
         if template_folder_id:
             # Validate parent_id is valid
-            get_valid_template_folder(template_folder_id, request)
+            EmailTemplateFolder.get_valid_template_folder(template_folder_id, request)
         # If is_immutable value is not passed, make it as 0
         is_immutable = data.get('is_immutable', 0)
         is_immutable = validate_and_return_immutable_value(is_immutable)
@@ -328,7 +326,7 @@ class EmailTemplate(Resource):
                     500 (Internal server error)
         """
         # Validate email template id
-        template = get_valid_email_template(template_id, request)
+        template = UserEmailTemplate.get_valid_email_template(template_id, request)
         return {'template': template.to_json()}, codes.OK
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CAMPAIGNS)
@@ -367,7 +365,7 @@ class EmailTemplate(Resource):
                     404 (Requested email-template not found)
                     500 (Internal server error)
         """
-        template = get_valid_email_template(template_id, request)
+        template = UserEmailTemplate.get_valid_email_template(template_id, request)
         data = get_valid_json_data(request)
         updated_data = {'body_html': data.get('body_html') or template.body_html,
                         'body_text': data.get('body_text') or template.body_text}
@@ -387,7 +385,7 @@ class EmailTemplate(Resource):
                     404 (Requested email-template not found)
                     500 (Internal server error)
         """
-        template = get_valid_email_template(template_id, request)
+        template = UserEmailTemplate.get_valid_email_template(template_id, request)
         # Delete the template
         UserEmailTemplate.delete(template)
         return '', requests.codes.NO_CONTENT

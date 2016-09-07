@@ -332,6 +332,32 @@ class UserEmailTemplate(db.Model):
         from user import User  # This has to be here to avoid circular import
         return cls.query.join(User).filter(User.domain_id == domain_id)
 
+    @classmethod
+    def get_valid_email_template(cls, email_template_id, request):
+        """
+        This validates given email_template_id is int or long greater than 0.
+        It raises Invalid Usage error in case of invalid email_template_id.
+        It raises ResourceNotFound error if requested template is not found in database.
+        It raises Forbidden error if requested template template does not belong to user's domain.
+        It returns EmailTemplate object if above validation does not raise any error.
+        :param int|long email_template_id: Id of email-template
+        :param flask_request request: Request object
+        :rtype: UserEmailTemplate
+        """
+        from user import User  # This has to be here to avoid circular import
+        raise_if_not_positive_int_or_long(email_template_id)
+        domain_id = request.user.domain_id
+        # Get email-template object from database
+        email_template = cls.get_by_id(email_template_id)
+        if not email_template:
+            raise ResourceNotFound('Email template(id:%d) not found' % email_template_id)
+        # Verify owned by same domain
+        template_owner_user = User.get_by_id(email_template.user_id)
+        if template_owner_user.domain_id != domain_id:
+            raise ForbiddenError('Email template(id:%d) is not owned by domain(id:%d)'
+                                 % (email_template_id, domain_id))
+        return email_template
+
 
 class EmailTemplateFolder(db.Model):
     __tablename__ = 'email_template_folder'
@@ -359,3 +385,28 @@ class EmailTemplateFolder(db.Model):
         assert folder_name, "folder_name not provided"
         assert domain_id, "domain_id not provided"
         return cls.query.filter_by(name=folder_name, domain_id=domain_id).first()
+
+    @classmethod
+    def get_valid_template_folder(cls, template_folder_id, request):
+        """
+        This validates given template_folder_id is int or long greater than 0.
+        It raises Invalid Usage error in case of invalid template_folder_id.
+        It raises ResourceNotFound error if requested folder is not found in database.
+        It raises Forbidden error if requested template folder does not belong to user's domain.
+        It returns EmailTemplateFolder object if above validation does not raise any error.
+        :param int|long template_folder_id: Id of email-template-folder
+        :param flask_request request: Request object
+        :rtype: EmailTemplateFolder
+        """
+        raise_if_not_positive_int_or_long(template_folder_id)
+        user_id = request.user.id
+        domain_id = request.user.domain_id
+        # Get template-folder object from database
+        template_folder = cls.get_by_id(template_folder_id)
+        if not template_folder:
+            raise ResourceNotFound('Email template folder(id:%s) not found' % template_folder_id)
+        # Verify owned by same domain
+        if not template_folder.domain_id == domain_id:
+            raise ForbiddenError("Email template folder(id:%d) is not owned by user(id:%d)'s domain(id:%d)"
+                                 % (template_folder_id, user_id, domain_id))
+        return template_folder
