@@ -385,8 +385,12 @@ def meetup_venue(meetup, user_first, token_first):
 
     response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
 
-    assert response_post.status_code == 201, response_post.text
-    venue_id = response_post.json()['id']
+    data = response_post.json()
+    if response_post.status_code == 400:
+        data = data['error']
+
+    assert response_post.status_code == 201 or response_post.status_code == 400, response_post.text
+    venue_id = data['id']
 
     return {'id': venue_id}
 
@@ -413,8 +417,12 @@ def meetup_venue_second(meetup, user_first, token_first):
 
     response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
 
-    assert response_post.status_code == 201, response_post.text
-    venue_id = response_post.json()['id']
+    data = response_post.json()
+    if response_post.status_code == 400:
+        data = data['error']
+
+    assert response_post.status_code == 201 or response_post.status_code == 400, response_post.text
+    venue_id = data['id']
 
     return {'id': venue_id}
 

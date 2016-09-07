@@ -78,15 +78,12 @@ class MockApi(object):
         :return: Returns response based on mocked_json validation
         :rtype: tuple
         """
-        response_code = self._validate_headers()
-        if response_code and not response_code == codes.OK:
-            response = self.mocked_json[response_code]
-            return response['response'], response_code
 
-        response_code = self._validate_payload()
-        if response_code and not response_code == codes.OK:
-            response = self.mocked_json[response_code]
-            return response['response'], response_code
+        for _validate_method in [self._validate_headers, self._validate_payload]:
+            response_code = _validate_method()
+            if response_code and not response_code == codes.OK:
+                response = self.mocked_json[response_code]
+                return response['response'], response_code
 
         response = self.mocked_json[codes.OK]
         return response.get('response', {}), response['status_code']

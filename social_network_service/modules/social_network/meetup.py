@@ -269,7 +269,7 @@ class Meetup(SocialNetworkBase):
                 raise InternalServerError('Invalid response from Meetup', error_code=INVALID_MEETUP_RESPONSE)
             venue = Venue.get_by_user_id_and_social_network_venue_id(self.user.id, match_id)
             if venue:
-                raise InvalidUsage('Venue already exists in getTalent database',
+                raise InvalidUsage('Venue already exists in getTalent database', additional_error_info=dict(id=venue.id),
                                    error_code=VENUE_EXISTS_IN_GT_DATABASE)
             venue_id = json_resp['errors'][0]['potential_matches'][0]['id']
         else:

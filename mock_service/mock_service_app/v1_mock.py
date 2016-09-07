@@ -79,6 +79,7 @@ class MockServer(Resource):
             raise UnauthorizedError('This endpoint is not accessible in `%s` env.'
                                     % app.config[TalentConfigKeys.ENV_KEY])
 
+        # path will be relative url. i.e /self/member
         relative_url = request.args.get('path')
 
         vendor_data = mock_url_hub.get(social_network)
@@ -86,7 +87,7 @@ class MockServer(Resource):
             raise NotFoundError("Vendor '{}' not found or mocked yet." % social_network)
         request_method = request.method
 
-        # TODO:
+        # To get id from put or get url i.e /event/23 or /event/45. Split data and get resource id
         splitted_data = relative_url.split('/')
         if len(splitted_data) > 2 and splitted_data[2].isdigit():
             relative_url = '/' + splitted_data[1]
@@ -99,13 +100,15 @@ class MockServer(Resource):
         try:
             if request.content_type == 'application/x-www-form-urlencoded' or request.content_type == '':
                 data = dict()
-                # TODO:
+                # In case of url encoded data or form data get all values from querystring or form data
                 [data.update({k: v}) for k, v in request.values.iteritems()]
             elif request.content_type == 'application/json':
+                # In case of json, get json data
                 data = request.json()
             else:
                 data = request.data
-            # TODO:
+            # get mocked json vendor based. In case of meetup, a meetup dict will be returned (response, status code.
+            # see meetup_mock.py)
             mocked_json = vendor_data(url_type, resource_id)[relative_url][request_method]
             mock_api = MockApi(mocked_json, payload=data, headers=request.headers)
             response, status_code = mock_api.get_response()

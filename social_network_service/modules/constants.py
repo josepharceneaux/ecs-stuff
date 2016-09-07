@@ -22,4 +22,4 @@ RSVP = 'rsvp'
 MEETUP_VENUE = 'https://api.meetup.com/{}'
 
 # Vendors to be mocked goes here
-MOCK_VENDORS = [MEETUP]
+MOCK_VENDORS = []
