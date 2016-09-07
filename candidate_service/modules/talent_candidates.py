@@ -274,6 +274,10 @@ def candidate_experiences(candidate_id):
              'position': experience.position,
              'start_date': date_of_employment(year=experience.start_year, month=experience.start_month or 1),
              'end_date': date_of_employment(year=experience.end_year, month=experience.end_month or 1),
+             'start_year': experience.start_year,
+             'start_month': experience.start_month,
+             'end_year': experience.end_year,
+             'end_month': experience.end_month,
              'city': experience.city,
              'state': experience.state,
              'subdivision': get_subdivision_name(experience.iso3166_subdivision) if experience.iso3166_subdivision else None,
@@ -1760,11 +1764,9 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             # CandidateExperienceBullet
             experience_bullets = work_experience.get('bullets') or []
             for experience_bullet in experience_bullets:
-                experience_bullet_dict = dict(
-                    list_order=experience_bullet.get('list_order'),
-                    description=experience_bullet['description'].strip() if experience_bullet.get(
-                        'description') else None
-                )
+
+                description = (experience_bullet.get('description') or '').strip()
+                experience_bullet_dict = dict(list_order=experience_bullet.get('list_order'), description=description)
 
                 # Remove keys with None values
                 experience_bullet_dict = purge_dict(experience_bullet_dict)
@@ -1799,7 +1801,8 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
                     db.session.add(CandidateExperienceBullet(**experience_bullet_dict))
 
                     if is_updating:  # Track all updates
-                        track_edits(update_dict=experience_bullet_dict, table_name='candidate_experience_bullet',
+                        track_edits(update_dict=experience_bullet_dict,
+                                    table_name='candidate_experience_bullet',
                                     candidate_id=candidate_id, user_id=user_id)
 
         else:  # Add
@@ -1822,11 +1825,10 @@ def _add_or_update_work_experiences(candidate, work_experiences, added_time, use
             # CandidateExperienceBullet
             experience_bullets = work_experience.get('bullets') or []
             for experience_bullet in experience_bullets:
-                experience_bullet_dict = dict(
-                    list_order=experience_bullet.get('list_order'),
-                    description=experience_bullet['description'].strip() if experience_bullet.get(
-                        'description') else None
-                )
+
+                description = (experience_bullet.get('description') or '').strip()
+                experience_bullet_dict = dict(list_order=experience_bullet.get('list_order'), description=description)
+
                 # Remove keys with None values
                 experience_bullet_dict = purge_dict(experience_bullet_dict)
 
@@ -2470,10 +2472,17 @@ def update_total_months_experience(candidate, experience_dict=None, candidate_ex
                                           (previous_end_month - previous_start_month)
 
         else:  # An existing CandidateExperience's dates have been updated
+
+            this_total_months_experience, previous_total_months_experience = None, None
             if start_year and end_year:
-                total_months_experience = ((end_year - start_year) * 12 + (end_month - start_month) -
-                                           (previous_end_year - previous_start_year) * 12 + (
-                                           previous_end_month - previous_start_month))
+                this_total_months_experience = (end_year - start_year) * 12 + (end_month - start_month)
+            if previous_end_year and previous_start_year:
+                previous_total_months_experience = (previous_end_year - previous_start_year) * 12 + (previous_end_month - previous_start_month)
+
+            if this_total_months_experience and previous_total_months_experience:
+                total_months_experience = this_total_months_experience - previous_total_months_experience
+            elif this_total_months_experience and not previous_total_months_experience:
+                total_months_experience = this_total_months_experience
 
     candidate.total_months_experience += total_months_experience
     return
