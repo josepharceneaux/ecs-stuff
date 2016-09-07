@@ -213,7 +213,7 @@ def eventbrite_event_data(eventbrite, eventbrite_venue, test_eventbrite_credenti
 
 
 @pytest.fixture(scope="session")
-def meetup_event(request, test_meetup_credentials, meetup, meetup_venue, organizer_in_db, token_first,
+def meetup_event(test_meetup_credentials, meetup, meetup_venue, organizer_in_db, token_first,
                  meetup_event_data):
     """
     This creates an event for Meetup for user_first
@@ -235,7 +235,7 @@ def meetup_event(request, test_meetup_credentials, meetup, meetup_venue, organiz
 
 
 @pytest.fixture(scope="function")
-def meetup_event_second(request, test_meetup_credentials, meetup, meetup_venue_second, organizer_in_db,
+def meetup_event_second(test_meetup_credentials, meetup, meetup_venue_second, organizer_in_db,
                         token_first, meetup_event_data):
     """
     This creates another event for Meetup for user_first
@@ -298,7 +298,7 @@ def meetup_event_dict_second(meetup_event_second, talent_pool_session_scope):
 
 
 @pytest.fixture(scope="session")
-def eventbrite_event(request, test_eventbrite_credentials,
+def eventbrite_event(test_eventbrite_credentials,
                      eventbrite, eventbrite_venue, organizer_in_db, token_first):
     """
     This method create a dictionary data to create event on eventbrite.
@@ -332,7 +332,7 @@ def eventbrite_event(request, test_eventbrite_credentials,
 
 
 @pytest.fixture(scope="function")
-def eventbrite_event_second(request, test_eventbrite_credentials, eventbrite, eventbrite_venue_second, organizer_in_db,
+def eventbrite_event_second(test_eventbrite_credentials, eventbrite, eventbrite_venue_second, organizer_in_db,
                             token_first):
     """
     This method create a dictionary data to create event on eventbrite.
@@ -534,7 +534,7 @@ def organizer_in_db(user_first):
 
 
 @pytest.fixture()
-def get_test_event_eventbrite(request, user_first, eventbrite, eventbrite_venue, organizer_in_db, token_first):
+def get_test_event_eventbrite(user_first, eventbrite, eventbrite_venue, organizer_in_db, token_first):
     """
     This fixture returns data (dictionary) to create eventbrite events
     """
@@ -549,7 +549,7 @@ def get_test_event_eventbrite(request, user_first, eventbrite, eventbrite_venue,
 
 
 @pytest.fixture()
-def get_test_event_meetup(request, user_first, meetup, meetup_venue, meetup_group, organizer_in_db, token_first):
+def get_test_event_meetup(user_first, meetup, meetup_venue, meetup_group, organizer_in_db, token_first):
     """
     This fixture returns data (dictionary) to create meetup and eventbrite events
     """
