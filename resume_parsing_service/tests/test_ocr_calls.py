@@ -18,7 +18,7 @@ def test_valid_ocr_response():
         with open(os.path.join(CURRENT_DIR, 'files/{}'.format('han.png')), 'rb') as img:
             img_data = StringIO(img.read())
         try:
-            google_response = google_vision_ocr(img_data, timeout=60)
+            google_response = google_vision_ocr([img_data])
             desired_strs = u'Han Solo best smuggler galaxy frozen Boba Fett'.split()
             assert all(substr in google_response for substr in desired_strs)
         except InternalServerError:
@@ -35,7 +35,7 @@ def test_ocr_doesnt_req_seek():
             img_data = StringIO(img.read())
         img_data.read() #  Put file pointer at EOF.
         try:
-            google_response = google_vision_ocr(img_data, timeout=60)
+            google_response = google_vision_ocr([img_data])
             desired_strs = u'Han Solo best smuggler galaxy frozen Boba Fett'.split()
             assert all(substr in google_response for substr in desired_strs)
         except InternalServerError:
@@ -52,7 +52,7 @@ def test_invalid_ocr_response():
         with open(os.path.join(CURRENT_DIR, 'files/{}'.format('hanPopcicle.png')), 'rb') as img:
             img_data = StringIO(img.read())
         try:
-            google_response = google_vision_ocr(img_data, timeout=60)
+            google_response = google_vision_ocr([img_data])
             assert isinstance(google_response, unicode)
             assert len(google_response) < OCR_CHAR_MIN
         except InternalServerError:

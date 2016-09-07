@@ -64,17 +64,16 @@ def process_resume(parse_params):
 
     # Upload resumes we want to create candidates from.
     try:
-        resume_file.seek(0)
         bucket = current_app.config['S3_BUCKET_NAME']
-        boto3_put(resume_file.read(), bucket, filename_str, 'OriginalFiles')
+        boto3_put(resume_file.getvalue(), bucket, filename_str, 'OriginalFiles')
         parsed_resume['candidate']['resume_url'] = filename_str
 
     except Exception as e:
         logger.exception('Failure during s3 upload; reason: {}'.format(e.message))
 
     candidate_references = parsed_resume['candidate'].pop('references', None)
-    candidate_created, candidate_id = create_parsed_resume_candidate(
-        parsed_resume['candidate'], oauth_string, filename_str)
+    candidate_created, candidate_id = create_parsed_resume_candidate(parsed_resume['candidate'],
+                                                                     oauth_string)
 
     if not candidate_created:
         # We must update!
@@ -82,9 +81,10 @@ def process_resume(parse_params):
         candidate_updated = update_candidate_from_resume(
             parsed_resume['candidate'], oauth_string, filename_str)
 
+    # TODO: Blocked by Get-1627.
     # References have their own endpoint and are not part of /candidates POSTed data.
-    if candidate_references:
-        send_candidate_references(candidate_references, candidate_id, oauth_string)
+    # if candidate_references:
+    #     send_candidate_references(candidate_references, candidate_id, oauth_string)
 
     candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id,
                                           headers={'Authorization': oauth_string})
