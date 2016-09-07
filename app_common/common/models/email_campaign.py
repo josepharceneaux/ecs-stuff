@@ -319,7 +319,7 @@ class UserEmailTemplate(db.Model):
         :param string template_name: Name of email-template
         :rtype: UserEmailTemplate
         """
-        return cls.query.filter_by(name=template_name).first()
+        return cls.query.filter_by(name=template_name.strip()).first()
 
     @classmethod
     def get_by_domain_id(cls, domain_id):

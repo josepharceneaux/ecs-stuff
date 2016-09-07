@@ -288,7 +288,7 @@ def access_token_other(user_from_diff_domain, sample_client):
 @pytest.fixture()
 def headers(access_token_first):
     """
-    Returns the header containing access token and  `application/json` as content-type to make POST/DELETE requests
+    Returns the header containing access token and `application/json` as content-type to make POST/DELETE requests
     for user_first.
     """
     return get_auth_header(access_token_first)
@@ -297,7 +297,7 @@ def headers(access_token_first):
 @pytest.fixture()
 def headers_same(access_token_same):
     """
-    Returns the header containing access token and  `application/json` as content-type to make POST/DELETE requests
+    Returns the header containing access token and `application/json` as content-type to make POST/DELETE requests
     for second user of same domain(i.e. for user_same_domain).
     """
     return get_auth_header(access_token_same)

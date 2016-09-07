@@ -329,7 +329,7 @@ class EmailTemplate(Resource):
         """
         # Validate email template id
         template = get_valid_email_template(template_id, request)
-        return {'template': template.to_json()}
+        return {'template': template.to_json()}, codes.OK
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CAMPAIGNS)
     def patch(self, template_id):
