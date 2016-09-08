@@ -1,8 +1,11 @@
 """
 Here we have endpoint which is treated as Mock-Service for different social-networks, e.g. Meetup.
 """
-# Third party
+
+# Standard Library
 import types
+
+# Third party
 from flask import Blueprint, request
 from flask.ext.restful import Resource
 
@@ -14,6 +17,7 @@ from mock_service.common.utils.api_utils import api_route, ApiResponse
 from mock_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from mock_service.common.error_handling import (NotFoundError, InternalServerError,
                                                 UnauthorizedError)
+from mock_service.common.utils.handy_functions import (HttpMethods, JSON_CONTENT_TYPE_HEADER)
 from mock_service.mock_service_app import app, logger
 from mock_service.modules.mock_api import get_mock_response
 from mock_service.modules.vendors.meetup_mock import meetup_vendor
@@ -65,7 +69,8 @@ class MockServer(Resource):
     def patch(self, url_type, social_network, path):
         return self.mock_endpoint(url_type, social_network, path)
 
-    def mock_endpoint(self, url_type, social_network, path):
+    @staticmethod
+    def mock_endpoint(url_type, social_network, path):
         """
         Mock endpoint to handle mock requests and its response.
         Note: Currently it works for only meetup vendor.
@@ -77,11 +82,11 @@ class MockServer(Resource):
         :type: str | basestring
         """
         # We need to mock third party urls in case of jenkins or dev environment.
-        if not app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
+        if app.config[TalentConfigKeys.ENV_KEY] not in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
             raise UnauthorizedError('This endpoint is not accessible in `%s` env.'
                                     % app.config[TalentConfigKeys.ENV_KEY])
 
-        # path will be relative url. i.e /self/member
+        # path will be relative url. i.e self/member
         relative_url = path
 
         vendor_data = mock_url_hub.get(social_network)
@@ -89,22 +94,21 @@ class MockServer(Resource):
             raise NotFoundError("Vendor '{}' not found or mocked yet." % social_network)
         request_method = request.method
 
-        # To get id from put or get url i.e /event/23 or /event/45. Split data and get resource id
+        # To get id from put or get url i.e event/23 or event/45. Split data and get resource id
         splitted_data = relative_url.split('/')
         if len(splitted_data) > 1 and splitted_data[1].isdigit():
-            relative_url = '/' + splitted_data[0]
+            relative_url = splitted_data[0]
             resource_id = splitted_data[1]
-            if request_method == 'POST':
-                request_method = 'PUT'
+            if request_method == HttpMethods.POST:
+                request_method = HttpMethods.PUT
         else:
             resource_id = None
-
         try:
-            if request.content_type == 'application/x-www-form-urlencoded' or request.content_type == '':
+            if request.content_type in ['application/x-www-form-urlencoded', '']:
                 data = dict()
                 # In case of url encoded data or form data get all values from querystring or form data
                 [data.update({k: v}) for k, v in request.values.iteritems()]
-            elif request.content_type == 'application/json':
+            elif request.content_type == JSON_CONTENT_TYPE_HEADER['content-type']:
                 # In case of json, get json data
                 data = request.json()
             else:

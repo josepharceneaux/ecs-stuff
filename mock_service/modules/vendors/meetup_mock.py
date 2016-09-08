@@ -12,11 +12,13 @@ from itertools import repeat, chain
 from requests import codes
 
 # Application Specific
-from mock_service.common.constants import MEETUP, AUTH, API
-from mock_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls as Urls
-from mock_service.common.models.candidate import SocialNetwork
-from mock_service.common.redis_cache import redis_store2
 from mock_service.common.utils.test_utils import fake
+from mock_service.common.redis_cache import redis_store2
+from mock_service.common.constants import MEETUP, AUTH, API
+from mock_service.common.models.candidate import SocialNetwork
+from mock_service.common.utils.handy_functions import HttpMethods
+from mock_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls as Urls
+
 
 # Prepare data for dictionary below
 meetup_fake_member_id = randint(1, 100000)
@@ -55,7 +57,7 @@ def meetup_vendor_api(event_id=None):
     """
     return {
         Urls.MEETUP[Urls.VALIDATE_TOKEN].format(''): {
-            'GET': {
+            HttpMethods.GET: {
                 'expected_headers':
                     {
                         'headers': {
@@ -104,7 +106,7 @@ def meetup_vendor_api(event_id=None):
                     }
                 }
             },
-            'POST': {
+            HttpMethods.POST: {
                 'expected_headers':
                     {
                         'headers': {
@@ -129,7 +131,7 @@ def meetup_vendor_api(event_id=None):
         },
 
         Urls.MEETUP[Urls.GROUPS].format(''): {
-            'GET': {
+            HttpMethods.GET: {
                 'expected_headers':
                     {
                         'headers': {
@@ -214,7 +216,7 @@ def meetup_vendor_api(event_id=None):
         },
 
         Urls.MEETUP[Urls.VENUES].format(''): {
-            'POST': {
+            HttpMethods.POST: {
                 codes.OK: {
                     'status_code': codes.CONFLICT,
                     'response': {
@@ -244,7 +246,7 @@ def meetup_vendor_api(event_id=None):
             }
         },
         Urls.MEETUP[Urls.EVENTS].format(''): {
-            'POST': {
+            HttpMethods.POST: {
                 codes.OK: {
                     'status_code': codes.CREATED,
                     'response': {
@@ -253,22 +255,22 @@ def meetup_vendor_api(event_id=None):
                     }
                 }
             },
-            'PUT': {
+            HttpMethods.PUT: {
                 codes.OK: {
-                    'status_code': codes.CREATED,
+                    'status_code': codes.OK,
                     'response': {
                         'id': event_id
                     }
                 }
             },
-            'DELETE': {
+            HttpMethods.DELETE: {
                 codes.OK: {
                     'status_code': codes.OK
                 }
             }
         },
         Urls.MEETUP[Urls.EVENT].format('', event_id): {
-            'PUT': {
+            HttpMethods.PUT: {
                 codes.OK: {
                     'status_code': codes.CREATED,
                     'response': {
@@ -288,7 +290,7 @@ def meetup_vendor_auth():
     """
     return {
         Urls.MEETUP[Urls.REFRESH_TOKEN].format(''): {
-            'POST': {
+            HttpMethods.POST: {
                 'expected_payload': {
                     'payload': get_meetup_client(),
                     'on_fail': codes.UNAUTHORIZED,
