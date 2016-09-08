@@ -1,4 +1,3 @@
-
 __author__ = 'ufarooqi'
 
 from user_service.common.utils.models_utils import init_talent_app

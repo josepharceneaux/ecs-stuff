@@ -37,7 +37,7 @@ test_config = load_test_config()
 def test_data():
     """
     This fixture create test users, domains, groups, tokens etc. which will be used to create other fixtures/data like
-    smarlists, candidates, campaigns etc.
+    smartlists, candidates, campaigns etc.
     """
     response = send_request('post', UserServiceApiUrl.TEST_SETUP, '')
     print("Test Data Response: ", response.content, response.status_code)

@@ -22,11 +22,11 @@ def create_test_domain(names):
     """
     This function takes list of domain names, creates domains with given names and then returns domains list.
     :param list | tuple names: list of domain names
-    :rtype tuple[list]
+    :rtype: tuple[list]
     """
     domains = []
     for domain_name in names:
-        domain = Domain(name=domain_name, organization_id=1)
+        domain = Domain(name=domain_name)
         Domain.save(domain)
         logger.debug('Domain Name %s', domain.name)
         domains.append(domain)
@@ -38,7 +38,7 @@ def create_user_groups(group_names, domain_ids):
     This function creates user groups in database. It takes group names ad domain ids as input.
     :param list(string) group_names: user group names
     :param list(int | long) domain_ids: domain ids
-    :rtype tuple[list]
+    :rtype: tuple[list]
     """
     assert len(group_names) == len(domain_ids), 'group names and domain ids should be equal'
     groups = []
@@ -56,7 +56,7 @@ def create_test_user(email, domain_id, group_id):
     This function creates a test user with given domain and group with `TEST_ADMIN` as role.
     :param int | long domain_id: user's domain id
     :param int | long group_id: user's group id
-    :rtype User
+    :rtype: User
     """
     user = User.get_by_email(email)
     role = Role.get_by_name('TEST_ADMIN')
@@ -72,13 +72,10 @@ def create_test_client(client_id, client_secret):
     This function creates a test client.
     :param string client_id: client unique id
     :param string client_secret: client secret
-    :rtype Client
+    :rtype: Client
     """
     client = Client(client_id=client_id, client_secret=client_secret, client_name='test_client')
-    try:
-        return Client.save(client)
-    except Exception as e:
-        raise InternalServerError('Internal Serer Error: %s' % str(e))
+    return Client.save(client)
 
 
 def create_test_token(user_id, client_id):
@@ -86,7 +83,7 @@ def create_test_token(user_id, client_id):
     This function creates a access token for given test user.
     :param int | long user_id: user primary id
     :param string client_id: client unique id
-    :rtype Token
+    :rtype: Token
     """
 
     token = Token(client_id=client_id, user_id=user_id, token_type='Bearer',
@@ -98,7 +95,7 @@ def create_test_token(user_id, client_id):
 def create_test_data():
     """
     To create test data (Domains, Users, Groups, Client, Token etc.)
-    :rtype dict
+    :rtype: dict
     """
     timestamp = str(time.time()) + gen_salt(10)
     # Create two domains

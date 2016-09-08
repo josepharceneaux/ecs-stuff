@@ -36,22 +36,23 @@ class TestSetupApi(Resource):
         Users created by this endpoint have ability to Create, Read and Update (CRU). (Not delete)
         Users are assigned `TEST_ADMIN` role.
         """
-        origin = request.remote_addr
-        localhost = '127.0.0.1'
+        origin_ip = request.remote_addr
         environment = app.config[TalentConfigKeys.ENV_KEY]
         jenkins_ip = app.config[TalentConfigKeys.JENKINS_HOST_IP]
-        is_jenkins = origin == jenkins_ip
-        is_dev = origin == localhost and environment == TalentEnvs.DEV
+
+        is_jenkins = origin_ip == jenkins_ip
+        is_dev = environment == TalentEnvs.DEV
         is_allowed = is_jenkins or is_dev
-        message = """is_gettalent: %s,
+        message = """is_jenkins: %s,
                        id_dev: %s,
-                       origin: %s,
+                       origin_ip: %s,
                        environment: %s,
                        is_allowed: %s
-                    """ % (is_jenkins, is_dev, origin, environment, is_allowed)
+                    """ % (is_jenkins, is_dev, origin_ip, environment, is_allowed)
         if not is_allowed:
             logger.warn(message)
-            raise ForbiddenError('Invalid request origin : %s' % origin)
+            raise ForbiddenError('Invalid request origin : %s' % origin_ip)
 
         logger.info(message)
         return create_test_data()
+

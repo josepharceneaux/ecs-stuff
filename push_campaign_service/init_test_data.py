@@ -129,5 +129,3 @@ def create_test_data():
         cfg.write('DEVICE_ID_2=6a81ab5d-9e71-44f7-99dc-eb72eeaff311\n\n')
 
         cfg.flush()
-
-
