@@ -3,11 +3,9 @@ Here we have endpoint which is treated as Mock-Service for different social-netw
 """
 
 # Standard Library
-import types
 
 # Third party
 from flask import Blueprint, request
-from flask.ext.restful import Resource
 
 # Application Specific
 from mock_service.common.constants import MEETUP
@@ -42,7 +40,7 @@ register_vendor(MEETUP, meetup_vendor)
 
 
 # TODO: Make this endpoint generic and usable for all services
-@mock_blueprint.route(MockServiceApi.MOCK_SERVICE)
+@mock_blueprint.route(MockServiceApi.MOCK_SERVICE, methods=['GET', 'POST', 'PATCH', 'PUT', 'DELETE'])
 def mock_endpoint(url_type, social_network, path):
     """
     Mock endpoint to handle mock requests and its response.
@@ -77,6 +75,7 @@ def mock_endpoint(url_type, social_network, path):
     else:
         resource_id = None
     try:
+        authorization_header = {'Authorization': request.headers.get('Authorization')}
         if request.content_type in ['application/x-www-form-urlencoded', '']:
             data = dict()
             # In case of url encoded data or form data get all values from querystring or form data
@@ -89,7 +88,7 @@ def mock_endpoint(url_type, social_network, path):
         # get mocked json vendor based. In case of meetup, a meetup dict will be returned (response, status code.
         # see meetup_mock.py)
         mocked_json = vendor_data(url_type, resource_id)['/' + relative_url][request_method]
-        response, status_code = get_mock_response(mocked_json, payload=data, headers=request.headers)
+        response, status_code = get_mock_response(mocked_json, payload=data, headers=authorization_header)
         logger.info('MOCK RESPONSE: {} Request data: {} {} {}'.format(str(response), url_type, relative_url,
                                                                       request_method))
     except KeyError:
