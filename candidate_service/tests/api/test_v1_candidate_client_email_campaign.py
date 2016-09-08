@@ -65,7 +65,7 @@ class TestClientEmailCampaign(object):
 def _assert_candidate_client_campaign(body, access_token):
     """
     Here we create candidate-client-campaign and assert valid response
-    :param dict body: Date to create candidate client campaign
+    :param dict body: Data to create candidate client campaign
     :param string access_token: Access token of user
     """
     # send the post request to /v1/candidates/client-email-campaign
