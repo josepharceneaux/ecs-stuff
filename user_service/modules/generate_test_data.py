@@ -18,7 +18,7 @@ from user_service.user_app import logger
 TEST_PASSWORD = "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6"
 
 
-def create_test_domain(names):
+def create_test_domains(names):
     """
     This function takes list of domain names, creates domains with given names and then returns domains list.
     :param list | tuple names: list of domain names
@@ -28,7 +28,7 @@ def create_test_domain(names):
     for domain_name in names:
         domain = Domain(name=domain_name)
         Domain.save(domain)
-        logger.debug('Domain Name %s', domain.name)
+        logger.debug('create_test_domain: Created a test domain with name %s', domain.name)
         domains.append(domain)
     return domains, [domain.id for domain in domains]
 
@@ -46,7 +46,7 @@ def create_user_groups(group_names, domain_ids):
         user_group = UserGroup.get_by_name(group_name)
         if not user_group:
             user_group = UserGroup.add_groups([{'name': group_name}], domain_id)[0]
-        logger.debug('User Group: %s', user_group.name)
+        logger.debug('create_user_groups: Created a user group: %s', user_group.name)
         groups.append(user_group)
     return groups, [group.id for group in groups]
 
@@ -54,6 +54,7 @@ def create_user_groups(group_names, domain_ids):
 def create_test_user(email, domain_id, group_id):
     """
     This function creates a test user with given domain and group with `TEST_ADMIN` as role.
+    :param string email: user's email address
     :param int | long domain_id: user's domain id
     :param int | long group_id: user's group id
     :rtype: User
@@ -63,7 +64,7 @@ def create_test_user(email, domain_id, group_id):
     if not user:
         user = User(email=email, domain_id=domain_id, user_group_id=group_id, password=TEST_PASSWORD, role_id=role.id)
         User.save(user)
-    logger.debug('User: %s', user.name)
+    logger.debug('create_test_user: Created a test user: %s', user.name)
     return user
 
 
@@ -101,7 +102,7 @@ def create_test_data():
     # Create two domains
     domain_names = ["test_domain_first", "test_domain_second"]
     domain_names = [name + timestamp for name in domain_names]
-    domains, domain_ids = create_test_domain(domain_names)
+    domains, domain_ids = create_test_domains(domain_names)
 
     # # Create user groups
     group_names = ["test_group_first", "test_group_second"]
