@@ -320,7 +320,7 @@ def test_2448_3264_jpg_by_post(token_fixture, user_fixture):
 
 def test_jpg_in_pdf(token_fixture, user_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'jpg_in_pdf.pdf')
-    """Test that large jpgs files can be posted."""
+    """Test PDF wrapped images can be parsed."""
     assert_non_create_content_and_status(content, status)
 
 
@@ -445,7 +445,7 @@ def test_create_from_jpgTxtPdf(token_fixture, user_fixture):
 # Test Candidate Updating
 ####################################################################################################
 def test_already_exists_candidate(token_fixture, user_fixture):
-    """Test that v1.5 pdf files can be posted."""
+    """Test that multiple resumes can be posted and updated right after."""
     resumes_to_update = ['Aleksandr_Tenishev_2016_02.doc',
         'Apoorva-Resume_SynergesticIT.pdf',
         'Foti Resume May 2016.pdf', 'James_Xie_Resume_2016.doc',

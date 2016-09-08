@@ -52,13 +52,11 @@ class TestCampaignBlastById(object):
         get_blast(blast_id, invalid_campaign_id, token_first,
                   expected_status=(codes.NOT_FOUND,))
 
-    def test_get_campaign_blast_with_invalid_blast_id(self, token_first, campaign_blast,
-                                                      campaign_in_db):
+    def test_get_campaign_blast_with_invalid_blast_id(self, token_first, campaign_in_db):
         """
         Try to get a valid campaign's blast with invalid blast id,
         and we are expecting ResourceNotFound error here
         :param token_first: auth token
-        :param campaign_blast: campaign blast object
         :param campaign_in_db: campaign object
         """
         # 404 Case, Blast not found

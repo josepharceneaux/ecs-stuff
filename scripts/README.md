@@ -1,5 +1,21 @@
 # Scripts
 
+## **__change-task-definition.py__**
+
+Intended for backing out a container image in the event of installing a bad one, this script changes the task definition being run. To back up one revision, run:
+```
+python change-task-definition.py stage activity-service -1
+```
+
+To move up one revision, that would be:
+```
+python change-task-definition.py stage activity-service +1
+```
+To revert one revision for all services on a cluster:
+```
+python change-task-definition.py stage all-services -1
+```
+
 Scripts which are run manually, or by processes such as Jenkins. Jenkins builds on the `develop` branch push the container images built to the AWS repository,
 creates a new task definition using the image, and restarts the service. An image running on `staging` can be promoted to production with the `move-stage-to-prod.py` script
 described below.
