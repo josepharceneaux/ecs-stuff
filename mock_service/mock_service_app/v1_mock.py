@@ -19,8 +19,8 @@ from mock_service.common.error_handling import (NotFoundError, InternalServerErr
                                                 UnauthorizedError)
 from mock_service.common.utils.handy_functions import (HttpMethods, JSON_CONTENT_TYPE_HEADER)
 from mock_service.mock_service_app import app, logger
-from mock_service.modules.mock_api import get_mock_response
-from mock_service.modules.vendors.meetup_mock import meetup_vendor
+from mock_service.modules.mock_utils import get_mock_response
+from mock_service.modules.vendors.meetup import meetup_vendor
 
 mock_blueprint = Blueprint('mock_service', __name__)
 api = TalentApi()
@@ -47,7 +47,7 @@ register_vendor(MEETUP, meetup_vendor)
 
 # TODO: Make this endpoint generic and usable for all services
 @api.route(MockServiceApi.MOCK_SERVICE)
-class MockServer(Resource):
+class MockApi(Resource):
     """
     Mock Server endpoint to handle mock requests and its response.
 

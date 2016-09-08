@@ -13,8 +13,9 @@ from mock_service.common.error_handling import InternalServerError
 def _validate_payload(mocked_json, payload):
     """
     Validate expected payload with original request payload
-    :param dict mocked_json:
-    :param dict payload:
+    :param dict mocked_json: Already mocked hard coded json dict from where response data needs to be extracted
+    :param dict payload: Original payload sent to mock api. If not None, then match validate it with mock_json
+    expected payload
     """
     expected_payload = mocked_json.get('expected_payload')
     if not expected_payload:
@@ -30,8 +31,9 @@ def _validate_payload(mocked_json, payload):
 def _validate_headers(mocked_json, headers):
     """
     Validate expected headers with original request headers
-    :param dict mocked_json:
-    :param dict headers:
+    :param dict mocked_json: Already mocked hard coded json dict from where response data needs to be extracted
+    :param dict headers: Original headers sent to mock api. If not None, then match validate it with mock_json
+    expected headers
     """
     expected_headers = mocked_json.get('expected_headers')
     if not expected_headers:
@@ -44,10 +46,10 @@ def _validate_headers(mocked_json, headers):
         raise InternalServerError('Mocked JSON is not implemented for headers.')
 
 
-def _match_dicts(expected_data, original_data, ignore=[]):
+def _match_dicts(original_data, expected_data=None, ignore=None):
     """
     Match all entries of expected dict with original dict
-    :param dict expected_data: expected dict with key value pair
+    :param dict|None expected_data: expected dict with key value pair
     :param dict original_data: original dict with key value pair
     :param list ignore: list of keys to ignore in original data when validating. Default will check all expected
     data with original data
@@ -65,10 +67,11 @@ def get_mock_response(mocked_json, payload=None, headers=None):
         - Check if expected and request headers is same. If not, then send on_fail response
         - Check if expected and request payload is same. If not, then send on_fail response
         - If everything's fine, then return OK response by default
+    Called by mock api endpoint
     :param dict mocked_json: Already mocked hard coded json dict from where response data needs to be extracted
-    :param dict payload: Original payload sent to mock api. If not None, then match validate it with mock_json
+    :param dict|None payload: Original payload sent to mock api. If not None, then match validate it with mock_json
     expected payload
-    :param dict headers: Original headers sent to mock api. If not None, then match validate it with mock_json
+    :param dict|None headers: Original headers sent to mock api. If not None, then match validate it with mock_json
     expected headers
     """
     for response_code in [_validate_headers(mocked_json, headers), _validate_payload(mocked_json, payload)]:

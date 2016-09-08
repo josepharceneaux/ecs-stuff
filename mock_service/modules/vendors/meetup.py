@@ -39,6 +39,7 @@ def get_random_event_id():
 def get_meetup_client():
     """
     Return meetup client from db
+    :rtype dict:
     """
     social_network = SocialNetwork.get_by_name(MEETUP.title())
     return {
