@@ -58,7 +58,7 @@ class TestClientEmailCampaign(object):
 
         # Sometimes we face 504 issue as smartlist-candidate not found in candidate-service. So added this in
         # retry block.
-        retry(_assert_candidate_client_campaign, sleeptime=3,  attempts=5, sleepscale=1,
+        retry(_assert_candidate_client_campaign, sleeptime=3, attempts=5, sleepscale=1,
               retry_exceptions=(AssertionError,), args=(body, access_token_first))
 
 
