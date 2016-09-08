@@ -10,7 +10,7 @@ from datetime import datetime
 from datetime import timedelta
 
 # Application specific
-from social_network_service.common.mock.sn_relative_urls import SocialNetworkUrls as Urls
+from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls as Urls
 from social_network_service.modules.urls import get_url
 from social_network_service.modules.utilities import logger
 from social_network_service.modules.utilities import log_error

@@ -4,10 +4,9 @@ Here we have endpoint which is treated as Mock-Service for different social-netw
 # Third party
 import types
 from flask import Blueprint, request
-
-# Application Specific
 from flask.ext.restful import Resource
 
+# Application Specific
 from mock_service.common.constants import MEETUP
 from mock_service.common.routes import MockServiceApi
 from mock_service.common.talent_api import TalentApi
@@ -16,7 +15,7 @@ from mock_service.common.talent_config_manager import TalentConfigKeys, TalentEn
 from mock_service.common.error_handling import (NotFoundError, InternalServerError,
                                                 UnauthorizedError)
 from mock_service.mock_service_app import app, logger
-from mock_service.modules.mock_api import MockApi
+from mock_service.modules.mock_api import get_mock_response
 from mock_service.modules.vendors.meetup_mock import meetup_vendor
 
 mock_blueprint = Blueprint('mock_service', __name__)
@@ -51,28 +50,31 @@ class MockServer(Resource):
     - mock_endpoint(self, url_type, social_network):
       when a request is made then return mocked response based on vendor dict defined. (See vendors/meetup_mock.py)
     """
-    def get(self, url_type, social_network):
-        return self.mock_endpoint(url_type, social_network)
+    def get(self, url_type, social_network, path):
+        return self.mock_endpoint(url_type, social_network, path)
 
-    def put(self, url_type, social_network):
-        return self.mock_endpoint(url_type, social_network)
+    def put(self, url_type, social_network, path):
+        return self.mock_endpoint(url_type, social_network, path)
 
-    def post(self, url_type, social_network):
-        return self.mock_endpoint(url_type, social_network)
+    def post(self, url_type, social_network, path):
+        return self.mock_endpoint(url_type, social_network, path)
 
-    def delete(self, url_type, social_network):
-        return self.mock_endpoint(url_type, social_network)
+    def delete(self, url_type, social_network, path):
+        return self.mock_endpoint(url_type, social_network, path)
 
-    def patch(self, url_type, social_network):
-        return self.mock_endpoint(url_type, social_network)
+    def patch(self, url_type, social_network, path):
+        return self.mock_endpoint(url_type, social_network, path)
 
-    def mock_endpoint(self, url_type, social_network):
+    def mock_endpoint(self, url_type, social_network, path):
         """
-        #TODO:
-        Mock endpoint
+        Mock endpoint to handle mock requests and its response.
+        Note: Currently it works for only meetup vendor.
         :param url_type: auth url or api url
         :type url_type: str | basestring
-        :param string social_network: Name of social-network. e.g. "meetup"
+        :param social_network: Name of social-network. e.g. "meetup"
+        :type social_network: str | basestring
+        :param path: relative part of vendor url
+        :type: str | basestring
         """
         # We need to mock third party urls in case of jenkins or dev environment.
         if not app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
@@ -80,7 +82,7 @@ class MockServer(Resource):
                                     % app.config[TalentConfigKeys.ENV_KEY])
 
         # path will be relative url. i.e /self/member
-        relative_url = request.args.get('path')
+        relative_url = path
 
         vendor_data = mock_url_hub.get(social_network)
         if not vendor_data:
@@ -89,9 +91,9 @@ class MockServer(Resource):
 
         # To get id from put or get url i.e /event/23 or /event/45. Split data and get resource id
         splitted_data = relative_url.split('/')
-        if len(splitted_data) > 2 and splitted_data[2].isdigit():
-            relative_url = '/' + splitted_data[1]
-            resource_id = splitted_data[2]
+        if len(splitted_data) > 1 and splitted_data[1].isdigit():
+            relative_url = '/' + splitted_data[0]
+            resource_id = splitted_data[1]
             if request_method == 'POST':
                 request_method = 'PUT'
         else:
@@ -109,9 +111,8 @@ class MockServer(Resource):
                 data = request.data
             # get mocked json vendor based. In case of meetup, a meetup dict will be returned (response, status code.
             # see meetup_mock.py)
-            mocked_json = vendor_data(url_type, resource_id)[relative_url][request_method]
-            mock_api = MockApi(mocked_json, payload=data, headers=request.headers)
-            response, status_code = mock_api.get_response()
+            mocked_json = vendor_data(url_type, resource_id)['/' + relative_url][request_method]
+            response, status_code = get_mock_response(mocked_json, payload=data, headers=request.headers)
             logger.info('MOCK RESPONSE: {} Request data: {} {} {}'.format(str(response), url_type, relative_url,
                                                                           request_method))
         except KeyError:

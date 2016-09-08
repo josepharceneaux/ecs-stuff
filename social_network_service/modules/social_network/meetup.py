@@ -17,7 +17,7 @@ from social_network_service.modules import custom_codes
 from social_network_service.modules.constants import MEETUP_VENUE
 from social_network_service.modules.custom_codes import (VENUE_EXISTS_IN_GT_DATABASE,
                                                          INVALID_MEETUP_RESPONSE)
-from social_network_service.common.mock.sn_relative_urls import SocialNetworkUrls
+from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
 from social_network_service.modules.urls import get_url
 from social_network_service.modules.utilities import logger
 from base import SocialNetworkBase

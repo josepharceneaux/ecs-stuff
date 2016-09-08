@@ -4,7 +4,7 @@ get_url method returns vendor specific absolute url.
 
 # App specific imports
 from social_network_service.common.constants import API, AUTH
-from social_network_service.common.mock.sn_relative_urls import SocialNetworkUrls
+from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
 from social_network_service.common.routes import MockServiceApiUrl
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
