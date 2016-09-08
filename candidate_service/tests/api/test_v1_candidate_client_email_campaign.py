@@ -56,26 +56,25 @@ class TestClientEmailCampaign(object):
             'email_client_id': EmailClient.get_id_by_name('Browser')
         }
 
-        # send the post request to /v1/candidates/client-email-campaign
-        response = requests.post(
-            url=CandidateApiUrl.CANDIDATE_CLIENT_CAMPAIGN,
-            data=json.dumps(body),
-            headers={'Authorization': 'Bearer %s' % access_token_first,
-                     'content-type': 'application/json'}
-        )
-        print response_info(response)
-
         # Sometimes we face 504 issue as smartlist-candidate not found in candidate-service. So added this in
         # retry block.
         retry(_assert_candidate_client_campaign, sleeptime=3,  attempts=5, sleepscale=1,
-              retry_exceptions=(AssertionError,), args=(response,))
+              retry_exceptions=(AssertionError,), args=(body, access_token_first))
 
 
-def _assert_candidate_client_campaign(candidate_client_campaign_response):
+def _assert_candidate_client_campaign(body, access_token):
     """
     Here we create candidate-client-campaign and assert valid response
-    :param Response candidate_client_campaign_response: Date to create candidate client campaign
+    :param dict body: Date to create candidate client campaign
+    :param string access_token: Access token of user
     """
+    # send the post request to /v1/candidates/client-email-campaign
+    candidate_client_campaign_response = requests.post(
+        url=CandidateApiUrl.CANDIDATE_CLIENT_CAMPAIGN,
+        data=json.dumps(body),
+        headers={'Authorization': 'Bearer %s' % access_token,
+                 'content-type': 'application/json'}
+    )
     # assert it is created and contains email campaign sends objects
     assert candidate_client_campaign_response.status_code == codes.CREATED, candidate_client_campaign_response.text
     email_campaign_sends = candidate_client_campaign_response.json()['email_campaign_sends']
