@@ -386,10 +386,10 @@ def meetup_venue(meetup, user_first, token_first):
     response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
 
     data = response_post.json()
-    if response_post.status_code == 400:
+    if response_post.status_code == codes.bad:
         data = data['error']
 
-    assert response_post.status_code == 201 or response_post.status_code == 400, response_post.text
+    assert response_post.status_code == codes.created or response_post.status_code == codes.bad, response_post.text
     venue_id = data['id']
 
     return {'id': venue_id}
@@ -418,10 +418,10 @@ def meetup_venue_second(meetup, user_first, token_first):
     response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
 
     data = response_post.json()
-    if response_post.status_code == 400:
+    if response_post.status_code == codes.bad:
         data = data['error']
 
-    assert response_post.status_code == 201 or response_post.status_code == 400, response_post.text
+    assert response_post.status_code == codes.created or response_post.status_code == codes.bad, response_post.text
     venue_id = data['id']
 
     return {'id': venue_id}
@@ -448,7 +448,7 @@ def eventbrite_venue_second(user_first, eventbrite, token_first):
 
     response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
 
-    assert response_post.status_code == 201, response_post.text
+    assert response_post.status_code == codes.created, response_post.text
 
     venue_id = response_post.json()['id']
 
@@ -476,7 +476,7 @@ def eventbrite_venue(user_first, eventbrite, token_first):
 
     response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token_first, data=venue)
 
-    assert response_post.status_code == 201, response_post.text
+    assert response_post.status_code == codes.created, response_post.text
     venue_id = response_post.json()['id']
 
     return {'id': venue_id}
