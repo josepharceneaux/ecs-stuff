@@ -31,6 +31,10 @@ events_id = []
 
 
 def get_random_event_id():
+    """
+    Return random event id ranging from 1 to 100,000
+    :rtype: int
+    """
     event_id = fake.random_int(min=1, max=100000)
     events_id.append(event_id)
     return event_id
@@ -285,9 +289,8 @@ def meetup_vendor_api(event_id=None):
 
 def meetup_vendor_auth():
     """
-    Returns JSON dict for mocked data of Meetup
-    :return:
-    :rtype:
+    Returns meetup auth url dictionary
+    :rtype:dict
     """
     return {
         Urls.MEETUP[Urls.REFRESH_TOKEN].format(''): {
@@ -322,6 +325,7 @@ def meetup_vendor(url_type, event_id=None):
     There will be two types of url. auth and api. See SocialNetwork model class for more details.
     :param url_type: Check if request URL is of auth type
     :type url_type: str
+    :param int event_id: event id or resource id
     :rtype: dict
     """
     if url_type.lower() == AUTH:

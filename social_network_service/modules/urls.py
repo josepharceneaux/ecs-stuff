@@ -1,5 +1,8 @@
 """
 get_url method returns vendor specific absolute url.
+
+Example url: http://localhost:8016/v1/api/self/member
+
 """
 
 # App specific imports

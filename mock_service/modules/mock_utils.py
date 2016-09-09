@@ -38,15 +38,16 @@ def _validate_headers(mocked_json, headers):
     expected_headers = mocked_json.get('expected_headers')
     if not expected_headers:
         return None
-    fields_to_ignore = expected_headers.get('ignore', [])
-    is_matched = _match_dicts(expected_headers['headers'], headers, ignore=fields_to_ignore)
+    auth_header = {'Authorization': headers.get('Authorization')}
+
+    is_matched = _match_dicts(expected_headers['headers'], auth_header)
     try:
         return codes.OK if is_matched else expected_headers['on_fail']
     except KeyError:
         raise InternalServerError('Mocked JSON is not implemented for headers.')
 
 
-def _match_dicts(original_data, expected_data=None, ignore=None):
+def _match_dicts(original_data, expected_data=None, ignore=[]):
     """
     Match all entries of expected dict with original dict
     :param dict|None expected_data: expected dict with key value pair
