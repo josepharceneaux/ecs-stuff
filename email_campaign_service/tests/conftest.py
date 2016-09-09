@@ -1,6 +1,17 @@
+"""
+ Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Um-I-Hani, QC-Technologies, <haniqadri.qc@gmail.com>
+         Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
+This file contains fixtures for tests of email-campaign-service
+"""
+
 __author__ = 'basit'
 
+# Standard Library
 import re
+
+# Application Specific
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.routes import EmailCampaignApiUrl
@@ -11,20 +22,13 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   create_email_campaign_smartlist,
                                                                   send_campaign_helper,
                                                                   create_smartlist_with_given_email_candidate,
+                                                                  add_email_template,
+                                                                  get_template_folder, assert_valid_template_folder,
                                                                   EmailCampaignTypes)
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 EMAIL_CAMPAIGN_TYPES = [EmailCampaignTypes.WITHOUT_CLIENT, EmailCampaignTypes.WITH_CLIENT]
-
-
-@pytest.fixture()
-def headers(access_token_first):
-    """
-    Returns the header containing access token and content-type to make POST/DELETE requests.
-    :param access_token_first: fixture to get access token of user
-    """
-    return get_auth_header(access_token_first)
 
 
 @pytest.fixture()
@@ -256,3 +260,40 @@ def invalid_data_for_campaign_creation(request):
                      }
     del campaign_data[request.param]
     return campaign_data, request.param
+
+
+@pytest.fixture()
+def create_email_template_folder(headers, user_first):
+    """
+    Here we create email-template-folder
+    """
+    template_folder_id, template_folder_name = get_template_folder(headers)
+    # Assert that folder is created with correct name
+    response = requests.get(EmailCampaignApiUrl.TEMPLATE_FOLDER % template_folder_id,
+                            headers=headers)
+    assert response.ok
+    assert response.json()
+    json_response = response.json()
+    assert_valid_template_folder(json_response['email_template_folder'], user_first.domain.id,
+                                 template_folder_name)
+    return template_folder_id, template_folder_name
+
+
+@pytest.fixture()
+def email_template(headers, user_first):
+    """
+    Here we create email-template-folder
+    """
+    return add_email_template(headers, user_first)
+
+
+@pytest.fixture()
+def email_templates_bulk(headers, user_first):
+    """
+    Here we create 10 email-templates to test pagination.
+    """
+    email_template_ids = []
+    for _ in xrange(1, 11):
+        template = add_email_template(headers, user_first)
+        email_template_ids.append(template['id'])
+    return email_template_ids
