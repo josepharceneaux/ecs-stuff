@@ -1,5 +1,6 @@
 """
  Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Um-I-Hani, QC-Technologies, <haniqadri.qc@gmail.com>
          Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
 This file contains function used by email-campaign-api.

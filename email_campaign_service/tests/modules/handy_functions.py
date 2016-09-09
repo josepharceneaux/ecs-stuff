@@ -1,5 +1,9 @@
 """
-Here we have helper function to be used in tests of email-campaign-service
+ Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Um-I-Hani, QC-Technologies, <haniqadri.qc@gmail.com>
+         Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
+    Here are the helper functions used in tests of email-campaign-service
 """
 
 # Standard Imports
@@ -11,6 +15,7 @@ import datetime
 # Third Party
 import requests
 from redo import retry
+from requests import codes
 
 # Application Specific
 from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
@@ -33,7 +38,13 @@ from email_campaign_service.common.tests.fake_testing_data_generator import Fake
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 __author__ = 'basit'
+
 TEST_EMAIL_ID = 'test.gettalent@gmail.com'
+ON = 1  # Global variable for comparing value of is_immutable in the functions to avoid hard-coding 1
+EMAIL_TEMPLATE_BODY = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
+                      '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
+                      '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through ' \
+                      'script</p>\r\n</body>\r\n</html>\r\n'
 
 
 class EmailCampaignTypes(object):
@@ -260,16 +271,14 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         UrlConversion.delete(send_url_conversion.url_conversion)
 
 
-def post_to_email_template_resource(access_token, data):
+def post_to_email_template_resource(headers, data):
     """
     Function sends a post request to email-templates,
     i.e. EmailTemplate/post()
+    It then returns Id of created EmailTemplate
     """
-    response = requests.post(url=EmailCampaignApiUrl.TEMPLATES,
-                             data=json.dumps(data),
-                             headers={'Authorization': 'Bearer %s' % access_token,
-                                      'Content-type': 'application/json'}
-                             )
+    response = requests.post(url=EmailCampaignApiUrl.TEMPLATES, data=json.dumps(data), headers=headers)
+    print response.json()
     return response
 
 
@@ -281,58 +290,52 @@ def request_to_email_template_resource(access_token, request, email_template_id,
     :param email_template_id: Id of email template
     :param data: data in form of dictionary
     """
-    url = EmailCampaignApiUrl.TEMPLATES + '/' + str(email_template_id)
+    url = EmailCampaignApiUrl.TEMPLATE % email_template_id
     return define_and_send_request(access_token, request, url, data)
 
 
-def get_template_folder(token):
+def get_template_folder(headers):
     """
     Function will create and retrieve template folder
-    :param token:
+    :type headers: dict
     :return: template_folder_id, template_folder_name
+    :rtype: tuple[int, str]
     """
     template_folder_name = 'test_template_folder_%i' % datetime.datetime.now().microsecond
 
-    data = {'name': template_folder_name}
-    response = requests.post(url=EmailCampaignApiUrl.TEMPLATES_FOLDER, data=json.dumps(data),
-                             headers={'Authorization': 'Bearer %s' % token,
-                                      'Content-type': 'application/json'})
+    data = {'name': template_folder_name,
+            'is_immutable': ON}
+    response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
+                             headers=headers)
     assert response.status_code == requests.codes.CREATED
     response_obj = response.json()
-    template_folder_id = response_obj["template_folder_id"][0]
-    return template_folder_id['id'], template_folder_name
+    template_folder_id = response_obj["id"]
+    return template_folder_id, template_folder_name
 
 
-def create_email_template(token, user_id, template_name, body_html, body_text, is_immutable=1,
-                          folder_id=None):
+def data_to_create_email_template(headers, template_owner, body_html='', body_text=''):
     """
-    Creates a email campaign template with params provided
-
-    :param token
-    :param user_id:                 User id
-    :param template_name:           Template name
-    :param body_html:               Body html
-    :param body_text:               Body text
-    :param is_immutable:            1 if immutable, otherwise 0
-    :param folder_id:               folder id
+    This returns data to create an email-template with params provided
+    :rtype: dict
     """
+    # Get Template Folder Id
+    template_folder_id, template_folder_name = get_template_folder(headers)
+    template_name = 'test_email_template_%i' % datetime.datetime.utcnow().microsecond
+    is_immutable = ON
     data = dict(
         name=template_name,
-        template_folder_id=folder_id,
-        user_id=user_id,
+        template_folder_id=template_folder_id,
+        user_id=template_owner.id,
         type=0,
         body_html=body_html,
         body_text=body_text,
         is_immutable=is_immutable
     )
-
-    create_resp = post_to_email_template_resource(token, data=data)
-    return create_resp
+    return data
 
 
 def update_email_template(email_template_id, request, token, user_id, template_name, body_html,
-                          body_text='',
-                          folder_id=None, is_immutable=1):
+                          body_text='', folder_id=None, is_immutable=ON):
     """
         Update existing email template fields using values provided by user.
         :param email_template_id: id of email template
@@ -359,37 +362,22 @@ def update_email_template(email_template_id, request, token, user_id, template_n
     return create_resp
 
 
-def add_email_template(token, template_owner, template_body):
+def add_email_template(headers, template_owner):
     """
-    This function will create email template
+    This function will create email template with valid data.
+    :rtype: dict
     """
-    domain_id = template_owner.domain_id
-
-    # Get Template Folder Id
-    template_folder_id, template_folder_name = get_template_folder(token)
-
-    template_name = 'test_email_template%i' % datetime.datetime.now().microsecond
-    is_immutable = 1
-    resp = create_email_template(token, template_owner.id, template_name, template_body, '',
-                                 is_immutable,
-                                 folder_id=template_folder_id)
-    db.session.commit()
-    resp_obj = resp.json()
-    resp_dict = resp_obj['template_id'][0]
-
-    return {"template_id": resp_dict['id'],
-            "template_folder_id": template_folder_id,
-            "template_folder_name": template_folder_name,
-            "template_name": template_name,
-            "is_immutable": is_immutable,
-            "domain_id": domain_id}
-
-
-def template_body():
-    return '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
-           '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
-           '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through script</p>' \
-           '\r\n</body>\r\n</html>\r\n'
+    data = data_to_create_email_template(headers, template_owner, EMAIL_TEMPLATE_BODY)
+    response = post_to_email_template_resource(headers, data=data)
+    json_response = response.json()
+    assert response.status_code == codes.CREATED, response.text
+    assert response.json()
+    assert 'id' in json_response
+    return {"id": json_response['id'],
+            "name": data['name'],
+            "template_folder_id": data['template_folder_id'],
+            "is_immutable": data['is_immutable'],
+            "domain_id": template_owner.domain_id}
 
 
 def create_email_campaign_via_api(access_token, data, is_json=True):
@@ -486,3 +474,47 @@ def send_campaign_helper(request, email_campaign, access_token):
     # send campaign
     CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND, email_campaign, access_token)
     return email_campaign
+
+
+def assert_valid_template_object(template_dict, user_id, expected_template_ids, expected_name='', expected_html=''):
+    """
+    Here we are asserting that response from API /v1/email-templates/:id
+    :param dict template_dict: object received from above API endpoints
+    :param int|long user_id: Id of user
+    :param list[int|long] expected_template_ids: List of email-template ids
+    :param string|None expected_name: Expected name of email-template
+    :param string|None expected_html: Expected body_html of email-template
+    """
+    assert template_dict['id'] in expected_template_ids
+    if expected_name:
+        assert template_dict['name'] == expected_name
+    else:
+        assert template_dict['name']
+    if expected_html:
+        assert template_dict['body_html'] == expected_html
+    else:
+        assert template_dict['body_html']
+    assert template_dict['user_id'] == user_id
+    assert template_dict['template_folder_id']
+    assert template_dict['updated_datetime']
+    assert template_dict['is_immutable'] == ON
+
+    # Following fields may have empty values
+    assert 'type' in template_dict
+    assert 'body_text' in template_dict
+
+
+def assert_valid_template_folder(template_folder_dict, domain_id, expected_name):
+    """
+    Here we are asserting that response from API /v1/email-template-folders/:id
+    :param dict template_folder_dict: object received from above API endpoints
+    :param int|long domain_id: Id of user's domain
+    :param string expected_name: Expected name of email-template-folder
+    """
+    assert template_folder_dict['id']
+    assert template_folder_dict['name'] == expected_name
+    assert template_folder_dict['domain_id'] == domain_id
+    assert template_folder_dict['updated_datetime']
+    assert template_folder_dict['is_immutable'] == ON
+    # Following fields may have empty values
+    assert 'parent_id' in template_folder_dict

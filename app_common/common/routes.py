@@ -647,7 +647,8 @@ class SocialNetworkApi(object):
     VENUE = '/' + VERSION + '/venues/<int:venue_id>'
     EVENT_ORGANIZERS = '/' + VERSION + '/event-organizers'
     EVENT_ORGANIZER = '/' + VERSION + '/event-organizers/<int:organizer_id>'
-    # TODO: This should be /timezones in place of /data/timezones as data is not a resource of social network service (Verify is it timezone or timezones)
+    # TODO: This should be /timezones in place of /data/timezones as data is not a resource of social network service
+    # TODO: (Verify is it timezone or timezones)
     TIMEZONES = '/' + VERSION + '/data/timezones'
     RSVP = '/' + VERSION + '/rsvp'
     IMPORTER = '/' + VERSION + '/import/<string:mode>/<string:social_network>'
@@ -830,8 +831,13 @@ class EmailCampaignApi(object):
     # endpoint /v1/email-campaigns/:id/sends/:id
     # Gives the send object of a campaign for a particular send_id
     SEND_BY_ID = '/' + VERSION + '/email-campaigns/<int:campaign_id>/sends/<int:send_id>'
-
     TEST_EMAIL = '/' + VERSION + '/test-email-send'
+
+    """ URLs for email-templates """
+    TEMPLATES = '/' + VERSION + '/email-templates'
+    TEMPLATE = '/' + VERSION + '/email-templates/<int:template_id>'
+    TEMPLATE_FOLDERS = '/' + VERSION + '/email-template-folders'
+    TEMPLATE_FOLDER = '/' + VERSION + '/email-template-folders/<int:folder_id>'
 
 
 class EmailCampaignApiUrl(object):
@@ -846,11 +852,15 @@ class EmailCampaignApiUrl(object):
     URL_REDIRECT = HOST_NAME % ('/' + VERSION + '/redirect/%s')
     BLASTS = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/blasts')
     BLAST = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/blasts/%s')
-    TEMPLATES = HOST_NAME % ('/' + VERSION + '/email-templates')
-    TEMPLATES_FOLDER = HOST_NAME % ('/' + VERSION + '/email-template-folders')
     SENDS = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/sends')
     SEND_BY_ID = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/sends/%s')
     TEST_EMAIL = HOST_NAME % ('/' + VERSION + '/test-email-send')
+
+    """ URLs for email-templates """
+    TEMPLATES = HOST_NAME % ('/' + VERSION + '/email-templates')
+    TEMPLATE = HOST_NAME % ('/' + VERSION + '/email-templates/%s')
+    TEMPLATE_FOLDERS = HOST_NAME % ('/' + VERSION + '/email-template-folders')
+    TEMPLATE_FOLDER = HOST_NAME % ('/' + VERSION + '/email-template-folders/%s')
 
 
 class ATSServiceApi(object):
