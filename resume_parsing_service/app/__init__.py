@@ -3,7 +3,6 @@
 __author__ = 'erikfarmer'
 
 from flask.ext.redis import FlaskRedis
-from flask.ext.cors import CORS
 
 from resume_parsing_service.common.utils.models_utils import init_talent_app
 from resume_parsing_service.common.routes import ResumeApi, GTApis

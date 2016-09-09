@@ -19,7 +19,7 @@ from resume_parsing_service.common.utils.talent_s3 import boto3_get_file
 
 
 @contract
-def create_parsed_resume_candidate(candidate_dict, formatted_token_str, filename):
+def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
     """
     Sends candidate dict to candidate service POST and returns response.
     :param dict candidate_dict: dict containing candidate info in candidate format.
@@ -194,38 +194,7 @@ def get_users_talent_pools(formatted_token_str):
 
 def gen_hash_from_file(_file):
     """Handy function for creating file hashes. Used as redis keys to store parsed resumes."""
-    return hashlib.md5(_file.read()).hexdigest()
-
-
-def send_abbyy_email():
-    """
-    Function to send warning emails in the event Abbyy is out of credits. If RPS uses ses
-    functionality more this can be made more modular.
-    :return dict:
-    """
-
-    email_client = boto3.client('ses', region_name='us-east-1')
-    # Send to work/personal of DRI as well as Osman as back up in the event DRI is unavailable.
-    recipients = ['erik@gettalent.com', 'erikdfarmer@gmail.com', 'osman@gettalent.com']
-    ses_source = 'no-reply@gettalent.com'
-    subject = 'RED ALERT - Abbyy OCR is out of credits!'
-    body = 'Purchase credits from: https://cloud.ocrsdk.com/Account/Welcome immediately\n'
-
-    response = email_client.send_email(
-        Source=ses_source,
-        Destination={'ToAddresses': recipients},
-        Message={
-            'Subject': {
-                'Data': subject
-            },
-            'Body': {
-                'Text': {
-                    'Data': body
-                }
-            }
-        }
-    )
-    return response
+    return hashlib.md5(_file.getvalue()).hexdigest()
 
 
 def resume_file_from_params(parse_params):
@@ -242,6 +211,7 @@ def resume_file_from_params(parse_params):
     elif parse_params.get('filename'):
         resume_bin = parse_params.get('resume_file')
         resume_file = StringIO(resume_bin.read())
+        resume_bin.close()
 
     else:
         raise InvalidUsage(

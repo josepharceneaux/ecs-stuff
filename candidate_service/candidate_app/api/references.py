@@ -1,3 +1,7 @@
+# Standard library
+import requests
+import json
+
 # Flask specific
 from flask import request
 from flask_restful import Resource
@@ -23,14 +27,48 @@ from candidate_service.modules.references import (
 
 
 class CandidateReferencesResource(Resource):
+    """
+    Resource for all CRUD operations pertaining to candidate's references
+    """
     decorators = [require_oauth()]
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:   POST /v1/candidates/:candidate_id/references
+        Function will create candidate's reference's data
+
+        Usage:
+            >>> url = 'host/v1/candidates/4/references'
+            >>> headers = {'Authorization': 'Bearer {access_token}', 'content-type': 'application/json'}
+            >>> data =
+                        {
+                            "candidate_references": [
+                                {
+                                    "name": "Colonel Sanders",
+                                    "position_title": "manager",
+                                    "comments": "adept in problem solving",
+                                    "reference_email": {
+                                        "address": "c.sanders@kfc.com",
+                                        "label": "Primary",
+                                        "is_default": true
+                                    },
+                                    "reference_phone": {
+                                        "value": "+14055689944",
+                                        "label": "Mobile",
+                                        "is_default": true
+                                    },
+                                    "reference_web_address": {
+                                        "url": "http://www.kfc.com",
+                                        "description": "best way to reach me is via this website"
+                                    }
+                                }
+                            ]
+                        }
+            >>> requests.post(url=url, headers=headers, data=json.dumps(data))
+            <Response [201]>
+
         :return     {'candidate_references': [{'id': int}, {'id': int}, ...]}
-                    status code: 201
         """
         # Get json data if exists and validate its schema
         body_dict = get_json_data_if_validated(request, references_schema)
@@ -44,7 +82,9 @@ class CandidateReferencesResource(Resource):
         created_reference_ids = create_or_update_references(candidate_id=candidate_id,
                                                             references=body_dict['candidate_references'],
                                                             is_creating=True)
-        return {'candidate_references': [{'id': reference_id} for reference_id in created_reference_ids]}, 201
+        return {
+                   'candidate_references': [{'id': reference_id} for reference_id in created_reference_ids]
+               }, requests.codes.CREATED
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
