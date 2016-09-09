@@ -256,6 +256,8 @@ class UserServiceApi(object):
     DOMAIN_AOIS = '/' + VERSION + '/areas_of_interest'
     DOMAIN_AOI = '/' + VERSION + '/areas_of_interest/<int:id>'
 
+    TEST_SETUP = 'test-setup'
+
 
 class UserServiceApiUrl(object):
     """
@@ -290,6 +292,8 @@ class UserServiceApiUrl(object):
 
     DOMAIN_AOIS = HOST_NAME % ('/' + VERSION + '/areas_of_interest')
     DOMAIN_AOI = HOST_NAME % ('/' + VERSION + '/areas_of_interest/%s')
+
+    TEST_SETUP = HOST_NAME % ('/' + VERSION + '/test-setup')
 
 
 class CandidateApi(object):
