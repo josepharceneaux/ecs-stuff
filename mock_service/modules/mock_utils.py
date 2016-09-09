@@ -55,6 +55,7 @@ def _match_dicts(original_data, expected_data=None, ignore=[]):
     :param list ignore: list of keys to ignore in original data when validating. Default will check all expected
     data with original data
     """
+    #TODO--passing lists as ignore=[] can result in a bug, that's a known issue. Kindly fix this ASAP.
     if expected_data:
         for k, v in expected_data.iteritems():
             if not v == original_data[k] and k not in ignore:

@@ -20,7 +20,7 @@ from mock_service.modules.mock_utils import get_mock_response
 from mock_service.modules.vendors.meetup import meetup_vendor
 
 mock_blueprint = Blueprint('mock_service', __name__)
-
+#TODO--please comment and explain what this is
 mock_url_hub = dict()
 
 
@@ -32,6 +32,7 @@ def register_vendor(vendor_name, vendor_json_data):
     :param vendor_json_data: See meetup_mock.py
     :type vendor_json_data: Callable
     """
+    #TODO--please explain in above comment what is vendor registration and why our code does that?
     mock_url_hub.update({vendor_name: vendor_json_data})
 
 
@@ -44,7 +45,6 @@ register_vendor(MEETUP, meetup_vendor)
 def mock_endpoint(url_type, social_network, path):
     """
     Mock endpoint to handle mock requests and its response.
-    URL will look like -> http://localhost:8016/v1/api/self/member
     Note: Currently it works for only meetup vendor.
     :param url_type: auth url or api url
     :type url_type: str | basestring
@@ -53,6 +53,7 @@ def mock_endpoint(url_type, social_network, path):
     :param path: relative part of vendor url
     :type: str | basestring
     """
+    #TODO--kindly give examples about params
     # We need to mock third party urls in case of jenkins or dev environment.
     if app.config[TalentConfigKeys.ENV_KEY] not in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
         raise UnauthorizedError('This endpoint is not accessible in `%s` env.'
@@ -66,7 +67,7 @@ def mock_endpoint(url_type, social_network, path):
         raise NotFoundError("Vendor '{}' not found or mocked yet." % social_network)
     request_method = request.method
 
-    # To get id from put or get url i.e event/23 or event/45. Split data and get resource id
+    # To get id from PUT or GET url i.e event/23 or event/45. Split data and get resource id
     splitted_data = relative_url.split('/')
     if len(splitted_data) > 1 and splitted_data[1].isdigit():
         relative_url = splitted_data[0]
@@ -76,6 +77,7 @@ def mock_endpoint(url_type, social_network, path):
     else:
         resource_id = None
     try:
+        authorization_header = {'Authorization': request.headers.get('Authorization')}
         if request.content_type in ['application/x-www-form-urlencoded', '']:
             data = dict()
             # In case of url encoded data or form data get all values from querystring or form data
@@ -85,10 +87,11 @@ def mock_endpoint(url_type, social_network, path):
             data = request.json()
         else:
             data = request.data
+        # TODO --clarify the following example
         # get mocked json vendor based. In case of meetup, a meetup dict will be returned (response, status code.
         # see meetup_mock.py)
         mocked_json = vendor_data(url_type, resource_id)['/' + relative_url][request_method]
-        response, status_code = get_mock_response(mocked_json, payload=data, headers=request.headers)
+        response, status_code = get_mock_response(mocked_json, payload=data, headers=authorization_header)
         logger.info('MOCK RESPONSE: {} Request data: {} {} {}'.format(str(response), url_type, relative_url,
                                                                       request_method))
     except KeyError:
