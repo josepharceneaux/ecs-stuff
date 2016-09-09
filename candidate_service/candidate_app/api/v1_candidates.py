@@ -11,11 +11,11 @@ from datetime import date
 
 # Third Party
 from redo import retry
-from _mysql_exceptions import OperationalError
 
 # Flask specific
 from flask import request
 from flask_restful import Resource
+
 from candidate_service.candidate_app import logger
 
 # Database connection
@@ -1687,16 +1687,11 @@ class CandidateDeviceResource(Resource):
         # Send a GET request to OneSignal API to confirm that this device id is valid
         response = one_signal_client.get_player(one_signal_device_id)
         if response.ok:
-            # Device exists with id
             candidate_device = CandidateDevice(candidate_id=candidate.id,
                                                one_signal_device_id=one_signal_device_id,
                                                registered_at_datetime=datetime.datetime.utcnow())
-            try:
-                CandidateDevice.save(candidate_device)
-            except OperationalError as e:
-                logger.info('Try again, Error occurred while saving candidate device. Error: %s', e)
-                db.session.rollback()
-                CandidateDevice.save(candidate_device)
+
+            CandidateDevice.save(candidate_device)
 
             return dict(message='Device (id: %s) registered successfully with candidate (id: %s)'
                                 % (candidate_device.id, candidate.id)), 201

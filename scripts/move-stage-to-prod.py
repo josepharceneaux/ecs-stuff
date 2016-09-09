@@ -80,6 +80,7 @@ def update_prod_task_definition(client, family_name, definitions):
     return td['taskDefinitionArn']
 
 
+# TODO: Use the generic version of this from ecs_utils
 def update_service(client, prod_service_name, new_td_arn):
     """
     Update production service to use a new task definition revision.

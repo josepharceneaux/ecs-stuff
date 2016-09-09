@@ -148,9 +148,9 @@ def test_blank_file(token_fixture, user_fixture):
 
 def test_picture_not_resume(token_fixture, user_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'notResume.jpg')
-    assert content['error']['message'] == error_constants.ERROR_ENCODING_TEXT['message'], "There should be an error Because it's a picture of a backyard."
+    assert content['error']['message'] == error_constants.NO_TEXT_EXTRACTED['message'], "There should be an error Because it's a picture of a backyard."
     # The ocr of a tree returns japanese characters and cannot be encoded.
-    assert content['error']['code'] == error_constants.ERROR_ENCODING_TEXT['code']
+    assert content['error']['code'] == error_constants.NO_TEXT_EXTRACTED['code']
 
     content, status = fetch_resume_post_response(token_fixture, 'notResume2.jpg')
     assert content['error']['message'] == error_constants.NO_TEXT_EXTRACTED['message'], "There should be an error Because it's a picture of food."
@@ -320,7 +320,7 @@ def test_2448_3264_jpg_by_post(token_fixture, user_fixture):
 
 def test_jpg_in_pdf(token_fixture, user_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'jpg_in_pdf.pdf')
-    """Test that large jpgs files can be posted."""
+    """Test PDF wrapped images can be parsed."""
     assert_non_create_content_and_status(content, status)
 
 
@@ -445,7 +445,7 @@ def test_create_from_jpgTxtPdf(token_fixture, user_fixture):
 # Test Candidate Updating
 ####################################################################################################
 def test_already_exists_candidate(token_fixture, user_fixture):
-    """Test that v1.5 pdf files can be posted."""
+    """Test that multiple resumes can be posted and updated right after."""
     resumes_to_update = ['Aleksandr_Tenishev_2016_02.doc',
         'Apoorva-Resume_SynergesticIT.pdf',
         'Foti Resume May 2016.pdf', 'James_Xie_Resume_2016.doc',

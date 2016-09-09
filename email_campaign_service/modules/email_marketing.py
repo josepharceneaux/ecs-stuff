@@ -1,5 +1,6 @@
 """
  Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Um-I-Hani, QC-Technologies, <haniqadri.qc@gmail.com>
          Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
 This file contains function used by email-campaign-api.
@@ -18,6 +19,7 @@ from sqlalchemy import desc
 from datetime import datetime, timedelta
 
 # Service Specific
+from email_campaign_service.json_schema.test_email import TEST_EMAIL_SCHEMA
 from email_campaign_service.modules.validations import get_or_set_valid_value
 from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 from email_campaign_service.modules.utils import (TRACKING_URL_TYPE,
@@ -43,7 +45,8 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailCampaignSend,
                                                                  EmailCampaignSendUrlConversion)
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
-                                                            raise_if_not_positive_int_or_long)
+                                                            raise_if_not_positive_int_or_long,
+                                                            get_json_data_if_validated)
 from email_campaign_service.common.utils.handy_functions import (http_request,
                                                                  JSON_CONTENT_TYPE_HEADER)
 from email_campaign_service.common.utils.amazon_ses import send_email, get_default_email_info
@@ -1178,3 +1181,31 @@ def celery_error_handler(uuid):
     :param uuid:
     """
     db.session.rollback()
+
+
+def send_test_email(user, request):
+    """
+    This function sends a test email to given email addresses. Email sender depends on environment:
+        - local-no-reply@gettalent.com for dev
+        - staging-no-rely@gettalent.com for staging
+        - no-reply@gettalent.com for Prod
+    :param user: User model object (current user)
+    :param request: Flask request object
+    """
+    # Get and validate request data
+    data = get_json_data_if_validated(request, TEST_EMAIL_SCHEMA)
+    try:
+        default_email = get_default_email_info()['email']
+        send_email(source='"%s" <%s>' % (data['from'], default_email),
+                   subject=data['subject'],
+                   html_body=data['body_html'] or None,
+                   # Can't be '', otherwise, text_body will not show in email
+                   text_body=data['body_html'],
+                   to_addresses=data['email_address_list'],
+                   reply_address=user.email,
+                   body=None,
+                   email_format='html')
+    except Exception as e:
+        logger.error('Error occurred while sending test email. Error: %s', e)
+        raise InternalServerError('Unable to send emails to test email addresses.')
+

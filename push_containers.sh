@@ -34,7 +34,7 @@ if [ $production ] ; then
 	fi
 
 	# Tag it with the version
-	tag_command="docker tag -f ${stage_image} ${ecr_registry_url}/gettalent/${app}:${version_tag}"
+	tag_command="docker tag ${stage_image} ${ecr_registry_url}/gettalent/${app}:${version_tag}"
 	echo $tag_command
 	eval $tag_command
 	if [ $? -ne 0 ] ; then
@@ -73,7 +73,7 @@ else
     for app in ${FLASK_APPS}
     do
 	# Tag the image with a timestamp
-	tag_command="docker tag -f gettalent/${app} ${ecr_registry_url}/gettalent/${app}:${timestamp_tag}"
+	tag_command="docker tag gettalent/${app} ${ecr_registry_url}/gettalent/${app}:${timestamp_tag}"
 	echo $tag_command
         eval $tag_command
 	if [ $? -ne 0 ] ; then

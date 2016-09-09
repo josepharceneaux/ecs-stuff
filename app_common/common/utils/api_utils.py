@@ -15,6 +15,7 @@ Here we also have functions which are useful for APIs to implement pagination.
 import json
 
 # Third Part
+from requests import codes
 from flask import Response
 from contracts import contract
 
@@ -155,7 +156,7 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
     response = {
         key: items
     }
-    return ApiResponse(response, headers=headers, status=200)
+    return ApiResponse(response, headers=headers, status= codes.OK)
 
 
 @contract

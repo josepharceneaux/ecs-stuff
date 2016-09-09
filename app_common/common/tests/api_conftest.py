@@ -17,68 +17,90 @@ import time
 from redo import retry
 from requests import codes
 
+from ..routes import UserServiceApiUrl
+from ..utils.handy_functions import send_request
 from ..test_config_manager import load_test_config
-from ..utils.test_utils import (create_candidate, delete_candidate,
-                                create_smartlist, delete_smartlist, delete_talent_pool,
-                                create_talent_pools, create_talent_pipelines, get_smartlist_candidates, get_talent_pool,
-                                search_candidates)
+from ..utils.test_utils import (create_candidate, create_smartlist, create_talent_pools, create_talent_pipelines,
+                                get_smartlist_candidates, get_talent_pool, search_candidates,
+                                associate_device_to_candidate)
 
+# Data returned from UserService contains lists of users, tokens etc. At 0 index, there is user first, at index 1,
+# user_same_domain and at index 2, user_second. Same is the order for other entities.
+FIRST = 0
+SAME_DOMAIN = 1
+SECOND = 2
 
 test_config = load_test_config()
 
 
 @pytest.fixture(scope='session')
-def token_first():
+def test_data():
     """
-    Au Authentication token for user_first.
+    This fixture create test users, domains, groups, tokens etc. which will be used to create other fixtures/data like
+    smartlists, candidates, campaigns etc.
     """
-    return test_config['USER_FIRST']['token']
+    response = send_request('post', UserServiceApiUrl.TEST_SETUP, '')
+    print("Test Data Response: ", response.content, response.status_code)
+    assert response.status_code == codes.OK
+
+    return response.json()
 
 
 @pytest.fixture(scope='session')
-def token_same_domain():
+def token_first(test_data):
+    """
+    Authentication token for user_first.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
+    """
+    return test_data['tokens'][FIRST]['access_token']
+
+
+@pytest.fixture(scope='session')
+def token_same_domain(test_data):
     """
     Authentication token for user that belongs to same domain as user_first.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
     """
-    return test_config['USER_SAME_DOMAIN']['token']
+    return test_data['tokens'][SAME_DOMAIN]['access_token']
 
 
 @pytest.fixture(scope='session')
-def token_second():
+def token_second(test_data):
     """
      Authentication token for user_second.
+     :param dict test_data: a collection of test users, domains, groups, tokens data.
     """
-    return test_config['USER_SECOND']['token']
+    return test_data['tokens'][SECOND]['access_token']
 
 
 @pytest.fixture(scope='session')
-def user_first():
+def user_first(test_data):
     """
     This fixture will be used to get user from UserService using id from config.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
     :return: user dictionary object
     """
-    user_id = test_config['USER_FIRST']['user_id']
-    return {'id': int(user_id)}
+    return test_data['users'][FIRST]
 
 
 @pytest.fixture(scope='session')
-def user_second():
+def user_same_domain(test_data):
     """
     This fixture will be used to get user from UserService using id from config.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
     :return: user dictionary object
     """
-    user_id = test_config['USER_SECOND']['user_id']
-    return {'id': int(user_id)}
+    return test_data['users'][SAME_DOMAIN]
 
 
 @pytest.fixture(scope='session')
-def user_same_domain():
+def user_second(test_data):
     """
     This fixture will be used to get user from UserService using id from config.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
     :return: user dictionary object
     """
-    user_id = test_config['USER_SAME_DOMAIN']['user_id']
-    return {'id': int(user_id)}
+    return test_data['users'][SECOND]
 
 
 @pytest.fixture(scope='function')
@@ -111,12 +133,6 @@ def candidate_same_domain(request, talent_pool, token_same_domain):
     response = retry(search_candidates, max_sleeptime=60, retry_exceptions=(AssertionError,),
                      args=([candidate_id], token_same_domain))
     candidate = response['candidates'][0]
-
-    def tear_down():
-        delete_candidate(candidate_id, token_same_domain,
-                         expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return candidate
 
 
@@ -134,12 +150,6 @@ def candidate_second(request, token_second, talent_pool_second):
     response = retry(search_candidates, sleeptime=3, retry_exceptions=(AssertionError,),
                      args=([candidate_id], token_second))
     candidate = response['candidates'][0]
-
-    def tear_down():
-        delete_candidate(candidate_id, token_second,
-                         expected_status=(codes.NO_CONTENT, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return candidate
 
 
@@ -160,11 +170,6 @@ def smartlist_first(request, token_first, candidate_first, talent_pipeline):
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_first), kwargs={'count': 1})
 
-    def tear_down():
-        delete_smartlist(smartlist_id, token_first,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -185,10 +190,6 @@ def smartlist_second(request, token_second, candidate_second, talent_pipeline_se
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_second), kwargs={'count': 1})
 
-    def tear_down():
-        delete_smartlist(smartlist_id, token_second,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-    request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -209,11 +210,6 @@ def smartlist_same_domain(request, token_same_domain, candidate_same_domain, tal
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_same_domain), kwargs={'count': 1})
 
-    def tear_down():
-        delete_smartlist(smartlist_id, token_same_domain,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -227,12 +223,6 @@ def talent_pool(request, token_first):
     talent_pools = create_talent_pools(token_first)
     talent_pool_id = talent_pools['talent_pools'][0]
     talent_pool_obj = get_talent_pool(talent_pool_id, token_first)['talent_pool']
-
-    def tear_down():
-        delete_talent_pool(talent_pool_id, token_first,
-                           expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return talent_pool_obj
 
 
@@ -258,12 +248,6 @@ def talent_pool_second(request, token_second):
     talent_pools = create_talent_pools(token_second)
     talent_pool_id = talent_pools['talent_pools'][0]
     talent_pool_obj = get_talent_pool(talent_pool_id, token_second)['talent_pool']
-
-    def tear_down():
-        delete_talent_pool(talent_pool_id, token_second,
-                           expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return talent_pool_obj
 
 
@@ -293,3 +277,18 @@ def talent_pipeline_second(request, token_second, talent_pool_second):
     talent_pipeline_id = talent_pipelines['talent_pipelines'][0]
 
     return {'id': talent_pipeline_id}
+
+
+@pytest.fixture(scope='function')
+def candidate_device_first(request, token_first, candidate_first):
+    """
+    This fixture associates a device with test candidate which is required to
+    send push campaign to candidate.
+    :param token_first: authentication token
+    :param candidate_first: candidate dict object
+    """
+    candidate_id = candidate_first['id']
+    device_id = test_config['PUSH_CONFIG']['device_id_1']
+    associate_device_to_candidate(candidate_id, device_id, token_first)
+    device = {'one_signal_id': device_id}
+    return device

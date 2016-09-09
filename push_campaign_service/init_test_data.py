@@ -10,21 +10,17 @@ python push_campaign_service/init_test_data.py
 import os
 from datetime import datetime, timedelta
 
-from common.utils.models_utils import init_talent_app
+from push_campaign_service.common.utils.models_utils import init_talent_app
 app, logger = init_talent_app('test_app')
 
-from common.talent_config_manager import TalentConfigKeys, TalentEnvs
-from common.models.user import Domain, User, UserGroup, Token, Client, Role
+from push_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
+from push_campaign_service.common.models.user import Domain, User, UserGroup, Token, Client, Role
 
 CLIENT_ID = 'KGy3oJySBTbMmubglOXnhVqsRQDoRcFjJ3921U1Z'
 CLIENT_SECRET = 'DbS8yb895bBw4AXFe182bjYmv5XfF1x7dOftmBHMlxQmulYj1Z'
 TEST_ACCESS_TOKEN = 'uTl6zNUdoNATwwUg0GOuSFvyrtyCCW'
 TEST_REFRESH_TOKEN = 'uTl6zNUdoNATwwUg0GOuSFvyrtyCCW'
 TEST_PASSWORD = "pbkdf2:sha512:1000$lf3teYeJ$7bb470eb0a2d10629e4835cac771e51d2b1e9ed577b849c27551ab7b244274a10109c8d7a7b8786f4de176b764d9763e4fd1954ad902d6041f6d46fab16219c6"
-
-if app.config[TalentConfigKeys.ENV_KEY] not in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
-    print "This script is only to populate test data in dev environment."
-    raise SystemExit(0)
 
 
 def create_test_domain(names):
@@ -133,8 +129,3 @@ def create_test_data():
         cfg.write('DEVICE_ID_2=6a81ab5d-9e71-44f7-99dc-eb72eeaff311\n\n')
 
         cfg.flush()
-
-# Create data
-if app.config[TalentConfigKeys.ENV_KEY] == TalentEnvs.DEV:
-    create_test_data()
-
