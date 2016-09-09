@@ -47,7 +47,7 @@ def _validate_headers(mocked_json, headers):
         raise InternalServerError('Mocked JSON is not implemented for headers.')
 
 
-def _match_dicts(original_data, expected_data=None, ignore=[]):
+def _match_dicts(original_data, expected_data=None, ignore=None):
     """
     Match all entries of expected dict with original dict
     :param dict|None expected_data: expected dict with key value pair
@@ -55,7 +55,8 @@ def _match_dicts(original_data, expected_data=None, ignore=[]):
     :param list ignore: list of keys to ignore in original data when validating. Default will check all expected
     data with original data
     """
-    #TODO--passing lists as ignore=[] can result in a bug, that's a known issue. Kindly fix this ASAP.
+    if not ignore:
+        ignore = []
     if expected_data:
         for k, v in expected_data.iteritems():
             if not v == original_data[k] and k not in ignore:
