@@ -1,4 +1,3 @@
-
 __author__ = 'ufarooqi'
 from dateutil import parser
 from flask_restful import Resource
@@ -215,6 +214,7 @@ class DomainApi(Resource):
         db.session.commit()
 
         return {'updated_domain': {'id': requested_domain_id}}
+
 
 domain_blueprint = Blueprint('domain_api', __name__)
 api = TalentApi(domain_blueprint)

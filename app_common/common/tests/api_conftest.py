@@ -15,67 +15,92 @@ but user is different.
 import pytest
 import time
 from redo import retry
+from requests import codes
+
+from ..routes import UserServiceApiUrl
+from ..utils.handy_functions import send_request
 from ..test_config_manager import load_test_config
 from ..utils.test_utils import (create_candidate, create_smartlist, create_talent_pools, create_talent_pipelines,
                                 get_smartlist_candidates, get_talent_pool, search_candidates,
                                 associate_device_to_candidate)
 
+# Data returned from UserService contains lists of users, tokens etc. At 0 index, there is user first, at index 1,
+# user_same_domain and at index 2, user_second. Same is the order for other entities.
+FIRST = 0
+SAME_DOMAIN = 1
+SECOND = 2
 
 test_config = load_test_config()
 
 
 @pytest.fixture(scope='session')
-def token_first():
+def test_data():
     """
-    Au Authentication token for user_first.
+    This fixture create test users, domains, groups, tokens etc. which will be used to create other fixtures/data like
+    smartlists, candidates, campaigns etc.
     """
-    return test_config['USER_FIRST']['token']
+    response = send_request('post', UserServiceApiUrl.TEST_SETUP, '')
+    print("Test Data Response: ", response.content, response.status_code)
+    assert response.status_code == codes.OK
+
+    return response.json()
 
 
 @pytest.fixture(scope='session')
-def token_same_domain():
+def token_first(test_data):
+    """
+    Authentication token for user_first.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
+    """
+    return test_data['tokens'][FIRST]['access_token']
+
+
+@pytest.fixture(scope='session')
+def token_same_domain(test_data):
     """
     Authentication token for user that belongs to same domain as user_first.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
     """
-    return test_config['USER_SAME_DOMAIN']['token']
+    return test_data['tokens'][SAME_DOMAIN]['access_token']
 
 
 @pytest.fixture(scope='session')
-def token_second():
+def token_second(test_data):
     """
      Authentication token for user_second.
+     :param dict test_data: a collection of test users, domains, groups, tokens data.
     """
-    return test_config['USER_SECOND']['token']
+    return test_data['tokens'][SECOND]['access_token']
 
 
 @pytest.fixture(scope='session')
-def user_first():
+def user_first(test_data):
     """
     This fixture will be used to get user from UserService using id from config.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
     :return: user dictionary object
     """
-    user_id = test_config['USER_FIRST']['user_id']
-    return {'id': int(user_id)}
+    return test_data['users'][FIRST]
 
 
 @pytest.fixture(scope='session')
-def user_second():
+def user_same_domain(test_data):
     """
     This fixture will be used to get user from UserService using id from config.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
     :return: user dictionary object
     """
-    user_id = test_config['USER_SECOND']['user_id']
-    return {'id': int(user_id)}
+    return test_data['users'][SAME_DOMAIN]
 
 
 @pytest.fixture(scope='session')
-def user_same_domain():
+def user_second(test_data):
     """
     This fixture will be used to get user from UserService using id from config.
+    :param dict test_data: a collection of test users, domains, groups, tokens data.
     :return: user dictionary object
     """
-    user_id = test_config['USER_SAME_DOMAIN']['user_id']
-    return {'id': int(user_id)}
+    return test_data['users'][SECOND]
 
 
 @pytest.fixture(scope='function')
@@ -198,7 +223,6 @@ def talent_pool(request, token_first):
     talent_pools = create_talent_pools(token_first)
     talent_pool_id = talent_pools['talent_pools'][0]
     talent_pool_obj = get_talent_pool(talent_pool_id, token_first)['talent_pool']
-
     return talent_pool_obj
 
 
@@ -224,7 +248,6 @@ def talent_pool_second(request, token_second):
     talent_pools = create_talent_pools(token_second)
     talent_pool_id = talent_pools['talent_pools'][0]
     talent_pool_obj = get_talent_pool(talent_pool_id, token_second)['talent_pool']
-
     return talent_pool_obj
 
 

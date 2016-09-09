@@ -22,8 +22,8 @@ from push_campaign_service.common.constants import SLEEP_INTERVAL, RETRY_ATTEMPT
 from push_campaign_service.common.models.misc import Frequency
 from push_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from push_campaign_service.common.utils.test_utils import (delete_scheduler_task,
-                                                           create_smartlist, get_smartlist_candidates, delete_smartlist,
-                                                           associate_device_to_candidate, delete_candidate_device)
+                                                           create_smartlist, get_smartlist_candidates,
+                                                           associate_device_to_candidate)
 from push_campaign_service.common.test_config_manager import load_test_config
 from push_campaign_service.common.tests.api_conftest import (token_first, token_same_domain,
                                                              token_second, user_first,
@@ -32,10 +32,9 @@ from push_campaign_service.common.tests.api_conftest import (token_first, token_
                                                              candidate_second, smartlist_first,
                                                              smartlist_same_domain, smartlist_second,
                                                              talent_pool, talent_pool_second, talent_pipeline,
-                                                             talent_pipeline_second, candidate_device_first)
+                                                             talent_pipeline_second, test_data, candidate_device_first)
+
 from push_campaign_service.common.routes import PushCampaignApiUrl
-from push_campaign_service.init_test_data import create_test_data
-from push_campaign_service.push_campaign_app import app
 from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
                                                         generate_campaign_schedule_data,
                                                         get_campaigns, create_campaign,
@@ -44,9 +43,6 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_data, 
                                                         delete_campaigns, get_campaign_sends)
 
 fake = Faker()
-# initialize test users and domains etc.
-if app.config[TalentConfigKeys.ENV_KEY] == TalentEnvs.DEV:
-    create_test_data()
 
 test_config = load_test_config()
 
@@ -402,12 +398,6 @@ def smartlist_with_two_candidates_with_and_without_device_associated(request, to
     smartlist_id = smartlist['id']
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_first), kwargs={'count': 2})
-
-    def tear_down():
-        delete_smartlist(smartlist_id, token_first,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -429,10 +419,4 @@ def smartlist_with_two_candidates_with_no_device_associated(request, token_first
     smartlist_id = smartlist['id']
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_first), kwargs={'count': 2})
-
-    def tear_down():
-        delete_smartlist(smartlist_id, token_first,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return smartlist
