@@ -5,7 +5,6 @@ Email Templates. Also contains endpoints for creating and deleting Email Templat
 import types
 
 # Third Party
-import requests
 from flask import request
 from requests import codes
 from flask import Blueprint
@@ -90,7 +89,7 @@ class TemplateFolders(Resource):
         template_folder = EmailTemplateFolder(name=folder_name, domain_id=domain_id, parent_id=parent_id,
                                               is_immutable=is_immutable)
         EmailTemplateFolder.save(template_folder)
-        return {'id': template_folder.id}, requests.codes.CREATED
+        return {'id': template_folder.id}, codes.CREATED
 
 
 @api.route(EmailCampaignApi.TEMPLATE_FOLDER)
@@ -219,7 +218,7 @@ class EmailTemplates(Resource):
         page, per_page = get_pagination_params(request)
         domain_id = request.user.domain_id
         # Get all email campaigns from logged in user's domain
-        query = UserEmailTemplate.get_by_domain_id(domain_id)
+        query = UserEmailTemplate.query_by_domain_id(domain_id)
         return get_paginated_response('email_templates', query, page, per_page)
 
     @require_all_permissions(Permission.PermissionNames.CAN_ADD_CAMPAIGNS)
@@ -281,7 +280,7 @@ class EmailTemplates(Resource):
                                      template_folder_id else None,
                                      is_immutable=is_immutable)
         UserEmailTemplate.save(template)
-        return {'id': template.id}, requests.codes.CREATED
+        return {'id': template.id}, codes.CREATED
 
 
 @api.route(EmailCampaignApi.TEMPLATE)
@@ -388,4 +387,4 @@ class EmailTemplate(Resource):
         template = UserEmailTemplate.get_valid_email_template(template_id, request.user)
         # Delete the template
         UserEmailTemplate.delete(template)
-        return '', requests.codes.NO_CONTENT
+        return '', codes.NO_CONTENT

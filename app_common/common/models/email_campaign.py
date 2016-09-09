@@ -298,15 +298,14 @@ class UserEmailTemplate(db.Model):
     __tablename__ = 'user_email_template'
     id = db.Column('Id', db.Integer, primary_key=True)
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'), index=True)
-    type = db.Column('Type', db.Integer, server_default=db.text("'0'"))
+    type = db.Column('Type', db.Integer, default=0)
     name = db.Column('Name', db.String(255), nullable=False)
     body_html = db.Column('EmailBodyHtml', db.Text)
     body_text = db.Column('EmailBodyText', db.Text)
     template_folder_id = db.Column('EmailTemplateFolderId', db.Integer,
                                    db.ForeignKey('email_template_folder.id', ondelete=u'SET NULL'), index=True)
-    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False,
-                                 server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, default=0)
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
 
     # Relationships
     template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
@@ -322,7 +321,7 @@ class UserEmailTemplate(db.Model):
         return cls.query.filter_by(name=template_name.strip()).first()
 
     @classmethod
-    def get_by_domain_id(cls, domain_id):
+    def query_by_domain_id(cls, domain_id):
         """
         This returns query object to get email-templates in given domain_id.
         :param int|long domain_id: Id of domain of user
@@ -363,10 +362,9 @@ class EmailTemplateFolder(db.Model):
     name = db.Column('Name', db.String(512))
     parent_id = db.Column('ParentId', db.Integer,  db.ForeignKey('email_template_folder.id', ondelete='CASCADE'),
                           index=True)
-    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
+    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, default=0)
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False,
-                             server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
 
     domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
     parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
