@@ -198,6 +198,16 @@ class User(db.Model):
         """
         return User.query.filter_by(email=email).first()
 
+    @staticmethod
+    def get_user_count_in_domain(domain_name):
+        """
+        This method returns count of users in a domain
+        :param str domain_name: User domain
+        :return: int : Number of users
+        """
+        return User.query.filter(User.domain_id == Domain.id).\
+            filter(Domain.name == domain_name).count()
+
 
 class UserPhone(db.Model):
     __tablename__ = 'user_phone'
@@ -792,3 +802,17 @@ class UserSocialNetworkCredential(db.Model):
         assert webhook_id and social_network_id
         return cls.query.filter(
             db.and_(cls.webhook == webhook_id, cls.social_network_id == social_network_id)).one()
+
+
+class TalentbotAuth(db.Model):
+    __tablename__ = 'talentbot_auth'
+    id = db.Column('Id', db.Integer, primary_key=True, unique=True, nullable=False)
+    email = db.Column('Email', db.String(50), unique=True)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'))
+    user_phone_id = db.Column('UserPhoneId', db.Integer, db.ForeignKey('user_phone.id'))
+    email_secret_token = db.Column('EmailSecretToken', db.String(50))
+    slack_user_id = db.Column('SlackUserId', db.String(50), unique=True)
+    slack_team_id = db.Column('SlackTeamId', db.String(50), unique=True)
+    slack_team_name = db.Column('SlackTeamName', db.String(50))
+    facebook_user_id = db.Column('FacebookUserId', db.String(50), unique=True)
+    slack_user_token = db.Column('SlackUsertoken', db.String(70), unique=True)

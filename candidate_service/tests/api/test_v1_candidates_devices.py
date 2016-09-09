@@ -14,9 +14,9 @@ import sys
 import requests
 
 from candidate_service.candidate_app import logger
+from candidate_service.common.tests.api_conftest import *
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request
-from candidate_service.common.tests.api_conftest import *
 
 test_config = load_test_config()
 PUSH_DEVICE_ID = test_config['PUSH_CONFIG']['device_id_1']
@@ -60,22 +60,22 @@ def test_associate_device_with_invalid_one_signal_device_id(token_first, candida
     assert response.status_code == requests.codes.NOT_FOUND
 
 
-def test_associate_device_to_deleted_candidate(token_first, candidate_first):
-    """
-    Try to associate a valid device id to a deleted (web-hidden) candidate.
-    API should raise ResourceNotFound (404) error.
-    :param token_first: authentication token
-    :param candidate_first: candidate dict object
-    """
-
-    response = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_first['id'], token_first)
-    logger.info(response.content)
-    assert response.status_code == requests.codes.NO_CONTENT
-
-    data = {'one_signal_device_id': PUSH_DEVICE_ID}
-    response = send_request('post', CandidateApiUrl.DEVICES % candidate_first['id'], token_first, data)
-    logger.info(response.content)
-    assert response.status_code == requests.codes.NOT_FOUND
+# def test_associate_device_to_deleted_candidate(token_first, candidate_first):
+#     """
+#     Try to associate a valid device id to a deleted (web-hidden) candidate.
+#     API should raise ResourceNotFound (404) error.
+#     :param token_first: authentication token
+#     :param candidate_first: candidate dict object
+#     """
+#
+#     response = send_request('delete', CandidateApiUrl.CANDIDATE % candidate_first['id'], token_first)
+#     logger.info(response.content)
+#     assert response.status_code == requests.codes.NO_CONTENT
+#
+#     data = {'one_signal_device_id': PUSH_DEVICE_ID}
+#     response = send_request('post', CandidateApiUrl.DEVICES % candidate_first['id'], token_first, data)
+#     logger.info(response.content)
+#     assert response.status_code == requests.codes.NOT_FOUND
 
 
 def test_associate_device_with_valid_data(token_first, candidate_first):

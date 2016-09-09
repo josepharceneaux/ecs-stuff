@@ -1,0 +1,13 @@
+"""
+This script adds a new role "TEST_ADMIN" in role table with all CRU permissions but no delete permissions.
+"""
+
+from push_campaign_service.app import db
+from sqlalchemy import text
+
+db.session.execute(
+    text("""
+          INSERT INTO role (name) values ('TEST_ADMIN');
+          INSERT INTO permissions_of_role (RoleId, PermissionId) select (SELECT max(id) from role) as RoleId, id as PermissionId from permission where name like "CAN_ADD_%" OR name like "CAN_EDIT_%" OR name like "CAN_GET_%";
+          """)
+)

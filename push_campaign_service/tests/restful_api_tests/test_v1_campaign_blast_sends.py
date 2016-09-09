@@ -31,14 +31,13 @@ class TestCampaignBlastSends(object):
 
     # Test URL: /v1/push-campaigns/<int:campaign_id>/blasts/<int:blast_id>/sends [GET]
 
-    def test_get_campaign_blast_sends_with_invalid_token(self, campaign_in_db, campaign_blast):
+    def test_get_campaign_blast_sends_with_invalid_token(self, campaign_in_db):
         """
         We are getting campaign blast's sends with invalid token and it will
         raise Unauthorized error 401
         :param campaign_in_db: campaign object
-        :param campaign_blast: campaign blast object
         """
-        blast_id = campaign_blast['id']
+        blast_id = fake.random_int()
         campaign_id = campaign_in_db['id']
         get_blast_sends(blast_id, campaign_id, 'invalid_token',
                         expected_status=(codes.UNAUTHORIZED,))

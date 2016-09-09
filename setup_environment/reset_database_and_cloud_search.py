@@ -96,9 +96,7 @@ print 'DB reset is successful'
 
 print 'Generating initial test data'
 
-
-# Create dummy users for tests and insert user social network credentials of eventbrite and associate it with user_id 1
-create_dummy_users()
+# Insert user social network credentials of Eventbrite and associate it with user_id 1
 eventbrite = SocialNetwork.get_by_name('Eventbrite')
 access_token_eventbrite = redis_store2.get('Eventbrite')
 access_token_eventbrite = json.loads(access_token_eventbrite)['access_token']

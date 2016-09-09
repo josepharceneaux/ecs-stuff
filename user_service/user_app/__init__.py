@@ -44,12 +44,14 @@ try:
     from views import users_utilities_blueprint
     from api.users_v1 import users_blueprint
     from api.domain_v1 import domain_blueprint
+    from api.test_setup import test_setup_blueprint
     from api.roles_and_groups_v1 import groups_and_roles_blueprint
 
     app.register_blueprint(users_blueprint, url_prefix=UserServiceApi.URL_PREFIX)
     app.register_blueprint(domain_blueprint, url_prefix=UserServiceApi.URL_PREFIX)
     app.register_blueprint(users_utilities_blueprint, url_prefix=UserServiceApi.URL_PREFIX)
     app.register_blueprint(groups_and_roles_blueprint, url_prefix=UserServiceApi.URL_PREFIX)
+    app.register_blueprint(test_setup_blueprint, url_prefix=UserServiceApi.URL_PREFIX)
 
     db.create_all()
     db.session.commit()
