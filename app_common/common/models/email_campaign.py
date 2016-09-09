@@ -199,11 +199,11 @@ class EmailCampaignBlast(db.Model):
     def top_performing_email_campaign(year):
         """
         This method returns top performing email campaign from a specific year
-        :param year:
-        :return:
+        :param year: Year of campaign started or updated
+        :rtype: EmailCampaignBlast
         """
         return EmailCampaignBlast.query.filter(or_(EmailCampaignBlast.updated_datetime.contains(year),
-                 EmailCampaignBlast.sent_datetime.contains(year))). \
+                                                   EmailCampaignBlast.sent_datetime.contains(year))). \
             filter(EmailCampaign.id == EmailCampaignBlast.campaign_id). \
             order_by(desc(EmailCampaignBlast.opens)).first()
 

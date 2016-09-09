@@ -99,7 +99,7 @@ class GTApis(object):
     PUSH_CAMPAIGN_SERVICE_PORT = 8013
     EMAIL_CAMPAIGN_SERVICE_PORT = 8014
     ATS_SERVICE_PORT = 8015
-    TALENTBOT_PORT = 8016
+    TALENTBOT_PORT = 8017
 
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
@@ -117,6 +117,7 @@ class GTApis(object):
     PUSH_CAMPAIGN_SERVICE_NAME = 'push-campaign-service'
     EMAIL_CAMPAIGN_SERVICE_NAME = 'email-campaign-service'
     ATS_SERVICE_NAME = 'ats-service'
+    TALENTBOT_SERVICE_NAME = 'talentbot-service'
 
     # CORS headers
     CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com$",
@@ -875,3 +876,16 @@ class ATSServiceApiUrl(object):
     CANDIDATES = HOST_NAME % ('/' + VERSION  + '/ats-candidates/%s')
     CANDIDATE_REFRESH = HOST_NAME % ('/' + VERSION  + '/ats-candidates/refresh/%s')
     CANDIDATE_LINK = HOST_NAME % ('/' + VERSION  + '/ats-candidates/link/%s/%s')
+
+
+class TalentBotApiUrl(object):
+    """
+    URLs for Talentbot service
+    """
+    VERSION = 'v1'
+    SMS_LISTEN = '/' + VERSION + '/sms/listen'
+    EMAIL_LISTEN = '/' + VERSION + '/email/listen'
+    FACEBOOK_LISTEN = '/' + VERSION + '/facebook/listen'
+    SLACK_LISTEN = '/' + VERSION + '/slack/listen'
+    SLACK_AUTH = '/' + VERSION + '/slack/auth'
+    INDEX = '/' + VERSION + '/index'

@@ -3,11 +3,11 @@ __author__ = 'ufarooqi'
 import json
 from db import db
 from datetime import datetime, timedelta
-from sqlalchemy.dialects.mysql import TINYINT
 from user import Domain, UserGroup, User
 from candidate import Candidate
 # 3rd party imports
 from sqlalchemy import or_, and_, extract
+from sqlalchemy.dialects.mysql import TINYINT
 
 
 class TalentPool(db.Model):
@@ -58,6 +58,13 @@ class TalentPoolCandidate(db.Model):
 
     @staticmethod
     def candidates_added_last_month(user_name, talent_pool_name, previous_month):
+        """
+        Returns number of candidate added by a user in a talent pool in a specific month
+        :param user_name: User name
+        :param talent_pool_name: Talent pool name
+        :param previous_month: Month during candidates were added
+        :rtype: int
+        """
         return TalentPoolCandidate.query.filter(TalentPoolCandidate.talent_pool_id == TalentPool.id) \
             .filter(or_((and_(extract("year", TalentPoolCandidate.added_time) == previous_month.year,
                               extract("month", TalentPoolCandidate.added_time) == previous_month.month)), (

@@ -11,16 +11,18 @@ import random
 import re
 from abc import abstractmethod
 # App specific imports
-from constants import BEST_QUESTION_MATCH_RATIO
+from constants import BEST_QUESTION_MATCH_RATIO, GREETINGS
 from talentbot_service.modules.question_handler import QuestionHandler
 from talentbot_service import logger
 # 3rd party imports
 from fuzzywuzzy import fuzz
-# TODO: I have some code related to Twilio. Kindly see sms_campaign_service/modeuls/handy_functions.py
-# TODO: I think we can move that out of that service and put in common/ so that it is available across services.
+# TODO: There is a class TwilioSMS in sms-campaign-service, move sms related code there in future
 
 
-class TalentBot:
+class TalentBot(object):
+    """
+    This class has some common methods of our bot
+    """
     def __init__(self, list_of_questions, bot_name, error_messages):
         self.handler = QuestionHandler()
         self.question_dict = {'0': {'question': list_of_questions[0], 'threshold': 70,
@@ -59,6 +61,9 @@ class TalentBot:
         :return str Response generated
         """
         message = self.clean_user_message(message)
+        is_greetings = self.check_for_greetings(message)
+        if is_greetings:
+            return is_greetings
         message_tokens = self.tokenize_message(message)
         max_match_ratio = 0
         message_handler = None
@@ -93,15 +98,25 @@ class TalentBot:
         :return: int partial_ratio
         """
         partial_ratio = fuzz.partial_ratio(message.lower(), question)
-        logger.info(message + ': '+partial_ratio.__str__()+'% matched')
+        logger.info(message + ': '+str(partial_ratio)+'% matched')
         return partial_ratio
 
     @abstractmethod
-    def authenticate_user(self):
+    def authenticate_user(self, *args):
         """
         Authenticates user
         :return: True|False
         """
         pass
 
-
+    @staticmethod
+    def check_for_greetings(message):
+        """
+        Checks if user is greeting out bot
+        :param str message: User's message
+        :return: Response message|None
+        :rtype: str|None
+        """
+        if message.lower() in GREETINGS:
+            return random.choice(GREETINGS)
+        return None

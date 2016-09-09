@@ -22,7 +22,10 @@ from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCan
 from talentbot_service.modules.constants import HINT, BOT_NAME
 
 
-class QuestionHandler:
+class QuestionHandler(object):
+    """
+    This class contains question handlers against questions and some helping methods
+    """
     def __init__(self):
         pass
 
@@ -30,7 +33,7 @@ class QuestionHandler:
     def find_word_in_message(word, message_tokens):
         """
         Finds a specific word in user message and returns it's index
-        :param word:
+        :param str word: Word to be found in message_tokens
         :param list message_tokens: Tokens of user message
         :return: int word_index
         """
@@ -60,7 +63,7 @@ class QuestionHandler:
         domain_index = cls.find_word_in_message('domain', message_tokens)
         domain_name = message_tokens[domain_index + 1]
         count = User.get_user_count_in_domain(domain_name)
-        response_message = "Users in domain " + message_tokens[domain_index + 1] + " : "
+        response_message = "Users in domain %s : " % message_tokens[domain_index + 1]
         response_message += str(count)
         return response_message
 
@@ -74,8 +77,8 @@ class QuestionHandler:
         skill_index = cls.find_word_in_message('skill', message_tokens)
         extracted_skills = message_tokens[skill_index + 1::]
         count = Candidate.get_candidate_count_with_skills(extracted_skills)
-        response_message = "There are %d candidates with skills " + ' '.join(extracted_skills)
-        response_message = response_message % count
+        response_message = "There are %d candidates with skills %s"
+        response_message = response_message % (count, ' '.join(extracted_skills))
         if count == 1:
             response_message = response_message.replace('are', 'is'). \
                 replace('candidates', 'candidate')
@@ -91,9 +94,8 @@ class QuestionHandler:
         zip_index = cls.find_word_in_message('zip', message_tokens)
         zipcode = message_tokens[zip_index + 1]
         count = Candidate.get_candidate_count_from_zipcode(zipcode)
-        response_message = "Number of candidates from zipcode " + \
-                           message_tokens[zip_index + 1] + " : "
-        response_message += str(count)
+        response_message = "Number of candidates from zipcode %s : %d" % \
+                           (message_tokens[zip_index + 1], count)
         return response_message
 
     def question_3_handler(self, message_tokens):
@@ -107,10 +109,10 @@ class QuestionHandler:
         if is_valid_year:
             email_campaign_blast = EmailCampaignBlast.top_performing_email_campaign(year)
             if email_campaign_blast:
-                response_message = 'Top performing email campaign from ' + year + \
-                                   ' is "%s"' % email_campaign_blast.campaign.name
+                response_message = 'Top performing email campaign from %s is "%s"' \
+                                   % (year, email_campaign_blast.campaign.name)
             else:
-                response_message = "Sorry couldn't find top email campaign from " + year
+                response_message = "Sorry couldn't find top email campaign from %s" % year
         else:
             response_message = "Please Enter a Valid Year"
         return response_message
@@ -129,12 +131,11 @@ class QuestionHandler:
         # Extracting username from user message
         user_name = message_tokens[import_index - 1]
         spaced_talent_pool_name = self.append_list_with_spaces(talent_pool_name)
-        previous_month = datetime.datetime.now() - relativedelta(months=1)
+        previous_month = datetime.datetime.utcnow() - relativedelta(months=1)
         count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
                                                                 previous_month)
-        response_message = user_name.title() + " added %d candidates in " \
-                                             + spaced_talent_pool_name + "talent pool last month"
-        response_message = response_message % count
+        response_message = "%s added %d candidates in %s talent pool last month" %\
+                           (user_name.title(), count, spaced_talent_pool_name)
         return response_message
 
     @classmethod
@@ -153,7 +154,7 @@ class QuestionHandler:
         :param message_tokens: User message tokens
         :rtype: str
         """
-        return HINT[0]
+        return HINT
 
     @staticmethod
     def is_valid_year(year):

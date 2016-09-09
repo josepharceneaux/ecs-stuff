@@ -1,3 +1,6 @@
+"""
+This module is the entry point to the Talentbot service
+"""
 # Common utils
 from talentbot_service.common.routes import GTApis
 # Service specific

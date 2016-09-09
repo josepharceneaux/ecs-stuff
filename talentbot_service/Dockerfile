@@ -10,9 +10,6 @@ RUN sed -i -e 's/APP_NAME/talentbot_service/g' newrelic.ini /etc/rsyslog.d/*logg
 
 EXPOSE 80
 
-# For Celery worker
-ENV C_FORCE_ROOT true
-
 # Set PYTHON PATH
 ENV PYTHONPATH ../
 

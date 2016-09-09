@@ -127,7 +127,7 @@ class Candidate(db.Model):
         """
         This method returns number of candidates from a certain zipcode
         :param str zipcode: Candidate zipcode
-        :return: int: Number of candidates from zipcode
+        :rtype: int: Number of candidates from zipcode
         """
         return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
             filter(CandidateAddress.zip_code == zipcode).count()

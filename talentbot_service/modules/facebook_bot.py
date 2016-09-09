@@ -8,19 +8,23 @@ with Facebook.
 """
 # Builtin imports
 import random
-
+# Common utils
 from talentbot_service.modules.constants import FACEBOOK_MESSAGE_LIMIT, FACEBOOK_MESSAGE_SPLIT_COUNT
-
+# Service specific
 from talentbot_service import app
 from talentbot_service.common.talent_config_manager import TalentConfigKeys
 from talentbot_service.common.utils.handy_functions import send_request
 from talentbot_service.modules.talent_bot import TalentBot
+from talentbot_service.modules.constants import FACEBOOK_API_URI
 
 
 class FacebookBot(TalentBot):
+    """
+    This class handles bot communication with user on Facebook
+    """
     def __init__(self, questions, bot_name, error_messages):
         TalentBot.__init__(self, questions, bot_name, error_messages)
-        self.time_stamp = None
+        self.timestamp = None
 
     def authenticate_user(self):
         """
@@ -32,8 +36,8 @@ class FacebookBot(TalentBot):
     def handle_communication(self, user_id, message):
         """
         Handles the communication between user and bot
-        :param user_id: Facebook user iId of sender
-        :param message: User's message
+        :param str user_id: Facebook user iId of sender
+        :param str message: User's message
         """
         try:
             self.sender_action(user_id, "mark_seen")
@@ -67,7 +71,7 @@ class FacebookBot(TalentBot):
             "recipient": {"id": user_id},
             "sender_action": action
         }
-        send_request('POST', "https://graph.facebook.com/v2.6/me/messages", access_token=None,
+        send_request('POST', FACEBOOK_API_URI, access_token=None,
                      params={'access_token': app.config[TalentConfigKeys.FACEBOOK_ACCESS_TOKEN]},
                      data=data)
 
@@ -82,6 +86,6 @@ class FacebookBot(TalentBot):
             "recipient": {"id": user_id},
             "message": {"text": msg}
         }
-        send_request('POST', "https://graph.facebook.com/v2.6/me/messages", access_token=None,
+        send_request('POST', FACEBOOK_API_URI, access_token=None,
                      params={'access_token': app.config[TalentConfigKeys.FACEBOOK_ACCESS_TOKEN]},
                      data=data)
