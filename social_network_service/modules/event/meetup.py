@@ -107,6 +107,7 @@ class Meetup(EventBase):
         self.group_url_name = None
         self.social_network_group_ids = []
         self.social_network_event_id = None
+        # TODO: Change following start_date/end_date variable names to start_datetime/end_datetime
         self.start_date = kwargs.get('start_date') or (datetime.utcnow() - timedelta(days=5))
         self.end_date = kwargs.get('end_date') or (datetime.utcnow() + timedelta(days=5))
         self.start_time_since_epoch = milliseconds_since_epoch_local_time(self.start_date)
@@ -366,7 +367,7 @@ class Meetup(EventBase):
         venue_in_db = Venue.get_by_user_id_social_network_id_venue_id(
             self.user.id, self.social_network.id, self.venue_id)
         if not venue_in_db:
-            error_message = 'Venue does not exist in db. Venue id is %s' % self.venue_id
+            error_message = 'Venue does not exist in db. Venue id is {}'.format(self.venue_id)
             log_error({'user_id': self.user.id, 'error': error_message})
             raise VenueNotFound('Venue not found in database. Kindly specify a valid venue.')
 

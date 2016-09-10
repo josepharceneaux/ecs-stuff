@@ -917,7 +917,7 @@ class MockServiceApiUrl(object):
     # Endpoint for sn mock server
     MOCK_SERVICE = HOST_NAME % ('/' + VERSION + '/%s/%s')
 
-    
+
 class TalentBotApiUrl(object):
     """
     URLs for Talentbot service

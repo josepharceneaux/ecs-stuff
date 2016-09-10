@@ -104,7 +104,7 @@ def mock_endpoint(url_type, social_network, path):
         """
         mocked_json = vendor_data(url_type, resource_id)['/' + relative_url][request_method]
         response, status_code = get_mock_response(mocked_json, payload=data, headers=request.headers)
-        logger.info('MOCK RESPONSE: {} Request data: {} {} {}'.format(str(response), url_type, relative_url,
+        logger.info('MOCK RESPONSE: {} Request data: {} {} {}'.format(response, url_type, relative_url,
                                                                       request_method))
     except KeyError:
         raise InternalServerError('No Data found. Method:%s, Url:%s.' % (request_method, relative_url))
