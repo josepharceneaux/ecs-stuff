@@ -35,13 +35,10 @@ class EmailBot(TalentBot):
         :param str email_body: Received Email body
         :return: tuple (True|False, str|None)
         """
-        secret_email_token = TalentbotAuth.query.with_entities(TalentbotAuth.email_secret_token).\
+        email = TalentbotAuth.query.with_entities(TalentbotAuth.email).\
             filter_by(email=email_id).first()
-        if secret_email_token:
-            if secret_email_token[0] in email_body or secret_email_token[0] in subject:
-                # removing secret email token from msg
-                email_body = email_body.replace(secret_email_token[0], '')
-                return True, email_body
+        if email:
+            return True, email_body
         return False, None
 
     def reply(self, recipient, subject, message, sender):

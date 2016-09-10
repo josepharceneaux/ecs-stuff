@@ -89,7 +89,7 @@ class SlackBot(TalentBot):
         """
         logger.info('slack reply:' + msg)
         slack_client.api_call("chat.postMessage", channel=chanel_id,
-                              text=msg, as_user=True)
+                              text=msg)
 
     def handle_communication(self, channel_id, message, slack_user_id, timestamp):
         """
