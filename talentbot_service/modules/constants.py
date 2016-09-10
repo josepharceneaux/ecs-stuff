@@ -36,6 +36,7 @@ BEST_QUESTION_MATCH_RATIO = 95
 FACEBOOK_API_URI = "https://graph.facebook.com/v2.6/me/messages"
 AUTHENTICATION_FAILURE_MSG = 'Sorry you are not registered to use this service\n' \
                             'Go to the http://www.gettalent.com to register yourself'
-# Twilio account credentials for staging
+SLACK_AUTH_URI = 'https://slack.com/api/oauth.access'
+# TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"

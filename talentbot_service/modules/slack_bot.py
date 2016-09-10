@@ -48,6 +48,8 @@ class SlackBot(TalentBot):
             except NotFoundError as error:
                 logger.error(error.message)
                 return False, None, None
+            # Slack channel Id starts with 'C' if it is a channel and
+            # Start's with 'D' if it's a private message
             if (at_bot in message or at_bot+':' in message and channel_id[0] == 'C') \
                     or (channel_id[0] == 'D' and slack_user_id != at_bot):
                 return True, message.strip(at_bot), slack_client
@@ -94,20 +96,17 @@ class SlackBot(TalentBot):
         Handles the communication between user and bot
         :param str slack_user_id: Slack user id of the sender
         :param str channel_id: Slack channel Id from which message is received
-        :param message: User's message
+        :param str message: User's message
         :param str timestamp: Current message timestamp
         """
         is_authenticated, message, slack_client = self.authenticate_user(slack_user_id, message, channel_id)
         if is_authenticated:
+            self.timestamp = timestamp
+            self.recent_channel_id = channel_id
+            self.recent_user_id = slack_user_id
             try:
                 response_generated = self.parse_message(message)
-                self.timestamp = timestamp
-                self.recent_channel_id = channel_id
-                self.recent_user_id = slack_user_id
                 self.reply(channel_id, response_generated, slack_client)
             except (IndexError, NameError, KeyError):
                 error_response = random.choice(self.error_messages)
-                self.timestamp = timestamp
-                self.recent_channel_id = channel_id
-                self.recent_user_id = slack_user_id
                 self.reply(channel_id, error_response, slack_client)

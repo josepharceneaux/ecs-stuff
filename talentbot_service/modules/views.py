@@ -12,18 +12,16 @@ from talentbot_service.modules.facebook_bot import FacebookBot
 from talentbot_service.modules.slack_bot import SlackBot
 from talentbot_service.modules.sms_bot import SmsBot
 from constants import TWILIO_NUMBER, ERROR_MESSAGE, STANDARD_MSG_LENGTH, QUESTIONS, BOT_NAME, \
-    MAILGUN_SENDING_ENDPOINT, BOT_IMAGE, TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID
+    MAILGUN_SENDING_ENDPOINT, BOT_IMAGE, TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID, SLACK_AUTH_URI
 from talentbot_service import app, logger
 # 3rd party imports
 from flask import request, json
 
-twilio_account_sid = TWILIO_ACCOUNT_SID
-twilio_auth_token = TWILIO_AUTH_TOKEN
 mailgun_api_key = app.config[TalentConfigKeys.MAILGUN_API_KEY]
 slack_bot = SlackBot(QUESTIONS, BOT_NAME, ERROR_MESSAGE)
 sms_bot = SmsBot(bot_name=BOT_NAME, error_messages=ERROR_MESSAGE,
-                 standard_sms_length=STANDARD_MSG_LENGTH, twilio_account_sid=twilio_account_sid,
-                 twilio_auth_token=twilio_auth_token, twilio_number=TWILIO_NUMBER, questions=QUESTIONS)
+                 standard_sms_length=STANDARD_MSG_LENGTH, twilio_account_sid=TWILIO_ACCOUNT_SID,
+                 twilio_auth_token=TWILIO_AUTH_TOKEN, twilio_number=TWILIO_NUMBER, questions=QUESTIONS)
 email_bot = EmailBot(mailgun_api_key, MAILGUN_SENDING_ENDPOINT, QUESTIONS, BOT_NAME, BOT_IMAGE,
                      ERROR_MESSAGE)
 facebook_bot = FacebookBot(QUESTIONS, BOT_NAME, ERROR_MESSAGE)
@@ -45,7 +43,7 @@ def index():
 def listen_slack():
     """
     Listens to the slack web hook
-    :return: str
+    :rtype: str
     """
     event = request.json.get('event')
     if event:
@@ -55,11 +53,12 @@ def listen_slack():
         if slack_bot.timestamp:
             if current_timestamp == slack_bot.timestamp and channel_id == slack_bot.recent_channel_id\
                     and slack_user_id == slack_bot.recent_user_id:
-                print "none"
+                logger.info("Same callback again, response wasn't in 3 seconds")
                 return "OK"
         message = request.json.get('event').get('text')
         if message and channel_id and slack_user_id:
-            print "Message slack:%s, Current_timestamp: %s, Previous timestamp: %s"%(message, current_timestamp, slack_bot.timestamp)
+            logger.info("Message slack:%s, Current_timestamp: %s, Previous timestamp: %s"
+                        % (message, current_timestamp, slack_bot.timestamp))
             slack_bot.handle_communication(channel_id, message, slack_user_id, current_timestamp)
             return "OK"
     challenge = request.json.get('challenge')
@@ -72,7 +71,7 @@ def listen_slack():
 def handle_twilio_webhook():
     """
     Listens to the twilio callbacks
-    :return: str
+    :rtype: str
     """
     recipient = request.form.get('From')
     message_body = request.form.get('Body')
@@ -85,7 +84,7 @@ def handle_twilio_webhook():
 def receive_mail():
     """
     End point which listens mail gun callbacks
-    :return: str
+    :rtype: str
     """
     message = request.form.get('stripped-text')
     sender = request.form.get('sender')
@@ -100,7 +99,7 @@ def receive_mail():
 def handle_verification():
     """
     End point which handles facebook challenge code
-    :return: str
+    :rtype: str
     """
     return request.args['hub.challenge']
 
@@ -109,7 +108,7 @@ def handle_verification():
 def handle_incoming_messages():
     """
     End point to listen facebook web hooks
-    :return: str
+    :rtype: str
     """
     data = request.json
     sender = data['entry'][0]['messaging'][0]['sender']['id']
@@ -134,5 +133,5 @@ def get_new_user_credentials():
     client_id = app.config['SLACK_APP_CLIENT_ID']
     client_secret = app.config['SLACK_APP_CLIENT_SECRET']
     data = {'code': code, 'client_id': client_id, 'client_secret': client_secret}
-    response = send_request('POST', 'https://slack.com/api/oauth.access', None, data)
+    response = send_request('POST', SLACK_AUTH_URI, None, data)
     return "ok"
