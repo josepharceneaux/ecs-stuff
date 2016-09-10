@@ -900,9 +900,9 @@ class TalentBotApiUrl(object):
     URLs for Talentbot service
     """
     VERSION = 'v1'
-    SMS_LISTEN = '/' + VERSION + '/sms/listen'
-    EMAIL_LISTEN = '/' + VERSION + '/email/listen'
-    FACEBOOK_LISTEN = '/' + VERSION + '/facebook/listen'
-    SLACK_LISTEN = '/' + VERSION + '/slack/listen'
-    SLACK_AUTH = '/' + VERSION + '/slack/auth'
+    SMS_LISTEN = '/' + VERSION + '/sms-callback'
+    EMAIL_LISTEN = '/' + VERSION + '/email-callback'
+    FACEBOOK_LISTEN = '/' + VERSION + '/facebook-callback'
+    SLACK_LISTEN = '/' + VERSION + '/slack-callback'
+    SLACK_AUTH = '/' + VERSION + '/slack-auth'
     INDEX = '/' + VERSION + '/index'

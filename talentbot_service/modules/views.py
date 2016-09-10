@@ -12,13 +12,13 @@ from talentbot_service.modules.facebook_bot import FacebookBot
 from talentbot_service.modules.slack_bot import SlackBot
 from talentbot_service.modules.sms_bot import SmsBot
 from constants import TWILIO_NUMBER, ERROR_MESSAGE, STANDARD_MSG_LENGTH, QUESTIONS, BOT_NAME, \
-    MAILGUN_SENDING_ENDPOINT, BOT_IMAGE
+    MAILGUN_SENDING_ENDPOINT, BOT_IMAGE, TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID
 from talentbot_service import app, logger
 # 3rd party imports
 from flask import request, json
 
-twilio_account_sid = app.config[TalentConfigKeys.TWILIO_ACCOUNT_SID]
-twilio_auth_token = app.config[TalentConfigKeys.TWILIO_AUTH_TOKEN]
+twilio_account_sid = TWILIO_ACCOUNT_SID
+twilio_auth_token = TWILIO_AUTH_TOKEN
 mailgun_api_key = app.config[TalentConfigKeys.MAILGUN_API_KEY]
 slack_bot = SlackBot(QUESTIONS, BOT_NAME, ERROR_MESSAGE)
 sms_bot = SmsBot(bot_name=BOT_NAME, error_messages=ERROR_MESSAGE,
@@ -47,20 +47,21 @@ def listen_slack():
     Listens to the slack web hook
     :return: str
     """
-    current_timestamp = request.json.get('event').get('ts')
-    channel_id = request.json.get('event').get('channel')
-    slack_user_id = request.json.get('event').get('user')
-    if slack_bot.timestamp:
-        if current_timestamp == slack_bot.timestamp and channel_id == slack_bot.recent_channel_id\
-                and slack_user_id == slack_bot.recent_user_id:
-            return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
-    slack_bot.timestamp = current_timestamp
-    slack_bot.recent_channel_id = channel_id
-    slack_bot.recent_user_id = slack_user_id
-    message = request.json.get('event').get('text')
-    if message and channel_id and slack_user_id:
-        slack_bot.handle_communication(channel_id, message, slack_user_id)
-        return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
+    event = request.json.get('event')
+    if event:
+        current_timestamp = event.get('ts')
+        channel_id = request.json.get('event').get('channel')
+        slack_user_id = request.json.get('event').get('user')
+        if slack_bot.timestamp:
+            if current_timestamp == slack_bot.timestamp and channel_id == slack_bot.recent_channel_id\
+                    and slack_user_id == slack_bot.recent_user_id:
+                print "none"
+                return "OK"
+        message = request.json.get('event').get('text')
+        if message and channel_id and slack_user_id:
+            print "Message slack:%s, Current_timestamp: %s, Previous timestamp: %s"%(message, current_timestamp, slack_bot.timestamp)
+            slack_bot.handle_communication(channel_id, message, slack_user_id, current_timestamp)
+            return "OK"
     challenge = request.json.get('challenge')
     if challenge:
         return challenge
