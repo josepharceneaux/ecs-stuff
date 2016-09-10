@@ -48,7 +48,10 @@ class SlackBot(TalentBot):
             except NotFoundError as error:
                 logger.error(error.message)
                 return False, None, None
-            if (at_bot in message or at_bot+':' in message) or channel_id[0] == 'D':
+            # Slack channel Id starts with 'C' if it is a channel and
+            # Start's with 'D' if it's a private message
+            if (at_bot in message or at_bot+':' in message and channel_id[0] == 'C') \
+                    or (channel_id[0] == 'D' and slack_user_id != at_bot):
                 return True, message.strip(at_bot), slack_client
         return False, None, None
 
@@ -86,17 +89,21 @@ class SlackBot(TalentBot):
         """
         logger.info('slack reply:' + msg)
         slack_client.api_call("chat.postMessage", channel=chanel_id,
-                              text=msg, as_user=True)
+                              text=msg)
 
-    def handle_communication(self, channel_id, message, slack_user_id):
+    def handle_communication(self, channel_id, message, slack_user_id, timestamp):
         """
         Handles the communication between user and bot
         :param str slack_user_id: Slack user id of the sender
         :param str channel_id: Slack channel Id from which message is received
-        :param message: User's message
+        :param str message: User's message
+        :param str timestamp: Current message timestamp
         """
         is_authenticated, message, slack_client = self.authenticate_user(slack_user_id, message, channel_id)
         if is_authenticated:
+            self.timestamp = timestamp
+            self.recent_channel_id = channel_id
+            self.recent_user_id = slack_user_id
             try:
                 response_generated = self.parse_message(message)
                 self.reply(channel_id, response_generated, slack_client)
