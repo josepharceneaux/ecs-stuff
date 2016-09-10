@@ -43,9 +43,10 @@ This file contains API endpoints related to email_campaign_service.
             GET    : Gets all the "sends" records for given email campaign id
                         from db table "email_campaign_sends"
 """
+# Standard Library
+import types
 
 # Third Party
-import types
 import requests
 from flask_restful import Resource
 from werkzeug.utils import redirect
