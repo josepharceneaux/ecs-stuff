@@ -207,7 +207,6 @@ class ResumeApi(object):
     VERSION = 'v1'
     URL_PREFIX = '/' + VERSION + '/'
     PARSE = 'parse_resume'
-    BATCH = 'batch'
 
 
 class ResumeApiUrl(object):
@@ -217,10 +216,7 @@ class ResumeApiUrl(object):
     VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.RESUME_PARSING_SERVICE_NAME, GTApis.RESUME_PARSING_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    BASE_URL = HOST_NAME % ('/' + VERSION + '/%s')
     PARSE = HOST_NAME % ('/' + VERSION + '/parse_resume')
-    BATCH_URL = HOST_NAME % ('/' + VERSION + '/batch')
-    BATCH_PROCESS = HOST_NAME % ('/' + VERSION + '/batch/<int:user_id>')
 
 
 class UserServiceApi(object):
