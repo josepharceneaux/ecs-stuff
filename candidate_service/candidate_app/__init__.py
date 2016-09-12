@@ -16,7 +16,7 @@ try:
         CandidateWorkExperienceResource, CandidateWorkExperienceBulletResource, CandidateWorkPreferenceResource,
         CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
-        CandidateEditResource, CandidatesResource, CandidateOpenWebResource, CandidateViewResource,
+        CandidatesResource, CandidateOpenWebResource, CandidateViewResource,
         CandidatePreferenceResource, CandidateClientEmailCampaignResource,
         CandidateDeviceResource, CandidatePhotosResource, CandidateLanguageResource
     )
@@ -27,6 +27,7 @@ try:
     from candidate_service.candidate_app.api.candidate_custom_fields import CandidateCustomFieldResource
     from candidate_service.candidate_app.api.statuses import CandidateStatusesResources
     from candidate_service.candidate_app.api.notes import CandidateNotesResource
+    from candidate_service.candidate_app.api.edits import CandidateEditResource
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)

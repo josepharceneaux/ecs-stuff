@@ -1,0 +1,10 @@
+"""
+This script increases adds 'edit_action' column to 'candidate_edit' table.
+'edit_action' will be used to identify whether the user added, updated, or deleted candidate's record(s)
+"""
+
+from candidate_service.common.models.db import db
+from candidate_service.common.models.candidate_edit import CandidateEdit
+from sqlalchemy.dialects.mysql import TINYINT
+
+db.session.execute("""ALTER TABLE `candidate_edit` ADD COLUMN `edit_action` TINYINT;""")
