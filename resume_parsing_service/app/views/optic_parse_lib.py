@@ -304,7 +304,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
                 # If experience already exists then append the current bullet-descriptions to
                 # already existed bullet-descriptions
                 if existing_experience_list_order:
-                    existing_experience_description = output[existing_experience_list_order - 1][
+                    existing_experience_description = output[existing_experience_list_order][
                         'bullets']
                     existing_experience_description.append(dict(
                         description=bullet_description
@@ -558,7 +558,7 @@ def is_experience_already_exists(candidate_experiences, experience_to_test):
             'end_year': experience.get('end_year'),
         }
         if existing_exp == base_exp_to_test:
-            return i + 1
+            return i
 
     return False
 
