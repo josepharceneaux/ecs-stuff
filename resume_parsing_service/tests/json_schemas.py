@@ -63,7 +63,6 @@ EXPERIENCE_SCHEMA = {
     "bullets": {
       "type": "array",
       "items": {
-        "type": "object",
         "properties": {
           "description": {
             "type": ["string", "null"]

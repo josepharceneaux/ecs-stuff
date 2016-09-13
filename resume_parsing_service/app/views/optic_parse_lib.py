@@ -21,9 +21,10 @@ from flask import current_app
 from resume_parsing_service.app import logger
 from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.OauthClient import OAuthClient
-from resume_parsing_service.common.error_handling import ForbiddenError, InternalServerError
+from resume_parsing_service.common.error_handling import InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 from resume_parsing_service.common.utils.handy_functions import normalize_value
+
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
 
@@ -249,52 +250,9 @@ def parse_candidate_experiences(bg_experience_xml_list):
     for experiences in bg_experience_xml_list:
         jobs = experiences.findAll('job')
         for employment in jobs:
-            start_month, start_year, end_month, end_year, start_datetime, end_datetime = (None,) * 6
-            organization = _tag_text(employment, 'employer')
-
-            # If it's 5 or less chars, keep the given capitalization, because it may be an acronym.
-            # TODO revisit this logic. `Many XYZ Services` companies are becoming Xyz Services.
-            if organization and len(organization) > 5:
-                organization = string.capwords(organization)
-            # Position title
-            position_title = _tag_text(employment, 'title')
-            # Start date
-            start_date_str = get_date_from_date_tag(employment, 'start')
-
-            if start_date_str:
-                start_datetime = datetime.datetime.strptime(start_date_str, ISO8601_DATE_FORMAT)
-                start_year = start_datetime.year
-                start_month = start_datetime.month
-
-            end_date_str = get_date_from_date_tag(employment, 'end')
-
-            if end_date_str:
-                end_datetime = datetime.datetime.strptime(end_date_str, ISO8601_DATE_FORMAT)
-                end_month = end_datetime.month
-                end_year = end_datetime.year
-
-            # A Resume or BG may give us bad dates that get invalidated by Candidate Service.
-            if (start_datetime and end_datetime) and (start_datetime > end_datetime):
-                start_month, start_year, end_month, end_year = None, None, None, None
-
-            today_date = datetime.date.today().isoformat()
-            is_current_job = True if today_date == end_date_str else False
-
-            # Company's address
-            company_address = employment.find('address')
-            company_city = _tag_text(company_address, 'city', capwords=True)
-            company_state = _tag_text(company_address, 'state')
-            company_country = get_country_code_from_address_tag(company_address)
+            base_exp = gen_base_exp_from_exp_tag(employment)
 
             # Check if an experience already exists
-            base_exp = {
-                'organization': organization,
-                'title': position_title,
-                'start_month': start_month,
-                'start_year': start_year,
-                'end_month': end_month,
-                'end_year': end_year,
-            }
             existing_experience_list_order = is_experience_already_exists(output, base_exp)
 
             # Get experience bullets
@@ -304,28 +262,73 @@ def parse_candidate_experiences(bg_experience_xml_list):
                 # If experience already exists then append the current bullet-descriptions to
                 # already existed bullet-descriptions
                 if existing_experience_list_order:
-                    existing_experience_description = output[existing_experience_list_order][
-                        'bullets']
-                    existing_experience_description.append(dict(
-                        description=bullet_description
-                    ))
+                    output[existing_experience_list_order]['bullets'][0]['description'] += '\n' + bullet_description
                 else:
                     candidate_experience_bullets.append(bullet_description)
+
             if not existing_experience_list_order:
+                is_current_job = False
+                if base_exp['end_year'] and base_exp['end_month']:
+                    today_date = datetime.date.today()
+                    experience_end_date = datetime.date(base_exp['end_year'],
+                                                        base_exp['end_month'], 1)
+                    if today_date == experience_end_date:
+                        is_current_job = True
+
+                # Company's address
+                company_address = employment.find('address')
+                company_city = _tag_text(company_address, 'city', capwords=True)
+                company_state = _tag_text(company_address, 'state')
+                company_country = get_country_code_from_address_tag(company_address)
                 output.append(dict(
-                    position=position_title,
-                    organization=organization,
+                    position=base_exp['title'],
+                    organization=base_exp['organization'],
+                    start_month=base_exp['start_month'],
+                    start_year=base_exp['start_year'],
+                    end_month=base_exp['end_month'],
+                    end_year=base_exp['end_year'],
                     city=company_city,
                     state=company_state,
                     country_code=company_country,
-                    start_month=start_month,
-                    start_year=start_year,
-                    end_month=end_month,
-                    end_year=end_year,
                     is_current=is_current_job,
-                    bullets=['\n'.join(candidate_experience_bullets)]
+                    bullets=[{'description': '\n'.join(candidate_experience_bullets)}]
                 ))
     return output
+
+
+def gen_base_exp_from_exp_tag(experience_xml):
+    start_month, start_year, end_month, end_year, start_datetime, end_datetime = (None,) * 6
+    organization = _tag_text(experience_xml, 'employer')
+    # If it's 5 or less chars, keep the given capitalization, because it may be an acronym.
+    if organization and len(organization) > 5:
+        organization = string.capwords(organization)
+    title = _tag_text(experience_xml, 'title')
+    start_date_str = get_date_from_date_tag(experience_xml, 'start')
+
+    if start_date_str:
+        start_datetime = datetime.datetime.strptime(start_date_str, ISO8601_DATE_FORMAT)
+        start_year = start_datetime.year
+        start_month = start_datetime.month
+
+    end_date_str = get_date_from_date_tag(experience_xml, 'end')
+
+    if end_date_str:
+        end_datetime = datetime.datetime.strptime(end_date_str, ISO8601_DATE_FORMAT)
+        end_month = end_datetime.month
+        end_year = end_datetime.year
+
+    # A Resume or BG may give us bad dates that get invalidated by Candidate Service.
+    if (start_datetime and end_datetime) and (start_datetime > end_datetime):
+        start_month, start_year, end_month, end_year = None, None, None, None
+
+    return {
+        'organization': organization,
+        'title': title,
+        'start_month': start_month,
+        'start_year': start_year,
+        'end_month': end_month,
+        'end_year': end_year
+    }
 
 
 @contract

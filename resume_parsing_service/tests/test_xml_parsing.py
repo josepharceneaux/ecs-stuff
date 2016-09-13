@@ -189,7 +189,7 @@ def test_experience_exists_concats():
 
     experiences = [exp1]
     list_order = is_experience_already_exists(experiences, exp2)
-    assert True
+    assert list_order is 0  # http://stackoverflow.com/a/306353
 
 
 def test_education_parsing():
@@ -254,6 +254,8 @@ def test_docx_accuracy():
     # Experience parsing.
     experience_xml_list = bs4(DOCX, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
+    for exp in experiences:
+        assert len(exp['bullets']) == 1
     exp1 = next((org for org in experiences if org["organization"] == u'Merck & Co, Inc'), None)
     exp2 = next((org for org in experiences if org["organization"] == u'Infomc Inc'), None)
     exp3 = next((org for org in experiences if org["organization"] == u'Datakinetics Inc'), None)
@@ -309,6 +311,8 @@ def test_g642_accuracy():
     # Experience parsing.
     experience_xml_list = bs4(GET_642, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
+    for exp in experiences:
+        assert len(exp['bullets']) == 1
     exp1 = next((org for org in experiences if org["organization"] == u'Pivotalthought Llc'), None)
     exp2 = next((org for org in experiences if org["organization"] == u'Gxs, Inc'), None)
     exp3 = next((org for org in experiences if org["organization"] == u'Sun Microsystems'), None)
@@ -410,6 +414,8 @@ def test_g646_accuracy():
     # Experience parsing.
     experience_xml_list = bs4(GET_646, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
+    for exp in experiences:
+        assert len(exp['bullets']) == 1
     # Name is currently not grabbed.
     # exp1 = next((org for org in experiences if org["organization"] == u'Technical Difference'), None)
     exp2 = next((org for org in experiences if org["organization"] == u'Convergence Inc. Llc'), None)
@@ -449,6 +455,8 @@ def test_g626a_accuracy():
     # Experience parsing.
     experience_xml_list = bs4(GET_626a, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
+    for exp in experiences:
+        assert len(exp['bullets']) == 1
     exp1 = next((org for org in experiences if org["organization"] == u'Census Bureau'), None)
     assert exp1
     assert exp1['start_month'] == 9
@@ -565,6 +573,8 @@ def test_g626b_accuracy():
     # Experience parsing.
     experience_xml_list = bs4(GET_626b, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
+    for exp in experiences:
+        assert len(exp['bullets']) == 1
     # Below does not parse positions after , in Director
     # exp1 = next((org for org in experiences if (
     #     org["organization"] == u'Sage Software' and
@@ -611,6 +621,8 @@ def test_pdf_accuracy():
     assert {'value': u'727.565.1234', 'label': 'Other'} in phones
     experience_xml_list = bs4(PDF, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
+    for exp in experiences:
+        assert len(exp['bullets']) == 1
     # exp1 = next((org for org in experiences if (
     #     org["organization"] == u'SmartSource' and
     #     org['position'] == u'Technical Support')), None)
@@ -701,6 +713,8 @@ def test_pdf13_accuracy():
     assert {'value': u'630-930-2756', 'label': 'Other'} in phones
     experience_xml_list = bs4(PDF_13, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
+    for exp in experiences:
+        assert len(exp['bullets']) == 1
     exp1 = next((org for org in experiences if org["organization"] == u'Sagamore Apps, Inc'), None)
     assert exp1
     # assert exp1['position'] == u'Owner and Senior iOS Contract Developer'
@@ -745,6 +759,8 @@ def test_pdf14_accuracy():
     addresses = parse_candidate_addresses(contact_xml_list)
     experience_xml_list = bs4(PDF_14, 'lxml').findAll('experience')
     experiences = parse_candidate_experiences(experience_xml_list)
+    for exp in experiences:
+        assert len(exp['bullets']) == 1
     educations_xml_list = bs4(PDF_14, 'lxml').findAll('education')
     educations = parse_candidate_educations(educations_xml_list)
     assert first == 'Jose'
