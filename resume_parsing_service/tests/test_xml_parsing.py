@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup as bs4
 from jsonschema import validate, FormatChecker
 # JSON outputs.
 from .resume_xml import DOCX
+from .resume_xml import DUPED_EXPERIENCE
 from .resume_xml import GET_1301
 from .resume_xml import GET_626a
 from .resume_xml import GET_626b
@@ -135,6 +136,13 @@ def test_experience_parsing():
         assert validate(experience, EXPERIENCE_SCHEMA, format_checker=FormatChecker()) is None
     for experience in processed_experiences_b:
         assert validate(experience, EXPERIENCE_SCHEMA, format_checker=FormatChecker()) is None
+
+
+def test_dupe_experience_bullets():
+    experience_xml_list = bs4(DUPED_EXPERIENCE, 'lxml').findAll('experience')
+    experiences = parse_candidate_experiences(experience_xml_list)
+    for exp in experiences:
+        assert len(exp['bullets']) == 1
 
 
 def test_experience_exists_detects_dupe():

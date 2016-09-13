@@ -576,6 +576,599 @@ Available upon request.
   </resdoc>
 """
 
+
+DUPED_EXPERIENCE = u"""
+  <resdoc>
+   <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
+    <contact>
+     <name>
+      <givenname>
+       VEENA
+      </givenname>
+      <surname>
+       NITHOO
+      </surname>
+     </name>
+     <address division-code="37964: METROPOLITAN DIVISION" inferred-city="LANSDALE" inferred-country="USA" inferred-county="MONTGOMERY" inferred-phone-area-code="215|267|610" inferred-state="PA" lat="40.237484" lma="DV423796|MT423798" lon="-75.291367" majorcity="LANSDALE" msa="37980: METROPOLITAN STATISTICAL AREA" state="PA">
+      <street>
+       466 Tailor Way
+      </street>
+      *
+      <city majorcity="lansdale">
+       Lansdale
+      </city>
+      ,
+      <state abbrev="PA">
+       Pennsylvania
+      </state>
+      <postalcode division-code="37964: METROPOLITAN DIVISION" inferred-city="LANSDALE" inferred-country="USA" inferred-county="MONTGOMERY" inferred-phone-area-code="215|267|610" inferred-state="PA" lat="40.237484" lma="DV423796|MT423798" lon="-75.291367" msa="37980: METROPOLITAN STATISTICAL AREA">
+       19446
+      </postalcode>
+     </address>
+     *
+     <phone area="215">
+      (215) 412-0817
+     </phone>
+    </contact>
+    <summary>
+     CAREER OBJECTIVE
+     <objective>
+      To obtain a challenging position in the field of information technology.
+     </objective>
+    </summary>
+    <education>
+     EDUCATION:
+     <school id="8">
+      <institution>
+       South Bank University
+      </institution>
+      ,
+      <address inferred-city="CHARLESTON" inferred-state="WV" lat="38.187" lon="-81.3476" majorcity="CHARLESTON" state="WV">
+       <city majorcity="london">
+        London
+       </city>
+       ,
+       <country iso3="GBR">
+        UK
+       </country>
+      </address>
+      -
+      <degree level="16" name="Bachelor of Science">
+       B.Sc
+      </degree>
+      .
+      <major code="0402">
+       Computing Studies
+      </major>
+      (
+      <completiondate days="728477" iso8601="1995-07-01">
+       July 1995
+      </completiondate>
+      )
+      <courses>
+       Institute of Data Processing &amp; Management - Certificate of Management (July 1991)
+Dr Maurice Curé State Secondary School, Mauritius - Secondary Education up to "A" Level (University of Cambridge, UK)
+      </courses>
+     </school>
+    </education>
+    <experience end="present" start="727809">
+     WORK EXPERIENCE:
+     <job bgtocc="15-1131.00" end="present" id="1" inferred-naics="325412" inferred-to="1" onet="15-1132.00|15-1151.00" onetrank="1" pos="2" sic="283407" sic2="28" span="15" start="730396">
+      <daterange>
+       <start days="730396" iso8601="2000-10-01">
+        Oct 2000
+       </start>
+       -
+       <end days="present" iso8601="2015-12-09">
+        Present
+       </end>
+      </daterange>
+      <employer city="WHITEHOUSE STA" clean="MERCK &amp; CO, Inc" consolidated="Merck &amp; Company" employees="63,200" inferred-naics="325412" invalid="false" name="MERCK &amp; COMPANY INCORPORATED" priority="1" referenced-naics="3254" sales="2147483647" sic="283407" state="NJ" std="Merck &amp; Company" ticker="MRK" zipcode="08889-3497">
+       MERCK &amp; CO, Inc
+      </employer>
+      ., Merck Manufacturing Division IT,
+      <address>
+       RCS
+      </address>
+      <title bgonetmodel-topic-onet="15-1151.00|15-1141.00" clean="Application services Analyst" internship-flag="false" onet="15-1151.00|15-1141.00" onetrank="1" std="Applications Analyst">
+       Application Services Analyst
+      </title>
+     </job>
+     <job end="present" id="2" inferred-from="2" pos="1" sic="283407" sic2="28" span="10" start="732100">
+      <daterange>
+       <start days="732100" iso8601="2005-06-01">
+        Jun 2005
+       </start>
+       -
+       <end days="present" iso8601="2015-12-09">
+        Present
+       </end>
+      </daterange>
+      <description>
+       (WATS) - Worldwide Atypical Tracking Systems
+*Team Leader for all WATS deployments, enhancements and support.
+*Responsible for global deployment of WATS to several sites in North America and international sites in Europe and Asia Pacific on both desktop and terminal servers.
+*Worked with the Terminal server group (Citrix Servers) to roll-out latest release to several sites. (Several issues were encountered due to MAPI and could not export from Crystal report to Excel)
+*Developed design specifications, requirement specifications, test scripts (integration and acceptance), installation qualification and operational qualifications (IQ/OQs) and change controls.
+*Developed Performance Monitoring reports for all 13 sites across the world annually.
+*Reviewed and approved executed test scripts, IQ/OQs and change controls together with business area and quality representative.
+*Updated traceability matrix to verify and confirm all requirements are fully tested.
+*Managed change control and make sure that they are closed in a timely manner.
+*Worked closely with the business area for each sites to make sure that their requests are managed and delivered to them promptly.
+*Actively participated in remediating WATS documentation for accuracy and completeness.
+*Wrote technical bulletins to communicate any new bugs and the workarounds to system administrators.
+*Managed workload of the team members.
+*Assisted in Help Desk cases resolutions.
+*Worked in a GMP environment.
+*Team Leader in Disaster Recovery Drill exercise for WATS twice.
+*Experienced in a regulated environment working with 21 CFR Part 11 and computer systems validation.
+*Developed PL/SQL scripts for support activities. Actively used SQL Navigator &amp; SQL*PLUS.
+*Involved in testing Oracle 10g with WATS.
+*Worked on creating Knowledge Transfer document for new team members.
+      </description>
+     </job>
+          <job end="present" id="2" inferred-from="2" pos="1" sic="283407" sic2="28" span="10" start="732100">
+      <daterange>
+       <start days="732100" iso8601="2005-06-01">
+        Jun 2005
+       </start>
+       -
+       <end days="present" iso8601="2015-12-09">
+        Present
+       </end>
+      </daterange>
+      <description>
+       Did some more of that stuff!
+      </description>
+     </job>
+     <job end="732100" id="3" pos="3" sic="233103" sic2="23" span="5" start="730396">
+      <daterange>
+       <start days="730396" iso8601="2000-10-01">
+        Oct 2000
+       </start>
+       -
+       <end days="732100" iso8601="2005-06-01">
+        Jun 2005
+       </end>
+      </daterange>
+      (
+      <employer city="VAN NUYS" clean="LIMS" consolidated="LIMS" employees="20" invalid="false" name="LIMS" priority="2" referenced-naics="3152" sales="2420000" sic="233103" state="CA" zipcode="91402-4900">
+       LIMS
+      </employer>
+      ) - Laboratory Information Management Systems
+*
+      <description>
+       Team leader for the Stability LIMS deployments of SQL*LIMS v4 to WestPoint, Wilson/Elkton, Cramlington &amp; Australia.
+*In charge of making sure all the tables and customized code were successfully migrated from Oracle 7 to oracle 9i.
+*Supporting Cramlington &amp; Wilson/Elkton as the primary point of contact for Stability LIMS.
+*Has a good working relationship with Applied Biosystems support group. Assist in bug fixes for the LIMS systems in a timely manner in order to provide better support to our business area.
+*Develop Unit testing plan, Integration testing plan and acceptance testing plans.
+*Perform several upgrades by executing IQ/OQs to install the latest software.
+*Perform migration of LIMS data from Oracle 7 to Oracle 9.
+*Work in a GMP environment.
+*Experience in a regulated environment working with 21 CFR Part 11 and computer systems validation.
+*Update design documents to reflect any changes in the LIMS system.
+*Used PL/SQL, Oracle, Java and Unix
+      </description>
+     </job>
+     <job bgtocc="15-1131.91" end="730274" id="4" onet="15-1131.00" onetrank="1" pos="4" sic="999977" sic2="99" span="1" start="730000">
+      <daterange>
+       <start days="730000" iso8601="1999-09-01">
+        Sept 1999
+       </start>
+       -
+       <end days="730274" iso8601="2000-06-01">
+        June 2000
+       </end>
+      </daterange>
+      <employer city="PLYMOUTH" clean="INFOMC Inc" consolidated="INFOMC INCORPORATED" invalid="false" name="INFOMC INCORPORATED" priority="2" sic="999977" state="PA" zipcode="18651-0000">
+       INFOMC Inc
+      </employer>
+      .
+      <title bgonetmodel-topic-onet="15-1131.00|15-1132.00" clean="Analyst Programmer" internship-flag="false" onet="15-1131.00|15-1132.00" onetrank="1" std="Programmer/Analyst">
+       Analyst Programmer
+      </title>
+      *
+      <description>
+       Developing and testing software programs using Visual Foxpro 6.0 for Behavioral Health Care Projects and SQL server on the backend.
+*Worked closely with the implementation specialist team in writing function specifications.
+*Write programs to export and import Electronic Claim Processing (Health Insurance Claims) using Visual Foxpro 6.0
+*Trained in HTML 4.0 and Javascript.
+*Worked with Windows NT, Client/Server and SQL(Query Analyser)
+*Used Visual Sourcesafe and PVCS tracker
+      </description>
+     </job>
+     <job bgtocc="15-1131.91" end="729969" id="5" onet="15-1131.00" onetrank="1" pos="5" sic="737303" sic2="73" span="2" start="729392">
+      <daterange>
+       <start days="729392" iso8601="1998-01-01">
+        Jan 1998
+       </start>
+       -
+       <end days="729969" iso8601="1999-08-01">
+        Aug 1999
+       </end>
+      </daterange>
+      <employer city="YOUNGSTOWN" clean="DATAKINETICS Inc" consolidated="DATAKINETICS INCORPORATED" invalid="false" name="DATAKINETICS INCORPORATED" priority="2" referenced-naics="5415" sic="737303" state="OH" zipcode="44512-6727">
+       DATAKINETICS Inc
+      </employer>
+      .
+      <title bgonetmodel-topic-onet="15-1131.00|15-1132.00" clean="Analyst Programmer" internship-flag="false" onet="15-1131.00|15-1132.00" onetrank="1" std="Programmer/Analyst">
+       Analyst Programmer
+      </title>
+      *
+      <description>
+       Writing and testing software programs using Visual Foxpro 3.0 , MSAccess 97 and Paradox for Windows 4.5.
+*Data conversion and extraction:- transferring data from the ADS onto a PC based program using TTWin32 (TurboSoft Windows Based Terminal Emulation Package)
+*Writing reports using Seagate Crystal 6.0 &amp; Goldmine 4.0
+*Extensive system analysis and design as well as writing function specifications.
+      </description>
+     </job>
+     <job bgtocc="15-1131.91" end="729147" id="6" onet="15-1131.00" onetrank="1" pos="6" sic="6552" sic2="65" span="1" start="728721">
+      <daterange>
+       <start days="728721" iso8601="1996-03-01">
+        Mar 1996
+       </start>
+       -
+       <end days="729147" iso8601="1997-05-01">
+        May 1997
+       </end>
+      </daterange>
+      <employer clean="HAREL MALLAC, MCS DEVELOPMENT LTD" consolidated="HAREL MALLAC, MCS DEVELOPMENT LTD" invalid="false" priority="3" referenced-naics="2372" sic="6552">
+       HAREL MALLAC, MCS DEVELOPMENT LTD
+      </employer>
+      .,
+      <address>
+       <country iso3="MUS">
+        Mauritius
+       </country>
+      </address>
+      <title bgonetmodel-topic-onet="15-1131.00|15-1132.00" clean="Analyst Programmer" internship-flag="false" onet="15-1131.00|15-1132.00" onetrank="1" std="Programmer/Analyst">
+       Analyst Programmer
+      </title>
+      *
+      <description>
+       Involved in training and providing support to users with newly implemented systems (Payroll &amp; Inventory)
+*Writing and testing software programs using FOXPRO 2.6 for Windows.
+*Worked closely with a programmer team in writing function specifications.
+      </description>
+     </job>
+     <job bgtocc="15-1131.91" end="728174" id="7" onet="15-1131.00" onetrank="1" pos="7" sic="874201" sic2="87" span="1" start="727809">
+      <daterange>
+       <start days="727809" iso8601="1993-09-01">
+        Sept 1993
+       </start>
+       -
+       <end days="728174" iso8601="1994-09-01">
+        Sept 1994
+       </end>
+      </daterange>
+      <employer clean="GT MANAGEMENT LTD" consolidated="GT MANAGEMENT" invalid="false" name="GT MANAGEMENT" priority="2" referenced-naics="5416" sic="874201">
+       GT MANAGEMENT LTD
+      </employer>
+      .,
+      <address inferred-city="CHARLESTON" inferred-state="WV" lat="38.187" lon="-81.3476" majorcity="CHARLESTON" state="WV">
+       <city majorcity="london">
+        London
+       </city>
+       ,
+       <country iso3="GBR">
+        United Kingdom
+       </country>
+      </address>
+      <title bgonetmodel-topic-onet="15-1131.00|15-1132.00" clean="Analyst Programmer" internship-flag="false" onet="15-1131.00|15-1132.00" onetrank="1" std="Programmer/Analyst">
+       Analyst Programmer
+      </title>
+      *
+      <description>
+       Implementing software programs using SQL*PLUS on the Vax system.
+*Creating reports using SQLFORMS v3.0
+*Designing and documenting software projects such as data dictionary, testing and quantitative analysis.
+      </description>
+      ACADEMIC EXPERIENCE:
+*
+      <description>
+       Knowledgeable in data modeling and data normalization.
+*Extensive knowledge of UNIX, MS DOS v6.2 and the Vax VMS operating systems.
+      </description>
+     </job>
+    </experience>
+    *
+    <skills>
+     <skills>
+      Programming in SQL*PLUS, ANSI C, C++, VB, COBOL, ADA and Paradox for Windows v4.5
+*Intensive training in computer graphics using X Windows (NeXt stations).
+*Presentations done: Structured systems analysis and Design methodology (SSADM).
+     </skills>
+     OTHER:
+     <languages>
+      Bilingual: Speak and write fluent English and French.
+     </languages>
+    </skills>
+    <statements>
+     <activities>
+      Sports discipline: Swimming, volleyball, badminton, netball, table-tennis and aerobics.
+     </activities>
+    </statements>
+    <references>
+     REFERENCE:
+Available upon request.
+    </references>
+    <contact>
+     <name>
+      <givenname>
+       Veena
+      </givenname>
+      <surname>
+       Nithoo
+      </surname>
+     </name>
+     's CVPage 1
+    </contact>
+   </resume>
+   <skillrollup version="1">
+    <canonskill end="730274" experience="1" expidrefs="4" idrefs="4" lastused="2000" name="Behavioral Health" posrefs="4" skill-cluster="Health: Mental/Behavioral; Specialized Skills" start="730000">
+     <variant>
+      Behavioral Health
+     </variant>
+    </canonskill>
+    <canonskill name="Bilingual" skill-cluster="Common Skills: Language">
+     <variant>
+      Bilingual
+     </variant>
+    </canonskill>
+    <canonskill name="C Programming Language" skill-cluster="Software and Programming Skills; Specialized Skills">
+     <variant>
+      ANSI C
+     </variant>
+    </canonskill>
+    <canonskill name="C++" skill-cluster="Software and Programming Skills; IT: Programming, Development, and Engineering; Specialized Skills">
+     <variant>
+      C++
+     </variant>
+    </canonskill>
+    <canonskill name="COBOL" skill-cluster="Software and Programming Skills; IT: Programming, Development, and Engineering; Specialized Skills">
+     <variant>
+      COBOL
+     </variant>
+    </canonskill>
+    <canonskill end="735943" experience="1" expidrefs="2" idrefs="2" lastused="2015" name="Citrix" posrefs="1" skill-cluster="Software and Programming Skills; IT: Network Administration and Security; Specialized Skills" start="732100">
+     <variant>
+      Citrix
+     </variant>
+    </canonskill>
+    <canonskill end="730274" experience="1" expidrefs="4" idrefs="4" lastused="2000" name="Claims Knowledge" posrefs="4" skill-cluster="Finance: Accounting, Bookkeeping, and Tax Preparation: Tax Preparation and Advice; Specialized Skills" start="730000">
+     <variant>
+      Claims
+     </variant>
+    </canonskill>
+    <canonskill end="730274" experience="1" expidrefs="4" idrefs="4" lastused="2000" name="Client/Server" posrefs="4" skill-cluster="Specialized Skills" start="730000">
+     <variant>
+      Client/Server
+     </variant>
+    </canonskill>
+    <canonskill end="735943" experience="1" expidrefs="2" idrefs="2" lastused="2015" name="Crystal Reports" posrefs="1" skill-cluster="Software and Programming Skills; IT: Business Intelligence; Specialized Skills" start="732100">
+     <variant>
+      Crystal report
+     </variant>
+    </canonskill>
+    <canonskill end="728174" experience="1" expidrefs="7" idrefs="7" lastused="1994" name="DEC VAX" posrefs="7" skill-cluster="IT: Operating Systems; Specialized Skills" start="727809">
+     <variant>
+      Vax
+     </variant>
+    </canonskill>
+    <canonskill end="729969" experience="1" expidrefs="5" idrefs="5" lastused="1999" name="Data Conversion" posrefs="5" skill-cluster="Specialized Skills" start="729392">
+     <variant>
+      Data conversion
+     </variant>
+    </canonskill>
+    <canonskill end="728174" experience="1" expidrefs="7" idrefs="7" lastused="1994" name="Data Dictionary Language" posrefs="7" skill-cluster="Specialized Skills" start="727809">
+     <variant>
+      data dictionary
+     </variant>
+    </canonskill>
+    <canonskill education="1" eduidrefs="8" idrefs="8" name="Data Management" skill-cluster="Specialized Skills">
+     <variant>
+      Data Processing
+     </variant>
+    </canonskill>
+    <canonskill end="728174" experience="1" expidrefs="7" idrefs="7" lastused="1994" name="Data Modeling" posrefs="7" skill-cluster="Data Mining: General; Specialized Skills" start="727809">
+     <variant>
+      data modeling
+     </variant>
+    </canonskill>
+    <canonskill end="735943" experience="1" expidrefs="2" idrefs="2" lastused="2015" name="Disaster Recovery Planning" posrefs="1" skill-cluster="Specialized Skills" start="732100">
+     <variant>
+      Disaster Recovery
+     </variant>
+    </canonskill>
+    <canonskill name="English" skill-cluster="Common Skills: Language">
+     <variant>
+      English
+     </variant>
+    </canonskill>
+    <canonskill end="729147" experience="1" expidrefs="6" idrefs="6" lastused="1997" name="FoxPro 2.6" posrefs="6" skill-cluster="Software and Programming Skills; IT: Databases and Data Warehousing; IT: Programming, Development, and Engineering; Specialized Skills" start="728721">
+     <variant>
+      FOXPRO 2.6
+     </variant>
+    </canonskill>
+    <canonskill name="French" skill-cluster="Common Skills: Language">
+     <variant>
+      French
+     </variant>
+    </canonskill>
+    <canonskill end="729969" experience="1" expidrefs="5" idrefs="5" lastused="1999" name="Goldmine" posrefs="5" skill-cluster="IT: Business Intelligence; Specialized Skills" start="729392">
+     <variant>
+      Goldmine 4.0
+     </variant>
+    </canonskill>
+    <canonskill end="735943" experience="1" expidrefs="2,3" idrefs="2,3" lastused="2015" name="Good Manufacturing Practices (GMP)" posrefs="1,3" skill-cluster="Specialized Skills" start="730396">
+     <variant>
+      GMP
+     </variant>
+    </canonskill>
+    <canonskill end="735943" experience="1" expidrefs="2" idrefs="2" lastused="2015" name="Help Desk Support" posrefs="1" skill-cluster="IT: Support; Specialized Skills" start="732100">
+     <variant>
+      Help Desk
+     </variant>
+    </canonskill>
+    <canonskill end="730274" experience="1" expidrefs="4" idrefs="4" lastused="2000" name="HyperText Markup Language" posrefs="4" skill-cluster="Software and Programming Skills; IT: Web Design and Technologies; Specialized Skills" start="730000">
+     <variant>
+      HTML 4.0
+     </variant>
+    </canonskill>
+    <canonskill end="732100" experience="1" expidrefs="3" idrefs="3" lastused="2005" name="JAVA" posrefs="3" skill-cluster="Software and Programming Skills; IT: Programming, Development, and Engineering; IT: Web Design and Technologies; Specialized Skills" start="730396">
+     <variant>
+      Java
+     </variant>
+    </canonskill>
+    <canonskill end="730274" experience="1" expidrefs="4" idrefs="4" lastused="2000" name="JavaScript" posrefs="4" skill-cluster="Software and Programming Skills; IT: Programming, Development, and Engineering; IT: Web Design and Technologies; Specialized Skills" start="730000">
+     <variant>
+      Javascript
+     </variant>
+    </canonskill>
+    <canonskill end="735943" experience="1" expidrefs="2,3" idrefs="2,3" lastused="2015" name="Leadership" posrefs="1,3" skill-cluster="Common Skills: Business Environment Skills" start="730396">
+     <variant>
+      Team Leader
+     </variant>
+     <variant>
+      Team leader
+     </variant>
+    </canonskill>
+    <canonskill end="728174" experience="1" expidrefs="7" idrefs="7" lastused="1994" name="MS DOS" posrefs="7" skill-cluster="Specialized Skills" start="727809">
+     <variant>
+      MS DOS
+     </variant>
+    </canonskill>
+    <canonskill end="729969" experience="1" expidrefs="5" idrefs="5" lastused="1999" name="Microsoft Access" posrefs="5" skill-cluster="Software and Programming Skills; Common Skills: Problem Solving" start="729392">
+     <variant>
+      MSAccess
+     </variant>
+    </canonskill>
+    <canonskill end="735943" experience="1" expidrefs="2" idrefs="2" lastused="2015" name="Microsoft Excel" posrefs="1" skill-cluster="Software and Programming Skills; Common Skills: Problem Solving" start="732100">
+     <variant>
+      Excel
+     </variant>
+    </canonskill>
+    <canonskill end="735943" experience="1" expidrefs="2" idrefs="2" lastused="2015" name="Microsoft Terminal Server" posrefs="1" skill-cluster="Software and Programming Skills; IT: Network Administration and Security; Specialized Skills" start="732100">
+     <variant>
+      Terminal server
+     </variant>
+    </canonskill>
+    <canonskill end="729969" experience="1" expidrefs="5,6" idrefs="5,6" lastused="1999" name="Microsoft Windows" posrefs="5,6" skill-cluster="Software and Programming Skills; Common Skills" start="728721">
+     <variant>
+      Windows
+     </variant>
+    </canonskill>
+    <canonskill end="735943" experience="1" expidrefs="2,3" idrefs="2,3" lastused="2015" name="Oracle PL/SQL" posrefs="1,3" skill-cluster="Software and Programming Skills; IT: Databases and Data Warehousing; Specialized Skills" start="730396">
+     <variant>
+      PL/SQL
+     </variant>
+    </canonskill>
+    <canonskill end="735943" experience="1" expidrefs="2,3" idrefs="2,3" lastused="2015" name="Oracle" posrefs="1,3" skill-cluster="Software and Programming Skills; IT: Business Intelligence; IT: Databases and Data Warehousing; Specialized Skills" start="730396">
+     <variant>
+      Oracle
+     </variant>
+     <variant>
+      oracle
+     </variant>
+    </canonskill>
+    <canonskill end="728174" experience="1" expidrefs="7" idrefs="7" lastused="1994" name="Quantitative Analysis" posrefs="7" skill-cluster="Research: Quantitative; Specialized Skills" start="727809">
+     <variant>
+      quantitative analysis
+     </variant>
+    </canonskill>
+    <canonskill end="730274" experience="1" expidrefs="4" idrefs="4" lastused="2000" name="SQL Server" posrefs="4" skill-cluster="Software and Programming Skills; IT: Databases and Data Warehousing; Specialized Skills" start="730000">
+     <variant>
+      SQL server
+     </variant>
+    </canonskill>
+    <canonskill end="735943" experience="1" expidrefs="2,3,4,7" idrefs="2,3,4,7" lastused="2015" name="SQL" posrefs="1,3,4,7" skill-cluster="Software and Programming Skills; IT: Databases and Data Warehousing; Specialized Skills" start="727809">
+     <variant>
+      SQL
+     </variant>
+    </canonskill>
+    <canonskill name="SSADM" skill-cluster="Specialized Skills">
+     <variant>
+      SSADM
+     </variant>
+    </canonskill>
+    <canonskill end="732100" experience="1" expidrefs="3" idrefs="3" lastused="2005" name="Software Installation" posrefs="3" skill-cluster="IT: Support; Specialized Skills" start="730396">
+     <variant>
+      software
+     </variant>
+    </canonskill>
+    <canonskill end="730274" experience="1" expidrefs="4,5,6" idrefs="4,5,6" lastused="2000" name="Software Testing" posrefs="4,5,6" skill-cluster="IT: Software Testing and QA; Specialized Skills" start="728721">
+     <variant>
+      testing software
+     </variant>
+    </canonskill>
+    <canonskill end="730274" experience="1" expidrefs="4" idrefs="4" lastused="2000" name="SourceSafe" posrefs="4" skill-cluster="Software and Programming Skills; IT: Programming, Development, and Engineering; Specialized Skills" start="730000">
+     <variant>
+      Visual Sourcesafe
+     </variant>
+    </canonskill>
+    <canonskill end="729969" experience="1" expidrefs="5" idrefs="5" lastused="1999" name="Systems Analysis" posrefs="5" skill-cluster="IT: Software Testing and QA; Specialized Skills" start="729392">
+     <variant>
+      system analysis
+     </variant>
+    </canonskill>
+    <canonskill name="Systems Analysis" skill-cluster="IT: Software Testing and QA; Specialized Skills">
+     <variant>
+      systems analysis
+     </variant>
+    </canonskill>
+    <canonskill end="732100" experience="1" expidrefs="3,7" idrefs="3,7" lastused="2005" name="UNIX" posrefs="3,7" skill-cluster="Software and Programming Skills; IT: Operating Systems; Specialized Skills" start="727809">
+     <variant>
+      UNIX
+     </variant>
+     <variant>
+      Unix
+     </variant>
+    </canonskill>
+    <canonskill end="728174" experience="1" expidrefs="7" idrefs="7" lastused="1994" name="VAX/VMS" posrefs="7" skill-cluster="IT: Operating Systems; Specialized Skills" start="727809">
+     <variant>
+      Vax VMS
+     </variant>
+    </canonskill>
+    <canonskill end="735943" experience="1" expidrefs="2,3" idrefs="2,3" lastused="2015" name="Validation" posrefs="1,3" skill-cluster="Neutral Skills; Specialized Skills" start="730396">
+     <variant>
+      validation
+     </variant>
+    </canonskill>
+    <canonskill end="730274" experience="1" expidrefs="4,5" idrefs="4,5" lastused="2000" name="Visual Foxpro" posrefs="4,5" skill-cluster="Software and Programming Skills; IT: Databases and Data Warehousing; IT: Programming, Development, and Engineering; Specialized Skills" start="729392">
+     <variant>
+      Visual Foxpro
+     </variant>
+    </canonskill>
+    <canonskill end="730274" experience="1" expidrefs="4" idrefs="4" lastused="2000" name="Windows NT" posrefs="4" skill-cluster="Software and Programming Skills; IT: Network Administration and Security; Specialized Skills" start="730000">
+     <variant>
+      Windows NT
+     </variant>
+    </canonskill>
+    <canonskill end="730274" experience="1" expidrefs="4,5,6" idrefs="4,5,6" lastused="2000" name="Writing" posrefs="4,5,6" skill-cluster="Common Skills: Communication and Coordination" start="728721">
+     <variant>
+      Writing
+     </variant>
+     <variant>
+      writing
+     </variant>
+    </canonskill>
+    <canonskill name="X Windows" skill-cluster="Software and Programming Skills; IT: Operating Systems; Specialized Skills">
+     <variant>
+      X Windows
+     </variant>
+    </canonskill>
+   </skillrollup>
+   <dataelementsrollup version="5.5.18 TalentMine v3.2.5.3">
+    <certification>
+    </certification>
+    <canoncertification>
+    </canoncertification>
+   </dataelementsrollup>
+  </resdoc>
+"""
+
+
 GET_642 = u"""
   <resdoc>
    <resume canonversion="2" dateversion="2" iso8601="2015-12-09" present="735943" xml:space="preserve">
