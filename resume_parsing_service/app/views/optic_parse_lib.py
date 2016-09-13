@@ -248,25 +248,25 @@ def parse_candidate_experiences(bg_experience_xml_list):
     output = []
     for experiences in bg_experience_xml_list:
         jobs = experiences.findAll('job')
-        for employement in jobs:
+        for employment in jobs:
             start_month, start_year, end_month, end_year, start_datetime, end_datetime = (None,) * 6
-            organization = _tag_text(employement, 'employer')
+            organization = _tag_text(employment, 'employer')
 
             # If it's 5 or less chars, keep the given capitalization, because it may be an acronym.
             # TODO revisit this logic. `Many XYZ Services` companies are becoming Xyz Services.
             if organization and len(organization) > 5:
                 organization = string.capwords(organization)
             # Position title
-            position_title = _tag_text(employement, 'title')
+            position_title = _tag_text(employment, 'title')
             # Start date
-            start_date_str = get_date_from_date_tag(employement, 'start')
+            start_date_str = get_date_from_date_tag(employment, 'start')
 
             if start_date_str:
                 start_datetime = datetime.datetime.strptime(start_date_str, ISO8601_DATE_FORMAT)
                 start_year = start_datetime.year
                 start_month = start_datetime.month
 
-            end_date_str = get_date_from_date_tag(employement, 'end')
+            end_date_str = get_date_from_date_tag(employment, 'end')
 
             if end_date_str:
                 end_datetime = datetime.datetime.strptime(end_date_str, ISO8601_DATE_FORMAT)
@@ -281,12 +281,13 @@ def parse_candidate_experiences(bg_experience_xml_list):
             is_current_job = True if today_date == end_date_str else False
 
             # Company's address
-            company_address = employement.find('address')
+            company_address = employment.find('address')
             company_city = _tag_text(company_address, 'city', capwords=True)
             company_state = _tag_text(company_address, 'state')
             company_country = get_country_code_from_address_tag(company_address)
 
             # Check if an experience already exists
+
             existing_experience_list_order = is_experience_already_exists(output,
                                                                           organization or '',
                                                                           position_title or '',
@@ -296,7 +297,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
                                                                           end_year)
             # Get experience bullets
             candidate_experience_bullets = []
-            description_text = _tag_text(employement, 'description', remove_questions=True) or ''
+            description_text = _tag_text(employment, 'description', remove_questions=True) or ''
             for bullet_description in description_text.split('|'):
                 # If experience already exists then append the current bullet-descriptions to
                 # already existed bullet-descriptions
