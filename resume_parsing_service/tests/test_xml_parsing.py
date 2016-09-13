@@ -25,6 +25,7 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_nam
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_phones
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_skills
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_reference
+from resume_parsing_service.app.views.optic_parse_lib import is_experience_already_exists
 # JSON Schemas
 from json_schemas import (EMAIL_SCHEMA, PHONE_SCHEMA, EXPERIENCE_SCHEMA, EDU_SCHEMA,\
                           SKILL_SCHEMA, ADDRESS_SCHEMA)
@@ -134,6 +135,36 @@ def test_experience_parsing():
         assert validate(experience, EXPERIENCE_SCHEMA, format_checker=FormatChecker()) is None
     for experience in processed_experiences_b:
         assert validate(experience, EXPERIENCE_SCHEMA, format_checker=FormatChecker()) is None
+
+
+def test_experience_exists():
+    exp1 = {
+        'organization': 'Starbucks',
+        'position': 'Coffee Master',
+        'start_month': 6,
+        'start_year': 2005,
+        'end_month': 8,
+        'end_year': 2012
+    }
+    exp2 = {
+        'organization': 'Aeria Games',
+        'position': 'Asst. Product Manager',
+        'start_month': 8,
+        'start_year': 2012,
+        'end_month': 6,
+        'end_year': 2013
+    }
+    exp3 = {
+        'organization': 'Astreya Partners',
+        'position': 'Jr. Python Developer',
+        'start_month': 7,
+        'start_year': 2013,
+        'end_month': 6,
+        'end_year': 2015
+    }
+    experiences = [exp1, exp2]
+    assert is_experience_already_exists(experiences, exp2)
+    assert is_experience_already_exists(experiences, exp3) is False
 
 
 def test_education_parsing():

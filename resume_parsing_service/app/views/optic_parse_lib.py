@@ -251,6 +251,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
         for employement in jobs:
             start_month, start_year, end_month, end_year, start_datetime, end_datetime = (None,) * 6
             organization = _tag_text(employement, 'employer')
+
             # If it's 5 or less chars, keep the given capitalization, because it may be an acronym.
             # TODO revisit this logic. `Many XYZ Services` companies are becoming Xyz Services.
             if organization and len(organization) > 5:
@@ -265,8 +266,6 @@ def parse_candidate_experiences(bg_experience_xml_list):
                 start_year = start_datetime.year
                 start_month = start_datetime.month
 
-            is_current_job = False
-            # End date
             end_date_str = get_date_from_date_tag(employement, 'end')
 
             if end_date_str:
@@ -278,14 +277,9 @@ def parse_candidate_experiences(bg_experience_xml_list):
             if (start_datetime and end_datetime) and (start_datetime > end_datetime):
                 start_month, start_year, end_month, end_year = None, None, None, None
 
-            try:
-                today_date = datetime.date.today().isoformat()
-                is_current_job = True if today_date == end_date_str else False
-            except ValueError:
-                pass
-                # current_app.logger.error(
-                #     "parse_xml: Received exception getting date for candidate end_date %s",
-                #      end_date_str)
+            today_date = datetime.date.today().isoformat()
+            is_current_job = True if today_date == end_date_str else False
+
             # Company's address
             company_address = employement.find('address')
             company_city = _tag_text(company_address, 'city', capwords=True)
@@ -328,7 +322,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
                     end_month=end_month,
                     end_year=end_year,
                     is_current=is_current_job,
-                    bullets=candidate_experience_bullets
+                    bullets=''.join(candidate_experience_bullets)
                 ))
     return output
 
@@ -543,18 +537,12 @@ def get_date_from_date_tag(parent_tag, date_tag_name):
     return date_tag.get('iso8601')
 
 
-def is_experience_already_exists(candidate_experiences, organization, position_title, start_month,
-                                 start_year, end_month, end_year):
+def is_experience_already_exists(candidate_experiences, experience_to_test):
     """Logic for checking an experience has been parsed twice due to BG error"""
     for i, experience in enumerate(candidate_experiences):
-        if (experience['organization'] or '') == organization and \
-           (experience['position'] or '') == position_title and \
-           (experience['start_month'] == start_month and
-            experience['start_year'] == start_year and
-            experience['end_month'] == end_month and
-            experience['end_year'] == end_year):
-
+        if experience_to_test in candidate_experiences:
             return i + 1
+
     return False
 
 
