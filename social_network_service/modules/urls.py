@@ -34,6 +34,7 @@ def get_url(class_object, key, custom_url=None, is_auth=None):
         api_url = MockServiceApiUrl.MOCK_SERVICE % (auth_part, social_network_name.lower())
     else:
         api_url = (class_object.auth_url if is_auth else class_object.api_url) if not custom_url else custom_url
+
     try:
         relative_url = social_network_urls[key.lower()]
     except KeyError as error:

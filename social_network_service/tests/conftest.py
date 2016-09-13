@@ -20,7 +20,7 @@ from requests import codes
 from social_network_service.common.tests.conftest import user_auth
 from social_network_service.common.tests.api_conftest import (user_first, token_first, talent_pool_session_scope,
                                                               user_same_domain, token_same_domain, user_second,
-                                                              token_second)
+                                                              token_second, test_data)
 
 # Models
 from social_network_service.common.models.db import db
@@ -98,7 +98,7 @@ def facebook():
     return SocialNetwork.get_by_name(FACEBOOK.title())
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def test_eventbrite_credentials(user_first, eventbrite):
     """
     Create eventbrite social network credentials for this user so
@@ -111,13 +111,28 @@ def test_eventbrite_credentials(user_first, eventbrite):
                          json.dumps(dict(
                              access_token=app.config[TalentConfigKeys.EVENTBRITE_ACCESS_TOKEN]
                          )))
+
+    # Get the key value pair of access_token and refresh_token
+    eventbrite_kv = json.loads(redis_store2.get(eventbrite_key))
+
+    social_network_id = eventbrite['id']
+    user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_first['id'],
+                                                                                     social_network_id)
+
+    if not user_credentials:
+        user_credentials = UserSocialNetworkCredential(
+            social_network_id=social_network_id,
+            user_id=int(user_first['id']),
+            access_token=eventbrite_kv['access_token'])
+        UserSocialNetworkCredential.save(user_credentials)
+
     social_network_id = eventbrite['id']
     user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_first['id'],
                                                                                      social_network_id)
     return user_credentials
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def test_meetup_credentials(user_first, meetup):
     """
     Create meetup social network credentials for this user so

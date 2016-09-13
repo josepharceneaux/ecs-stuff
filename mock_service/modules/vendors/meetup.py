@@ -81,12 +81,12 @@ def meetup_vendor_api(event_id=None):
                             {
                                 "urlkey": fake.word(),
                                 "name": fake.word(),
-                                "id": fake.rand_int(1, 100000)
+                                "id": fake.random_int(1, 100000)
                             },
                             {
                                 "urlkey": fake.word(),
                                 "name": fake.word(),
-                                "id": fake.rand_int(1, 100000)
+                                "id": fake.random_int(1, 100000)
                             }
                         ],
                         "joined": fake.random_number(),
@@ -159,17 +159,17 @@ def meetup_vendor_api(event_id=None):
                                          {
                                              "urlkey": fake.word(),
                                              "name": fake.word(),
-                                             "id": fake.rand_int(1, 100000)
+                                             "id": fake.random_int(1, 100000)
                                          },
                                          {
                                              "urlkey": fake.word(),
                                              "name": fake.word(),
-                                             "id": fake.rand_int(1, 100000)
+                                             "id": fake.random_int(1, 100000)
                                          },
                                          {
                                              "urlkey": fake.word(),
                                              "name": fake.word(),
-                                             "id": fake.rand_int(1, 100000)
+                                             "id": fake.random_int(1, 100000)
                                          },
                                      ],
                                      "link": fake.url(),
@@ -178,7 +178,7 @@ def meetup_vendor_api(event_id=None):
                                      "lon": float(fake.longitude()),
                                      "join_mode": fake.word(),
                                      "organizer": {
-                                         "member_id": fake.rand_int(1, 100000) if is_last else meetup_fake_member_id,
+                                         "member_id": fake.random_int(1, 100000) if is_last else meetup_fake_member_id,
                                          "name": fake.word()
                                      },
                                      "members": fake.random_number(),
@@ -188,7 +188,7 @@ def meetup_vendor_api(event_id=None):
                                      "urlname": fake.word(),
                                      "category": {
                                          "name": fake.word(),
-                                         "id": fake.rand_int(1, 100000),
+                                         "id": fake.random_int(1, 100000),
                                          "shortname": fake.word()
                                      },
                                      "lat": float(fake.latitude()),
@@ -243,7 +243,7 @@ def meetup_vendor_api(event_id=None):
                                      "address_3": "",
                                      "address_2": "",
                                      "address_1": fake.address(),
-                                     "id": fake.rand_int(1, 100000)
+                                     "id": fake.random_int(1, 100000)
                                      } for _ in xrange(random.randint(1, 5))]}
                         ]
                     }
