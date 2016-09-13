@@ -137,7 +137,7 @@ def test_experience_parsing():
         assert validate(experience, EXPERIENCE_SCHEMA, format_checker=FormatChecker()) is None
 
 
-def test_experience_exists():
+def test_experience_exists_detects_dupe():
     exp1 = {
         'organization': 'Starbucks',
         'position': 'Coffee Master',
@@ -165,6 +165,31 @@ def test_experience_exists():
     experiences = [exp1, exp2]
     assert is_experience_already_exists(experiences, exp2)
     assert is_experience_already_exists(experiences, exp3) is False
+
+
+def test_experience_exists_concats():
+    exp1 = {
+        'organization': 'Starbucks',
+        'position': 'Coffee Master',
+        'start_month': 6,
+        'start_year': 2005,
+        'end_month': 8,
+        'end_year': 2012,
+        'bullets': ['Made a whole bunch of coffee']
+    }
+    exp2 = {
+        'organization': 'Starbucks',
+        'position': 'Coffee Master',
+        'start_month': 6,
+        'start_year': 2005,
+        'end_month': 8,
+        'end_year': 2012,
+        'bullets': ['Made a whole bunch of frappaccinos']
+    }
+
+    experiences = [exp1]
+    list_order = is_experience_already_exists(experiences, exp2)
+    assert True
 
 
 def test_education_parsing():

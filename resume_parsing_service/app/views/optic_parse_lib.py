@@ -287,14 +287,16 @@ def parse_candidate_experiences(bg_experience_xml_list):
             company_country = get_country_code_from_address_tag(company_address)
 
             # Check if an experience already exists
+            base_exp = {
+                'organization': organization,
+                'title': position_title,
+                'start_month': start_month,
+                'start_year': start_year,
+                'end_month': end_month,
+                'end_year': end_year,
+            }
+            existing_experience_list_order = is_experience_already_exists(output, base_exp)
 
-            existing_experience_list_order = is_experience_already_exists(output,
-                                                                          organization or '',
-                                                                          position_title or '',
-                                                                          start_month,
-                                                                          start_year,
-                                                                          end_month,
-                                                                          end_year)
             # Get experience bullets
             candidate_experience_bullets = []
             description_text = _tag_text(employment, 'description', remove_questions=True) or ''
@@ -308,9 +310,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
                         description=bullet_description
                     ))
                 else:
-                    candidate_experience_bullets.append(dict(
-                        description=bullet_description
-                    ))
+                    candidate_experience_bullets.append(bullet_description)
             if not existing_experience_list_order:
                 output.append(dict(
                     position=position_title,
@@ -323,7 +323,7 @@ def parse_candidate_experiences(bg_experience_xml_list):
                     end_month=end_month,
                     end_year=end_year,
                     is_current=is_current_job,
-                    bullets=''.join(candidate_experience_bullets)
+                    bullets=['\n'.join(candidate_experience_bullets)]
                 ))
     return output
 
@@ -540,8 +540,24 @@ def get_date_from_date_tag(parent_tag, date_tag_name):
 
 def is_experience_already_exists(candidate_experiences, experience_to_test):
     """Logic for checking an experience has been parsed twice due to BG error"""
+    base_exp_to_test = {
+        'organization': experience_to_test.get('organization'),
+        'position': experience_to_test.get('position'),
+        'start_month': experience_to_test.get('start_month'),
+        'start_year': experience_to_test.get('start_year'),
+        'end_month': experience_to_test.get('end_month'),
+        'end_year': experience_to_test.get('end_year'),
+    }
     for i, experience in enumerate(candidate_experiences):
-        if experience_to_test in candidate_experiences:
+        existing_exp = {
+            'organization': experience.get('organization'),
+            'position': experience.get('position'),
+            'start_month': experience.get('start_month'),
+            'start_year': experience.get('start_year'),
+            'end_month': experience.get('end_month'),
+            'end_year': experience.get('end_year'),
+        }
+        if existing_exp == base_exp_to_test:
             return i + 1
 
     return False
