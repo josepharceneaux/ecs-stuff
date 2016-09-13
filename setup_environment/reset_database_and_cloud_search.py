@@ -96,15 +96,6 @@ print 'DB reset is successful'
 
 print 'Generating initial test data'
 
-
-
-query = '''INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '1', '%s', NULL, '217041', '164351364314', '%s');
-INSERT INTO user_social_network_credential(Id, UserId, SocialNetworkId, RefreshToken, webhook, MemberId, AccessToken) VALUES (NULL, '2', '%s', NULL, '217041', '164351364314', '%s');''' % (eventbrite.id,
-                                                                                                                                                                                            access_token_eventbrite, eventbrite.id,
-                                                                                                                                                                                            access_token_eventbrite)
-sql = text(query)
-result = db.engine.execute(sql)
-
 from candidate_service.candidate_app import app
 
 with app.app_context():
