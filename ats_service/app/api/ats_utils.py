@@ -6,6 +6,9 @@ __author__ = 'Joseph Arceneaux'
 
 import datetime
 
+from enum import Enum
+
+
 if __name__ == 'ats_service.app.api.ats_utils':
     # Imports for the web app.
     from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
@@ -370,3 +373,41 @@ def create_ats_object(logger, ats_name, url, user_id, credentials):
         raise UnprocessableEntity("Invalid data", additional_error_info=dict(unsupported_ats=data['ats_name']))
 
     return ATS_CONSTRUCTORS[ats_name](logger, ats_name, url, user_id, credentials)
+
+
+class ATSMatchMethod(Enum):
+    email = 0
+    phone = 1
+    email_and_phone = 3
+    email_or_phone = 4
+
+
+def match_ats_and_gt_candidates(logger, account_id, method, link=False):
+    """
+    Search for getTalent condidates which appear to match ATS candidates using a particular method.
+
+    :param object logger: object to use for logging.
+    :param int account_id: ATS account to search within.
+    :param ATSMatchMethod method: matching technique to use.
+    :param boolean link: Whether to link the candidates matched or not.
+    """
+    account = ATSAccount.get(account_id)
+    if not account:
+        raise NotFoundError('ATS Account id not found', additional_error_info=dict(account_id=account_id))
+
+    # Now get the user that owns this account
+    user = User.get(account.user_id)
+    # Get all candidates from user's domain
+    candidate_list = db.session.query(Candidate).join(User).filter(User.domain_id == user.domain_id).all()
+
+    # Get a list of our ATS candidates
+    ats_candidate_list = ATSCandidate.get_all(account_id)
+
+    if method is ATSMatchMethod.email:
+        logger.info("Email match")
+    elif method is ATSMatchMethod.phone:
+        logger.info("Phone match")
+    elif method is ATSMatchMethod.email_and_phone:
+        logger.info("Email and Phone Match")
+
+    return 0

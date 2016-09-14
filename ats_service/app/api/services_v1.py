@@ -36,7 +36,9 @@ from ats_utils import (validate_ats_account_data,
                        link_ats_candidate,
                        unlink_ats_candidate,
                        fetch_auth_data,
-                       create_ats_object)
+                       create_ats_object,
+                       ATSMatchMethod,
+                       match_ats_and_gt_candidates)
 
 # Why doesn't this work?
 # from ats_service.app import logger
@@ -375,6 +377,7 @@ class ATSCandidateLinkService(Resource):
         """
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
+        # TODO: this should return something.
         link_ats_candidate(candidate_id, ats_candidate_id)
 
         response = json.dumps(dict(id=candidate_id, message="ATS candidate successfully linked."))
@@ -393,10 +396,36 @@ class ATSCandidateLinkService(Resource):
         """
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
+        # TODO: this should return something
         unlink_ats_candidate(candidate_id, ats_candidate_id)
 
         response = json.dumps(dict(unlink='success'))
         headers = dict(Location=ATSServiceApiUrl.CANDIDATE_LINK % (candidate_id, ats_candidate_id))
+        return ApiResponse(response, headers=headers, status=codes.OK)
+
+
+MATCH_METHOD_DICT = { 'email' : ATSMatchMethod.email, 'phone' : ATSMatchMethod.phone,
+                      'email-and-phone' : ATSMatchMethod.email_and_phone, 'email-or-phone' : ATSMatchMethod.email_or_phone }
+
+
+@api.route(ATSServiceApi.MATCH_AND_LINK)
+class ATSCandidateMatchLinkService(Resource):
+    """
+    Controller for /v1/ats-candidates/match-link/:account_id/:match-method
+    """
+
+    def put(self, account_id, match_method):
+        """
+        """
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
+
+        if match_method not in MATCH_METHOD_DICT:
+            raise UnprocessableEntity("Invalid matching method specified", additional_error_info=dict(method=match_method))
+
+        matches = match_ats_and_gt_candidates(ats_service.app.logger, account_id, match_method, link=True)
+
+        response = json.dumps(dict(matches=matches))
+        headers = dict(Location=ATSServiceApiUrl.MATCH_AND_LINK % (account_id, match_method))
         return ApiResponse(response, headers=headers, status=codes.OK)
 
 
@@ -420,19 +449,19 @@ class ATSCandidateRefreshService(Resource):
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
 
-        # Create an ATS-specific object
-        ats_name, url, user_id, credentials = fetch_auth_data(account_id)
-        if not url:
+        ats_name, login_url, user_id, credentials = fetch_auth_data(account_id)
+        if not login_url:
             return '{{"account_id" : {},  "status" : "inactive"}}'.format(account_id)
 
-        # Authenticate
-        ats_object = create_ats_object(ats_service.app.logger, ats_name, url, user_id, credentials)
+        # Create an ATS-specific object, authenticate
+        ats_object = create_ats_object(ats_service.app.logger, ats_name, login_url, user_id, credentials)
         ats_object.authenticate()
 
         # Get all candidate ids (references)
         individual_references = ats_object.fetch_individual_references()
 
         # For each candidate, fetch the candidate data and update our copy. Later this can be combined with the previous step.
+        # TODO: Refactor with code in ats_refresh.py
         return_list = []
         created_count = 0
         updated_count = 0

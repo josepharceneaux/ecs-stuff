@@ -1,5 +1,5 @@
 """
-Library for integrating with Workday accounts.
+Library for integrating with Workday accounts. Provides a class implementing the standard ATS interface methods.
 """
 
 
@@ -104,3 +104,17 @@ class Workday(object):
 
         individual.save()
         return individual
+
+    @staticmethod
+    def get_individual_contact_email_address(self):
+        """
+        Return (from our local database) the main contact email address for an individual
+        """
+        return 'joe@gettalent.com'
+
+    @staticmethod
+    def get_individual_contact_phone_number(self):
+        """
+        Return (from our local database) the main contact phone number for an individual
+        """
+        return '415 203 8626'
