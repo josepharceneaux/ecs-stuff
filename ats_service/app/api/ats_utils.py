@@ -382,6 +382,48 @@ class ATSMatchMethod(Enum):
     email_or_phone = 4
 
 
+def emails_match(gt_candidate, ats_candidate):
+    """
+    """
+    if gt_candidate.is_web_hidden:
+        return False
+
+    # Get the ATS candidate email address
+    # TODO: Handle lists
+    ats_email = ATS_CONSTRUCTORS[ATSAccount.get(ats_candidate.ats_id).name].get_individual_contact_email_address(ats_candidate)
+    if not ats_email:
+        return False
+
+    # Compare to GT candidate email address(es)
+    if not gt_candidate.emails:
+        return False
+
+    # Compare
+    for gt_email in candidate.emails:
+        if gt_email == ats_email:
+            return True
+
+    return False
+
+
+def phones_match(gt_candidate, ats_candidate):
+    """
+    """
+    return False
+
+
+def emails_and_phones_match(gt_candidate, ats_candidate):
+    """
+    """
+    return False
+
+
+def emails_or_phones_match(gt_candidate, ats_candidate):
+    """
+    """
+    return False
+
+
 def match_ats_and_gt_candidates(logger, account_id, method, link=False):
     """
     Search for getTalent condidates which appear to match ATS candidates using a particular method.
@@ -398,16 +440,30 @@ def match_ats_and_gt_candidates(logger, account_id, method, link=False):
     # Now get the user that owns this account
     user = User.get(account.user_id)
     # Get all candidates from user's domain
-    candidate_list = db.session.query(Candidate).join(User).filter(User.domain_id == user.domain_id).all()
+    gt_candidate_list = db.session.query(Candidate).join(User).filter(User.domain_id == user.domain_id).all()
 
     # Get a list of our ATS candidates
     ats_candidate_list = ATSCandidate.get_all(account_id)
 
     if method is ATSMatchMethod.email:
         logger.info("Email match")
+        match_method = emails_match
     elif method is ATSMatchMethod.phone:
         logger.info("Phone match")
+        match_method = phones_match
     elif method is ATSMatchMethod.email_and_phone:
         logger.info("Email and Phone Match")
+        match_method = emails_and_phones_match
+    elif method is ATSMatchMethod.email_or_phone:
+        logger.info("Email or Phone Match")
+        match_method = emails_or_phones_match
+    else:
+        raise UnprocessableEntity("match_ats_and_gt_candidates: Invalid match method", additional_error_info=dict(unsupported_method=method))
 
-    return 0
+    matches = 0
+    for gt_candidate in gt_candidate_list:
+        for ats_candidate in ats_candidate_list:
+            if match_method(gt_candidate, ats_candidate):
+                matches += 1
+
+    return matches

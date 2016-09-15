@@ -106,14 +106,21 @@ class Workday(object):
         return individual
 
     @staticmethod
-    def get_individual_contact_email_address(self):
+    def get_individual_contact_email_address(self, ats_candidate):
         """
         Return (from our local database) the main contact email address for an individual
+
+        :param ATSCandidate ats_candidate: ATSCandidate object.
         """
+        # Get WorkdayTable entry
+        WorkdayTable.get_by_ats_id(ats_candidate.id)
+
+        # Extract email address from contact_data
+
         return 'joe@gettalent.com'
 
     @staticmethod
-    def get_individual_contact_phone_number(self):
+    def get_individual_contact_phone_number(self, ats_candidate):
         """
         Return (from our local database) the main contact phone number for an individual
         """

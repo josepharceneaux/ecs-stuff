@@ -1,3 +1,6 @@
+"""
+Scan database for number of candidates each domain.
+"""
 
 import sys
 import argparse
@@ -7,8 +10,9 @@ from sqlalchemy.sql import select
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-# Modify load path to include current directory
+# Modify import path to include current directory
 sys.path[0] = '.'
+# When run on production, remove app_common.
 from app_common.common.models.candidate import Candidate
 from app_common.common.models.user import User
 
@@ -34,10 +38,9 @@ POOL_ID_NAME = 'talent_pool_id'
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description="Scan database for inconsistencies between candidates and talent pools.\nSupply password if --stage or --prod.")
+    parser = argparse.ArgumentParser(description="Scan database for number of candidates each domain.\nSupply password if --stage or --prod.")
     parser.add_argument('--stage', nargs=1)
     parser.add_argument('--prod', nargs=1)
-    parser.add_argument('domain_id', nargs=1)
     args = parser.parse_args()
 
     if args.prod:
@@ -46,8 +49,6 @@ if __name__ == "__main__":
         uri = MYSQL_STAGE.format(args.stage[0])
     else:
         uri = MYSQL_LOCAL_URI
-
-    domain_id = int(args.domain_id[0])
 
     print "Connecting to", uri, "...",
     sys.stdout.flush()
@@ -61,13 +62,30 @@ if __name__ == "__main__":
         sys.exit(1)
 
     print "Connected."
-    print "Searching domain {}".format(domain_id)
-    candidate_list = db_session.query(Candidate).join(User).filter(User.domain_id == domain_id).all()
-    for candidate in candidate_list:
-        exist = db_session.query(Candidate).join(User).filter(Candidate.id == candidate.id).filter(User.domain_id == domain_id).first()
-        if exist:
-            print "id: {} domain: {}".format(candidate.id, domain_id)
-        else:
-            print "id: {} not in {}".format(candidate.id, domain_id)
+
+    zero_count = 0
+    total_count = 0
+    domain_list = connection.execute('select id, Name from domain')
+    for row in domain_list:
+        # print "Domain: {}".format(row.Name)
+        total_count += 1
+        domain_id = row.id
+        candidate_list = db_session.query(Candidate).join(User).filter(User.domain_id == domain_id).all()
+        count = len(candidate_list)
+        if count == 0:
+            zero_count += 1
+        # print "    {} candidates".format(count)
+
+    print "{} Domains".format(total_count)
+    print "{} Empty".format(zero_count)
+
+    # print "Searching domain {}".format(domain_id)
+    # candidate_list = db_session.query(Candidate).join(User).filter(User.domain_id == domain_id).all()
+    # for candidate in candidate_list:
+    #     exist = db_session.query(Candidate).join(User).filter(Candidate.id == candidate.id).filter(User.domain_id == domain_id).first()
+    #     if exist:
+    #         print "id: {} domain: {}".format(candidate.id, domain_id)
+    #     else:
+    #         print "id: {} not in {}".format(candidate.id, domain_id)
 
     sys.exit(0)
