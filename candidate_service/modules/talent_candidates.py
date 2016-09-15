@@ -555,30 +555,6 @@ def get_candidate_id_from_email_if_exists_in_domain(user, email):
 
 
 ######################################
-# Helper Functions For Candidate Edits
-######################################
-def fetch_candidate_edits(candidate_id):
-    """
-    :type candidate_id:  int|long
-    :rtype:  list[dict]
-    """
-    all_edits = []
-    for can_edit in CandidateEdit.get_by_candidate_id(candidate_id=candidate_id):
-        table_and_field_names_tuple = CandidateEdit.get_table_and_field_names_from_id(can_edit.field_id)
-        all_edits.append({
-            'user_id': can_edit.user_id,
-            'table_name': table_and_field_names_tuple[0],
-            'field_name': table_and_field_names_tuple[1],
-            'old_value': can_edit.old_value,
-            'new_value': can_edit.new_value,
-            'is_custom_field': can_edit.is_custom_field,
-            'edit_type': can_edit.edit_type,
-            'edit_datetime': str(can_edit.edit_datetime)
-        })
-    return all_edits
-
-
-######################################
 # Helper Functions For Candidate Views
 ######################################
 def fetch_candidate_views(candidate_id):
@@ -1188,6 +1164,7 @@ def _update_candidate(first_name, middle_name, last_name, formatted_name, object
     candidate_object = Candidate.get_by_id(candidate_id)
 
     # Track all edits
+    # TODO: some edits are delete
     track_edits(update_dict=update_dict, table_name='candidate', candidate_id=candidate_id,
                 user_id=user_id, query_obj=candidate_object)
 
@@ -1278,8 +1255,8 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
                 raise ForbiddenError("Unauthorized candidate address", custom_error.ADDRESS_FORBIDDEN)
 
             # Track all updates
-            track_edits(update_dict=address_dict, table_name='candidate_address', candidate_id=candidate_id,
-                        user_id=user_id, query_obj=candidate_address_obj)
+            track_edits(update_dict=address_dict, table_name='candidate_address',
+                        candidate_id=candidate_id, user_id=user_id, query_obj=candidate_address_obj)
 
             # Update
             candidate_address_obj.update(**address_dict)
