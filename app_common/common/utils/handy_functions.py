@@ -32,6 +32,17 @@ define_custom_contracts()
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
 
 
+class HttpMethods(object):
+    """
+    Here we have names of HTTP methods
+    """
+    GET = 'GET'
+    POST = 'POST'
+    PUT = 'PUT'
+    PATCH = 'PATCH'
+    DELETE = 'DELETE'
+
+
 def random_word(length):
     """Creates a random lowercase string, useful for testing data."""
     return ''.join(random.choice(string.lowercase) for i in xrange(length))
