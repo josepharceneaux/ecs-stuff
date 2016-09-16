@@ -21,9 +21,11 @@ LOCALHOST_CANDIDATE_UPDATE = 'http://127.0.0.1:8005/v1/candidates'
 
 # MYSQL_STAGE = 'mysql://talent_web:{}@rds-staging.cp1kv0ecwo23.us-west-1.rds.amazonaws.com/talent_staging'
 MYSQL_STAGE = 'mysql://talent_web:{}@stage-db.gettalent.com/talent_staging'
+STAGE_CANDIDATE_UPDATE = 'https://candidate-service-staging.gettalent.com/v1/candidates'
 
 # Prod mysql URI prefix
 MYSQL_PROD = 'mysql://talent_live:{}@rds-prod.gettalent.com/talent_core'
+PROD_CANDIDATE_UPDATE = 'https://candidate-service.gettalent.com/v1/candidates'
 
 def convert_freshup_candidate_to_gt_candidate(freshup_candidate):
     """
@@ -119,10 +121,13 @@ if __name__ == "__main__":
 
     if args.prod:
         uri = MYSQL_PROD.format(args.prod[0])
+        CANDIDATE_UPDATE_URL = PROD_CANDIDATE_UPDATE
     elif args.stage:
         uri = MYSQL_STAGE.format(args.stage[0])
+        CANDIDATE_UPDATE_URL = STAGE_CANDIDATE_UPDATE
     else:
         uri = MYSQL_LOCAL_URI
+        CANDIDATE_UPDATE_URL = LOCALHOST_CANDIDATE_UPDATE
 
     print "Connecting to", uri, "...\n",
     sys.stdout.flush()
@@ -183,7 +188,7 @@ if __name__ == "__main__":
 
     for candidate in candidates:
         try:
-            r = requests.patch(LOCALHOST_CANDIDATE_UPDATE,
+            r = requests.patch(CANDIDATE_UPDATE_URL,
                 json={'candidates': [candidate]},
                 headers={'Authorization': 'Bearer %s' % args.token[0], 'Content-Type': 'application/json'}
             )
