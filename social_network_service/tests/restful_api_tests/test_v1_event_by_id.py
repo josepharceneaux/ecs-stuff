@@ -2,6 +2,7 @@
 Test cases for meetup and eventbrite event i.e get/delete event by id or using with valid and invalid token.
 """
 # Std imports
+import copy
 import json
 import sys
 import datetime
@@ -42,23 +43,23 @@ class TestEventById(object):
         response = unauthorize_test(url=SocialNetworkApiUrl.EVENT % non_existing_id, method='get')
         assert 'event' not in response.json()
 
-    def test_get_by_id_with_valid_token(self, token_first, event_in_db):
+    def test_get_by_id_with_valid_token(self, token_first, event_in_db_second):
         """
         - Get event using id and response should be 200
         - Delete venue_id and organizer_id from event response data
         - Then compare values from the event data in db table and response event data
         """
-        event = event_in_db
+        event = copy.deepcopy(event_in_db_second)
 
-        response = requests.get(SocialNetworkApiUrl.EVENT % event.id, headers=auth_header(token_first))
+        response = requests.get(SocialNetworkApiUrl.EVENT % event['id'], headers=auth_header(token_first))
         logger.info(response.text)
-        assert response.status_code == codes.OK, 'Status should be Ok (200)'
+        assert response.status_code == codes.OK, "Response: {}".format(response.text)
         results = response.json()
         assert 'event' in results
         api_event = results['event']
-        event = event.to_json()
         del event['venue_id']
-        del event['organizer_id']
+        if event.get('organizer_id'):
+            del event['organizer_id']
         comparison = '\n{0: <20}  |  {1: <40} |  {2: <40}\n'.format('Key', 'Expected', 'Found')
         comparison += '=' * 100 + '\n'
         status = True
@@ -83,7 +84,7 @@ class TestEventById(object):
         """
         - Get event data from db (using fixture - event_in_db)
         """
-        event = event_in_db.to_json()
+        event = copy.deepcopy(event_in_db)
 
         # Update with invalid event id
         event['id'] = sys.maxint  # We will find a better way to test it
@@ -98,7 +99,7 @@ class TestEventById(object):
         - Modify social_network_id to max int value in event data object
         - Send request to update event data. response should be 404 as there is no social network id = max int
         """
-        event = event_in_db.to_json()
+        event = copy.deepcopy(event_in_db)
         event_id = event['id']
 
         # Update with invalid event id
@@ -111,14 +112,14 @@ class TestEventById(object):
         logger.info(response.text)
         assert response.status_code == codes.NOT_FOUND, 'Event not found with this social network event id'
 
-    def test_put_with_valid_token(self, token_first, event_in_db):
+    def test_put_with_valid_token(self, token_first, event_in_db_second, organizer_in_db):
         """
         - Get event data from db (using fixture - event_in_db)
         - Using event id, send PUT request to update event data
         - Should get 200 response
         - Check if activity is created or not
         """
-        event = event_in_db.to_json()
+        event = copy.deepcopy(event_in_db_second)
         # Success case, event should be updated
         datetime_now = datetime.datetime.utcnow()
         datetime_now = datetime_now.replace(microsecond=0)
@@ -128,6 +129,7 @@ class TestEventById(object):
         response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token_first, data=event)
         logger.info(response.text)
         assert response.status_code == codes.OK, 'Status should be Ok, Resource Modified (200)'
+        db.db.session.commit()
         event_occurrence_in_db = Event.get_by_id(event['id'])
         Event.session.commit()  # needed to refresh session otherwise it will show old objects
         event_occurrence_in_db = event_occurrence_in_db.to_json()
@@ -152,27 +154,26 @@ class TestEventById(object):
         - Try to delete event data using id and pass invalid access token in header
         - it should throw 401 un-authorized exception
         """
-        unauthorize_test('delete', url=SocialNetworkApiUrl.EVENT % event_in_db.id)
+        unauthorize_test('delete', url=SocialNetworkApiUrl.EVENT % event_in_db['id'])
 
     def test_delete_with_valid_token(self, token_first, event_in_db_second):
         """
         - Try to delete event data using id, if deleted you expect 200 response
         - Then again try to delete event using same event id and expect 403 response
         """
-        event_id = event_in_db_second.id
-        event_data = event_in_db_second.to_json()
+        event_id = event_in_db_second['id']
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
         logger.info(response.text)
-        assert response.status_code == codes.OK, 'Status should be Ok (200)'
+        assert response.status_code == codes.OK, str(response.text)
         response = requests.delete(SocialNetworkApiUrl.EVENT % event_id, headers=auth_header(token_first))
 
         # check if event delete activity
-        user_id = event_data['user_id']
+        user_id = event_in_db_second['user_id']
         db.db.session.commit()
         activity = Activity.get_by_user_id_type_source_id(user_id=user_id, source_id=event_id,
                                                           type_=Activity.MessageIds.EVENT_DELETE)
         data = json.loads(activity.params)
-        assert data['event_title'] == event_data['title']
+        assert data['event_title'] == event_in_db_second['title']
 
         logger.info(response.text)
         assert response.status_code == codes.FORBIDDEN, 'Unable to delete event as it is not present there (403)'

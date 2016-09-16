@@ -10,6 +10,7 @@ from flask.ext.restful import Resource
 
 # Application specific imports
 from social_network_service.common.error_handling import *
+from social_network_service.common.models.db import db
 from social_network_service.common.models.event import Event
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.routes import SocialNetworkApi

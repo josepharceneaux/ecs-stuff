@@ -2,6 +2,7 @@
 import json
 
 # Third Party
+import pytest
 import requests
 from requests import codes
 
@@ -97,7 +98,7 @@ class TestVenues(object):
         """
         Create venue using endpoint and send DELETE that venue using id
         """
-        venue_ids = {'ids': [venue_in_db_second.id]}
+        venue_ids = {'ids': [venue_in_db_second['id']]}
         response = requests.delete(SocialNetworkApiUrl.VENUES, data=json.dumps(venue_ids),
                                    headers=get_headers(token_first))
         logger.info(response.text)

@@ -429,8 +429,7 @@ class EventBase(object):
         # create url to publish event
         url = self.url_to_delete_event
         # params are None. Access token is present in self.headers
-        response = http_request(method, url, headers=self.headers,
-                                user_id=self.user.id)
+        response = http_request(method, url, headers=self.headers, user_id=self.user.id)
         if response.ok:
             logger.info('|  Event has been unpublished (deleted)  |')
         else:

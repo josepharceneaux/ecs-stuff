@@ -99,6 +99,7 @@ class GTApis(object):
     PUSH_CAMPAIGN_SERVICE_PORT = 8013
     EMAIL_CAMPAIGN_SERVICE_PORT = 8014
     ATS_SERVICE_PORT = 8015
+    MOCK_SERVICE_PORT = 8016
     TALENTBOT_PORT = 8017
 
     # Names of flask micro services
@@ -117,6 +118,7 @@ class GTApis(object):
     PUSH_CAMPAIGN_SERVICE_NAME = 'push-campaign-service'
     EMAIL_CAMPAIGN_SERVICE_NAME = 'email-campaign-service'
     ATS_SERVICE_NAME = 'ats-service'
+    MOCK_SERVICE_NAME = 'mock-service'
     TALENTBOT_SERVICE_NAME = 'talentbot-service'
 
     # CORS headers
@@ -889,6 +891,27 @@ class ATSServiceApiUrl(object):
     CANDIDATES = HOST_NAME % ('/' + VERSION  + '/ats-candidates/%s')
     CANDIDATE_REFRESH = HOST_NAME % ('/' + VERSION  + '/ats-candidates/refresh/%s')
     CANDIDATE_LINK = HOST_NAME % ('/' + VERSION  + '/ats-candidates/link/%s/%s')
+
+
+class MockServiceApi(object):
+    """
+    URLs for Mock Service
+    """
+    VERSION = 'v1'
+    HOST_NAME = _get_host_name(GTApis.MOCK_SERVICE_NAME, GTApis.MOCK_SERVICE_PORT)
+    # Endpoint for mock server
+    MOCK_SERVICE = '/' + VERSION + '/<string:url_type>/<string:social_network>/<path:path>'
+
+
+class MockServiceApiUrl(object):
+    """
+    API relative URLs for mock_service
+    """
+    VERSION = 'v1'
+    HOST_NAME = _get_host_name(GTApis.MOCK_SERVICE_NAME, GTApis.MOCK_SERVICE_PORT)
+
+    # Endpoint for sn mock server
+    MOCK_SERVICE = HOST_NAME % ('/' + VERSION + '/%s/%s')
 
 
 class TalentBotApiUrl(object):
