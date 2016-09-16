@@ -54,11 +54,12 @@ class TalentBot(object):
         cleaned_message = cleaned_message.lstrip(': ')
         return cleaned_message
 
-    def parse_message(self, message):
+    def parse_message(self, message, user_id=None):
         """
         Checks which is the appropriate message handler for this message and calls that handler
+        :param int user_id: User Id
         :param str message: User's message
-        :return str Response generated
+        :rtype str
         """
         message = self.clean_user_message(message)
         is_greetings = self.check_for_greetings(message)
@@ -77,7 +78,7 @@ class TalentBot(object):
                 if match_ratio >= BEST_QUESTION_MATCH_RATIO:
                     break
         if message_handler:
-            return message_handler(message_tokens)
+            return message_handler(message_tokens, user_id)
         return random.choice(self.error_messages)
 
     @staticmethod
@@ -98,7 +99,7 @@ class TalentBot(object):
         :return: int partial_ratio
         """
         partial_ratio = fuzz.partial_ratio(message.lower(), question)
-        logger.info(message + ': '+str(partial_ratio)+'% matched')
+        logger.info("%s : %d%% matched" % (message, partial_ratio))
         return partial_ratio
 
     @abstractmethod

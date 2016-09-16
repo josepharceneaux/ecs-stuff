@@ -199,14 +199,16 @@ class User(db.Model):
         return User.query.filter_by(email=email).first()
 
     @staticmethod
-    def get_user_count_in_domain(domain_name):
+    def get_user_count_in_domain(user_id):
         """
         This method returns count of users in a domain
-        :param str domain_name: User domain
-        :return: int : Number of users
+        :param int user_id: User Id
+        :return: tuple(int, str) : (Number of users, domain name)
         """
-        return User.query.filter(User.domain_id == Domain.id).\
-            filter(Domain.name == domain_name).count()
+        domain_name = User.query.with_entities(Domain.name).filter(User.domain_id == Domain.id).filter(User.id == user_id).first()
+        count = User.query.filter(User.domain_id == Domain.id).\
+            filter(User.id == user_id).count()
+        return count, domain_name[0]
 
 
 class UserPhone(db.Model):

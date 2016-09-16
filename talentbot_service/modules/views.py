@@ -64,8 +64,8 @@ def listen_slack():
         if message and channel_id and slack_user_id:
             logger.info("Message slack:%s, Current_timestamp: %s, Previous timestamp: %s"
                         % (message, current_timestamp, slack_bot.timestamp))
-            parent_process = Process(target=ProcessScheduler.schedule_process, args=(slack_bot, channel_id, message,
-                                     slack_user_id, current_timestamp))
+            parent_process = Process(target=ProcessScheduler.schedule_slack_process,
+                                     args=(slack_bot, channel_id, message, slack_user_id, current_timestamp))
             parent_process.start()
             return 'HTTP_200_OK'
     challenge = request.json.get('challenge')
@@ -120,12 +120,11 @@ def handle_incoming_messages():
     data = request.json
     sender = data['entry'][0]['messaging'][0]['sender']['id']
     msg = data['entry'][0]['messaging'][0].get('message')
-    current_timestamp = data['entry'][0]['messaging'][0]['timestamp']
-    logger.info('current timestamp:' + str(current_timestamp), 'old timestamp:',
-                str(facebook_bot.timestamp))
     if msg and sender:
         message = data['entry'][0]['messaging'][0]['message']['text']
-        facebook_bot.handle_communication(sender, message)
+        parent_process = Process(target=ProcessScheduler.schedule_fb_process,
+                                 args=(sender, message, facebook_bot))
+        parent_process.start()
     return 'HTTP_200_OK'
 
 

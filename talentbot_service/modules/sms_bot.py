@@ -31,15 +31,16 @@ class SmsBot(TalentBot):
     def authenticate_user(self, mobile_number):
         """
         Authenticates user
-        :return: True|False
+        :return: tuple(bool, int): (True|False, user_id|None)
         """
         user_phone_id = UserPhone.query.with_entities(UserPhone.id).\
             filter_by(value=mobile_number).first()
         if user_phone_id:
-            count = TalentbotAuth.query.filter_by(user_phone_id=user_phone_id[0]).count()
-            if count > 0:
-                return True
-        return False
+            talentbot_auth = TalentbotAuth.query.with_entities(TalentbotAuth.user_id).\
+                filter_by(user_phone_id=user_phone_id[0]).first()
+            if talentbot_auth:
+                return True, talentbot_auth[0]
+        return False, None
 
     def reply(self, response, recipient):
         """
@@ -72,10 +73,10 @@ class SmsBot(TalentBot):
         :param str message: User's message
         :param str recipient: User's mobile number
         """
-        is_authenticated = self.authenticate_user(recipient)
+        is_authenticated, user_id = self.authenticate_user(recipient)
         if is_authenticated:
             try:
-                response_generated = self.parse_message(message)
+                response_generated = self.parse_message(message, user_id)
                 self.reply(response_generated, recipient)
             except (IndexError, NameError, KeyError):
                 error_response = random.choice(self.error_messages)

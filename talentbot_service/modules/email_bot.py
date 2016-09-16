@@ -12,6 +12,7 @@ from talentbot_service.common.models.user import TalentbotAuth
 # App specific imports
 from talentbot_service.modules.constants import MAILGUN_FROM, AUTHENTICATION_FAILURE_MSG
 from talentbot_service.modules.talent_bot import TalentBot
+from talentbot_service  import logger
 # 3rd party import
 import requests
 
@@ -33,13 +34,13 @@ class EmailBot(TalentBot):
         :param str email_id: User Email Id
         :param str subject: Received Email subject
         :param str email_body: Received Email body
-        :return: tuple (True|False, str|None)
+        :return: tuple (True|False, str|None, int|None)
         """
-        email = TalentbotAuth.query.with_entities(TalentbotAuth.email).\
+        user_id = TalentbotAuth.query.with_entities(TalentbotAuth.user_id).\
             filter_by(email=email_id).first()
-        if email:
-            return True, email_body
-        return False, None
+        if user_id:
+            return True, email_body, user_id[0]
+        return False, None, None
 
     def reply(self, recipient, subject, message, sender):
         """
@@ -59,6 +60,7 @@ class EmailBot(TalentBot):
                                  data={"from": sender, "to": recipient, "subject": subject,
                                        "html": html
                                        })
+        logger.info('Mail reply "%s", to %s' % (message, recipient))
         return response
 
     def handle_communication(self, recipient, subject, message):
@@ -68,10 +70,10 @@ class EmailBot(TalentBot):
         :param str subject: Email subject
         :param message: User's message
         """
-        is_authenticated, message = self.authenticate_user(recipient, subject, message)
+        is_authenticated, message, user_id = self.authenticate_user(recipient, subject, message)
         if is_authenticated:
             try:
-                response_generated = self.parse_message(message)
+                response_generated = self.parse_message(message, user_id)
                 self.reply(recipient, subject, "<br />".join(response_generated.split("\n")), MAILGUN_FROM)
             except (IndexError, NameError, KeyError):
                 error_response = random.choice(self.error_messages)

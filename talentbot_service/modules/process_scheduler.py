@@ -18,7 +18,7 @@ class ProcessScheduler(object):
         pass
 
     @staticmethod
-    def schedule_process(slack_bot, channel_id, message, slack_user_id, current_timestamp):
+    def schedule_slack_process(slack_bot, channel_id, message, slack_user_id, current_timestamp):
         """
         This method runs class SlackBot's handle_question() method in a thread and makes sure it ends
         :param SlackBot slack_bot: SlackBot object
@@ -27,10 +27,27 @@ class ProcessScheduler(object):
         :param str slack_user_id: User's Slack Id
         :param str current_timestamp: Current timestamp
         """
-        process = Process(target=slack_bot.handle_communication,
-                          args=(channel_id, message, slack_user_id, current_timestamp))
-        process.start()
-        process.join(PROCESS_MAX_TIME)
-        if process.is_alive():
-            logger.info("Killing process: %s" % process.pid)
-            process.terminate()
+        slack_handler_process = Process(target=slack_bot.handle_communication,
+                                        args=(channel_id, message, slack_user_id, current_timestamp))
+        slack_handler_process.start()
+        slack_handler_process.join(PROCESS_MAX_TIME)
+        if slack_handler_process.is_alive():
+            logger.info("Killing process: %s" % slack_handler_process.pid)
+            slack_handler_process.terminate()
+
+    @staticmethod
+    def schedule_fb_process(fb_user_id, message, facebook_bot):
+        """
+        This method runs class FacebookBot's handle_question() method in a thread and makes sure it
+        ends
+        :param FacebookBot facebook_bot: FacebookBot object
+        :param str fb_user_id: User's Facebook Id
+        :param message: User's message
+        """
+        fb_handler_process = Process(target=facebook_bot.handle_communication,
+                                     args=(fb_user_id, message))
+        fb_handler_process.start()
+        fb_handler_process.join(PROCESS_MAX_TIME)
+        if fb_handler_process.is_alive():
+            logger.info("Killing process: %s" % fb_handler_process.pid)
+            fb_handler_process.terminate()
