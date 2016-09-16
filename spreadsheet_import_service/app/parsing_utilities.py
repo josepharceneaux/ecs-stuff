@@ -229,6 +229,8 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                         prepare_candidate_data(degrees, 'start_month', 6)
                         prepare_candidate_data(degrees, 'end_month', 6)
 
+                    elif column_name == 'candidate_education.graduation_year':
+                        prepare_candidate_data(degrees, 'end_year', column)
                     elif column_name == 'candidate_address.address_line_1':
                         prepare_candidate_data(addresses, 'address_line_1', column)
                     elif column_name == 'candidate_address.address_line_2':
