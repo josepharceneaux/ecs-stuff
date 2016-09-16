@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 
 # Third Party
+import pytest
 import requests
 from requests import codes
 
@@ -31,7 +32,7 @@ class TestOrganizers(object):
         response = requests.get(SocialNetworkApiUrl.EVENT_ORGANIZERS, headers=auth_header(token_first))
         logger.info(response.text)
         # to most messages we placed on RHS of asserts
-        assert response.status_code == codes.OK, response.text
+        assert response.status_code == codes.OK, "Response: {}".format(response.text)
         results = response.json()
         assert 'event_organizers' in results
 
@@ -48,7 +49,7 @@ class TestOrganizers(object):
         response = requests.post(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(event_organizer),
                                  headers=get_headers('invalid_token'))
         logger.info(response.text)
-        assert response.status_code == codes.UNAUTHORIZED, response.text
+        assert response.status_code == codes.UNAUTHORIZED, "Response: {}".format(response.text)
 
     def test_post_with_valid_token(self, token_first, user_first):
         """
@@ -79,7 +80,7 @@ class TestOrganizers(object):
         response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps({'ids': []}),
                                    headers=get_headers('invalid_token'))
         logger.info(response.text)
-        assert response.status_code == codes.UNAUTHORIZED, response.text
+        assert response.status_code == codes.UNAUTHORIZED, "Response: {}".format(response.text)
 
     def test_delete_with_invalid_id(self, token_first):
         """
@@ -89,7 +90,7 @@ class TestOrganizers(object):
         response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(organizer_ids),
                                    headers=get_headers(token_first))
         logger.info(response.text)
-        assert response.status_code == codes.MULTI_STATUS, response.text
+        assert response.status_code == codes.MULTI_STATUS, "Response: {}".format(response.text)
         response = response.json()
         assert 'deleted' in response and len(response['deleted']) == 0
         assert 'not_deleted' in response and len(response['not_deleted']) == 1
@@ -103,13 +104,13 @@ class TestOrganizers(object):
         response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(organizer_ids),
                                    headers=get_headers(token_first))
         logger.info(response.text)
-        assert response.status_code == codes.OK, response.text
+        assert response.status_code == codes.OK, "Response: {}".format(response.text)
 
         organizer_ids = {'ids': -1}  # invalid ids format to test 400 status code
         response = requests.delete(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(organizer_ids),
                                    headers=get_headers(token_first))
         logger.info(response.text)
-        assert response.status_code == codes.BAD, response.text
+        assert response.status_code == codes.BAD, "Response: {}".format(response.text)
         response = response.json()
         assert 'message' in response['error'] and \
                response['error']['message'] == 'Bad request, include ids as list data'

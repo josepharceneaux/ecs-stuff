@@ -15,6 +15,8 @@ from social_network_service.common.error_handling import InvalidUsage
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.utils.validators import raise_if_not_positive_int_or_long
+from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
+from social_network_service.modules.urls import get_url
 from social_network_service.modules.utilities import get_class
 from social_network_service.modules.utilities import log_error
 from social_network_service.common.models.user import User
@@ -197,11 +199,13 @@ class SocialNetworkBase(object):
                 "gt_user_id": self.user_credentials.user_id,
                 "social_network_id": self.social_network.id,
                 "api_url": self.social_network.api_url,
+                "auth_url": self.social_network.auth_url
             }
             # checks if any field is missing for given user credentials
-            items = [value for key, value in data.iteritems() if key is not "api_url"]
+            items = [value for key, value in data.iteritems() if key not in ["api_url", "auth_url"]]
             if all(items):
                 self.api_url = data['api_url']
+                self.auth_url = data['auth_url']
                 self.gt_user_id = data['gt_user_id']
                 self.social_network_id = data['social_network_id']
                 self.access_token = data['access_token']
@@ -414,7 +418,7 @@ class SocialNetworkBase(object):
                      % (self.user.name, self.user.id, self.social_network.name))
         try:
             user_credentials = self.user_credentials
-            url = self.api_url + self.api_relative_url
+            url = get_url(self, SocialNetworkUrls.VALIDATE_TOKEN)
             # Now we have the URL, access token, and header is set too,
             get_member_id_response = http_request('POST', url,
                                                   headers=self.headers,
@@ -466,7 +470,7 @@ class SocialNetworkBase(object):
         :return status of of access token either True or False.
         """
         status = False
-        url = self.api_url + self.api_relative_url
+        url = get_url(self, SocialNetworkUrls.VALIDATE_TOKEN)
         logger.info("%s access_token validation url: %s", self.social_network.name, url)
         try:
             response = requests.get(url, headers=self.headers, params=payload)

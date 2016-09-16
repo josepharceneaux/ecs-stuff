@@ -25,7 +25,7 @@ from social_network_service.common.models.misc import Activity
 from social_network_service.custom_exceptions import *
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.candidate import SocialNetwork
-from social_network_service.modules.constants import MEETUP
+from social_network_service.common.constants import MEETUP
 from social_network_service.social_network_app import logger
 
 
@@ -261,13 +261,10 @@ def process_event(data, user_id, method='Create'):
         social_network = SocialNetwork.get(social_network_id)
         if social_network:
             # creating class object for respective social network
-            social_network_class = get_class(social_network.name.lower(),
-                                             'social_network')
+            social_network_class = get_class(social_network.name.lower(), 'social_network')
             event_class = get_class(social_network.name.lower(), 'event')
             sn = social_network_class(user_id=user_id)
-            event_obj = event_class(user=sn.user,
-                                    headers=sn.headers,
-                                    social_network=social_network)
+            event_obj = event_class(user=sn.user, headers=sn.headers, social_network=social_network)
         else:
             raise SocialNetworkError('Unable to find social network')
         data['user_id'] = user_id
@@ -275,18 +272,14 @@ def process_event(data, user_id, method='Create'):
             raise InvalidUsage('organizer_id is not a valid field in case of meetup')
         event_obj.event_gt_to_sn_mapping(data)
 
-        activity_data = {'username': request.user.name,
-                         }
+        activity_data = {'username': request.user.name}
 
         if method == 'Create':
             event_id = event_obj.create_event()
 
             # Create activity of event object creation
-            event_obj = Event.get_by_user_and_event_id(user_id=user_id,
-                                                       event_id=event_id)
-
+            event_obj = Event.get_by_user_and_event_id(user_id=user_id, event_id=event_id)
             activity_data.update({'event_title': event_obj.title})
-
             add_activity(user_id=user_id,
                          activity_type=Activity.MessageIds.EVENT_CREATE,
                          source_id=event_id,
