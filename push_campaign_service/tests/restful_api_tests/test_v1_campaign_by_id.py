@@ -58,11 +58,12 @@ class TestCampaignById(object):
         """
         get_campaign(campaign_in_db['id'], 'invalid_token', expected_status=(401,))
 
-    def test_get_by_id(self, token_first, campaign_in_db):
+    def test_get_by_valid_id(self, token_first, campaign_in_db, smartlist_first):
         """
         We will try to get campaign with a valid token and we are expecting OK (200) response
         :param token_first: auth token
         :param campaign_in_db: campaign object
+        :param smartlist_first: smartlist dict object
         """
         json_response = get_campaign(campaign_in_db['id'], token_first)
         campaign = json_response['campaign']
@@ -70,6 +71,7 @@ class TestCampaignById(object):
         assert campaign_in_db['body_text'] == campaign['body_text']
         assert campaign_in_db['name'] == campaign['name']
         assert campaign_in_db['url'] == campaign['url']
+        assert campaign['smartlist_ids'] == [smartlist_first['id']]
 
     def test_get_campaign_with_invalid_id(self, token_first):
         """
@@ -90,12 +92,13 @@ class TestCampaignById(object):
         delete_campaign(campaign_id, token_first)
         get_campaign(campaign_id, token_first, expected_status=(404,))
 
-    def test_get_campaign_from_same_domain(self, token_same_domain, campaign_in_db):
+    def test_get_campaign_from_same_domain(self, token_same_domain, campaign_in_db, smartlist_first):
         """
         We will try to get campaign with a valid token. User is not owner of campaign
          and he is from same domain as the owner of the campaign. We are expecting OK (200) response.
         :param token_same_domain: auth token
         :param campaign_in_db: campaign object
+        :param smartlist_first: smartlist dict object
         """
         campaign_id = campaign_in_db['id']
         json_response = get_campaign(campaign_id, token_same_domain, expected_status=(200,))
@@ -104,6 +107,7 @@ class TestCampaignById(object):
         assert campaign_in_db['body_text'] == campaign['body_text']
         assert campaign_in_db['name'] == campaign['name']
         assert campaign_in_db['url'] == campaign['url']
+        assert campaign['smartlist_ids'] == [smartlist_first['id']]
 
     def test_get_campaign_from_diff_domain(self, token_second, campaign_in_db):
         """
