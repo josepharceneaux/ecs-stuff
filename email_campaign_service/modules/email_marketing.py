@@ -75,7 +75,7 @@ def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
     db.session.commit()
 
 
-def create_email_campaign(user_id, oauth_token, name, subject,
+def create_email_campaign(user_id, oauth_token, name, subject, description,
                           _from, reply_to, body_html,
                           body_text, list_ids, email_client_id=None,
                           frequency_id=None,
@@ -93,6 +93,7 @@ def create_email_campaign(user_id, oauth_token, name, subject,
                                    user_id=user_id,
                                    is_hidden=0,
                                    subject=subject,
+                                   description=description,
                                    _from=get_or_set_valid_value(_from, basestring, '').strip(),
                                    reply_to=get_or_set_valid_value(reply_to, basestring, '').strip(),
                                    body_html=body_html,

@@ -46,6 +46,7 @@ def validate_and_format_request_data(data, user_id):
     """
     name = data.get('name')  # required
     subject = data.get('subject')        # required
+    description = data.get('description')        # required
     _from = data.get('from')
     reply_to = data.get('reply_to')
     body_html = data.get('body_html')    # required
@@ -62,6 +63,8 @@ def validate_and_format_request_data(data, user_id):
         raise InvalidUsage('name is required')  # 400 Bad request
     if subject is None or subject.strip() == '':
         raise InvalidUsage('subject is required')
+    if description is None or description.strip() == '':
+        raise InvalidUsage('description is required')
     if body_html is None or body_html.strip() == '':
         raise InvalidUsage('body_html is required')
     if not list_ids:
@@ -99,6 +102,7 @@ def validate_and_format_request_data(data, user_id):
     return {
         'name': name.strip(),
         'subject': subject.strip(),
+        'description': description.strip(),
         'from': get_or_set_valid_value(_from, basestring, '').strip(),
         'reply_to': get_or_set_valid_value(reply_to, basestring, '').strip(),
         'body_html': body_html.strip(),

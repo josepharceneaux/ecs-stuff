@@ -11,6 +11,7 @@ from werkzeug.security import generate_password_hash
 
 from db import db
 from ..models.event import Event
+from ..models.candidate import Candidate
 from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
@@ -84,7 +85,7 @@ class User(db.Model):
         return secret_key_id, 'Bearer %s' % s.dumps({'user_id': user_id})
 
     @staticmethod
-    def verify_jw_token(secret_key_id, token, allow_null_user=False):
+    def verify_jw_token(secret_key_id, token, allow_null_user=False, allow_candidate=False):
         secret_key = redis_store.get(secret_key_id)
         if not secret_key:
             raise UnauthorizedError(
@@ -98,13 +99,22 @@ class User(db.Model):
         except BadSignature:
             raise UnauthorizedError(error_message="Your JSON web token is not valid")
 
-        if data['user_id']:
+        if 'user_id' in data and data['user_id']:
             user = User.query.get(data['user_id'])
             if user:
                 request.user = user
+                request.candidate = None
                 return
+        elif allow_candidate:
+            if 'candidate_id' in data:
+                candidate = Candidate.query.get(data['candidate_id'])
+                if candidate:
+                    request.candidate = candidate
+                    request.user = None
+                    return
         elif allow_null_user:
             request.user = None
+            request.candidate = None
             return
 
         raise UnauthorizedError(error_message="User %s doesn't exist in database" % data['user_id'])

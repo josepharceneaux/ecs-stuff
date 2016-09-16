@@ -72,7 +72,7 @@ from email_campaign_service.common.error_handling import (InvalidUsage, NotFound
                                                           ForbiddenError, MethodNotAllowedError)
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response,
-                                                           get_pagination_params)
+                                                           get_pagination_params, SORT_TYPES)
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
@@ -121,7 +121,11 @@ class EmailCampaigns(Resource):
                 raise InvalidUsage('`is_hidden` can be either 0 or 1')
 
             if sort_by not in ('added_datetime', 'name'):
-                raise InvalidUsage('Value of sort parameter is not valid')
+                raise InvalidUsage('Value of sort_by parameter is not valid')
+
+            if sort_type not in SORT_TYPES:
+                raise InvalidUsage('Value of sort_type parameter is not valid. Valid values are %s'
+                                   % list(SORT_TYPES))
 
             # Get all email campaigns from logged in user's domain
             query = EmailCampaign.get_by_domain_id_and_filter_by_name(
@@ -149,6 +153,7 @@ class EmailCampaigns(Resource):
                                          oauth_token=request.oauth_token,
                                          name=data['name'],
                                          subject=data['subject'],
+                                         description=data['description'],
                                          _from=data['from'],
                                          reply_to=data['reply_to'],
                                          body_html=data['body_html'],
