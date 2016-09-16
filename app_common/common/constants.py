@@ -21,3 +21,14 @@ REDIS2 = 'REDIS2'
 MEETUP = 'meetup'
 AUTH = 'auth'
 API = 'api'
+
+
+class HttpMethods(object):
+    """
+    Here we have names of HTTP methods
+    """
+    GET = 'GET'
+    POST = 'POST'
+    PUT = 'PUT'
+    PATCH = 'PATCH'
+    DELETE = 'DELETE'

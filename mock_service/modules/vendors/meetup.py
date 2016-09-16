@@ -16,7 +16,7 @@ from mock_service.common.utils.test_utils import fake
 from mock_service.common.redis_cache import redis_store2
 from mock_service.common.constants import MEETUP, AUTH, API
 from mock_service.common.models.candidate import SocialNetwork
-from mock_service.common.utils.handy_functions import HttpMethods
+from app_common.common.constants import HttpMethods
 from mock_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls as Urls
 
 

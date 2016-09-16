@@ -3,9 +3,9 @@
 __author__ = 'erikfarmer'
 
 # Standard Imports
-import re
 import json
 import random
+import re
 import string
 
 # Third Party
@@ -30,17 +30,6 @@ define_custom_contracts()
 
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
-
-
-class HttpMethods(object):
-    """
-    Here we have names of HTTP methods
-    """
-    GET = 'GET'
-    POST = 'POST'
-    PUT = 'PUT'
-    PATCH = 'PATCH'
-    DELETE = 'DELETE'
 
 
 def random_word(length):

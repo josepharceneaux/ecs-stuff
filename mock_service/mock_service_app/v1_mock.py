@@ -2,8 +2,6 @@
 Here we have endpoint which is treated as Mock-Service for different social-networks, e.g. Meetup.
 """
 
-# Standard Library
-
 # Third party
 from flask import Blueprint, request
 
@@ -14,7 +12,7 @@ from mock_service.common.utils.api_utils import ApiResponse
 from mock_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from mock_service.common.error_handling import (NotFoundError, InternalServerError,
                                                 UnauthorizedError)
-from mock_service.common.utils.handy_functions import (HttpMethods, JSON_CONTENT_TYPE_HEADER)
+from mock_service.common.utils.handy_functions import (JSON_CONTENT_TYPE_HEADER)
 from mock_service.mock_service_app import app, logger
 from mock_service.modules.mock_utils import get_mock_response
 from mock_service.modules.vendors.meetup import meetup_vendor
@@ -45,7 +43,7 @@ register_vendor(MEETUP, meetup_vendor)
 
 # TODO: Make this endpoint generic and usable for all services
 @mock_blueprint.route(MockServiceApi.MOCK_SERVICE, methods=['GET', 'POST', 'PATCH', 'PUT', 'DELETE'])
-def mock_endpoint(url_type, social_network, path):
+def mock_endpoint(url_type, social_network, relative_url):
     """
     Mock endpoint to handle mock requests and its response.
 
@@ -57,7 +55,7 @@ def mock_endpoint(url_type, social_network, path):
     :type url_type: str | basestring
     :param social_network: Name of social-network. e.g. "meetup"
     :type social_network: str | basestring
-    :param path: relative part of vendor url i.e /self/member or /groups
+    :param relative_url: relative part of vendor url i.e /self/member or /groups
     :type: str | basestring
     """
 
@@ -66,21 +64,16 @@ def mock_endpoint(url_type, social_network, path):
         raise UnauthorizedError('This endpoint is not accessible in `%s` env.'
                                 % app.config[TalentConfigKeys.ENV_KEY])
 
-    # path will be relative url. i.e self/member
-    relative_url = path
-
     vendor_data = mock_url_hub.get(social_network)
     if not vendor_data:
         raise NotFoundError("Vendor '{}' not found or mocked yet." % social_network)
     request_method = request.method
 
     # To get id from PUT or GET url i.e event/23 or event/45. Split data and get resource id
-    splitted_data = relative_url.split('/')
-    if len(splitted_data) > 1 and splitted_data[1].isdigit():
-        relative_url = splitted_data[0]
-        resource_id = splitted_data[1]
-        if request_method == HttpMethods.POST:
-            request_method = HttpMethods.PUT
+    split_data = relative_url.split('/')
+    if len(split_data) > 1 and split_data[1].isdigit():
+        relative_url = split_data[0]
+        resource_id = split_data[1]
     else:
         resource_id = None
     try:
