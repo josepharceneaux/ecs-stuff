@@ -46,7 +46,8 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_schedu
                                                         schedule_campaign, reschedule_campaign, unschedule_campaign,
                                                         get_campaign, match_schedule_data)
 from push_campaign_service.common.utils.test_utils import (invalid_data_test, unexpected_field_test,
-                                                           missing_keys_test, invalid_value_test, assert_activity)
+                                                           missing_keys_test, invalid_value_test, assert_activity,
+                                                           delete_smartlist)
 from push_campaign_service.common.utils.handy_functions import (send_request)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.models.misc import Frequency, Activity
@@ -210,6 +211,18 @@ class TestScheduleCampaignUsingPOST(object):
         """
         data = generate_campaign_schedule_data()
         unexpected_field_test('post', URL % campaign_in_db['id'], data, token_first)
+
+    def test_schedule_campaign_with_deleted_smartlist(self, token_first, campaign_in_db, smartlist_first):
+        """
+        Schedule a campaign that has a deleted smartlist associated with it.
+        Api should raise InvalidUsage error 400 .
+        """
+
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
+        delete_smartlist(smartlist_first['id'], token_first)
+        response = send_request('post', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
+        assert response.status_code == codes.BAD
+        assert 'deleted' in response.json()['error']['message']
 
 
 class TestRescheduleCampaignUsingPUT(object):
@@ -376,6 +389,19 @@ class TestRescheduleCampaignUsingPUT(object):
         """
         data = generate_campaign_schedule_data()
         unexpected_field_test('post', URL % campaign_in_db['id'], data, token_first)
+
+    def test_reschedule_campaign_with_deleted_smartlist(self, token_first, campaign_in_db, talent_pool, candidate_first,
+                                             smartlist_first, schedule_a_campaign, candidate_device_first):
+        """
+        Reschedule a campaign that has a deleted smartlist associated with it.
+        Api should raise InvalidUsage error 400 .
+        """
+
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
+        delete_smartlist(smartlist_first['id'], token_first)
+        response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
+        assert response.status_code == codes.BAD
+        assert 'deleted' in response.json()['error']['message']
 
 
 class TestUnscheduleCamapignUsingDELETE(object):

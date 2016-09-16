@@ -739,6 +739,8 @@ class CampaignBase(object):
         # get campaign obj, scheduled task data and oauth_header
         campaign_obj, scheduled_task, oauth_header = cls.get_campaign_and_scheduled_task(campaign_id, request.user,
                                                                                          campaign_type)
+        smartlist_ids = [campaign_smartlist.smartlist_id for campaign_smartlist in campaign_obj.smartlists]
+        validate_smartlist_ids(smartlist_ids, request.user)
         # Updating scheduled task should not be allowed in POST request
         if scheduled_task and request.method == 'POST':
             raise ForbiddenError('Use PUT method instead to update already scheduled task')
