@@ -101,7 +101,7 @@ def import_from_table():
     if candidates_table and len(candidates_table[0]) != len(header_row):
         raise InvalidUsage("Number of Columns should be equal to header row provided")
 
-    if len(candidates_table) > 100:
+    if len(candidates_table) > 25:
         import_from_spreadsheet.delay(candidates_table, file_picker_key, header_row, talent_pool_ids,
                                       request.oauth_token, request.user.id, True, source_id,
                                       formatted_candidate_tags=candidate_tags)

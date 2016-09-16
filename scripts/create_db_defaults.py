@@ -300,7 +300,7 @@ def create_candidate_status():
         session.add(CandidateStatus(description=status_pair[0], notes=status_pair[1]))
         session.commit()
 
-
+# TODO: email labels
 if __name__ == "__main__":
     create_roles()
     create_permissions()
