@@ -69,7 +69,7 @@ def get_mock_response(mocked_json, payload=None, headers=None):
     Get mocked response of a request in dict
         - Check if expected and request headers is same. If not, then send on_fail response
         - Check if expected and request payload is same. If not, then send on_fail response
-        - If everything's fine, then return OK response by default
+        - If everything is fine, then return OK response by default
     Called by mock api endpoint
     :param dict mocked_json: Already mocked hard coded json dict from where response data needs to be extracted
     :param dict|None payload: Original payload sent to mock api. If not None, then match validate it with mock_json

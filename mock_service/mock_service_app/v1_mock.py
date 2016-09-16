@@ -48,6 +48,9 @@ register_vendor(MEETUP, meetup_vendor)
 def mock_endpoint(url_type, social_network, path):
     """
     Mock endpoint to handle mock requests and its response.
+
+    To see expected headers/payload response. See readme file
+
     Note: Currently it works for only meetup vendor.
     :param url_type: auth url or api url i.e http://localhost:8016/api/meetup/groups or
                                              http://localhost:8016/auth/meetup/self/member

@@ -58,7 +58,7 @@ def meetup_vendor_api(event_id=None):
     """
     Returns mocked dict of Meetup API.
     Mocked dict is a collection of response, expected headers/payload and events like on_fail. This will be used
-    by MockApi class
+    by mock endpoint. See readme for examples and writing schema.
     """
     return {
         Urls.MEETUP[Urls.VALIDATE_TOKEN].format(''): {

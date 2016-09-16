@@ -118,7 +118,7 @@ class Test_Event_Importer(object):
             url = sn.api_url + '/rsvp/'
             payload = {'event_id': social_network_event_id, 'rsvp': 'no'}
             response = http_request('POST', url, params=payload, headers=sn.headers)
-            assert response.ok is True, response.text
+            assert response.ok is True, "Response: {}".format(response.text)
             logger.debug('RSVP has been posted successfully')
             social_network_rsvp_id = response.json()['rsvp_id']
             sn.headers = {'Authorization': 'Bearer invalid_token'}

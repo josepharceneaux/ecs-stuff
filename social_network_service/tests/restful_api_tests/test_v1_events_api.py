@@ -113,10 +113,10 @@ class TestResourceEvents(object):
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token_first)
         logger.info(response.text)
         if social_network.name.lower() == MEETUP:
-            assert response.status_code == codes.BAD_REQUEST, response.text
+            assert response.status_code == codes.BAD_REQUEST, "Response: {}".format(response.text)
             return
         else:
-            assert response.status_code == codes.NOT_FOUND, response.text
+            assert response.status_code == codes.NOT_FOUND, "Response: {}".format(response.text)
         response = response.json()
 
         assert 'error' in response and response['error']['code'] == EventOrganizerNotFound.error_code, \

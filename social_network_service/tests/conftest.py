@@ -235,7 +235,7 @@ def meetup_event(test_meetup_credentials, meetup, meetup_venue, organizer_in_db,
     This creates an event for Meetup for user_first
     """
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=meetup_event_data)
-    assert response.status_code == codes.CREATED, response.text
+    assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
     data = response.json()
     assert data['id']
 
@@ -259,7 +259,7 @@ def meetup_event_second(test_meetup_credentials, meetup, meetup_venue_second, or
 
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=meetup_event_data)
 
-    assert response.status_code == codes.CREATED, response.text
+    assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
 
     data = response.json()
     assert data['id']
@@ -330,7 +330,7 @@ def eventbrite_event(test_eventbrite_credentials,
 
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=event)
 
-    assert response.status_code == codes.CREATED, response.text
+    assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
 
     data = response.json()
     assert data['id']
@@ -361,7 +361,7 @@ def eventbrite_event_second(test_eventbrite_credentials, eventbrite, eventbrite_
     event['venue_id'] = eventbrite_venue_second['id']
     event['organizer_id'] = organizer_in_db['id']
     response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=event)
-    assert response.status_code == codes.CREATED, response.text
+    assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
 
     data = response.json()
     assert data['id']
