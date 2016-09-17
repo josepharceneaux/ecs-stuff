@@ -47,7 +47,7 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         On scheduling such campaign, API will raise InvalidUsage 400 error.
         """
         campaign = sms_campaign_of_user_first
-        smartlist_id = campaign['smartlist_ids'][0]
+        smartlist_id = campaign['list_ids'][0]
         send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL % campaign['id'], access_token_first,
                                             one_time_and_periodic, smartlist_id)
 
@@ -313,7 +313,7 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         """
         campaign = sms_campaign_of_user_first
         campaign_id = campaign['id']
-        smartlist_id = sms_campaign_of_user_first['smartlist_ids'][0]
+        smartlist_id = sms_campaign_of_user_first['list_ids'][0]
         send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL % campaign_id, access_token_first,
                                             one_time_and_periodic, smartlist_id)
 

@@ -159,7 +159,7 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         """
         Update campaign with deleted smartlist , API should raise InvalidUsage 400
         """
-        smartlist_id = sms_campaign_of_user_first['smartlist_ids'][0]
+        smartlist_id = sms_campaign_of_user_first['list_ids'][0]
         url = self.URL % sms_campaign_of_user_first['id']
         campaign_valid_data['smartlist_ids'] = [smartlist_id]
         # Create a campaign with deleted smarlist. API will raise 400 error.
