@@ -10,7 +10,8 @@ import requests
 from sms_campaign_service.common.models.misc import Frequency
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
-from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers, send_request
+from sms_campaign_service.common.utils.test_utils import delete_smartlist
 from sms_campaign_service.tests.modules.common_functions import generate_campaign_schedule_data
 
 
@@ -38,6 +39,19 @@ class TestSmsCampaignScheduleHTTPPOST(object):
             data_for_different_users_of_same_domain['user'].id, campaign['id'],
             SmsCampaignApiUrl.CAMPAIGN, one_time_and_periodic)
         one_time_and_periodic['task_id'] = task_id
+
+    def test_campaign_schedule_with_deleted_smartlist(self, access_token_first,
+                                               sms_campaign_of_user_first, one_time_and_periodic):
+        """
+        Here we schedule a campaign which is associated with a delete smartlist.
+        On scheduling such campaign, API will raise InvalidUsage 400 error.
+        """
+        campaign = sms_campaign_of_user_first
+        smartlist_id = campaign['smartlist_ids'][0]
+        delete_smartlist(smartlist_id, access_token_first)
+        resp = send_request(self.HTTP_METHOD, self.URL, access_token_first, data=one_time_and_periodic)
+        assert resp.status_code == requests.codes.BAD
+        assert 'deleted' in resp.json()['error']['message']
 
     def test_campaign_schedule_with_no_auth_header(self, access_token_first,
                                                    sms_campaign_of_user_first):

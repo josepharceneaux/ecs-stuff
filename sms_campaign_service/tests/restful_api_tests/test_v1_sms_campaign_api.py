@@ -286,9 +286,6 @@ class TestSmsCampaignHTTPPost(object):
                                                           campaign_valid_data, user_phone_1):
         """
         We will try to create a campaign with deleted smartlist and API will raise 400 error.
-        :param access_token_first: access token for ser first
-        :param headers: valid header to POST data
-        :param campaign_valid_data: valid data to create SMS campaign
         """
         smartlist_id = campaign_valid_data['smartlist_ids'][0]
         delete_smartlist(smartlist_id, access_token_first)
