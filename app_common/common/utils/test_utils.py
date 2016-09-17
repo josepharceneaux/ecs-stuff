@@ -695,3 +695,19 @@ def delete_candidate_device(candidate_id, device_id,  token, expected_status=(20
     assert response.status_code in expected_status
     return response.json()
 
+
+@contract
+def send_request_with_deleted_smartlist(method, url, token, data, smartlist_id):
+    """
+    This helper method sends HTTP request to given url and verifies that API raised InvalidUsage 400 error.
+    :param http_method method: POST or PUT
+    :param string url: target api url
+    :param string token: access token
+    :param dict data: request body
+    :param int | long smartlist_id: smartlist id
+    """
+    delete_smartlist(smartlist_id, token)
+    resp = send_request(method, url, token, data)
+    assert resp.status_code == requests.codes.BAD
+    assert 'deleted' in resp.json()['error']['message']
+
