@@ -10,21 +10,16 @@ import json
 import requests
 
 # Service Specific
-from sms_campaign_service.common.utils.test_utils import send_request_with_deleted_smartlist
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import (assert_campaign_delete, assert_valid_campaign_get,
-                                                                 generate_campaign_schedule_data,
                                                                  generate_campaign_data)
 
 # Common Utils
-from sms_campaign_service.common.models.misc import Frequency
 from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.models.smartlist import Smartlist
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound, ForbiddenError,
-                                                        InvalidUsage)
+from sms_campaign_service.common.error_handling import (UnauthorizedError, ForbiddenError, InvalidUsage)
 
 
 class TestSmsCampaignWithIdHTTPGET(object):
@@ -163,8 +158,8 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         url = self.URL % sms_campaign_of_user_first['id']
         campaign_valid_data['smartlist_ids'] = [smartlist_id]
         # Create a campaign with deleted smarlist. API will raise 400 error.
-        send_request_with_deleted_smartlist(self.HTTP_METHOD, url, access_token_first,
-                                            campaign_valid_data, smartlist_id)
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, url, access_token_first,
+                                                                  campaign_valid_data, smartlist_id)
 
     def test_with_no_data(self, headers, sms_campaign_of_user_first):
         """

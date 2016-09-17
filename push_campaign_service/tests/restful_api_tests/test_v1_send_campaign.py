@@ -21,10 +21,10 @@ from redo import retry
 from requests import codes
 
 # Application specific imports
+from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from push_campaign_service.common.constants import SLEEP_INTERVAL, RETRY_ATTEMPTS
 from push_campaign_service.common.models.misc import Activity
-from push_campaign_service.common.utils.test_utils import (get_and_assert_zero, assert_activity,
-                                                           send_request_with_deleted_smartlist)
+from push_campaign_service.common.utils.test_utils import (get_and_assert_zero, assert_activity)
 from push_campaign_service.tests.test_utilities import send_campaign, get_blasts, get_blast_sends
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
@@ -134,8 +134,8 @@ class TestSendCampaign(object):
         :param smartlist_first: smartlist object
         """
         # 400 case: Campaign will not be sent due to deleted smartlist that is associated with campaign
-        send_request_with_deleted_smartlist('post', URL % campaign_in_db['id'], token_first, {},
-                                            smartlist_first['id'])
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist('post', URL % campaign_in_db['id'], token_first, {},
+                                                                  smartlist_first['id'])
 
     def test_campaign_send_to_smartlist_with_two_candidates_with_and_without_push_device(self, token_first,
                                                     campaign_with_two_candidates_with_and_without_push_device):

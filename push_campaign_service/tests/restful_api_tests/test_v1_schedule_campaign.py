@@ -47,7 +47,7 @@ from push_campaign_service.tests.test_utilities import (generate_campaign_schedu
                                                         get_campaign, match_schedule_data)
 from push_campaign_service.common.utils.test_utils import (invalid_data_test, unexpected_field_test,
                                                            missing_keys_test, invalid_value_test, assert_activity,
-                                                           send_request_with_deleted_smartlist)
+                                                           unauthorize_test)
 from push_campaign_service.common.utils.handy_functions import (send_request)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.models.misc import Frequency, Activity
@@ -220,7 +220,8 @@ class TestScheduleCampaignUsingPOST(object):
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         campaign_id = campaign_in_db['id']
         # Schedule a campaign with deleted smarlist. API will raise 400 error.
-        send_request_with_deleted_smartlist('post', URL % campaign_id, token_first, data, smartlist_first['id'])
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist('post', URL % campaign_id, token_first, data,
+                                                                  smartlist_first['id'])
 
 
 class TestRescheduleCampaignUsingPUT(object):
@@ -397,20 +398,21 @@ class TestRescheduleCampaignUsingPUT(object):
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         campaign_id = campaign_in_db['id']
         # Reschedule a campaign with deleted smarlist. API will raise 400 error.
-        send_request_with_deleted_smartlist('put', URL % campaign_id, token_first, data, smartlist_first['id'])
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist('put', URL % campaign_id, token_first, data,
+                                                                  smartlist_first['id'])
 
 
 class TestUnscheduleCamapignUsingDELETE(object):
 
     # Test URL: /v1/push-campaigns/{id}/schedule [DELETE]
-    # def test_unschedule_campaign_with_invalid_token(self, campaign_in_db, smartlist_first):
-    #     """
-    #      Try to unschedule a campaign with invalid aut token nd  API will raise 401 error.
-    #     """
-    #     # data not needed here but just to be consistent with other requests of
-    #     # this resource test
-    #     data = generate_campaign_schedule_data()
-    #     unauthorize_test('delete',  URL % campaign_in_db['id'], data)
+    def test_unschedule_campaign_with_invalid_token(self, campaign_in_db, smartlist_first):
+        """
+         Try to unschedule a campaign with invalid aut token nd  API will raise 401 error.
+        """
+        # data not needed here but just to be consistent with other requests of
+        # this resource test
+        data = generate_campaign_schedule_data()
+        unauthorize_test('delete',  URL % campaign_in_db['id'], data)
 
     def test_unschedule_campaign_with_other_user(self, token_second, campaign_in_db):
         """

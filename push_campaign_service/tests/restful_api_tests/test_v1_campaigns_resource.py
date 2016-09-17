@@ -41,8 +41,7 @@ from push_campaign_service.tests.test_utilities import (create_campaign, get_cam
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from push_campaign_service.common.utils.test_utils import (invalid_data_test, missing_keys_test, assert_activity,
-                                                           unexpected_field_test, invalid_value_test,
-                                                           send_request_with_deleted_smartlist)
+                                                           unexpected_field_test, invalid_value_test)
 from push_campaign_service.common.utils.handy_functions import (send_request)
 
 
@@ -122,7 +121,7 @@ class TestCreateCampaign(object):
         data = campaign_data.copy()
         data['smartlist_ids'] = [smartlist_id]
         # Create a campaign with deleted smarlist. API will raise 400 error.
-        send_request_with_deleted_smartlist('post', URL, token_first, data, smartlist_id)
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist('post', URL, token_first, data, smartlist_id)
 
     def test_campaign_creation_with_invalid_name(self, token_first, campaign_data, smartlist_first):
         """
