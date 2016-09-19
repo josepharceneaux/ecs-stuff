@@ -113,24 +113,26 @@ class Candidate(db.Model):
         db.session.commit()
 
     @staticmethod
-    def get_candidate_count_with_skills(skills):
+    def get_candidate_count_with_skills(skills, user_id):
         """
         This method returns number of candidates who have certain skills
+        :param int user_id: User Id
         :param list skills: Candidate skills
         :return: int: Number of candidates with certain skills
         """
         return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
-            .filter(CandidateSkill.description.in_(skills)).distinct().count()
+            .filter(Candidate.user_id == user_id).filter(CandidateSkill.description.in_(skills)).distinct().count()
 
     @staticmethod
-    def get_candidate_count_from_zipcode(zipcode):
+    def get_candidate_count_from_zipcode(zipcode, user_id):
         """
         This method returns number of candidates from a certain zipcode
+        :param int user_id: User Id
         :param str zipcode: Candidate zipcode
         :rtype: int: Number of candidates from zipcode
         """
         return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
-            filter(CandidateAddress.zip_code == zipcode).count()
+            filter(Candidate.user_id == user_id).filter(CandidateAddress.zip_code == zipcode).count()
 
 
 class CandidateStatus(db.Model):

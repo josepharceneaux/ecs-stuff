@@ -35,25 +35,32 @@ class SlackBot(TalentBot):
         :param str slack_user_id: User's slack Id
         :param str message: User's message
         :param str channel_id: Slack channel Id
-        :return: tuple (True|False, None|message, None|slack_client)
+        :return: tuple (True|False, None|message, None|slack_client, user_id|None)
         """
-        slack_user_token = TalentbotAuth.query.with_entities(TalentbotAuth.slack_user_token).\
+        talentbot_auth = TalentbotAuth.query.\
+            with_entities(TalentbotAuth.slack_user_token, TalentbotAuth.user_id).\
             filter_by(slack_user_id=slack_user_id).first()
-        if slack_user_token:
-            slack_user_token = slack_user_token[0]
-            slack_client = SlackClient(slack_user_token)
-            try:
-                at_bot = self.get_bot_id(slack_client)
-                # self.set_bot_state_active(slack_client)
-            except NotFoundError as error:
-                logger.error(error.message)
-                return False, None, None
-            # Slack channel Id starts with 'C' if it is a channel and
-            # Start's with 'D' if it's a private message
-            if (at_bot in message or at_bot+':' in message and channel_id[0] == 'C') \
-                    or (channel_id[0] == 'D' and slack_user_id != at_bot):
-                return True, message.strip(at_bot), slack_client
-        return False, None, None
+        if talentbot_auth:
+            slack_user_token = talentbot_auth[0]
+            user_id = talentbot_auth[1]
+            if slack_user_token and user_id:
+                slack_client = SlackClient(slack_user_token)
+                try:
+                    at_bot = self.get_bot_id(slack_client)
+                    self.set_bot_state_active(slack_client)
+                except NotFoundError as error:
+                    logger.error(error.message)
+                    return False, None, None, None
+                # Slack channel Id starts with 'C' if it is a channel and
+                # Start's with 'D' if it's a private message
+                is_channel = channel_id[0] == 'C'
+                is_private_message = channel_id[0] == 'D'
+                at_bot_colon = '%s:' % at_bot
+                if (at_bot in message or at_bot_colon in message and is_channel) \
+                        or (is_private_message and slack_user_id != at_bot):
+                    return True, message.replace(at_bot, ''), slack_client, user_id
+        logger.info("Not authenticated")
+        return False, None, None, None
 
     def get_bot_id(self, slack_client):
         """
@@ -66,11 +73,11 @@ class SlackBot(TalentBot):
             # retrieve all users so we can find our bot
             users = api_call.get('members')
             for user in users:
-                if 'name' in user and user.get('name') == self.bot_name:
+                if 'name' in user and self.bot_name == user.get('name'):
                     logger.info("Bot ID for %s is %s" % (user['name'], user.get('id')))
-                    temp_at_bot = '<@' + user.get('id') + '>'
+                    temp_at_bot = '<@%s>' % user.get('id')
                     return temp_at_bot
-        raise NotFoundError("could not find bot user with the name " + self.bot_name)
+        raise NotFoundError("could not find bot user with the name %s" % self.bot_name)
 
     def set_bot_state_active(self, slack_client):
         """
@@ -78,7 +85,7 @@ class SlackBot(TalentBot):
         """
         slack_client.rtm_connect()
         api_call_response = slack_client.api_call("users.setActive")
-        logger.info('bot state is active: ' + str(api_call_response.get('ok')))
+        logger.info('bot state is active: %r' % str(api_call_response.get('ok')))
 
     def reply(self, chanel_id, msg, slack_client):
         """
@@ -87,7 +94,7 @@ class SlackBot(TalentBot):
         :param str chanel_id: Slack channel id
         :param str msg: Message received to bot
         """
-        logger.info('slack reply:' + msg)
+        logger.info('slack reply: %s' % msg)
         slack_client.api_call("chat.postMessage", channel=chanel_id,
                               text=msg)
 
@@ -99,13 +106,13 @@ class SlackBot(TalentBot):
         :param str message: User's message
         :param str timestamp: Current message timestamp
         """
-        is_authenticated, message, slack_client = self.authenticate_user(slack_user_id, message, channel_id)
+        is_authenticated, message, slack_client, user_id = self.authenticate_user(slack_user_id, message, channel_id)
         if is_authenticated:
             self.timestamp = timestamp
             self.recent_channel_id = channel_id
             self.recent_user_id = slack_user_id
             try:
-                response_generated = self.parse_message(message)
+                response_generated = self.parse_message(message, user_id)
                 self.reply(channel_id, response_generated, slack_client)
             except (IndexError, NameError, KeyError):
                 error_response = random.choice(self.error_messages)

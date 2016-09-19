@@ -196,15 +196,17 @@ class EmailCampaignBlast(db.Model):
         return "<EmailCampaignBlast (Sends: %s, Opens: %s)>" % (self.sends, self.opens)
 
     @staticmethod
-    def top_performing_email_campaign(year):
+    def top_performing_email_campaign(year, user_id):
         """
         This method returns top performing email campaign from a specific year
+        :param int user_id: User Id
         :param year: Year of campaign started or updated
         :rtype: EmailCampaignBlast
         """
         return EmailCampaignBlast.query.filter(or_(EmailCampaignBlast.updated_datetime.contains(year),
                                                    EmailCampaignBlast.sent_datetime.contains(year))). \
-            filter(EmailCampaign.id == EmailCampaignBlast.campaign_id). \
+            filter(EmailCampaign.id == EmailCampaignBlast.campaign_id).\
+            filter(EmailCampaign.user_id == user_id). \
             order_by(desc(EmailCampaignBlast.opens)).first()
 
 
