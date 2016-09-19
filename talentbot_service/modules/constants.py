@@ -11,7 +11,7 @@ BOT_IMAGE = 'https://d13yacurqjgara.cloudfront.net/users' \
             '/15084/screenshots/702565/attachments/64916/Space_Ghost-iPad---1024x1024.jpg'
 GREETINGS = ['hello', 'hey', 'howdy', 'greetings', 'hi']
 HINT = '''I am Talent Bot @kamal is teaching me new things, right now I can answer following questions for you:_
-1- How many users are there with domain [domain name]?
+1- How many users are there in my domain?
 2- How many candidates are there with skills [skills separated with space]?
 3- How many candidates from zipcode [zipcode]?
 4- What is the top performing email campaign from [year]?
@@ -26,7 +26,7 @@ STANDARD_MSG_LENGTH = 160
 MAILGUN_SENDING_ENDPOINT = "https://api.mailgun.net/v3/sandbox59cbb160934f43d7839e1788604c2c06." \
                            "mailgun.org/messages"
 MAILGUN_FROM = "TalentBot <postmaster@sandbox59cbb160934f43d7839e1788604c2c06.mailgun.org>"
-QUESTIONS = ['how many users are with domain', 'how many candidates with skills',
+QUESTIONS = ['how many users are in my domain', 'how many candidates with skills',
              'how many candidates from zipcode', 'what is the top performing email campaign from',
              'How many candidate leads did x import into the y talent pool last month',
              'what is your name'
@@ -37,6 +37,7 @@ FACEBOOK_API_URI = "https://graph.facebook.com/v2.6/me/messages"
 AUTHENTICATION_FAILURE_MSG = 'Sorry you are not registered to use this service\n' \
                             'Go to the http://www.gettalent.com to register yourself'
 SLACK_AUTH_URI = 'https://slack.com/api/oauth.access'
+PROCESS_MAX_TIME = 500
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"

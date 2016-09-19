@@ -2,6 +2,8 @@
 This module contains talentbot service's endpoints to receive webhook calls from
 Facebook, Email, SMS and Slack
 """
+# Builtin imports
+from multiprocessing import Process
 # Common utils
 from slackclient import SlackClient
 
@@ -13,11 +15,12 @@ from talentbot_service.modules.email_bot import EmailBot
 from talentbot_service.modules.facebook_bot import FacebookBot
 from talentbot_service.modules.slack_bot import SlackBot
 from talentbot_service.modules.sms_bot import SmsBot
+from talentbot_service.modules.process_scheduler import ProcessScheduler
 from constants import TWILIO_NUMBER, ERROR_MESSAGE, STANDARD_MSG_LENGTH, QUESTIONS, BOT_NAME, \
-    MAILGUN_SENDING_ENDPOINT, BOT_IMAGE, TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID, SLACK_AUTH_URI
+    MAILGUN_SENDING_ENDPOINT, BOT_IMAGE, TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID
 from talentbot_service import app, logger
 # 3rd party imports
-from flask import request, json
+from flask import request
 
 mailgun_api_key = app.config[TalentConfigKeys.MAILGUN_API_KEY]
 slack_bot = SlackBot(QUESTIONS, BOT_NAME, ERROR_MESSAGE)
@@ -52,21 +55,23 @@ def listen_slack():
         current_timestamp = event.get('ts')
         channel_id = request.json.get('event').get('channel')
         slack_user_id = request.json.get('event').get('user')
-        if slack_bot.timestamp:
+        '''if slack_bot.timestamp:
             if current_timestamp == slack_bot.timestamp and channel_id == slack_bot.recent_channel_id\
                     and slack_user_id == slack_bot.recent_user_id:
                 logger.info("Same callback again, response wasn't in 3 seconds")
-                return "OK"
+                return "OK" '''
         message = request.json.get('event').get('text')
         if message and channel_id and slack_user_id:
             logger.info("Message slack:%s, Current_timestamp: %s, Previous timestamp: %s"
                         % (message, current_timestamp, slack_bot.timestamp))
-            slack_bot.handle_communication(channel_id, message, slack_user_id, current_timestamp)
-            return "OK"
+            parent_process = Process(target=ProcessScheduler.schedule_slack_process,
+                                     args=(slack_bot, channel_id, message, slack_user_id, current_timestamp))
+            parent_process.start()
+            return 'HTTP_200_OK'
     challenge = request.json.get('challenge')
     if challenge:
         return challenge
-    return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
+    return 'HTTP_200_OK'
 
 
 @app.route(TalentBotApiUrl.SMS_LISTEN, methods=['GET', 'POST'])
@@ -79,7 +84,7 @@ def handle_twilio_webhook():
     message_body = request.form.get('Body')
     if recipient and message_body:
         sms_bot.handle_communication(message_body, recipient)
-    return str('ok')
+    return 'HTTP_200_OK'
 
 
 @app.route(TalentBotApiUrl.EMAIL_LISTEN, methods=['POST'])
@@ -94,7 +99,7 @@ def receive_mail():
     if message and sender:
         logger.info('Received email body: ' + message + ', Sender: ' + sender)
         email_bot.handle_communication(sender, subject, message)
-    return "OK"
+    return 'HTTP_200_OK'
 
 
 @app.route(TalentBotApiUrl.FACEBOOK_LISTEN, methods=['GET'])
@@ -115,14 +120,12 @@ def handle_incoming_messages():
     data = request.json
     sender = data['entry'][0]['messaging'][0]['sender']['id']
     msg = data['entry'][0]['messaging'][0].get('message')
-    current_timestamp = data['entry'][0]['messaging'][0]['timestamp']
-    logger.info('current timestamp:' + current_timestamp.__str__(), 'old timestamp:',
-                facebook_bot.timestamp.__str__())
-    if msg and current_timestamp != facebook_bot.timestamp:
-        facebook_bot.timestamp = current_timestamp
+    if msg and sender:
         message = data['entry'][0]['messaging'][0]['message']['text']
-        facebook_bot.handle_communication(sender, message)
-    return "ok"
+        parent_process = Process(target=ProcessScheduler.schedule_fb_process,
+                                 args=(sender, message, facebook_bot))
+        parent_process.start()
+    return 'HTTP_200_OK'
 
 
 @app.route(TalentBotApiUrl.SLACK_AUTH, methods=['GET', 'POST'])
