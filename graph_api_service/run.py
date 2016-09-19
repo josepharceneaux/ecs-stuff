@@ -1,7 +1,7 @@
 from graph_api_service.application import app
 from graph_api_service.common.routes import GTApis
 from flask_graphql import GraphQLView
-from schema import schema
+from graph_api_service.modules.schema import schema
 
 
 app.add_url_rule(
