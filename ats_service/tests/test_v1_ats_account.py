@@ -108,3 +108,20 @@ class TestATSAccounts(object):
         # TODO: Normalize service output text between endpoints
         values = json.loads(response.text)
         assert values[key] == value
+
+# As we don't have real ATS data yet, we only test the negative result here.
+
+    def test_ats_gt_match_empty(self, access_token_first, account_post_data):
+        """
+        PATCH /v1/ats-candidates/match-link/:account_id/:match-method
+
+        Test that no matches are found.
+
+        :param str access_token_first: authentication token
+        :param dict account_post_data: values for creating an ATS account
+        """
+        account_id = create_and_validate_account(access_token_first, account_post_data)
+        response = send_request('patch', ATSServiceApiUrl.MATCH_AND_LINK % (account_id, u'email'), access_token_first, {})
+        assert response.status_code == codes.OK
+        values = json.loads(response.text)
+        assert values['matches'] == 0

@@ -37,7 +37,6 @@ from ats_utils import (validate_ats_account_data,
                        unlink_ats_candidate,
                        fetch_auth_data,
                        create_ats_object,
-                       ATSMatchMethod,
                        match_ats_and_gt_candidates)
 
 # Why doesn't this work?
@@ -404,23 +403,24 @@ class ATSCandidateLinkService(Resource):
         return ApiResponse(response, headers=headers, status=codes.OK)
 
 
-MATCH_METHOD_DICT = { 'email' : ATSMatchMethod.email, 'phone' : ATSMatchMethod.phone,
-                      'email-and-phone' : ATSMatchMethod.email_and_phone, 'email-or-phone' : ATSMatchMethod.email_or_phone }
-
-
 @api.route(ATSServiceApi.MATCH_AND_LINK)
 class ATSCandidateMatchLinkService(Resource):
     """
     Controller for /v1/ats-candidates/match-link/:account_id/:match-method
     """
 
-    def put(self, account_id, match_method):
+    decorators = [require_oauth()]
+
+    def patch(self, account_id, match_method):
         """
+        PATCH /v1/ats-candidates/match-link/:account_id/:match-method
+
+        Look for matches between an ATS candidate and a getTalent candidate.
+        :param int account_id: The ATS account id.
+        :param string match_method: The method used to determine matches.
+        :return: The number of matches found.
         """
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
-
-        if match_method not in MATCH_METHOD_DICT:
-            raise UnprocessableEntity("Invalid matching method specified", additional_error_info=dict(method=match_method))
 
         matches = match_ats_and_gt_candidates(ats_service.app.logger, account_id, match_method, link=True)
 
@@ -437,6 +437,7 @@ class ATSCandidateRefreshService(Resource):
 
     decorators = [require_oauth()]
 
+    # TODO: Change this to patch
     def get(self, account_id):
         """
         GET /v1/ats-candidates/refresh/:account_id
