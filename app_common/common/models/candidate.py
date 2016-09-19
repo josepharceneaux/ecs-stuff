@@ -378,6 +378,16 @@ class CandidateEmail(db.Model):
     def __repr__(self):
         return "<CandidateEmail (address = '{}')".format(self.address)
 
+    # labels_mapping = {1: 'Primary', 2: 'Home', 3: 'Work', 4: 'Other'}
+    labels_mapping = {'Primary': 1, 'Home': 2, 'Work': 3, 'Other': 4}
+
+    @classmethod
+    def identify_label_id(cls, label):
+        for k, v in cls.labels_mapping.iteritems():
+            if label.title() == v:
+                return k
+            return 4
+
     @classmethod
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
