@@ -1,5 +1,7 @@
 """
 Scan database for number of candidates each domain.
+
+This is a general-purpose script used for mucking about with the DB without Flask.
 """
 
 import sys
