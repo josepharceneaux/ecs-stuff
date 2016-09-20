@@ -21,6 +21,7 @@ class EmailCampaign(db.Model):
     type = db.Column('Type', db.String(63))
     is_hidden = db.Column('IsHidden', db.Boolean, default=False)
     subject = db.Column('emailSubject', db.String(127))
+    description = db.Column('Description', db.Text(65535))
     _from = db.Column('emailFrom', db.String(127))
     reply_to = db.Column('emailReplyTo', db.String(127))
     is_email_open_tracking = db.Column('isEmailOpenTracking', db.Boolean, default=True)

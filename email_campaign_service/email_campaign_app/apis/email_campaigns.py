@@ -149,6 +149,7 @@ class EmailCampaigns(Resource):
                                          oauth_token=request.oauth_token,
                                          name=data['name'],
                                          subject=data['subject'],
+                                         description=data['description'],
                                          _from=data['from'],
                                          reply_to=data['reply_to'],
                                          body_html=data['body_html'],
