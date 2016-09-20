@@ -449,7 +449,9 @@ class ATSCandidateRefreshService(Resource):
 
         ats_name, login_url, user_id, credentials = fetch_auth_data(account_id)
         if not login_url:
-            return '{{"account_id" : {},  "status" : "inactive"}}'.format(account_id)
+            response = json.dumps(dict(account_id=account_id))
+            headers = dict(Location=ATSServiceApiUrl.CANDIDATES_REFRESH % account_id)
+            return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
 
         # Create an ATS-specific object, authenticate
         ats_object = create_ats_object(ats_service.app.logger, ats_name, login_url, user_id, credentials)
