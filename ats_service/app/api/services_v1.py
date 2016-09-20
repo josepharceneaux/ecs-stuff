@@ -240,7 +240,7 @@ class ATSCandidatesService(Resource):
 
         candidates = ATSCandidate.get_all(account_id)
         if candidates:
-            # TODO: Add the ATS-particular entry.
+            # TODO: Consider adding the ATS-particular entry.
             response = json.dumps(dict(candidate_list=candidates))
             headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account_id)
             return ApiResponse(response, headers=headers, status=codes.OK)
@@ -376,7 +376,6 @@ class ATSCandidateLinkService(Resource):
         """
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
-        # TODO: this should return something.
         link_ats_candidate(candidate_id, ats_candidate_id)
 
         response = json.dumps(dict(id=candidate_id, message="ATS candidate successfully linked."))
@@ -395,7 +394,6 @@ class ATSCandidateLinkService(Resource):
         """
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
-        # TODO: this should return something
         unlink_ats_candidate(candidate_id, ats_candidate_id)
 
         response = json.dumps(dict(unlink='success'))
@@ -437,8 +435,7 @@ class ATSCandidateRefreshService(Resource):
 
     decorators = [require_oauth()]
 
-    # TODO: Change this to patch
-    def get(self, account_id):
+    def patch(self, account_id):
         """
         GET /v1/ats-candidates/refresh/:account_id
 
