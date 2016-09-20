@@ -14,6 +14,7 @@ if __name__ == 'ats_service.app.api.ats_utils':
     from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
     from ats_service.common.models.candidate import Candidate
     from ats_service.common.models.user import User
+    from ats_service.common.utils.validators import format_phone_number
     from ats_service.common.error_handling import *
     from ats_service.ats.workday import Workday
 else:
@@ -21,6 +22,7 @@ else:
     from common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
     from common.models.candidate import Candidate
     from common.models.user import User
+    from common.utils.validators import format_phone_number
     from common.error_handling import *
     from ats.workday import Workday
 
@@ -404,6 +406,28 @@ def emails_match(gt_candidate, ats_candidate):
     return False
 
 
+def normalized_phones_match(gt_phone_list, ats_phone_list):
+    """
+    """
+    # Compare. This makes a 4-deep for loop, but we expect the lists to be very small. For Workday, there'll be only one email address.
+    for gt_phone in gt_phone_list:
+        try:
+            normalized_gt_phone = format_phone_number(gt_phone)
+        except:
+            continue
+
+        for ats_phone in ats_phone_list:
+            try:
+                normalized_ats_phone = format_phone_number(ats_phone)
+            except:
+                continue
+
+            if normalized_gt_phone == normalized_ats_phone:
+                return True
+
+    return False
+
+
 def phones_match(gt_candidate, ats_candidate):
     """
     Determine if there are matching phone numbers between a GT candidate and a Workday individual.
@@ -424,14 +448,7 @@ def phones_match(gt_candidate, ats_candidate):
     if not gt_candidate.phones:
         return False
 
-    # Compare. This makes a 4-deep for loop, but we expect the lists to be very small. For Workday, there'll be only one email address.
-    for gt_phone in candidate.phones:
-        for ats_phone in ats_phone_list:
-            # TODO: Normalize the phone number
-            if gt_phone == ats_phone:
-                return True
-
-    return False
+    return normalized_phones_match(candidate.phones, ats_phone_list)
 
 
 def emails_and_phones_match(gt_candidate, ats_candidate):
@@ -469,12 +486,8 @@ def emails_and_phones_match(gt_candidate, ats_candidate):
             if gt_email == ats_email:
                 email_match = True
 
-    # Compare.
-    for gt_phone in candidate.phones:
-        for ats_phone in ats_phone_list:
-            # TODO: Normalize the phone number
-            if gt_phone == ats_phone:
-                phone_match = True
+    # Compare phones.
+    phone_match = normalized_phones_match(candidate.phones, ats_phone_list)
 
     return email_match and phone_match
 
@@ -514,14 +527,8 @@ def emails_or_phones_match(gt_candidate, ats_candidate):
             if gt_email == ats_email:
                 return True
 
-    # Compare.
-    for gt_phone in candidate.phones:
-        for ats_phone in ats_phone_list:
-            # TODO: Normalize the phone number
-            if gt_phone == ats_phone:
-                return True
-
-    return False
+    # Compare phones.
+    return normalized_phones_match(candidate.phones, ats_phone_list)
 
 
 MATCH_DICT = { u'email' : emails_match, u'phone' : phones_match,
