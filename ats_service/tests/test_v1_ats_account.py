@@ -125,3 +125,15 @@ class TestATSAccounts(object):
         assert response.status_code == codes.OK
         values = json.loads(response.text)
         assert values['matches'] == 0
+        response = send_request('patch', ATSServiceApiUrl.MATCH_AND_LINK % (account_id, u'phone'), access_token_first, {})
+        assert response.status_code == codes.OK
+        values = json.loads(response.text)
+        assert values['matches'] == 0
+        response = send_request('patch', ATSServiceApiUrl.MATCH_AND_LINK % (account_id, u'email-and-phone'), access_token_first, {})
+        assert response.status_code == codes.OK
+        values = json.loads(response.text)
+        assert values['matches'] == 0
+        response = send_request('patch', ATSServiceApiUrl.MATCH_AND_LINK % (account_id, u'email-or-phone'), access_token_first, {})
+        assert response.status_code == codes.OK
+        values = json.loads(response.text)
+        assert values['matches'] == 0

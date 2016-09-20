@@ -126,7 +126,7 @@ class Workday(object):
         return [ '415 203 8545' ]
 
     @staticmethod
-    def get_individual_contact_email_address(ats_candidate):
+    def get_individual_contact_email_addresses(ats_candidate):
         """
         Return (from our local database) the main contact email address for an individual
 
@@ -143,7 +143,7 @@ class Workday(object):
         return email_list
 
     @staticmethod
-    def get_individual_contact_phone_number(ats_candidate):
+    def get_individual_contact_phone_numbers(ats_candidate):
         """
         Return (from our local database) the main contact phone number for an individual
 
@@ -155,6 +155,6 @@ class Workday(object):
             return []
 
         # Extract email address from contact_data
-        phone_numbers = workday_phone_from_contact_data(individual.contact_data)
+        phone_list = workday_phone_from_contact_data(individual.contact_data)
 
-        return phone_numbers
+        return phone_list

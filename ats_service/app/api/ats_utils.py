@@ -387,7 +387,7 @@ def emails_match(gt_candidate, ats_candidate):
         return False
 
     # Get the ATS candidate email address with an ATS-specific static method
-    ats_email_list = ATS_CONSTRUCTORS[ATSAccount.get(ats_candidate.ats_id).name].get_individual_contact_email_address(ats_candidate)
+    ats_email_list = ATS_CONSTRUCTORS[ATSAccount.get(ats_candidate.ats_id).name].get_individual_contact_email_addresses(ats_candidate)
     if not ats_email_list:
         return False
 
@@ -412,6 +412,25 @@ def phones_match(gt_candidate, ats_candidate):
     :param ATSCandidate ats_candidate: Workday individual.
     :rtype boolean:
     """
+    if gt_candidate.is_web_hidden:
+        return False
+
+    # Get the ATS candidate email address with an ATS-specific static method
+    ats_phone_list = ATS_CONSTRUCTORS[ATSAccount.get(ats_candidate.ats_id).name].get_individual_contact_phone_numbers(ats_candidate)
+    if not ats_phone_list:
+        return False
+
+    # Compare to GT candidate email address(es)
+    if not gt_candidate.phones:
+        return False
+
+    # Compare. This makes a 4-deep for loop, but we expect the lists to be very small. For Workday, there'll be only one email address.
+    for gt_phone in candidate.phones:
+        for ats_phone in ats_phone_list:
+            # TODO: Normalize the phone number
+            if gt_phone == ats_phone:
+                return True
+
     return False
 
 
@@ -423,7 +442,41 @@ def emails_and_phones_match(gt_candidate, ats_candidate):
     :param ATSCandidate ats_candidate: Workday individual.
     :rtype boolean:
     """
-    return False
+    if gt_candidate.is_web_hidden:
+        return False
+
+    # Get the ATS candidate email address with an ATS-specific static method
+    ats_phone_list = ATS_CONSTRUCTORS[ATSAccount.get(ats_candidate.ats_id).name].get_individual_contact_phone_numbers(ats_candidate)
+    if not ats_phone_list:
+        return False
+
+    # Compare to GT candidate email address(es)
+    if not gt_candidate.phones:
+        return False
+
+    # Get the ATS candidate email address with an ATS-specific static method
+    ats_email_list = ATS_CONSTRUCTORS[ATSAccount.get(ats_candidate.ats_id).name].get_individual_contact_email_addresses(ats_candidate)
+    if not ats_email_list:
+        return False
+
+    # Compare to GT candidate email address(es)
+    if not gt_candidate.emails:
+        return False
+
+    # Compare emails.
+    for gt_email in candidate.emails:
+        for ats_email in ats_email_list:
+            if gt_email == ats_email:
+                email_match = True
+
+    # Compare.
+    for gt_phone in candidate.phones:
+        for ats_phone in ats_phone_list:
+            # TODO: Normalize the phone number
+            if gt_phone == ats_phone:
+                phone_match = True
+
+    return email_match and phone_match
 
 
 def emails_or_phones_match(gt_candidate, ats_candidate):
@@ -434,6 +487,40 @@ def emails_or_phones_match(gt_candidate, ats_candidate):
     :param ATSCandidate ats_candidate: Workday individual.
     :rtype boolean:
     """
+    if gt_candidate.is_web_hidden:
+        return False
+
+    # Get the ATS candidate email address with an ATS-specific static method
+    ats_phone_list = ATS_CONSTRUCTORS[ATSAccount.get(ats_candidate.ats_id).name].get_individual_contact_phone_numbers(ats_candidate)
+    if not ats_phone_list:
+        return False
+
+    # Compare to GT candidate email address(es)
+    if not gt_candidate.phones:
+        return False
+
+    # Get the ATS candidate email address with an ATS-specific static method
+    ats_email_list = ATS_CONSTRUCTORS[ATSAccount.get(ats_candidate.ats_id).name].get_individual_contact_email_addresses(ats_candidate)
+    if not ats_email_list:
+        return False
+
+    # Compare to GT candidate email address(es)
+    if not gt_candidate.emails:
+        return False
+
+    # Compare emails.
+    for gt_email in candidate.emails:
+        for ats_email in ats_email_list:
+            if gt_email == ats_email:
+                return True
+
+    # Compare.
+    for gt_phone in candidate.phones:
+        for ats_phone in ats_phone_list:
+            # TODO: Normalize the phone number
+            if gt_phone == ats_phone:
+                return True
+
     return False
 
 
