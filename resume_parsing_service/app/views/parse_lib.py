@@ -15,7 +15,8 @@ from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
 from resume_parsing_service.app.views.ocr_lib import google_vision_ocr
-from resume_parsing_service.app.views.pdf_utils import convert_pdf_to_text, decrypt_pdf
+from resume_parsing_service.app.views.pdf_utils import (convert_pdf_to_text, convert_pdf_to_png,
+                                                        decrypt_pdf)
 from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.common.utils.talent_s3 import boto3_put
 
@@ -44,10 +45,18 @@ def parse_resume(file_obj, filename_str, cache_key):
     if file_ext == '.pdf':
         file_obj = decrypt_pdf(file_obj)
 
-    if is_resume_image(file_ext, file_obj):
-        # If file is an image, OCR it
+    is_image = is_resume_image(file_ext, file_obj)
+
+    # If file is an image, OCR it
+    if is_image:
+        files = [file_obj]
+        if file_ext == '.pdf':
+            # If its a PDF replace file obj with a png representation of it.
+            # convert_pdf_to_png will close the old StringIO instance.
+            files = convert_pdf_to_png(file_obj)
+
         start_time = time()
-        doc_content = google_vision_ocr(file_obj)
+        doc_content = google_vision_ocr(files)
         logger.info(
             "Benchmark: google_vision_ocr for {}: took {}s to process".format(
                 filename_str, time() - start_time)
@@ -64,6 +73,8 @@ def parse_resume(file_obj, filename_str, cache_key):
             error_message=error_constants.NO_TEXT_EXTRACTED['message'],
             error_code=error_constants.NO_TEXT_EXTRACTED['code']
         )
+
+    file_obj.close() # Free file from memory after attempted upload caused by failure.
 
     try:
         encoded_resume = base64.b64encode(doc_content)

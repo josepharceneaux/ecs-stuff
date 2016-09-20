@@ -10,16 +10,20 @@ class CandidateEdit(db.Model):
     __tablename__ = 'candidate_edit'
     id = db.Column(db.Integer, primary_key=True)
     candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id'))
-    field_id = db.Column(db.Integer)  # Hardcoded constants associated with Candidate's fie ld
+    field_id = db.Column(db.Integer)  # Hardcoded constants associated with Candidate's field
     user_id = db.Column(db.Integer)  # ID of the user updating the Candidate, NULL if OpenWeb is updating
     is_custom_field = db.Column(db.Boolean, default=False)  # If True, field_id must = custom_field.id
     old_value = db.Column(db.String(255))  # Value of the field before update
     new_value = db.Column(db.String(255))  # Value of the field after update
     edit_type = db.Column(TINYINT, default=None)  # 1 for OpenWeb, 2 for Automatic ClearBit, Null otherwise
+    edit_action = db.Column(TINYINT, default=None)  # action used for editing records; e.g. added, deleted, etc.
     edit_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)  # Timestamp of when edit occurred
 
     def __repr__(self):
         return "<CandidateEdit (id = %r)" % self.id
+
+    # Mapped edit actions
+    actions = {1: 'added', 2: 'changed', 3: 'deleted'}
 
     field_dict = {
         'candidate': {

@@ -2,13 +2,13 @@ import datetime
 
 from sqlalchemy import desc
 from sqlalchemy.orm import relationship
+from sqlalchemy import or_
 
 from db import db
 from ..utils.datetime_utils import DatetimeUtils
 from ..utils.validators import (raise_if_not_instance_of,
                                 raise_if_not_positive_int_or_long)
 from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError)
-
 
 __author__ = 'jitesh'
 
@@ -195,6 +195,20 @@ class EmailCampaignBlast(db.Model):
     def __repr__(self):
         return "<EmailCampaignBlast (Sends: %s, Opens: %s)>" % (self.sends, self.opens)
 
+    @staticmethod
+    def top_performing_email_campaign(year, user_id):
+        """
+        This method returns top performing email campaign from a specific year
+        :param int user_id: User Id
+        :param year: Year of campaign started or updated
+        :rtype: EmailCampaignBlast
+        """
+        return EmailCampaignBlast.query.filter(or_(EmailCampaignBlast.updated_datetime.contains(year),
+                                                   EmailCampaignBlast.sent_datetime.contains(year))). \
+            filter(EmailCampaign.id == EmailCampaignBlast.campaign_id).\
+            filter(EmailCampaign.user_id == user_id). \
+            order_by(desc(EmailCampaignBlast.opens)).first()
+
 
 class EmailCampaignSend(db.Model):
     __tablename__ = 'email_campaign_send'
@@ -298,31 +312,62 @@ class UserEmailTemplate(db.Model):
     __tablename__ = 'user_email_template'
     id = db.Column('Id', db.Integer, primary_key=True)
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'), index=True)
-    type = db.Column('Type', db.Integer, server_default=db.text("'0'"))
+    type = db.Column('Type', db.Integer, default=0)
     name = db.Column('Name', db.String(255), nullable=False)
     body_html = db.Column('EmailBodyHtml', db.Text)
     body_text = db.Column('EmailBodyText', db.Text)
-    template_folder_id = db.Column('EmailTemplateFolderId', db.Integer, db.ForeignKey('email_template_folder.id',
-                                                                                      ondelete=u'SET NULL'), index=True)
-    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, server_default=db.text(
-            "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+    template_folder_id = db.Column('EmailTemplateFolderId', db.Integer,
+                                   db.ForeignKey('email_template_folder.id', ondelete=u'SET NULL'), index=True)
+    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, default=0)
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
 
     # Relationships
     template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
                                                                               cascade="all, delete-orphan"))
 
     @classmethod
-    def get_by_id(cls, template_id):
+    def get_by_name(cls, template_name):
         """
-        :type template_id:  int | long
-        :return: UserEmailTemplate
+        This filters email-templates for given name and returns first object
+        :param string template_name: Name of email-template
+        :rtype: UserEmailTemplate
         """
-        return cls.query.get(template_id)
+        return cls.query.filter_by(name=template_name.strip()).first()
 
     @classmethod
-    def get_by_name(cls, template_name):
-        return cls.query.filter_by(name=template_name).first()
+    def query_by_domain_id(cls, domain_id):
+        """
+        This returns query object to get email-templates in given domain_id.
+        :param int|long domain_id: Id of domain of user
+        :rtype: sqlalchemy.orm.query.Query
+        """
+        assert domain_id, 'domain_id not given'
+        from user import User  # This has to be here to avoid circular import
+        return cls.query.join(User).filter(User.domain_id == domain_id)
+
+    @classmethod
+    def get_valid_email_template(cls, email_template_id, user):
+        """
+        This validates given email_template_id is int or long greater than 0.
+        It raises Invalid Usage error in case of invalid email_template_id.
+        It raises ResourceNotFound error if requested template is not found in database.
+        It raises Forbidden error if requested template template does not belong to user's domain.
+        It returns EmailTemplate object if above validation does not raise any error.
+        :param int|long email_template_id: Id of email-template
+        :param User user: User object of logged-in user
+        :rtype: UserEmailTemplate
+        """
+        raise_if_not_positive_int_or_long(email_template_id)
+        # Get email-template object from database
+        email_template = cls.get_by_id(email_template_id)
+        if not email_template:
+            raise ResourceNotFound('Email template(id:%d) not found' % email_template_id)
+        # Verify owned by same domain
+        template_owner_user = email_template.user
+        if template_owner_user.domain_id != user.domain_id:
+            raise ForbiddenError('Email template(id:%d) is not owned by domain(id:%d)'
+                                 % (email_template_id, user.domain_id))
+        return email_template
 
 
 class EmailTemplateFolder(db.Model):
@@ -331,22 +376,13 @@ class EmailTemplateFolder(db.Model):
     name = db.Column('Name', db.String(512))
     parent_id = db.Column('ParentId', db.Integer,  db.ForeignKey('email_template_folder.id', ondelete='CASCADE'),
                           index=True)
-    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, server_default=db.text("'0'"))
+    is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, default=0)
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
-    updated_time = db.Column('UpdatedTime', db.DateTime, nullable=False,
-                             server_default=db.text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
 
     domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
     parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                       cascade="all, delete-orphan"))
-
-    @classmethod
-    def get_by_id(cls, folder_id):
-        """
-        :type folder_id:  int | long
-        :return: EmailTemplateFolder
-        """
-        return cls.query.get(folder_id)
 
     @classmethod
     def get_by_name_and_domain_id(cls, folder_name, domain_id):
@@ -359,3 +395,26 @@ class EmailTemplateFolder(db.Model):
         assert folder_name, "folder_name not provided"
         assert domain_id, "domain_id not provided"
         return cls.query.filter_by(name=folder_name, domain_id=domain_id).first()
+
+    @classmethod
+    def get_valid_template_folder(cls, template_folder_id, user):
+        """
+        This validates given template_folder_id is int or long greater than 0.
+        It raises Invalid Usage error in case of invalid template_folder_id.
+        It raises ResourceNotFound error if requested folder is not found in database.
+        It raises Forbidden error if requested template folder does not belong to user's domain.
+        It returns EmailTemplateFolder object if above validation does not raise any error.
+        :param int|long template_folder_id: Id of email-template-folder
+        :param User user: User object of logged-in user
+        :rtype: EmailTemplateFolder
+        """
+        raise_if_not_positive_int_or_long(template_folder_id)
+        # Get template-folder object from database
+        template_folder = cls.get_by_id(template_folder_id)
+        if not template_folder:
+            raise ResourceNotFound('Email template folder(id:%s) not found' % template_folder_id)
+        # Verify owned by same domain
+        if not template_folder.domain_id == user.domain_id:
+            raise ForbiddenError("Email template folder(id:%d) is not owned by user(id:%d)'s domain(id:%d)"
+                                 % (template_folder_id, user.id, user.domain_id))
+        return template_folder

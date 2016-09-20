@@ -2,7 +2,6 @@
 Helper methods used in social network service test cases. like to create event test data for event creation
 or send request
 """
-
 # Std Imports
 import json
 import datetime

@@ -28,8 +28,8 @@ def upload_failed_IO(f):
                 logger.exception('Uncaught error occured during Resume Processing: {}'.format(e.message))
                 fileIO = args[0]
                 key = args[1]
-                fileIO.seek(0)
-                boto3_put(fileIO.read(), current_app.config['S3_BUCKET_NAME'], key, 'FailedResumes')
+                boto3_put(fileIO.getvalue(), current_app.config['S3_BUCKET_NAME'], key, 'FailedResumes')
+                fileIO.close()
                 raise InternalServerError(
                     error_message=error_constants.RESUME_UNCAUGHT_EXCEPTION['message'],
                     error_code=error_constants.RESUME_UNCAUGHT_EXCEPTION['code']

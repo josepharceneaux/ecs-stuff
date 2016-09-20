@@ -99,6 +99,8 @@ class GTApis(object):
     PUSH_CAMPAIGN_SERVICE_PORT = 8013
     EMAIL_CAMPAIGN_SERVICE_PORT = 8014
     ATS_SERVICE_PORT = 8015
+    MOCK_SERVICE_PORT = 8016
+    TALENTBOT_PORT = 8017
 
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
@@ -116,6 +118,8 @@ class GTApis(object):
     PUSH_CAMPAIGN_SERVICE_NAME = 'push-campaign-service'
     EMAIL_CAMPAIGN_SERVICE_NAME = 'email-campaign-service'
     ATS_SERVICE_NAME = 'ats-service'
+    MOCK_SERVICE_NAME = 'mock-service'
+    TALENTBOT_SERVICE_NAME = 'talentbot-service'
 
     # CORS headers
     CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com$",
@@ -205,7 +209,6 @@ class ResumeApi(object):
     VERSION = 'v1'
     URL_PREFIX = '/' + VERSION + '/'
     PARSE = 'parse_resume'
-    BATCH = 'batch'
 
 
 class ResumeApiUrl(object):
@@ -215,10 +218,7 @@ class ResumeApiUrl(object):
     VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.RESUME_PARSING_SERVICE_NAME, GTApis.RESUME_PARSING_SERVICE_PORT)
     HEALTH_CHECK = _get_health_check_url(HOST_NAME)
-    BASE_URL = HOST_NAME % ('/' + VERSION + '/%s')
     PARSE = HOST_NAME % ('/' + VERSION + '/parse_resume')
-    BATCH_URL = HOST_NAME % ('/' + VERSION + '/batch')
-    BATCH_PROCESS = HOST_NAME % ('/' + VERSION + '/batch/<int:user_id>')
 
 
 class UserServiceApi(object):
@@ -254,6 +254,8 @@ class UserServiceApi(object):
     DOMAIN_AOIS = '/' + VERSION + '/areas_of_interest'
     DOMAIN_AOI = '/' + VERSION + '/areas_of_interest/<int:id>'
 
+    TEST_SETUP = 'test-setup'
+
 
 class UserServiceApiUrl(object):
     """
@@ -288,6 +290,8 @@ class UserServiceApiUrl(object):
 
     DOMAIN_AOIS = HOST_NAME % ('/' + VERSION + '/areas_of_interest')
     DOMAIN_AOI = HOST_NAME % ('/' + VERSION + '/areas_of_interest/%s')
+
+    TEST_SETUP = HOST_NAME % ('/' + VERSION + '/test-setup')
 
 
 class CandidateApi(object):
@@ -643,7 +647,8 @@ class SocialNetworkApi(object):
     VENUE = '/' + VERSION + '/venues/<int:venue_id>'
     EVENT_ORGANIZERS = '/' + VERSION + '/event-organizers'
     EVENT_ORGANIZER = '/' + VERSION + '/event-organizers/<int:organizer_id>'
-    # TODO: This should be /timezones in place of /data/timezones as data is not a resource of social network service (Verify is it timezone or timezones)
+    # TODO: This should be /timezones in place of /data/timezones as data is not a resource of social network service
+    # TODO: (Verify is it timezone or timezones)
     TIMEZONES = '/' + VERSION + '/data/timezones'
     RSVP = '/' + VERSION + '/rsvp'
     IMPORTER = '/' + VERSION + '/import/<string:mode>/<string:social_network>'
@@ -826,6 +831,13 @@ class EmailCampaignApi(object):
     # endpoint /v1/email-campaigns/:id/sends/:id
     # Gives the send object of a campaign for a particular send_id
     SEND_BY_ID = '/' + VERSION + '/email-campaigns/<int:campaign_id>/sends/<int:send_id>'
+    TEST_EMAIL = '/' + VERSION + '/test-email-send'
+
+    """ URLs for email-templates """
+    TEMPLATES = '/' + VERSION + '/email-templates'
+    TEMPLATE = '/' + VERSION + '/email-templates/<int:template_id>'
+    TEMPLATE_FOLDERS = '/' + VERSION + '/email-template-folders'
+    TEMPLATE_FOLDER = '/' + VERSION + '/email-template-folders/<int:folder_id>'
 
 
 class EmailCampaignApiUrl(object):
@@ -840,10 +852,15 @@ class EmailCampaignApiUrl(object):
     URL_REDIRECT = HOST_NAME % ('/' + VERSION + '/redirect/%s')
     BLASTS = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/blasts')
     BLAST = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/blasts/%s')
-    TEMPLATES = HOST_NAME % ('/' + VERSION + '/email-templates')
-    TEMPLATES_FOLDER = HOST_NAME % ('/' + VERSION + '/email-template-folders')
     SENDS = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/sends')
     SEND_BY_ID = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/sends/%s')
+    TEST_EMAIL = HOST_NAME % ('/' + VERSION + '/test-email-send')
+
+    """ URLs for email-templates """
+    TEMPLATES = HOST_NAME % ('/' + VERSION + '/email-templates')
+    TEMPLATE = HOST_NAME % ('/' + VERSION + '/email-templates/%s')
+    TEMPLATE_FOLDERS = HOST_NAME % ('/' + VERSION + '/email-template-folders')
+    TEMPLATE_FOLDER = HOST_NAME % ('/' + VERSION + '/email-template-folders/%s')
 
 
 class ATSServiceApi(object):
@@ -874,3 +891,37 @@ class ATSServiceApiUrl(object):
     CANDIDATES = HOST_NAME % ('/' + VERSION  + '/ats-candidates/%s')
     CANDIDATE_REFRESH = HOST_NAME % ('/' + VERSION  + '/ats-candidates/refresh/%s')
     CANDIDATE_LINK = HOST_NAME % ('/' + VERSION  + '/ats-candidates/link/%s/%s')
+
+
+class MockServiceApi(object):
+    """
+    URLs for Mock Service
+    """
+    VERSION = 'v1'
+    HOST_NAME = _get_host_name(GTApis.MOCK_SERVICE_NAME, GTApis.MOCK_SERVICE_PORT)
+    # Endpoint for mock server
+    MOCK_SERVICE = '/' + VERSION + '/<string:url_type>/<string:social_network>/<path:path>'
+
+
+class MockServiceApiUrl(object):
+    """
+    API relative URLs for mock_service
+    """
+    VERSION = 'v1'
+    HOST_NAME = _get_host_name(GTApis.MOCK_SERVICE_NAME, GTApis.MOCK_SERVICE_PORT)
+
+    # Endpoint for sn mock server
+    MOCK_SERVICE = HOST_NAME % ('/' + VERSION + '/%s/%s')
+
+
+class TalentBotApiUrl(object):
+    """
+    URLs for Talentbot service
+    """
+    VERSION = 'v1'
+    SMS_LISTEN = '/' + VERSION + '/sms-callback'
+    EMAIL_LISTEN = '/' + VERSION + '/email-callback'
+    FACEBOOK_LISTEN = '/' + VERSION + '/facebook-callback'
+    SLACK_LISTEN = '/' + VERSION + '/slack-callback'
+    SLACK_AUTH = '/' + VERSION + '/slack-auth'
+    INDEX = '/' + VERSION + '/index'

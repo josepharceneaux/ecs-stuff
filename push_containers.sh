@@ -5,7 +5,7 @@ echo "Pushing containers"
 
 eval "$(aws ecr get-login --region us-east-1)"
 
-FLASK_APPS="auth-service activity-service resume-parsing-service user-service candidate-service social-network-service candidate-pool-service spreadsheet-import-service scheduler-service sms-campaign-service push-campaign-service email-campaign-service scheduler-service-admin ats-service"
+FLASK_APPS="auth-service activity-service resume-parsing-service user-service candidate-service social-network-service candidate-pool-service spreadsheet-import-service scheduler-service sms-campaign-service push-campaign-service email-campaign-service scheduler-service-admin ats-service talentbot-service"
 
 ecr_registry_url="528222547498.dkr.ecr.us-east-1.amazonaws.com"
 
@@ -34,7 +34,7 @@ if [ $production ] ; then
 	fi
 
 	# Tag it with the version
-	tag_command="docker tag -f ${stage_image} ${ecr_registry_url}/gettalent/${app}:${version_tag}"
+	tag_command="docker tag ${stage_image} ${ecr_registry_url}/gettalent/${app}:${version_tag}"
 	echo $tag_command
 	eval $tag_command
 	if [ $? -ne 0 ] ; then
@@ -73,7 +73,7 @@ else
     for app in ${FLASK_APPS}
     do
 	# Tag the image with a timestamp
-	tag_command="docker tag -f gettalent/${app} ${ecr_registry_url}/gettalent/${app}:${timestamp_tag}"
+	tag_command="docker tag gettalent/${app} ${ecr_registry_url}/gettalent/${app}:${timestamp_tag}"
 	echo $tag_command
         eval $tag_command
 	if [ $? -ne 0 ] ; then

@@ -6,13 +6,12 @@ import sys
 import json
 
 # Third-Part imports
-import pytest
 import requests
 from requests import codes
 
 # App specific imports
 from social_network_service.common.models import db
-from social_network_service.modules.constants import MEETUP
+from social_network_service.common.constants import MEETUP
 from social_network_service.social_network_app import logger
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.routes import SocialNetworkApiUrl
@@ -45,7 +44,7 @@ class TestResourceEvents(object):
         events = response.json()['events']
         assert len(events) == 0, 'There shouldn\'t be some events for test user'
 
-    def test_events_get_with_valid_token(self, token_first, event_in_db):
+    def test_events_get_with_valid_token(self, token_first, event_in_db_second):
         """
         event_in_db fixture creates an event entry in db. So, when request is made, it should return that created event
         for test user
@@ -114,10 +113,10 @@ class TestResourceEvents(object):
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token_first)
         logger.info(response.text)
         if social_network.name.lower() == MEETUP:
-            assert response.status_code == codes.BAD_REQUEST, response.text
+            assert response.status_code == codes.BAD_REQUEST, "Response: {}".format(response.text)
             return
         else:
-            assert response.status_code == codes.NOT_FOUND, response.text
+            assert response.status_code == codes.NOT_FOUND, "Response: {}".format(response.text)
         response = response.json()
 
         assert 'error' in response and response['error']['code'] == EventOrganizerNotFound.error_code, \
@@ -190,7 +189,6 @@ class TestResourceEvents(object):
         assert response['error']['code'] == EventInputMissing.error_code, \
             'There should be an missing field error for %s KeyError' % key
 
-    @pytest.mark.skipif(True, reason='TODO: Modify following tests when meetup sandbox testing issue is resolved')
     def test_meetup_with_valid_address(self, token_first, meetup_event_data, test_meetup_credentials):
         """
         Send Post request with meetup_event data and response should be 201 (event created)
@@ -202,7 +200,6 @@ class TestResourceEvents(object):
         event_id = response.json()['id']
         meetup_event_data['id'] = event_id
 
-    @pytest.mark.skipif(True, reason='TODO: Modify following tests when meetup sandbox testing issue is resolved')
     def test_meetup_with_invalid_address(self, token_first, meetup_event_data, test_meetup_credentials):
         """
         Send post request with invalid meetup_event data (change venue_id) and response should be 404 with error code

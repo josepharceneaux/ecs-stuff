@@ -8,36 +8,20 @@ Syntax: python scan-cluster.py [ stage | prod ]
 import boto3
 import argparse
 
-def validate_http_status(request_name, response):
-    '''
-    Validate that we got a good status on our request.
+from ecs_utils import validate_http_status, gather_task_definitions #, gt_service_name_from_arn
 
-    :param request_name: Caller name to put in error message.
-    :param response: The response to be validated.
-    :return: None.
-    '''
-    
-    try:
-        http_status = response['ResponseMetadata']['HTTPStatusCode']
-    except Exception as e:
-        print "Exception getting HTTP status {}: {}".format(request_name, e.message)
-        exit(1)
 
-    if http_status != 200:
-        print "Error with {}. HTTP Status: {}".format(request_name, http_status)
-        exit(1)
-
-def describe_service(cluster, service):
+def describe_service(cluster, service_arn):
     '''
     Describe an ECS service and its task definition
 
     :param cluster: The cluster to inspect.
-    :param service: The service to describe.
+    :param service_arn: The service to describe.
     :return: None.
     '''
 
     print
-    response = ECS_CLIENT.describe_services(cluster=cluster, services=[ service ])
+    response = ECS_CLIENT.describe_services(cluster=cluster, services=[ service_arn ])
     validate_http_status('describe_services', response)
     print "{} {} Deployments: {}".format(response['services'][0]['serviceName'],
                                          response['services'][0]['status'],
@@ -49,6 +33,8 @@ def describe_service(cluster, service):
     print "Task: Family: {} Revision: {} Status: {}".format(response['taskDefinition']['family'],
                                                             response['taskDefinition']['revision'],
                                                             response['taskDefinition']['status'])
+    # TODO: Add this line
+    # print "Available Task Revsions: {} - {}".format(first_revision, last_revision)
     print "Image: {}".format(response['taskDefinition']['containerDefinitions'][0]['image'])
     print "CPU: {} Memory {}: ".format(response['taskDefinition']['containerDefinitions'][0]['cpu'], response['taskDefinition']['containerDefinitions'][0]['memory'])
 

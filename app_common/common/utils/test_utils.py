@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 # 3rd party imports
 import requests
 from faker import Faker
-from redo import retrier
+from redo import retrier, retry
 from requests import codes
 from contracts import contract
 from dateutil.parser import parse
@@ -19,9 +19,9 @@ from dateutil.parser import parse
 # Service specific imports
 from ..error_codes import ErrorCodes
 from ..tests.conftest import randomword
-from ..constants import SLEEP_TIME, SLEEP_INTERVAL
+from ..constants import SLEEP_TIME, SLEEP_INTERVAL, RETRY_ATTEMPTS
 from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
-                      CandidatePoolApiUrl, SchedulerApiUrl)
+                      CandidatePoolApiUrl, SchedulerApiUrl, ActivityApiUrl)
 from ..custom_contracts import define_custom_contracts
 from ..error_handling import NotFoundError
 from handy_functions import send_request
@@ -373,7 +373,7 @@ def delete_candidate(candidate_id, token, expected_status=(200,)):
     """
     This method sends a DELETE request to Candidate API to delete a candidate given by candidate_id.
     :type candidate_id: int | long
-    :type token: str
+    :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """
@@ -550,6 +550,40 @@ def delete_talent_pool(talent_pool_id, token, expected_status=(200,)):
     return response.json()
 
 
+@contract
+def get_activity(type_id, source_id, source_table, token, expected_status=(200,)):
+    """
+    This method sends a GET request to Activity Service API to get specific activity.
+    :param int | long type_id: activity type id, like 4 for campaign creation
+    :param int | long source_id: id of source object like push campaign id
+    :param string source_table: source table name, like push_campaign
+    :param string token: access token
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
+    url = "{}?type={}&source_id={}&source_table={}".format(ActivityApiUrl.ACTIVITIES, type_id, source_id, source_table)
+    response = send_request('get', url, token)
+    print('common_tests : get_activity: ', response.content)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+@contract
+def assert_activity(type_id, source_id, source_table, token, expected_status=(200,)):
+    """
+    This function uses retry to retrieve activity specified by query params.
+    :param int | long type_id: activity type id, like 4 for campaign creation
+    :param int | long source_id: id of source object like push campaign id
+    :param string source_table: source table name, like push_campaign
+    :param string token: access token
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
+    retry(get_activity, sleeptime=SLEEP_INTERVAL * 2, attempts=RETRY_ATTEMPTS, sleepscale=1,
+          retry_exceptions=(AssertionError,), args=(type_id, source_id, source_table, token),
+          kwargs={"expected_status": expected_status})
+
+
 def get_response(access_token, arguments_to_url, expected_count=1, attempts=20, pause=3, comp_operator='>='):
     """
     Function will a send request to cloud search until desired response is obtained.
@@ -604,4 +638,60 @@ def get_and_assert_zero(url, key, token, sleep_time=SLEEP_TIME):
     attempts = sleep_time / SLEEP_INTERVAL
     for _ in retrier(attempts=attempts, sleeptime=SLEEP_INTERVAL, sleepscale=1):
         assert len(send_request('get', url, token).json()[key]) == 0
+
+
+@contract
+def associate_device_to_candidate(candidate_id, device_id, token, expected_status=(201,)):
+    """
+    This method sends a POST request to Candidate API to associate a OneSignal Device Id to a candidate.
+
+    :type candidate_id: int | long
+    :type device_id: string
+    :type token: string
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
+    data = {
+        'one_signal_device_id': device_id
+    }
+    response = send_request('post', CandidateApiUrl.DEVICES % candidate_id, token, data=data)
+    print('tests : associate_device_to_candidate: %s', response.content)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+@contract
+def get_candidate_devices(candidate_id, token, expected_status=(200,)):
+    """
+    This method sends a GET request to Candidate API to get all associated OneSignal Device Ids to a candidate.
+
+    :type candidate_id: int | long
+    :type token: string
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
+    response = send_request('get', CandidateApiUrl.DEVICES % candidate_id, token)
+    print('tests : get_candidate_devices: %s', response.content)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+@contract
+def delete_candidate_device(candidate_id, device_id,  token, expected_status=(200,)):
+    """
+    This method sends a DELETE request to Candidate API to delete  OneSignal Device that is associated to a candidate.
+
+    :type candidate_id: int | long
+    :type device_id: string
+    :type token: string
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
+    data = {
+        'one_signal_device_id': device_id
+    }
+    response = send_request('delete', CandidateApiUrl.DEVICES % candidate_id, token, data=data)
+    print('tests : delete_candidate_devices: %s', response.content)
+    assert response.status_code in expected_status
+    return response.json()
 

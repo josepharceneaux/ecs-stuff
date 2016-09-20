@@ -19,7 +19,8 @@ SERVICE_TO_REPO_NAME = {'base_service_container': 'base-service-container',
                         'scheduler_service': GTApis.SCHEDULER_SERVICE_NAME,
                         'email_campaign_service': GTApis.EMAIL_CAMPAIGN_SERVICE_NAME,
                         'sms_campaign_service': GTApis.SMS_CAMPAIGN_SERVICE_NAME,
-                        'push_campaign_service': GTApis.PUSH_CAMPAIGN_SERVICE_NAME
+                        'push_campaign_service': GTApis.PUSH_CAMPAIGN_SERVICE_NAME,
+                        'talentbot_service': GTApis.TALENTBOT_SERVICE_NAME
                         }
 
 SERVICE_TO_PORT_NUMBER = {'auth_service': GTApis.AUTH_SERVICE_PORT,
@@ -34,7 +35,8 @@ SERVICE_TO_PORT_NUMBER = {'auth_service': GTApis.AUTH_SERVICE_PORT,
                           'scheduler_service': GTApis.SCHEDULER_SERVICE_PORT,
                           'email_campaign_service': GTApis.EMAIL_CAMPAIGN_SERVICE_PORT,
                           'sms_campaign_service': GTApis.SMS_CAMPAIGN_SERVICE_PORT,
-                          'push_campaign_service': GTApis.PUSH_CAMPAIGN_SERVICE_PORT
+                          'push_campaign_service': GTApis.PUSH_CAMPAIGN_SERVICE_PORT,
+                          'talentbot_service': GTApis.TALENTBOT_PORT
                           }
 
 parser = argparse.ArgumentParser(description='Common files administrator for Docker building.')

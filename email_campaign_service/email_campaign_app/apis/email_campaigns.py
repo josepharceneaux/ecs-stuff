@@ -43,9 +43,10 @@ This file contains API endpoints related to email_campaign_service.
             GET    : Gets all the "sends" records for given email campaign id
                         from db table "email_campaign_sends"
 """
+# Standard Library
+import types
 
 # Third Party
-import types
 import requests
 from flask_restful import Resource
 from werkzeug.utils import redirect
@@ -56,7 +57,7 @@ from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.email_marketing import (create_email_campaign,
                                                             send_email_campaign,
-                                                            update_hit_count)
+                                                            update_hit_count, send_test_email)
 from email_campaign_service.modules.validations import validate_and_format_request_data
 
 # Common utils
@@ -183,6 +184,32 @@ class EmailCampaigns(Resource):
             raise InvalidUsage("is_hidden field should be a boolean, given: %s" % is_hidden)
         email_campaign.update(is_hidden=is_hidden)
         return dict(message="Email campaign (id: %s) updated successfully" % campaign_id), requests.codes.OK
+
+
+@api.route(EmailCampaignApi.TEST_EMAIL)
+class TestEmailResource(Resource):
+    """
+    This resource is to send test email to preview the email before sending the actual email campaign to candidates.
+    """
+    # Access token decorator
+    decorators = [require_oauth()]
+
+    def post(self):
+        """
+            POST /v1/test-email
+            Send email campaign with data (subject, from, body_html, emails)
+            Sample POST Data:
+
+            {
+              "subject": "Test Email",
+              "from": "Zohaib Ijaz",
+              "body_html": "<html><body><h1>Welcome to email campaign service <a href=https://www.github.com>Github</a></h1></body></html>",
+              "emails": ["mzohaib.qc@gmail.com", "mzohaib.qc+1@gmail.com"]
+            }
+        """
+        user = request.user
+        send_test_email(user, request)
+        return {'message': 'test email has been sent to given emails'}, requests.codes.OK
 
 
 @api.route(EmailCampaignApi.SEND)

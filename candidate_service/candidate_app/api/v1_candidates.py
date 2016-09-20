@@ -11,11 +11,11 @@ from datetime import date
 
 # Third Party
 from redo import retry
-from _mysql_exceptions import OperationalError
 
 # Flask specific
 from flask import request
 from flask_restful import Resource
+
 from candidate_service.candidate_app import logger
 
 # Database connection
@@ -69,7 +69,7 @@ from candidate_service.common.models.user import User, Permission
 # Module
 from candidate_service.modules.talent_candidates import (
     fetch_candidate_info, get_candidate_id_from_email_if_exists_in_domain,
-    create_or_update_candidate_from_params, fetch_candidate_edits, fetch_candidate_views,
+    create_or_update_candidate_from_params, fetch_candidate_views,
     add_candidate_view, fetch_candidate_subscription_preference,
     add_or_update_candidate_subs_preference, add_photos, update_photo,
     fetch_aggregated_candidate_views, update_total_months_experience, fetch_candidate_languages,
@@ -1251,26 +1251,6 @@ class CandidateWorkPreferenceResource(Resource):
         return '', 204
 
 
-class CandidateEditResource(Resource):
-    decorators = [require_oauth()]
-
-    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
-    def get(self, **kwargs):
-        """
-        Endpoint: GET /v1/candidates/:id/edits
-        Function will return requested Candidate with all of its edits.
-        """
-        # Get authenticated user & candidate_id
-        authed_user, candidate_id = request.user, kwargs.get('id')
-
-        # Check for candidate's existence and web-hidden status
-        get_candidate_if_validated(authed_user, candidate_id)
-
-        candidate_edits = fetch_candidate_edits(candidate_id=candidate_id)
-        return {'candidate': {'id': candidate_id, 'edits': [
-            candidate_edit for candidate_edit in candidate_edits]}}
-
-
 class CandidateOpenWebResource(Resource):
     decorators = [require_oauth()]
 
@@ -1699,16 +1679,11 @@ class CandidateDeviceResource(Resource):
         # Send a GET request to OneSignal API to confirm that this device id is valid
         response = one_signal_client.get_player(one_signal_device_id)
         if response.ok:
-            # Device exists with id
             candidate_device = CandidateDevice(candidate_id=candidate.id,
                                                one_signal_device_id=one_signal_device_id,
                                                registered_at_datetime=datetime.datetime.utcnow())
-            try:
-                CandidateDevice.save(candidate_device)
-            except OperationalError as e:
-                logger.info('Try again, Error occurred while saving candidate device. Error: %s', e)
-                db.session.rollback()
-                CandidateDevice.save(candidate_device)
+
+            CandidateDevice.save(candidate_device)
 
             return dict(message='Device (id: %s) registered successfully with candidate (id: %s)'
                                 % (candidate_device.id, candidate.id)), 201

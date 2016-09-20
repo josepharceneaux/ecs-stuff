@@ -1,9 +1,22 @@
+"""
+ Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Um-I-Hani, QC-Technologies, <haniqadri.qc@gmail.com>
+         Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
+    Here are the validator functions used in email-campaign-service
+"""
+
+# Standard Library
+import datetime
+
+# Application Specific
+from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.smartlist import Smartlist
 from email_campaign_service.common.models.email_campaign import EmailClient
-from email_campaign_service.common.models.user import User
-from email_campaign_service.common.error_handling import InvalidUsage, UnprocessableEntity, ForbiddenError
-import datetime
+from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity, ForbiddenError)
+
 __author__ = 'jitesh'
 
 
@@ -14,9 +27,10 @@ def validate_datetime(datetime_text, field_name=None):
     :type datetime_text: unicode | basestring
     """
     try:
-        parsed_date = datetime.datetime.strptime(datetime_text, "%Y-%m-%dT%H:%M:%S.%fZ")
+        parsed_date = datetime.datetime.strptime(datetime_text, DatetimeUtils.ISO8601_FORMAT)
     except ValueError:
-        raise InvalidUsage("%s should be in valid format `2016-03-05T04:30:00.000Z`" % field_name if field_name else 'Datetime')
+        raise InvalidUsage("%s should be in valid format `2016-03-05T04:30:00.000Z`"
+                           % field_name if field_name else 'Datetime')
     if parsed_date < datetime.datetime.utcnow():
         raise UnprocessableEntity("The %s cannot be before today.")
     return parsed_date
