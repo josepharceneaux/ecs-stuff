@@ -224,6 +224,8 @@ def assert_and_delete_email(subject, username=app.config[TalentConfigKeys.GT_GMA
     except imaplib.IMAP4_SSL.error as error:
         logger.exception(error.message)
 
+    return msg_ids
+
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False,
                          expected_status=200, abort_time_for_sends=300):
