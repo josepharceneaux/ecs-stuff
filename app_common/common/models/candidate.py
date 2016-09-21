@@ -112,6 +112,28 @@ class Candidate(db.Model):
         cls.query.filter_by(id=candidate_id).first().is_web_hidden = 1
         db.session.commit()
 
+    @staticmethod
+    def get_candidate_count_with_skills(skills, user_id):
+        """
+        This method returns number of candidates who have certain skills
+        :param int user_id: User Id
+        :param list skills: Candidate skills
+        :return: int: Number of candidates with certain skills
+        """
+        return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
+            .filter(Candidate.user_id == user_id).filter(CandidateSkill.description.in_(skills)).distinct().count()
+
+    @staticmethod
+    def get_candidate_count_from_zipcode(zipcode, user_id):
+        """
+        This method returns number of candidates from a certain zipcode
+        :param int user_id: User Id
+        :param str zipcode: Candidate zipcode
+        :rtype: int: Number of candidates from zipcode
+        """
+        return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
+            filter(Candidate.user_id == user_id).filter(CandidateAddress.zip_code == zipcode).count()
+
 
 class CandidateStatus(db.Model):
     __tablename__ = 'candidate_status'

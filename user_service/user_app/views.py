@@ -139,6 +139,7 @@ def reset_password(token):
         user.reset_password_key = ''
         user.password = gettalent_generate_password_hash(password)
         user.password_reset_time = datetime.utcnow()
+        user.is_disabled = 0
         db.session.commit()
         return '', 204
 
