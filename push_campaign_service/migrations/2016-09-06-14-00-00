@@ -2,7 +2,7 @@
 This script adds a new role "TEST_ADMIN" in role table with all CRU permissions but no delete permissions.
 """
 
-from push_campaign_service.app import db
+from push_campaign_service.common.models.db import db
 from sqlalchemy import text
 
 db.session.execute(
