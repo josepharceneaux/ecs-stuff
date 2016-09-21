@@ -52,8 +52,8 @@ class OAuthClient:
     def generate_timestamp(self):
         return int(time.time())
 
-    def generate_nonce(self, length=8):
-        return ''.join([os.urandom(4).encode('hex') for i in range(length)])
+    def generate_nonce(self):
+        return os.urandom(4).encode('hex')
 
     def get_normalized_parameters(self):
         """Return a string that contains the parameters that must be signed."""
