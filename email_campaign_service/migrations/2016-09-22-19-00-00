@@ -1,0 +1,14 @@
+"""
+This script adds a Description column in email_campaign table.
+"""
+
+from email_campaign_service.common.models.db import db
+from sqlalchemy import text
+
+result = db.session.execute(text("show columns from email_campaign"))
+columns = list(result)
+present = [col for col in columns if 'description' in col.values()]
+if len(present) == 0:
+    db.session.execute(
+        text("ALTER TABLE email_campaign ADD Description MEDIUMTEXT;")
+    )
