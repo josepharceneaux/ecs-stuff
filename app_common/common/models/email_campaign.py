@@ -68,6 +68,7 @@ class EmailCampaign(db.Model):
                        "name": self.name,
                        "frequency": self.frequency.name if self.frequency else None,
                        "subject": self.subject,
+                       "description": self.description,
                        "from": self._from,
                        "reply_to": self.reply_to,
                        "start_datetime": DatetimeUtils.utc_isoformat(self.start_datetime) if self.start_datetime else None,
