@@ -53,7 +53,6 @@ from werkzeug.utils import redirect
 from flask import request, Blueprint, jsonify
 
 # Service Specific
-from app_common.common.utils.api_utils import SORT_TYPES
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.email_marketing import (create_email_campaign,
@@ -73,7 +72,7 @@ from email_campaign_service.common.error_handling import (InvalidUsage, NotFound
                                                           ForbiddenError, MethodNotAllowedError)
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response,
-                                                           get_pagination_params)
+                                                           get_pagination_params, SORT_TYPES)
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
