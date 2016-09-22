@@ -181,7 +181,7 @@ class Eventbrite(SocialNetworkBase):
         if response.ok:
             return json_response['id']
         elif response.status_code == requests.codes.BAD_REQUEST and json_response.get('error') == "ARGUMENTS_ERROR":
-            raise InvalidUsage('Organizer name already exists on Eventbrite', error_code=ORGANIZER_ALREADY_EXISTS)
+            raise InvalidUsage('Organizer name `{}` already exists on Eventbrite'.format(data['name']), error_code=ORGANIZER_ALREADY_EXISTS)
         raise InternalServerError('Error occurred while creating organizer.',
                                   additional_error_info=dict(error=json_response))
 
