@@ -16,15 +16,16 @@ In this module, we have tests for following endpoints
 import re
 import requests
 from redo import retry
+from random import randint
 from datetime import datetime, timedelta
 
 # Application Specific
-
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.tests.conftest import fake, uuid
+from email_campaign_service.common.utils.api_utils import SORT_TYPES
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.models.misc import (UrlConversion, Frequency)
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity,
                                                           ForbiddenError)
@@ -163,6 +164,38 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first,
                                                     pagination_query='?page=2')
         assert len(email_campaigns) == 0
+
+    def test_get_campaigns_with_invalid_sort_type(self, headers):
+        """
+        Test GET API of email_campaigns for getting all campaigns in logged-in user's domain with invalid value
+        of parameter sort_type. Valid values are "ASC" or "DESC"
+        This should result in invalid usage error.
+        """
+        url = EmailCampaignApiUrl.CAMPAIGNS + '?sort_type=%s' % fake.word()
+        response = requests.get(url, headers=headers)
+        assert response.status_code == requests.codes.BAD
+        for sort_type in SORT_TYPES:
+            assert sort_type in response.json()['error']['message']
+
+    def test_get_campaigns_with_invalid_value_of_sort_by(self, headers):
+        """
+        Test GET API of email_campaigns for getting all campaigns in logged-in user's domain with invalid value
+        of parameter sort_by. Valid values are "name" and "added_datetime".
+        This should result in invalid usage error.
+        """
+        url = EmailCampaignApiUrl.CAMPAIGNS + '?sort_by=%s' % fake.sentence()
+        response = requests.get(url, headers=headers)
+        assert response.status_code == requests.codes.BAD
+
+    def test_get_campaigns_with_invalid_value_of_is_hidden(self, headers):
+        """
+        Test GET API of email_campaigns for getting all campaigns in logged-in user's domain with invalid value
+        of parameter is_hidden. Valid values are 0 or 1.
+        This should result in invalid usage error.
+        """
+        url = EmailCampaignApiUrl.CAMPAIGNS + '?is_hidden=%d' % randint(2, 10)
+        response = requests.get(url, headers=headers)
+        assert response.status_code == requests.codes.BAD
 
 
 class TestCreateCampaign(object):

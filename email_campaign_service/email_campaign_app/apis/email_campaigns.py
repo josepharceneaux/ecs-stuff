@@ -53,6 +53,7 @@ from werkzeug.utils import redirect
 from flask import request, Blueprint, jsonify
 
 # Service Specific
+from app_common.common.utils.api_utils import SORT_TYPES
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.email_marketing import (create_email_campaign,
@@ -121,7 +122,11 @@ class EmailCampaigns(Resource):
                 raise InvalidUsage('`is_hidden` can be either 0 or 1')
 
             if sort_by not in ('added_datetime', 'name'):
-                raise InvalidUsage('Value of sort parameter is not valid')
+                raise InvalidUsage('Value of sort_by parameter is not valid')
+
+            if sort_type not in SORT_TYPES:
+                raise InvalidUsage('Value of sort_type parameter is not valid. Valid values are %s'
+                                   % list(SORT_TYPES))
 
             # Get all email campaigns from logged in user's domain
             query = EmailCampaign.get_by_domain_id_and_filter_by_name(

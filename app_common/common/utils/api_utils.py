@@ -32,6 +32,7 @@ define_custom_contracts()
 DEFAULT_PAGE = 1
 DEFAULT_PAGE_SIZE = 10
 MAX_PAGE_SIZE = 50
+SORT_TYPES = ('ASC', 'DESC')
 
 
 class ApiResponse(Response):
