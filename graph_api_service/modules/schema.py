@@ -10,7 +10,6 @@ from graph_api_service.common.error_handling import InternalServerError
 class CandidateAddressType(graphene.ObjectType):
     name = 'CandidateAddress'
 
-    id = graphene.Int()
     address_line_1 = graphene.String()
     address_line_2 = graphene.String()
     city = graphene.String()
@@ -19,26 +18,59 @@ class CandidateAddressType(graphene.ObjectType):
     po_box = graphene.String()
     is_default = graphene.Boolean()
     coordinates = graphene.String()
-    updated_time = graphene.String()  # Todo: update name to 'updated_datetime' & format timezones
+    updated_time = graphene.String()
     iso3166_subdivision = graphene.String()
     iso3166_country = graphene.String()
+
+    def resolve_address_line_1(self, args, info):
+        return self.get('address_line_1')
+
+    def resolve_address_line_2(self, args, info):
+        return self.get('address_line_2')
+
+    def resolve_city(self, args, info):
+        return self.get('city')
+
+    def resolve_state(self, args, info):
+        return self.get('state')
+
+    def resolve_zip_code(self, args, info):
+        return self.get('zip_code')
+
+    def resolve_po_box(self, args, info):
+        return self.get('po_box')
+
+    def resolve_is_default(self, args, info):
+        return self.get('is_default')
+
+    def resolve_coordinates(self, args, info):
+        return self.get('coordinates')
+
+    def resolve_updated_time(self, args, info):
+        return self.get('updated_time')
+
+    def resolve_iso3166_subdivision(self, args, info):
+        return self.get('iso3166_subdivision')
+
+    def resolve_iso3166_country(self, args, info):
+        return self.get('iso3166_country')
 
 
 class CandidateEmailType(graphene.ObjectType):
     name = 'CandidateEmail'
 
-    id = graphene.Int()
     address = graphene.String()
-    email_label = graphene.String()
+    label = graphene.String()
     is_default = graphene.Boolean()
 
-    labels_mapping = {1: 'Primary', 2: 'Home', 3: 'Work', 4: 'Other'}
+    def resolve_label(self, args, info):
+        return self.get('label')
 
-    def resolve_email_label(self, args, info):
-        for label_id, label in self.labels_mapping.iteritems():
-            if self.email_label == label:
-                return label
-        return 'Other'
+    def resolve_address(self, args, info):
+        return self.get('address')
+
+    def resolve_is_default(self, args, info):
+        return self.get('is_default')
 
 
 class DegreeBulletType(graphene.ObjectType):
@@ -115,36 +147,69 @@ class CandidateType(graphene.ObjectType):
     source_id = graphene.Int()
     culture_id = graphene.Int()
 
+    def resolve_first_name(self, args, info):
+        return self.get('first_name')
+
+    def resolve_middle_name(self, args, info):
+        return self.get('middle_name')
+
+    def resolve_last_name(self, args, info):
+        return self.get('last_name')
+
+    def resolve_formatted_name(self, args, info):
+        return self.get('formatted_name')
+
+    def resolve_user_id(self, args, info):
+        return self.get('user_id')
+
+    def resolve_filename(self, args, info):
+        return self.get('filename')
+
+    def resolve_objective(self, args, info):
+        return self.get('objective')
+
+    def resolve_summary(self, args, info):
+        return self.get('summary')
+
+    def resolve_total_months_experience(self, args, info):
+        return self.get('total_months_experience')
+
+    def resolve_added_time(self, args, info):
+        return self.get('added_time')
+
+    def resolve_updated_datetime(self, args, info):
+        return self.get('updated_datetime')
+
+    def resolve_candidate_status_id(self, args, info):
+        return self.get('candidate_status_id')
+
+    def resolve_source_id(self, args, info):
+        return self.get('source_id')
+
+    def resolve_culture_id(self, args, info):
+        return self.get('culture_id')
+
     # ***** Secondary attributes *****
     addresses = graphene.List(CandidateAddressType)
     emails = graphene.List(CandidateEmailType)
-    educations = graphene.List(CandidateEducationType)
 
-    # ***** Resolvers *****
+    # educations = List(CandidateEducationType)
+
     def resolve_addresses(self, args, info):
-        """
-        Will return all of candidate's addresses using SQLAlchemy's relationships
-        """
         return self.addresses
 
     def resolve_emails(self, args, info):
-        """
-        Will return all of candidate's emails using SQLAlchemy's relationships
-        """
-        return self.emails
+        return self.get('emails')
 
-    def resolve_educations(self, args, info):
-        """
-        Will return all of candidate's educations using SQLAlchemy's relationships
-        """
-        return self.educations
+    # def resolve_educations(self, args, info):
+    #     return self.get('educations')
 
 
 try:
-    from graph_api_service.modules.query import QueryType
+    from graph_api_service.modules.query import QueryCandidate
     from mutation import CandidateMutation
 
-    schema = graphene.Schema(query=QueryType, mutation=CandidateMutation)
+    schema = graphene.Schema(query=QueryCandidate, mutation=CandidateMutation)
 except Exception as e:
-    print "NO WORK!"
+    print "Error: {}".format(e.message)
     raise InternalServerError('Unable to create schema because: {}'.format(e.message))
