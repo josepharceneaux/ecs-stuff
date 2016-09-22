@@ -20,7 +20,9 @@ import pycountry
 from flask import current_app
 from resume_parsing_service.app import logger
 from resume_parsing_service.app.constants import error_constants
-from resume_parsing_service.app.views.OauthClient import OAuthClient
+# from resume_parsing_service.app.views.OauthClient import OAuthClient
+from resume_parsing_service.app.views.oauth_client2 import OAuthClient
+# from resume_parsing_service.app.views.oauth1_utils import gen_auth, gen_key, gen_string
 from resume_parsing_service.common.error_handling import InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 from resume_parsing_service.common.utils.handy_functions import normalize_value
@@ -40,13 +42,17 @@ def fetch_optic_response(resume, filename_str):
     """
     start_time = time()
     bg_url = current_app.config['BG_URL']
+    # oauth = OAuthClient(url=bg_url,
+    #                     method='POST', consumerKey='StevePeck',
+    #                     consumerSecret=current_app.config['CONSUMER_SECRET'],
+    #                     token='Utility',
+    #                     tokenSecret=current_app.config['TOKEN_SECRET'],
+    #                     signatureMethod='HMAC-SHA1',
+    #                     oauthVersion='1.0')
     oauth = OAuthClient(url=bg_url,
-                        method='POST', consumerKey='StevePeck',
+                        consumerKey='StevePeck',
                         consumerSecret=current_app.config['CONSUMER_SECRET'],
-                        token='Utility',
-                        tokenSecret=current_app.config['TOKEN_SECRET'],
-                        signatureMethod='HMAC-SHA1',
-                        oauthVersion='1.0')
+                        tokenSecret=current_app.config['TOKEN_SECRET'])
     auth = oauth.get_authorizationString()
     headers = {
         'accept': 'application/xml',

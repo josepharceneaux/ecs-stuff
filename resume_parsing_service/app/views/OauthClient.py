@@ -1,7 +1,7 @@
 import binascii
-import os
 import hashlib  # 2.5+
 import hmac
+import os
 import time
 import urllib
 import urlparse
@@ -47,10 +47,8 @@ class OAuthClient:
     def generate_timestamp(self):
         return int(time.time())
 
-
     def generate_nonce(self):
         return os.urandom(4).encode('hex')
-
 
     def get_normalized_parameters(self):
         """Return a string that contains the parameters that must be signed."""
