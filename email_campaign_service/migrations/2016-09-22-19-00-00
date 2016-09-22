@@ -10,5 +10,5 @@ columns = list(result)
 present = [col for col in columns if 'description' in col.values()]
 if len(present) == 0:
     db.session.execute(
-        text("ALTER TABLE email_campaign ADD Description MEDIUMTEXT;")
+        text("ALTER TABLE `email_campaign` ADD `Description` MEDIUMTEXT")
     )
