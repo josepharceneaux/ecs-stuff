@@ -1483,7 +1483,8 @@ class CandidatePreferenceResource(Resource):
         # Ensure Candidate exists & is not web-hidden
         candidate_object = get_candidate_if_validated(authed_user, candidate_id)
 
-        if (request.candidate and request.candidate.id != candidate_id) or (request.user.domain_id != candidate_object.user.domain_id):
+        if (request.candidate and request.candidate.id != candidate_id) or (
+                    request.user and request.user.domain_id != candidate_object.user.domain_id):
             raise ForbiddenError("You are not authorized to change subscription preference of "
                                  "candidate: %s" % candidate_id)
 
@@ -1502,7 +1503,8 @@ class CandidatePreferenceResource(Resource):
         # Ensure Candidate exists & is not web-hidden
         candidate_object = get_candidate_if_validated(authed_user, candidate_id)
 
-        if (request.candidate and request.candidate.id != candidate_id) or (request.user.domain_id != candidate_object.user.domain_id):
+        if (request.candidate and request.candidate.id != candidate_id) or (
+                    request.user and request.user.domain_id != candidate_object.user.domain_id):
             raise ForbiddenError("You are not authorized to change subscription preference of "
                                  "candidate: %s" % candidate_id)
 
@@ -1541,7 +1543,8 @@ class CandidatePreferenceResource(Resource):
         # Ensure Candidate exists & is not web-hidden
         candidate_object = get_candidate_if_validated(authed_user, candidate_id)
 
-        if (request.candidate and request.candidate.id != candidate_id) or (request.user.domain_id != candidate_object.user.domain_id):
+        if (request.candidate and request.candidate.id != candidate_id) or (
+                    request.user and request.user.domain_id != candidate_object.user.domain_id):
             raise ForbiddenError("You are not authorized to change subscription preference of "
                                  "candidate: %s" % candidate_id)
 
@@ -1580,7 +1583,8 @@ class CandidatePreferenceResource(Resource):
         # Ensure Candidate exists & is not web-hidden
         candidate_object = get_candidate_if_validated(authed_user, candidate_id)
 
-        if (request.candidate and request.candidate.id != candidate_id) or (request.user.domain_id != candidate_object.user.domain_id):
+        if (request.candidate and request.candidate.id != candidate_id) or (
+                    request.user and request.user.domain_id != candidate_object.user.domain_id):
             raise ForbiddenError("You are not authorized to change subscription preference of "
                                  "candidate: %s" % candidate_id)
 
