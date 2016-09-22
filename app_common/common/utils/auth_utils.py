@@ -15,12 +15,13 @@ from ..error_handling import *
 from ..routes import AuthApiUrl
 
 
-def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
+def require_oauth(allow_jwt_based_auth=True, allow_null_user=False, allow_candidate=False):
     """
     This method will verify Authorization header of request using getTalent AuthService or Basic HTTP secret-key based
     Auth and will set request.user and request.oauth_token
     :param bool allow_jwt_based_auth: Either JWT based authentication is supported for a particular endpoint or not ?
     :param allow_null_user: Is user necessary for Authorization or not ?
+    :param allow_candidate: Allow Candidate Id in JWT payload
     """
 
     def auth_wrapper(func):
@@ -36,7 +37,7 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
                 try:
                     secret_key_id = request.headers['X-Talent-Secret-Key-ID']
                     json_web_token = oauth_token.replace('Bearer', '').strip()
-                    User.verify_jw_token(secret_key_id, json_web_token, allow_null_user)
+                    User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
                     request.oauth_token = ''
                     return func(*args, **kwargs)
                 except KeyError:
@@ -59,6 +60,7 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
                 valid_user_id = response.json().get('user_id')
                 request.user = User.query.get(valid_user_id)
                 request.oauth_token = oauth_token
+                request.candidate = None
                 return func(*args, **kwargs)
 
         return authenticate

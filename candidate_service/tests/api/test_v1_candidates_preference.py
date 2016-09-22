@@ -86,7 +86,6 @@ class TestGetSubscriptionPreference(object):
         print response_info(resp)
         assert resp.status_code == 401 and resp.json()['error']['code'] == 11
 
-
     def test_get_non_existing_candidate_preference(self, access_token_first, user_first, talent_pool):
         """
         Test: Retrieve candidate's preferences that don't exist in the database
