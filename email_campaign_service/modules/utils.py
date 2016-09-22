@@ -66,7 +66,7 @@ def get_candidates_from_smartlist(list_id, candidate_ids_only=False, user_id=Non
 @cache.cached(timeout=86400, key_prefix="X-TALENT-SERVER-KEY")
 def jwt_security_key():
     """
-    This function will return secret_key_id against which a secret_id will be stored in redis
+    This function will return secret_key_id against which a secret_key will be stored in redis
     :return:
     """
     secret_key_id = str(uuid.uuid4())[0:10]

@@ -106,7 +106,7 @@ class User(db.Model):
                 request.candidate = None
                 return
         elif allow_candidate:
-            if 'candidate_id'in data:
+            if 'candidate_id' in data:
                 candidate = Candidate.query.get(data['candidate_id'])
                 if candidate:
                     request.candidate = candidate
