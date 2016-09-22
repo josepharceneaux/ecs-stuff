@@ -561,6 +561,7 @@ class CandidateResource(Resource):
         :return:    A dict of candidate info
         """
         start_time = time()
+
         # Get authenticated user
         authed_user = request.user
 
