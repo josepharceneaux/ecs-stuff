@@ -164,7 +164,7 @@ class Eventbrite(SocialNetworkBase):
         """
         mandatory_input_data = ['name', 'about']
         # gets fields which are missing
-        missing_items = find_missing_items(data, mandatory_input_data, verify_all=True)
+        missing_items = find_missing_items(data, mandatory_input_data)
         if missing_items:
             raise InvalidUsage("Mandatory Input Missing: %s" % missing_items)
 
@@ -180,8 +180,8 @@ class Eventbrite(SocialNetworkBase):
         json_response = response.json()
         if response.ok:
             return json_response['id']
-        elif response.status_code == requests.codes.BAD_REQUEST and json_response.get('error') == "NOT_ALLOWED":
-            raise InvalidUsage('Organizer name already exists', error_code=ORGANIZER_ALREADY_EXISTS)
+        elif response.status_code == requests.codes.BAD_REQUEST and json_response.get('error') == "ARGUMENTS_ERROR":
+            raise InvalidUsage('Organizer name already exists on Eventbrite', error_code=ORGANIZER_ALREADY_EXISTS)
         raise InternalServerError('Error occurred while creating organizer.',
                                   additional_error_info=dict(error=json_response))
 
