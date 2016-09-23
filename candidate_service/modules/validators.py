@@ -79,10 +79,29 @@ def get_candidate_if_validated(user, candidate_id):
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
                             error_code=custom_error.CANDIDATE_IS_HIDDEN)
 
-    if user.role.name != 'TALENT_ADMIN' and candidate.user.domain_id != user.domain_id:
+    if user and user.role.name != 'TALENT_ADMIN' and candidate.user.domain_id != user.domain_id:
         raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
     return candidate
+
+
+def authenticate_candidate_preference_request(request_object, candidate_id):
+    """
+    This method will check either user or candidate is authorized to access Candidate Preference EndPoint
+    :param request_object: Flask Request Object
+    :param candidate_id: Id of candidate
+    :return:
+    """
+    # Ensure Candidate exists & is not web-hidden
+    candidate_object = get_candidate_if_validated(request_object.user, candidate_id)
+
+    if (request_object.candidate and request_object.candidate.id != candidate_id) or (
+                request_object.user and request_object.user.domain_id != candidate_object.user.domain_id):
+        raise ForbiddenError("You are not authorized to change subscription preference of "
+                             "candidate: %s" % candidate_id)
+
+    return candidate_object
+
 
 
 def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):

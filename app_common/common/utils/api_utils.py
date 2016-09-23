@@ -96,7 +96,7 @@ def get_pagination_params(request, default_page=DEFAULT_PAGE, default_per_page=D
         assert 0 < per_page <= max_per_page, 'Give per_page value %s' % per_page
     except:
         raise InvalidUsage('per_page should be a number with maximum value %s. Given %s'
-                           % (default_per_page, per_page))
+                           % (max_per_page, per_page))
 
     return page, per_page
 

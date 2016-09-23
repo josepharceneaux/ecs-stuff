@@ -11,7 +11,6 @@ In this module, we have tests for following endpoints
     5- GET /v1/redirect
 
 """
-
 # Packages
 import re
 import requests
@@ -23,10 +22,10 @@ from datetime import datetime, timedelta
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.tests.conftest import fake, uuid
-from email_campaign_service.common.utils.api_utils import SORT_TYPES
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.models.misc import (UrlConversion, Frequency)
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
+from email_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE, SORT_TYPES
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity,
                                                           ForbiddenError)
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, HEALTH_CHECK)
@@ -196,6 +195,17 @@ class TestGetCampaigns(object):
         url = EmailCampaignApiUrl.CAMPAIGNS + '?is_hidden=%d' % randint(2, 10)
         response = requests.get(url, headers=headers)
         assert response.status_code == requests.codes.BAD
+
+    def test_get_campaigns_with_paginated_response_using_invalid_per_page(self, headers):
+        """
+        Test GET API of email_campaigns for getting all campaigns in logged-in user's domain using
+        paginated response. Here we use per_page to be greater than maximum allowed value. It should
+        result in invalid usage error.
+        """
+        url = EmailCampaignApiUrl.CAMPAIGNS + '?per_page=%d' % randint(MAX_PAGE_SIZE+1, 2*MAX_PAGE_SIZE)
+        response = requests.get(url, headers=headers)
+        assert response.status_code == requests.codes.BAD
+        assert str(MAX_PAGE_SIZE) in response.json()['error']['message']
 
 
 class TestCreateCampaign(object):
