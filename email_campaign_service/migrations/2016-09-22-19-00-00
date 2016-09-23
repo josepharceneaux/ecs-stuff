@@ -7,7 +7,7 @@ from sqlalchemy import text
 
 result = db.session.execute(text("show columns from email_campaign"))
 columns = list(result)
-present = [col for col in columns if 'description' in col.values()]
+present = [col for col in columns if 'Description' in col.values()]
 if len(present) == 0:
     db.session.execute(
         text("ALTER TABLE `email_campaign` ADD `Description` MEDIUMTEXT")
