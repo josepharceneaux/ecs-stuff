@@ -29,6 +29,7 @@ from flask import current_app
 from ..models.db import db
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
+from ..models.smartlist import Smartlist
 from ..models.misc import (UrlConversion, Activity)
 from ..models.push_campaign import PushCampaignBlast
 from ..models.email_campaign import EmailCampaignBlast
@@ -1134,6 +1135,11 @@ class CampaignBase(object):
                                error_code=CampaignException.EMPTY_BODY_TEXT)
         # Get smartlists associated to this campaign
         campaign_smartlists = self.campaign.smartlists.all()
+        hidden_smarlists = filter(lambda smartlist: Smartlist.get(smartlist.smartlist_id).is_hidden,
+                                  campaign_smartlists)
+        if hidden_smarlists:
+            raise InvalidUsage('Associated Smartlists (ids: %s) are deleted and can not be accessed'
+                               % map(lambda sm: sm.id, hidden_smarlists))
         if not campaign_smartlists:
             raise InvalidUsage('No smartlist is associated with %s(id:%s). (User(id:%s))' % (self.campaign_type,
                                                                                              self.campaign.id,
