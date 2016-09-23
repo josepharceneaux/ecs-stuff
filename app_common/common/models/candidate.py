@@ -628,12 +628,12 @@ class SocialNetwork(db.Model):
     @classmethod
     def get_by_name(cls, name):
         assert name
-        return cls.query.filter(SocialNetwork.name == name.strip()).one()
+        return cls.query.filter(SocialNetwork.name == name.strip()).first()
 
     @classmethod
     def get_by_id(cls, id):
         assert isinstance(id, (int, long))
-        return cls.query.filter(SocialNetwork.id == id).one()
+        return cls.query.filter(SocialNetwork.id == id).first()
 
     @classmethod
     def get_all(cls):
