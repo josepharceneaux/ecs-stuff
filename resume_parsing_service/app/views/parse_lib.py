@@ -68,7 +68,8 @@ def parse_resume(file_obj, filename_str, cache_key):
     if not doc_content or len(doc_content) < 10: #  If doc content is < 10 not worth parsing.
         bucket = current_app.config['S3_BUCKET_NAME']
         boto3_put(file_obj.getvalue(), bucket, filename_str, 'FailedResumes')
-        logger.exception("Unable to determine the documents contents of: {}".format(filename_str))
+        logger.error('Unable document contents.\nFilename {}\n Contents {}'.format(
+            filename_str, doc_content))
         file_obj.close()  # Free file from memory after attempted upload caused by failure.
         raise InvalidUsage(
             error_message=error_constants.NO_TEXT_EXTRACTED['message'],
