@@ -8,7 +8,7 @@ import requests
 from requests import codes
 
 # App specific imports
-from social_network_service.common.utils.test_utils import missing_keys_test
+from social_network_service.common.utils.test_utils import missing_keys_test, fake
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.models.event_organizer import EventOrganizer
@@ -58,7 +58,7 @@ class TestOrganizers(object):
         """
         event_organizer = {
             "user_id": user_first['id'],
-            "name": datetime.now().strftime('%Y%m%dT%H%M%S'),
+            "name": "organizer_%s" % fake.uuid4(),
             "email": "testemail@gmail.com",
             "about": "He is a testing engineer"
         }
@@ -79,7 +79,7 @@ class TestOrganizers(object):
         Send POST request with valid event organizer data and response should be 201 but when
         we will try to create organizer with same name again, API will raise InvalidUsage 400 error.
         """
-        name = datetime.now().strftime('%Y%m%dT%H%M%S')
+        name = "organizer_%s" % fake.uuid4(),
         event_organizer = {
             "user_id": user_first['id'],
             "name": name,
@@ -106,7 +106,7 @@ class TestOrganizers(object):
         """
         event_organizer = {
             "user_id": user_first['id'],
-            "name": datetime.now().strftime('%Y%m%dT%H%M%S'),
+            "name": "organizer_%s" % fake.uuid4(),
             "email": "testemail@gmail.com",
             "about": "He is a testing engineer"
         }
