@@ -839,6 +839,10 @@ class EmailCampaignApi(object):
     TEMPLATE_FOLDERS = '/' + VERSION + '/email-template-folders'
     TEMPLATE_FOLDER = '/' + VERSION + '/email-template-folders/<int:folder_id>'
 
+    """ URLs for email-clients """
+    CLIENTS = '/' + VERSION + '/email-clients'
+    CONVERSATIONS = '/' + VERSION + '/email-conversations'
+
 
 class EmailCampaignApiUrl(object):
     """

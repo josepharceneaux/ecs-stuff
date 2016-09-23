@@ -1,11 +1,19 @@
+"""
+Here we have helper functions used in email-campaign-service
+"""
 # Standard Imports
-import urllib
 import os
 import json
 import uuid
+import poplib
+import urllib
+import smtplib
+import imaplib
 import HTMLParser
+from _socket import gaierror
 from urllib import urlencode
 from datetime import datetime
+from abc import abstractmethod
 from urlparse import (parse_qs, urlsplit, urlunsplit)
 
 # Third Party
@@ -13,24 +21,22 @@ from bs4 import BeautifulSoup
 from dateutil.relativedelta import relativedelta
 
 # Service Specific
-from email_campaign_service.email_campaign_app import (logger, celery_app)
+from email_campaign_service.common.error_handling import InternalServerError
+from email_campaign_service.email_campaign_app import (logger, celery_app, cache, app)
 
 # Common Utils
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.email_campaign_app import cache, app
 from email_campaign_service.common.redis_cache import redis_store
-from email_campaign_service.common.models.user import User, Serializer
 from email_campaign_service.common.models.misc import UrlConversion
+from email_campaign_service.common.models.user import User, Serializer
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
                                                             raise_if_not_positive_int_or_long)
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
-from email_campaign_service.common.routes import (CandidateApiUrl,
-                                                  EmailCampaignApiUrl)
-from email_campaign_service.common.campaign_services.validators import \
-    raise_if_dict_values_are_not_int_or_long
+from email_campaign_service.common.routes import EmailCampaignApiUrl
+from email_campaign_service.common.campaign_services.validators import raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 
 SIX_MONTHS_EXPIRATION_TIME = 15768000
@@ -308,3 +314,129 @@ def get_valid_send_obj(requested_campaign_id, send_id, current_user, campaign_ty
     CampaignBase.get_campaign_if_domain_is_valid(requested_campaign_id,
                                                  current_user, campaign_type)
     return EmailCampaignSend.get_valid_send_object(send_id, requested_campaign_id)
+
+
+class EmailClients(object):
+    def __init__(self, host, port, email, password):
+        """
+        This sets values of attributes host, port, email and password.
+        :param string host: Hostname of server
+        :param string port: Port number
+        :param string email: Email address
+        :param string password: Password
+        """
+        self.host = host
+        self.port = str(port).strip() if port else ''
+        self.email = email
+        self.password = password
+        self.client = None
+
+    @abstractmethod
+    def set_client(self):
+        """
+        This sets the value of attribute "client".
+        Child classes will implement this.
+        """
+        pass
+
+    def connect(self):
+        """
+        This first connects with SMTP/IMAP/POP server. It then tries to login to server.
+        """
+        self.set_client()
+        try:
+            connection = self.client(self.host, port=self.port)
+        except gaierror as error:
+            logger.exception(error.message)
+            raise InternalServerError('Error occurred while connecting with given server')
+        return connection
+
+
+class SMTP(EmailClients):
+    def __init__(self, host, port, email, password):
+        """
+        This sets values of attributes host, port, email and password.
+        :param string host: Hostname of SMTP server
+        :param string port: Port number
+        :param string email: Email address
+        :param string password: Password
+        """
+        super(SMTP, self).__init__(host, port, email, password)
+
+    def set_client(self):
+        """
+        This sets the value of attribute "client".
+        """
+        self.client = smtplib.SMTP
+
+    def connect(self):
+        """
+        This first connects with SMTP server. It then tries to login to server.
+        """
+        server = super(SMTP, self).connect()
+        server.starttls()
+        try:
+            server.login(self.email, self.password)
+        except smtplib.SMTPAuthenticationError as error:
+            logger.exception(error.smtp_error)
+            raise InternalServerError('Error occurred while authenticating with smtp server')
+
+
+class IMAP(EmailClients):
+    def __init__(self, host, port, email, password):
+        """
+        This sets values of attributes host, port, email and password.
+        :param string host: Hostname of SMTP server
+        :param string port: Port number
+        :param string email: Email address
+        :param string password: Password
+        """
+        super(IMAP, self).__init__(host, port, email, password)
+
+    def set_client(self):
+        """
+        This sets the value of attribute "client".
+        """
+        self.client = imaplib.IMAP4_SSL
+
+    def connect(self):
+        """
+        This first connects with IMAP server. It then tries to login to server.
+        """
+        mail_connection = super(IMAP, self).connect()
+
+        try:
+            mail_connection.login(self.email, self.password)
+        except imaplib.IMAP4_SSL.error as error:
+            logger.exception(error.message)
+            raise InternalServerError('Error occurred while authenticating with imap server')
+
+
+class POP(EmailClients):
+    def __init__(self, host, port, email, password):
+        """
+        This sets values of attributes host, port, email and password.
+        :param string host: Hostname of SMTP server
+        :param string port: Port number
+        :param string email: Email address
+        :param string password: Password
+        """
+        super(POP, self).__init__(host, port, email, password)
+
+    def set_client(self):
+        """
+        This sets the value of attribute "client"
+        """
+        self.client = poplib.POP3_SSL
+
+    def connect(self):
+        """
+        This first connects with POP server. It then tries to login to server.
+        """
+        pop_conn = super(POP, self).connect()
+        try:
+            pop_conn.user(self.email)
+            pop_conn.pass_(self.password)
+        except poplib.error_proto as error:
+            logger.exception(error.message)
+            raise InternalServerError('Error occurred while authenticating with pop server')
