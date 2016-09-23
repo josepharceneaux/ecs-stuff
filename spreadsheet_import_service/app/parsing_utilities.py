@@ -15,7 +15,7 @@ import requests
 from flask import request, jsonify
 from spreadsheet_import_service.app import logger, app, celery_app
 from spreadsheet_import_service.common.utils.talent_s3 import *
-from spreadsheet_import_service.common.utils.validators import is_valid_email
+from spreadsheet_import_service.common.utils.validators import is_valid_email, is_number
 from spreadsheet_import_service.common.models.user import User, db
 from spreadsheet_import_service.common.models.misc import AreaOfInterest
 from spreadsheet_import_service.common.models.candidate import CandidateSource
@@ -228,8 +228,8 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                     prepare_candidate_data(degrees, 'end_month', 6)
 
                 # `graduation_year` and `student_year` are mutually exclusive i.e. they cannot come together
-                elif column_name == 'candidate_education.graduation_year':
-                    prepare_candidate_data(degrees, 'end_year', column)
+                elif column_name == 'candidate_education.graduation_year' and is_number(column):
+                    prepare_candidate_data(degrees, 'end_year', int(column))
                 elif column_name == 'candidate_address.address_line_1':
                     prepare_candidate_data(addresses, 'address_line_1', column)
                 elif column_name == 'candidate_address.address_line_2':
