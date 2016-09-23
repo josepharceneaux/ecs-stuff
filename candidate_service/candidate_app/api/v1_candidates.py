@@ -31,7 +31,8 @@ from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
     is_valid_email_client, get_json_if_exist, is_date_valid,
-    get_json_data_if_validated, get_candidate_if_validated
+    get_json_data_if_validated, get_candidate_if_validated,
+    authenticate_candidate_preference_request
 )
 
 # JSON Schemas
@@ -1470,35 +1471,30 @@ class CandidateViewResource(Resource):
 
 
 class CandidatePreferenceResource(Resource):
-    decorators = [require_oauth()]
+    decorators = [require_oauth(allow_candidate=True)]
 
-    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/preferences
         Function will return requested candidate's preference(s)
         """
-        # Get authenticated user & candidate ID
-        authed_user, candidate_id = request.user, kwargs.get('id')
-
-        # Ensure Candidate exists & is not web-hidden
-        get_candidate_if_validated(authed_user, candidate_id)
+        # Get candidate ID
+        candidate_id = kwargs.get('id')
+        authenticate_candidate_preference_request(request, kwargs.get('id'))
 
         candidate_subs_pref = fetch_candidate_subscription_preference(candidate_id=candidate_id)
         return {'candidate': {'id': candidate_id, 'subscription_preference': candidate_subs_pref}}
 
-    @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:id/preferences
         Function will create candidate's preference(s)
         input: {'frequency_id': 1}
         """
-        # Get authenticated user & candidate ID
-        authed_user, candidate_id = request.user, kwargs.get('id')
 
-        # Ensure candidate exists & is not web-hidden
-        get_candidate_if_validated(authed_user, candidate_id)
+        # Get candidate ID
+        candidate_id = kwargs.get('id')
+        authenticate_candidate_preference_request(request, kwargs.get('id'))
 
         body_dict = get_json_if_exist(_request=request)
         try:
@@ -1523,18 +1519,15 @@ class CandidatePreferenceResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def put(self, **kwargs):
         """
         Endpoint:  PATCH /v1/candidates/:id/preferences
         Function will update candidate's subscription preference
         Input: {'frequency_id': 1}
         """
-        # Get authenticated user & candidate ID
-        authed_user, candidate_id = request.user, kwargs.get('id')
-
-        # Ensure candidate exists & is not web-hidden
-        get_candidate_if_validated(authed_user, candidate_id)
+        # Get candidate ID
+        candidate_id = kwargs.get('id')
+        authenticate_candidate_preference_request(request, kwargs.get('id'))
 
         body_dict = get_json_if_exist(_request=request)
         try:
@@ -1560,17 +1553,14 @@ class CandidatePreferenceResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoint:  DELETE /v1/candidates/:id/preferences
         Function will delete candidate's subscription preference
         """
-        # Get authenticated user & candidate ID
-        authed_user, candidate_id = request.user, kwargs.get('id')
-
-        # Ensure candidate exists & is not web-hidden
-        get_candidate_if_validated(authed_user, candidate_id)
+        # Get candidate ID
+        candidate_id = kwargs.get('id')
+        authenticate_candidate_preference_request(request, kwargs.get('id'))
 
         candidate_subs_pref = CandidateSubscriptionPreference.get_by_candidate_id(candidate_id)
         if not candidate_subs_pref:
