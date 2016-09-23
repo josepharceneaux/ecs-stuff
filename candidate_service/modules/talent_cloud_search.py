@@ -283,6 +283,9 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate_address.coordinates AS `coordinates`,
                 GROUP_CONCAT(DISTINCT candidate_email.address SEPARATOR :sep) AS `email`,
 
+                # Candidat Phone Numbers
+                GROUP_CONCAT(DISTINCT candidate_phone.Value SEPARATOR :sep) AS `phone`,
+
                 # Talent Pools
                 GROUP_CONCAT(DISTINCT talent_pool_candidate.talent_pool_id SEPARATOR :sep) AS `talent_pools`,
 
@@ -338,6 +341,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
     LEFT JOIN   candidate_military_service ON (candidate.id = candidate_military_service.candidateId)
 
     LEFT JOIN   candidate_experience ON (candidate.id = candidate_experience.candidateId)
+    LEFT JOIN   candidate_phone ON (candidate.id = candidate_phone.CandidateId)
     LEFT JOIN   candidate_experience_bullet ON (candidate_experience.id =
     candidate_experience_bullet.candidateExperienceId)
 
@@ -397,6 +401,14 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
             resume_text = ''
             for field_name in field_name_to_sql_value.keys():
                 index_field_options = INDEX_FIELD_NAME_TO_OPTIONS.get(field_name)
+
+                if field_name == 'phone' and field_name_to_sql_value[field_name]:
+                    # Add Phone numbers in Resume Text
+                    phone_numbers = field_name_to_sql_value[field_name].split(group_concat_separator)
+                    phone_numbers = map(lambda phone_number: re.sub('[^0-9]', '', phone_number), phone_numbers)
+                    resume_text += ' ' + ' '.join(phone_numbers)
+                    del field_name_to_sql_value[field_name]
+                    continue
 
                 if not index_field_options:
                     logger.error("Unknown field name, could not build document: %s", field_name)
@@ -483,7 +495,7 @@ def upload_candidate_documents_in_domain(domain_id):
                                                                                User.domain_id == domain_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of domain id %s", len(candidate_ids), domain_id)
-    return upload_candidate_documents.delay(candidate_ids, domain_id, 10)
+    return upload_candidate_documents.delay(candidate_ids, domain_id, 50)
 
 
 def upload_candidate_documents_of_user(user_id):
