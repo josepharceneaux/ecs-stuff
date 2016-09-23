@@ -1135,17 +1135,16 @@ class CampaignBase(object):
                                error_code=CampaignException.EMPTY_BODY_TEXT)
         # Get smartlists associated to this campaign
         campaign_smartlists = self.campaign.smartlists.all()
-        hidden_smarlists = filter(lambda smartlist: Smartlist.get(smartlist.smartlist_id).is_hidden,
-                                  campaign_smartlists)
-        if hidden_smarlists:
-            raise InvalidUsage('Associated Smartlists (ids: %s) are deleted and can not be accessed'
-                               % map(lambda sm: sm.id, hidden_smarlists))
         if not campaign_smartlists:
             raise InvalidUsage('No smartlist is associated with %s(id:%s). (User(id:%s))' % (self.campaign_type,
                                                                                              self.campaign.id,
                                                                                              self.user.id),
                                error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
         self.smartlist_ids = [campaign_smartlist.smartlist_id for campaign_smartlist in campaign_smartlists]
+        hidden_smarlist_ids = filter(lambda _id: Smartlist.get(_id).is_hidden, self.smartlist_ids)
+        if hidden_smarlist_ids:
+            raise InvalidUsage('Associated Smartlists (ids: %s) are deleted and can not be accessed'
+                               % hidden_smarlist_ids)
         # Register function to be called after all candidates are fetched from smartlists
         callback = self.send_callback.subtask((self,), queue=self.campaign_type)
 
