@@ -27,5 +27,3 @@ if len(tables) == 0:
         )
     db.session.execute(
         text("ALTER TABLE `email_client_credentials` ADD CONSTRAINT `email_client_credentials_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user`(`Id`) ON DELETE CASCADE"))
-
-db.session.commit()
