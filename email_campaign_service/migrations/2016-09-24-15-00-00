@@ -1,0 +1,29 @@
+"""
+Add EmailClientCredentials table
+"""
+
+from sqlalchemy import text
+
+from email_campaign_service.common.models.db import db
+from email_campaign_service.common.models.email_campaign import EmailClientCredentials
+
+table_name = EmailClientCredentials.__tablename__
+query = "select * from information_schema.tables where table_name = '{}'".format(table_name)
+result = db.session.execute(query)
+tables = list(result)
+if len(tables) == 0:
+    db.session.execute(
+        text("create table `{}` ( \
+                                   `id` int auto_increment key, \
+                                   `user_id` int not null, \
+                                   `host` varchar(255) not null, \
+                                   `port` varchar(255), \
+                                   `email` varchar(255) not null, \
+                                   `password` varchar(255) not null, \
+                                   `type` varchar(255) not null, \
+                                   `incoming_server_type` varchar(255), \
+                                   `updated_datetime` timestamp not null \
+                                 )".format(table_name))
+        )
+
+db.session.commit()

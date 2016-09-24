@@ -25,18 +25,18 @@ from flask_restful import Resource
 from flask import request, Blueprint
 
 # Service Specific
-from email_campaign_service.common.utils.validators import get_json_data_if_validated
+from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.email_campaign_app import logger
+from email_campaign_service.modules.utils import EmailClients
+from email_campaign_service.modules.validations import validate_email_client_data
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
-from email_campaign_service.json_schema.test_email import TEST_EMAIL_SCHEMA
-from email_campaign_service.modules.utils import SMTP, IMAP, POP
-from email_campaign_service.modules.validations import validate_and_format_request_data, validate_email_client_data
+from email_campaign_service.common.utils.validators import get_json_data_if_validated
+from email_campaign_service.common.models.email_campaign import EmailClientCredentials
 
 # Common utils
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.routes import EmailCampaignApi
 from email_campaign_service.common.utils.api_utils import api_route
-from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.common.utils.auth_utils import require_oauth
 
 # Blueprint for email-clients API
@@ -47,7 +47,7 @@ api.route = types.MethodType(api_route, api)
 
 
 @api.route(EmailCampaignApi.CLIENTS)
-class EmailClients(Resource):
+class EmailClientsEndpoint(Resource):
 
     # Access token decorator
     decorators = [require_oauth()]
@@ -76,23 +76,19 @@ class EmailClients(Resource):
                     401 (Unauthorized to access getTalent)
                     500 (Internal server error)
         """
-
         data = get_json_data_if_validated(request, EMAIL_CLIENTS_SCHEMA)
         validate_email_client_data(data)
-        user_id = request.user.id
-        if 'smtp' in data['host']:
-            client_object = SMTP(data['host'], data['port'], data['email'], data['password'])
-            client_object.connect()
-        elif 'imap' in data['host']:
-            client_object = IMAP(data['host'], data['port'], data['email'], data['password'])
-            client_object.connect()
-        elif 'pop' in data['host']:
-            client_object = POP(data['host'], data['port'], data['email'], data['password'])
-            client_object.connect()
-        else:
-            raise InvalidUsage('Unknown host provided')
-
-        return {'id': ''}, requests.codes.CREATED
+        client = EmailClients.get_client(data['host'])
+        client = client(data['host'], data['port'], data['email'], data['password'])
+        client.connect_and_authenticate()
+        data['user_id'] = request.user.id
+        client_in_db = EmailClientCredentials.get_by_user_id_host_and_email(data['user_id'],
+                                                                            data['host'], data['email'])
+        if client_in_db:
+            raise InvalidUsage('Email client with given data already present in database')
+        email_client = EmailClientCredentials(**data)
+        EmailClientCredentials.save(email_client)
+        return {'id': email_client.id}, requests.codes.CREATED
 
 
 @api.route(EmailCampaignApi.CONVERSATIONS)

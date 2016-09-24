@@ -84,19 +84,32 @@ class TestCreateEmailClients(object):
             response = requests.post(self.URL, headers=headers, data=json.dumps(email_client_data))
             assert response.status_code == codes.BAD
 
-    def test_test_email_with_invalid_fields(self, headers):
+    def test_with_invalid_format_of_fields(self, headers):
         """
-        In this test, we will tes endpoint with invalid format of fields which will cause 400 error.
+        In this test, we will test endpoint with invalid format of fields which will cause 400 error.
         """
-        invalid_key_values = [(key, CampaignsTestsHelpers.INVALID_STRING)
-                              for key in data_for_creating_email_clients()[0].keys()]
+        email_client_data = data_for_creating_email_clients()[0]
+        invalid_key_values = [(key, CampaignsTestsHelpers.INVALID_STRING) for key in email_client_data]
+        for key, values in invalid_key_values:
+            for value in values:
+                if key not in EMAIL_CLIENTS_SCHEMA['required'] and value in (None, '', '      '):
+                    pass
+                else:
+                    data = email_client_data.copy()
+                    data[key] = value
+                    response = requests.post(self.URL, headers=headers, data=json.dumps(data))
+                    assert response.status_code == requests.codes.BAD_REQUEST, 'data is:%s' % data
+
+    def test_duplicate_email_client(self, headers):
+        """
+        Here we try to save duplicate email-client which should cause 400 error.
+        """
         for email_client_data in data_for_creating_email_clients():
-            for key, values in invalid_key_values:
-                for value in values:
-                    if key not in EMAIL_CLIENTS_SCHEMA['required'] and value in (None, '', '      '):
-                        pass
-                    else:
-                        data = email_client_data.copy()
-                        data[key] = value
-                        response = requests.post(self.URL, headers=headers, data=json.dumps(data))
-                        assert response.status_code == requests.codes.BAD_REQUEST, 'data is:%s' % data
+            # It should create first time
+            response = requests.post(self.URL, headers=headers, data=json.dumps(email_client_data))
+            assert response.ok
+            assert 'id' in response.json()
+
+            # Try to create duplicate
+            response = requests.post(self.URL, headers=headers, data=json.dumps(email_client_data))
+            assert response.status_code == requests.codes.BAD

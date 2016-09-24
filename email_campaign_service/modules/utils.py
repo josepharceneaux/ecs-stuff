@@ -331,6 +331,22 @@ class EmailClients(object):
         self.password = password
         self.client = None
 
+    @staticmethod
+    def get_client(host):
+        """
+        This gets the required client for given host.
+        :param string host: Hostname e.g. smtp.gmail.com
+        """
+        if 'smtp' in host:
+            client = SMTP
+        elif 'imap' in host:
+            client = IMAP
+        elif 'pop' in host:
+            client = POP
+        else:
+            raise InvalidUsage('Unknown host provided')
+        return client
+
     @abstractmethod
     def set_client(self):
         """
@@ -339,7 +355,7 @@ class EmailClients(object):
         """
         pass
 
-    def connect(self):
+    def connect_and_authenticate(self):
         """
         This first connects with SMTP/IMAP/POP server. It then tries to login to server.
         """
@@ -370,11 +386,11 @@ class SMTP(EmailClients):
         """
         self.client = smtplib.SMTP
 
-    def connect(self):
+    def connect_and_authenticate(self):
         """
         This first connects with SMTP server. It then tries to login to server.
         """
-        server = super(SMTP, self).connect()
+        server = super(SMTP, self).connect_and_authenticate()
         server.starttls()
         try:
             server.login(self.email, self.password)
@@ -400,11 +416,11 @@ class IMAP(EmailClients):
         """
         self.client = imaplib.IMAP4_SSL
 
-    def connect(self):
+    def connect_and_authenticate(self):
         """
         This first connects with IMAP server. It then tries to login to server.
         """
-        mail_connection = super(IMAP, self).connect()
+        mail_connection = super(IMAP, self).connect_and_authenticate()
         try:
             mail_connection.login(self.email, self.password)
         except imaplib.IMAP4_SSL.error as error:
@@ -429,11 +445,11 @@ class POP(EmailClients):
         """
         self.client = poplib.POP3_SSL
 
-    def connect(self):
+    def connect_and_authenticate(self):
         """
         This first connects with POP server. It then tries to login to server.
         """
-        pop_conn = super(POP, self).connect()
+        pop_conn = super(POP, self).connect_and_authenticate()
         try:
             pop_conn.user(self.email)
             pop_conn.pass_(self.password)

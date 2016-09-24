@@ -418,3 +418,30 @@ class EmailTemplateFolder(db.Model):
             raise ForbiddenError("Email template folder(id:%d) is not owned by user(id:%d)'s domain(id:%d)"
                                  % (template_folder_id, user.id, user.domain_id))
         return template_folder
+
+
+class EmailClientCredentials(db.Model):
+    __tablename__ = 'email_client_credentials'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column('user_id', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
+    host = db.Column('host',db.String(255))
+    port = db.Column('port',db.String(255))
+    email = db.Column('email',db.String(255))
+    password = db.Column('password',db.String(255))
+    type = db.Column('type', db.String(255))
+    incoming_server_type = db.Column('incoming_server_type', db.String(255))
+    updated_datetime = db.Column('updated_datetime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
+
+    @classmethod
+    def get_by_user_id_host_and_email(cls, user_id, host, email):
+        """
+        Method to get email_client_credentials objects for given params.
+        :type user_id:  int | long
+        :type host:  string
+        :type email:  string
+        :rtype:  list
+        """
+        assert user_id, "user_id not provided"
+        assert host, "host not provided"
+        assert email, "email not provided"
+        return cls.filter_by_keywords(user_id=user_id, host=host, email=email)
