@@ -25,9 +25,9 @@ from flask_restful import Resource
 from flask import request, Blueprint
 
 # Service Specific
-from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.modules.utils import EmailClients
+from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.modules.validations import validate_email_client_data
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
 from email_campaign_service.common.utils.validators import get_json_data_if_validated
