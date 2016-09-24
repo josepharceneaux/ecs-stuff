@@ -27,7 +27,7 @@ def get_url(class_object, key, custom_url=None, is_auth=None):
     """
     social_network_name = class_object.social_network.name
     social_network_urls = getattr(SocialNetworkUrls, social_network_name.upper())
-    if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS] \
+    if app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.JENKINS] \
             and social_network_name.lower() in MOCK_VENDORS:
         # There are currently two types of URLs. i.e Auth and API url.
         auth_part = AUTH if is_auth else API

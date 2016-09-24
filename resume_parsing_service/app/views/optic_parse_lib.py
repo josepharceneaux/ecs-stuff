@@ -20,7 +20,9 @@ import pycountry
 from flask import current_app
 from resume_parsing_service.app import logger
 from resume_parsing_service.app.constants import error_constants
-from resume_parsing_service.app.views.OauthClient import OAuthClient
+# from resume_parsing_service.app.views.OauthClient import OAuthClient
+from resume_parsing_service.app.views.oauth_client2 import get_authorization_string
+# from resume_parsing_service.app.views.oauth1_utils import gen_auth, gen_key, gen_string
 from resume_parsing_service.common.error_handling import InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 from resume_parsing_service.common.utils.handy_functions import normalize_value
@@ -40,14 +42,14 @@ def fetch_optic_response(resume, filename_str):
     """
     start_time = time()
     bg_url = current_app.config['BG_URL']
-    oauth = OAuthClient(url=bg_url,
-                        method='POST', consumerKey='StevePeck',
-                        consumerSecret=current_app.config['CONSUMER_SECRET'],
-                        token='Utility',
-                        tokenSecret=current_app.config['TOKEN_SECRET'],
-                        signatureMethod='HMAC-SHA1',
-                        oauthVersion='1.0')
-    auth = oauth.get_authorizationString()
+
+    auth_params = {
+        'consumer_key': 'StevePeck',
+        'consumer_secret':  current_app.config['CONSUMER_SECRET'],
+        'token_secret': current_app.config['TOKEN_SECRET'],
+        'endpoint_url': bg_url
+    }
+    auth = get_authorization_string(auth_params)
     headers = {
         'accept': 'application/xml',
         'content-type': 'application/json',
@@ -142,8 +144,8 @@ def parse_candidate_name(bs_contact_xml_list):
     :rtype: tuple
     """
 
-    givenname = None # Placeholder for a `first_name`.
-    surname = None # Placeholder for a `last_name`.
+    givenname = None  # Placeholder for a `first_name`.
+    surname = None  # Placeholder for a `last_name`.
 
     for contact in bs_contact_xml_list:
         # If a name is already parsed we do not want to reassign it.
