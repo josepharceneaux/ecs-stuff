@@ -15,7 +15,7 @@ if len(tables) == 0:
     db.session.execute(
         text("create table `{}` ( \
                                    `id` int auto_increment key, \
-                                   `user_id` int not null, \
+                                   `user_id` bigint not null, \
                                    `host` varchar(255) not null, \
                                    `port` varchar(255), \
                                    `email` varchar(255) not null, \
@@ -25,5 +25,7 @@ if len(tables) == 0:
                                    `updated_datetime` timestamp not null \
                                  )".format(table_name))
         )
+    db.session.execute(
+        text("ALTER TABLE `email_client_credentials` ADD CONSTRAINT `email_client_credentials_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user`(`Id`) ON DELETE CASCADE"))
 
 db.session.commit()
