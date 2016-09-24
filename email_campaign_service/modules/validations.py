@@ -150,14 +150,10 @@ def validate_email_client_data(data):
     :return: Dictionary of formatted data
     :rtype: dict
     """
-    if not data:
-        raise InvalidUsage("Received empty request body")
-
-    host = data.get('host')  # required
-    port = data.get('port')
-    email = data.get('email')  # required
-    password = data.get('password')  # required
     type = data.get('type')
-    if type not in ('incoming', 'outgoing'):
+    if type.lower() not in ('incoming', 'outgoing'):
         raise InvalidUsage('Invalid type provided')
-    return data
+    incoming_server_type = data.get('incoming_server_type')
+    if incoming_server_type and incoming_server_type.lower() not in ('imap', 'pop'):
+        raise InvalidUsage('Invalid server_type provided')
+

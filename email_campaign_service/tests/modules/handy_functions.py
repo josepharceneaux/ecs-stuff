@@ -522,3 +522,35 @@ def assert_valid_template_folder(template_folder_dict, domain_id, expected_name)
     assert template_folder_dict['is_immutable'] == ON
     # Following fields may have empty values
     assert 'parent_id' in template_folder_dict
+
+
+def data_for_creating_email_clients():
+    """
+    This returns data to create email-clietns.
+    :rtype: list
+    """
+    return [
+        {
+            "host": "smtp.gmail.com",
+            "port": "587",
+            "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
+            "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
+            "type": "outgoing",
+            "incoming_server_type": ""
+        },
+        {
+            "host": "imap.gmail.com",
+            "port": "",
+            "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
+            "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
+            "type": "incoming",
+            "incoming_server_type": "imap"
+        },
+        {
+            "host": "pop.gmail.com",
+            "port": "",
+            "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
+            "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
+            "type": "incoming",
+            "incoming_server_type": "pop"
+        }]

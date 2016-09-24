@@ -21,12 +21,12 @@ from bs4 import BeautifulSoup
 from dateutil.relativedelta import relativedelta
 
 # Service Specific
-from email_campaign_service.common.error_handling import InternalServerError
 from email_campaign_service.email_campaign_app import (logger, celery_app, cache, app)
 
 # Common Utils
 from email_campaign_service.common.redis_cache import redis_store
 from email_campaign_service.common.models.misc import UrlConversion
+from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.user import User, Serializer
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
@@ -35,7 +35,7 @@ from email_campaign_service.common.campaign_services.campaign_utils import Campa
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
                                                             raise_if_not_positive_int_or_long)
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
-from email_campaign_service.common.routes import EmailCampaignApiUrl
+from email_campaign_service.common.error_handling import (InternalServerError, InvalidUsage)
 from email_campaign_service.common.campaign_services.validators import raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 
@@ -345,7 +345,8 @@ class EmailClients(object):
         """
         self.set_client()
         try:
-            connection = self.client(self.host, port=self.port)
+            connection = self.client(self.host, port=self.port) if self.port else self.client(self.host)
+
         except gaierror as error:
             logger.exception(error.message)
             raise InternalServerError('Error occurred while connecting with given server')
@@ -379,7 +380,7 @@ class SMTP(EmailClients):
             server.login(self.email, self.password)
         except smtplib.SMTPAuthenticationError as error:
             logger.exception(error.smtp_error)
-            raise InternalServerError('Error occurred while authenticating with smtp server')
+            raise InvalidUsage('Invalid credentials provided. Could not authenticate with smtp server')
 
 
 class IMAP(EmailClients):
@@ -404,12 +405,11 @@ class IMAP(EmailClients):
         This first connects with IMAP server. It then tries to login to server.
         """
         mail_connection = super(IMAP, self).connect()
-
         try:
             mail_connection.login(self.email, self.password)
         except imaplib.IMAP4_SSL.error as error:
             logger.exception(error.message)
-            raise InternalServerError('Error occurred while authenticating with imap server')
+            raise InvalidUsage('Invalid credentials provided. Could not authenticate with imap server')
 
 
 class POP(EmailClients):
@@ -439,4 +439,4 @@ class POP(EmailClients):
             pop_conn.pass_(self.password)
         except poplib.error_proto as error:
             logger.exception(error.message)
-            raise InternalServerError('Error occurred while authenticating with pop server')
+            raise InvalidUsage('Invalid credentials provided. Could not authenticate with pop server')
