@@ -11,8 +11,8 @@ from copy import deepcopy
 from datetime import datetime
 from flask import request
 from flask_sqlalchemy import Model
-from celery.exceptions import SoftTimeLimitExceeded
 from candidate_service.candidate_app import app, celery_app, logger
+from candidate_service.common.utils.timeout import Timeout, TimeoutException
 from candidate_service.common.utils.validators import is_number
 from candidate_service.common.talent_celery import OneTimeSQLConnection
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
@@ -452,7 +452,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
     return action_dicts
 
 
-@celery_app.task(soft_time_limit=120)  # 2 Minutes
+@celery_app.task()
 def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_candidate=10):
     """
     Upload all the candidate documents to cloud search
@@ -461,15 +461,19 @@ def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_cand
     :param max_number_of_candidate: Default value is 10
     :return:
     """
-    try:
-        if isinstance(candidate_ids, (int, long)):
-            candidate_ids = [candidate_ids]
+    if isinstance(candidate_ids, (int, long)):
+        candidate_ids = [candidate_ids]
 
-        for i in xrange(0, len(candidate_ids), max_number_of_candidate):
+    for i in xrange(0, len(candidate_ids), max_number_of_candidate):
+        try:
             logger.info("Uploading %s candidate documents (%s). Generating action dicts...",
                         len(candidate_ids[i:i + max_number_of_candidate]), candidate_ids[i:i + max_number_of_candidate])
             start_time = time.time()
-            action_dicts = _build_candidate_documents(candidate_ids[i:i + max_number_of_candidate], domain_id)
+
+            with Timeout(seconds=60):
+                # If _build_candidate_documents take more than 60 seconds Timeout will raise an exception
+                action_dicts = _build_candidate_documents(candidate_ids[i:i + max_number_of_candidate], domain_id)
+
             logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
                         len(action_dicts))
             adds, deletes = _send_batch_request(action_dicts)
@@ -479,9 +483,9 @@ def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_cand
             if adds:
                 logger.info("%s Candidate documents (%s) have been uploaded",
                             len(candidate_ids[i:i + max_number_of_candidate]), candidate_ids[i:i + max_number_of_candidate])
-
-    except SoftTimeLimitExceeded:
-        logger.exception("Time Limit Exceeded for Candidate Upload for following Candidates: %s" % candidate_ids)
+        except TimeoutException:
+            logger.exception("Time Limit Exceeded for Candidate Upload for following "
+                             "Candidates: %s" % candidate_ids[i:i + max_number_of_candidate])
 
 
 def upload_candidate_documents_in_domain(domain_id):
