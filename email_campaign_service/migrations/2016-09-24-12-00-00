@@ -13,17 +13,14 @@ result = db.session.execute(query)
 tables = list(result)
 if len(tables) == 0:
     db.session.execute(
-        text("create table `{}` ( \
-                                   `id` int auto_increment key, \
-                                   `user_id` bigint not null, \
-                                   `host` varchar(255) not null, \
-                                   `port` varchar(255), \
-                                   `email` varchar(255) not null, \
-                                   `password` varchar(255) not null, \
-                                   `type` varchar(255) not null, \
-                                   `incoming_server_type` varchar(255), \
-                                   `updated_datetime` timestamp not null \
-                                 )".format(table_name))
+        text("CREATE TABLE `{}` (`id` INT(11) NOT NULL AUTO_INCREMENT,\
+                                 `user_id` BIGINT(20) NOT NULL,\
+                                 `host` VARCHAR(255) NOT NULL,\
+                                 `port` VARCHAR(255) DEFAULT NULL,\
+                                 `email` VARCHAR(255) NOT NULL,\
+                                 `password` VARCHAR(255) NOT NULL,\
+                                 `type` VARCHAR(255) NOT NULL,\
+                                 `incoming_server_type` VARCHAR(255) DEFAULT NULL,\
+                                 `updated_datetime` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\
+                                 PRIMARY KEY (`id`), KEY `email_client_credentials_ibfk_1` (`user_id`), CONSTRAINT `email_client_credentials_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`Id`) ON DELETE CASCADE) ENGINE=INNODB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='utf8_general_ci'".format(table_name))
         )
-    db.session.execute(
-        text("ALTER TABLE `email_client_credentials` ADD CONSTRAINT `email_client_credentials_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user`(`Id`) ON DELETE CASCADE"))
