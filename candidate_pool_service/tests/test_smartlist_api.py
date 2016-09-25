@@ -90,13 +90,13 @@ class TestSmartlistResource(object):
             candidates = response_body['candidates']
             assert len(candidates) == 2
 
-            for current_page in range(1, no_of_pages):
-                next_page = current_page + 1
+            for next_page in range(2, no_of_pages + 1):
                 response = smartlist_candidates_api.call_smartlist_candidates_get_api_with_pagination_params(
                     smartlist_id, {'fields': 'id'}, access_token_first, page=next_page,
                     per_page=2)
                 response_body = response.json()
                 candidates.extend(response_body['candidates'])
+                print [candidate['id'] for candidate in candidates]  # For Debugging Purpose
             assert len(candidates) == 20
             smartlist_candidate_ids = [candidate['id'] for candidate in candidates]
             assert sorted(candidate_ids) == sorted(map(int, smartlist_candidate_ids))
