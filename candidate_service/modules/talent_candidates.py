@@ -638,7 +638,8 @@ def add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_updat
     :type frequency_id: int|long
     :type is_update: bool
     """
-    assert isinstance(candidate_id, (int, long)) and isinstance(frequency_id, (int, long))
+    assert isinstance(candidate_id, (int, long))
+
     can_subs_pref_query = CandidateSubscriptionPreference.query.filter_by(candidate_id=candidate_id)
     if is_update:  # Update
         can_subs_pref_query.update(dict(frequency_id=frequency_id))
