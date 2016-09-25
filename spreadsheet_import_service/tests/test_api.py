@@ -44,7 +44,7 @@ def test_import_candidates_from_spreadsheet(access_token_first, user_first, tale
     print "user: {}".format(user_first)
     candidate_data = candidate_test_data()
 
-    # Logged-in user trying to import 15 candidates from a csv spreadsheet
+    # Logged-in user trying to import 5 candidates from a csv spreadsheet
     response, status_code = import_spreadsheet_candidates(talent_pool.id, access_token=access_token_first,
                                                           candidate_data=candidate_data, import_candidates=True,
                                                           domain_custom_field=domain_custom_fields[0])
