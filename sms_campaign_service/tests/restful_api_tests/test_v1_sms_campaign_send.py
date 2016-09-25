@@ -4,10 +4,11 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
     This module contains pyTests for endpoint /v1/sms-campaigns/:id/send of SMS Campaign API.
 """
 # Third party imports
+import requests
 from requests import codes
 
 # Service Specific
-from sms_campaign_service.common.utils.test_utils import get_and_assert_zero
+from sms_campaign_service.common.utils.test_utils import get_and_assert_zero, delete_smartlist
 from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.custom_exceptions import (CandidateNotFoundInUserDomain,
@@ -44,6 +45,20 @@ class TestSendSmsCampaign(object):
         CampaignsTestsHelpers.request_after_deleting_campaign(
             sms_campaign_of_user_first, SmsCampaignApiUrl.CAMPAIGN,
             self.URL, self.HTTP_METHOD, access_token_first)
+
+    def test_campaign_send_with_deleted_smartlist(self, access_token_first, sms_campaign_of_user_first, headers):
+        """
+        We will try to send a campaign with deleted smartlist and API will raise 400 error.
+        :param access_token_first: access token for ser first
+        :param sms_campaign_of_user_first: campaign dict
+        :param headers: valid header to POST data
+        """
+        smartlist_id = sms_campaign_of_user_first['list_ids'][0]
+        campaign_id = sms_campaign_of_user_first['id']
+        delete_smartlist(smartlist_id, access_token_first)
+        response = requests.post(self.URL % campaign_id, headers=headers)
+        assert response.status_code == requests.codes.BAD
+        assert 'deleted' in response.json()['error']['message']
 
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
                                                      sms_campaign_in_other_domain):

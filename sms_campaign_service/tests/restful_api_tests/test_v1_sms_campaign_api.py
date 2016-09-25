@@ -11,6 +11,7 @@ from operator import itemgetter
 import requests
 
 # Service Specific
+from sms_campaign_service.common.utils.test_utils import delete_smartlist
 from sms_campaign_service.tests.conftest import db
 from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
@@ -280,6 +281,20 @@ class TestSmsCampaignHTTPPost(object):
         """
         response = requests.post(self.URL, headers=headers, data=json.dumps(campaign_valid_data))
         assert_campaign_creation(response, user_first.id, requests.codes.CREATED)
+
+    def test_campaign_creation_with_one_deleted_smartlist(self, access_token_first, headers,
+                                                          campaign_valid_data, user_phone_1):
+        """
+        We will try to create a campaign with deleted smartlist and API will raise 400 error.
+        :param access_token_first: access token for ser first
+        :param headers: valid header to POST data
+        :param campaign_valid_data: valid data to create SMS campaign
+        """
+        smartlist_id = campaign_valid_data['smartlist_ids'][0]
+        delete_smartlist(smartlist_id, access_token_first)
+        response = requests.post(self.URL, headers=headers, data=json.dumps(campaign_valid_data))
+        assert response.status_code == requests.codes.BAD
+        assert 'deleted' in response.json()['error']['message']
 
     def test_campaign_creation_with_other_user_of_same_domain(self, user_same_domain, headers_same_domain,
                                                               campaign_valid_data):

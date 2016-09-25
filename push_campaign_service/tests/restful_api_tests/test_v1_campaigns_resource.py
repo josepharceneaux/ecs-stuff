@@ -41,7 +41,7 @@ from push_campaign_service.tests.test_utilities import (create_campaign, get_cam
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from push_campaign_service.common.utils.test_utils import (invalid_data_test, missing_keys_test, assert_activity,
-                                                           unexpected_field_test, invalid_value_test)
+                                                           unexpected_field_test, invalid_value_test, delete_smartlist)
 from push_campaign_service.common.utils.handy_functions import (send_request)
 
 
@@ -110,6 +110,19 @@ class TestCreateCampaign(object):
         """
         invalid_ids = CampaignsTestsHelpers.INVALID_ID
         invalid_value_test(URL, campaign_data, 'smartlist_ids', invalid_ids, token_first)
+
+    def test_campaign_creation_with_deleted_or_hidden_smartlist_id(self, token_first, campaign_data, smartlist_first):
+        """
+        Create campaign with deleted smartlist , API should raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        """
+        smartlist_id = smartlist_first['id']
+        data = campaign_data.copy()
+        data['smartlist_ids'] = [smartlist_first['id']]
+        delete_smartlist(smartlist_id, token_first)
+        response = create_campaign(data, token_first, expected_status=(codes.BAD,))
+        assert 'deleted' in response['error']['message']
 
     def test_campaign_creation_with_invalid_name(self, token_first, campaign_data, smartlist_first):
         """

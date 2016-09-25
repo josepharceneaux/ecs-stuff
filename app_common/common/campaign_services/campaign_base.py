@@ -29,7 +29,6 @@ from flask import current_app
 from ..models.db import db
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
-from ..models.smartlist import Smartlist
 from ..models.misc import (UrlConversion, Activity)
 from ..models.push_campaign import PushCampaignBlast
 from ..models.email_campaign import EmailCampaignBlast
@@ -49,7 +48,7 @@ from ..inter_service_calls.candidate_pool_service_calls import get_candidates_of
 from validators import (validate_form_data,
                         validation_of_data_to_schedule_campaign,
                         validate_blast_candidate_url_conversion_in_db,
-                        raise_if_dict_values_are_not_int_or_long)
+                        raise_if_dict_values_are_not_int_or_long, validate_smartlist_ids)
 from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER,
                                      generate_jwt_headers)
 
@@ -1141,10 +1140,7 @@ class CampaignBase(object):
                                                                                              self.user.id),
                                error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
         self.smartlist_ids = [campaign_smartlist.smartlist_id for campaign_smartlist in campaign_smartlists]
-        hidden_smarlist_ids = filter(lambda _id: Smartlist.get(_id).is_hidden, self.smartlist_ids)
-        if hidden_smarlist_ids:
-            raise InvalidUsage('Associated Smartlists (ids: %s) are deleted and can not be accessed'
-                               % hidden_smarlist_ids)
+        validate_smartlist_ids(self.smartlist_ids, self.user)
         # Register function to be called after all candidates are fetched from smartlists
         callback = self.send_callback.subtask((self,), queue=self.campaign_type)
 
