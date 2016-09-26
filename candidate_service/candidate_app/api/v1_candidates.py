@@ -1504,7 +1504,7 @@ class CandidatePreferenceResource(Resource):
 
         # Frequency ID must be recognized
         frequency_id = body_dict.get('frequency_id')
-        if not Frequency.get_by_id(_id=frequency_id):
+        if frequency_id and not Frequency.get_by_id(_id=frequency_id):
             raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
 
         # Candidate cannot have more than one subsctiption preference
@@ -1537,7 +1537,7 @@ class CandidatePreferenceResource(Resource):
 
         # Frequency ID must be recognized
         frequency_id = body_dict.get('frequency_id')
-        if not Frequency.get_by_id(_id=frequency_id):
+        if frequency_id and not Frequency.get_by_id(_id=frequency_id):
             raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
 
         # Candidate must already have a subscription preference

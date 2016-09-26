@@ -63,6 +63,7 @@ def create_email_campaign(user):
                                    user_id=user.id,
                                    is_hidden=0,
                                    subject=uuid.uuid4().__str__()[0:8] + ' It is a test campaign',
+                                   description=fake.paragraph(),
                                    _from=TEST_EMAIL_ID,
                                    reply_to=TEST_EMAIL_ID,
                                    body_html="<html><body>Email campaign test</body></html>",
@@ -417,6 +418,7 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
     email_from = 'no-reply@gettalent.com'
     reply_to = fake.safe_email()
     body_text = fake.sentence()
+    description = fake.paragraph()
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
     smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
                                                                             talent_pipeline,
@@ -425,6 +427,7 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
                                                                             )
     return {'name': campaign_name,
             'subject': subject,
+            'description': description,
             'from': email_from,
             'reply_to': reply_to,
             'body_html': body_html,
