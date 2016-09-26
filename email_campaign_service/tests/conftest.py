@@ -238,7 +238,7 @@ def template_id(domain_id):
     return template['id']
 
 
-@pytest.fixture(params=['name', 'subject', 'body_html', 'frequency_id', 'list_ids'])
+@pytest.fixture(params=['name', 'subject', 'description', 'body_html', 'frequency_id', 'list_ids'])
 def invalid_data_for_campaign_creation(request):
     """
     This function returns the data to create an email campaign. It also removes a required
@@ -251,6 +251,7 @@ def invalid_data_for_campaign_creation(request):
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
     campaign_data = {'name': fake.name(),
                      'subject': fake.sentence(),
+                     'description': fake.paragraph(),
                      'from': email_from,
                      'reply_to': reply_to,
                      'body_html': body_html,
