@@ -172,8 +172,11 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     :param post_data: post data like campaign name, smartlist ids etc
     :param is_jwt_request: (optional) if true, then use X-Talent-Secret-Id in header
     """
-    if not os.environ['WERKZEUG_RUN_MAIN'] == 'true':
-        return
+
+    print 'CODE_VERONICA\n\n\n\n\n\n\n\n', os.environ, '\n\n\n\n\n\n\n\n\n\n\n\n'
+
+    # if not os.environ['WERKZEUG_RUN_MAIN'] == 'true':
+    #     return
     # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
     # created because frequency is set to minimum (1 hour).
     secret_key_id = None
