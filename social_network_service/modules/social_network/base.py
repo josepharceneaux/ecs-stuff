@@ -11,14 +11,18 @@ from abc import ABCMeta
 import requests
 
 # Application Specific
+from social_network_service.common.error_handling import InvalidUsage
+from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.utils.validators import raise_if_not_positive_int_or_long
+from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
+from social_network_service.modules.urls import get_url
 from social_network_service.modules.utilities import get_class
 from social_network_service.modules.utilities import log_error
 from social_network_service.common.models.user import User
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.user import UserSocialNetworkCredential
-from social_network_service.social_network_app import logger
+from social_network_service.social_network_app import logger, app
 from social_network_service.custom_exceptions import *
 
 
@@ -172,7 +176,7 @@ class SocialNetworkBase(object):
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self,  user_id, social_network_id=None, validate_credentials=True):
+    def __init__(self,  user_id, social_network_id=None, validate_credentials=True, **kwargs):
         """
         - This sets the user's credentials as base class property so that it can be used in other classes.
         - We also check the validity of access token and try to refresh it in case it has expired.
@@ -195,11 +199,13 @@ class SocialNetworkBase(object):
                 "gt_user_id": self.user_credentials.user_id,
                 "social_network_id": self.social_network.id,
                 "api_url": self.social_network.api_url,
+                "auth_url": self.social_network.auth_url
             }
             # checks if any field is missing for given user credentials
-            items = [value for key, value in data.iteritems() if key is not "api_url"]
+            items = [value for key, value in data.iteritems() if key not in ["api_url", "auth_url"]]
             if all(items):
                 self.api_url = data['api_url']
+                self.auth_url = data['auth_url']
                 self.gt_user_id = data['gt_user_id']
                 self.social_network_id = data['social_network_id']
                 self.access_token = data['access_token']
@@ -248,7 +254,7 @@ class SocialNetworkBase(object):
             social_network = SocialNetwork.get_by_name(self.__class__.__name__)
         return user, social_network
 
-    def process(self, mode, user_credentials=None, rsvp_data=None):
+    def process(self, mode, user_credentials=None, **kwargs):
         """
         :param mode: mode is either 'event' or 'rsvp.
         :param user_credentials: are the credentials of user for
@@ -283,7 +289,8 @@ class SocialNetworkBase(object):
             # create object of selected event class
             sn_event_obj = event_class(user_credentials=user_credentials,
                                        social_network=self.social_network,
-                                       headers=self.headers)
+                                       headers=self.headers,
+                                       **kwargs)
 
             if mode == 'event':
                 # gets events using respective API of Social Network
@@ -298,9 +305,8 @@ class SocialNetworkBase(object):
                 # process events to save in database
                 sn_event_obj.process_events(self.events)
             elif mode == 'rsvp':
-                sn_event_obj.process_events_rsvps(user_credentials,
-                                                  rsvp_data=rsvp_data)
-        except:
+                sn_event_obj.process_events_rsvps(user_credentials, **kwargs)
+        except Exception:
             logger.exception('process: running %s importer, user_id: %s, '
                              'social network: %s(id: %s)'
                              % (mode, user_id, social_network_name,
@@ -412,11 +418,12 @@ class SocialNetworkBase(object):
                      % (self.user.name, self.user.id, self.social_network.name))
         try:
             user_credentials = self.user_credentials
-            url = self.api_url + self.api_relative_url
+            url = get_url(self, SocialNetworkUrls.VALIDATE_TOKEN)
             # Now we have the URL, access token, and header is set too,
             get_member_id_response = http_request('POST', url,
                                                   headers=self.headers,
-                                                  user_id=self.user.id)
+                                                  user_id=self.user.id,
+                                                  app=app)
             if get_member_id_response.ok:
                 member_id = get_member_id_response.json().get('id')
                 data = dict(user_id=user_credentials.user_id,
@@ -463,8 +470,8 @@ class SocialNetworkBase(object):
         :return status of of access token either True or False.
         """
         status = False
-        url = self.api_url + self.api_relative_url
-        logger.info("Eventbrite url: %s" % url)
+        url = get_url(self, SocialNetworkUrls.VALIDATE_TOKEN)
+        logger.info("%s access_token validation url: %s", self.social_network.name, url)
         try:
             response = requests.get(url, headers=self.headers, params=payload)
             if response.ok:
@@ -568,10 +575,27 @@ class SocialNetworkBase(object):
             if user_credentials_in_db:
                 user_credentials_in_db.update(**user_credentials)
             else:
-                user_credentials = UserSocialNetworkCredential(**user_credentials)
-                UserSocialNetworkCredential.save(user_credentials)
+                user_credentials_in_db = UserSocialNetworkCredential(**user_credentials)
+                UserSocialNetworkCredential.save(user_credentials_in_db)
             return user_credentials_in_db
         except:
             logger.exception('save_user_credentials_in_db: user_id: %s',
                              user_credentials['user_id'])
             raise SNServerException('APIError: Unable to create user credentials')
+
+    @staticmethod
+    def save_venue(venue_data):
+        """
+        This function will take dictionary data and will save it in database as Venue reccord.
+        :param dict venue_data: venue data
+        """
+        valid_fields = ['address_line_1', 'address_line_2', 'city', 'country', 'latitude', 'longitude',
+                        'zip_code', 'user_id', 'social_network_id', 'social_network_venue_id']
+        venue_data = {key: venue_data[key] for key in venue_data if key in valid_fields}
+        required_fields = ['social_network_id', 'user_id']
+        for key in required_fields:
+            if key not in venue_data:
+                raise InvalidUsage('Required field missing in venue data. Field: %s' % key)
+        venue = Venue(**venue_data)
+        Venue.save(venue)
+        return venue

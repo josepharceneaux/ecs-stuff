@@ -5,7 +5,6 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 
@@ -34,7 +33,6 @@ class TestGetCandidateLanguages(object):
         """
         Test:  Make a POST and a GET request to CandidateLanguageResource
         """
-        AddUserRoles.add_and_get(user_first)
         create_resp = send_request('post', CandidateApiUrl.LANGUAGES % candidate_first.id, access_token_first,
                                    self.get_data())
         print response_info(create_resp)
@@ -50,7 +48,6 @@ class TestGetCandidateLanguages(object):
         """
         Test:  Update candidate's language
         """
-        AddUserRoles.all_roles(user_first)
         create_resp = send_request('post', CandidateApiUrl.LANGUAGES % candidate_first.id, access_token_first,
                                    self.get_data())
         print response_info(create_resp)
@@ -78,7 +75,6 @@ class TestGetCandidateLanguages(object):
         """
         Test:  Delete one of candidate's languages
         """
-        AddUserRoles.all_roles(user_first)
 
         # Create candidate languages
         create_resp = send_request('post', CandidateApiUrl.LANGUAGES % candidate_first.id, access_token_first,

@@ -1,9 +1,22 @@
+"""
+ Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Um-I-Hani, QC-Technologies, <haniqadri.qc@gmail.com>
+         Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
+    Here are the validator functions used in email-campaign-service
+"""
+
+# Standard Library
+import datetime
+
+# Application Specific
+from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.smartlist import Smartlist
 from email_campaign_service.common.models.email_campaign import EmailClient
-from email_campaign_service.common.models.user import User
-from email_campaign_service.common.error_handling import InvalidUsage, UnprocessableEntity, ForbiddenError
-import datetime
+from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity, ForbiddenError)
+
 __author__ = 'jitesh'
 
 
@@ -14,9 +27,10 @@ def validate_datetime(datetime_text, field_name=None):
     :type datetime_text: unicode | basestring
     """
     try:
-        parsed_date = datetime.datetime.strptime(datetime_text, "%Y-%m-%dT%H:%M:%S.%fZ")
+        parsed_date = datetime.datetime.strptime(datetime_text, DatetimeUtils.ISO8601_FORMAT)
     except ValueError:
-        raise InvalidUsage("%s should be in valid format `2016-03-05T04:30:00.000Z`" % field_name if field_name else 'Datetime')
+        raise InvalidUsage("%s should be in valid format `2016-03-05T04:30:00.000Z`"
+                           % field_name if field_name else 'Datetime')
     if parsed_date < datetime.datetime.utcnow():
         raise UnprocessableEntity("The %s cannot be before today.")
     return parsed_date
@@ -32,6 +46,7 @@ def validate_and_format_request_data(data, user_id):
     """
     name = data.get('name')  # required
     subject = data.get('subject')        # required
+    description = data.get('description')        # required
     _from = data.get('from')
     reply_to = data.get('reply_to')
     body_html = data.get('body_html')    # required
@@ -48,6 +63,8 @@ def validate_and_format_request_data(data, user_id):
         raise InvalidUsage('name is required')  # 400 Bad request
     if subject is None or subject.strip() == '':
         raise InvalidUsage('subject is required')
+    if description is None or description.strip() == '':
+        raise InvalidUsage('description is required')
     if body_html is None or body_html.strip() == '':
         raise InvalidUsage('body_html is required')
     if not list_ids:
@@ -85,6 +102,7 @@ def validate_and_format_request_data(data, user_id):
     return {
         'name': name.strip(),
         'subject': subject.strip(),
+        'description': description.strip(),
         'from': get_or_set_valid_value(_from, basestring, '').strip(),
         'reply_to': get_or_set_valid_value(reply_to, basestring, '').strip(),
         'body_html': body_html.strip(),

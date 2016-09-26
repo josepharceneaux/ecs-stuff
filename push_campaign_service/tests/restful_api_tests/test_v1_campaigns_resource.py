@@ -34,13 +34,17 @@ import sys
 from requests import codes
 
 # Application specific imports
-from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
-from push_campaign_service.tests.test_utilities import (invalid_data_test,
-                                                        missing_key_test, create_campaign,
-                                                        get_campaigns, delete_campaign,
-                                                        delete_campaigns)
+from push_campaign_service.common.models.misc import Activity
+from push_campaign_service.modules.push_campaign_base import PushCampaignBase
+from push_campaign_service.tests.test_utilities import (create_campaign, get_campaigns,
+                                                        delete_campaign, delete_campaigns)
 from push_campaign_service.common.routes import PushCampaignApiUrl
-from push_campaign_service.common.utils.test_utils import send_request
+from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from push_campaign_service.common.utils.test_utils import (invalid_data_test, missing_keys_test, assert_activity,
+                                                           unexpected_field_test, invalid_value_test)
+from push_campaign_service.common.utils.handy_functions import (send_request)
+
+
 from push_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
 
 
@@ -65,26 +69,65 @@ class TestCreateCampaign(object):
         """
         invalid_data_test('post', URL, token_first)
 
+    def test_create_campaign_with_unexpected_field(self, token_first, campaign_data, smartlist_first):
+        """
+        Create a campaign with an extra unexpected field, API should raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        :param dict smartlist_first: Smartlist object
+        """
+        campaign_data['smartlist_ids'] = [smartlist_first['id']]
+        unexpected_field_test('post', URL, campaign_data, token_first)
+
     def test_create_campaign_with_missing_fields(self, token_first, campaign_data, smartlist_first):
         """
         Here we will try to create campaign with some required fields missing and we will get
         400 status code
-        :param token_first: auth token
-        :param campaign_data: campaign dictionary data
-        :param smartlist_first: smartlist dict object
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        :param dict smartlist_first: Smartlist object
         """
         # First test with missing keys
-        for key in CAMPAIGN_REQUIRED_FIELDS:
-            data = campaign_data.copy()
-            data['smartlist_ids'] = [smartlist_first['id']]
-            missing_key_test(data, key, token_first)
+        campaign_data['smartlist_ids'] = [smartlist_first['id']]
+        missing_keys_test(URL, campaign_data, PushCampaignBase.REQUIRED_FIELDS, token_first)
 
-    def test_create_campaign(self, token_first, campaign_data, smartlist_first):
+    def test_campaign_creation_with_invalid_body_text(self, token_first, campaign_data, smartlist_first):
+        """
+        Create a campaign with invalid body text, it should raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        :param dict smartlist_first: Smartlist object
+        """
+        campaign_data['smartlist_ids'] = [smartlist_first['id']]
+        invalid_values = CampaignsTestsHelpers.INVALID_TEXT_VALUES
+        invalid_value_test(URL, campaign_data, 'body_text', invalid_values, token_first)
+
+    def test_campaign_creation_with_invalid_smartlist_ids(self, token_first, campaign_data):
+        """
+        Create campaign with invalid smartlist ids, API should raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        """
+        invalid_ids = CampaignsTestsHelpers.INVALID_ID
+        invalid_value_test(URL, campaign_data, 'smartlist_ids', invalid_ids, token_first)
+
+    def test_campaign_creation_with_invalid_name(self, token_first, campaign_data, smartlist_first):
+        """
+        Create a campaign with invalid name field, API should raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        :param dict smartlist_first: Smartlist object
+        """
+        campaign_data['smartlist_ids'] = [smartlist_first['id']]
+        invalid_names = CampaignsTestsHelpers.INVALID_TEXT_VALUES
+        invalid_value_test(URL, campaign_data, 'name', invalid_names, token_first)
+
+    def test_create_campaign_with_valid_data(self, token_first, campaign_data, smartlist_first):
         """
         Here we will send a valid data to create a campaign and we are expecting 201 (created)
-        :param token_first: auth token
-        :param campaign_data: dict data for campaigns
-        :param smartlist_first: Smartlist dict object
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        :param dict smartlist_first: Smartlist object
         """
         # Success case. Send a valid data and campaign should be created (201)
         data = campaign_data.copy()
@@ -93,7 +136,7 @@ class TestCreateCampaign(object):
         _id = response['id']
         assert response['message'] == 'Push campaign was created successfully'
         assert response['headers']['Location'] == PushCampaignApiUrl.CAMPAIGN % _id
-
+        assert_activity(Activity.MessageIds.CAMPAIGN_CREATE, _id, 'push_campaign', token_first)
         # To delete this in finalizer, add id and token
         campaign_data['id'] = _id
         campaign_data['token'] = token_first
@@ -128,24 +171,24 @@ class TestGetListOfCampaigns(object):
         per_page = MAX_PAGE_SIZE + 1
         get_campaigns(token_first, per_page=per_page, expected_status=(codes.BAD_REQUEST,))
 
-    # TODO: Commenting this flaky test for Zohaib (basit)
-    # def test_get_all_campaigns_in_user_domain(self, token_first, token_same_domain, token_second,
-    #                                           campaign_in_db, campaign_in_db_same_domain, campaign_in_db_second,
-    #                                           ):
-    #     """
-    #     In this test, we will create three campaign for three users , two from same domain and one from
-    #     different domain and then we will get campaigns using user_first token and we will expect two campaigns,
-    #     and one campaign when using token for `user_second`.
-    #     :return:
-    #     """
-    #     response = get_campaigns(token_first, expected_status=(codes.OK,))
-    #     assert len(response['campaigns']) == 2
-    #
-    #     response = get_campaigns(token_same_domain, expected_status=(codes.OK,))
-    #     assert len(response['campaigns']) == 2
-    #
-    #     response = get_campaigns(token_second, expected_status=(codes.OK,))
-    #     assert len(response['campaigns']) == 1
+    def test_get_all_campaigns_in_user_domain(self, token_first, token_same_domain, token_second,
+                                              campaign_in_db, campaign_in_db_same_domain, campaign_in_db_second,
+                                              ):
+        """
+        In this test, we will create three campaign for three users , two from same domain and one from
+        different domain and then we will get campaigns using user_first token and we will expect two campaigns,
+        and one campaign when using token for `user_second`.
+        :return:
+        """
+        created_campaign_ids = {campaign_in_db['id'], campaign_in_db_same_domain['id']}
+        response = get_campaigns(token_first, per_page=50, expected_status=(codes.OK,))
+        assert created_campaign_ids.issubset({campaign['id'] for campaign in response['campaigns']})
+
+        response = get_campaigns(token_same_domain, per_page=50, expected_status=(codes.OK,))
+        assert created_campaign_ids.issubset({campaign['id'] for campaign in response['campaigns']})
+
+        response = get_campaigns(token_second, expected_status=(codes.OK,))
+        assert {campaign_in_db_second['id']}.issubset({campaign['id'] for campaign in response['campaigns']})
 
 
 class TestDeleteMultipleCampaigns(object):
@@ -203,6 +246,7 @@ class TestDeleteMultipleCampaigns(object):
         """
         data = {'ids': [campaign_in_db['id']]}
         delete_campaigns(data, token_first, expected_status=(codes.OK,))
+        assert_activity(Activity.MessageIds.CAMPAIGN_DELETE, campaign_in_db['id'], 'push_campaign', token_first)
 
     def test_campaigns_delete_with_other_user_with_same_domain(self, token_same_domain, campaign_in_db):
         """
@@ -213,6 +257,9 @@ class TestDeleteMultipleCampaigns(object):
         """
         data = {'ids': [campaign_in_db['id']]}
         delete_campaigns(data, token_same_domain, expected_status=(codes.OK,))
+
+        # Check campaign creation activity
+        assert_activity(Activity.MessageIds.CAMPAIGN_DELETE, campaign_in_db['id'], 'push_campaign', token_same_domain)
 
     def test_campaigns_delete_with_unauthorized_id(self, token_second, campaign_in_db):
         """

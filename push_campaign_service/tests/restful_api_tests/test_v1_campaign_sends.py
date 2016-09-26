@@ -21,7 +21,7 @@ from redo import retry
 from requests import codes
 
 # Application specific imports
-from push_campaign_service.tests.test_utilities import get_campaign_sends
+from push_campaign_service.tests.test_utilities import get_campaign_sends, fake
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE
 
@@ -31,13 +31,12 @@ URL = PushCampaignApiUrl.SENDS
 class TestCampaignSends(object):
 
     # Test URL: /v1/push-campaigns/<int:campaign_id>/sends [GET]
-    def test_get_campaign_sends_with_invalid_token(self, campaign_in_db):
+    def test_get_campaign_sends_with_invalid_token(self):
         """
         Try to get a campaign send with invalid token, we are expecting that we will get
         Unauthorized (401) error
-        :param campaign_in_db: campaign object
         """
-        campaign_id = campaign_in_db['id']
+        campaign_id = fake.random_int()
         get_campaign_sends(campaign_id, 'invalid_token', expected_status=(codes.UNAUTHORIZED,))
 
     def test_get_campaign_sends_for_non_existing_campaign(self, token_first):
@@ -60,8 +59,8 @@ class TestCampaignSends(object):
         # 403 Case, Not authorized
         get_campaign_sends(campaign_in_db['id'], token_second, expected_status=(codes.FORBIDDEN,))
 
-    def test_get_campaign_sends_with_diff_user_from_same_domain(self, token_same_domain, candidate_first,
-                                                                candidate_device_first, campaign_in_db, campaign_blasts):
+    def test_get_campaign_sends_with_diff_user_from_same_domain(self, token_same_domain, candidate_device_first,
+                                                                campaign_in_db, campaign_blasts):
         """
         Test that accessing campaign sends of a campaign created by other user but domain is
         same , so current user can access campaign sends
@@ -69,7 +68,7 @@ class TestCampaignSends(object):
         """
         get_campaign_sends(campaign_in_db['id'], token_same_domain, expected_status=(codes.OK,))
 
-    def test_get_campaign_sends_paginated(self, token_first, candidate_first, candidate_device_first,
+    def test_get_campaign_sends_paginated(self, token_first, candidate_device_first,
                                           campaign_in_db, campaign_blasts_pagination):
         """
         Test success case. Get sends of a campaign with valid token, valid campaign id,

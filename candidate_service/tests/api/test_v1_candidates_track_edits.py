@@ -8,22 +8,21 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles, get_int_version
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
+from candidate_service.tests.api.helpers import get_int_version
 
 # Candidate sample data
 from candidate_sample_data import generate_single_candidate_data
 
 
 class TestTrackCandidateEdits(object):
-    def test_edit_candidate_primary_info(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_primary_info(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's first, middle, and last names
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -53,13 +52,12 @@ class TestTrackCandidateEdits(object):
 
 
 class TestTrackCandidateAddressEdits(object):
-    def test_edit_candidate_address(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_address(self, access_token_first, talent_pool):
         """
         Test:   Edit Candidate's address
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -92,15 +90,15 @@ class TestTrackCandidateAddressEdits(object):
 
 
 class TestTrackCandidateCustomFieldEdits(object):
-    def test_edit_candidate_custom_field(self, access_token_first, user_first, talent_pool, domain_custom_fields):
+    def test_edit_candidate_custom_field(self, access_token_first, talent_pool, domain_custom_fields):
         """
         Test:   Change Candidate's custom fields
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id], custom_fields=domain_custom_fields)
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(create_resp)
 
         # Retrieve Candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -117,25 +115,26 @@ class TestTrackCandidateCustomFieldEdits(object):
 
         # Retrieve Candidate custom fields
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
+        print response_info(get_resp)
         new_custom_field_dict = get_resp.json()['candidate']['custom_fields'][0]
 
         # Retrieve Candidate Edits
         edit_resp = send_request('get', CandidateApiUrl.CANDIDATE_EDIT % candidate_id, access_token_first)
         print response_info(edit_resp)
         candidate_edits = edit_resp.json()['candidate']['edits']
-        assert edit_resp.status_code == 200
+
+        assert edit_resp.status_code == requests.codes.OK
         assert old_custom_field_dict['value'] in [edit['old_value'] for edit in candidate_edits]
         assert new_custom_field_dict['value'] in [edit['new_value'] for edit in candidate_edits]
 
 
 class TestTrackCandidateEducationEdits(object):
-    def test_edit_candidate_education(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_education(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's education records
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -167,13 +166,13 @@ class TestTrackCandidateEducationEdits(object):
         assert old_education_dict['school_name'] in old_values
         assert new_education_dict['school_name'] in new_values
 
-    def test_edit_candidate_education_degree(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_education_degree_goo(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's education degree records
         Expect: 200
         """
+
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -182,11 +181,18 @@ class TestTrackCandidateEducationEdits(object):
         get_resp = send_request('get', CandidateApiUrl.CANDIDATE % candidate_id, access_token_first)
         old_education_dict = get_resp.json()['candidate']['educations'][0]
 
+        # Change degree type to something different
+        current_degree = get_resp.json()['candidate']['educations'][0]['degrees'][0]['type']
+        degree_type = ['BS', 'MS', 'BA', 'PhD']
+        if current_degree in degree_type:
+            degree_type.remove(current_degree)
+
         # Update Candidate's education degree
         data = {'candidates': [
             {'id': candidate_id, 'educations': [
                 {'id': old_education_dict['id'], 'degrees': [
-                    {'id': old_education_dict['degrees'][0]['id'], 'type': 'MS', 'title': 'Biomedical Engineering'}
+                    {'id': old_education_dict['degrees'][0]['id'],
+                     'type': random.choice(degree_type), 'title': 'Biomedical Engineering'}
                 ]}
             ]}
         ]}
@@ -201,24 +207,24 @@ class TestTrackCandidateEducationEdits(object):
         print response_info(edit_resp)
 
         candidate_edits = edit_resp.json()['candidate']['edits']
-        assert edit_resp.status_code == 200
+        assert edit_resp.status_code == requests.codes.OK
         assert new_education_dict['degrees'][0]['type'] != old_education_dict['degrees'][0]['type']
         assert new_education_dict['degrees'][0]['title'] != old_education_dict['degrees'][0]['title']
 
         old_values = [edit['old_value'] for edit in candidate_edits]
         new_values = [edit['new_value'] for edit in candidate_edits]
+
         assert old_education_dict['degrees'][0]['type'] in old_values
         assert old_education_dict['degrees'][0]['title'] in old_values
         assert new_education_dict['degrees'][0]['type'] in new_values
         assert new_education_dict['degrees'][0]['title'] in new_values
 
-    def test_edit_candidate_education_degree_bullet(self, access_token_first, user_first, talent_pool):
+    def test_edit_candidate_education_degree_bullet(self, access_token_first, talent_pool):
         """
         Test:   Change Candidate's education degree bullet records
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -263,7 +269,6 @@ class TestTrackCandidateExperienceEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -304,7 +309,6 @@ class TestTrackCandidateExperienceEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -346,7 +350,6 @@ class TestTrackCandidateWorkPreferenceEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
@@ -390,7 +393,6 @@ class TestTrackCandidatePhoneEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -426,7 +428,6 @@ class TestTrackCandidateMilitaryServiceEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -461,7 +462,6 @@ class TestTrackCandidatePreferredLocationEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -501,7 +501,6 @@ class TestTrackCandidateSkillEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 
@@ -539,7 +538,6 @@ class TestTrackCandidateSocialNetworkEdits(object):
         Expect: 200
         """
         # Create Candidate
-        AddUserRoles.all_roles(user_first)
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 

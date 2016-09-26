@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 # 3rd party imports
 import requests
 from faker import Faker
+from redo import retrier, retry
 from requests import codes
 from contracts import contract
 from dateutil.parser import parse
@@ -18,38 +19,90 @@ from dateutil.parser import parse
 # Service specific imports
 from ..error_codes import ErrorCodes
 from ..tests.conftest import randomword
+from ..constants import SLEEP_TIME, SLEEP_INTERVAL, RETRY_ATTEMPTS
 from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
-                      CandidatePoolApiUrl, SchedulerApiUrl)
+                      CandidatePoolApiUrl, SchedulerApiUrl, ActivityApiUrl)
 from ..custom_contracts import define_custom_contracts
 from ..error_handling import NotFoundError
+from handy_functions import send_request
 
 define_custom_contracts()
 fake = Faker()
 
 
 @contract
-def send_request(method, url, access_token, data=None, params=None, is_json=True, verify=True):
+def invalid_value_test(url, data, key, values, token, method='post', expected_status=(codes.BAD_REQUEST,)):
     """
-    This is a generic method to send HTTP request. We can just pass our data/ payload
-    and it will make it json and send it to target url with application/json as content-type
-    header.
-    :param http_method method: standard HTTP method like post, get (in lowercase)
-    :param string url: target url
-    :param (string | None)  access_token: authentication token, token can be empty, None or invalid
-    :param (dict | None) data: payload data for request
-    :param (dict | None) params: query params
-    :param bool is_json: a flag to determine, whether we need to dump given data or not.
-            default value is true because most of the APIs are using json content-type.
-    :param bool verify: set this to false
-    :return:
+    This function sends a request to given url with required field
+    having an invalid value and checks that it returns InvalidUsage 400
+    :param dict data: campaign data
+    :param string url: api endpoint url
+    :param string key: field key
+    :param list values: possible invalid values
+    :param string token: auth token
+    :param http_method method: http request method, post/put
+    :param tuple(int)  expected_status: what can be possible expected status for this request
+
+    :Example:
+
+        >>> invalid_values = ['', '  ', {}, [], None, True]
+        >>> invalid_value_test(URL, campaign_data, 'body_text', invalid_values, token_first)
     """
-    method = method.lower()
-    request_method = getattr(requests, method)
-    headers = dict(Authorization='Bearer %s' % access_token)
-    if is_json:
-        headers['Content-Type'] = 'application/json'
-        data = json.dumps(data)
-    return request_method(url, data=data, params=params, headers=headers, verify=verify)
+    for val in values:
+        data[key] = val
+        response = send_request(method, url, token, data)
+        assert response.status_code in expected_status, 'Invalid field %s with value %s' % (key, val)
+
+
+@contract
+def unexpected_field_test(method, url, data, token):
+    """
+    This function send a request to given URL with an unexpected field in request body.
+    API should raise InvalidUsage 400
+    :param http_method method: request method, POST/PUT
+    :param string url: API resource url
+    :param dict data: request data
+    :param string token: access token
+    """
+    fake_word = fake.word()
+    data[fake_word] = fake_word
+    response = send_request(method, url, token, data)
+    assert response.status_code == codes.BAD_REQUEST, 'Unexpected field name: %s' % fake_word
+
+
+@contract
+def invalid_data_test(method, url, token):
+    """
+    This functions sends http request to a given URL with different
+    invalid data and checks for InvalidUsage (400 status code)
+    :param http_method method: http method e.g. POST, PUT, DELETE
+    :param string url: api url
+    :param string token: auth token
+    """
+    data_set = [None, {}, get_fake_dict(), '',  '  ', []]
+    for data in data_set:
+        response = send_request(method, url, token, data, is_json=False)
+        assert response.status_code == codes.BAD_REQUEST
+        response = send_request(method, url, token, data, is_json=True)
+        assert response.status_code == codes.BAD_REQUEST
+
+
+@contract
+def missing_keys_test(url, data, keys, token, method='post'):
+    """
+    This function sends a request to given url after removing required field from given (valid) data.
+    We are expecting that API should raise InvalidUsage error (400 status code)
+    :param string url: api endpoint url
+    :param dict data: request body data
+    :param list | tuple keys: required fields
+    :param string token: auth token
+    :param http_method method: http request method, post/put
+    """
+    for key in keys:
+        new_data = data.copy()
+        new_data.pop(key)
+        response = send_request(method, url, token, new_data)
+        assert response.status_code == codes.BAD_REQUEST, 'Test failed for key: %s' % key
 
 
 def response_info(response):
@@ -320,7 +373,7 @@ def delete_candidate(candidate_id, token, expected_status=(200,)):
     """
     This method sends a DELETE request to Candidate API to delete a candidate given by candidate_id.
     :type candidate_id: int | long
-    :type token: str
+    :type token: string
     :type expected_status: tuple[int]
     :rtype dict
     """
@@ -497,6 +550,40 @@ def delete_talent_pool(talent_pool_id, token, expected_status=(200,)):
     return response.json()
 
 
+@contract
+def get_activity(type_id, source_id, source_table, token, expected_status=(200,)):
+    """
+    This method sends a GET request to Activity Service API to get specific activity.
+    :param int | long type_id: activity type id, like 4 for campaign creation
+    :param int | long source_id: id of source object like push campaign id
+    :param string source_table: source table name, like push_campaign
+    :param string token: access token
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
+    url = "{}?type={}&source_id={}&source_table={}".format(ActivityApiUrl.ACTIVITIES, type_id, source_id, source_table)
+    response = send_request('get', url, token)
+    print('common_tests : get_activity: ', response.content)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+@contract
+def assert_activity(type_id, source_id, source_table, token, expected_status=(200,)):
+    """
+    This function uses retry to retrieve activity specified by query params.
+    :param int | long type_id: activity type id, like 4 for campaign creation
+    :param int | long source_id: id of source object like push campaign id
+    :param string source_table: source table name, like push_campaign
+    :param string token: access token
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
+    retry(get_activity, sleeptime=SLEEP_INTERVAL * 2, attempts=RETRY_ATTEMPTS, sleepscale=1,
+          retry_exceptions=(AssertionError,), args=(type_id, source_id, source_table, token),
+          kwargs={"expected_status": expected_status})
+
+
 def get_response(access_token, arguments_to_url, expected_count=1, attempts=20, pause=3, comp_operator='>='):
     """
     Function will a send request to cloud search until desired response is obtained.
@@ -536,3 +623,75 @@ def get_response(access_token, arguments_to_url, expected_count=1, attempts=20, 
             return resp
 
     raise NotFoundError('Unable to get expected number of candidates')
+
+
+@contract
+def get_and_assert_zero(url, key, token, sleep_time=SLEEP_TIME):
+    """
+    This function gets list of objects from given url and asserts that length of objects under a given key is zero.
+    It keeps on retrying this process until it founds some records or sleep_time is over
+    :param string url: URL of requested resource
+    :param string key: key in response that has resource list
+    :param string token: user access token
+    :param int sleep_time: maximum time to wait
+    """
+    attempts = sleep_time / SLEEP_INTERVAL
+    for _ in retrier(attempts=attempts, sleeptime=SLEEP_INTERVAL, sleepscale=1):
+        assert len(send_request('get', url, token).json()[key]) == 0
+
+
+@contract
+def associate_device_to_candidate(candidate_id, device_id, token, expected_status=(201,)):
+    """
+    This method sends a POST request to Candidate API to associate a OneSignal Device Id to a candidate.
+
+    :type candidate_id: int | long
+    :type device_id: string
+    :type token: string
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
+    data = {
+        'one_signal_device_id': device_id
+    }
+    response = send_request('post', CandidateApiUrl.DEVICES % candidate_id, token, data=data)
+    print('tests : associate_device_to_candidate: %s', response.content)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+@contract
+def get_candidate_devices(candidate_id, token, expected_status=(200,)):
+    """
+    This method sends a GET request to Candidate API to get all associated OneSignal Device Ids to a candidate.
+
+    :type candidate_id: int | long
+    :type token: string
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
+    response = send_request('get', CandidateApiUrl.DEVICES % candidate_id, token)
+    print('tests : get_candidate_devices: %s', response.content)
+    assert response.status_code in expected_status
+    return response.json()
+
+
+@contract
+def delete_candidate_device(candidate_id, device_id,  token, expected_status=(200,)):
+    """
+    This method sends a DELETE request to Candidate API to delete  OneSignal Device that is associated to a candidate.
+
+    :type candidate_id: int | long
+    :type device_id: string
+    :type token: string
+    :type expected_status: tuple[int]
+    :rtype dict
+    """
+    data = {
+        'one_signal_device_id': device_id
+    }
+    response = send_request('delete', CandidateApiUrl.DEVICES % candidate_id, token, data=data)
+    print('tests : delete_candidate_devices: %s', response.content)
+    assert response.status_code in expected_status
+    return response.json()
+

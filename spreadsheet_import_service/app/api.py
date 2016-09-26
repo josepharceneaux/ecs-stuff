@@ -10,9 +10,9 @@ from . import logger
 from .parsing_utilities import convert_spreadsheet_to_table, import_from_spreadsheet, schedule_spreadsheet_import
 from spreadsheet_import_service.common.error_handling import InvalidUsage
 from spreadsheet_import_service.common.routes import SpreadsheetImportApi
-from spreadsheet_import_service.common.utils.auth_utils import require_oauth, require_all_roles
+from spreadsheet_import_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from spreadsheet_import_service.common.utils.talent_s3 import *
-from spreadsheet_import_service.common.models.user import DomainRole
+from spreadsheet_import_service.common.models.user import Permission
 
 mod = Blueprint('spreadsheet_import_api', __name__)
 
@@ -21,7 +21,7 @@ HEADER_ROW_PARAMS = ['first_name', 'last_name', 'email']
 
 @mod.route(SpreadsheetImportApi.CONVERT_TO_TABLE, methods=['GET'])
 @require_oauth()
-@require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+@require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
 def spreadsheet_to_table():
     """
     POST /parse_spreadsheet/convert_to_table:  Convert given spreadsheet to table of candidates
@@ -46,7 +46,7 @@ def spreadsheet_to_table():
 
 @mod.route(SpreadsheetImportApi.IMPORT_CANDIDATES, methods=['POST'])
 @require_oauth()
-@require_all_roles(DomainRole.Roles.CAN_ADD_CANDIDATES)
+@require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
 def import_from_table():
     """
     POST /parse_spreadsheet/import_from_table: Import candidates from a python table object (arrays of arrays)
@@ -64,10 +64,14 @@ def import_from_table():
     if not posted_data or 'file_picker_key' not in posted_data or 'header_row' not in posted_data:
         raise InvalidUsage(error_message="Request body is empty or not provided")
 
+    # Format data
     file_picker_key = posted_data.get('file_picker_key')
     header_row = posted_data.get('header_row')
     source_id = posted_data.get('source_id')
     talent_pool_ids = posted_data.get('talent_pool_ids', [])
+    tags = posted_data.get('tags') or []
+
+    candidate_tags = [{'name': tag_name} for tag_name in tags]
 
     if not header_row or not file_picker_key:
         raise InvalidUsage(error_message="FilePicker key or header_row is missing")
@@ -94,10 +98,15 @@ def import_from_table():
 
     file_obj.close()
 
-    if len(candidates_table) > 100:
+    if candidates_table and len(candidates_table[0]) != len(header_row):
+        raise InvalidUsage("Number of Columns should be equal to header row provided")
+
+    if len(candidates_table) > 25:
         import_from_spreadsheet.delay(candidates_table, file_picker_key, header_row, talent_pool_ids,
-                                      request.oauth_token, request.user.id, True, source_id)
+                                      request.oauth_token, request.user.id, True, source_id,
+                                      formatted_candidate_tags=candidate_tags)
         return jsonify(dict(count=len(candidates_table), status='pending')), 201
     else:
         return import_from_spreadsheet(candidates_table, file_picker_key, header_row, talent_pool_ids,
-                                       request.oauth_token, request.user.id, False, source_id)
+                                       request.oauth_token, request.user.id, False, source_id,
+                                       formatted_candidate_tags=candidate_tags)

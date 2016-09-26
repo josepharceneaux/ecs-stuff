@@ -1,3 +1,4 @@
+import pytz
 import datetime
 import os
 import time
@@ -10,6 +11,7 @@ from werkzeug.security import generate_password_hash
 
 from db import db
 from ..models.event import Event
+from ..models.candidate import Candidate
 from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
@@ -25,7 +27,7 @@ from ..error_codes import ErrorCodes
 class User(db.Model):
     __tablename__ = 'user'
     id = db.Column('Id', db.BIGINT, primary_key=True)
-    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.Id'))
+    domain_id = db.Column('domainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'))
     email = db.Column(db.String(60), unique=True, nullable=False)
     password = db.Column(db.String(512))
     device_token = db.Column('deviceToken', db.String(64))
@@ -37,24 +39,28 @@ class User(db.Model):
     registration_key = db.Column(db.String(512))
     reset_password_key = db.Column(db.String(512))
     registration_id = db.Column(db.String(512))
-    # name = db.Column(db.String(127))
     first_name = db.Column('firstName', db.String(255))
     last_name = db.Column('lastName', db.String(255))
     added_time = db.Column('addedTime', db.DateTime, default=datetime.datetime.utcnow)
     updated_time = db.Column('updatedTime', db.DateTime, default=datetime.datetime.utcnow)
     password_reset_time = db.Column('passwordResetTime', db.DateTime, default=datetime.datetime.utcnow)
     dice_user_id = db.Column('diceUserId', db.Integer)
-    user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.Id', ondelete='CASCADE'))
+    user_group_id = db.Column('userGroupId', db.Integer, db.ForeignKey('user_group.Id'))
+    # I'm assuming First row of Role table will be Standard Role
+    role_id = db.Column('roleId', db.Integer, db.ForeignKey('role.id'), nullable=False, default=1)
     last_read_datetime = db.Column('lastReadDateTime', db.DateTime, server_default=db.text("CURRENT_TIMESTAMP"))
+    last_login_datetime = db.Column('lastLoginDateTime', db.DateTime)
     thumbnail_url = db.Column('thumbnailUrl', db.TEXT)
     is_disabled = db.Column(TINYINT, default='0', nullable=False)
     locale = db.Column(db.String(10), default='en-US')
     # TODO: Set Nullable = False after setting user_group_id for existing data
+    ats_enabled = db.Column(db.Boolean, default=False)
 
     # Relationships
     candidates = relationship('Candidate', backref='user')
     public_candidate_sharings = relationship('PublicCandidateSharing', backref='user')
     user_group = relationship('UserGroup', backref='user')
+    role = relationship('Role', backref='user')
     user_phones = relationship('UserPhone', cascade='all,delete-orphan', passive_deletes=True,
                                backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
@@ -79,7 +85,7 @@ class User(db.Model):
         return secret_key_id, 'Bearer %s' % s.dumps({'user_id': user_id})
 
     @staticmethod
-    def verify_jw_token(secret_key_id, token, allow_null_user=False):
+    def verify_jw_token(secret_key_id, token, allow_null_user=False, allow_candidate=False):
         secret_key = redis_store.get(secret_key_id)
         if not secret_key:
             raise UnauthorizedError(
@@ -93,16 +99,53 @@ class User(db.Model):
         except BadSignature:
             raise UnauthorizedError(error_message="Your JSON web token is not valid")
 
-        if data['user_id']:
+        if 'user_id' in data and data['user_id']:
             user = User.query.get(data['user_id'])
             if user:
                 request.user = user
+                request.candidate = None
                 return
+        elif allow_candidate:
+            if 'candidate_id' in data:
+                candidate = Candidate.query.get(data['candidate_id'])
+                if candidate:
+                    request.candidate = candidate
+                    request.user = None
+                    return
         elif allow_null_user:
             request.user = None
+            request.candidate = None
             return
 
         raise UnauthorizedError(error_message="User %s doesn't exist in database" % data['user_id'])
+
+    def to_dict(self):
+        """
+        This method withh convert sqlalchemy user object to a dictionary
+        :return:
+        """
+        return {
+            'id': self.id,
+            'domain_id': self.domain_id,
+            'email': self.email,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'phone': self.phone,
+            'registration_id': self.registration_id,
+            'dice_user_id': self.dice_user_id,
+            'user_group_id': self.user_group_id,
+            'added_time': self.added_time.replace(
+                    tzinfo=pytz.UTC).isoformat() if self.added_time else None,
+            'updated_time': self.updated_time.replace(
+                    tzinfo=pytz.UTC).isoformat() if self.updated_time else None,
+            'last_read_datetime': self.last_read_datetime.replace(
+                    tzinfo=pytz.UTC).isoformat() if self.last_read_datetime else None,
+            'last_login_datetime': self.last_login_datetime.replace(
+                    tzinfo=pytz.UTC).isoformat() if self.last_login_datetime else None,
+            'thumbnail_url': self.thumbnail_url,
+            'locale': self.locale,
+            'is_disabled': True if self.is_disabled == 1 else False
+        }
 
     def is_authenticated(self):
         return True
@@ -165,6 +208,18 @@ class User(db.Model):
         """
         return User.query.filter_by(email=email).first()
 
+    @staticmethod
+    def get_user_count_in_domain(user_id):
+        """
+        This method returns count of users in a domain
+        :param int user_id: User Id
+        :return: tuple(int, str) : (Number of users, domain name)
+        """
+        domain_name = User.query.with_entities(Domain.name).filter(User.domain_id == Domain.id).filter(User.id == user_id).first()
+        count = User.query.filter(User.domain_id == Domain.id).\
+            filter(User.id == user_id).count()
+        return count, domain_name[0]
+
 
 class UserPhone(db.Model):
     __tablename__ = 'user_phone'
@@ -211,7 +266,7 @@ class Domain(db.Model):
     default_tracking_code = db.Column('DefaultTrackingCode', db.SmallInteger)
     default_culture_id = db.Column('DefaultCultureId', db.Integer, default=1)
     settings_json = db.Column('SettingsJson', db.Text)
-    expiration = db.Column('Expiration', db.DateTime)
+    expiration = db.Column('Expiration', db.TIMESTAMP)
     added_time = db.Column('AddedTime', db.DateTime)
     default_from_name = db.Column('DefaultFromName', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
@@ -243,6 +298,25 @@ class Domain(db.Model):
         session.add(domain)
         session.commit()
         return domain
+
+    def to_dict(self):
+        """
+        This method will convert a domain object in JSON dictionary
+        :return:
+        """
+
+        return {
+            "id": self.id,
+            "name": self.name,
+            "organization_id": self.organization_id,
+            "default_culture_id": self.default_culture_id,
+            "added_time": self.added_time.replace(
+                    tzinfo=pytz.UTC).isoformat() if self.added_time else None,
+            "updated_time": self.updated_time.replace(
+                    tzinfo=pytz.UTC).isoformat() if self.updated_time else None,
+            "dice_company_id": self.dice_company_id,
+            "is_disabled": True if self.is_disabled == 1 else False
+        }
 
 
 class WebAuthGroup(db.Model):
@@ -358,20 +432,17 @@ class Token(db.Model):
         return Token.query.filter_by(access_token=access_token).first()
 
 
-class DomainRole(db.Model):
-    __tablename__ = 'domain_role'
+class Permission(db.Model):
+    __tablename__ = 'permission'
     id = db.Column(db.Integer, primary_key=True)
-    role_name = db.Column(db.String(255), nullable=False, unique=True)
-    domain_id = db.Column(db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), nullable=True)
-
-    domain = db.relationship('Domain', backref=db.backref('domain_role', cascade="all, delete-orphan"))
+    name = db.Column(db.String(255), nullable=False, unique=True)
 
     def __repr__(self):
-        return "<DomainRole (id = {})>".format(self.id)
+        return "<Permission (id = {})>".format(self.id)
 
-    class Roles(object):
+    class PermissionNames(object):
         """
-        Class entails constants that point to available user-role names
+        Class entails constants that point to available permission names
         """
         # Candidate Resources
         CAN_ADD_CANDIDATES = "CAN_ADD_CANDIDATES"
@@ -379,14 +450,33 @@ class DomainRole(db.Model):
         CAN_EDIT_CANDIDATES = "CAN_EDIT_CANDIDATES"
         CAN_DELETE_CANDIDATES = "CAN_DELETE_CANDIDATES"
 
-        # User Roles
-        CAN_GET_USER_ROLES = "CAN_GET_USER_ROLES"
-        CAN_ADD_USER_ROLES = "CAN_ADD_USER_ROLES"
-        CAN_DELETE_USER_ROLES = "CAN_DELETE_USER_ROLES"
+        # Candidate Primary Information
+        CAN_ADD_CANDIDATE_PRIMARY_INFO = "CAN_ADD_CANDIDATE_PRIMARY_INFO"
+        CAN_GET_CANDIDATE_PRIMARY_INFO = "CAN_GET_CANDIDATE_PRIMARY_INFO"
+        CAN_EDIT_CANDIDATE_PRIMARY_INFO = "CAN_EDIT_CANDIDATE_PRIMARY_INFO"
+        CAN_DELETE_CANDIDATE_PRIMARY_INFO = "CAN_DELETE_CANDIDATE_PRIMARY_INFO"
 
-        # User Groups
-        CAN_GET_GROUP_USERS = "CAN_GET_GROUP_USERS"
-        CAN_ADD_GROUP_USERS = "CAN_ADD_GROUP_USERS"
+        # Candidate Notes
+        CAN_ADD_CANDIDATE_NOTES = "CAN_ADD_CANDIDATE_NOTES"
+        CAN_GET_CANDIDATE_NOTES = "CAN_GET_CANDIDATE_NOTES"
+        CAN_EDIT_CANDIDATE_NOTES = "CAN_EDIT_CANDIDATE_NOTES"
+        CAN_DELETE_CANDIDATE_NOTES = "CAN_DELETE_CANDIDATE_NOTES"
+
+        # Candidate Contact History
+        CAN_ADD_CANDIDATE_CONTACT_HISTORY = "CAN_ADD_CANDIDATE_CONTACT_HISTORY"
+        CAN_GET_CANDIDATE_CONTACT_HISTORY = "CAN_GET_CANDIDATE_CONTACT_HISTORY"
+        CAN_EDIT_CANDIDATE_CONTACT_HISTORY = "CAN_EDIT_CANDIDATE_CONTACT_HISTORY"
+        CAN_DELETE_CANDIDATE_CONTACT_HISTORY = "CAN_DELETE_CANDIDATE_CONTACT_HISTORY"
+
+        # Candidate Social Profile
+        CAN_ADD_CANDIDATE_SOCIAL_PROFILE = "CAN_ADD_CANDIDATE_SOCIAL_PROFILE"
+        CAN_GET_CANDIDATE_SOCIAL_PROFILE = "CAN_GET_CANDIDATE_SOCIAL_PROFILE"
+        CAN_EDIT_CANDIDATE_SOCIAL_PROFILE = "CAN_EDIT_CANDIDATE_SOCIAL_PROFILE"
+        CAN_DELETE_CANDIDATE_SOCIAL_PROFILE = "CAN_DELETE_CANDIDATE_SOCIAL_PROFILE"
+
+        # User Roles
+        CAN_GET_USER_ROLE = "CAN_GET_USER_ROLE"
+        CAN_EDIT_USER_ROLE = "CAN_EDIT_USER_ROLE"
 
         # User Resources
         CAN_ADD_USERS = "CAN_ADD_USERS"
@@ -399,12 +489,6 @@ class DomainRole(db.Model):
         CAN_ADD_DOMAINS = "CAN_ADD_DOMAINS"
         CAN_DELETE_DOMAINS = "CAN_DELETE_DOMAINS"
         CAN_EDIT_DOMAINS = "CAN_EDIT_DOMAINS"
-
-        # Domain Roles
-        CAN_ADD_DOMAIN_ROLES = "CAN_ADD_DOMAIN_ROLES"
-        CAN_GET_DOMAIN_ROLES = "CAN_GET_DOMAIN_ROLES"
-        CAN_EDIT_DOMAIN_ROLES = "CAN_EDIT_DOMAIN_ROLES"
-        CAN_DELETE_DOMAIN_ROLES = "CAN_DELETE_DOMAIN_ROLES"
 
         # Domain Groups
         CAN_GET_DOMAIN_GROUPS = "CAN_GET_DOMAIN_GROUPS"
@@ -423,191 +507,128 @@ class DomainRole(db.Model):
         CAN_GET_TALENT_POOLS = "CAN_GET_TALENT_POOLS"
         CAN_EDIT_TALENT_POOLS = "CAN_EDIT_TALENT_POOLS"
         CAN_DELETE_TALENT_POOLS = "CAN_DELETE_TALENT_POOLS"
-        CAN_GET_TALENT_PIPELINES_OF_TALENT_POOLS = "CAN_GET_TALENT_PIPELINES_OF_TALENT_POOLS"
-
-        # Talent Pool Group
-        CAN_GET_TALENT_POOLS_OF_GROUP = "CAN_GET_TALENT_POOLS_OF_GROUP"
-        CAN_DELETE_TALENT_POOLS_FROM_GROUP = "CAN_DELETE_TALENT_POOLS_FROM_GROUP"
-        CAN_ADD_TALENT_POOLS_TO_GROUP = "CAN_ADD_TALENT_POOLS_TO_GROUP"
-
-        # Candidate from Talent Pool
-        CAN_GET_CANDIDATES_FROM_TALENT_POOL = "CAN_GET_CANDIDATES_FROM_TALENT_POOL"
-        CAN_ADD_CANDIDATES_TO_TALENT_POOL = "CAN_ADD_CANDIDATES_TO_TALENT_POOL"
-        CAN_DELETE_CANDIDATES_FROM_TALENT_POOL = "CAN_DELETE_CANDIDATES_FROM_TALENT_POOL"
-
-        # Talent Pipeline Candidates
-        CAN_GET_TALENT_PIPELINE_CANDIDATES = "CAN_GET_TALENT_PIPELINE_CANDIDATES"
-
-        # Smart List
-        CAN_ADD_SMART_LISTS_STATS = "CAN_ADD_SMART_LISTS_STATS"
-        CAN_GET_SMART_LISTS_STATS = "CAN_GET_SMART_LISTS_STATS"
-        CAN_EDIT_SMART_LISTS_STATS = "CAN_EDIT_SMART_LISTS_STATS"
-        CAN_DELETE_SMART_LISTS_STATS = "CAN_DELETE_SMART_LISTS_STATS"
-
-        # Talent Pipelines' Stats
-        CAN_ADD_TALENT_PIPELINES_STATS = "CAN_ADD_TALENT_PIPELINES_STATS"
-        CAN_GET_TALENT_PIPELINES_STATS = "CAN_GET_TALENT_PIPELINES_STATS"
-        CAN_DELETE_TALENT_PIPELINES_STATS = "CAN_DELETE_TALENT_PIPELINES_STATS"
 
         # Talent Pipeline Smart lists
-        CAN_ADD_TALENT_PIPELINE_SMART_LISTS = "CAN_ADD_TALENT_PIPELINE_SMART_LISTS"
-        CAN_GET_TALENT_PIPELINE_SMART_LISTS = "CAN_GET_TALENT_PIPELINE_SMART_LISTS"
-        CAN_EDIT_TALENT_PIPELINE_SMART_LISTS = "CAN_EDIT_TALENT_PIPELINE_SMART_LISTS"
-        CAN_DELETE_TALENT_PIPELINE_SMART_LISTS = "CAN_DELETE_TALENT_PIPELINE_SMART_LISTS"
+        CAN_ADD_SMART_LISTS = "CAN_ADD_SMART_LISTS"
+        CAN_GET_SMART_LISTS = "CAN_GET_SMART_LISTS"
+        CAN_EDIT_SMART_LISTS = "CAN_EDIT_SMART_LISTS"
+        CAN_DELETE_SMART_LISTS = "CAN_DELETE_SMART_LISTS"
 
-        # Admin Roles
-        CAN_EDIT_OTHER_DOMAIN_INFO = "CAN_EDIT_OTHER_DOMAIN_INFO"
+        # Campaigns
+        CAN_ADD_CAMPAIGNS = "CAN_ADD_CAMPAIGNS"
+        CAN_GET_CAMPAIGNS = "CAN_GET_CAMPAIGNS"
+        CAN_EDIT_CAMPAIGNS = "CAN_EDIT_CAMPAIGNS"
+        CAN_DELETE_CAMPAIGNS = "CAN_DELETE_CAMPAIGNS"
 
-        # Email Template Roles
-        CAN_CREATE_EMAIL_TEMPLATE = "CAN_CREATE_EMAIL_TEMPLATE"
-        CAN_GET_EMAIL_TEMPLATE = "CAN_GET_EMAIL_TEMPLATE"
-        CAN_UPDATE_EMAIL_TEMPLATE = "CAN_UPDATE_EMAIL_TEMPLATE"
-        CAN_DELETE_EMAIL_TEMPLATE = "CAN_DELETE_EMAIL_TEMPLATE"
-
-        # Email Template Folder Roles
-        CAN_CREATE_EMAIL_TEMPLATE_FOLDER = "CAN_CREATE_EMAIL_TEMPLATE_FOLDER"
-        CAN_DELETE_EMAIL_TEMPLATE_FOLDER = "CAN_DELETE_EMAIL_TEMPLATE_FOLDER"
+        # Widgets
+        CAN_ADD_WIDGETS = "CAN_ADD_WIDGETS"
+        CAN_GET_WIDGETS = "CAN_GET_WIDGETS"
+        CAN_EDIT_WIDGETS = "CAN_EDIT_WIDGETS"
+        CAN_DELETE_WIDGETS = "CAN_DELETE_WIDGETS"
 
         CAN_IMPERSONATE_USERS = "CAN_IMPERSONATE_USERS"
-
-        # Scheduler Admin Role
-        CAN_GET_ALL_SCHEDULER_JOBS = "CAN_GET_ALL_SCHEDULER_JOBS"
 
     def delete(self):
         db.session.delete(self)
         db.session.commit()
 
     @staticmethod
-    def save(role_name, domain_id=None):
+    def save(permission_name):
         """
-        Create a new Role record with the supplied domain_id and role_name. If domain_id is provided then role
-        would be domain specific otherwise it would be general
-        :param int | None domain_id: domain id of a role.
-        :param basestring role_name: role name of a role.
+        Create a new Permission record with the supplied permission_name.
+        :param basestring permission_name: Mame of a permission.
         :rtype: int
         """
-        role = DomainRole(role_name=role_name, domain_id=domain_id)
+        permission = Permission(name=permission_name)
+        db.session.add(permission)
+        db.session.commit()
+        return permission.id
+
+    @staticmethod
+    def get_by_id(permission_id):
+        """ Get permission object with supplied permission_id.
+        :param int permission_id: Id of a role.
+        :rtype: Permission
+        """
+        return Permission.query.get(permission_id)
+
+    @staticmethod
+    def get_by_name(permission_name):
+        """ Get permission object with supplied permission_name.
+        :param str permission_name: Name of a permission.
+        :rtype: Permission
+        """
+        return Permission.query.filter_by(name=permission_name).first()
+
+    @staticmethod
+    def get_by_names(permission_names):
+        """ Get all permission objects with supplied permission_names.
+        :param list[str] permission_names: List of names of a permissions.
+        :rtype: list[Permission]
+        """
+        return Permission.query.filter(Permission.name.in_(permission_names)).all()
+
+    @staticmethod
+    def all():
+        """
+        Get all permission objects in database
+        :rtype: list[Permission]
+        """
+        return Permission.query.all()
+
+
+class Role(db.Model):
+    __tablename__ = 'role'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False, unique=True)
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    @staticmethod
+    def save(role_name):
+        """
+        Create a new Role record with the supplied role_name.
+        :param basestring role_name: Mame of a role.
+        :rtype: int
+        """
+        role = Role(name=role_name)
         db.session.add(role)
         db.session.commit()
         return role.id
 
     @staticmethod
-    def get_by_id(role_id):
-        """ Get a role with supplied role_id.
-        :param int role_id: id of a role.
-        :rtype: DomainRole
-        """
-        return DomainRole.query.get(role_id)
+    def get_by_name(name):
+        return Role.query.filter_by(name=name).first()
 
-    @staticmethod
-    def get_by_name(role_name):
-        """ Get a role with supplied role_name.
-        :param str role_name: Name of a role.
-        :rtype: DomainRole
+    def get_all_permissions_of_role(self):
+        """ Get all permissions of a role
+        :rtype: list[Permission]
         """
-        return DomainRole.query.filter_by(role_name=role_name).first()
-
-    @staticmethod
-    def get_by_names(role_names):
-        """ Get a role with supplied role_name.
-        :param list[str] role_names: List of role names.
-        :rtype: list[DomainRole]
-        """
-        return DomainRole.query.filter(DomainRole.role_name.in_(role_names)).all()
+        permissions_of_role = PermissionsOfRole.query.filter_by(role_id=self.id).all()
+        return [permission_of_role.permission for permission_of_role in permissions_of_role]
 
     @staticmethod
     def all():
         """
-        Get all roles_ids in database
-        :rtype: list[DomainRole]
+        Get all role objects in database
+        :rtype: list[Permission]
         """
-        return DomainRole.query.all()
-
-    @staticmethod
-    def all_roles_of_domain(domain_id):
-        """ Get all roles with names for a given domain_id
-        :param int domain_id: id of a domain.
-        :rtype: list[DomainRole]
-        """
-        return DomainRole.query.filter_by(domain_id=domain_id).all()
+        return Role.query.all()
 
 
-class UserScopedRoles(db.Model):
-    __tablename__ = 'user_scoped_roles'
+class PermissionsOfRole(db.Model):
+    __tablename__ = 'permissions_of_role'
     id = db.Column('Id', db.Integer, primary_key=True)
-    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
-    role_id = db.Column('RoleId', db.Integer, db.ForeignKey('domain_role.id', ondelete='CASCADE'), nullable=False)
-    domain_role = db.relationship('DomainRole', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
-    user = db.relationship('User', backref=db.backref('user_scoped_roles', cascade="all, delete-orphan"))
+    role_id = db.Column('RoleId', db.Integer, db.ForeignKey('role.id', ondelete='CASCADE'), nullable=False)
+    permission_id = db.Column('PermissionId', db.Integer, db.ForeignKey('permission.id', ondelete='CASCADE'), nullable=False)
+
+    permission = db.relationship('Permission', backref=db.backref('permissions_of_role', cascade="all, delete-orphan"))
+    role = db.relationship('Role', backref=db.backref('permissions_of_role', cascade="all, delete-orphan"))
 
     def __repr__(self):
-        return "<UserScopedRoles (id = {})>".format(self.id)
-
-    @staticmethod
-    def add_roles(user, roles_list):
-        """ Add a role for user
-        :param User user: user object
-        :param list[int | str] roles_list: list of role_ids or role_names or both
-        :rtype: None
-        """
-        if user:
-            for role in roles_list:
-                if is_number(role):
-                    role_id = int(role)
-                else:
-                    domain_role = DomainRole.get_by_name(role)
-                    if domain_role:
-                        role_id = domain_role.id
-                    else:
-                        raise InvalidUsage(error_message="Role: %s doesn't exist" % role)
-                domain_role = DomainRole.query.get(role_id)
-                if domain_role and (not domain_role.domain_id or domain_role.domain_id == user.domain_id):
-                    if not UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id) &
-                                                                (UserScopedRoles.role_id == role_id)).first():
-                        user_scoped_role = UserScopedRoles(user_id=user.id, role_id=role_id)
-                        db.session.add(user_scoped_role)
-                    else:
-                        raise InvalidUsage(error_message="Role: %s already exists for user: %s" % (role, user.id),
-                                           error_code=ErrorCodes.ROLE_ALREADY_EXISTS)
-                else:
-                    raise InvalidUsage(
-                        error_message="Role: %s doesn't exist or it belongs to a different domain" % role)
-            db.session.commit()
-        else:
-            raise InvalidUsage(error_message="User %s doesn't exist" % user.id)
-
-    @staticmethod
-    def delete_roles(user, roles_list):
-        """ Delete a role for user
-        :param User user: user object
-        :param list[int | str] roles_list: list of role_ids or role_names or both
-        :rtype: None
-        """
-        for role in roles_list:
-            if is_number(role):
-                role_id = int(role)
-            else:
-                domain_role = DomainRole.get_by_name(role)
-                if domain_role:
-                    role_id = domain_role.id
-                else:
-                    raise InvalidUsage(error_message="Domain role %s doesn't exist" % role)
-
-            user_scoped_role = UserScopedRoles.query.filter((UserScopedRoles.user_id == user.id)
-                                                            & (UserScopedRoles.role_id == role_id)).first()
-            if user_scoped_role:
-                db.session.delete(user_scoped_role)
-            else:
-                raise InvalidUsage(error_message="User %s doesn't have any role %s or " % (user.id, role_id))
-        db.session.commit()
-
-    @staticmethod
-    def get_all_roles_of_user(user_id):
-        """ Get all roles for a user
-        :param int user_id: Id of a user
-        :rtype: list[UserScopedRoles]
-        """
-        return UserScopedRoles.query.filter_by(user_id=user_id).all()
+        return "<PermissionsOfRole (id = {})>".format(self.id)
 
 
 class UserGroup(db.Model):
@@ -753,6 +774,7 @@ class UserSocialNetworkCredential(db.Model):
     access_token = db.Column('AccessToken', db.String(1000))
     social_network = db.relationship("SocialNetwork", backref=db.backref(
         'user_social_network_credential', cascade="all, delete-orphan"))
+    updated_datetime = db.Column('UpdatedDatetime', db.DateTime, nullable=True)
 
     @classmethod
     def get_all_credentials(cls, social_network_id=None):
@@ -792,3 +814,17 @@ class UserSocialNetworkCredential(db.Model):
         assert webhook_id and social_network_id
         return cls.query.filter(
             db.and_(cls.webhook == webhook_id, cls.social_network_id == social_network_id)).one()
+
+
+class TalentbotAuth(db.Model):
+    __tablename__ = 'talentbot_auth'
+    id = db.Column('Id', db.Integer, primary_key=True, unique=True, nullable=False)
+    email = db.Column('Email', db.String(50), unique=True)
+    user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id'))
+    user_phone_id = db.Column('UserPhoneId', db.Integer, db.ForeignKey('user_phone.id'))
+    email_secret_token = db.Column('EmailSecretToken', db.String(50))
+    slack_user_id = db.Column('SlackUserId', db.String(50), unique=True)
+    slack_team_id = db.Column('SlackTeamId', db.String(50))
+    slack_team_name = db.Column('SlackTeamName', db.String(50))
+    facebook_user_id = db.Column('FacebookUserId', db.String(50), unique=True)
+    slack_user_token = db.Column('SlackUsertoken', db.String(70))

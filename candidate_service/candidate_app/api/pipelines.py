@@ -12,10 +12,13 @@ from flask_restful import Resource
 from candidate_service.modules.validators import get_candidate_if_validated
 
 # Decorators
-from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
+from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions, is_number
+
+# Handlers
+from candidate_service.common.error_handling import InvalidUsage
 
 # Models
-from candidate_service.common.models.user import DomainRole, User
+from candidate_service.common.models.user import Permission, User
 from candidate_service.common.models.candidate import Candidate
 from candidate_service.common.models.talent_pools_pipelines import TalentPipeline
 from candidate_service.modules.candidate_engagement import top_most_engaged_pipelines_of_candidate
@@ -25,7 +28,7 @@ from candidate_service.common.inter_service_calls.candidate_service_calls import
 class CandidatePipelineResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Function will return user's 5 most recently added Pipelines. One of the pipelines will
@@ -45,9 +48,13 @@ class CandidatePipelineResource(Resource):
         # This is to prevent client from waiting too long for a response
         max_requests = 10
 
+        is_hidden = request.args.get('is_hidden', 0)
+        if not is_number(is_hidden) or int(is_hidden) not in (0, 1):
+            raise InvalidUsage('`is_hidden` can be either 0 or 1')
+
         # Get User-domain's 10 most recent talent pipelines in order of added time
         talent_pipelines = TalentPipeline.query.join(User).filter(
-            User.domain_id == authed_user.domain_id).order_by(
+            TalentPipeline.is_hidden == is_hidden,  User.domain_id == authed_user.domain_id).order_by(
             TalentPipeline.added_time.desc()).limit(max_requests).all()
 
         # Use Search API to retrieve candidate's domain-pipeline inclusion
@@ -86,6 +93,7 @@ class CandidatePipelineResource(Resource):
                         "open_positions": talent_pipeline.positions,
                         "pipeline_engagement": pipeline_engagements.get(int(talent_pipeline.id), None),
                         "datetime_needed": str(talent_pipeline.date_needed),
+                        'is_hidden': talent_pipeline.is_hidden,
                         "user_id": user_id,
                         "added_datetime": str(talent_pipeline.added_time)
                     })

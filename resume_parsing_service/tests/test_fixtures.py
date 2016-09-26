@@ -5,23 +5,23 @@ import datetime
 from _mysql_exceptions import IntegrityError
 import pytest
 # Module Specific
+from resume_parsing_service.app import db
 from resume_parsing_service.common.models.candidate import EmailLabel
-from resume_parsing_service.common.models.candidate_edit import CandidateView
+from resume_parsing_service.common.models.candidate import PhoneLabel
 from resume_parsing_service.common.models.misc import Country
 from resume_parsing_service.common.models.misc import Culture
 from resume_parsing_service.common.models.misc import Organization
 from resume_parsing_service.common.models.misc import Product
-from resume_parsing_service.common.models.candidate import PhoneLabel
 from resume_parsing_service.common.models.talent_pools_pipelines import TalentPool
 from resume_parsing_service.common.models.talent_pools_pipelines import TalentPoolGroup
 from resume_parsing_service.common.models.user import Client
 from resume_parsing_service.common.models.user import Domain
+from resume_parsing_service.common.models.user import Role
 from resume_parsing_service.common.models.user import Token
 from resume_parsing_service.common.models.user import User
 from resume_parsing_service.common.models.user import UserGroup
 from resume_parsing_service.common.utils.db_utils import get_or_create
 from resume_parsing_service.common.utils.handy_functions import random_word
-from resume_parsing_service.app import db
 
 
 def require_integrity(func):
@@ -108,10 +108,12 @@ def talent_pool_group_fixture(talent_pool_fixture, user_group_fixture, request):
 
 @pytest.fixture(autouse=True)
 def user_fixture(domain_fixture, user_group_fixture, request):
+    user_role = Role.get_by_name('USER')
     user = User(domain_id=domain_fixture.id, first_name='Jamtry', last_name='Jonas',
                 password='password', email='jamtry@{}.com'.format(random_word(8)),
                 user_group_id=user_group_fixture.id,
-                added_time=datetime.datetime(2050, 4, 26))
+                added_time=datetime.datetime(2050, 4, 26),
+                role_id=user_role.id)
     db.session.add(user)
     db.session.commit()
     @require_integrity

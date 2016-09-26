@@ -11,7 +11,16 @@
 .idea/workspace.xml
 .idea/tasks.xml
 .idea/dictionaries
+.idea/modules.xml
 .idea/runConfigurations/Run_social_network_manager.xml
+.idea/runConfigurations/Build_Scheduler_Service.xml
+.idea/runConfigurations/Run_Scheduler_Service__Staging_.xml
+.idea/runConfigurations/Test_Scheduler_Service.xml
+.idea/runConfigurations/Run_scheduler_service.xml
+.idea/runConfigurations/Test_CandidatePoolService.xml
+.idea/runConfigurations/Test_PushCampaignService.xml
+.idea/runConfigurations/Test_Scheduler_Service.xml
+
 
 # Sensitive or high-churn files:
 .idea/dataSources.ids

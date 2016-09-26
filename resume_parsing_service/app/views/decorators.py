@@ -7,6 +7,7 @@ from functools import wraps
 # Module Specific
 from flask import current_app
 from resume_parsing_service.app import logger
+from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.common.error_handling import InternalServerError, TalentError
 from resume_parsing_service.common.utils.talent_s3 import boto3_put
 
@@ -27,9 +28,12 @@ def upload_failed_IO(f):
                 logger.exception('Uncaught error occured during Resume Processing: {}'.format(e.message))
                 fileIO = args[0]
                 key = args[1]
-                fileIO.seek(0)
-                boto3_put(fileIO.read(), current_app.config['S3_BUCKET_NAME'], key, 'FailedResumes')
-                raise InternalServerError(error_message='An error has occured during this process. The development team has been notified.')
+                boto3_put(fileIO.getvalue(), current_app.config['S3_BUCKET_NAME'], key, 'FailedResumes')
+                fileIO.close()
+                raise InternalServerError(
+                    error_message=error_constants.RESUME_UNCAUGHT_EXCEPTION['message'],
+                    error_code=error_constants.RESUME_UNCAUGHT_EXCEPTION['code']
+                )
 
             else:
                 raise e

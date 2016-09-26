@@ -35,11 +35,13 @@ import sys
 from requests import codes
 
 # Application specific imports
-from push_campaign_service.tests.test_utilities import (get_campaign,delete_campaign, invalid_value_test,
-                                                        compare_campaign_data, generate_campaign_data, update_campaign)
+from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from push_campaign_service.tests.test_utilities import (get_campaign, delete_campaign, compare_campaign_data,
+                                                        generate_campaign_data, update_campaign)
+from push_campaign_service.common.utils.test_utils import (invalid_data_test, missing_keys_test,
+                                                           unauthorize_test, invalid_value_test)
 from push_campaign_service.common.routes import PushCampaignApiUrl
-from push_campaign_service.common.utils.test_utils import unauthorize_test
-from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
+from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 
 
 URL = PushCampaignApiUrl.CAMPAIGN
@@ -151,8 +153,9 @@ class TestUpdateCampaign(object):
         data = generate_campaign_data()
         data['smartlist_ids'] = [smartlist_first['id']]
         invalid_id = sys.maxint
-        for _id in [0, invalid_id]:
-            update_campaign(_id, data, token_first, expected_status=(codes.NOT_FOUND,))
+        update_campaign(invalid_id, data, token_first, expected_status=(codes.NOT_FOUND,))
+        # test with id: 0, it should raise InvalidUsage
+        update_campaign(0, data, token_first, expected_status=(codes.BAD_REQUEST,))
 
     def test_update_deleted_campaign(self, token_first, campaign_in_db, smartlist_first):
         """
@@ -178,26 +181,83 @@ class TestUpdateCampaign(object):
         """
         # Test invalid field
         data = generate_campaign_data()
+        data['smartlist_ids'] = [smartlist_first['id']]
+        # valid fields for push campaign are ['name', 'body_text', 'smartlist_ids', 'url`]
         data['invalid_field_name'] = 'Any Value'
         campaign_id = campaign_in_db['id']
-        response = update_campaign(campaign_id, data, token_first,
-                                   expected_status=(codes.BAD_REQUEST,))
-        error = response['error']
-        assert error['invalid_field'] == 'invalid_field_name'
+        update_campaign(campaign_id, data, token_first, expected_status=(codes.BAD_REQUEST,))
 
-    def test_put_by_id_with_missing_required_key(self, token_first, smartlist_first, campaign_in_db):
+    def test_put_by_id_with_missing_required_key(self, token_first, smartlist_first, campaign_in_db, campaign_data):
         """
         Try to update a campaign with some required field missing, and API will raise
         InvalidUsage (400) error
         :param token_first: auth token
         :param smartlist_first: smartlist object
         :param campaign_in_db: campaign object
+        :param campaign_data: data to update a campaign
         """
-        # Test valid fields with invalid/ empty values
-        data = generate_campaign_data()
-        data['smartlist_ids'] = [smartlist_first['id']]
-        for key in CAMPAIGN_REQUIRED_FIELDS:
-            invalid_value_test(data, key, token_first, campaign_in_db['id'])
+        campaign_data['smartlist_ids'] = [smartlist_first['id']]
+        missing_keys_test(URL % campaign_in_db['id'], campaign_data, PushCampaignBase.REQUIRED_FIELDS,
+                          token_first, method='put')
+
+    def test_update_campaign_with_invalid_data(self, token_first, campaign_in_db):
+        """
+        We will try to update a campaign with invalid data (empty, invalid json, without json dump)
+        and expect 400 status code
+        :param token_first: auth token
+        :param campaign_in_db: campaign object
+        """
+        invalid_data_test('put', URL % campaign_in_db['id'], token_first)
+
+    def test_campaign_update_with_invalid_body_text(self, token_first, campaign_data, smartlist_first, campaign_in_db):
+        """
+        Update a campaign with invalid body text, it should raise InvalidUsage 400
+        :param token_first: auth token
+        :param campaign_data: data to update push campaign
+        :param smartlist_first: smartlist objectd
+        :param campaign_in_db: already created push campaign data
+        """
+        url = URL % campaign_in_db['id']
+        campaign_data['smartlist_ids'] = [smartlist_first['id']]
+        invalid_values = CampaignsTestsHelpers.INVALID_TEXT_VALUES
+        invalid_value_test(url,  campaign_data, 'body_text', invalid_values, token_first, method='put')
+
+    def test_campaign_update_with_invalid_smartlist_ids(self, token_first, campaign_data, campaign_in_db):
+        """
+        Update campaign with invalid smartlist ids, API should raise InvalidUsage 400
+        :param token_first: auth token
+        :param campaign_data: data to update push campaign
+        :param campaign_in_db: already created push campaign data
+        """
+        invalid_ids = CampaignsTestsHelpers.INVALID_ID
+        url = URL % campaign_in_db['id']
+        invalid_value_test(url, campaign_data, 'smartlist_ids', invalid_ids, token_first, method='put')
+
+    def test_campaign_update_with_invalid_name(self, token_first, campaign_data, smartlist_first, campaign_in_db):
+        """
+        Create a campaign with invalid name field, API should raise InvalidUsage 400
+        :param token_first: auth token
+        :param campaign_data: data to update push campaign
+        :param smartlist_first: smartlist objectd
+        :param campaign_in_db: already created push campaign data
+        """
+        campaign_data['smartlist_ids'] = [smartlist_first['id']]
+        invalid_names = CampaignsTestsHelpers.INVALID_TEXT_VALUES
+        url = URL % campaign_in_db['id']
+        invalid_value_test(url, campaign_data, 'name', invalid_names, token_first, method='put')
+
+    def test_campaign_update_with_invalid_url(self, token_first, campaign_data, smartlist_first, campaign_in_db):
+        """
+        Update a campaign with invalid uel field, API should raise InvalidUsage 400
+        :param token_first: auth token
+        :param campaign_data: data to update push campaign
+        :param smartlist_first: smartlist objectd
+        :param campaign_in_db: already created push campaign data
+        """
+        campaign_data['smartlist_ids'] = [smartlist_first['id']]
+        invalid_names = ['localhost.com', 'abc',  '',  '  ', None, True]
+        url = URL % campaign_in_db['id']
+        invalid_value_test(url, campaign_data, 'url', invalid_names, token_first, method='put')
 
     def test_put_by_id(self, token_first, campaign_in_db, smartlist_first):
         """

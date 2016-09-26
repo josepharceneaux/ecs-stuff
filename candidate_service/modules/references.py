@@ -88,7 +88,7 @@ def create_or_update_references(candidate_id, references, is_creating=False,
                                 is_updating=False, reference_id_from_url=None):
     """
     Function will insert candidate's references' information into db.
-    References' information must include: person_name and comments.
+    References' information must include: comments.
     References' information may include: reference-email dict & reference-phone dict.
     Empty data will not be added to db
     Duplicate records will not be added to db
@@ -101,11 +101,13 @@ def create_or_update_references(candidate_id, references, is_creating=False,
     """
     created_or_updated_reference_ids = []
     for reference in references:
+
         candidate_reference_dict = dict(
             person_name=reference.get('name'),
             position_title=reference.get('position_title'),
             comments=reference.get('comments')
         )
+
         # Strip each value & remove keys with empty values
         candidate_reference_dict = purge_dict(candidate_reference_dict)
 
@@ -120,7 +122,7 @@ def create_or_update_references(candidate_id, references, is_creating=False,
         candidate_reference_dict.update(resume_id=candidate_id, candidate_id=candidate_id)
 
         if is_creating:  # Add
-            reference_id = add_reference(candidate_id, candidate_reference_dict)
+            reference_id = _add_reference(candidate_id, candidate_reference_dict)
         elif is_updating:  # Update
             update_reference(candidate_id, reference_id, candidate_reference_dict)
 
@@ -130,7 +132,8 @@ def create_or_update_references(candidate_id, references, is_creating=False,
 
         if reference_email:  # add reference's email info
             default_label = EmailLabel.PRIMARY_DESCRIPTION
-            email_label = default_label if not reference_email.get('label') else reference_email['label'].strip().title()
+            email_label = default_label if not reference_email.get('label') else reference_email[
+                'label'].strip().title()
             value = reference_email['address'].strip() if reference_email.get('address') else None
             reference_email_dict = dict(
                 email_label_id=EmailLabel.email_label_id_from_email_label(email_label) if value else None,
@@ -147,7 +150,8 @@ def create_or_update_references(candidate_id, references, is_creating=False,
 
         if reference_phone:  # add reference's phone info if provided
             default_label = PhoneLabel.DEFAULT_LABEL
-            phone_label = default_label if not reference_phone.get('label') else reference_phone['label'].strip().title()
+            phone_label = default_label if not reference_phone.get('label') else reference_phone[
+                'label'].strip().title()
             value = reference_phone['value'].strip() if reference_phone.get('value') else None
             phone_number_dict = format_phone_number(value) if value else None
             reference_phone_dict = dict(
@@ -183,19 +187,27 @@ def create_or_update_references(candidate_id, references, is_creating=False,
     return created_or_updated_reference_ids
 
 
-def add_reference(candidate_id, reference_dict):
+def _add_reference(candidate_id, reference_dict):
     """
     Function will insert a record in CandidateReference.
     Function will check db to prevent adding duplicate records.
-    :rtype  int | None
+    :rtype:  int
     """
     reference_name = reference_dict.get('person_name')
-    if not CandidateReference.query.filter_by(candidate_id=candidate_id, person_name=reference_name).first():
+
+    duplicate_reference_note = CandidateReference.query.filter_by(candidate_id=candidate_id,
+                                                                  person_name=reference_name,
+                                                                  comments=reference_dict.get('comments')).first()
+    if not duplicate_reference_note:
         candidate_reference = CandidateReference(**reference_dict)
         db.session.add(candidate_reference)
         db.session.flush()
         return candidate_reference.id
-    return None
+    else:
+        raise InvalidUsage(error_message="Reference already exists for candidate",
+                           error_code=custom_error.REFERENCE_EXISTS,
+                           additional_error_info={'reference_id': duplicate_reference_note.id,
+                                                  'candidate_id': candidate_id})
 
 
 def update_reference(candidate_id, reference_id, reference_dict):

@@ -1,5 +1,6 @@
 """
  Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Um-I-Hani, QC-Technologies, <haniqadri.qc@gmail.com>
          Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
 This file contains function used by email-campaign-api.
@@ -8,14 +9,17 @@ This file contains function used by email-campaign-api.
 import re
 import os
 import json
+import getpass
 import itertools
 
 # Third Party
 from celery import chord
+from redo import retrier
 from sqlalchemy import desc
 from datetime import datetime, timedelta
 
 # Service Specific
+from email_campaign_service.json_schema.test_email import TEST_EMAIL_SCHEMA
 from email_campaign_service.modules.validations import get_or_set_valid_value
 from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 from email_campaign_service.modules.utils import (TRACKING_URL_TYPE,
@@ -41,7 +45,8 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailCampaignSend,
                                                                  EmailCampaignSendUrlConversion)
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
-                                                            raise_if_not_positive_int_or_long)
+                                                            raise_if_not_positive_int_or_long,
+                                                            get_json_data_if_validated)
 from email_campaign_service.common.utils.handy_functions import (http_request,
                                                                  JSON_CONTENT_TYPE_HEADER)
 from email_campaign_service.common.utils.amazon_ses import send_email, get_default_email_info
@@ -70,7 +75,7 @@ def create_email_campaign_smartlists(smartlist_ids, email_campaign_id):
     db.session.commit()
 
 
-def create_email_campaign(user_id, oauth_token, name, subject,
+def create_email_campaign(user_id, oauth_token, name, subject, description,
                           _from, reply_to, body_html,
                           body_text, list_ids, email_client_id=None,
                           frequency_id=None,
@@ -88,6 +93,7 @@ def create_email_campaign(user_id, oauth_token, name, subject,
                                    user_id=user_id,
                                    is_hidden=0,
                                    subject=subject,
+                                   description=description,
                                    _from=get_or_set_valid_value(_from, basestring, '').strip(),
                                    reply_to=get_or_set_valid_value(reply_to, basestring, '').strip(),
                                    body_html=body_html,
@@ -529,14 +535,15 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
         return False
 
     environment = os.getenv(TalentConfigKeys.ENV_KEY) or 'local'
-
+    username = getpass.getuser()
     # Save SES message ID & request ID
     logger.info('''Marketing email sent successfully.
                    Recipients    : %s,
                    UserId        : %s,
+                   System User Name: %s,
                    Environment   : %s,
                    Email Response: %s
-                ''', to_addresses, user_id, environment, email_response)
+                ''', to_addresses, user_id, username, environment, email_response)
     request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
     message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
     email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
@@ -863,12 +870,19 @@ def handle_email_bounce(message_id, bounce, emails):
     assert isinstance(emails, list) and all(emails), "emails param should be a non empty list of email addresses"
     logger.info('Bounce Detected: %s', bounce)
 
+    send_obj = None
     # get the corresponding EmailCampaignSend object that is associated with given AWS message id
-    send_obj = EmailCampaignSend.get_by_amazon_ses_message_id(message_id)
+    for _ in retrier(sleeptime=2, sleepscale=1, attempts=15):
+        EmailCampaignSend.session.commit()
+        send_obj = EmailCampaignSend.get_by_amazon_ses_message_id(message_id)
+        if send_obj:  # found email campaign send, no need to retry
+            break
 
     if not send_obj:
-        logger.error('Unable to find email campaign send for this email bounce.'
-                     '\nMessageId: %s\nEmails: %s\nBounce: %s', message_id, emails, bounce)
+        logger.info("""Unable to find email campaign send for this email bounce.
+                       MessageId: %s
+                       Emails: %s
+                       Bounce: %s""", message_id, emails, bounce)
 
     # Mark the send object as bounced.
     else:
@@ -1168,3 +1182,31 @@ def celery_error_handler(uuid):
     :param uuid:
     """
     db.session.rollback()
+
+
+def send_test_email(user, request):
+    """
+    This function sends a test email to given email addresses. Email sender depends on environment:
+        - local-no-reply@gettalent.com for dev
+        - staging-no-rely@gettalent.com for staging
+        - no-reply@gettalent.com for Prod
+    :param user: User model object (current user)
+    :param request: Flask request object
+    """
+    # Get and validate request data
+    data = get_json_data_if_validated(request, TEST_EMAIL_SCHEMA)
+    try:
+        default_email = get_default_email_info()['email']
+        send_email(source='"%s" <%s>' % (data['from'], default_email),
+                   subject=data['subject'],
+                   html_body=data['body_html'] or None,
+                   # Can't be '', otherwise, text_body will not show in email
+                   text_body=data['body_html'],
+                   to_addresses=data['email_address_list'],
+                   reply_address=user.email,
+                   body=None,
+                   email_format='html')
+    except Exception as e:
+        logger.error('Error occurred while sending test email. Error: %s', e)
+        raise InternalServerError('Unable to send emails to test email addresses.')
+

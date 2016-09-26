@@ -10,22 +10,22 @@ from datetime import datetime
 from datetime import timedelta
 
 # Application specific
-from social_network_service.common.models.candidate import SocialNetwork
-from social_network_service.common.utils.datetime_utils import DatetimeUtils
-from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls as Urls
+from social_network_service.modules.urls import get_url
 from social_network_service.modules.utilities import logger
 from social_network_service.modules.utilities import log_error
-from social_network_service.modules.utilities import get_class
+from social_network_service.common.models.venue import Venue
+from social_network_service.common.models.event import Event
 from social_network_service.modules.event.base import EventBase
-from social_network_service.custom_exceptions import VenueNotFound
 from social_network_service.custom_exceptions import EventNotCreated
 from social_network_service.custom_exceptions import TicketsNotCreated
 from social_network_service.custom_exceptions import EventNotPublished
 from social_network_service.custom_exceptions import EventInputMissing
 from social_network_service.custom_exceptions import EventLocationNotCreated
-from social_network_service.common.models.venue import Venue
-from social_network_service.common.models.event import Event
+from social_network_service.common.utils.datetime_utils import DatetimeUtils
+from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.models.event_organizer import EventOrganizer
+from social_network_service.custom_exceptions import VenueNotFound, EventOrganizerNotFound
 
 
 class Eventbrite(EventBase):
@@ -98,10 +98,10 @@ class Eventbrite(EventBase):
                 event id of event on eventbrite
             - start_date_in_utc:
                 utc start_date for event importer
+            - end_date_in_utc:
+                utc start_date for event importer
 
-        :param args:
-        :param kwargs:
-        :return:
+        :param kwargs: datetime range dict or None
         """
         super(Eventbrite, self).__init__(*args, **kwargs)
         # calling super constructor sets the api_url and access_token
@@ -110,28 +110,12 @@ class Eventbrite(EventBase):
         self.ticket_payload = None
         self.venue_payload = None
         self.start_date_in_utc =\
-            kwargs.get('start_date') \
-            or (datetime.now() -
+            kwargs.get('date_range_start') \
+            or (datetime.utcnow() -
                 timedelta(days=60)).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-    def process_events_rsvps(self, user_credentials, rsvp_data=None):
-        """
-        We get events against a particular user_credential.
-        Then we get the rsvps of all events present in database and process
-        them to save in database.
-        :param user_credentials: are the credentials of user for
-                                    a specific social network in db.
-        :type user_credentials: common.models.user.UserSocialNetworkCredential
-        """
-        # get_required class under rsvp/ to process rsvps
-        sn_rsvp_class = get_class(self.social_network.name, 'rsvp')
-        # create object of selected rsvp class
-        sn_rsvp_obj = sn_rsvp_class(user_credentials=user_credentials,
-                                    headers=self.headers,
-                                    social_network=self.social_network
-                                    )
-        # process RSVPs and save in database
-        sn_rsvp_obj.process_rsvp_via_webhook(rsvp_data)
+        self.end_date_in_utc =\
+            kwargs.get('date_range_end') \
+            or datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def get_events(self):
         """
@@ -143,9 +127,10 @@ class Eventbrite(EventBase):
         :rtype all_events: list
         """
         # create url to fetch events from eventbrite.com
-        events_url = self.api_url + '/events/search/'
+        events_url = get_url(self, Urls.EVENT).format('search/')
         params = {'user.id': self.member_id,
-                  # 'date_created.range_start': self.start_date_in_utc
+                  'date_created.range_start': self.start_date_in_utc,
+                  'date_created.range_end': self.end_date_in_utc
                   }
         # initialize event list to empty
         all_events = []
@@ -211,8 +196,7 @@ class Eventbrite(EventBase):
             try:
                 # Get venues from Eventbrite API for this event.
                 response = http_request('GET',
-                                        self.api_url + '/venues/'
-                                        + event['venue_id'],
+                                        get_url(self, Urls.VENUE).format(event['venue_id']),
                                         headers=self.headers,
                                         user_id=self.user.id)
             except:
@@ -229,8 +213,7 @@ class Eventbrite(EventBase):
                         # Get organizer of the event from Eventbrite API.
                         response = http_request(
                             'GET',
-                            self.api_url + '/organizers/' +
-                            event['organizer_id'],
+                            get_url(self, Urls.ORGANIZER).format(event['organizer_id']),
                             headers=self.headers,
                             user_id=self.user.id)
                     except:
@@ -245,7 +228,7 @@ class Eventbrite(EventBase):
                         try:
                             response = http_request(
                                 'GET',
-                                self.api_url + '/users/' + self.member_id,
+                                get_url(self, Urls.USER).format(self.member_id),
                                 headers=self.headers,
                                 user_id=self.user.id)
                         except:
@@ -265,8 +248,8 @@ class Eventbrite(EventBase):
                 email=organizer_email if organizer_email else '',
                 about=organizer['description']
                 if organizer.has_key('description') else ''
-
             )
+
             organizer_data['about'] = organizer_data['about'].get('html', '') if type(organizer_data['about']) == dict \
                 else ''
             organizer_in_db = EventOrganizer.get_by_user_id_and_name(
@@ -358,7 +341,7 @@ class Eventbrite(EventBase):
 
         """
         # create url to post/create event on eventbrite.com
-        url = self.api_url + "/events/"
+        url = get_url(self, Urls.EVENTS)
         # adding venue for the event or reuse if already created on
         # eventbrite.com
         venue_id = self.add_location()
@@ -428,8 +411,7 @@ class Eventbrite(EventBase):
                 This method returns id of updated getTalent event.
         """
         # create url to update event
-        url = \
-            self.api_url + "/events/" + str(self.social_network_event_id) + '/'
+        url = get_url(self, Urls.EVENT).format(str(self.social_network_event_id) + '/')
         venue_id = self.add_location()  # adding venue for the event
         self.event_payload['event.venue_id'] = venue_id
         response = http_request('POST', url, params=self.event_payload,
@@ -505,7 +487,7 @@ class Eventbrite(EventBase):
                 'venue.address.longitude': venue.longitude,
             }
             # create url to send post request to create venue
-            url = self.api_url + "/venues/"
+            url = get_url(self, Urls.VENUES)
             response = http_request('POST', url, params=payload,
                                     headers=self.headers,
                                     user_id=self.user.id)
@@ -553,8 +535,7 @@ class Eventbrite(EventBase):
             eventbrite.com
         :rtype: str
         """
-        tickets_url = self.api_url + "/events/" + social_network_event_id \
-                      + "/ticket_classes/"
+        tickets_url = get_url(self, Urls.TICKETS).format(social_network_event_id)
         return self.manage_event_tickets(tickets_url)
 
     def update_tickets(self, social_network_event_id):
@@ -573,8 +554,7 @@ class Eventbrite(EventBase):
             eventbrite.com)
         :rtype: str
         """
-        tickets_url = self.api_url + "/events/" + social_network_event_id \
-                      + "/ticket_classes/"
+        tickets_url = get_url(self, Urls.TICKETS).format(social_network_event_id)
         event = Event.get_by_user_and_social_network_event_id(
             self.user.id, social_network_event_id)
         if event.tickets_id:
@@ -632,8 +612,7 @@ class Eventbrite(EventBase):
             publish event on Eventbrite.com
         """
         # create url to publish event
-        url = self.api_url + "/events/" + str(social_network_event_id) \
-              + "/publish/"
+        url = get_url(self, Urls.PUBLISH_EVENT).format(str(social_network_event_id))
         # params are None. Access token is present in self.headers
         response = http_request('POST', url, headers=self.headers,
                                 user_id=self.user.id)
@@ -658,8 +637,7 @@ class Eventbrite(EventBase):
         :type social_network_event_id: int
         """
         # we will only set specific url here
-        self.url_to_delete_event = self.api_url + "/events/" + \
-                                   str(social_network_event_id) + "/unpublish/"
+        self.url_to_delete_event = get_url(self, Urls.UNPUBLISH_EVENT).format(social_network_event_id)
         # common unpublish functionality is in EventBase class'
         # unpublish_event() method.
         # Removes event from Eventbrite and from local database
@@ -747,6 +725,12 @@ class Eventbrite(EventBase):
         # provided DateTime accordingly.
         start_time = DatetimeUtils.get_utc_datetime(data['start_datetime'], data['timezone'])
         end_time = DatetimeUtils.get_utc_datetime(data['end_datetime'], data['timezone'])
+        event_organizer_id = data['organizer_id']
+        user_id = data['user_id']
+        event_organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, event_organizer_id)
+        if not event_organizer:
+            raise EventOrganizerNotFound('Event organizer not found in database. Kindly create'
+                                         ' event organizer first.')
         # This dict is used to create an event as a draft on vendor
         self.event_payload = {
             'event.start.utc': start_time,
@@ -755,15 +739,26 @@ class Eventbrite(EventBase):
             'event.end.timezone': data['timezone'],
             'event.currency': data['currency'],
             'event.name.html': data['title'],
-            'event.description.html': data['description']
+            'event.description.html': data['description'],
+            'event.organizer_id': event_organizer.social_network_organizer_id
         }
         self.venue_id = data['venue_id']
         # Creating ticket data as Eventbrite wants us to associate tickets with
         # events. This dict is used to create tickets for a specified event.
-        self.ticket_payload = {
-            'ticket_class.name': 'Event Ticket',
-            'ticket_class.quantity_total': data['max_attendees'],
-            'ticket_class.free': True,
-        }
+
+        max_attendees = data['max_attendees']
+        cost = data.get('cost')
+        if max_attendees and cost:
+            self.ticket_payload = {
+                'ticket_class.name': 'Event Ticket',
+                'ticket_class.quantity_total': max_attendees,
+                'ticket_class.cost': 'USD,' + str(cost) + '00'
+            }
+        else:
+            self.ticket_payload = {
+                'ticket_class.name': 'Event Ticket',
+                'ticket_class.quantity_total': max_attendees,
+                'ticket_class.free': True,
+            }
         self.social_network_event_id = data.get('social_network_event_id')
 

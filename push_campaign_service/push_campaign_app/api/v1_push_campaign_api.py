@@ -109,19 +109,19 @@ import types
 
 # Third Party
 from flask import request
+from requests import codes
 from flask import redirect
 from flask import Blueprint
 from flask.ext.restful import Resource
 
 # Application Specific
+from push_campaign_service.common.campaign_services.json_schema.campaign_schedule import CAMPAIGN_SCHEDULE_SCHEMA
+from push_campaign_service.common.utils.validators import get_json_data_if_validated
+from push_campaign_service.json_schema.campaign_fields import CAMPAIGN_SCHEMA
 from push_campaign_service.push_campaign_app import logger
-from push_campaign_service.modules.constants import CAMPAIGN_REQUIRED_FIELDS
 from push_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from push_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
-from push_campaign_service.common.campaign_services.custom_errors import CampaignException
-from push_campaign_service.common.campaign_services.validators import get_valid_json_data
-from push_campaign_service.common.error_handling import (InternalServerError, ResourceNotFound,
-                                                         ForbiddenError, InvalidUsage)
+from push_campaign_service.common.error_handling import (ResourceNotFound, ForbiddenError, InvalidUsage)
 from push_campaign_service.common.models.misc import UrlConversion
 from push_campaign_service.common.talent_api import TalentApi
 from push_campaign_service.common.routes import PushCampaignApi, PushCampaignApiUrl
@@ -240,19 +240,13 @@ class PushCampaignsResource(Resource):
         ..Error Codes:: 7003 (RequiredFieldsMissing)
         """
         user = request.user
-        data = get_valid_json_data(request)
-        missing_fields = [field for field in ['name', 'body_text', 'url',
-                                              'smartlist_ids'] if field not in data or not data[field]]
-        if missing_fields:
-            raise InvalidUsage('Some required fields are missing',
-                               additional_error_info=dict(missing_fields=missing_fields),
-                               error_code=CampaignException.MISSING_REQUIRED_FIELD)
+        data = get_json_data_if_validated(request, CAMPAIGN_SCHEMA)
+
         campaign = PushCampaignBase(user_id=user.id)
         campaign_id = campaign.save(data)
         response = dict(id=campaign_id, message='Push campaign was created successfully')
-        response = json.dumps(response)
         headers = dict(Location=PushCampaignApiUrl.CAMPAIGN % campaign_id)
-        return ApiResponse(response, headers=headers, status=201)
+        return ApiResponse(response, headers=headers, status=codes.CREATED)
 
     def delete(self):
         """
@@ -331,7 +325,7 @@ class CampaignByIdResource(Resource):
         campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
                                                                     CampaignUtils.PUSH)
         response = dict(campaign=campaign.to_json())
-        return response, 200
+        return response, codes.OK
 
     def put(self, campaign_id):
         """
@@ -379,31 +373,11 @@ class CampaignByIdResource(Resource):
         ..Error Codes:: 7003 (RequiredFieldsMissing)
         """
         user = request.user
-        data = get_valid_json_data(request)
-        if not campaign_id > 0:
-            raise ResourceNotFound('Campaign id must be a positive number. Given %s' % campaign_id)
-        campaign = PushCampaignBase.get_campaign_if_domain_is_valid(campaign_id, user,
-                                                                    CampaignUtils.PUSH)
-        for key, value in data.items():
-            if key not in CAMPAIGN_REQUIRED_FIELDS:
-                raise InvalidUsage('Invalid field in campaign data',
-                                   additional_error_info=dict(invalid_field=key))
-            if not value:
-                raise InvalidUsage('Invalid value for field in campaign data',
-                                   additional_error_info=dict(field=key,
-                                                              invalid_value=value),
-                                   error_code=CampaignException.MISSING_REQUIRED_FIELD)
-
-        data['user_id'] = user.id
-        # We are confirmed that this key has some value after above validation
-        smartlist_ids = data.pop('smartlist_ids')
-        campaign.update(**data)
-        associated_smartlist_ids = [smartlist.id for smartlist in campaign.smartlists]
-        if isinstance(smartlist_ids, list):
-            smartlist_ids = list(set(smartlist_ids) - set(associated_smartlist_ids))
-            PushCampaignBase.create_campaign_smartlist(campaign, smartlist_ids)
+        data = get_json_data_if_validated(request, CAMPAIGN_SCHEMA)
+        camp_obj = PushCampaignBase(user.id, campaign_id)
+        camp_obj.update(data, campaign_id=campaign_id)
         response = dict(message='Push campaign was updated successfully')
-        return response, 200
+        return response, codes.OK
 
     def delete(self, campaign_id):
         """
@@ -434,7 +408,7 @@ class CampaignByIdResource(Resource):
         """
         campaign_obj = PushCampaignBase(request.user.id, campaign_id)
         campaign_obj.delete()
-        return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), 200
+        return dict(message='Campaign(id:%s) has been deleted successfully.' % campaign_id), codes.OK
 
 
 @api.route(PushCampaignApi.SCHEDULE)
@@ -487,7 +461,7 @@ class SchedulePushCampaignResource(Resource):
         :return: dict containing message and task_id.
         """
         user = request.user
-        get_valid_json_data(request)
+        get_json_data_if_validated(request, CAMPAIGN_SCHEDULE_SCHEMA)
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
         pre_processed_data = PushCampaignBase.data_validation_for_campaign_schedule(
@@ -497,7 +471,7 @@ class SchedulePushCampaignResource(Resource):
         campaign_obj.campaign = pre_processed_data['campaign']
         task_id = campaign_obj.schedule(pre_processed_data['data_to_schedule'])
         message = 'Campaign(id:%s) has been scheduled.' % campaign_id
-        return dict(message=message, task_id=task_id), 200
+        return dict(message=message, task_id=task_id), codes.OK
 
     def put(self, campaign_id):
         """
@@ -538,7 +512,7 @@ class SchedulePushCampaignResource(Resource):
         :param campaign_id: integer, unique id representing campaign in GT database
         :return: dict containing message and task_id.
         """
-        get_valid_json_data(request)
+        get_json_data_if_validated(request, CAMPAIGN_SCHEDULE_SCHEMA)
         if not campaign_id:
             raise InvalidUsage('campaign_id should be a positive number')
         # create object of class PushCampaignBase
@@ -549,7 +523,7 @@ class SchedulePushCampaignResource(Resource):
         else:
             message = 'Campaign(id:%s) is already scheduled with given data.' % campaign_id
             task_id = push_camp_obj.campaign.scheduler_task_id
-        return dict(message=message, task_id=task_id), 200
+        return dict(message=message, task_id=task_id), codes.OK
 
     def delete(self, campaign_id):
         """
@@ -584,9 +558,9 @@ class SchedulePushCampaignResource(Resource):
             raise InvalidUsage('campaign_id should be a positive number')
         task_unscheduled = PushCampaignBase.unschedule(campaign_id, request, CampaignUtils.PUSH)
         if task_unscheduled:
-            return dict(message='Campaign(id:%s) has been unscheduled.' % campaign_id), 200
+            return dict(message='Campaign(id:%s) has been unscheduled.' % campaign_id), codes.OK
         else:
-            return dict(message='Campaign(id:%s) is already unscheduled.' % campaign_id), 200
+            return dict(message='Campaign(id:%s) is already unscheduled.' % campaign_id), codes.OK
 
 
 @api.route(PushCampaignApi.SEND)
@@ -627,7 +601,7 @@ class SendPushCampaign(Resource):
         user = request.user
         campaign_obj = PushCampaignBase(user_id=user.id, campaign_id=campaign_id)
         campaign_obj.send()
-        return dict(message='Campaign(id:%s) is being sent to candidates' % campaign_id), 200
+        return dict(message='Campaign(id:%s) is being sent to candidates' % campaign_id), codes.OK
 
 
 @api.route(PushCampaignApi.BLAST_SENDS)
@@ -875,7 +849,7 @@ class PushCampaignBlastById(Resource):
         # Get a campaign that was created by this user
         blast = CampaignBase.get_valid_blast_obj(campaign_id, blast_id, user, CampaignUtils.PUSH)
 
-        return dict(blast=blast.to_json()), 200
+        return dict(blast=blast.to_json()), codes.OK
 
 
 @api.route(PushCampaignApi.REDIRECT)
@@ -929,7 +903,7 @@ class PushCampaignUrlRedirection(Resource):
             # As this endpoint is hit by client, so we log the error, and return internal server
             # error.
             logger.exception("Error occurred while URL redirection for Push campaign.\nError: %s" % str(e))
-        return dict(message='Internal Server Error'), 500
+        return dict(message='Internal Server Error'), codes.INTERNAL_SERVER_ERROR
 
 
 @api.route(PushCampaignApi.URL_CONVERSION, PushCampaignApi.URL_CONVERSION_BY_SEND_ID)
@@ -990,13 +964,13 @@ class UrlConversionResource(Resource):
             if not url_conversion:
                 raise ForbiddenError("You can not get other domain's url_conversion records")
 
-            return {'url_conversion': url_conversion.to_json()}
+            return {'url_conversion': url_conversion.to_json()}, codes.OK
 
         elif send_id:
             url_conversion = PushCampaignBase.get_url_conversion_by_send_id(send_id,
                                                                             CampaignUtils.PUSH,
                                                                             user)
-            return {'url_conversion': url_conversion.to_json()}
+            return {'url_conversion': url_conversion.to_json()}, codes.OK
 
     def delete(self, **kwargs):
         """
@@ -1040,7 +1014,7 @@ class UrlConversionResource(Resource):
             if not url_conversion:
                 raise ForbiddenError("You can not delete other domain's url_conversion records")
             UrlConversion.delete(url_conversion)
-            return {'message': "UrlConversion (id: %s) deleted successfully" % _id}
+            return {'message': "UrlConversion (id: %s) deleted successfully" % _id}, codes.OK
 
         elif send_id:
             url_conversion = PushCampaignBase.get_url_conversion_by_send_id(send_id,
@@ -1048,5 +1022,5 @@ class UrlConversionResource(Resource):
                                                                             user)
             _id = url_conversion.id
             UrlConversion.delete(url_conversion)
-            return {'message': "UrlConversion (id: %s) deleted successfully" % _id}
+            return {'message': "UrlConversion (id: %s) deleted successfully" % _id}, codes.OK
 

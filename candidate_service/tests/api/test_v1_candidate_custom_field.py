@@ -10,7 +10,6 @@ import sys
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import AddUserRoles
 from candidate_service.common.routes import CandidateApiUrl
 from candidate_service.common.utils.test_utils import send_request, response_info
 
@@ -23,13 +22,11 @@ URL = CandidateApiUrl.CUSTOM_FIELDS
 
 
 class TestCreateCandidateCustomField(object):
-    def test_add_and_retrieve_candidate_custom_field(self, access_token_first, user_first, domain_custom_fields,
-                                                     candidate_first):
+    def test_add_and_retrieve_candidate_custom_field(self, access_token_first, domain_custom_fields, candidate_first):
         """
         Test:  Add candidate custom field & retrieve it
         Expect:  201
         """
-        AddUserRoles.add_get_edit(user_first)
         data = {'candidate_custom_fields': [
             {'custom_field_id': domain_custom_fields[0].id, 'value': VALUE}]
         }
@@ -46,14 +43,12 @@ class TestCreateCandidateCustomField(object):
         assert get_resp.status_code == requests.codes.OK
         assert get_resp.json()['candidate_custom_field']['value'] == data['candidate_custom_fields'][0]['value'].strip()
 
-    def test_add_candidate_custom_field_with_whitespaced_value(self, access_token_first, user_first,
-                                                               domain_custom_fields,
+    def test_add_candidate_custom_field_with_whitespaced_value(self, access_token_first, domain_custom_fields,
                                                                candidate_first):
         """
         Test:  Add candidate custom field with a value that contains whitespaces
         Expect:  201, whitespace must be removed before inserting into db
         """
-        AddUserRoles.add_get_edit(user_first)
         data = {'candidate_custom_fields': [
             {'custom_field_id': domain_custom_fields[0].id, 'value': ' ' + VALUE + ' '}]
         }
@@ -78,7 +73,6 @@ class TestCreateCandidateCustomField(object):
         Test:  Add candidate custom field with a value that contains whitespaces
         Expect:  400
         """
-        AddUserRoles.add_get_edit(user_first)
         data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id}]}
 
         # Add candidate custom fields for candidate
@@ -92,7 +86,6 @@ class TestCreateCandidateCustomField(object):
         Test:  Attempt to add candidate custom field using an unauthorized custom field ID
         Expect:  403
         """
-        AddUserRoles.edit(user_second)
         data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id, 'value': VALUE}]}
 
         # Add candidate custom fields for candidate
@@ -107,7 +100,6 @@ class TestCreateCandidateCustomField(object):
         Test:  Attempt to add candidate custom field with non-existing custom field ID
         Expect:  404
         """
-        AddUserRoles.edit(user_first)
         data = {'candidate_custom_fields': [{'custom_field_id': MAX_INT, 'value': VALUE}]}
 
         # Add candidate custom fields for candidate
@@ -118,13 +110,12 @@ class TestCreateCandidateCustomField(object):
 
 
 class TestGetCandidateCustomField(object):
-    def test_get_ccf_of_forbidden_candidate(self, access_token_first, user_first, domain_custom_fields,
+    def test_get_ccf_of_forbidden_candidate(self, access_token_first, domain_custom_fields,
                                             candidate_first, candidate_second):
         """
         Test:  Attempt to retrieve the ccf of a different candidate
         Expect: 403
         """
-        AddUserRoles.add_get_edit(user_first)
         data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id, 'value': VALUE}]}
 
         # Add candidate custom fields for candidate
@@ -144,7 +135,6 @@ class TestGetCandidateCustomField(object):
         Test:  Attempt to retrieve a ccf that isn't yet created
         Expect: 404
         """
-        AddUserRoles.add_get_edit(user_first)
 
         # Retrieve ccf
         get_resp = send_request('get', CandidateApiUrl.CUSTOM_FIELD % (candidate_first.id, MAX_INT), access_token_first)
@@ -152,14 +142,12 @@ class TestGetCandidateCustomField(object):
         assert get_resp.status_code == requests.codes.NOT_FOUND
         assert get_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_NOT_FOUND
 
-    def test_get_ccf_outside_of_users_domain(self, access_token_second, user_second, domain_custom_fields,
-                                             user_second_candidate, candidate_first, user_first, access_token_first):
+    def test_get_ccf_outside_of_users_domain(self, access_token_second, domain_custom_fields,
+                                             user_second_candidate, candidate_first, access_token_first):
         """
         Test:  Attempt to retrieve ccf that do not belong to user's domain
         Expect: 403
         """
-        AddUserRoles.all_roles(user_second)
-        AddUserRoles.all_roles(user_first)
 
         # Create candidate custom field
         data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id, 'value': VALUE}]}
@@ -176,13 +164,12 @@ class TestGetCandidateCustomField(object):
 
 
 class TestDeleteCandidateCustomField(object):
-    def test_delete_ccf_of_forbidden_candidate(self, access_token_first, user_first, domain_custom_fields,
-                                               candidate_first, candidate_second):
+    def test_delete_ccf_of_forbidden_candidate(self, access_token_first, domain_custom_fields, candidate_first,
+                                               candidate_second):
         """
         Test:  Attempt to delete the ccf of a different candidate
         Expect: 403
         """
-        AddUserRoles.all_roles(user_first)
         data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id, 'value': VALUE}]}
 
         # Add candidate custom fields for candidate
@@ -197,12 +184,11 @@ class TestDeleteCandidateCustomField(object):
         assert del_resp.status_code == requests.codes.FORBIDDEN
         assert del_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_FORBIDDEN
 
-    def test_delete_non_existing_ccf(self, access_token_first, user_first, candidate_first):
+    def test_delete_non_existing_ccf(self, access_token_first, candidate_first):
         """
         Test:  Attempt to delete a ccf that isn't yet created
         Expect: 404
         """
-        AddUserRoles.all_roles(user_first)
 
         # Retrieve ccf
         url = CandidateApiUrl.CUSTOM_FIELD % (candidate_first.id, MAX_INT)
@@ -211,15 +197,13 @@ class TestDeleteCandidateCustomField(object):
         assert del_resp.status_code == requests.codes.NOT_FOUND
         assert del_resp.json()['error']['code'] == custom_error.CUSTOM_FIELD_NOT_FOUND
 
-    def test_delete_ccf_outside_of_users_domain(self, user_first, access_token_first,
-                                                user_second, access_token_second, candidate_first,
+    def test_delete_ccf_outside_of_users_domain(self, access_token_first,
+                                                access_token_second, candidate_first,
                                                 domain_custom_fields, user_second_candidate):
         """
         Test:  Attempt to delete ccf that do not belong to user's domain
         Expect: 403
         """
-        AddUserRoles.all_roles(user_first)
-        AddUserRoles.all_roles(user_second)
 
         # Add candidate custom fields for candidate
         data = {'candidate_custom_fields': [{'custom_field_id': domain_custom_fields[0].id, 'value': VALUE}]}

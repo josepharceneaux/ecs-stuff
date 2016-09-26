@@ -8,7 +8,7 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helper functions
-from helpers import check_for_id, remove_id_key, AddUserRoles
+from helpers import check_for_id, remove_id_key
 from candidate_service.tests.api.candidate_sample_data import generate_single_candidate_data
 from candidate_service.common.utils.test_utils import send_request, response_info
 
@@ -22,7 +22,6 @@ def test_check_for_id(access_token_first, user_first, talent_pool):
     Expect: False if candidate-dict has missing id-key(s)
     """
     # Create candidate
-    AddUserRoles.add_and_get(user_first)
     data = generate_single_candidate_data([talent_pool.id])
     resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
     print response_info(resp)
@@ -84,7 +83,6 @@ def test_remove_id_key(access_token_first, user_first, talent_pool):
     Expect: Candidate dict with no id-key
     """
     # Create Candidate
-    AddUserRoles.add_and_get(user=user_first)
     data = generate_single_candidate_data([talent_pool.id])
     create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
 

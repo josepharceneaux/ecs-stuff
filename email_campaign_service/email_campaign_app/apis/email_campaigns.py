@@ -43,9 +43,10 @@ This file contains API endpoints related to email_campaign_service.
             GET    : Gets all the "sends" records for given email campaign id
                         from db table "email_campaign_sends"
 """
+# Standard Library
+import types
 
 # Third Party
-import types
 import requests
 from flask_restful import Resource
 from werkzeug.utils import redirect
@@ -56,7 +57,7 @@ from email_campaign_service.email_campaign_app import logger
 from email_campaign_service.modules.utils import get_valid_send_obj
 from email_campaign_service.modules.email_marketing import (create_email_campaign,
                                                             send_email_campaign,
-                                                            update_hit_count)
+                                                            update_hit_count, send_test_email)
 from email_campaign_service.modules.validations import validate_and_format_request_data
 
 # Common utils
@@ -66,11 +67,12 @@ from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.routes import EmailCampaignApi
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.models.email_campaign import EmailCampaign
+from email_campaign_service.common.utils.validators import is_number
 from email_campaign_service.common.error_handling import (InvalidUsage, NotFoundError,
-                                                          ForbiddenError)
+                                                          ForbiddenError, MethodNotAllowedError)
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response,
-                                                           get_pagination_params)
+                                                           get_pagination_params, SORT_TYPES)
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
@@ -113,13 +115,21 @@ class EmailCampaigns(Resource):
             sort_type = request.args.get('sort_type', 'DESC')
             search_keyword = request.args.get('search', '')
             sort_by = request.args.get('sort_by', 'added_datetime')
+            is_hidden = request.args.get('is_hidden', 0)
+
+            if not is_number(is_hidden) or int(is_hidden) not in (0, 1):
+                raise InvalidUsage('`is_hidden` can be either 0 or 1')
 
             if sort_by not in ('added_datetime', 'name'):
-                raise InvalidUsage('Value of sort parameter is not valid')
+                raise InvalidUsage('Value of sort_by parameter is not valid')
+
+            if sort_type not in SORT_TYPES:
+                raise InvalidUsage('Value of sort_type parameter is not valid. Valid values are %s'
+                                   % list(SORT_TYPES))
 
             # Get all email campaigns from logged in user's domain
             query = EmailCampaign.get_by_domain_id_and_filter_by_name(
-                    user.domain_id, search_keyword, sort_by, sort_type)
+                    user.domain_id, search_keyword, sort_by, sort_type, int(is_hidden))
 
             return get_paginated_response('email_campaigns', query, page, per_page, parser=EmailCampaign.to_dict)
 
@@ -143,6 +153,7 @@ class EmailCampaigns(Resource):
                                          oauth_token=request.oauth_token,
                                          name=data['name'],
                                          subject=data['subject'],
+                                         description=data['description'],
                                          _from=data['from'],
                                          reply_to=data['reply_to'],
                                          body_html=data['body_html'],
@@ -155,6 +166,55 @@ class EmailCampaigns(Resource):
                                          frequency_id=data['frequency_id'])
 
         return {'campaign': campaign}, requests.codes.CREATED
+
+    def patch(self, **kwargs):
+        """
+        This endpoint updates an existing campaign
+        :param dict kwargs: dictionary containing campaign id
+        """
+        campaign_id = kwargs.get('id')
+        if not campaign_id:
+            raise MethodNotAllowedError('Campaign id is not given')
+        email_campaign = EmailCampaign.get_by_id(campaign_id)
+        if not email_campaign:
+            raise NotFoundError("Email campaign with id: %s does not exist" % campaign_id)
+        if not email_campaign.user.domain_id == request.user.domain_id:
+            raise ForbiddenError("Email campaign doesn't belongs to user's domain")
+        # Get and validate request data
+        data = request.get_json(silent=True)
+        if not data:
+            raise InvalidUsage("Received empty request body")
+        is_hidden = data.get('is_hidden', False)
+        if is_hidden not in [True, False, 1, 0]:
+            raise InvalidUsage("is_hidden field should be a boolean, given: %s" % is_hidden)
+        email_campaign.update(is_hidden=is_hidden)
+        return dict(message="Email campaign (id: %s) updated successfully" % campaign_id), requests.codes.OK
+
+
+@api.route(EmailCampaignApi.TEST_EMAIL)
+class TestEmailResource(Resource):
+    """
+    This resource is to send test email to preview the email before sending the actual email campaign to candidates.
+    """
+    # Access token decorator
+    decorators = [require_oauth()]
+
+    def post(self):
+        """
+            POST /v1/test-email
+            Send email campaign with data (subject, from, body_html, emails)
+            Sample POST Data:
+
+            {
+              "subject": "Test Email",
+              "from": "Zohaib Ijaz",
+              "body_html": "<html><body><h1>Welcome to email campaign service <a href=https://www.github.com>Github</a></h1></body></html>",
+              "emails": ["mzohaib.qc@gmail.com", "mzohaib.qc+1@gmail.com"]
+            }
+        """
+        user = request.user
+        send_test_email(user, request)
+        return {'message': 'test email has been sent to given emails'}, requests.codes.OK
 
 
 @api.route(EmailCampaignApi.SEND)

@@ -6,12 +6,14 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 """
 # Third Party
 import requests
+from redo import retry
 
 # Common Utils
 from sms_campaign_service.common.models.db import db
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.tests.modules.common_functions import assert_valid_blast_object
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from sms_campaign_service.common.constants import SLEEP_INTERVAL, RETRY_ATTEMPTS
 
 
 class TestSmsCampaignBlasts(object):
@@ -49,7 +51,7 @@ class TestSmsCampaignBlasts(object):
                                                               access_token_first)
 
     def test_get_blasts_without_pagination_params(self,
-                                                  access_token_for_different_users_of_same_domain,
+                                                  data_for_different_users_of_same_domain,
                                                   sent_campaign_and_blast_ids):
         """
         This is the case where we assume we have sent campaign to 2 candidates.
@@ -62,10 +64,9 @@ class TestSmsCampaignBlasts(object):
         CampaignsTestsHelpers.assert_blast_sends(
             sent_campaign, expected_sends,
             blast_url=SmsCampaignApiUrl.BLAST % (sent_campaign['id'], blast_ids[0]),
-            access_token=access_token_for_different_users_of_same_domain)
+            access_token=data_for_different_users_of_same_domain['access_token'])
         response = requests.get(self.URL % sent_campaign['id'],
-                                headers=dict(
-                                    Authorization='Bearer %s' % access_token_for_different_users_of_same_domain))
+                                headers=data_for_different_users_of_same_domain['headers'])
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY][0]
         assert_valid_blast_object(json_resp, blast_ids[0], sent_campaign['id'], expected_sends)
@@ -110,9 +111,10 @@ class TestSmsCampaignBlasts(object):
             CampaignsTestsHelpers.send_campaign(SmsCampaignApiUrl.SEND,
                                                 sent_campaign, access_token_first,
                                                 SmsCampaignApiUrl.BLASTS)
-        response = requests.get(url, headers=headers)
-        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=10, entity=self.ENTITY)
-        blast_ids = [blast['id'] for blast in response.json()['blasts']]
+        blasts = retry(CampaignsTestsHelpers.get_blasts, sleeptime=SLEEP_INTERVAL, attempts=RETRY_ATTEMPTS,
+                       sleepscale=1, args=(sent_campaign, access_token_first, url), kwargs=dict(count=10),
+                       retry_exceptions=(AssertionError,))
+        blast_ids = [blast['id'] for blast in blasts]
 
         # Poll sends for 4th blast
         CampaignsTestsHelpers.assert_blast_sends(

@@ -257,6 +257,7 @@ def schedule_job(data, user_id=None, access_token=None):
         job_config['task_name'] = get_valid_task_name_from_dict(data, 'task_name')
         jobs = scheduler.get_jobs()
         jobs = filter(lambda task: task.name == job_config['task_name'], jobs)
+        job_config['is_jwt_request'] = True
         # There should be a unique task named job. If a job already exist then it should raise error
         if jobs and len(jobs) == 1:
             raise TaskAlreadyScheduledError('Task name %s is already scheduled' % jobs[0].name)

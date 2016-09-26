@@ -12,15 +12,17 @@ from faker import Faker
 from werkzeug.security import gen_salt
 
 from ..models.candidate import Candidate
-from ..models.user import UserGroup, DomainRole
+from ..models.user import UserGroup
 from auth_utilities import get_access_token, get_or_create
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 
 # Application Specific
 from ..models.db import db
-from ..models.user import (Client, Domain, User, Token)
+from ..models.user import (Client, Domain, User, Token, Role)
 from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline)
-from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField)
+from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField, CustomFieldCategory)
+from ..utils.handy_functions import send_request
+from ..routes import UserServiceApiUrl
 
 fake = Faker()
 ISO_FORMAT = '%Y-%m-%d %H:%M'
@@ -142,7 +144,7 @@ def test_org():
 
 
 @pytest.fixture()
-def domain_aoi(domain_first):
+def domain_aois(domain_first):
     """Will add two areas-of-interest to domain
     :rtype:  list[AreaOfInterest]
     """
@@ -152,6 +154,60 @@ def domain_aoi(domain_first):
 
     db.session.commit()
     return AreaOfInterest.get_domain_areas_of_interest(domain_id=domain_first.id)
+
+
+# TODO: Update code once the API is updated to accept a list of dicts for creating multiple domain sources - Amir
+@pytest.fixture()
+def domain_source(access_token_first, user_first):
+    """
+    Creates a source in domain_first using the API
+    :rtype:  dict
+    """
+    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+    db.session.commit()
+
+    source_1_data = {'source': {
+        'description': 'test_source_{}'.format(str(uuid.uuid4())[0:3])},
+        'notes': fake.sentence()
+    }
+
+    # Create domain source
+    create_response = send_request('post', UserServiceApiUrl.DOMAIN_SOURCES, access_token_first, source_1_data)
+    assert create_response.status_code == requests.codes.CREATED
+
+    # Retrieve domain source
+    source_id = create_response.json()['source']['id']
+    get_response = send_request('get', UserServiceApiUrl.DOMAIN_SOURCE % str(source_id), access_token_first)
+    assert get_response.status_code == requests.codes.OK
+
+    return get_response.json()
+
+
+# TODO: Update code once the API is updated to accept a list of dicts for creating multiple domain sources - Amir
+@pytest.fixture()
+def domain_source_2(access_token_first, user_first):
+    """
+    Creates a source in domain_first using the API
+    :rtype:  dict
+    """
+    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+    db.session.commit()
+
+    source_1_data = {'source': {
+        'description': 'test_source_{}'.format(str(uuid.uuid4())[0:3])},
+        'notes': fake.sentence()
+    }
+
+    # Create domain source
+    create_response = send_request('post', UserServiceApiUrl.DOMAIN_SOURCES, access_token_first, source_1_data)
+    assert create_response.status_code == requests.codes.CREATED
+
+    # Retrieve domain source
+    source_id = create_response.json()['source']['id']
+    get_response = send_request('get', UserServiceApiUrl.DOMAIN_SOURCE % str(source_id), access_token_first)
+    assert get_response.status_code == requests.codes.OK
+
+    return get_response.json()
 
 
 @pytest.fixture()
@@ -169,7 +225,24 @@ def domain_custom_fields(domain_first):
 
 
 @pytest.fixture()
-def sample_client(request):
+def domain_custom_field_categories(domain_first):
+    """
+    Will add three custom field categories to domain_first
+    :rtype:  list[CustomFieldCategory]
+    """
+    custom_field_categories = [{'name': fake.word()}, {'name': fake.word()}, {'name': fake.word()}]
+
+    for custom_field_category in custom_field_categories:
+        db.session.add(CustomFieldCategory(
+            domain_id=domain_first.id,
+            name=custom_field_category['name']
+        ))
+    db.session.commit()
+    return CustomFieldCategory.get_all_in_domain(domain_first.id)
+
+
+@pytest.fixture()
+def sample_client():
     # Adding sample client credentials to Database
     client_id = gen_salt(40)
     client_secret = gen_salt(50)
@@ -210,6 +283,33 @@ def access_token_other(user_from_diff_domain, sample_client):
     """
     return get_access_token(user_from_diff_domain, USER_PASSWORD, sample_client.client_id,
                             sample_client.client_secret)
+
+
+@pytest.fixture()
+def headers(access_token_first):
+    """
+    Returns the header containing access token and `application/json` as content-type to make POST/DELETE requests
+    for user_first.
+    """
+    return get_auth_header(access_token_first)
+
+
+@pytest.fixture()
+def headers_same(access_token_same):
+    """
+    Returns the header containing access token and `application/json` as content-type to make POST/DELETE requests
+    for second user of same domain(i.e. for user_same_domain).
+    """
+    return get_auth_header(access_token_same)
+
+
+@pytest.fixture()
+def headers_other(access_token_other):
+    """
+    Returns the header containing access token and `application/json` as content-type to make POST/DELETE requests
+    for user_from_diff_domain.
+    """
+    return get_auth_header(access_token_other)
 
 
 @pytest.fixture()
@@ -254,20 +354,8 @@ def domain_second():
 
 
 @pytest.fixture()
-def domain_roles():
-    test_role_first = gen_salt(20)
-    DomainRole.save(test_role_first)
-    test_role_second = gen_salt(20)
-    DomainRole.save(test_role_second)
-
-    return {'test_roles': [test_role_first, test_role_second]}
-
-
-@pytest.fixture()
 def first_group(domain_first):
-    """
-    Fixture adds a group in domain_first
-    """
+
     user_group = UserGroup(name=gen_salt(20), domain_id=domain_first.id)
     db.session.add(user_group)
     db.session.commit()

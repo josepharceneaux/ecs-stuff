@@ -1,13 +1,15 @@
 """
 Functions related to candidate_service/candidate_app/api validations
 """
-# Flask Specific
-from flask import request
-from dateutil.parser import parse
 # Standard library
 import json
 import re
 from datetime import datetime
+
+# Flask Specific
+from flask import request
+from dateutil.parser import parse
+
 # Models
 from candidate_service.common.models.db import db
 from candidate_service.common.models.candidate import (
@@ -24,6 +26,7 @@ from candidate_service.cloudsearch_constants import (RETURN_FIELDS_AND_CORRESPON
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from ..custom_error_codes import CandidateCustomErrors as custom_error
 from candidate_service.common.utils.validators import is_number, is_valid_email, format_phone_number
+
 # Json schema validation
 from jsonschema import validate, ValidationError, FormatChecker
 
@@ -76,10 +79,29 @@ def get_candidate_if_validated(user, candidate_id):
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
                             error_code=custom_error.CANDIDATE_IS_HIDDEN)
 
-    if candidate.user.domain_id != user.domain_id:
+    if user and user.role.name != 'TALENT_ADMIN' and candidate.user.domain_id != user.domain_id:
         raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
     return candidate
+
+
+def authenticate_candidate_preference_request(request_object, candidate_id):
+    """
+    This method will check either user or candidate is authorized to access Candidate Preference EndPoint
+    :param request_object: Flask Request Object
+    :param candidate_id: Id of candidate
+    :return:
+    """
+    # Ensure Candidate exists & is not web-hidden
+    candidate_object = get_candidate_if_validated(request_object.user, candidate_id)
+
+    if (request_object.candidate and request_object.candidate.id != candidate_id) or (
+                request_object.user and request_object.user.domain_id != candidate_object.user.domain_id):
+        raise ForbiddenError("You are not authorized to change subscription preference of "
+                             "candidate: %s" % candidate_id)
+
+    return candidate_object
+
 
 
 def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
@@ -193,23 +215,16 @@ def validate_id_list(key, values):
 
 
 def validate_string_list(key, values):
-    # TODO: A hack to support Candidate Search for TOM Recruiting
-    if key == 'skills':
-        return validate_skill_list(values)
-    else:
-        if ',' in values or isinstance(values, list):
-            values = [value.strip() for value in values.split(',') if value.strip()] if ',' in values else values
-            return values[0] if values.__len__() == 1 else values
-        else:
-            return values.strip()
 
-
-def validate_skill_list(values):
     if ',' in values or isinstance(values, list):
-        values = [value for value in values.split(',') if value.strip()] if ',' in values else values
+        if ',' in values:
+            values = re.split(r'(?<!\\),', values)
+            values = [value.replace('\\', '') for value in values]
+
+        values = [value.strip().replace("'", r"\'") for value in values if value.strip()]
         return values[0] if values.__len__() == 1 else values
     else:
-        return values
+        return values.strip().replace("'", r"\'")
 
 
 def validate_sort_by(key, value):
@@ -420,15 +435,17 @@ def does_address_exist(candidate, address_dict):
     return False
 
 
-def does_candidate_cf_exist(candidate, custom_field_dict):
+def does_candidate_cf_exist(candidate, custom_field_id, value):
     """
+    Function will return true if custom field already exists for candidate, otherwise false
     :type candidate:  Candidate
-    :type custom_field_dict: dict[str]
+    :type custom_field_id: int | long
+    :param value: candidate's custom field value
+    :type value: str
     :rtype:  bool
     """
     for custom_field in candidate.custom_fields:
-        custom_field_value = (custom_field.value or '').lower()
-        if custom_field_value == (custom_field_dict.get('value') or '').lower():
+        if custom_field.id == custom_field_id and (custom_field.value or '').lower() == value.lower():
             return True
     return False
 
@@ -556,9 +573,8 @@ def do_phones_exist(phones, phone_dict):
     """
     for phone in phones:
         value = phone_dict.get('value')
-        if value:
-            if phone.value == format_phone_number(value)['formatted_number']:
-                return True
+        if value and phone.value == format_phone_number(value)['formatted_number']:
+            return True
     return False
 
 
@@ -645,23 +661,3 @@ def get_json_data_if_validated(request_body, json_schema, format_checker=True):
     except ValidationError as e:
         raise InvalidUsage('JSON schema validation error: {}'.format(e), custom_error.INVALID_INPUT)
     return body_dict
-
-
-def get_email_if_validated(email_address, domain_id):
-    """
-    Function will retrieve CandidateEmail from db after validating email_address
-    :type email_address:  str
-    :type domain_id:      int | long
-    :rtype:               CandidateEmail | None
-    """
-    # In case just a whitespace is provided, e.g. "  "
-    if not email_address:
-        raise InvalidUsage('No email address provided', custom_error.INVALID_EMAIL)
-
-    # Email addresses must be properly formatted
-    if not is_valid_email(email_address):
-        raise InvalidUsage('Invalid email address/format: {}'.format(email_address),
-                           error_code=custom_error.INVALID_EMAIL)
-
-    # Get candidate's email in user's domain if exists
-    return CandidateEmail.get_email_in_users_domain(domain_id, email_address)

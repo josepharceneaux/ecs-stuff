@@ -54,7 +54,7 @@ class TestSmsCampaignReplies(object):
 
     def test_get_with_valid_token_and_one_reply(self, candidate_and_phone_1,
                                                 sent_campaign_and_blast_ids,
-                                                headers_for_different_users_of_same_domain,
+                                                data_for_different_users_of_same_domain,
                                                 create_campaign_replies):
         """
         This is the case where we assume we have received the replies on a campaign from 1
@@ -68,7 +68,7 @@ class TestSmsCampaignReplies(object):
         """
         campaign, blast_ids = sent_campaign_and_blast_ids
         response = requests.get(self.URL % campaign['id'],
-                                headers=headers_for_different_users_of_same_domain)
+                                headers=data_for_different_users_of_same_domain['headers'])
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=1, entity=self.ENTITY)
         received_reply_objects = response.json()[self.ENTITY]
         # Assert all reply objects have valid fields

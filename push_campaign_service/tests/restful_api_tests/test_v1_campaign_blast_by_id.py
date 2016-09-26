@@ -19,7 +19,7 @@ from redo import retry
 from requests import codes
 
 # Application specific imports
-from push_campaign_service.tests.test_utilities import get_blast, get_blast_sends
+from push_campaign_service.tests.test_utilities import get_blast, fake
 from push_campaign_service.common.routes import PushCampaignApiUrl
 
 URL = PushCampaignApiUrl.BLAST
@@ -28,39 +28,35 @@ URL = PushCampaignApiUrl.BLAST
 class TestCampaignBlastById(object):
 
     # Test URL: /v1/push-campaigns/<int:campaign_id>/blasts/<int:blast_id> [GET]
-    def test_get_campaign_blast_with_invalid_token(self, campaign_blast, campaign_in_db):
+    def test_get_campaign_blast_with_invalid_token(self, campaign_in_db):
         """
         We are getting campaign blast with invalid token and it will raise Unauthorized error 401
         :param campaign_blast: campaign blast object
         :param campaign_in_db: campaign object
         """
-        blast_id = campaign_blast['id']
+        blast_id = fake.random_int()
         campaign_id = campaign_in_db['id']
         get_blast(blast_id, campaign_id, 'invalid_token',
                   expected_status=(codes.UNAUTHORIZED,))
 
-    def test_get_campaign_blast_with_non_existing_campaign(self, token_first, campaign_blast,
-                                                           campaign_in_db):
+    def test_get_campaign_blast_with_non_existing_campaign(self, token_first, campaign_in_db):
         """
         We are trying to get a blast of a campaign that does not exist,
         we are expecting ResourceNotFound error 404
         :param token_first: auth token
-        :param campaign_blast: campaign blast object
         :param campaign_in_db: campaign object
         """
         # 404 Case, Campaign not found
-        blast_id = campaign_blast['id']
+        blast_id = fake.random_int()
         invalid_campaign_id = sys.maxint
         get_blast(blast_id, invalid_campaign_id, token_first,
                   expected_status=(codes.NOT_FOUND,))
 
-    def test_get_campaign_blast_with_invalid_blast_id(self, token_first, campaign_blast,
-                                                      campaign_in_db):
+    def test_get_campaign_blast_with_invalid_blast_id(self, token_first, campaign_in_db):
         """
         Try to get a valid campaign's blast with invalid blast id,
         and we are expecting ResourceNotFound error here
         :param token_first: auth token
-        :param campaign_blast: campaign blast object
         :param campaign_in_db: campaign object
         """
         # 404 Case, Blast not found

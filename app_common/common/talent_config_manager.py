@@ -44,6 +44,8 @@ class TalentConfigKeys(object):
     GOOGLE_URL_SHORTENER_API_KEY = "GOOGLE_URL_SHORTENER_API_KEY"
     GT_GMAIL_ID = "GT_GMAIL_ID"
     GT_GMAIL_PASSWORD = "GT_GMAIL_PASSWORD"
+    IMAAS_KEY = "IMAAS_KEY"
+    IMAAS_URL = "IMAAS_URL"
     LOGGER = "LOGGER"
     MEETUP_ACCESS_TOKEN = "MEETUP_ACCESS_TOKEN"
     MEETUP_REFRESH_TOKEN = "MEETUP_REFRESH_TOKEN"
@@ -54,9 +56,15 @@ class TalentConfigKeys(object):
     S3_FILE_PICKER_BUCKET_KEY = "S3_FILEPICKER_BUCKET_NAME"
     S3_REGION_KEY = "S3_BUCKET_REGION"
     SECRET_KEY = "SECRET_KEY"
-    TOKEN_SECRET="TOKEN_SECRET"
+    TOKEN_SECRET = "TOKEN_SECRET"
     TWILIO_ACCOUNT_SID = "TWILIO_ACCOUNT_SID"
     TWILIO_AUTH_TOKEN = "TWILIO_AUTH_TOKEN"
+    SLACK_BOT_TOKEN = "SLACK_BOT_TOKEN"
+    MAILGUN_API_KEY = "MAILGUN_API_KEY"
+    FACEBOOK_ACCESS_TOKEN = "FACEBOOK_ACCESS_TOKEN"
+    SLACK_APP_CLIENT_ID = "SLACK_APP_CLIENT_ID"
+    SLACK_APP_CLIENT_SECRET = "SLACK_APP_CLIENT_SECRET"
+    JENKINS_HOST_IP = "JENKINS_HOST_IP"
 
 
 class TalentEnvs(object):
@@ -113,8 +121,9 @@ def load_gettalent_config(app_config):
     # Load up hardcoded app config values
     _set_environment_specific_configurations(app_config[TalentConfigKeys.ENV_KEY], app_config)
     # Verify that all the TalentConfigKeys have been defined in the app config (one way or another)
-    if not verify_all_config_keys_defined(app_config):
-        raise Exception("Some required app config keys not defined. app config: %s" % app_config)
+    missing_config_value = missing_config_key_definition(app_config)
+    if missing_config_value:
+        raise Exception("Required app config key not defined: %s" % missing_config_value)
     app_config['LOGGER'].info("App configuration successfully loaded with %s keys: %s", len(app_config), app_config.keys())
     app_config['LOGGER'].debug("App configuration: %s", app_config)
 
@@ -124,17 +133,18 @@ def _set_environment_specific_configurations(environment, app_config):
 
     if environment == TalentEnvs.DEV:
         app_config['CELERY_RESULT_BACKEND_URL'] = app_config['REDIS_URL'] = 'redis://localhost:6379'
+        app_config['REDIS2_DB'] = 1
         app_config['DEBUG'] = True
         app_config['OAUTH2_PROVIDER_TOKEN_EXPIRES_IN'] = 7200
         app_config['JWT_OAUTH_EXPIRATION'] = 3600 * 24 * 7  # One week expiry time for bearer token
         app_config['SQLALCHEMY_DATABASE_URI'] = 'mysql://talent_web:s!loc976892@127.0.0.1/talent_local'
 
 
-def verify_all_config_keys_defined(app_config):
+def missing_config_key_definition(app_config):
     """
-    If any TalentConfigKey is not defined, will return False.
+    If a TalentConfigKey is not defined, return it.
 
-    :rtype: bool
+    :rtype: str | None
     """
 
     # Filter out all private methods/fields of the object class
@@ -144,5 +154,4 @@ def verify_all_config_keys_defined(app_config):
     for config_key in all_config_keys:
         app_config_field_name = getattr(TalentConfigKeys, config_key)
         if not app_config.get(app_config_field_name):
-            return False
-    return True
+            return app_config_field_name

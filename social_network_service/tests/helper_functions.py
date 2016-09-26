@@ -2,15 +2,18 @@
 Helper methods used in social network service test cases. like to create event test data for event creation
 or send request
 """
-
 # Std Imports
-import datetime
 import json
+import datetime
 
+# Third Party
 import requests
+
 # Service imports
+from social_network_service.common.models.db import db
 from social_network_service.common.models.event import Event
 from social_network_service.social_network_app import logger
+from social_network_service.common.utils.handy_functions import send_request
 
 
 def auth_header(token):
@@ -33,7 +36,7 @@ def get_headers(token):
 
 
 def unauthorize_test(method, url, data=None):
-    response = send_request(method, url, 'invalid_token',  data)
+    response = send_request(method, url, 'invalid_token', data)
     assert response.status_code == 401, 'It should be unauthorized (401)'
     return response
 
@@ -84,17 +87,6 @@ def event_data_tests(method, url, data, token):
         'end_datetime is modified'
 
 
-def send_request(method, url, access_token, data=None, is_json=True):
-    # This method is being used for test cases, so it is sure that method has
-    #  a valid value like 'get', 'post' etc.
-    request_method = getattr(requests, method)
-    headers = dict(Authorization='Bearer %s' % access_token)
-    if is_json:
-        headers['Content-Type'] = 'application/json'
-        data = json.dumps(data)
-    return request_method(url, data=data, headers=headers)
-
-
 def send_post_request(url, data, access_token):
     """
     This method sends a post request to a URL with given data using access_token for authorization in header
@@ -105,3 +97,13 @@ def send_post_request(url, data, access_token):
     """
     return requests.post(url, data=json.dumps(data),
                          headers=get_headers(access_token))
+
+
+def assert_event(user_id, social_network_event_id):
+    """
+    This asserts we get event in database for given user_id and social_network_event_id
+    """
+    db.session.commit()
+    event = Event.get_by_user_and_social_network_event_id(user_id=user_id,
+                                                          social_network_event_id=social_network_event_id)
+    assert event

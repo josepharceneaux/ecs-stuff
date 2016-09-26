@@ -1,15 +1,17 @@
+# Standard library
+import requests
+import json
+
 # Flask specific
 from flask import request
 from flask_restful import Resource
 
 # Validators
-from candidate_service.modules.validators import (
-    does_candidate_belong_to_users_domain, get_candidate_if_exists, get_json_data_if_validated
-)
+from candidate_service.modules.validators import get_json_data_if_validated, get_candidate_if_validated
 from candidate_service.json_schema.references import references_schema
 
 # Decorators
-from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
+from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
 
 # Error handling
 from candidate_service.common.error_handling import ForbiddenError, NotFoundError
@@ -17,7 +19,7 @@ from candidate_service.custom_error_codes import CandidateCustomErrors as custom
 
 # Models
 from candidate_service.common.models.candidate import CandidateReference
-from candidate_service.common.models.user import DomainRole
+from candidate_service.common.models.user import Permission
 from candidate_service.modules.references import (
     get_references, get_reference_emails, get_reference_phones, get_reference_web_addresses,
     create_or_update_references, delete_reference, delete_all_references
@@ -25,14 +27,48 @@ from candidate_service.modules.references import (
 
 
 class CandidateReferencesResource(Resource):
+    """
+    Resource for all CRUD operations pertaining to candidate's references
+    """
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:   POST /v1/candidates/:candidate_id/references
+        Function will create candidate's reference's data
+
+        Usage:
+            >>> url = 'host/v1/candidates/4/references'
+            >>> headers = {'Authorization': 'Bearer {access_token}', 'content-type': 'application/json'}
+            >>> data =
+                        {
+                            "candidate_references": [
+                                {
+                                    "name": "Colonel Sanders",
+                                    "position_title": "manager",
+                                    "comments": "adept in problem solving",
+                                    "reference_email": {
+                                        "address": "c.sanders@kfc.com",
+                                        "label": "Primary",
+                                        "is_default": true
+                                    },
+                                    "reference_phone": {
+                                        "value": "+14055689944",
+                                        "label": "Mobile",
+                                        "is_default": true
+                                    },
+                                    "reference_web_address": {
+                                        "url": "http://www.kfc.com",
+                                        "description": "best way to reach me is via this website"
+                                    }
+                                }
+                            ]
+                        }
+            >>> requests.post(url=url, headers=headers, data=json.dumps(data))
+            <Response [201]>
+
         :return     {'candidate_references': [{'id': int}, {'id': int}, ...]}
-                    status code: 201
         """
         # Get json data if exists and validate its schema
         body_dict = get_json_data_if_validated(request, references_schema)
@@ -41,18 +77,16 @@ class CandidateReferencesResource(Resource):
         authed_user, candidate_id = request.user, kwargs['candidate_id']
 
         # Check if candidate exists & is not web-hidden
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         created_reference_ids = create_or_update_references(candidate_id=candidate_id,
                                                             references=body_dict['candidate_references'],
                                                             is_creating=True)
-        return {'candidate_references': [{'id': reference_id} for reference_id in created_reference_ids]}, 201
+        return {
+                   'candidate_references': [{'id': reference_id} for reference_id in created_reference_ids]
+               }, requests.codes.CREATED
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints:
@@ -63,11 +97,7 @@ class CandidateReferencesResource(Resource):
         authed_user, candidate_id, reference_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check if candidate exists & is web-hidden
-        candidate = get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         if reference_id:
             # Reference ID must be recognized
@@ -91,7 +121,7 @@ class CandidateReferencesResource(Resource):
 
         return {'candidate_references': get_references(candidate)}
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
         """
         Function will update candidate's references' information
@@ -108,11 +138,7 @@ class CandidateReferencesResource(Resource):
         reference_id_from_url = kwargs.get('id')
 
         # Check if candidate exists & is web-hidden
-        get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+        get_candidate_if_validated(authed_user, candidate_id)
 
         updated_reference_ids = create_or_update_references(candidate_id=candidate_id,
                                                             references=body_dict['candidate_references'],
@@ -120,7 +146,7 @@ class CandidateReferencesResource(Resource):
                                                             reference_id_from_url=reference_id_from_url)
         return {'updated_candidate_references': [{'id': reference_id} for reference_id in updated_reference_ids]}
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:
@@ -135,11 +161,7 @@ class CandidateReferencesResource(Resource):
         authed_user, candidate_id, reference_id = request.user, kwargs['candidate_id'], kwargs.get('id')
 
         # Check if candidate exists & is web-hidden
-        candidate = get_candidate_if_exists(candidate_id)
-
-        # Candidate must belong to user's domain
-        if not does_candidate_belong_to_users_domain(authed_user, candidate_id):
-            raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
+        candidate = get_candidate_if_validated(authed_user, candidate_id)
 
         if reference_id:  # Delete specified reference
             candidate_reference = CandidateReference.get_by_id(reference_id)

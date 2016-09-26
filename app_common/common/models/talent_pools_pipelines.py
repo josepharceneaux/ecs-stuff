@@ -5,6 +5,9 @@ from db import db
 from datetime import datetime, timedelta
 from user import Domain, UserGroup, User
 from candidate import Candidate
+# 3rd party imports
+from sqlalchemy import or_, and_, extract
+from sqlalchemy.dialects.mysql import TINYINT
 
 
 class TalentPool(db.Model):
@@ -53,6 +56,24 @@ class TalentPoolCandidate(db.Model):
     def get(cls, candidate_id, talent_pool_id):
         return cls.query.filter_by(candidate_id=candidate_id, talent_pool_id=talent_pool_id).first()
 
+    @staticmethod
+    def candidates_added_last_month(user_name, talent_pool_name, previous_month, user_id):
+        """
+        Returns number of candidate added by a user in a talent pool in a specific month
+        :param int user_id: User Id
+        :param user_name: User name
+        :param talent_pool_name: Talent pool name
+        :param previous_month: Month during candidates were added
+        :rtype: int
+        """
+        return TalentPoolCandidate.query.filter(TalentPoolCandidate.talent_pool_id == TalentPool.id) \
+            .filter(or_((and_(extract("year", TalentPoolCandidate.added_time) == previous_month.year,
+                              extract("month", TalentPoolCandidate.added_time) == previous_month.month)), (
+                            and_(extract("year", TalentPoolCandidate.updated_time) == previous_month.year,
+                                 extract("month", TalentPoolCandidate.updated_time) == previous_month.month)))) \
+            .filter(User.first_name == user_name).\
+            filter(User.id == user_id).filter(TalentPool.name == talent_pool_name).distinct().count()
+
 
 class TalentPoolGroup(db.Model):
     __tablename__ = 'talent_pool_group'
@@ -79,13 +100,14 @@ class TalentPoolGroup(db.Model):
 class TalentPipeline(db.Model):
     __tablename__ = 'talent_pipeline'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.TEXT)
     positions = db.Column(db.Integer, default=1, nullable=False)
     date_needed = db.Column(db.DateTime, nullable=False)
     user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id'), nullable=False)
-    search_params = db.Column(db.String(1023))
+    search_params = db.Column(db.TEXT)
+    is_hidden = db.Column(TINYINT, default='0', nullable=False)
     added_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow,
                              nullable=False)
@@ -112,21 +134,23 @@ class TalentPipeline(db.Model):
     def get_email_campaigns(self, page=1, per_page=20):
         from candidate_pool_service.common.models.email_campaign import EmailCampaign, EmailCampaignSmartlist
         from candidate_pool_service.common.models.smartlist import Smartlist
-        return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline). \
-            filter(TalentPipeline.id == self.id).paginate(page=page, per_page=per_page, error_out=False).items
+        return EmailCampaign.query.distinct(EmailCampaign.id).join(EmailCampaignSmartlist).join(Smartlist). \
+            join(TalentPipeline).filter(TalentPipeline.id == self.id).paginate(page=page, per_page=per_page,
+                                                                               error_out=False).items
 
     def get_email_campaigns_count(self):
         from candidate_pool_service.common.models.email_campaign import EmailCampaign, EmailCampaignSmartlist
         from candidate_pool_service.common.models.smartlist import Smartlist
-        return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline). \
-            filter(TalentPipeline.id == self.id).count()
+        return EmailCampaign.query.distinct(EmailCampaign.id).join(EmailCampaignSmartlist).join(Smartlist).\
+            join(TalentPipeline).filter(TalentPipeline.id == self.id).count()
 
     def delete(self):
         db.session.delete(self)
         db.session.commit()
 
     def to_dict(self, include_stats=False, get_stats_function=None, include_growth=False, interval=None,
-                get_growth_function=None):
+                get_growth_function=None, include_candidate_count=False, get_candidate_count=None,
+                email_campaign_count=False):
 
         talent_pipeline = {
             'id': self.id,
@@ -138,9 +162,14 @@ class TalentPipeline(db.Model):
                 self.search_params) if self.search_params else None,
             'talent_pool_id': self.talent_pool_id,
             'date_needed': self.date_needed.isoformat() if self.date_needed else None,
+            'is_hidden': self.is_hidden,
             'added_time': self.added_time.isoformat(),
             'updated_time': self.updated_time.isoformat()
         }
+        if email_campaign_count:
+            talent_pipeline['total_email_campaigns'] = self.get_email_campaigns_count()
+        if include_candidate_count and get_candidate_count:
+            talent_pipeline['total_candidates'] = get_candidate_count(self, datetime.utcnow())
         if include_growth and interval and get_growth_function:
             talent_pipeline['growth'] = get_growth_function(self, int(interval))
         if include_stats and get_stats_function:
