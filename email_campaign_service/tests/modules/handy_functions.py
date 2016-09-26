@@ -536,18 +536,21 @@ def data_for_creating_email_clients():
         {
             "host": "smtp.gmail.com",
             "port": "587",
+            "name": "Gmail",
             "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
             "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
         },
         {
             "host": "imap.gmail.com",
             "port": "",
+            "name": "Gmail",
             "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
             "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
         },
         {
             "host": "pop.gmail.com",
             "port": "",
+            "name": "Gmail",
             "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
             "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
         }]
@@ -563,6 +566,7 @@ def assert_email_client_fields(email_client_data, user_id):
     assert email_client_data['user_id'] == user_id
     assert email_client_data['host']
     assert 'port' in email_client_data
+    assert email_client_data['name']
     assert email_client_data['email']
     assert email_client_data['password']
     assert email_client_data['updated_datetime']

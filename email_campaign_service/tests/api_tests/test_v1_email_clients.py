@@ -119,15 +119,30 @@ class TestGetEmailClients(object):
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL)
 
-    def test_with_created_clients(self, create_email_clients, headers, user_first):
+    def test_get_outgoing_clients(self, create_email_clients, headers, user_first):
         """
         We have created 3 email clients in the fixture create_email_clients.
-        Here we GET email-clients from endpoint and assert valid response.
+        Here we GET only outoging email-clients from endpoint and assert valid response.
         """
+        # GET outgoing email-clients
         response = requests.get(self.URL, headers=headers)
         assert response.ok
         assert response.json()
         email_clients_data = response.json()['email_client_credentials']
+        assert len(email_clients_data) == 1
+        assert_email_client_fields(email_clients_data[0], user_first.id)
+
+    def test_get_incoming_clients(self, create_email_clients, headers, user_first):
+        """
+        We have created 3 email clients in the fixture create_email_clients.
+        Here we GET only incoming email-clients from endpoint and assert valid response.
+        """
+        # GET incoming email-clients
+        response = requests.get(self.URL + '?type=incoming', headers=headers)
+        assert response.ok
+        assert response.json()
+        email_clients_data = response.json()['email_client_credentials']
+        assert len(email_clients_data) == 2
         for email_client_data in email_clients_data:
             assert_email_client_fields(email_client_data, user_first.id)
 
@@ -141,3 +156,19 @@ class TestGetEmailClients(object):
         assert response.json()
         email_client_data = response.json()['email_client_credentials']
         assert len(email_client_data) == 0
+
+    def test_get_invalid_client(self, create_email_clients, headers):
+        """
+        We have created 3 email clients in the fixture create_email_clients.
+        Here we GET email-clients with invalid value of parameter "type".
+        It should result in bad request error.
+        """
+        response = requests.get(self.URL + '?type=%s' % fake.word(), headers=headers)
+        assert response.status_code == codes.BAD
+
+class TestEmailCampaignWithEmailClient(object):
+    """
+    Here are the tests of /v1/email-campaigns
+    """
+    URL = EmailCampaignApiUrl.CLIENTS
+    HTTP_METHOD = 'post'

@@ -8,7 +8,7 @@ from db import db
 from ..utils.datetime_utils import DatetimeUtils
 from ..utils.validators import (raise_if_not_instance_of,
                                 raise_if_not_positive_int_or_long)
-from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError)
+from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError, InvalidUsage)
 
 __author__ = 'jitesh'
 
@@ -40,6 +40,8 @@ class EmailCampaign(db.Model):
     is_subscription = db.Column('isSubscription', db.Boolean, default=False)
     added_datetime = db.Column('addedTime', db.DateTime, default=datetime.datetime.utcnow)
     email_client_id = db.Column('EmailClientId', db.Integer, db.ForeignKey('email_client.id'))
+    email_client_credentials_id = db.Column('EmailClientCredentialsId', db.Integer,
+                                            db.ForeignKey('email_client_credentials.id'))
 
     # Relationships
     frequency = relationship("Frequency", backref="frequency")
@@ -428,9 +430,13 @@ class EmailClientCredentials(db.Model):
     user_id = db.Column('user_id', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
     host = db.Column('host', db.String(50), nullable=False)
     port = db.Column('port', db.String(5))
+    name = db.Column('name', db.String(20), nullable=False)
     email = db.Column('email', db.String(60), nullable=False)
     password = db.Column('password', db.String(512), nullable=False)
     updated_datetime = db.Column('updated_datetime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
+
+    OUTGOING = ['smtp']
+    INCOMING = ['imap', 'pop']
 
     @classmethod
     def get_by_user_id_host_and_email(cls, user_id, host, email):
@@ -445,3 +451,21 @@ class EmailClientCredentials(db.Model):
         assert host, "host not provided"
         assert email, "email not provided"
         return cls.filter_by_keywords(user_id=user_id, host=host, email=email)
+
+    @classmethod
+    def get_by_user_id_and_filter_by_name(cls, user_id, search_keyword):
+        """
+        This gets email-client-credentials for given user_id and search_keyword.
+        Valid values of "search_keyword" are 'incoming' or 'outgoing'.
+        :type user_id:  int | long
+        :type search_keyword:  string
+        :rtype: list
+        """
+        assert user_id, 'user_id not given'
+        if search_keyword not in ('incoming', 'outgoing'):
+            raise InvalidUsage('Invalid value of param `type` provided')
+        client_types = getattr(cls, search_keyword.upper())
+        conditions = []
+        for client_type in client_types:
+            conditions.append(cls.host.ilike('%{}%'.format(client_type)))
+        return cls.query.filter(or_(*conditions), cls.user_id == user_id).all()

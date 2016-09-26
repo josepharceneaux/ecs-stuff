@@ -5,6 +5,8 @@
 
 This file contains fixtures for tests of email-campaign-service
 """
+from datetime import timedelta
+from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 
 __author__ = 'basit'
 
@@ -17,14 +19,16 @@ from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
-                                                                 EmailTemplateFolder)
+                                                                 EmailTemplateFolder, EmailCampaign)
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   create_email_campaign_smartlist,
                                                                   send_campaign_helper,
                                                                   create_smartlist_with_given_email_candidate,
                                                                   add_email_template,
                                                                   get_template_folder, assert_valid_template_folder,
-                                                                  EmailCampaignTypes, data_for_creating_email_clients)
+                                                                  EmailCampaignTypes, data_for_creating_email_clients,
+                                                                  create_data_for_campaign_creation,
+                                                                  create_email_campaign_via_api)
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
@@ -304,9 +308,42 @@ def email_templates_bulk(headers, user_first):
 def create_email_clients(headers):
     """
     This add 3 email clients for user_first.
+    :rtype: list
     """
+    email_client_ids = []
     for email_client_data in data_for_creating_email_clients():
         response = requests.post(EmailCampaignApiUrl.CLIENTS, headers=headers, data=json.dumps(email_client_data))
         assert response.ok
         assert 'id' in response.json()
+        email_client_ids.append(response.json()['id'])
+    return email_client_ids
 
+
+@pytest.fixture()
+def email_campaign_with_outgoing_email_client(access_token_first, talent_pipeline, headers, create_email_clients):
+    """
+    This creates an email-campaign which will be sent via an SMTP server added by user.
+    """
+    subject = '%s-test_email_campaign_with_outgoing_email_client' % fake.uuid()
+    campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, subject)
+    campaign_data['frequency_id'] = Frequency.DAILY
+    campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(weeks=1))
+    campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow()
+                                                             + timedelta(weeks=1) + timedelta(days=4))
+
+    # GET email-client-id
+    response = requests.get(EmailCampaignApiUrl.CLIENTS + '?type=outgoing', headers=headers)
+    assert response.ok
+    assert response.json()
+    email_client_response = response.json()['email_client_credentials']
+    assert len(email_client_response) == 1
+    campaign_data['email_client_credentials_id'] = email_client_response[0]['id']
+
+    response = create_email_campaign_via_api(access_token_first, campaign_data)
+    assert response.status_code == requests.codes.CREATED
+    resp_object = response.json()
+    assert 'campaign' in resp_object
+    db.session.commit()
+    email_campaign = EmailCampaign.get_by_id(resp_object['campaign']['id'])
+    assert email_campaign
+    return email_campaign

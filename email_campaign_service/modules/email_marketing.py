@@ -25,7 +25,7 @@ from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 from email_campaign_service.modules.utils import (TRACKING_URL_TYPE,
                                                   get_candidates_from_smartlist,
                                                   do_mergetag_replacements,
-                                                  create_email_campaign_url_conversions)
+                                                  create_email_campaign_url_conversions, SMTP)
 from email_campaign_service.modules import aws_constants as aws
 
 # Common Utils
@@ -43,7 +43,8 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailCampaignSmartlist,
                                                                  EmailCampaignBlast,
                                                                  EmailCampaignSend,
-                                                                 EmailCampaignSendUrlConversion)
+                                                                 EmailCampaignSendUrlConversion,
+                                                                 EmailClientCredentials)
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
                                                             raise_if_not_positive_int_or_long,
                                                             get_json_data_if_validated)
@@ -52,7 +53,7 @@ from email_campaign_service.common.utils.handy_functions import (http_request,
 from email_campaign_service.common.utils.amazon_ses import send_email, get_default_email_info
 from email_campaign_service.common.models.candidate import (Candidate, CandidateEmail,
                                                             CandidateSubscriptionPreference, EmailLabel)
-from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)
+from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError, ResourceNotFound)
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
 from email_campaign_service.common.inter_service_calls.candidate_service_calls import \
     get_candidate_subscription_preference
@@ -79,6 +80,7 @@ def create_email_campaign(user_id, oauth_token, name, subject, description,
                           _from, reply_to, body_html,
                           body_text, list_ids, email_client_id=None,
                           frequency_id=None,
+                          email_client_credentials_id=None,
                           start_datetime=None,
                           end_datetime=None,
                           template_id=None):
@@ -101,7 +103,9 @@ def create_email_campaign(user_id, oauth_token, name, subject, description,
                                    start_datetime=start_datetime,
                                    end_datetime=end_datetime,
                                    frequency_id=frequency_id if frequency_id else None,
-                                   email_client_id=email_client_id
+                                   email_client_id=email_client_id,
+                                   email_client_credentials_id=email_client_credentials_id
+                                   if email_client_credentials_id else None
                                    )
     EmailCampaign.save(email_campaign)
 
@@ -493,7 +497,7 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
 
     if blast_params:
         raise_if_not_instance_of(blast_params, dict)
-
+    email_response = None
     campaign = EmailCampaign.get_by_id(campaign_id)
     candidate = Candidate.get_by_id(candidate_id)
     new_text, new_html, subject, email_campaign_send, blast_params, _ = \
@@ -515,38 +519,51 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
             to_addresses = campaign.user.email
         else:
             to_addresses = [app.config[TalentConfigKeys.GT_GMAIL_ID]]
-    try:
-        default_email = get_default_email_info()['email']
-        email_response = send_email(source='"%s" <%s>' % (campaign._from, default_email),
-                                    # Emails will be sent from verified email by Amazon SES for respective environment.
-                                    subject=subject,
-                                    html_body=new_html or None,
-                                    # Can't be '', otherwise, text_body will not show in email
-                                    text_body=new_text,
-                                    to_addresses=to_addresses,
-                                    reply_address=campaign.reply_to.strip(),
-                                    # BOTO doesn't seem to work with an array as to_addresses
-                                    body=None,
-                                    email_format='html' if campaign.body_html else 'text')
-    except Exception as e:
-        # Mark email as bounced
-        _handle_email_sending_error(email_campaign_send, candidate_id, to_addresses, blast_params,
-                                    email_campaign_blast_id, e)
-        return False
 
-    environment = os.getenv(TalentConfigKeys.ENV_KEY) or 'local'
-    username = getpass.getuser()
-    # Save SES message ID & request ID
-    logger.info('''Marketing email sent successfully.
-                   Recipients    : %s,
-                   UserId        : %s,
-                   System User Name: %s,
-                   Environment   : %s,
-                   Email Response: %s
-                ''', to_addresses, user_id, username, environment, email_response)
-    request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
-    message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
-    email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
+    email_client_credentials_id = campaign.email_client_credentials_id
+    if email_client_credentials_id:  # In case user wants to send email-campaign via added SMTP server.
+        email_client_credentials = EmailClientCredentials.get_by_id(campaign.email_client_credentials_id)
+        if not email_client_credentials:
+            raise ResourceNotFound("EmailClientCredentials's object(id:%s) not found"
+                                   % email_client_credentials_id)
+        client = SMTP(email_client_credentials.host,email_client_credentials.port,
+                      email_client_credentials.email, email_client_credentials.password)
+        client.send_email(to_addresses, subject, new_text)
+    else:
+        try:
+            default_email = get_default_email_info()['email']
+            email_response = send_email(source='"%s" <%s>' % (campaign._from, default_email),
+                                        # Emails will be sent from verified email by Amazon SES for respective
+                                        #  environment.
+                                        subject=subject,
+                                        html_body=new_html or None,
+                                        # Can't be '', otherwise, text_body will not show in email
+                                        text_body=new_text,
+                                        to_addresses=to_addresses,
+                                        reply_address=campaign.reply_to.strip(),
+                                        # BOTO doesn't seem to work with an array as to_addresses
+                                        body=None,
+                                        email_format='html' if campaign.body_html else 'text')
+        except Exception as e:
+            # Mark email as bounced
+            _handle_email_sending_error(email_campaign_send, candidate_id, to_addresses, blast_params,
+                                        email_campaign_blast_id, e)
+            return False
+
+        environment = os.getenv(TalentConfigKeys.ENV_KEY) or 'local'
+        username = getpass.getuser()
+        # Save SES message ID & request ID
+        logger.info('''Marketing email sent successfully.
+                       Recipients    : %s,
+                       UserId        : %s,
+                       System User Name: %s,
+                       Environment   : %s,
+                       Email Response: %s
+                    ''', to_addresses, user_id, username, environment, email_response)
+        request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
+        message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
+        email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
+
     # Add activity
     try:
         CampaignBase.create_activity(campaign.user.id,

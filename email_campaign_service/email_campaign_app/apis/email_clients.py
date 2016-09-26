@@ -58,8 +58,9 @@ class EmailClientsEndpoint(Resource):
 
         .. Request Body::
                         {
-                            "host": "server_name",
+                            "host": "Host Name",
                             "port": 123,
+                            "name": "Server Name",
                             "email": "email",
                             "password": "password",
                         }
@@ -102,6 +103,7 @@ class EmailClientsEndpoint(Resource):
                                                         "user_id": 12345
                                                         "host": "server_name",
                                                         "port": 123,
+                                                        "name": "Server Name 1",
                                                         "email": "email_1",
                                                         "password": "password_1",
                                                         "updated_datetime": "2016-09-26 14:20:06"
@@ -111,6 +113,7 @@ class EmailClientsEndpoint(Resource):
                                                         "user_id": 12345
                                                         "host": "server_name",
                                                         "port": 123,
+                                                        "name": "Server Name 2",
                                                         "email": "email_2",
                                                         "password": "password_2",
                                                         "updated_datetime": "2016-09-26 14:20:06"
@@ -119,11 +122,14 @@ class EmailClientsEndpoint(Resource):
             }
 
         .. Status:: 200 (Resource created)
+                    400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     500 (Internal server error)
         """
-        email_client_credentials = [email_client_credential.to_json()
-                                    for email_client_credential in request.user.email_client_credentials]
+        server_type = request.args.get('type', 'outgoing')
+        email_client_credentials = [email_client_credential.to_json() for email_client_credential in
+                                    EmailClientCredentials.get_by_user_id_and_filter_by_name(request.user.id,
+                                                                                             server_type)]
         return {'email_client_credentials': email_client_credentials}, requests.codes.OK
 
 

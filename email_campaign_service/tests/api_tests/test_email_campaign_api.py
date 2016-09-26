@@ -239,7 +239,7 @@ class TestCreateCampaign(object):
 
     def test_create_email_campaign_with_client_id(self, access_token_first, talent_pipeline):
         """
-        Here we provide valid data to create an email-campaign without email_client_id.
+        Here we provide valid data to create an email-campaign with email_client_id.
         It should get OK response.
         """
         subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign_with_client_id'
@@ -250,6 +250,45 @@ class TestCreateCampaign(object):
         assert response.status_code == requests.codes.CREATED
         resp_object = response.json()
         assert 'campaign' in resp_object
+
+    def test_create_email_campaign_with_outgoing_email_client(self, access_token_first, talent_pipeline,
+                                                              create_email_clients, headers):
+        """
+        Here we provide valid data to create an email-campaign with email_client_credentials_id.
+        It should get OK response.
+        """
+        subject = str(uuid.uuid4())[0:8] + '-test_email_campaign_with_outgoing_email_client'
+        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
+                                                          subject, assert_candidates=False)
+        # GET email-client-id
+        response = requests.get(EmailCampaignApiUrl.CLIENTS + '?type=outgoing', headers=headers)
+        assert response.ok
+        assert response.json()
+        email_client_response = response.json()['email_client_credentials']
+        assert len(email_client_response) == 1
+        campaign_data['email_client_credentials_id'] = email_client_response[0]['id']
+        response = create_email_campaign_via_api(access_token_first, campaign_data)
+        assert response.status_code == requests.codes.CREATED
+        resp_object = response.json()
+        assert 'campaign' in resp_object
+
+    def test_create_email_campaign_with_incoming_email_client(self, access_token_first, talent_pipeline,
+                                                              create_email_clients, headers):
+        """
+        Here we provide email-client of type "incoming". email-campaign should not be created.
+        """
+        subject = str(uuid.uuid4())[0:8] + '-test_create_email_campaign_with_incoming_email_client'
+        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
+                                                          subject, assert_candidates=False)
+        # GET email-client-id
+        response = requests.get(EmailCampaignApiUrl.CLIENTS + '?type=incoming', headers=headers)
+        assert response.ok
+        assert response.json()
+        email_client_response = response.json()['email_client_credentials']
+        assert len(email_client_response) == 2
+        campaign_data['email_client_credentials_id'] = email_client_response[0]['id']
+        response = create_email_campaign_via_api(access_token_first, campaign_data)
+        assert response.status_code == requests.codes.BAD
 
     def test_create_campaign_with_non_json_data(self, access_token_first):
         """
@@ -430,7 +469,6 @@ class TestSendCampaign(object):
                 json_resp = response.json()
                 assert str(email_campaign_of_user_first.id) in json_resp['message']
 
-
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
                                                      email_campaign_in_other_domain):
         """
@@ -463,7 +501,6 @@ class TestSendCampaign(object):
         if not campaign_with_candidate_having_no_email.email_client_id:
             json_resp = response.json()
             assert str(campaign_with_candidate_having_no_email.id) in json_resp['message']
-
 
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
             self, headers, user_first, campaign_with_valid_candidate):
@@ -504,6 +541,15 @@ class TestSendCampaign(object):
         campaign = campaign_with_candidates_having_same_email_in_diff_domain
         response = requests.post(self.URL % campaign.id, headers=headers)
         assert_campaign_send(response, campaign, user_first, 2, abort_time_for_sends=300)
+
+    def test_campaign_send_with_outgoing_email_client(self, email_campaign_with_outgoing_email_client, headers,
+                                                      user_first):
+        """
+        This sends email-campaign with SMTP server added by user. It should not get any error.
+        """
+        campaign = email_campaign_with_outgoing_email_client
+        response = requests.post(self.URL % campaign.id, headers=headers)
+        assert_campaign_send(response, campaign, user_first)
 
     def test_campaign_send_with_email_client_id(self, send_email_campaign_by_client_id_response, user_first):
         """

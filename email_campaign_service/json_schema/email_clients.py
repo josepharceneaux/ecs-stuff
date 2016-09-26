@@ -8,13 +8,18 @@ Authors:
 EMAIL_CLIENTS_SCHEMA = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
+    "additionalProperties": False,
     "properties": {
         "host": {
             "type": "string",
-            "pattern": "\w",
+            "pattern": "\S",
         },
         "port": {
             "type": ["string", "null"],
+        },
+        "name": {
+            "type": ["string"],
+            "pattern": "\S"
         },
         "email": {
             "type": "string",
@@ -22,9 +27,9 @@ EMAIL_CLIENTS_SCHEMA = {
         },
         "password": {
             "type": "string",
-            "pattern": "\w",
+            "pattern": "\S",
         }
 
     },
-    "required": ["host", "email", "password"]
+    "required": ["host", "name", "email", "password"]
 }

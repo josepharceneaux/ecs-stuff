@@ -11,11 +11,11 @@ CAMPAIGN_SCHEMA = {
     "properties": {
         "name": {
             "type": "string",
-            "pattern": "\w",
+            "pattern": "\S",
         },
         "body_text": {
             "type": "string",
-            "pattern": "\w",
+            "pattern": "\S",
         },
         "smartlist_ids": {
             "type": "array",

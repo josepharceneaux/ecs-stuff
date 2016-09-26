@@ -13,9 +13,10 @@ import datetime
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.smartlist import Smartlist
-from email_campaign_service.common.models.email_campaign import EmailClient
+from email_campaign_service.common.models.email_campaign import EmailClient, EmailClientCredentials
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity, ForbiddenError)
+from email_campaign_service.modules.utils import EmailClients
 
 
 def validate_datetime(datetime_text, field_name=None):
@@ -55,6 +56,7 @@ def validate_and_format_request_data(data, user_id):
     end_datetime = data.get('end_datetime')
     frequency_id = data.get('frequency_id')         # required
     template_id = data.get('template_id')
+    email_client_credentials_id = data.get('email_client_credentials_id')
 
     # Raise errors if invalid input
     if name is None or name.strip() == '':
@@ -93,6 +95,12 @@ def validate_and_format_request_data(data, user_id):
         # If email_client_id is there then set template_id to None. Why??
         template_id = None
 
+    # In case user wants to send email-campaign with its own account
+    if email_client_credentials_id:
+        email_client_credentials = EmailClientCredentials.get_by_id(email_client_credentials_id)
+        if not EmailClients.is_outgoing(email_client_credentials.host):
+            raise InvalidUsage("Selected email-client must be of type `outgoing`")
+
     # Validation for list ids belonging to same domain
     validate_lists_belongs_to_domain(list_ids, user_id)
 
@@ -110,7 +118,8 @@ def validate_and_format_request_data(data, user_id):
         'start_datetime': start_datetime,
         'end_datetime': end_datetime,
         'frequency_id': frequency_id,
-        'template_id': template_id
+        'template_id': template_id,
+        'email_client_credentials_id': email_client_credentials_id
     }
 
 

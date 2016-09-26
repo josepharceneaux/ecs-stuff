@@ -29,7 +29,7 @@ from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.user import User, Serializer
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.common.models.email_campaign import EmailCampaignSend
+from email_campaign_service.common.models.email_campaign import EmailCampaignSend, EmailClientCredentials
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
@@ -317,6 +317,10 @@ def get_valid_send_obj(requested_campaign_id, send_id, current_user, campaign_ty
 
 
 class EmailClients(object):
+    """
+    This is the base class for email-clients.
+    """
+
     def __init__(self, host, port, email, password):
         """
         This sets values of attributes host, port, email and password.
@@ -347,6 +351,18 @@ class EmailClients(object):
         else:
             raise InvalidUsage('Unknown host provided')
         return client
+
+    @staticmethod
+    def is_outgoing(host):
+        """
+        This returns True/False that given host is "outgoing" or not.
+        :type host: string
+        :rtype: bool
+        """
+        for client_type in EmailClientCredentials.OUTGOING:
+            if client_type in host:
+                return True
+        return False
 
     @abstractmethod
     def set_client(self):
@@ -402,6 +418,20 @@ class SMTP(EmailClients):
         except smtplib.SMTPAuthenticationError as error:
             logger.exception(error.smtp_error)
             raise InvalidUsage('Invalid credentials provided. Could not authenticate with smtp server')
+
+    def send_email(self, to_address, subject, body):
+        """
+        This connects and authenticate with SMTP server and sends email to given email-address
+        :param string to_address: Recipient's email address
+        :param string subject: Subject of email
+        :param string body: Body of email
+        """
+        self.connect()
+        self.authenticate()
+        msg = "From: %s\r\nTo: %s\r\nSubject: %s\n%s\n" % (self.email, to_address, subject, body)
+        self.connection.sendmail(self.email, [to_address], msg)
+        logger.info('Email has been sent from:%s, to:%s via SMTP server.' % (self.email, to_address))
+        self.connection.quit()
 
 
 class IMAP(EmailClients):
