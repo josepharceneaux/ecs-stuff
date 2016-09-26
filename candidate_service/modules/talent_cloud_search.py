@@ -470,8 +470,8 @@ def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_cand
                         len(candidate_ids[i:i + max_number_of_candidate]), candidate_ids[i:i + max_number_of_candidate])
             start_time = time.time()
 
-            with Timeout(seconds=60):
-                # If _build_candidate_documents take more than 60 seconds Timeout will raise an exception
+            with Timeout(seconds=120):
+                # If _build_candidate_documents take more than 120 seconds Timeout will raise an exception
                 action_dicts = _build_candidate_documents(candidate_ids[i:i + max_number_of_candidate], domain_id)
 
             logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
@@ -499,7 +499,7 @@ def upload_candidate_documents_in_domain(domain_id):
                                                                                User.domain_id == domain_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of domain id %s", len(candidate_ids), domain_id)
-    return upload_candidate_documents.delay(candidate_ids, domain_id, 50)
+    return upload_candidate_documents.delay(candidate_ids, domain_id, 10)
 
 
 def upload_candidate_documents_of_user(user_id):
@@ -511,7 +511,7 @@ def upload_candidate_documents_of_user(user_id):
     candidates = Candidate.query.with_entities(Candidate.id).filter_by(user_id=user_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of user (user id = %s)", len(candidate_ids), user_id)
-    return upload_candidate_documents.delay(candidate_ids, None, 50)
+    return upload_candidate_documents.delay(candidate_ids, None, 10)
 
 
 def upload_all_candidate_documents():
