@@ -57,6 +57,7 @@ class DynamoDB(object):
         """
         Will add an item to candidate's records
         """
+        # TODO: Add comment explaining the field check
         field = data.keys().pop()
         assert field in cls.candidate_attributes, "field: '{}' not recognized".format(field)
 

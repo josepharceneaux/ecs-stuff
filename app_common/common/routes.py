@@ -101,7 +101,7 @@ class GTApis(object):
     ATS_SERVICE_PORT = 8015
     MOCK_SERVICE_PORT = 8016
     TALENTBOT_PORT = 8017
-    GRAPH_API_SERVICE_PORT = 8018
+    GRAPHQL_SERVICE_PORT = 8018
 
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
@@ -121,6 +121,7 @@ class GTApis(object):
     ATS_SERVICE_NAME = 'ats-service'
     MOCK_SERVICE_NAME = 'mock-service'
     TALENTBOT_SERVICE_NAME = 'talentbot-service'
+    GRAPHQL_SERVICE = 'graphql-service'
 
     # CORS headers
     CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com$",

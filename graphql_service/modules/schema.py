@@ -4,7 +4,7 @@ import graphene
 from flask import request
 
 # Error handling
-from graph_api_service.common.error_handling import InternalServerError
+from graphql_service.common.error_handling import InternalServerError
 
 
 class CandidateAddressType(graphene.ObjectType):
@@ -73,20 +73,7 @@ class CandidateEmailType(graphene.ObjectType):
         return self.get('is_default')
 
 
-class DegreeBulletType(graphene.ObjectType):
-    name = 'DegreeBullet'
-
-    id = graphene.Int()
-    concentration_type = graphene.String()
-    comments = graphene.String()
-    added_time = graphene.String()
-    updated_time = graphene.String()
-
-
 class EducationDegreeType(graphene.ObjectType):
-    name = 'EducationDegree'
-
-    id = graphene.Int()
     degree_type = graphene.String()
     degree_title = graphene.String()
     start_year = graphene.Int()
@@ -94,30 +81,78 @@ class EducationDegreeType(graphene.ObjectType):
     end_year = graphene.Int()
     end_month = graphene.Int()
     gpa = graphene.Float()
-    added_time = graphene.String()
-    updated_time = graphene.String()
+    added_datetime = graphene.String()
+    updated_datetime = graphene.String()
+    major = graphene.String()
+    comments = graphene.String()
 
-    # Nested data
-    bullets = graphene.List(DegreeBulletType)
+    def resolve_degree_type(self, args, info):
+        return self.get('degree_type')
 
-    def resolve_bullets(self, args, info):
-        return self.bullets
+    def resolve_degree_title(self, args, info):
+        return self.get('degree_title')
+
+    def resolve_start_year(self, args, info):
+        return self.get('start_year')
+
+    def resolve_start_month(self, args, info):
+        return self.get('start_month')
+
+    def resolve_end_year(self, args, info):
+        return self.get('end_year')
+
+    def resolve_end_month(self, args, info):
+        return self.get('end_month')
+
+    def resolve_gpa(self, args, info):
+        return self.get('gpa')
+
+    def resolve_added_datetime(self, args, info):
+        return self.get('added_datetime')
+
+    def resolve_updated_datetime(self, args, info):
+        return self.get('updated_datetime')
+
+    def resolve_major(self, args, info):
+        return self.get('major')
+
+    def resolve_comments(self, args, info):
+        return self.get('comments')
 
 
-class CandidateEducationType(graphene.ObjectType):
-    name = 'CandidateEducation'
-
-    id = graphene.Int()
+class EducationType(graphene.ObjectType):
     school_name = graphene.String()
     school_type = graphene.String()
     city = graphene.String()
     state = graphene.String()
+    iso3166_subdivision = graphene.String()
     is_current = graphene.Boolean()
-    added_time = graphene.String()
-    updated_time = graphene.String()
+    added_datetime = graphene.String()
+    updated_datetime = graphene.String()
 
     # Nested data
     degrees = graphene.List(EducationDegreeType)
+
+    def resolve_school_name(self, args, info):
+        return self.get('school_name')
+
+    def resolve_school_type(self, args, info):
+        return self.get('school_type')
+
+    def resolve_city(self, args, info):
+        return self.get('city')
+
+    def resolve_iso3166_subdivision(self, args, info):
+        return self.get('iso3166_subdivision')
+
+    def resolve_is_current(self, args, info):
+        return self.get('is_current')
+
+    def resolve_added_datetime(self, args, info):
+        return self.get('added_datetime')
+
+    def resolve_updated_datetime(self, args, info):
+        return self.get('updated_datetime')
 
     def resolve_degrees(self, args, info):
         return self.degrees
@@ -192,24 +227,23 @@ class CandidateType(graphene.ObjectType):
     # ***** Secondary attributes *****
     addresses = graphene.List(CandidateAddressType)
     emails = graphene.List(CandidateEmailType)
-
-    # educations = List(CandidateEducationType)
+    educations = graphene.List(EducationType)
 
     def resolve_addresses(self, args, info):
-        return self.addresses
+        return self.get('addresses')
 
     def resolve_emails(self, args, info):
         return self.get('emails')
 
-    # def resolve_educations(self, args, info):
-    #     return self.get('educations')
+    def resolve_educations(self, args, info):
+        return self.get('educations')
 
 
 try:
-    from graph_api_service.modules.query import QueryCandidate
+    from graphql_service.modules.query import CandidateQuery
     from mutation import CandidateMutation
 
-    schema = graphene.Schema(query=QueryCandidate, mutation=CandidateMutation)
+    schema = graphene.Schema(query=CandidateQuery, mutation=CandidateMutation, auto_camelcase=False)
 except Exception as e:
     print "Error: {}".format(e.message)
     raise InternalServerError('Unable to create schema because: {}'.format(e.message))

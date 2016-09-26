@@ -386,7 +386,7 @@ class CandidateEmail(db.Model):
         for k, v in cls.labels_mapping.iteritems():
             if label.title() == v:
                 return k
-            return 4
+            return cls.labels_mapping['Other']
 
     @classmethod
     def get_by_id(cls, _id):
