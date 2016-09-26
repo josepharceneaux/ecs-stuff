@@ -497,7 +497,7 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
 
     if blast_params:
         raise_if_not_instance_of(blast_params, dict)
-    email_response = None
+        
     campaign = EmailCampaign.get_by_id(campaign_id)
     candidate = Candidate.get_by_id(candidate_id)
     new_text, new_html, subject, email_campaign_send, blast_params, _ = \
@@ -522,13 +522,17 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
 
     email_client_credentials_id = campaign.email_client_credentials_id
     if email_client_credentials_id:  # In case user wants to send email-campaign via added SMTP server.
-        email_client_credentials = EmailClientCredentials.get_by_id(campaign.email_client_credentials_id)
-        if not email_client_credentials:
-            raise ResourceNotFound("EmailClientCredentials's object(id:%s) not found"
-                                   % email_client_credentials_id)
-        client = SMTP(email_client_credentials.host,email_client_credentials.port,
-                      email_client_credentials.email, email_client_credentials.password)
-        client.send_email(to_addresses, subject, new_text)
+        try:
+            email_client_credentials = EmailClientCredentials.get_by_id(campaign.email_client_credentials_id)
+            if not email_client_credentials:
+                raise ResourceNotFound("EmailClientCredentials's object(id:%s) not found"
+                                       % email_client_credentials_id)
+            client = SMTP(email_client_credentials.host,email_client_credentials.port,
+                          email_client_credentials.email, email_client_credentials.password)
+            client.send_email(to_addresses, subject, new_text)
+        except Exception as error:
+            logger.exception('Error occurred while sending campaign via SMTP server. Error:%s' % error.message)
+            return False
     else:
         try:
             default_email = get_default_email_info()['email']

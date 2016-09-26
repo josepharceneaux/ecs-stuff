@@ -324,7 +324,7 @@ def email_campaign_with_outgoing_email_client(access_token_first, talent_pipelin
     """
     This creates an email-campaign which will be sent via an SMTP server added by user.
     """
-    subject = '%s-test_email_campaign_with_outgoing_email_client' % fake.uuid()
+    subject = '%s-test_email_campaign_with_outgoing_email_client' % fake.uuid4()
     campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, subject)
     campaign_data['frequency_id'] = Frequency.DAILY
     campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(weeks=1))
