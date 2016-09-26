@@ -1165,9 +1165,10 @@ resource_schema_preferences = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "type": "object",
     "additionalProperties": False,
+    "required": ["frequency_id"],
     "properties": {
         "frequency_id": {
-            "type": "integer"
+            "type": ["integer", "string"]
         }
     }
 }
