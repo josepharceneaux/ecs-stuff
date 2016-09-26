@@ -141,8 +141,8 @@ class TestScheduleCampaignUsingPOST(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        # retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
-        #       args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
+        retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
+              args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
 
     def test_schedule_a_campaign_with_user_from_same_domain(self, smartlist_first, campaign_in_db,  talent_pool,
                                                             token_first, token_same_domain,  candidate_device_first):
@@ -159,8 +159,8 @@ class TestScheduleCampaignUsingPOST(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        # retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
-        #       args=(campaign_id, token_first), kwargs={'count': 1})
+        retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
+              args=(campaign_id, token_first), kwargs={'count': 1})
 
     def test_schedule_a_campaign_with_user_from_diff_domain(self, token_first, token_second,
                                                             campaign_in_db, smartlist_first, candidate_device_first):
@@ -283,8 +283,8 @@ class TestRescheduleCampaignUsingPUT(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        # retry(get_blasts, attempts=20, sleepscale=1, sleeptime=3, retry_exceptions=(AssertionError,),
-        #       args=(campaign_in_db['id'], token_first), kwargs={'count': 2})
+        retry(get_blasts, attempts=20, sleepscale=1, sleeptime=3, retry_exceptions=(AssertionError,),
+              args=(campaign_in_db['id'], token_first), kwargs={'count': 2})
 
     def test_reschedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,
                                                             campaign_in_db, schedule_a_campaign):
