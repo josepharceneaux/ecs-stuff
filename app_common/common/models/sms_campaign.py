@@ -3,6 +3,7 @@ __author__ = 'basit'
 import datetime
 
 from sqlalchemy.orm import relationship
+from sqlalchemy import or_, desc
 
 from db import db
 from ..error_handling import InternalServerError
@@ -96,6 +97,28 @@ class SmsCampaignBlast(db.Model):
 
     def __repr__(self):
         return "<SMSCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
+
+    @staticmethod
+    def top_performing_sms_campaign(year, user_id):
+        """
+        This method returns top performing SMS campaign from a specific year
+        :param int user_id: User Id
+        :param year: Year of campaign started or updated
+        :rtype: SmsCampaignBlast|None
+        """
+        from user import UserPhone
+        user_phone = UserPhone.get_by_user_id(user_id)
+        if user_phone and year:
+            return SmsCampaignBlast.query.filter(or_(SmsCampaignBlast.updated_time.contains(year),
+                                                     SmsCampaignBlast.sent_datetime.contains(year))). \
+                filter(SmsCampaign.id == SmsCampaignBlast.campaign_id).\
+                filter(SmsCampaign.user_phone_id == user_phone[0].id). \
+                order_by(desc(SmsCampaignBlast.replies)).first()
+        if user_phone and not year:
+            return SmsCampaignBlast.query.filter(SmsCampaign.id == SmsCampaignBlast.campaign_id). \
+                filter(SmsCampaign.user_phone_id == user_phone[0].id).\
+                order_by(desc(SmsCampaignBlast.replies)).first()
+        return None
 
 
 class SmsCampaignSend(db.Model):

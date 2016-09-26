@@ -21,6 +21,7 @@ This module contains model classes that are related to push campaign service.
 import datetime
 from db import db
 from sqlalchemy.orm import relationship
+from sqlalchemy import or_, desc
 from candidate import Candidate
 from ..error_handling import InvalidUsage
 
@@ -102,6 +103,23 @@ class PushCampaignBlast(db.Model):
 
     def __repr__(self):
         return "<PushCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
+
+    @staticmethod
+    def top_performing_push_campaign(year, user_id):
+        """
+        This method returns top performing push campaign from a specific year
+        :param int user_id: User Id
+        :param year: Year of campaign started or updated
+        :rtype: PushCampaignBlast
+        """
+        if year:
+            return PushCampaignBlast.query.filter(PushCampaignBlast.updated_datetime.contains(year)). \
+                filter(PushCampaign.id == PushCampaignBlast.campaign_id).\
+                filter(PushCampaign.user_id == user_id). \
+                order_by(desc(PushCampaignBlast.clicks)).first()
+
+        return PushCampaignBlast.query.filter(PushCampaign.id == PushCampaignBlast.campaign_id).\
+            filter(PushCampaign.user_id == user_id).order_by(desc(PushCampaignBlast.clicks)).first()
 
 
 class PushCampaignSend(db.Model):
