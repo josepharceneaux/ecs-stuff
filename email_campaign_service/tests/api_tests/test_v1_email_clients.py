@@ -17,7 +17,8 @@ from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from email_campaign_service.tests.modules.handy_functions import data_for_creating_email_clients
+from email_campaign_service.tests.modules.handy_functions import (data_for_creating_email_clients,
+                                                                  assert_email_client_fields)
 
 __author__ = 'basit'
 
@@ -103,3 +104,40 @@ class TestCreateEmailClients(object):
             # Try to create duplicate
             response = requests.post(self.URL, headers=headers, data=json.dumps(email_client_data))
             assert response.status_code == requests.codes.BAD
+
+
+class TestGetEmailClients(object):
+    """
+    Here are the tests of /v1/email-campaigns
+    """
+    URL = EmailCampaignApiUrl.CLIENTS
+    HTTP_METHOD = 'get'
+
+    def test_with_invalid_token(self):
+        """
+         User auth token is invalid. It should get Unauthorized error.
+        """
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL)
+
+    def test_with_created_clients(self, create_email_clients, headers, user_first):
+        """
+        We have created 3 email clients in the fixture create_email_clients.
+        Here we GET email-clients from endpoint and assert valid response.
+        """
+        response = requests.get(self.URL, headers=headers)
+        assert response.ok
+        assert response.json()
+        email_clients_data = response.json()['email_client_credentials']
+        for email_client_data in email_clients_data:
+            assert_email_client_fields(email_client_data, user_first.id)
+
+    def test_with_no_client_created(self, headers):
+        """
+        We have not created any email-client for this test.
+        Here we GET email-clients from endpoint and assert we do not get any object from API.
+        """
+        response = requests.get(self.URL, headers=headers)
+        assert response.ok
+        assert response.json()
+        email_client_data = response.json()['email_client_credentials']
+        assert len(email_client_data) == 0

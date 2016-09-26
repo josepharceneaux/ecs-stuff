@@ -89,6 +89,43 @@ class EmailClientsEndpoint(Resource):
         EmailClientCredentials.save(email_client)
         return {'id': email_client.id}, requests.codes.CREATED
 
+    def get(self):
+        """
+        This will get all the email-clients added by requested user from email_client_credentials.
+
+        .. Response::
+
+            { 'email_client_credentials:
+                                            [
+                                                    {
+                                                        "id": 1,
+                                                        "user_id": 12345
+                                                        "host": "server_name",
+                                                        "port": 123,
+                                                        "email": "email_1",
+                                                        "password": "password_1",
+                                                        "updated_datetime": "2016-09-26 14:20:06"
+                                                    },
+                                                    {
+                                                        "id": 2,
+                                                        "user_id": 12345
+                                                        "host": "server_name",
+                                                        "port": 123,
+                                                        "email": "email_2",
+                                                        "password": "password_2",
+                                                        "updated_datetime": "2016-09-26 14:20:06"
+                                                    }
+                                            ]
+            }
+
+        .. Status:: 200 (Resource created)
+                    401 (Unauthorized to access getTalent)
+                    500 (Internal server error)
+        """
+        email_client_credentials = [email_client_credential.to_json()
+                                    for email_client_credential in request.user.email_client_credentials]
+        return {'email_client_credentials': email_client_credentials}, requests.codes.OK
+
 
 @api.route(EmailCampaignApi.CONVERSATIONS)
 class EmailConversations(Resource):

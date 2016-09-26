@@ -24,7 +24,7 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   create_smartlist_with_given_email_candidate,
                                                                   add_email_template,
                                                                   get_template_folder, assert_valid_template_folder,
-                                                                  EmailCampaignTypes)
+                                                                  EmailCampaignTypes, data_for_creating_email_clients)
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
@@ -298,3 +298,15 @@ def email_templates_bulk(headers, user_first):
         template = add_email_template(headers, user_first)
         email_template_ids.append(template['id'])
     return email_template_ids
+
+
+@pytest.fixture()
+def create_email_clients(headers):
+    """
+    This add 3 email clients for user_first.
+    """
+    for email_client_data in data_for_creating_email_clients():
+        response = requests.post(EmailCampaignApiUrl.CLIENTS, headers=headers, data=json.dumps(email_client_data))
+        assert response.ok
+        assert 'id' in response.json()
+

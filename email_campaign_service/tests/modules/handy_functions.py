@@ -551,3 +551,18 @@ def data_for_creating_email_clients():
             "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
             "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
         }]
+
+
+def assert_email_client_fields(email_client_data, user_id):
+    """
+    Here we are asserting that response from API GET /v1/email-clients
+    :param dict email_client_data: object received from above API endpoint
+    :param int|long user_id: Id of user's domain
+    """
+    assert email_client_data['id']
+    assert email_client_data['user_id'] == user_id
+    assert email_client_data['host']
+    assert 'port' in email_client_data
+    assert email_client_data['email']
+    assert email_client_data['password']
+    assert email_client_data['updated_datetime']
