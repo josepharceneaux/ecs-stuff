@@ -5,12 +5,11 @@ Facebook, Email, SMS and Slack
 # Builtin imports
 from multiprocessing import Process
 # Common utils
-from slackclient import SlackClient
-
 from talentbot_service.common.talent_config_manager import TalentConfigKeys
 from talentbot_service.common.models.user import TalentbotAuth
 from talentbot_service.common.routes import TalentBotApiUrl
 # Service specific
+from slackclient import SlackClient
 from talentbot_service.modules.email_bot import EmailBot
 from talentbot_service.modules.facebook_bot import FacebookBot
 from talentbot_service.modules.slack_bot import SlackBot
@@ -21,6 +20,7 @@ from constants import TWILIO_NUMBER, ERROR_MESSAGE, STANDARD_MSG_LENGTH, QUESTIO
 from talentbot_service import app, logger
 # 3rd party imports
 from flask import request
+from urllib import quote
 
 mailgun_api_key = app.config[TalentConfigKeys.MAILGUN_API_KEY]
 slack_bot = SlackBot(QUESTIONS, BOT_NAME, ERROR_MESSAGE)
@@ -70,7 +70,7 @@ def listen_slack():
             return 'HTTP_200_OK'
     challenge = request.json.get('challenge')
     if challenge:
-        return challenge
+        return quote(challenge)
     return 'HTTP_200_OK'
 
 
@@ -108,7 +108,8 @@ def handle_verification():
     End point which handles facebook challenge code
     :rtype: str
     """
-    return request.args['hub.challenge']
+    challenge = request.args['hub.challenge']
+    return quote(challenge)
 
 
 @app.route(TalentBotApiUrl.FACEBOOK_LISTEN, methods=['POST'])
