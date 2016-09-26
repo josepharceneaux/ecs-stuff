@@ -173,7 +173,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     :param is_jwt_request: (optional) if true, then use X-Talent-Secret-Id in header
     """
 
-    print 'CODE_VERONICA\n\n\n\n\n\n\n\n', os.environ, '\n\n\n\n\n\n\n\n\n\n\n\n'
+    print 'CODE_VERONICA-' + str(os.environ)
 
     # if not os.environ['WERKZEUG_RUN_MAIN'] == 'true':
     #     return
