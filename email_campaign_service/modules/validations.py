@@ -10,15 +10,12 @@
 import datetime
 
 # Application Specific
-from werkzeug.security import generate_password_hash
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.smartlist import Smartlist
 from email_campaign_service.common.models.email_campaign import EmailClient
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity, ForbiddenError)
-
-__author__ = 'jitesh'
 
 
 def validate_datetime(datetime_text, field_name=None):
@@ -158,5 +155,4 @@ def format_email_client_data(email_client_data):
     for key, value in email_client_data.iteritems():
         email_client_data[key] = value.strip()
     # TODO: Encrypt password
-    # email_client_data['password']= generate_password_hash(email_client_data['password'], method='pbkdf2:sha512')
     return email_client_data
