@@ -91,7 +91,7 @@ class TestSmartlistResource(object):
             candidates = response_body['candidates']
             assert len(candidates) == 2
 
-            sleep(5)
+            sleep(10)
             candidates = []
             for next_page in range(1, no_of_pages + 1):
                 response = smartlist_candidates_api.call_smartlist_candidates_get_api_with_pagination_params(
