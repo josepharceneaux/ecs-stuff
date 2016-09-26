@@ -330,6 +330,7 @@ class EmailClients(object):
         self.email = email
         self.password = password
         self.client = None
+        self.connection = None
 
     @staticmethod
     def get_client(host):
@@ -355,18 +356,23 @@ class EmailClients(object):
         """
         pass
 
-    def connect_and_authenticate(self):
+    def connect(self):
         """
-        This first connects with SMTP/IMAP/POP server. It then tries to login to server.
+        This connects with SMTP/IMAP/POP server and sets the value of attribute 'connection'.
         """
         self.set_client()
         try:
-            connection = self.client(self.host, port=self.port) if self.port else self.client(self.host)
-
+            self.connection = self.client(self.host, port=self.port) if self.port else self.client(self.host)
         except gaierror as error:
             logger.exception(error.message)
             raise InternalServerError('Error occurred while connecting with given server')
-        return connection
+
+    @abstractmethod
+    def authenticate(self):
+        """
+        This will authenticate with email-client using email and password. Child classes will implement this.
+        """
+        pass
 
 
 class SMTP(EmailClients):
@@ -386,14 +392,13 @@ class SMTP(EmailClients):
         """
         self.client = smtplib.SMTP
 
-    def connect_and_authenticate(self):
+    def authenticate(self):
         """
         This first connects with SMTP server. It then tries to login to server.
         """
-        server = super(SMTP, self).connect_and_authenticate()
-        server.starttls()
+        self.connection.starttls()
         try:
-            server.login(self.email, self.password)
+            self.connection.login(self.email, self.password)
         except smtplib.SMTPAuthenticationError as error:
             logger.exception(error.smtp_error)
             raise InvalidUsage('Invalid credentials provided. Could not authenticate with smtp server')
@@ -416,13 +421,12 @@ class IMAP(EmailClients):
         """
         self.client = imaplib.IMAP4_SSL
 
-    def connect_and_authenticate(self):
+    def authenticate(self):
         """
         This first connects with IMAP server. It then tries to login to server.
         """
-        mail_connection = super(IMAP, self).connect_and_authenticate()
         try:
-            mail_connection.login(self.email, self.password)
+            self.connection.login(self.email, self.password)
         except imaplib.IMAP4_SSL.error as error:
             logger.exception(error.message)
             raise InvalidUsage('Invalid credentials provided. Could not authenticate with imap server')
@@ -445,14 +449,13 @@ class POP(EmailClients):
         """
         self.client = poplib.POP3_SSL
 
-    def connect_and_authenticate(self):
+    def authenticate(self):
         """
         This first connects with POP server. It then tries to login to server.
         """
-        pop_conn = super(POP, self).connect_and_authenticate()
         try:
-            pop_conn.user(self.email)
-            pop_conn.pass_(self.password)
+            self.connection.user(self.email)
+            self.connection.pass_(self.password)
         except poplib.error_proto as error:
             logger.exception(error.message)
             raise InvalidUsage('Invalid credentials provided. Could not authenticate with pop server')

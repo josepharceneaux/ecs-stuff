@@ -23,15 +23,8 @@ EMAIL_CLIENTS_SCHEMA = {
         "password": {
             "type": "string",
             "pattern": "\w",
-        },
-        "type": {
-            "type": "string",
-            "pattern": "\w",
-        },
-        "incoming_server_type": {
-            "type": ["string", "null"]
-        },
+        }
 
     },
-    "required": ["host", "email", "password", "type"]
+    "required": ["host", "email", "password"]
 }

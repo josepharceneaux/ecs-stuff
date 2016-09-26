@@ -424,12 +424,10 @@ class EmailClientCredentials(db.Model):
     __tablename__ = 'email_client_credentials'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column('user_id', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
-    host = db.Column('host',db.String(255))
-    port = db.Column('port',db.String(255))
-    email = db.Column('email',db.String(255))
-    password = db.Column('password',db.String(255))
-    type = db.Column('type', db.String(255))
-    incoming_server_type = db.Column('incoming_server_type', db.String(255))
+    host = db.Column('host', db.String(50), nullable=False)
+    port = db.Column('port', db.String(5))
+    email = db.Column('email', db.String(60), nullable=False)
+    password = db.Column('password', db.String(512), nullable=False)
     updated_datetime = db.Column('updated_datetime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
 
     @classmethod

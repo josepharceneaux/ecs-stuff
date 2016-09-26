@@ -44,16 +44,6 @@ class TestCreateEmailClients(object):
             assert response.ok
             assert 'id' in response.json()
 
-    def test_create_email_client_with_invalid_type(self, headers):
-        """
-        Here we try to add server-side email-client with invalid type of server. It should result in
-        invalid usage error.
-        """
-        for email_client_data in data_for_creating_email_clients():
-            email_client_data['type'] = fake.word()
-            response = requests.post(self.URL, headers=headers, data=json.dumps(email_client_data))
-            assert response.status_code == codes.BAD
-
     def test_create_email_client_with_invalid_email_format(self, headers):
         """
         Here we try to add server-side email-client with invalid email-address. It should result in

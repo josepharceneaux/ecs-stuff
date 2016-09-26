@@ -535,22 +535,16 @@ def data_for_creating_email_clients():
             "port": "587",
             "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
             "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
-            "type": "outgoing",
-            "incoming_server_type": ""
         },
         {
             "host": "imap.gmail.com",
             "port": "",
             "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
             "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
-            "type": "incoming",
-            "incoming_server_type": "imap"
         },
         {
             "host": "pop.gmail.com",
             "port": "",
             "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
             "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
-            "type": "incoming",
-            "incoming_server_type": "pop"
         }]

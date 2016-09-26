@@ -10,6 +10,7 @@
 import datetime
 
 # Application Specific
+from werkzeug.security import generate_password_hash
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.models.smartlist import Smartlist
@@ -142,18 +143,16 @@ def get_or_set_valid_value(required_value, required_instance, default):
     return required_value
 
 
-def validate_email_client_data(data):
+def format_email_client_data(email_client_data):
     """
-    Validates the request form data and returns the formatted data with leading and trailing
-    white spaces stripped.
-    :param dict data: Data comping from front-end
+    It returns the formatted data with leading and trailing white spaces stripped. It also encrypts the
+    password to save in database.
+    :param dict email_client_data: Data comping from front-end
     :return: Dictionary of formatted data
     :rtype: dict
     """
-    type = data.get('type')
-    if type.lower() not in ('incoming', 'outgoing'):
-        raise InvalidUsage('Invalid type provided')
-    incoming_server_type = data.get('incoming_server_type')
-    if incoming_server_type and incoming_server_type.lower() not in ('imap', 'pop'):
-        raise InvalidUsage('Invalid server_type provided')
-
+    for key, value in email_client_data.iteritems():
+        email_client_data[key] = value.strip()
+    # TODO: Encrypt password
+    # email_client_data['password']= generate_password_hash(email_client_data['password'], method='pbkdf2:sha512')
+    return email_client_data
