@@ -1504,6 +1504,8 @@ class CandidatePreferenceResource(Resource):
 
         # Frequency ID must be recognized
         frequency_id = body_dict.get('frequency_id')
+        frequency_id = frequency_id if is_number(frequency_id) else None
+
         if frequency_id and not Frequency.get_by_id(_id=frequency_id):
             raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
 
@@ -1537,6 +1539,8 @@ class CandidatePreferenceResource(Resource):
 
         # Frequency ID must be recognized
         frequency_id = body_dict.get('frequency_id')
+        frequency_id = frequency_id if is_number(frequency_id) else None
+        
         if frequency_id and not Frequency.get_by_id(_id=frequency_id):
             raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
 
