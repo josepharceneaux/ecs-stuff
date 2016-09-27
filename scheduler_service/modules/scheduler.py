@@ -178,6 +178,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
         if not redis_store.get(LOCK_KEY + lock_uuid):
             redis_store.setex(LOCK_KEY + lock_uuid, True, 65)
         else:
+            logger.error('CODE-VERONICA: {}'.format(lock_uuid))
             # Multiple executions. No need to execute job
             return
 
@@ -282,6 +283,7 @@ def schedule_job(data, user_id=None, access_token=None):
 
     # make a UUID based on the host ID and current time
     lock_uuid = str(uuid.uuid1())
+    logger.error('CODE-VERONICA: job schedule {}'.format(lock_uuid))
 
     if trigger == SchedulerUtils.PERIODIC:
         valid_data = validate_periodic_job(data)
