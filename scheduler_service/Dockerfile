@@ -13,6 +13,8 @@ EXPOSE 80
 # For Celery worker
 ENV C_FORCE_ROOT true
 
+ENV ISAPP true
+
 # Set PYTHON PATH
 ENV PYTHONPATH ../
 
