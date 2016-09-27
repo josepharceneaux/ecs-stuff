@@ -22,10 +22,10 @@ from scheduler_service.common.utils.api_utils import api_route, ApiResponse, get
     generate_pagination_headers
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound
-from scheduler_service.common.utils.auth_utils import require_oauth, require_all_permissions
+from scheduler_service.common.utils.auth_utils import require_oauth
 from scheduler_service.custom_exceptions import SchedulerServiceApiException
 from scheduler_service.modules.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, \
-    scheduler_remove_job, serialize_task_admin, get_user_job_ids, get_all_general_job_ids, get_general_job_id
+    serialize_task_admin, get_user_job_ids, get_all_general_job_ids, get_general_job_id
 from scheduler_service.modules.scheduler_admin import filter_jobs_using_task_type, \
     filter_jobs_using_task_category, filter_paused_jobs
 
@@ -484,7 +484,7 @@ class TaskByName(Resource):
         task = scheduler.get_job(task_id)
         # Check if task is valid and belongs to the logged-in user
         if task and user_id is None and user_id == task.args[0]:
-            scheduler_remove_job(task.id)
+            scheduler.remove_job(task.id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task with name %s not found" % _name)
 
@@ -611,7 +611,7 @@ class TaskById(Resource):
         task = scheduler.get_job(_id)
         # Check if task is valid and belongs to the logged-in user
         if task and task.args[0] == user_id:
-            scheduler_remove_job(task.id)
+            scheduler.remove_job(task.id)
             logger.info('Job with id %s removed successfully.' % _id)
             return dict(message="Task has been removed successfully")
         raise ResourceNotFound(error_message="Task not found")

@@ -69,8 +69,9 @@ def dummy_request_method(_request):
 
 def raise_if_scheduler_not_running():
     # if scheduler is not running
-    if not scheduler.running:
-        raise SchedulerNotRunningError("Scheduler is not running")
+    # if not scheduler.running:
+    #     raise SchedulerNotRunningError("Scheduler is not running")
+    pass
 
 
 def check_job_state(job_id, job_state_to_check):
