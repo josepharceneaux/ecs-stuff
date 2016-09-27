@@ -176,7 +176,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     lock_uuid = kwargs.get('lock_uuid')
     if lock_uuid:
         if not redis_store.get(LOCK_KEY + lock_uuid):
-            redis_store.setex(LOCK_KEY + lock_uuid, True, 60)
+            redis_store.setex(LOCK_KEY + lock_uuid, True, 65)
         else:
             # Multiple executions. No need to execute job
             return
@@ -290,6 +290,7 @@ def schedule_job(data, user_id=None, access_token=None):
             job = scheduler.add_job(callback_method,
                                     name=job_config['task_name'],
                                     trigger='interval',
+                                    coalesce=True,
                                     seconds=valid_data['frequency'],
                                     start_date=valid_data['start_datetime'],
                                     end_date=valid_data['end_datetime'],
@@ -314,6 +315,7 @@ def schedule_job(data, user_id=None, access_token=None):
             job = scheduler.add_job(callback_method,
                                     name=job_config['task_name'],
                                     trigger='date',
+                                    coalesce=True,
                                     run_date=valid_data['run_datetime'],
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
