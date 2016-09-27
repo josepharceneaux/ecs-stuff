@@ -99,7 +99,7 @@ class QuestionHandler(object):
 
     def question_3_handler(self, message_tokens, user_id):
         """
-            Handles question 'what's the top performing email campaign from [year]'
+            Handles question 'what's the top performing [x] campaign from [year]'
             :param int user_id: User Id
             :param message_tokens: User message tokens
             :return: str response_message
@@ -111,20 +111,19 @@ class QuestionHandler(object):
         campaign_method = CAMPAIGN_TYPES.get(campaign_type)
         if not campaign_method:
             return "Wrong campaign type specified"
-        else:
-            if is_valid_year or year.lower() in 'campaigns' or year.lower() == 'from':
-                if year.lower() in 'campaigns' or year.lower() == 'from':
-                    year = None
-                campaign_blast = campaign_method(year, user_id)
-                if campaign_blast:
-                    response_message = 'Top performing %s campaign from %s is "%s"' \
+        if is_valid_year or year.lower() in 'campaigns' or year.lower() == 'from':
+            if year.lower() in 'campaigns' or year.lower() == 'from':
+                year = None
+            campaign_blast = campaign_method(year, user_id)
+            if campaign_blast:
+                response_message = 'Top performing %s campaign from %s is "%s"' \
                                        % (campaign_type, year, campaign_blast.campaign.name)
-                else:
-                    response_message = "Oops! looks like you don't have %s campaign from %s" % \
-                                       (campaign_type, year)
             else:
-                response_message = "Please enter a valid year greater than 1900"
-            return response_message.replace("None", "all the times")
+                response_message = "Oops! looks like you don't have %s campaign from %s" % \
+                                       (campaign_type, year)
+        else:
+            response_message = "Please enter a valid year greater than 1900"
+        return response_message.replace("None", "all the times")
 
     def question_4_handler(self, message_tokens, user_id):
         """
