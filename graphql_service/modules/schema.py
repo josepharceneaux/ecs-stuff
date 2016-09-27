@@ -158,6 +158,21 @@ class EducationType(graphene.ObjectType):
         return self.degrees
 
 
+class PhoneType(graphene.ObjectType):
+    value = graphene.String()
+    label = graphene.String()
+    is_default = graphene.Boolean()
+
+    def resolve_value(self, args, info):
+        return self.get('value')
+
+    def resolve_label(self, args, info):
+        return self.get('label')
+
+    def resolve_is_default(self, args, info):
+        return self.get('is_default')
+
+
 class CandidateType(graphene.ObjectType):
     """
     Note: Class variables must be identical to Candidate's class variables otherwise it
@@ -176,7 +191,7 @@ class CandidateType(graphene.ObjectType):
     objective = graphene.String()
     summary = graphene.String()
     total_months_experience = graphene.Int()
-    added_time = graphene.String()
+    added_datetime = graphene.String()
     updated_datetime = graphene.String()
     candidate_status_id = graphene.Int()
     source_id = graphene.Int()
@@ -228,6 +243,7 @@ class CandidateType(graphene.ObjectType):
     addresses = graphene.List(CandidateAddressType)
     emails = graphene.List(CandidateEmailType)
     educations = graphene.List(EducationType)
+    phones = graphene.List(PhoneType)
 
     def resolve_addresses(self, args, info):
         return self.get('addresses')
@@ -237,6 +253,9 @@ class CandidateType(graphene.ObjectType):
 
     def resolve_educations(self, args, info):
         return self.get('educations')
+
+    def resolve_phones(self, args, info):
+        return self.get('phones')
 
 
 try:

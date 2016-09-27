@@ -1,5 +1,7 @@
 import boto3
 from decimal import Decimal
+from graphql_service.application import app
+from graphql_service.common.talent_config_manager import TalentEnvs
 
 
 class DynamoDB(object):
@@ -14,13 +16,19 @@ class DynamoDB(object):
           via the AWS-DynamoDB's console: https://console.aws.amazon.com/dynamodb/home?region=us-east-1
     """
     # Connection to candidates' table
-    connection = boto3.resource('dynamodb')
+    if app.config['GT_ENVIRONMENT'] == TalentEnvs.DEV:
+        connection = boto3.resource('dynamodb', endpoint_url='http://localhost:8000', region_name='us-west-2')
+    else:
+        connection = boto3.resource('dynamodb')
+
     candidate_table = connection.Table('candidates')
 
     # Candidate attributes eligible for updating/adding
-    candidate_attributes = {'addresses', 'emails', 'educations',
-                            'work_experiences', 'phones', 'skills',
-                            'military_services', 'social_networks'}
+    candidate_attributes = {
+        'addresses', 'emails', 'educations',
+        'work_experiences', 'phones', 'skills',
+        'military_services', 'social_networks'
+    }
 
     @classmethod
     def get_candidate(cls, candidate_id):
