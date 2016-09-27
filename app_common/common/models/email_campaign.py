@@ -438,6 +438,9 @@ class EmailClientCredentials(db.Model):
     OUTGOING = ['smtp']
     INCOMING = ['imap', 'pop']
 
+    def __repr__(self):
+        return "<EmailClientCredentials (id:%s)>" % self.id
+
     @classmethod
     def get_by_user_id_host_and_email(cls, user_id, host, email):
         """

@@ -5,19 +5,19 @@
 
 This file contains fixtures for tests of email-campaign-service
 """
-from datetime import timedelta
-from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 
 __author__ = 'basit'
 
 # Standard Library
 import re
+from datetime import timedelta
 
 # Application Specific
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.candidate import CandidateEmail
+from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
                                                                  EmailTemplateFolder, EmailCampaign)
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,

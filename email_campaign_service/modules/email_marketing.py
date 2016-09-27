@@ -497,7 +497,7 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
 
     if blast_params:
         raise_if_not_instance_of(blast_params, dict)
-        
+
     campaign = EmailCampaign.get_by_id(campaign_id)
     candidate = Candidate.get_by_id(candidate_id)
     new_text, new_html, subject, email_campaign_send, blast_params, _ = \

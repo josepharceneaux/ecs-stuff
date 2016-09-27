@@ -364,19 +364,10 @@ class EmailClients(object):
                 return True
         return False
 
-    @abstractmethod
-    def set_client(self):
-        """
-        This sets the value of attribute "client".
-        Child classes will implement this.
-        """
-        pass
-
     def connect(self):
         """
         This connects with SMTP/IMAP/POP server and sets the value of attribute 'connection'.
         """
-        self.set_client()
         try:
             self.connection = self.client(self.host, port=self.port) if self.port else self.client(self.host)
         except gaierror as error:
@@ -401,11 +392,6 @@ class SMTP(EmailClients):
         :param string password: Password
         """
         super(SMTP, self).__init__(host, port, email, password)
-
-    def set_client(self):
-        """
-        This sets the value of attribute "client".
-        """
         self.client = smtplib.SMTP
 
     def authenticate(self):
@@ -444,11 +430,6 @@ class IMAP(EmailClients):
         :param string password: Password
         """
         super(IMAP, self).__init__(host, port, email, password)
-
-    def set_client(self):
-        """
-        This sets the value of attribute "client".
-        """
         self.client = imaplib.IMAP4_SSL
 
     def authenticate(self):
@@ -472,11 +453,6 @@ class POP(EmailClients):
         :param string password: Password
         """
         super(POP, self).__init__(host, port, email, password)
-
-    def set_client(self):
-        """
-        This sets the value of attribute "client"
-        """
         self.client = poplib.POP3_SSL
 
     def authenticate(self):
