@@ -27,7 +27,7 @@ jobstores = {
 
 job_defaults = {
     'apscheduler.job_defaults.coalesce': 'true',
-    'apscheduler.job_defaults.max_instances': '3',
+    'apscheduler.job_defaults.max_instances': '1',
     'apscheduler.job_defaults.misfire_grace_time': str(SchedulerUtils.MAX_MISFIRE_TIME),
     'apscheduler.timezone': 'UTC'
 }
