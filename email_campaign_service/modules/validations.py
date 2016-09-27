@@ -151,17 +151,3 @@ def get_or_set_valid_value(required_value, required_instance, default):
     if not isinstance(required_value, required_instance):
         required_value = default
     return required_value
-
-
-def format_email_client_data(email_client_data):
-    """
-    It returns the formatted data with leading and trailing white spaces stripped. It also encrypts the
-    password to save in database.
-    :param dict email_client_data: Data comping from front-end
-    :return: Dictionary of formatted data
-    :rtype: dict
-    """
-    for key, value in email_client_data.iteritems():
-        email_client_data[key] = value.strip()
-    # TODO: Encrypt password
-    return email_client_data

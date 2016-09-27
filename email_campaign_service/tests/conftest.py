@@ -320,7 +320,22 @@ def create_email_clients(headers):
 
 
 @pytest.fixture()
-def email_campaign_with_outgoing_email_client(access_token_first, talent_pipeline, headers, create_email_clients):
+def create_outgoing_email_client(headers):
+    """
+    This add 3 outgoing(SMTP) email-clients for user_first.
+    :rtype: list
+    """
+    email_clients_data = data_for_creating_email_clients(key='outgoing')
+    for email_client_data in email_clients_data:
+        response = requests.post(EmailCampaignApiUrl.CLIENTS, headers=headers, data=json.dumps(email_client_data))
+        assert response.ok
+        assert 'id' in response.json()
+        return response.json()['id']
+
+
+@pytest.fixture()
+def email_campaign_with_outgoing_email_client(access_token_first, talent_pipeline, headers,
+                                              create_outgoing_email_client):
     """
     This creates an email-campaign which will be sent via an SMTP server added by user.
     """

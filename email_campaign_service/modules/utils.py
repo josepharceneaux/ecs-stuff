@@ -29,7 +29,8 @@ from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.user import User, Serializer
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.common.models.email_campaign import EmailCampaignSend, EmailClientCredentials
+from email_campaign_service.common.models.email_campaign import (EmailCampaignSend,
+                                                                 EmailClientCredentials)
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
@@ -375,7 +376,7 @@ class EmailClients(object):
             raise InternalServerError('Error occurred while connecting with given server')
 
     @abstractmethod
-    def authenticate(self):
+    def authenticate(self, connection_quit=True):
         """
         This will authenticate with email-client using email and password. Child classes will implement this.
         """
@@ -394,7 +395,7 @@ class SMTP(EmailClients):
         super(SMTP, self).__init__(host, port, email, password)
         self.client = smtplib.SMTP
 
-    def authenticate(self):
+    def authenticate(self, connection_quit=True):
         """
         This first connects with SMTP server. It then tries to login to server.
         """
@@ -404,6 +405,8 @@ class SMTP(EmailClients):
         except smtplib.SMTPAuthenticationError as error:
             logger.exception(error.smtp_error)
             raise InvalidUsage('Invalid credentials provided. Could not authenticate with smtp server')
+        if connection_quit:
+            self.connection.quit()
 
     def send_email(self, to_address, subject, body):
         """
@@ -413,7 +416,7 @@ class SMTP(EmailClients):
         :param string body: Body of email
         """
         self.connect()
-        self.authenticate()
+        self.authenticate(connection_quit=False)
         msg = "From: %s\r\nTo: %s\r\nSubject: %s\n%s\n" % (self.email, to_address, subject, body)
         self.connection.sendmail(self.email, [to_address], msg)
         logger.info('Email has been sent from:%s, to:%s via SMTP server.' % (self.email, to_address))
@@ -432,7 +435,7 @@ class IMAP(EmailClients):
         super(IMAP, self).__init__(host, port, email, password)
         self.client = imaplib.IMAP4_SSL
 
-    def authenticate(self):
+    def authenticate(self, connection_quit=True):
         """
         This first connects with IMAP server. It then tries to login to server.
         """
@@ -455,7 +458,7 @@ class POP(EmailClients):
         super(POP, self).__init__(host, port, email, password)
         self.client = poplib.POP3_SSL
 
-    def authenticate(self):
+    def authenticate(self, connection_quit=True):
         """
         This first connects with POP server. It then tries to login to server.
         """
@@ -465,3 +468,17 @@ class POP(EmailClients):
         except poplib.error_proto as error:
             logger.exception(error.message)
             raise InvalidUsage('Invalid credentials provided. Could not authenticate with pop server')
+
+
+def format_email_client_data(email_client_data):
+    """
+    It returns the formatted data with leading and trailing white spaces stripped. It also encrypts the
+    password to save in database.
+    :param dict email_client_data: Data comping from front-end
+    :return: Dictionary of formatted data
+    :rtype: dict
+    """
+    for key, value in email_client_data.iteritems():
+        email_client_data[key] = value.strip()
+    # TODO: Encrypt password
+    return email_client_data

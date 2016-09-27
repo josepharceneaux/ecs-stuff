@@ -11,12 +11,14 @@ import os
 import json
 import getpass
 import itertools
+from base64 import b64decode
+from datetime import datetime, timedelta
 
 # Third Party
 from celery import chord
 from redo import retrier
 from sqlalchemy import desc
-from datetime import datetime, timedelta
+from simplecrypt import decrypt
 
 # Service Specific
 from email_campaign_service.json_schema.test_email import TEST_EMAIL_SCHEMA
@@ -525,10 +527,12 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
         try:
             email_client_credentials = EmailClientCredentials.get_by_id(campaign.email_client_credentials_id)
             if not email_client_credentials:
-                raise ResourceNotFound("EmailClientCredentials's object(id:%s) not found"
-                                       % email_client_credentials_id)
+                raise ResourceNotFound("EmailClientCredentials(id:%s) not found for user(id:%s)."
+                                       % (email_client_credentials_id, user_id))
+            decrypted_password = decrypt(app.config[TalentConfigKeys.ENCRYPTION_KEY],
+                                         b64decode(email_client_credentials.password))
             client = SMTP(email_client_credentials.host,email_client_credentials.port,
-                          email_client_credentials.email, email_client_credentials.password)
+                          email_client_credentials.email, decrypted_password)
             client.send_email(to_addresses, subject, new_text)
         except Exception as error:
             logger.exception('Error occurred while sending campaign via SMTP server. Error:%s' % error.message)

@@ -18,20 +18,22 @@ This file contains API endpoints for
 """
 # Standard Library
 import types
+from base64 import b64encode
 
 # Third Party
 import requests
+from simplecrypt import encrypt
 from flask_restful import Resource
 from flask import request, Blueprint
 
 # Service Specific
-from email_campaign_service.email_campaign_app import logger
-from email_campaign_service.modules.utils import EmailClients
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
+from email_campaign_service.email_campaign_app import logger, app
 from email_campaign_service.common.error_handling import InvalidUsage
-from email_campaign_service.modules.validations import format_email_client_data
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
 from email_campaign_service.common.utils.validators import get_json_data_if_validated
 from email_campaign_service.common.models.email_campaign import EmailClientCredentials
+from email_campaign_service.modules.utils import (EmailClients, format_email_client_data)
 
 # Common utils
 from email_campaign_service.common.talent_api import TalentApi
@@ -77,15 +79,20 @@ class EmailClientsEndpoint(Resource):
         """
         data = get_json_data_if_validated(request, EMAIL_CLIENTS_SCHEMA)
         data = format_email_client_data(data)
-        client = EmailClients.get_client(data['host'])
-        client = client(data['host'], data['port'], data['email'], data['password'])
-        client.connect()
-        client.authenticate()
         data['user_id'] = request.user.id
         client_in_db = EmailClientCredentials.get_by_user_id_host_and_email(data['user_id'],
                                                                             data['host'], data['email'])
         if client_in_db:
             raise InvalidUsage('Email client with given data already present in database')
+
+        client = EmailClients.get_client(data['host'])
+        client = client(data['host'], data['port'], data['email'], data['password'])
+        client.connect()
+        client.authenticate()
+        # Encrypt password
+        ciphered_password = encrypt(app.config[TalentConfigKeys.ENCRYPTION_KEY], data['password'])
+        b64_password = b64encode(ciphered_password)
+        data['password'] = b64_password
         email_client = EmailClientCredentials(**data)
         EmailClientCredentials.save(email_client)
         return {'id': email_client.id}, requests.codes.CREATED

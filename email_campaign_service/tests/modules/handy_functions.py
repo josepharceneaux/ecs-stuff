@@ -527,33 +527,42 @@ def assert_valid_template_folder(template_folder_dict, domain_id, expected_name)
     assert 'parent_id' in template_folder_dict
 
 
-def data_for_creating_email_clients():
+def data_for_creating_email_clients(key=None):
     """
-    This returns data to create email-clietns.
-    :rtype: list
+    This returns data to create email-clients.
+    :rtype: list[dict]
     """
-    return [
-        {
+    data = {
+        'outgoing': [{
             "host": "smtp.gmail.com",
             "port": "587",
             "name": "Gmail",
             "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
             "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
-        },
-        {
+        }],
+        'incoming': [{
             "host": "imap.gmail.com",
             "port": "",
             "name": "Gmail",
             "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
-            "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
+            "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD]
         },
-        {
-            "host": "pop.gmail.com",
-            "port": "",
-            "name": "Gmail",
-            "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
-            "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
-        }]
+            {
+                "host": "pop.gmail.com",
+                "port": "",
+                "name": "Gmail",
+                "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
+                "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
+            }
+        ]
+    }
+    if key:
+        return data[key]
+    email_clients_data = []
+    for key in ('incoming', 'outgoing'):
+        for email_client_data in data_for_creating_email_clients(key=key):
+            email_clients_data.append(email_client_data)
+    return email_clients_data
 
 
 def assert_email_client_fields(email_client_data, user_id):

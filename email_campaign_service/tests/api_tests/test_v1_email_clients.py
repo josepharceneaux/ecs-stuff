@@ -166,6 +166,7 @@ class TestGetEmailClients(object):
         response = requests.get(self.URL + '?type=%s' % fake.word(), headers=headers)
         assert response.status_code == codes.BAD
 
+
 class TestEmailCampaignWithEmailClient(object):
     """
     Here are the tests of /v1/email-campaigns
