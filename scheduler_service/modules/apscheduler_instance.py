@@ -90,6 +90,7 @@ def get_scheduler():
         return None
     try:
         local.scheduler_instance
+        print 'CODE-VERONICA: RUN'
     except:
         APSchedulerInstance()
     return local.scheduler_instance
