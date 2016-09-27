@@ -177,8 +177,9 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     if lock_uuid:
         if not redis_store.get(LOCK_KEY + lock_uuid):
             res = redis_store.set(LOCK_KEY + lock_uuid, True, nx=True, ex=4)
+            # Multiple executions. No need to execute job if race condition occurs
             if not res:
-                return 
+                return
             logger.error('CODE-VERONICA: Worked {}'.format(lock_uuid))
         else:
             # Multiple executions. No need to execute job
@@ -307,7 +308,8 @@ def schedule_job(data, user_id=None, access_token=None):
             # And if start time is passed due to this request delay, then job should be run
             job_start_time_obj = DatetimeUtils(valid_data['start_datetime'])
             if not job_start_time_obj.is_in_future():
-                run_job(user_id, access_token, job_config['url'], content_type, job_config['post_data'], job_config.get('is_jwt_request'))
+                run_job(user_id, access_token, job_config['url'], content_type, job_config['post_data'], job_config.get('is_jwt_request'),
+                        kwargs=dict(lock_uuid=lock_uuid))
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
         except Exception as e:
             logger.error(e.message)
