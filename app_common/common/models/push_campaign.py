@@ -104,22 +104,22 @@ class PushCampaignBlast(db.Model):
     def __repr__(self):
         return "<PushCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
 
-    @staticmethod
-    def top_performing_push_campaign(year, user_id):
+    @classmethod
+    def top_performing_push_campaign(cls, year, user_id):
         """
         This method returns top performing push campaign from a specific year
         :param int user_id: User Id
-        :param year: Year of campaign started or updated
+        :param str year: Year of campaign started or updated
         :rtype: PushCampaignBlast
         """
         if year:
-            return PushCampaignBlast.query.filter(PushCampaignBlast.updated_datetime.contains(year)). \
-                filter(PushCampaign.id == PushCampaignBlast.campaign_id).\
+            return cls.query.filter(cls.updated_datetime.contains(year)). \
+                filter(PushCampaign.id == cls.campaign_id).\
                 filter(PushCampaign.user_id == user_id). \
-                order_by(desc(PushCampaignBlast.clicks)).first()
+                order_by(desc(cls.clicks)).first()
 
-        return PushCampaignBlast.query.filter(PushCampaign.id == PushCampaignBlast.campaign_id).\
-            filter(PushCampaign.user_id == user_id).order_by(desc(PushCampaignBlast.clicks)).first()
+        return cls.query.filter(PushCampaign.id == cls.campaign_id).\
+            filter(PushCampaign.user_id == user_id).order_by(desc(cls.clicks)).first()
 
 
 class PushCampaignSend(db.Model):

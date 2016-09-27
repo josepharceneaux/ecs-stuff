@@ -17,7 +17,6 @@ from dateutil.relativedelta import relativedelta
 # Common utils
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.candidate import Candidate
-from talentbot_service.common.models.email_campaign import EmailCampaignBlast
 from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate
 from talentbot_service.modules.constants import HINT, BOT_NAME, CAMPAIGN_TYPES
 
@@ -110,7 +109,9 @@ class QuestionHandler(object):
         year = message_tokens[-1]
         is_valid_year = self.is_valid_year(year)
         campaign_method = CAMPAIGN_TYPES.get(campaign_type)
-        if campaign_method:
+        if not campaign_method:
+            return "Wrong campaign type specified"
+        else:
             if is_valid_year or year.lower() in 'campaigns' or year.lower() == 'from':
                 if year.lower() in 'campaigns' or year.lower() == 'from':
                     year = None
@@ -124,8 +125,6 @@ class QuestionHandler(object):
             else:
                 response_message = "Please enter a valid year greater than 1900"
             return response_message.replace("None", "all the times")
-        else:
-            return "Wrong campaign type specified"
 
     def question_4_handler(self, message_tokens, user_id):
         """
