@@ -480,5 +480,4 @@ def format_email_client_data(email_client_data):
     """
     for key, value in email_client_data.iteritems():
         email_client_data[key] = value.strip()
-    # TODO: Encrypt password
     return email_client_data
