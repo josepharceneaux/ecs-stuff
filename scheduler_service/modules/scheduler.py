@@ -10,6 +10,7 @@ Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 import datetime
 
 # Third-party imports
+import uuid
 from urllib import urlencode
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_ADDED, EVENT_JOB_MISSED, \
     EVENT_JOB_BEFORE_REMOVE
@@ -23,7 +24,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token
 from scheduler_service import logger, TalentConfigKeys, flask_app, redis_store
-from scheduler_service.apscheduler_config import executors, job_store, jobstores, job_defaults
+from scheduler_service.apscheduler_config import executors, job_store, jobstores, job_defaults, LOCK_KEY
 from scheduler_service.common.models.user import User
 from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.routes import AuthApiUrl
@@ -161,7 +162,7 @@ def validate_periodic_job(data):
     return valid_data
 
 
-def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=False, request_method="post"):
+def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=False, request_method="post", **kwargs):
     """
     Function callback to run when job time comes, this method is called by APScheduler
     :param user_id:
@@ -171,6 +172,15 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     :param post_data: post data like campaign name, smartlist ids etc
     :param is_jwt_request: (optional) if true, then use X-Talent-Secret-Id in header
     """
+
+    lock_uuid = kwargs.get('lock_uuid')
+    if lock_uuid:
+        if not redis_store.get(LOCK_KEY + lock_uuid):
+            redis_store.setex(LOCK_KEY + lock_uuid, True, 60)
+        else:
+            # Multiple executions. No need to execute job
+            return
+
     # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
     # created because frequency is set to minimum (1 hour).
     secret_key_id = None
@@ -270,6 +280,9 @@ def schedule_job(data, user_id=None, access_token=None):
 
     callback_method = 'scheduler_service.modules.scheduler:run_job'
 
+    # make a UUID based on the host ID and current time
+    lock_uuid = str(uuid.uuid1())
+
     if trigger == SchedulerUtils.PERIODIC:
         valid_data = validate_periodic_job(data)
 
@@ -282,7 +295,8 @@ def schedule_job(data, user_id=None, access_token=None):
                                     end_date=valid_data['end_datetime'],
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
-                                          job_config['post_data'], job_config.get('is_jwt_request'), request_method]
+                                          job_config['post_data'], job_config.get('is_jwt_request'), request_method],
+                                    kwargs=dict(lock_uuid=lock_uuid)
                                     )
             # Due to request timeout delay, there will be a delay in scheduling job sometimes.
             # And if start time is passed due to this request delay, then job should be run
@@ -304,7 +318,8 @@ def schedule_job(data, user_id=None, access_token=None):
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
                                           job_config['post_data'], job_config.get('is_jwt_request'),
-                                          request_method]
+                                          request_method],
+                                    kwargs=dict(lock_uuid=lock_uuid)
                                     )
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
             return job.id
