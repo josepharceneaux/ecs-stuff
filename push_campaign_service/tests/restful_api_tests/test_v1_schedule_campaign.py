@@ -38,6 +38,8 @@ Unschedule a campaign: /v1/push-campaigns/:id/schedule [DELETE]
 import sys
 from datetime import datetime
 # 3rd party imports
+from time import sleep
+
 from redo import retry
 from requests import codes
 
@@ -312,7 +314,7 @@ class TestRescheduleCampaignUsingPUT(object):
         """
         Reschedule a campaign with valid data and it should return 200 response.
         """
-
+        sleep(5)
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
         assert response.status_code == codes.OK
