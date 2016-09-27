@@ -314,7 +314,7 @@ class TestRescheduleCampaignUsingPUT(object):
         """
         Reschedule a campaign with valid data and it should return 200 response.
         """
-        sleep(5)
+        sleep(20)
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
         assert response.status_code == codes.OK
@@ -328,6 +328,7 @@ class TestRescheduleCampaignUsingPUT(object):
         match_schedule_data(data, campaign)
         retry(get_blasts, attempts=20, sleepscale=1, sleeptime=3, retry_exceptions=(AssertionError,),
               args=(campaign_in_db['id'], token_first), kwargs={'count': 2})
+        sleep(20)
 
     def test_reschedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,
                                                             campaign_in_db, schedule_a_campaign):
@@ -336,6 +337,7 @@ class TestRescheduleCampaignUsingPUT(object):
         as the actual owner of the campaign. So we are expecting that , response will be OK and campaign will be
         rescheduled.
         """
+        sleep(20)
         data = generate_campaign_schedule_data()
         response = reschedule_campaign(campaign_in_db['id'], data, token_same_domain,
                                        expected_status=(codes.OK,))
@@ -345,8 +347,9 @@ class TestRescheduleCampaignUsingPUT(object):
         assert task_id
         campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
         match_schedule_data(data, campaign)
-        # retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
-        #       args=(campaign_id, token_first), kwargs={'count': 1})
+        retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
+              args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
+        sleep(20)
 
     def test_campaign_reschedule_with_invalid_frequency_ids(self, token_first, campaign_in_db, schedule_a_campaign):
         """
