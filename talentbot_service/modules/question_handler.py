@@ -121,7 +121,7 @@ class QuestionHandler(object):
     def question_4_handler(self, message_tokens, user_id):
         """
             Handles question 'how many candidate leads did [user name] import into the
-            [talent pool name] in last [x] month'
+            [talent pool name] in last [x] months'
             :param int user_id: User Id
             :param message_tokens: User message tokens
             :return: str response_message

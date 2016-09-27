@@ -60,10 +60,11 @@ class TalentPoolCandidate(db.Model):
     def candidates_added_last_month(user_name, talent_pool_name, user_specific_date, user_id):
         """
         Returns number of candidate added by a user in a talent pool in a specific month
+        :param str user_name: User name
         :param int user_id: User Id
-        :param user_name: User name
-        :param talent_pool_name: Talent pool name
-        :param user_specific_date: Month during candidates were added
+        :param str talent_pool_name: Talent pool name
+        :param datetime|None user_specific_date: Datetime this should be later than or equal to updated_time
+        or added_time
         :rtype: int
         """
         if user_specific_date:
