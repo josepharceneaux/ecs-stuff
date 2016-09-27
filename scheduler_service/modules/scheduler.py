@@ -176,7 +176,9 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     lock_uuid = kwargs.get('lock_uuid')
     if lock_uuid:
         if not redis_store.get(LOCK_KEY + lock_uuid):
-            redis_store.setex(LOCK_KEY + lock_uuid, True, 4)
+            res = redis_store.set(LOCK_KEY + lock_uuid, True, nx=True, ex=4)
+            if not res:
+                return 
             logger.error('CODE-VERONICA: Worked {}'.format(lock_uuid))
         else:
             # Multiple executions. No need to execute job
