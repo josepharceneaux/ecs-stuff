@@ -3,7 +3,7 @@ __author__ = 'basit'
 import datetime
 
 from sqlalchemy.orm import relationship
-from sqlalchemy import or_, desc
+from sqlalchemy import or_, desc, extract
 
 from db import db
 from ..error_handling import InternalServerError
@@ -98,8 +98,8 @@ class SmsCampaignBlast(db.Model):
     def __repr__(self):
         return "<SMSCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
 
-    @staticmethod
-    def top_performing_sms_campaign(year, user_id):
+    @classmethod
+    def top_performing_sms_campaign(cls, year, user_id):
         """
         This method returns top performing SMS campaign from a specific year
         :param int user_id: User Id
@@ -107,17 +107,19 @@ class SmsCampaignBlast(db.Model):
         :rtype: SmsCampaignBlast|None
         """
         from user import UserPhone
-        user_phone = UserPhone.get_by_user_id(user_id)
-        if user_phone and year:
-            return SmsCampaignBlast.query.filter(or_(SmsCampaignBlast.updated_time.contains(year),
-                                                     SmsCampaignBlast.sent_datetime.contains(year))). \
-                filter(SmsCampaign.id == SmsCampaignBlast.campaign_id).\
-                filter(SmsCampaign.user_phone_id == user_phone[0].id). \
-                order_by(desc(SmsCampaignBlast.replies)).first()
-        if user_phone and not year:
-            return SmsCampaignBlast.query.filter(SmsCampaign.id == SmsCampaignBlast.campaign_id). \
-                filter(SmsCampaign.user_phone_id == user_phone[0].id).\
-                order_by(desc(SmsCampaignBlast.replies)).first()
+        user_phones = UserPhone.get_by_user_id(user_id)
+        if user_phones and year:
+            user_phone = user_phones[0]
+            return cls.query.filter(or_(extract("year", cls.updated_time) == year,
+                                        extract("year", cls.sent_datetime) == year)). \
+                filter(SmsCampaign.id == cls.campaign_id).\
+                filter(SmsCampaign.user_phone_id == user_phone.id). \
+                order_by(desc(cls.replies)).first()
+        if user_phones and not year:
+            user_phone = user_phones[0]
+            return cls.query.filter(SmsCampaign.id == cls.campaign_id). \
+                filter(SmsCampaign.user_phone_id == user_phone.id).\
+                order_by(desc(cls.replies)).first()
         return None
 
 

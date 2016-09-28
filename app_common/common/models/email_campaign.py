@@ -1,7 +1,7 @@
 import datetime
 
 from sqlalchemy.orm import relationship
-from sqlalchemy import or_, desc
+from sqlalchemy import or_, desc, extract
 
 from db import db
 from ..utils.datetime_utils import DatetimeUtils
@@ -203,8 +203,8 @@ class EmailCampaignBlast(db.Model):
         :rtype: EmailCampaignBlast
         """
         if year:
-            return cls.query.filter(or_(cls.updated_datetime.contains(year),
-                                        cls.sent_datetime.contains(year))). \
+            return cls.query.filter(or_(extract("year", cls.updated_datetime) == year,
+                                        extract("year", cls.sent_datetime) == year)). \
                 filter(EmailCampaign.id == cls.campaign_id).\
                 filter(EmailCampaign.user_id == user_id). \
                 order_by(desc(cls.opens)).first()

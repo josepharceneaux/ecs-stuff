@@ -21,7 +21,7 @@ This module contains model classes that are related to push campaign service.
 import datetime
 from db import db
 from sqlalchemy.orm import relationship
-from sqlalchemy import or_, desc
+from sqlalchemy import desc, extract
 from candidate import Candidate
 from ..error_handling import InvalidUsage
 
@@ -113,7 +113,7 @@ class PushCampaignBlast(db.Model):
         :rtype: PushCampaignBlast
         """
         if year:
-            return cls.query.filter(cls.updated_datetime.contains(year)). \
+            return cls.query.filter(extract("year", cls.updated_datetime) == year). \
                 filter(PushCampaign.id == cls.campaign_id).\
                 filter(PushCampaign.user_id == user_id). \
                 order_by(desc(cls.clicks)).first()
