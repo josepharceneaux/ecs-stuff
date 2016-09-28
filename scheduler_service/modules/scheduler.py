@@ -287,7 +287,7 @@ def schedule_job(data, user_id=None, access_token=None):
     callback_method = 'scheduler_service.modules.scheduler:run_job'
 
     # make a UUID based on the host ID and current time
-    lock_uuid = str(uuid.uuid1())
+    lock_uuid = str(uuid.uuid1()) + str(uuid.uuid4())
     logger.error('CODE-VERONICA: job schedule {}'.format(lock_uuid))
 
     if trigger == SchedulerUtils.PERIODIC:
@@ -297,7 +297,6 @@ def schedule_job(data, user_id=None, access_token=None):
             job = scheduler.add_job(callback_method,
                                     name=job_config['task_name'],
                                     trigger='interval',
-                                    coalesce=True,
                                     seconds=valid_data['frequency'],
                                     start_date=valid_data['start_datetime'],
                                     end_date=valid_data['end_datetime'],
