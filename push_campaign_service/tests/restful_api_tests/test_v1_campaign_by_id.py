@@ -67,11 +67,7 @@ class TestCampaignById(object):
         """
         json_response = get_campaign(campaign_in_db['id'], token_first)
         campaign = json_response['campaign']
-        assert campaign_in_db['id'] == campaign['id']
-        assert campaign_in_db['body_text'] == campaign['body_text']
-        assert campaign_in_db['name'] == campaign['name']
-        assert campaign_in_db['url'] == campaign['url']
-        assert campaign['smartlist_ids'] == [smartlist_first['id']]
+        compare_campaign_data(campaign_in_db, campaign)
 
     def test_get_campaign_with_invalid_id(self, token_first):
         """
@@ -103,11 +99,7 @@ class TestCampaignById(object):
         campaign_id = campaign_in_db['id']
         json_response = get_campaign(campaign_id, token_same_domain, expected_status=(200,))
         campaign = json_response['campaign']
-        assert campaign_in_db['id'] == campaign['id']
-        assert campaign_in_db['body_text'] == campaign['body_text']
-        assert campaign_in_db['name'] == campaign['name']
-        assert campaign_in_db['url'] == campaign['url']
-        assert campaign['smartlist_ids'] == [smartlist_first['id']]
+        compare_campaign_data(campaign_in_db, campaign)
 
     def test_get_campaign_from_diff_domain(self, token_second, campaign_in_db):
         """
@@ -263,7 +255,7 @@ class TestUpdateCampaign(object):
         url = URL % campaign_in_db['id']
         invalid_value_test(url, campaign_data, 'url', invalid_names, token_first, method='put')
 
-    def test_put_by_id(self, token_first, campaign_in_db, smartlist_first):
+    def test_put_by_id_with_valid_data(self, token_first, campaign_in_db, smartlist_first):
         """
         Try to update a campaign with valid data, we are expecting that API will
         update the campaign successfully (200)
@@ -281,7 +273,7 @@ class TestUpdateCampaign(object):
         json_response = get_campaign(campaign_id, token_first)
         campaign = json_response['campaign']
         # Compare sent campaign dict and campaign dict returned by API.
-        compare_campaign_data(data, campaign)
+        compare_campaign_data(data, campaign, ignore_keys=['id'])
 
 
 class TestCampaignDeleteById(object):

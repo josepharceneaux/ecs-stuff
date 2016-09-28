@@ -55,7 +55,7 @@ class PushCampaign(db.Model):
                               passive_deletes=True, backref='campaign', lazy='dynamic')
 
     def __repr__(self):
-        return "<PushCampaign ( = %r)>" % self.body_text
+        return "<PushCampaign (body_text = %r)>" % self.body_text
 
     def to_json(self, include_fields=None):
         """
@@ -64,7 +64,7 @@ class PushCampaign(db.Model):
         :rtype: dict[str, T]
         """
         return_dict = super(PushCampaign, self).to_json(include_fields=include_fields)
-        if not include_fields or "list_ids" in include_fields:
+        if not include_fields or "smartlist_ids" in include_fields:
             return_dict["smartlist_ids"] = [campaign_smartlist.smartlist_id for campaign_smartlist in self.smartlists]
         return return_dict
 
