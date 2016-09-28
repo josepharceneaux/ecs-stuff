@@ -17,8 +17,8 @@ HINT = '''I am Talent Bot @kamal is teaching me new things, right now I can answ
 1- How many users are there in my domain?
 2- How many candidates are there with skills [skills separated with space]?
 3- How many candidates from zipcode [zipcode]?
-4- What is the top performing email campaign from [year]?
-5- How many candidate leads did [user name] import into the [talent pool name] talent pool last month?
+4- What is the top performing [x] campaign from [year]?
+5- How many candidate leads did [user name] import into the [talent pool name] talent pool in last n months?
 *GOOD LUCK*'''
 OK_RESPONSE = ['hmm', '**nodes**']
 TWILIO_NUMBER = "+12015617985"
@@ -33,7 +33,7 @@ QUESTIONS = ['how many users are in my domain', 'how many candidates with skills
              'how many candidates from zipcode', 'what is the top performing email campaign from',
              'How many candidate leads did x import into the y talent pool last month',
              'what is your name'
-             , 'hint']
+             , 'hint', 'help', 'what are your features', 'what can you do']
 POSITIVE_MESSAGES = ['hmmmm', 'ok', 'fine', 'whatever', 'yeah', 'ahan', 'so so']
 BEST_QUESTION_MATCH_RATIO = 95
 FACEBOOK_API_URI = "https://graph.facebook.com/v2.6/me/messages"

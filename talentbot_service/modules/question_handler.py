@@ -55,7 +55,7 @@ class QuestionHandler(object):
     @classmethod
     def question_0_handler(cls, message_tokens, user_id):
         """
-        Handles question 'how many users are there with domain [x]'
+        Handles question 'how many users are there in my domain'
         :param int user_id: User Id
         :param message_tokens: User message tokens
         :return: str response_message
@@ -160,24 +160,24 @@ class QuestionHandler(object):
         return response_message
 
     @classmethod
-    def question_5_handler(cls, message_tokens=None, user_id=None):
+    def question_5_handler(cls, *args):
         """
             Handles question 'what is your name'
-            :param int user_id: User Id
-            :param message_tokens: User message tokens
+            :param list args: List of args
             :return: str bot name
         """
-        return "My name is " + BOT_NAME
+        if args:
+            return "My name is " + BOT_NAME
 
     @classmethod
-    def question_6_handler(cls, message_tokens=None, user_id=None):
+    def question_6_handler(cls, *args):
         """
         Handles if user types 'hint'
-        :param int user_id: User Id
-        :param message_tokens: User message tokens
+        :param list args: List of args
         :rtype: str
         """
-        return HINT
+        if args:
+            return HINT
 
     @staticmethod
     def is_valid_year(year):
