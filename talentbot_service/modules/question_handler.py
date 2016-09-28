@@ -100,7 +100,7 @@ class QuestionHandler(object):
 
     def question_3_handler(self, message_tokens, user_id):
         """
-            Handles question 'what's the top performing email campaign from [year]'
+            Handles question 'what's the top performing [campaign name] campaign from [year]'
             :param int user_id: User Id
             :param message_tokens: User message tokens
             :return: str response_message
@@ -115,13 +115,13 @@ class QuestionHandler(object):
             else:
                 response_message = "Oops! looks like you don't have an email campaign from %s" % year
         else:
-            response_message = "Woah! I'm not that old, please enter a valid year greater than 1900"
+            response_message = "Please enter a valid year greater than 1900"
         return response_message
 
     def question_4_handler(self, message_tokens, user_id):
         """
             Handles question 'how many candidate leads did [user name] import into the
-            [talent pool name] last month'
+            [talent pool name] in last n months'
             :param int user_id: User Id
             :param message_tokens: User message tokens
             :return: str response_message
@@ -129,14 +129,25 @@ class QuestionHandler(object):
         talent_index = self.find_word_in_message('talent', message_tokens)
         import_index = self.find_word_in_message('import', message_tokens)
         # Extracting talent pool name from user's message
-        talent_pool_name = message_tokens[import_index + 3:talent_index:]
+        if message_tokens[import_index + 2].lower() != 'the':
+            talent_pool_name = message_tokens[import_index + 2:talent_index:]
+        else:
+            talent_pool_name = message_tokens[import_index + 3:talent_index:]
         # Extracting username from user message
         user_name = message_tokens[import_index - 1]
         spaced_talent_pool_name = self.append_list_with_spaces(talent_pool_name)
-        previous_month = datetime.datetime.utcnow() - relativedelta(months=1)
+        try:
+            last_index = self.find_word_in_message('last', message_tokens)
+        except IndexError:  # Word 'last' not found in message
+            last_index = len(message_tokens)
+        user_specific_date = None
+        if len(message_tokens) > last_index + 2:
+            if message_tokens[last_index + 1].isdigit():
+                months = int(message_tokens[last_index + 1])
+                user_specific_date = datetime.datetime.utcnow() - relativedelta(months=months)
         count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
-                                                                previous_month, user_id)
-        response_message = "%s added %d candidates in %s talent pool last month" %\
+                                                                user_specific_date, user_id)
+        response_message = "%s added %d candidates in %stalent pool" %\
                            (user_name.title(), count, spaced_talent_pool_name)
         return response_message
 
