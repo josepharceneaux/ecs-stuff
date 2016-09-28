@@ -7,5 +7,6 @@ from talentbot_service.common.routes import GTApis
 from talentbot_service import app
 import talentbot_service.modules.views
 
-if __name__ == '__main__':
+if __name__ ==\
+        '__main__':
     app.run(threaded=True, host='0.0.0.0', port=GTApis.TALENTBOT_PORT)

@@ -14,6 +14,7 @@ In this module, we have tests for following endpoints
 # Packages
 import re
 import requests
+import pytest
 from redo import retry
 from random import randint
 from datetime import datetime, timedelta
@@ -164,6 +165,7 @@ class TestGetCampaigns(object):
                                                     pagination_query='?page=2')
         assert len(email_campaigns) == 0
 
+
     def test_get_campaigns_with_invalid_sort_type(self, headers):
         """
         Test GET API of email_campaigns for getting all campaigns in logged-in user's domain with invalid value
@@ -206,6 +208,28 @@ class TestGetCampaigns(object):
         response = requests.get(url, headers=headers)
         assert response.status_code == requests.codes.BAD
         assert str(MAX_PAGE_SIZE) in response.json()['error']['message']
+
+    @pytest.mark.parametrize("params", ['?page=-5', '?per_page=51', '?sort_type=ASER', '?sort_type=DSCEE'])
+    @pytest.mark.qa
+    def test_get_campaign_with_invalid_field_one_by_one(self, access_token_first, params):
+        """
+         Test checks that with invalid values ......
+        """
+        response = requests.get(url=EmailCampaignApiUrl.CAMPAIGNS + params,
+                                headers={'Authorization': 'Bearer %s' % access_token_first})
+        assert response.status_code == requests.codes.BAD_REQUEST
+
+    @pytest.mark.qat
+    def test_get_all_campaigns_in_asc(self, email_campaign_of_user_first,
+                                              email_campaign_of_user_second,
+                                              access_token_first,
+                                              talent_pipeline):
+        """
+        Test GET API of email_campaigns for getting all campaigns in logged-in user'
+        """
+        # Test GET api of email campaign
+        email_campaigns = get_campaign_or_campaigns(access_token_first)
+        assert len(email_campaigns) == 2
 
 
 class TestCreateCampaign(object):
@@ -668,3 +692,6 @@ def test_test_email_with_invalid_fields(access_token_first):
             data[key] = value
             response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
             assert response.status_code == requests.codes.BAD_REQUEST
+
+
+
