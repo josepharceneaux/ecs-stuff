@@ -56,8 +56,8 @@ class TalentPoolCandidate(db.Model):
     def get(cls, candidate_id, talent_pool_id):
         return cls.query.filter_by(candidate_id=candidate_id, talent_pool_id=talent_pool_id).first()
 
-    @staticmethod
-    def candidates_added_last_month(user_name, talent_pool_name, user_specific_date, user_id):
+    @classmethod
+    def candidates_added_last_month(cls, user_name, talent_pool_name, user_specific_date, user_id):
         """
         Returns number of candidate added by a user in a talent pool in a specific month
         :param str user_name: User name
@@ -68,12 +68,12 @@ class TalentPoolCandidate(db.Model):
         :rtype: int
         """
         if user_specific_date:
-            return TalentPoolCandidate.query.filter(TalentPoolCandidate.talent_pool_id == TalentPool.id) \
-                .filter(or_((TalentPoolCandidate.added_time >= user_specific_date), (
-                 TalentPoolCandidate.updated_time >= user_specific_date))) \
+            return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
+                .filter(or_((cls.added_time >= user_specific_date), (
+                 cls.updated_time >= user_specific_date))) \
                 .filter(User.first_name == user_name).\
                 filter(User.id == user_id).filter(TalentPool.name == talent_pool_name).distinct().count()
-        return TalentPoolCandidate.query.filter(TalentPoolCandidate.talent_pool_id == TalentPool.id)\
+        return cls.query.filter(cls.talent_pool_id == TalentPool.id)\
             .filter(User.first_name == user_name).\
             filter(User.id == user_id).filter(TalentPool.name == talent_pool_name).distinct().count()
 

@@ -121,7 +121,7 @@ class QuestionHandler(object):
     def question_4_handler(self, message_tokens, user_id):
         """
             Handles question 'how many candidate leads did [user name] import into the
-            [talent pool name] in last [x] months'
+            [talent pool name] in last n months'
             :param int user_id: User Id
             :param message_tokens: User message tokens
             :return: str response_message
@@ -129,7 +129,10 @@ class QuestionHandler(object):
         talent_index = self.find_word_in_message('talent', message_tokens)
         import_index = self.find_word_in_message('import', message_tokens)
         # Extracting talent pool name from user's message
-        talent_pool_name = message_tokens[import_index + 3:talent_index:]
+        if message_tokens[import_index + 2].lower() != 'the':
+            talent_pool_name = message_tokens[import_index + 2:talent_index:]
+        else:
+            talent_pool_name = message_tokens[import_index + 3:talent_index:]
         # Extracting username from user message
         user_name = message_tokens[import_index - 1]
         spaced_talent_pool_name = self.append_list_with_spaces(talent_pool_name)
@@ -138,13 +141,13 @@ class QuestionHandler(object):
         except IndexError:  # Word 'last' not found in message
             last_index = len(message_tokens)
         user_specific_date = None
-        if len(message_tokens) > last_index+2:
-            if message_tokens[last_index+1].isdigit():
-                months = int(message_tokens[last_index+1])
+        if len(message_tokens) > last_index + 2:
+            if message_tokens[last_index + 1].isdigit():
+                months = int(message_tokens[last_index + 1])
                 user_specific_date = datetime.datetime.utcnow() - relativedelta(months=months)
         count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
                                                                 user_specific_date, user_id)
-        response_message = "%s added %d candidates in %s talent pool" %\
+        response_message = "%s added %d candidates in %stalent pool" %\
                            (user_name.title(), count, spaced_talent_pool_name)
         return response_message
 
