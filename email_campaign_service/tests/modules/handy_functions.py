@@ -10,8 +10,7 @@
 import json
 import uuid
 import imaplib
-import datetime
-
+from datetime import datetime, timedelta
 # Third Party
 import requests
 from redo import retry
@@ -36,6 +35,7 @@ from email_campaign_service.common.utils.handy_functions import define_and_send_
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 
 __author__ = 'basit'
 
@@ -45,6 +45,19 @@ EMAIL_TEMPLATE_BODY = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional
                       '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
                       '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through ' \
                       'script</p>\r\n</body>\r\n</html>\r\n'
+EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS = [{'from': fake.safe_email()}, {'from': fake.safe_email(),
+                                      'reply_to': fake.safe_email()}, {'from': fake.safe_email(),
+                                      'reply_to': fake.safe_email(), 'body_text': fake.sentence()},
+                                      {'from': fake.safe_email(), 'reply_to': fake.safe_email(),
+                                       'body_text': fake.sentence(), 'start_datetime': DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=20))},
+                                      {'from': fake.safe_email(), 'reply_to': fake.safe_email(),
+                                       'body_text': fake.sentence(), 'start_datetime': DatetimeUtils.to_utc_str(
+                                         datetime.utcnow() + timedelta(minutes=20)), 'end_datetime': DatetimeUtils.to_utc_str(
+                                         datetime.utcnow() + timedelta(minutes=40))}]
+
+EMAIL_CAMPAIGN_INVALID_FIELDS = ['?page=-5', '?per_page=51', '?sort_type=ASER', '?sort_type=DSCEE', '?sort_by=id']
+EMAIL_CAMPAIGN_EXPECT_SINGLE_FIELD = ['?page=1&sort_type=ASC&?sort_by=name', '?per_page=2&sort_type=ASC&?sort_by=name',
+                                       '?page=1&per_page=2&?sort_by=name']
 
 
 class EmailCampaignTypes(object):
@@ -415,8 +428,8 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
     :param subject: Subject of campaign
     :param campaign_name: Name of campaign
     """
-    email_from = 'no-reply@gettalent.com'
-    reply_to = fake.safe_email()
+    #email_from = 'no-reply@gettalent.com'
+    #reply_to = fake.safe_email()
     body_text = fake.sentence()
     description = fake.paragraph()
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
@@ -428,10 +441,7 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
     return {'name': campaign_name,
             'subject': subject,
             'description': description,
-            'from': email_from,
-            'reply_to': reply_to,
             'body_html': body_html,
-            'body_text': body_text,
             'frequency_id': Frequency.ONCE,
             'list_ids': [smartlist_id]
             }

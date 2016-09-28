@@ -15,6 +15,7 @@ In this module, we have tests for following endpoints
 import re
 import requests
 import pytest
+import time
 from redo import retry
 from random import randint
 from datetime import datetime, timedelta
@@ -40,7 +41,11 @@ from email_campaign_service.tests.modules.handy_functions import (assert_valid_c
                                                                   create_email_campaign_via_api,
                                                                   create_data_for_campaign_creation,
                                                                   create_email_campaign_smartlists,
-                                                                  assert_and_delete_email)
+                                                                  assert_and_delete_email,
+                                                                  create_email_campaign,
+                                                                  EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS,
+                                                                  EMAIL_CAMPAIGN_INVALID_FIELDS,
+                                                                  EMAIL_CAMPAIGN_EXPECT_SINGLE_FIELD)
 
 
 class TestGetCampaigns(object):
@@ -209,7 +214,7 @@ class TestGetCampaigns(object):
         assert response.status_code == requests.codes.BAD
         assert str(MAX_PAGE_SIZE) in response.json()['error']['message']
 
-    @pytest.mark.parametrize("params", ['?page=-5', '?per_page=51', '?sort_type=ASER', '?sort_type=DSCEE'])
+    @pytest.mark.parametrize("params", EMAIL_CAMPAIGN_INVALID_FIELDS)
     @pytest.mark.qa
     def test_get_campaign_with_invalid_field_one_by_one(self, access_token_first, params):
         """
@@ -219,17 +224,43 @@ class TestGetCampaigns(object):
                                 headers={'Authorization': 'Bearer %s' % access_token_first})
         assert response.status_code == requests.codes.BAD_REQUEST
 
-    @pytest.mark.qat
-    def test_get_all_campaigns_in_asc(self, email_campaign_of_user_first,
-                                              email_campaign_of_user_second,
-                                              access_token_first,
-                                              talent_pipeline):
+    @pytest.mark.qa
+    def test_get_all_campaigns_in_dsc(self, user_first,
+                                      user_same_domain,
+                                      access_token_first):
         """
-        Test GET API of email_campaigns for getting all campaigns in logged-in user'
+        Test GET API of email_campaigns for getting all campaigns in Descending order'
         """
         # Test GET api of email campaign
-        email_campaigns = get_campaign_or_campaigns(access_token_first)
-        assert len(email_campaigns) == 2
+        create_email_campaign(user_first)
+        time.sleep(2)
+        create_email_campaign(user_same_domain)
+        email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?sort_type=DESC')
+        assert email_campaigns[0]['added_datetime'] > email_campaigns[1]['added_datetime']
+
+    @pytest.mark.qa
+    def test_get_all_campaigns_in_asc(self, user_first,
+                                      user_same_domain,
+                                      access_token_first):
+        """
+        Test GET API of email_campaigns for getting all campaigns in ascending order'
+        """
+        # Test GET api of email campaign
+        create_email_campaign(user_first)
+        time.sleep(2)
+        create_email_campaign(user_same_domain)
+        email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?sort_type=ASC')
+        assert email_campaigns[0]['added_datetime'] < email_campaigns[1]['added_datetime']
+
+    @pytest.mark.parametrize("params", EMAIL_CAMPAIGN_EXPECT_SINGLE_FIELD)
+    @pytest.mark.qa
+    def test_get_campaign_except_single_field(self, access_token_first, params):
+        """
+         Test checks that with invalid values ......
+        """
+        response = requests.get(url=EmailCampaignApiUrl.CAMPAIGNS + params,
+                                headers={'Authorization': 'Bearer %s' % access_token_first})
+        assert response.status_code == requests.codes.OK
 
 
 class TestCreateCampaign(object):
@@ -353,8 +384,7 @@ class TestCreateCampaign(object):
         a required field. But we are not giving start_datetime. It should result in
         UnprocessableEntity error.
         """
-        subject = \
-            uuid.uuid4().__str__()[0:8] + '-test_with_no_start_datetime'
+        subject = fake.uuid4() + '-test_with_no_start_datetime'
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject, assert_candidates=False)
         campaign_data['frequency_id'] = Frequency.DAILY
@@ -407,6 +437,23 @@ class TestCreateCampaign(object):
                                                           subject, assert_candidates=False)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == ForbiddenError.http_status_code()
+
+    @pytest.mark.parametrize("params", EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS)
+    @pytest.mark.qa
+    def test_create_email_campaign_with_optional_parameters(self, access_token_first, talent_pipeline, params):
+        """
+        Here we provide valid data to create an email-campaign with optional.
+        It should get OK response.
+        """
+        subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign'
+        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
+                                                          subject)
+        campaign_data.update(params)
+        response = create_email_campaign_via_api(access_token_first, campaign_data)
+        assert response.status_code == requests.codes.CREATED
+        #resp_object = response.json()
+        #assert 'campaign' in resp_object
+        #assert resp_object['campaign']['id']
 
 
 class TestSendCampaign(object):
