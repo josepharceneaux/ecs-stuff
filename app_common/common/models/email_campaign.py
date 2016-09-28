@@ -435,8 +435,10 @@ class EmailClientCredentials(db.Model):
     password = db.Column('password', db.String(512), nullable=False)
     updated_datetime = db.Column('updated_datetime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
 
-    OUTGOING = ['smtp']
-    INCOMING = ['imap', 'pop']
+    CLIENT_TYPES = {'incoming': 'incoming',
+                    'outgoing': 'outgoing'}
+    OUTGOING = ('smtp',)
+    INCOMING = ('imap', 'pop')
 
     def __repr__(self):
         return "<EmailClientCredentials (id:%s)>" % self.id
@@ -465,10 +467,25 @@ class EmailClientCredentials(db.Model):
         :rtype: list
         """
         assert user_id, 'user_id not given'
-        if search_keyword not in ('incoming', 'outgoing'):
+        if search_keyword not in cls.CLIENT_TYPES:
             raise InvalidUsage('Invalid value of param `type` provided')
         client_types = getattr(cls, search_keyword.upper())
         conditions = []
         for client_type in client_types:
             conditions.append(cls.host.ilike('%{}%'.format(client_type)))
         return cls.query.filter(or_(*conditions), cls.user_id == user_id).all()
+
+    @classmethod
+    def get_by_type(cls, client_type):
+        """
+        This gets email-client-credentials for given client type.
+        Valid values of parameter are 'incoming' or 'outgoing'.
+        :type client_type:  string
+        :rtype: list
+        """
+        if client_type not in cls.CLIENT_TYPES:
+            raise InvalidUsage('Invalid value of param `client_type` provided')
+        conditions = []
+        for client_type in cls.INCOMING:
+            conditions.append(cls.host.ilike('%{}%'.format(client_type)))
+        return cls.query.filter(or_(*conditions)).all()

@@ -11,14 +11,12 @@ import os
 import json
 import getpass
 import itertools
-from base64 import b64decode
 from datetime import datetime, timedelta
 
 # Third Party
 from celery import chord
 from redo import retrier
 from sqlalchemy import desc
-from simplecrypt import decrypt
 
 # Service Specific
 from email_campaign_service.json_schema.test_email import TEST_EMAIL_SCHEMA
@@ -27,7 +25,7 @@ from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 from email_campaign_service.modules.utils import (TRACKING_URL_TYPE,
                                                   get_candidates_from_smartlist,
                                                   do_mergetag_replacements,
-                                                  create_email_campaign_url_conversions, SMTP)
+                                                  create_email_campaign_url_conversions, SMTP, decrypt_password)
 from email_campaign_service.modules import aws_constants as aws
 
 # Common Utils
@@ -529,8 +527,7 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
             if not email_client_credentials:
                 raise ResourceNotFound("EmailClientCredentials(id:%s) not found for user(id:%s)."
                                        % (email_client_credentials_id, user_id))
-            decrypted_password = decrypt(app.config[TalentConfigKeys.ENCRYPTION_KEY],
-                                         b64decode(email_client_credentials.password))
+            decrypted_password = decrypt_password(email_client_credentials.password)
             client = SMTP(email_client_credentials.host,email_client_credentials.port,
                           email_client_credentials.email, decrypted_password)
             client.send_email(to_addresses, subject, new_text)

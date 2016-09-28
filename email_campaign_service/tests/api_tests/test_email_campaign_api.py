@@ -252,7 +252,7 @@ class TestCreateCampaign(object):
         assert 'campaign' in resp_object
 
     def test_create_email_campaign_with_outgoing_email_client(self, access_token_first, talent_pipeline,
-                                                              create_email_clients, headers):
+                                                              email_clients, headers):
         """
         Here we provide valid data to create an email-campaign with email_client_credentials_id.
         It should get OK response.
@@ -273,7 +273,7 @@ class TestCreateCampaign(object):
         assert 'campaign' in resp_object
 
     def test_create_email_campaign_with_incoming_email_client(self, access_token_first, talent_pipeline,
-                                                              create_email_clients, headers):
+                                                              email_clients, headers):
         """
         Here we provide email-client of type "incoming". email-campaign should not be created.
         """

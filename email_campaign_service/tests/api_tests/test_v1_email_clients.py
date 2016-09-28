@@ -13,6 +13,7 @@ import requests
 from requests import codes
 
 # Application Specific
+from email_campaign_service.common.models.user import User
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
@@ -119,9 +120,9 @@ class TestGetEmailClients(object):
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL)
 
-    def test_get_outgoing_clients(self, create_email_clients, headers, user_first):
+    def test_get_outgoing_clients(self, email_clients, headers, user_first):
         """
-        We have created 3 email clients in the fixture create_email_clients.
+        We have created 3 email clients in the fixture email_clients.
         Here we GET only outoging email-clients from endpoint and assert valid response.
         """
         # GET outgoing email-clients
@@ -132,9 +133,9 @@ class TestGetEmailClients(object):
         assert len(email_clients_data) == 1
         assert_email_client_fields(email_clients_data[0], user_first.id)
 
-    def test_get_incoming_clients(self, create_email_clients, headers, user_first):
+    def test_get_incoming_clients(self, email_clients, headers, user_first):
         """
-        We have created 3 email clients in the fixture create_email_clients.
+        We have created 3 email clients in the fixture email_clients.
         Here we GET only incoming email-clients from endpoint and assert valid response.
         """
         # GET incoming email-clients
@@ -157,11 +158,26 @@ class TestGetEmailClients(object):
         email_client_data = response.json()['email_client_credentials']
         assert len(email_client_data) == 0
 
-    def test_get_invalid_client(self, create_email_clients, headers):
+    def test_get_invalid_client(self, email_clients, headers):
         """
-        We have created 3 email clients in the fixture create_email_clients.
+        We have created 3 email clients in the fixture email_clients.
         Here we GET email-clients with invalid value of parameter "type".
         It should result in bad request error.
         """
         response = requests.get(self.URL + '?type=%s' % fake.word(), headers=headers)
         assert response.status_code == codes.BAD
+
+
+class TestEmailConversations(object):
+    """
+    Here we test /v1/email-conversations
+    """
+    URL = EmailCampaignApiUrl.CONVERSATIONS
+
+    def test_post(self):
+        secret_key_id, access_token = User.generate_jw_token()
+        headers = {
+            'X-Talent-Secret-Key-ID': secret_key_id,
+            'Authorization': access_token}
+        requests.post(self.URL, headers=headers)
+        pass

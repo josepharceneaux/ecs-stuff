@@ -30,7 +30,8 @@ from email_campaign_service.common.routes import (EmailCampaignApiUrl,
 from email_campaign_service.common.utils.amazon_ses import (send_email,
                                                             get_default_email_info)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign,
-                                                                 EmailClient, EmailCampaignSend)
+                                                                 EmailClient, EmailCampaignSend,
+                                                                 EmailClientCredentials)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.utils.handy_functions import define_and_send_request
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
@@ -533,14 +534,14 @@ def data_for_creating_email_clients(key=None):
     :rtype: list[dict]
     """
     data = {
-        'outgoing': [{
+        EmailClientCredentials.CLIENT_TYPES['outgoing']: [{
             "host": "smtp.gmail.com",
             "port": "587",
             "name": "Gmail",
             "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
             "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
         }],
-        'incoming': [{
+        EmailClientCredentials.CLIENT_TYPES['incoming']: [{
             "host": "imap.gmail.com",
             "port": "",
             "name": "Gmail",
@@ -559,8 +560,8 @@ def data_for_creating_email_clients(key=None):
     if key:
         return data[key]
     email_clients_data = []
-    for key in ('incoming', 'outgoing'):
-        for email_client_data in data_for_creating_email_clients(key=key):
+    for client_type in EmailClientCredentials.CLIENT_TYPES:
+        for email_client_data in data_for_creating_email_clients(key=client_type):
             email_clients_data.append(email_client_data)
     return email_clients_data
 

@@ -134,6 +134,16 @@ class Candidate(db.Model):
         return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
             filter(Candidate.user_id == user_id).filter(CandidateAddress.zip_code == zipcode).count()
 
+    @classmethod
+    def get_all_in_user_domain(cls, domain_id):
+        """
+        This method returns number of candidates from a certain zipcode
+        :param int|long domain_id: Domain Id
+        """
+        assert domain_id, 'domain_id not provided'
+        from user import User  # This has to be here to avoid circular import
+        return cls.query.join(User, User.domain_id == domain_id).filter(Candidate.user_id == User.id).all()
+
 
 class CandidateStatus(db.Model):
     __tablename__ = 'candidate_status'

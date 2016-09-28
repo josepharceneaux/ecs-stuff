@@ -305,7 +305,7 @@ def email_templates_bulk(headers, user_first):
 
 
 @pytest.fixture()
-def create_email_clients(headers):
+def email_clients(headers):
     """
     This add 3 email clients for user_first.
     :rtype: list
@@ -320,7 +320,7 @@ def create_email_clients(headers):
 
 
 @pytest.fixture()
-def create_outgoing_email_client(headers):
+def outgoing_email_client(headers):
     """
     This add 3 outgoing(SMTP) email-clients for user_first.
     :rtype: list
@@ -335,7 +335,7 @@ def create_outgoing_email_client(headers):
 
 @pytest.fixture()
 def email_campaign_with_outgoing_email_client(access_token_first, talent_pipeline, headers,
-                                              create_outgoing_email_client):
+                                              outgoing_email_client):
     """
     This creates an email-campaign which will be sent via an SMTP server added by user.
     """

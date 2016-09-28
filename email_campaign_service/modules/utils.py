@@ -5,6 +5,7 @@ Here we have helper functions used in email-campaign-service
 import os
 import json
 import uuid
+import email
 import poplib
 import urllib
 import smtplib
@@ -12,15 +13,19 @@ import imaplib
 import HTMLParser
 from _socket import gaierror
 from urllib import urlencode
+from base64 import b64decode
 from datetime import datetime
 from abc import abstractmethod
 from urlparse import (parse_qs, urlsplit, urlunsplit)
 
 # Third Party
+from dateutil import parser
 from bs4 import BeautifulSoup
+from simplecrypt import decrypt
 from dateutil.relativedelta import relativedelta
 
 # Service Specific
+from email_campaign_service.common.models.candidate import Candidate
 from email_campaign_service.email_campaign_app import (logger, celery_app, cache, app)
 
 # Common Utils
@@ -48,6 +53,7 @@ TRACKING_PIXEL_URL = "https://s3-us-west-1.amazonaws.com/gettalent-static/pixel.
 TRACKING_URL_TYPE = 0
 TEXT_CLICK_URL_TYPE = 1
 HTML_CLICK_URL_TYPE = 2
+TASK_ALREADY_SCHEDULED = 6057
 
 
 @celery_app.task(name='get_candidates_from_smartlist')
@@ -317,12 +323,12 @@ def get_valid_send_obj(requested_campaign_id, send_id, current_user, campaign_ty
     return EmailCampaignSend.get_valid_send_object(send_id, requested_campaign_id)
 
 
-class EmailClients(object):
+class EmailClientBase(object):
     """
     This is the base class for email-clients.
     """
 
-    def __init__(self, host, port, email, password):
+    def __init__(self, host, port, email, password, domain_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of server
@@ -336,6 +342,7 @@ class EmailClients(object):
         self.password = password
         self.client = None
         self.connection = None
+        self.domain_id = domain_id
 
     @staticmethod
     def get_client(host):
@@ -360,10 +367,7 @@ class EmailClients(object):
         :type host: string
         :rtype: bool
         """
-        for client_type in EmailClientCredentials.OUTGOING:
-            if client_type in host:
-                return True
-        return False
+        return any([client_type in host for client_type in EmailClientCredentials.OUTGOING])
 
     def connect(self):
         """
@@ -382,9 +386,24 @@ class EmailClients(object):
         """
         pass
 
+    @abstractmethod
+    def import_emails(self):
+        """
+        This will import emails of user's account to getTalent database table email-conversations.
+        Child classes will implement this.
+        """
+        pass
 
-class SMTP(EmailClients):
-    def __init__(self, host, port, email, password):
+    def get_candidate_ids_and_emails(self):
+        """
+        This returns Ids and Emails of candidates in a user's domain.
+        """
+        candidates = Candidate.get_all_in_user_domain(self.domain_id)
+        return [(candidate.id, candidate.emails) for candidate in candidates]
+
+
+class SMTP(EmailClientBase):
+    def __init__(self, host, port, email, password, domain_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of SMTP server
@@ -392,7 +411,7 @@ class SMTP(EmailClients):
         :param string email: Email address
         :param string password: Password
         """
-        super(SMTP, self).__init__(host, port, email, password)
+        super(SMTP, self).__init__(host, port, email, password, domain_id=domain_id)
         self.client = smtplib.SMTP
 
     def authenticate(self, connection_quit=True):
@@ -422,9 +441,15 @@ class SMTP(EmailClients):
         logger.info('Email has been sent from:%s, to:%s via SMTP server.' % (self.email, to_address))
         self.connection.quit()
 
+    def import_emails(self):
+        """
+        We will only pass here as this client is of type "Outgoing"
+        """
+        pass
 
-class IMAP(EmailClients):
-    def __init__(self, host, port, email, password):
+
+class IMAP(EmailClientBase):
+    def __init__(self, host, port, email, password, domain_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of SMTP server
@@ -432,7 +457,7 @@ class IMAP(EmailClients):
         :param string email: Email address
         :param string password: Password
         """
-        super(IMAP, self).__init__(host, port, email, password)
+        super(IMAP, self).__init__(host, port, email, password,domain_id=domain_id)
         self.client = imaplib.IMAP4_SSL
 
     def authenticate(self, connection_quit=True):
@@ -445,9 +470,45 @@ class IMAP(EmailClients):
             logger.exception(error.message)
             raise InvalidUsage('Invalid credentials provided. Could not authenticate with imap server')
 
+    def import_emails(self):
+        """
+        This will import emails of user's account to getTalent database table email-conversations.
+        """
+        self.connect()
+        self.authenticate()
+        candidate_ids_and_emails = self.get_candidate_ids_and_emails()
+        search_criteria = '(FROM "no-reply@gettalent.com")'
+        typ, data = self.connection.search(None, search_criteria)
+        print "%s emails found" % len(data[0])
+        for num in data[0].split():
+            typ, data = self.connection.fetch(num, '(RFC822)')
+            raw_email = data[0][1]
+            # email_message = email.message_from_string(raw_email)
+            msg = email.message_from_string(raw_email)
+            print msg.get_payload(decode=True)
+            for header in ['subject', 'to', 'from', 'date']:
+                print '%s: %s' % (header.title(), msg[header])
+            datetime_obj = parser.parse(msg['date'])
+            print datetime_obj
+            # continue inside the same for loop as above
+            raw_email_string = raw_email.decode('utf-8')
+            # converts byte literal to string removing b''
+            email_message = email.message_from_string(raw_email_string)
+            # this will loop through all the available multiparts in mail
+            for part in email_message.walk():
+                if part.get_content_type() == "text/plain":  # ignore attachments/html
+                    body = part.get_payload(decode=True)
+                    print 'Body: %s' % body
+            print '----------------------'
+            # print 'Message %s\n%s\n' % (num, raw_email)
+        # if msg_ids:
+        #     msg_ids = ','.join(msg_ids.split(' '))
+        self.connection.close()
+        self.connection.logout()
 
-class POP(EmailClients):
-    def __init__(self, host, port, email, password):
+
+class POP(EmailClientBase):
+    def __init__(self, host, port, email, password, domain_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of SMTP server
@@ -455,7 +516,7 @@ class POP(EmailClients):
         :param string email: Email address
         :param string password: Password
         """
-        super(POP, self).__init__(host, port, email, password)
+        super(POP, self).__init__(host, port, email, password, domain_id=domain_id)
         self.client = poplib.POP3_SSL
 
     def authenticate(self, connection_quit=True):
@@ -469,6 +530,12 @@ class POP(EmailClients):
             logger.exception(error.message)
             raise InvalidUsage('Invalid credentials provided. Could not authenticate with pop server')
 
+    def import_emails(self):
+        """
+        This will import emails of user's account to getTalent database table email-conversations.
+        """
+        pass
+
 
 def format_email_client_data(email_client_data):
     """
@@ -478,6 +545,23 @@ def format_email_client_data(email_client_data):
     :return: Dictionary of formatted data
     :rtype: dict
     """
-    for key, value in email_client_data.iteritems():
-        email_client_data[key] = value.strip()
-    return email_client_data
+    return {key: value.strip() for key, value in email_client_data.iteritems()}
+
+
+def decrypt_password(password):
+    """
+    This decrypts the given password
+    :param string password: Login password of user for email-client
+    """
+    return decrypt(app.config[TalentConfigKeys.ENCRYPTION_KEY], b64decode(password))
+
+
+# @celery_app.task(name='import_email_conversations')
+def import_email_conversations(email_client):
+    """
+    This imports emails for given email-client
+    """
+    client_class = EmailClientBase.get_client(email_client.host)
+    client = client_class(email_client.host, email_client.port, email_client.email,
+                          decrypt_password(email_client.password), email_client.user.domain_id)
+    client.import_emails()
