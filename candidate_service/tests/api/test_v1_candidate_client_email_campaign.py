@@ -51,6 +51,7 @@ class TestClientEmailCampaign(object):
             'email_subject': client_email_campaign_subject,
             'email_from': 'Samuel L. Jackson',
             'email_reply_to': 'amir@gettalent.com',
+            'description': 'Email campaign description for user',
             'email_body_html': '<html><body>Email Body</body></html>',
             'email_body_text': 'Plaintext part of email goes here, if any',
             'email_client_id': EmailClient.get_id_by_name('Browser')

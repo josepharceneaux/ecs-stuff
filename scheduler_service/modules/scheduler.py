@@ -179,10 +179,12 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
             res = redis_store.set(LOCK_KEY + lock_uuid, True, nx=True, ex=2)
             # Multiple executions. No need to execute job if race condition occurs
             if not res:
+                logger.error('CODE-VERONICA: Escaping {}'.format(lock_uuid))
                 return
             logger.error('CODE-VERONICA: Worked {}'.format(lock_uuid))
         else:
             # Multiple executions. No need to execute job
+            logger.error('CODE-VERONICA: Escaping {}'.format(lock_uuid))
             return
 
     # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
