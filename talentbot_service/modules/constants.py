@@ -1,6 +1,9 @@
 """
 This module contains Talentbot constants
 """
+from talentbot_service.common.models.sms_campaign import SmsCampaignBlast
+from talentbot_service.common.models.email_campaign import EmailCampaignBlast
+from talentbot_service.common.models.push_campaign import PushCampaignBlast
 BOT_NAME = "talentbot"
 AT_BOT = ""
 READ_WEB_SOCKET_DELAY = 1
@@ -38,6 +41,9 @@ AUTHENTICATION_FAILURE_MSG = 'Sorry you are not registered to use this service\n
                             'Go to the http://www.gettalent.com to register yourself'
 SLACK_AUTH_URI = 'https://slack.com/api/oauth.access'
 PROCESS_MAX_TIME = 500
+CAMPAIGN_TYPES = {'sms': SmsCampaignBlast.top_performing_sms_campaign,
+                  'email': EmailCampaignBlast.top_performing_email_campaign,
+                  'push': PushCampaignBlast.top_performing_push_campaign}
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"

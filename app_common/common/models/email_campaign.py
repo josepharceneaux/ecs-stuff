@@ -1,8 +1,7 @@
 import datetime
 
-from sqlalchemy import desc
 from sqlalchemy.orm import relationship
-from sqlalchemy import or_
+from sqlalchemy import or_, desc, extract
 
 from db import db
 from ..utils.datetime_utils import DatetimeUtils
@@ -195,19 +194,23 @@ class EmailCampaignBlast(db.Model):
     def __repr__(self):
         return "<EmailCampaignBlast (Sends: %s, Opens: %s)>" % (self.sends, self.opens)
 
-    @staticmethod
-    def top_performing_email_campaign(year, user_id):
+    @classmethod
+    def top_performing_email_campaign(cls, year, user_id):
         """
         This method returns top performing email campaign from a specific year
         :param int user_id: User Id
-        :param year: Year of campaign started or updated
+        :param str year: Year of campaign started or updated
         :rtype: EmailCampaignBlast
         """
-        return EmailCampaignBlast.query.filter(or_(EmailCampaignBlast.updated_datetime.contains(year),
-                                                   EmailCampaignBlast.sent_datetime.contains(year))). \
-            filter(EmailCampaign.id == EmailCampaignBlast.campaign_id).\
-            filter(EmailCampaign.user_id == user_id). \
-            order_by(desc(EmailCampaignBlast.opens)).first()
+        if year:
+            return cls.query.filter(or_(extract("year", cls.updated_datetime) == year,
+                                        extract("year", cls.sent_datetime) == year)). \
+                filter(EmailCampaign.id == cls.campaign_id).\
+                filter(EmailCampaign.user_id == user_id). \
+                order_by(desc(cls.opens)).first()
+
+        return cls.query.filter(EmailCampaign.id == cls.campaign_id).\
+            filter(EmailCampaign.user_id == user_id).order_by(desc(cls.opens)).first()
 
 
 class EmailCampaignSend(db.Model):

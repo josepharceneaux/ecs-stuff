@@ -17,9 +17,8 @@ from dateutil.relativedelta import relativedelta
 # Common utils
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.candidate import Candidate
-from talentbot_service.common.models.email_campaign import EmailCampaignBlast
 from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate
-from talentbot_service.modules.constants import HINT, BOT_NAME
+from talentbot_service.modules.constants import HINT, BOT_NAME, CAMPAIGN_TYPES
 
 
 class QuestionHandler(object):
@@ -105,18 +104,27 @@ class QuestionHandler(object):
             :param message_tokens: User message tokens
             :return: str response_message
         """
+        campaign_type_index = self.find_word_in_message('campaign', message_tokens)
+        campaign_type = message_tokens[campaign_type_index-1].lower()
         year = message_tokens[-1]
         is_valid_year = self.is_valid_year(year)
-        if is_valid_year:
-            email_campaign_blast = EmailCampaignBlast.top_performing_email_campaign(year, user_id)
-            if email_campaign_blast:
-                response_message = 'Top performing email campaign from %s is "%s"' \
-                                   % (year, email_campaign_blast.campaign.name)
+        campaign_method = CAMPAIGN_TYPES.get(campaign_type)
+        if not campaign_method:
+            return "Wrong campaign type specified"
+        if is_valid_year or year.lower() in 'campaigns' or year.lower() == 'from':
+            if year.lower() in 'campaigns' or year.lower() == 'from':
+                year = None
+            campaign_blast = campaign_method(year, user_id)
+            if campaign_blast:
+                response_message = 'Top performing %s campaign from %s is "%s"' \
+                                       % (campaign_type, year, campaign_blast.campaign.name)
             else:
-                response_message = "Oops! looks like you don't have an email campaign from %s" % year
+                response_message = "Oops! looks like you don't have %s campaign from %s" % \
+                                       (campaign_type, year)
         else:
             response_message = "Please enter a valid year greater than 1900"
-        return response_message
+
+        return response_message.replace("None", "all the times")
 
     def question_4_handler(self, message_tokens, user_id):
         """
