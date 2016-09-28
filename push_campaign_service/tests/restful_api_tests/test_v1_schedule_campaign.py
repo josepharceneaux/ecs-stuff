@@ -166,7 +166,7 @@ class TestScheduleCampaignUsingPOST(object):
         # There should be a campaign schedule activity
         assert_activity(Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_in_db['id'], 'push_campaign', token_same_domain)
 
-        retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
+        retry(get_blasts, attempts=4, sleepscale=1, retry_exceptions=(AssertionError,),
               args=(campaign_id, token_first), kwargs={'count': 1})
 
     def test_schedule_a_campaign_with_user_from_diff_domain(self, token_first, token_second,
@@ -347,7 +347,7 @@ class TestRescheduleCampaignUsingPUT(object):
         assert task_id
         campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
         match_schedule_data(data, campaign)
-        retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
+        retry(get_blasts, attempts=4, sleepscale=1, retry_exceptions=(AssertionError,),
               args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
         sleep(20)
 

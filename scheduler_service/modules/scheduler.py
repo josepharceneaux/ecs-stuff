@@ -179,7 +179,7 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
             res = redis_store.set(LOCK_KEY + lock_uuid, True, nx=True, ex=4)
             # Multiple executions. No need to execute job if race condition occurs
             if not res:
-                logger.error('CODE-VERONICA: Escaping {}'.format(lock_uuid))
+                logger.error('CODE-VERONICA: Race Escaping {}'.format(lock_uuid))
                 return
             logger.error('CODE-VERONICA: Worked {}'.format(lock_uuid))
         else:
@@ -288,7 +288,6 @@ def schedule_job(data, user_id=None, access_token=None):
 
     # make a UUID based on the host ID and current time
     lock_uuid = str(uuid.uuid1()) + str(uuid.uuid4())
-    logger.error('CODE-VERONICA: job schedule {}'.format(lock_uuid))
 
     if trigger == SchedulerUtils.PERIODIC:
         valid_data = validate_periodic_job(data)
@@ -315,6 +314,7 @@ def schedule_job(data, user_id=None, access_token=None):
         except Exception as e:
             logger.error(e.message)
             raise JobNotCreatedError("Unable to create the job.")
+        logger.error('CODE-VERONICA: job id: {} schedule {}'.format(job.id, lock_uuid))
         return job.id
     elif trigger == SchedulerUtils.ONE_TIME:
         valid_data = validate_one_time_job(data)
@@ -331,6 +331,7 @@ def schedule_job(data, user_id=None, access_token=None):
                                     kwargs=dict(lock_uuid=lock_uuid)
                                     )
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
+            logger.error('CODE-VERONICA: job id: {} schedule {}'.format(job.id, lock_uuid))
             return job.id
         except Exception as e:
             logger.error(e.message)
