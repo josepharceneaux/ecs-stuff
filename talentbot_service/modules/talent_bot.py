@@ -38,6 +38,12 @@ class TalentBot(object):
                               '5': {'question': list_of_questions[5], 'threshold': 70,
                                     'handler': self.handler.question_5_handler},
                               '6': {'question': list_of_questions[6], 'threshold': 70,
+                                    'handler': self.handler.question_6_handler},
+                              '7': {'question': list_of_questions[7], 'threshold': 70,
+                                    'handler': self.handler.question_6_handler},
+                              '8': {'question': list_of_questions[8], 'threshold': 70,
+                                    'handler': self.handler.question_6_handler},
+                              '9': {'question': list_of_questions[9], 'threshold': 70,
                                     'handler': self.handler.question_6_handler}
                               }
         self.bot_name = bot_name

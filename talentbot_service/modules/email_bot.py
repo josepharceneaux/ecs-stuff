@@ -36,8 +36,7 @@ class EmailBot(TalentBot):
         :param str email_body: Received Email body
         :return: tuple (True|False, str|None, int|None)
         """
-        user_id = TalentbotAuth.query.with_entities(TalentbotAuth.user_id).\
-            filter_by(email=email_id).first()
+        user_id = TalentbotAuth.get_user_id(email=email_id)
         if user_id:
             return True, email_body, user_id[0]
         return False, None, None
