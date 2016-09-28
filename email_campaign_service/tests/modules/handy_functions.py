@@ -20,7 +20,7 @@ from requests import codes
 # Application Specific
 from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
 from email_campaign_service.common.models.db import db
-from email_campaign_service.email_campaign_app import app
+from email_campaign_service.email_campaign_app import app, logger
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.models.misc import (Activity,
                                                        UrlConversion,
@@ -63,6 +63,7 @@ def create_email_campaign(user):
                                    user_id=user.id,
                                    is_hidden=0,
                                    subject=uuid.uuid4().__str__()[0:8] + ' It is a test campaign',
+                                   description=fake.paragraph(),
                                    _from=TEST_EMAIL_ID,
                                    reply_to=TEST_EMAIL_ID,
                                    body_html="<html><body>Email campaign test</body></html>",
@@ -205,21 +206,25 @@ def assert_and_delete_email(subject, username=app.config[TalentConfigKeys.GT_GMA
         mail_connection.select("inbox")  # connect to inbox.
         # search the inbox for given email-subject
         result, [msg_ids] = mail_connection.search(None, '(SUBJECT "%s")' % subject)
-        if msg_ids:
-            print "Email(s) found with subject: %s" % subject
-            msg_ids = ','.join(msg_ids.split(' '))
-            # Change the Deleted flag to delete the email from Inbox
-            mail_connection.store(msg_ids, '+FLAGS', r'(\Deleted)')
-            status, response = mail_connection.expunge()
-            assert status == 'OK'
-            print "Email(s) deleted with subject: %s" % subject
-            mail_connection.close()
-            mail_connection.logout()
+        assert msg_ids, 'Email(s) with subject `%s` not found in inbox' % subject
+        print "Email(s) found with subject: %s" % subject
     except imaplib.IMAP4_SSL.error as error:
         print error.message
         raise  # Raise any error raised by IMAP server
 
-    assert msg_ids
+    # This is kind of finalizer which removes email from inbox. It shouldn't affect our test. So we are not raising it.
+    try:
+        msg_ids = ','.join(msg_ids.split(' '))
+        # Change the Deleted flag to delete the email from Inbox
+        mail_connection.store(msg_ids, '+FLAGS', r'(\Deleted)')
+        status, response = mail_connection.expunge()
+        assert status == 'OK'
+        print "Email(s) deleted with subject: %s" % subject
+        mail_connection.close()
+        mail_connection.logout()
+    except imaplib.IMAP4_SSL.error as error:
+        logger.exception(error.message)
+
     return msg_ids
 
 
@@ -413,6 +418,7 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
     email_from = 'no-reply@gettalent.com'
     reply_to = fake.safe_email()
     body_text = fake.sentence()
+    description = fake.paragraph()
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
     smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
                                                                             talent_pipeline,
@@ -421,6 +427,7 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
                                                                             )
     return {'name': campaign_name,
             'subject': subject,
+            'description': description,
             'from': email_from,
             'reply_to': reply_to,
             'body_html': body_html,

@@ -13,14 +13,16 @@ from flask import current_app as app
 from ..models.user import *
 from ..error_handling import *
 from ..routes import AuthApiUrl
+from ..models.user import User, Role
 
 
-def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
+def require_oauth(allow_jwt_based_auth=True, allow_null_user=False, allow_candidate=False):
     """
     This method will verify Authorization header of request using getTalent AuthService or Basic HTTP secret-key based
     Auth and will set request.user and request.oauth_token
     :param bool allow_jwt_based_auth: Either JWT based authentication is supported for a particular endpoint or not ?
     :param allow_null_user: Is user necessary for Authorization or not ?
+    :param allow_candidate: Allow Candidate Id in JWT payload
     """
 
     def auth_wrapper(func):
@@ -36,7 +38,7 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
                 try:
                     secret_key_id = request.headers['X-Talent-Secret-Key-ID']
                     json_web_token = oauth_token.replace('Bearer', '').strip()
-                    User.verify_jw_token(secret_key_id, json_web_token, allow_null_user)
+                    User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
                     request.oauth_token = ''
                     return func(*args, **kwargs)
                 except KeyError:
@@ -59,6 +61,7 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
                 valid_user_id = response.json().get('user_id')
                 request.user = User.query.get(valid_user_id)
                 request.oauth_token = oauth_token
+                request.candidate = None
                 return func(*args, **kwargs)
 
         return authenticate
@@ -173,11 +176,11 @@ def refresh_token(access_token):
     if token and isinstance(token, Token):
         # Sends a refresh request to the Oauth2 server.
         data = {
-                    'client_id': token.client_id,
-                    'client_secret': token.client.client_secret,
-                    'refresh_token': token.refresh_token,
-                    'grant_type': u'refresh_token'
-                }
+            'client_id': token.client_id,
+            'client_secret': token.client.client_secret,
+            'refresh_token': token.refresh_token,
+            'grant_type': u'refresh_token'
+        }
         response = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
         assert response.status_code == requests.codes.OK, 'Unable to refresh user (id: %s) token' % token.user.id
         return response.json()['access_token']
@@ -193,3 +196,19 @@ def gettalent_generate_password_hash(new_password):
     :rtype: basestring
     """
     return generate_password_hash(new_password, method='pbkdf2:sha512:1000', salt_length=32)
+
+
+def has_role(user, role):
+    """
+    Will return true if user has the specified role, otherwise false
+    :type user: User
+    :param role: A recognized user role such as: 'TALENT_ADMIN', 'DOMAIN_ADMIN'
+    :rtype: bool
+    """
+    role_name = role.upper()
+    accepted_roles = {role.name for role in Role.all()}
+    assert role_name in accepted_roles, "User role not recognized: {role}. " \
+                                        "User role must be one of the following: {roles}".format(
+        role=role, roles=', '.join(accepted_roles))
+
+    return user.role.name == role_name

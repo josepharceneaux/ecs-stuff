@@ -32,7 +32,7 @@ class Candidate(db.Model):
     dice_profile_id = db.Column('DiceProfileId', db.String(128))
     source_id = db.Column('SourceId', db.Integer, db.ForeignKey('candidate_source.Id'))
     source_product_id = db.Column('SourceProductId', db.Integer, db.ForeignKey('product.Id'),
-                                  nullable=False, default=2)  # Web = 2
+                                  nullable=True, default=2)  # Web = 2
     filename = db.Column('Filename', db.String(100))
     objective = db.Column('Objective', db.Text)
     summary = db.Column('Summary', db.Text)
@@ -378,6 +378,16 @@ class CandidateEmail(db.Model):
     def __repr__(self):
         return "<CandidateEmail (address = '{}')".format(self.address)
 
+    # labels_mapping = {1: 'Primary', 2: 'Home', 3: 'Work', 4: 'Other'}
+    labels_mapping = {'Primary': 1, 'Home': 2, 'Work': 3, 'Other': 4}
+
+    @classmethod
+    def identify_label_id(cls, label):
+        for k, v in cls.labels_mapping.iteritems():
+            if label.title() == v:
+                return k
+            return cls.labels_mapping['Other']
+
     @classmethod
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
@@ -628,12 +638,12 @@ class SocialNetwork(db.Model):
     @classmethod
     def get_by_name(cls, name):
         assert name
-        return cls.query.filter(SocialNetwork.name == name.strip()).one()
+        return cls.query.filter(SocialNetwork.name == name.strip()).first()
 
     @classmethod
     def get_by_id(cls, id):
         assert isinstance(id, (int, long))
-        return cls.query.filter(SocialNetwork.id == id).one()
+        return cls.query.filter(SocialNetwork.id == id).first()
 
     @classmethod
     def get_all(cls):

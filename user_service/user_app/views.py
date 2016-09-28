@@ -1,14 +1,13 @@
 __author__ = 'ufarooqi'
 
-import random
-import string
+import os
 from . import app
 from datetime import datetime
 from flask import request, Blueprint
 from user_service.common.models.user import User
 from user_service.common.redis_cache import redis_store
 from user_service_utilties import send_reset_password_email, PASSWORD_RECOVERY_JWT_SALT, \
-    PASSWORD_RECOVERY_JWT_MAX_AGE_SECONDS, validate_password
+    PASSWORD_RECOVERY_JWT_MAX_AGE_SECONDS
 from user_service.common.error_handling import *
 from user_service.common.routes import UserServiceApi, get_web_app_url
 from user_service.common.utils.validators import is_valid_email
@@ -84,15 +83,15 @@ def forgot_password():
     user.reset_password_key = token
     db.session.commit()
 
-    # Create 6-digit numeric token for mobile app and store it into cache
-    six_digit_token = ''.join(random.choice(string.digits) for _ in range(6))
+    # Create an alphanumeric token for mobile app and store it into cache
+    alphanumeric_token = os.urandom(3).encode('hex')
 
-    redis_store.setex(six_digit_token, token, PASSWORD_RECOVERY_JWT_MAX_AGE_SECONDS)
+    redis_store.setex(alphanumeric_token, token, PASSWORD_RECOVERY_JWT_MAX_AGE_SECONDS)
 
     reset_password_url = get_web_app_url() + "/reset-password/%s" % token
 
     name = user.first_name or user.last_name or 'User'
-    send_reset_password_email(email, name, reset_password_url, six_digit_token)
+    send_reset_password_email(email, name, reset_password_url, alphanumeric_token)
 
     return '', 204
 
@@ -101,11 +100,11 @@ def forgot_password():
 def reset_password(token):
 
     try:
-        # Check if token is six digit long (For Mobile).  If so, it's actually the token key
-        six_digit_token_key = ''
+        # Check if token is six characters long (For Mobile).  If so, it's actually the token key
+        alphanumeric_token = ''
         if len(token) == 6:
-            six_digit_token_key = token
-            token = redis_store.get(six_digit_token_key)
+            alphanumeric_token = token
+            token = redis_store.get(alphanumeric_token)
 
         email = URLSafeTimedSerializer(app.config["SECRET_KEY"]).loads(token, salt=PASSWORD_RECOVERY_JWT_SALT,
                                                                        max_age=PASSWORD_RECOVERY_JWT_MAX_AGE_SECONDS)
@@ -133,8 +132,8 @@ def reset_password(token):
             raise InvalidUsage(error_message="A valid password should be provided")
 
         # Remove key-value pair from redis-cache
-        if six_digit_token_key:
-            redis_store.delete(six_digit_token_key)
+        if alphanumeric_token:
+            redis_store.delete(alphanumeric_token)
 
         user.reset_password_key = ''
         user.password = gettalent_generate_password_hash(password)

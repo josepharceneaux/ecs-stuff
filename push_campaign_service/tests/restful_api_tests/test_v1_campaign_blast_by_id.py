@@ -28,13 +28,13 @@ URL = PushCampaignApiUrl.BLAST
 class TestCampaignBlastById(object):
 
     # Test URL: /v1/push-campaigns/<int:campaign_id>/blasts/<int:blast_id> [GET]
-    def test_get_campaign_blast_with_invalid_token(self, campaign_blast, campaign_in_db):
+    def test_get_campaign_blast_with_invalid_token(self, campaign_in_db):
         """
         We are getting campaign blast with invalid token and it will raise Unauthorized error 401
         :param campaign_blast: campaign blast object
         :param campaign_in_db: campaign object
         """
-        blast_id = campaign_blast['id']
+        blast_id = fake.random_int()
         campaign_id = campaign_in_db['id']
         get_blast(blast_id, campaign_id, 'invalid_token',
                   expected_status=(codes.UNAUTHORIZED,))
@@ -78,7 +78,6 @@ class TestCampaignBlastById(object):
         get_blast(blast_id, campaign_id, token_second,
                   expected_status=(codes.FORBIDDEN,))
 
-    """
     def test_get_campaign_blast_with_valid_data(self, token_first, campaign_blast, campaign_in_db):
         # 200 case: Campaign Blast successfully
         blast_id = campaign_blast['id']
@@ -89,7 +88,6 @@ class TestCampaignBlastById(object):
         assert blast['sends'] == 1
         assert blast['clicks'] == 0
         assert blast['id'] == blast_id
-    """
 
     def test_get_campaign_blast_with_same_domain_user(self, token_same_domain,
                                                       campaign_blast, campaign_in_db):

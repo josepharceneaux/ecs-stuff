@@ -1168,7 +1168,7 @@ resource_schema_preferences = {
     "required": ["frequency_id"],
     "properties": {
         "frequency_id": {
-            "type": "integer"
+            "type": ["integer", "string"]
         }
     }
 }

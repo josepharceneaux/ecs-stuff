@@ -85,7 +85,7 @@ def import_spreadsheet_candidates(talent_pool_id, access_token, candidate_data=N
     return response.json(), response.status_code
 
 
-def candidate_test_data(num_candidates=15):
+def candidate_test_data(num_candidates=5):
     candidate_data = []
     for x in xrange(num_candidates):
         # TODO: Generate random international phone number
@@ -103,7 +103,7 @@ def candidate_test_data(num_candidates=15):
                 international_phone_number, fake.street_address(), fake.street_address(), fake.city(), fake.state(),
                 fake.zipcode(), fake.country_code(), fake.bs(), fake.company(), fake.job(),
                 fake.first_name() + ' University', random.choice(college_majors()[discipline]), fake.year(),
-                '', fake.job(), fake.bs(), '24'
+                '', fake.job(), fake.bs(), '24', '', 'Software Engineer'
             ]
         )
     return candidate_data
