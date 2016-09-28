@@ -34,8 +34,7 @@ class FacebookBot(TalentBot):
         :param fb_user_id:
         :rtype tuple (bool, int): (True|False, user_id)
         """
-        user_id = TalentbotAuth.query.with_entities(TalentbotAuth.user_id).\
-            filter(TalentbotAuth.facebook_user_id == fb_user_id).first()
+        user_id = TalentbotAuth.get_user_id(facebook_user_id=fb_user_id)
         if user_id:
             return True, user_id[0]
         return False, None

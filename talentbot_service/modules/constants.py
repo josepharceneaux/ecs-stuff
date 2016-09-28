@@ -1,6 +1,9 @@
 """
 This module contains Talentbot constants
 """
+from talentbot_service.common.models.sms_campaign import SmsCampaignBlast
+from talentbot_service.common.models.email_campaign import EmailCampaignBlast
+from talentbot_service.common.models.push_campaign import PushCampaignBlast
 BOT_NAME = "talentbot"
 AT_BOT = ""
 READ_WEB_SOCKET_DELAY = 1
@@ -14,8 +17,8 @@ HINT = '''I am Talent Bot @kamal is teaching me new things, right now I can answ
 1- How many users are there in my domain?
 2- How many candidates are there with skills [skills separated with space]?
 3- How many candidates from zipcode [zipcode]?
-4- What is the top performing email campaign from [year]?
-5- How many candidate leads did [user name] import into the [talent pool name] talent pool last month?
+4- What is the top performing [x] campaign from [year]?
+5- How many candidate leads did [user name] import into the [talent pool name] talent pool in last n months?
 *GOOD LUCK*'''
 OK_RESPONSE = ['hmm', '**nodes**']
 TWILIO_NUMBER = "+12015617985"
@@ -30,7 +33,7 @@ QUESTIONS = ['how many users are in my domain', 'how many candidates with skills
              'how many candidates from zipcode', 'what is the top performing email campaign from',
              'How many candidate leads did x import into the y talent pool last month',
              'what is your name'
-             , 'hint']
+             , 'hint', 'help', 'what are your features', 'what can you do']
 POSITIVE_MESSAGES = ['hmmmm', 'ok', 'fine', 'whatever', 'yeah', 'ahan', 'so so']
 BEST_QUESTION_MATCH_RATIO = 95
 FACEBOOK_API_URI = "https://graph.facebook.com/v2.6/me/messages"
@@ -38,6 +41,9 @@ AUTHENTICATION_FAILURE_MSG = 'Sorry you are not registered to use this service\n
                             'Go to the http://www.gettalent.com to register yourself'
 SLACK_AUTH_URI = 'https://slack.com/api/oauth.access'
 PROCESS_MAX_TIME = 500
+CAMPAIGN_TYPES = {'sms': SmsCampaignBlast.top_performing_sms_campaign,
+                  'email': EmailCampaignBlast.top_performing_email_campaign,
+                  'push': PushCampaignBlast.top_performing_push_campaign}
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"
