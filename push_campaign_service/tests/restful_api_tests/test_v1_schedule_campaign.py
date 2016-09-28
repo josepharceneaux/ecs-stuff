@@ -348,7 +348,7 @@ class TestRescheduleCampaignUsingPUT(object):
         campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
         match_schedule_data(data, campaign)
         retry(get_blasts, attempts=4, sleepscale=1, retry_exceptions=(AssertionError,),
-              args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
+              args=(campaign_in_db['id'], token_first), kwargs={'count': 2})
         sleep(20)
 
     def test_campaign_reschedule_with_invalid_frequency_ids(self, token_first, campaign_in_db, schedule_a_campaign):
