@@ -314,7 +314,7 @@ class TestRescheduleCampaignUsingPUT(object):
         """
         Reschedule a campaign with valid data and it should return 200 response.
         """
-        sleep(20)
+        sleep(10)
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
         assert response.status_code == codes.OK
@@ -323,7 +323,6 @@ class TestRescheduleCampaignUsingPUT(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        sleep(20)
         campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
         match_schedule_data(data, campaign)
         retry(get_blasts, attempts=20, sleepscale=1, sleeptime=3, retry_exceptions=(AssertionError,),
@@ -336,7 +335,7 @@ class TestRescheduleCampaignUsingPUT(object):
         as the actual owner of the campaign. So we are expecting that , response will be OK and campaign will be
         rescheduled.
         """
-        sleep(20)
+        sleep(10)
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = reschedule_campaign(campaign_in_db['id'], data, token_same_domain,
                                        expected_status=(codes.OK,))
@@ -344,10 +343,10 @@ class TestRescheduleCampaignUsingPUT(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        sleep(20)
+
         campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
         match_schedule_data(data, campaign)
-        retry(get_blasts, attempts=4, sleepscale=1, retry_exceptions=(AssertionError,),
+        retry(get_blasts, attempts=20, sleepscale=1, sleeptime=3, retry_exceptions=(AssertionError,),
               args=(campaign_in_db['id'], token_first), kwargs={'count': 2})
 
     def test_campaign_reschedule_with_invalid_frequency_ids(self, token_first, campaign_in_db, schedule_a_campaign):
