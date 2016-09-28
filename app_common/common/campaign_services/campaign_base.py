@@ -1251,12 +1251,17 @@ class CampaignBase(object):
             logger.error('No candidate(s) found for smartlist_ids %s, campaign_id: %s'
                          'user_id: %s.' % (self.smartlist_ids, self.campaign.id, self.user.id))
             return
-
         # gather all candidates from various smartlists
-        all_candidates = list(set(itertools.chain(*celery_result)))  # Unique candidates
+        all_candidates = list(itertools.chain(*celery_result))
+        logger.info('Total candidates:%s' % len(all_candidates))
+        unique_candidates = []
+        # Unique candidates
+        [unique_candidates.append(candidate) for candidate in all_candidates
+         if candidate.id not in [unique_candidate.id for unique_candidate in unique_candidates]]
+        logger.info('Unique candidates:%s' % len(unique_candidates))
         # create campaign blast object
         self.campaign_blast_id = self.create_campaign_blast(self.campaign)
-        self.send_campaign_to_candidates(all_candidates)
+        self.send_campaign_to_candidates(unique_candidates)
 
     def pre_process_celery_task(self, candidates):
         """

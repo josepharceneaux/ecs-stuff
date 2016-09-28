@@ -632,17 +632,21 @@ class CampaignsTestsHelpers(object):
     @staticmethod
     @contract(talent_pipeline=TalentPipeline)
     def get_two_smartlists_with_same_candidate(talent_pipeline, access_token, count=1, create_phone=False,
-                                               email_list=False):
+                                               email_list=False, smartlist_and_candidate_ids=None):
         """
         Create two smartlists with same candidate in both of them and returns smartlist ids in list format.
         :param string access_token: Access token of user
         :param int count: Number of candidates in first smartlist
         :param bool create_phone: True if need to create candidate's phone
         :param bool email_list: True if need to create candidate's email
+        :param tuple|None smartlist_and_candidate_ids: Tuple contianing smartlist id and associated candidate ids
         :rtype: list
         """
-        smartlist_1_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
-            access_token, talent_pipeline, count=count, create_phone=create_phone, emails_list=email_list)
+        if smartlist_and_candidate_ids:
+            smartlist_1_id, candidate_ids = smartlist_and_candidate_ids
+        else:
+            smartlist_1_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
+                access_token, talent_pipeline, count=count, create_phone=create_phone, emails_list=email_list)
         # Going to assign candidate belonging to smartlist_1 to smartlist_2 so both will have same candidate
         candidate_ids_for_smartlist_2 = [candidate_ids[0]]
         smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
