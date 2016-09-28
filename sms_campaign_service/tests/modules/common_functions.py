@@ -140,14 +140,16 @@ def assert_campaign_schedule(response, user_id, campaign_id, headers):
     This asserts that campaign has scheduled successfully and we get 'task_id' in response.
     We also assert that 'start_datetime', 'end_datetime' and 'frequency_id' have been updated in database.
     """
-    assert response.status_code == 200, response.json()['error']['message']
+    assert response.status_code == requests.codes.OK, response.json()['error']['message']
     assert 'task_id' in response.json()
     CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_id)
     # get updated record to verify the changes we made
     response_get = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign_id, headers=headers)
     assert response_get.status_code == requests.codes.OK, 'Response should be ok (200)'
     resp = response_get.json()['campaign']
-    assert resp['frequency'].lower() in Frequency.standard_frequencies()
+    frequencies = Frequency.standard_frequencies().keys()
+    frequencies.append('custom')
+    assert resp['frequency'].lower() in frequencies
     assert resp['start_datetime']
     if resp['frequency']:
         assert resp['end_datetime']
