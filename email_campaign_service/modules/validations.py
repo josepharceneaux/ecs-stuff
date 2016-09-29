@@ -46,7 +46,7 @@ def validate_and_format_request_data(data, user_id):
     """
     name = data.get('name')  # required
     subject = data.get('subject')        # required
-    description = data.get('description')        # required
+    description = data.get('description', '')        # required
     _from = data.get('from')
     reply_to = data.get('reply_to')
     body_html = data.get('body_html')    # required
