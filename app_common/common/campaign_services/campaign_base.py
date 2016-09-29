@@ -835,7 +835,6 @@ class CampaignBase(object):
                                  start_datetime=data_to_schedule['start_datetime'],
                                  end_datetime=data_to_schedule['end_datetime'],
                                  scheduler_task_id=response.json()['id'])
-            time.sleep(5)
             # create campaign scheduled activity
             try:
                 self.create_campaign_schedule_activity(self.user, self.campaign, self.oauth_header)
