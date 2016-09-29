@@ -1,4 +1,4 @@
-from sqlalchemy import and_
+from sqlalchemy import and_, desc
 from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
@@ -495,6 +495,26 @@ class CandidateEmail(db.Model):
         return cls.query.join(Candidate).join(User). \
             filter(User.domain_id == domain_id). \
             filter(cls.address.in_(email_addresses)).all()
+
+    @classmethod
+    def get_emails_sorted_by_updated_time_and_candidate_id(cls, candidate_ids):
+        """
+        Get candidate emails sorted by updated time and then by candidate_id
+        :param list candidate_ids: List of candidate Ids
+        :rtype: list
+        """
+        candidate_email_rows = cls.query.with_entities(cls.candidate_id,
+                                                       cls.address, cls.updated_time, cls.email_label_id) \
+            .filter(CandidateEmail.candidate_id.in_(candidate_ids)).order_by(desc(CandidateEmail.updated_time),
+                                                                             CandidateEmail.candidate_id)
+        """
+            candidate_email_rows data will be
+            1   candidate0_ryk@gmail.com    2016-02-20T11:22:00Z    1
+            1   candidate0_lhr@gmail.com    2016-03-20T11:22:00Z    2
+            2   candidate1_isb@gmail.com    2016-02-20T11:22:00Z    4
+            2   candidate1_lhr@gmail.com    2016-03-20T11:22:00Z    3
+        """
+        return candidate_email_rows
 
 
 class CandidatePhoto(db.Model):

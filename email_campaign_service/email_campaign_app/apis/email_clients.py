@@ -35,8 +35,8 @@ from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
 from email_campaign_service.common.utils.validators import get_json_data_if_validated
-from email_campaign_service.common.models.email_campaign import EmailClientCredentials
-from email_campaign_service.modules.utils import (TASK_ALREADY_SCHEDULED, import_email_conversations)
+from email_campaign_service.common.models.email_campaign import EmailClientCredentials, EmailCampaign
+from email_campaign_service.modules.utils import (TASK_ALREADY_SCHEDULED, import_email_conversations, decrypt_password)
 from email_campaign_service.modules.utils import (EmailClientBase, format_email_client_data)
 from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)
 
@@ -161,8 +161,12 @@ class EmailConversations(Resource):
                     500 (Internal server error)
         """
         email_clients = EmailClientCredentials.get_by_type(EmailClientCredentials.CLIENT_TYPES['incoming'])
+        queue_name = EmailCampaign.__tablename__
         for email_client in email_clients:
-            import_email_conversations(email_client)
+            logger.info('Importing email-conversations for account:%s, user_id:%s' % (email_client.email,
+                                                                                      email_client.user.id))
+            import_email_conversations.apply_async([email_client.host, email_client.port, email_client.email,
+                                       email_client.password, email_client.user.id], queue_name=queue_name)
 
 
 def schedule_job_for_email_conversations():

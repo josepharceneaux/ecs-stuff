@@ -19,13 +19,14 @@ from abc import abstractmethod
 from urlparse import (parse_qs, urlsplit, urlunsplit)
 
 # Third Party
+from celery import chord
 from dateutil import parser
 from bs4 import BeautifulSoup
+import itertools
 from simplecrypt import decrypt
 from dateutil.relativedelta import relativedelta
 
 # Service Specific
-from email_campaign_service.common.models.candidate import Candidate
 from email_campaign_service.email_campaign_app import (logger, celery_app, cache, app)
 
 # Common Utils
@@ -35,13 +36,14 @@ from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.user import User, Serializer
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.models.email_campaign import (EmailCampaignSend,
-                                                                 EmailClientCredentials)
+                                                                 EmailClientCredentials, EmailCampaign)
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
                                                             raise_if_not_positive_int_or_long)
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
 from email_campaign_service.common.error_handling import (InternalServerError, InvalidUsage)
+from email_campaign_service.common.models.candidate import Candidate, CandidateEmail, EmailLabel
 from email_campaign_service.common.campaign_services.validators import raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 
@@ -323,12 +325,111 @@ def get_valid_send_obj(requested_campaign_id, send_id, current_user, campaign_ty
     return EmailCampaignSend.get_valid_send_object(send_id, requested_campaign_id)
 
 
+def get_candidate_id_email_by_priority(email_info_tuple, email_labels):
+    """
+    Get the primary_label_id from email_labels tuple list, using that find primary email address in emails_obj.
+    If found then simply return candidate_id and primary email_address otherwise return first email address.
+    :param (int, str, int) email_info_tuple: (candidate_id, email_address, email_label_id)
+    :param [(int, str)] email_labels: Tuple containing structure [( email_label_id, email_label_description )]
+    :return: candidate_id, email_address
+    :rtype: tuple
+    """
+    if not(isinstance(email_info_tuple, list) and len(email_info_tuple) > 0):
+        raise InternalServerError("get_candidate_id_email_by_priority: emails_obj is either not a list or is empty")
+
+    # Get the primary_label_id from email_labels tuple list, using that find primary email address in emails_obj
+    # python next method will return the first object from email_labels where primary label matches
+    primary_email_id = int(next(email_label_id for email_label_id, email_label_desc in email_labels
+                                if email_label_desc.lower() == EmailLabel.PRIMARY_DESCRIPTION.lower()))
+
+    # Find primary email address using email label id
+    candidate_email_tuple_iterator = ((candidate_id, email_address)
+                                      for candidate_id, email_address, email_label_id in email_info_tuple
+                                      if email_label_id == primary_email_id)
+
+    candidate_id_and_email_address = next(candidate_email_tuple_iterator, None)
+
+    # If candidate primary email is found, then just return that
+    if candidate_id_and_email_address:
+        return candidate_id_and_email_address
+
+    # If primary email not found, then return first email which is last added email
+    # Get first tuple from a list of emails_obj and return candidate_id and email_address
+    candidate_id, email_address, _ = email_info_tuple[0]
+    return candidate_id, email_address
+
+
+def get_priority_emails(user, candidate_ids):
+    """
+    This returns tuple (candidate_id, email) choosing priority email form all the emails of candidate.
+    :type user: User
+    :type candidate_ids: list
+    :rtype: list[tuple]
+    """
+    # Get candidate emails sorted by updated time and then by candidate_id
+    candidate_email_rows = CandidateEmail.get_emails_sorted_by_updated_time_and_candidate_id(candidate_ids)
+
+    # list of tuples (candidate id, email address)
+    group_id_and_email_and_labels = []
+
+    # ids_and_email_and_labels will be [(1, 'saad_ryk@hotmail.com', 1), (2, 'saad_lhr@gmail.com', 3), ...]
+    # id_email_label: (id, email, label)
+    ids_and_email_and_labels = [(row.candidate_id, row.address, row.email_label_id)
+                                for row in candidate_email_rows]
+
+    """
+    After running groupby clause, the data will look like
+    group_id_and_email_and_labels = [[(candidate_id1, email_address1, email_label1),
+        (candidate_id2, email_address2, email_label2)],... ]
+    """
+
+    for key, group_id_email_label in itertools.groupby(ids_and_email_and_labels,
+                                                       lambda id_email_label: id_email_label[0]):
+        group_id_and_email_and_labels.append(list(group_id_email_label))
+    filtered_email_rows = []
+
+    # Check if primary EmailLabel exist in db
+    if not EmailLabel.get_primary_label_description() == EmailLabel.PRIMARY_DESCRIPTION:
+        raise InternalServerError(
+            "get_email_campaign_candidate_ids_and_emails: Email label with primary description not found in db.")
+
+    # We don't know email_label id of primary email. So, get that from db
+    email_label_id_desc_tuples = [(email_label.id, email_label.description)
+                                  for email_label in EmailLabel.query.all()]
+
+    # If there are multiple emails of a single candidate, then get the primary email if it exist, otherwise get any
+    # other email
+    for id_and_email_and_label in group_id_and_email_and_labels:
+        _id, email = get_candidate_id_email_by_priority(id_and_email_and_label, email_label_id_desc_tuples)
+        search_result = CandidateEmail.search_email_in_user_domain(User, user, email)
+        if CandidateEmail.is_bounced_email(email):
+            logger.info('Skipping this email because this email address is marked as bounced.'
+                        'CandidateId : %s, Email: %s.' % (_id, email))
+            continue
+        # If there is only one candidate for an email-address in user's domain, we are good to go,
+        # otherwise log error and send campaign email to that email id only once.
+        if len(search_result) == 1:
+            filtered_email_rows.append((_id, email))
+        else:
+            # Check if this email is already present in list of addresses to which campaign would be sent.
+            # If so, omit the entry and continue.
+            if any(email in emails for emails in filtered_email_rows):
+                continue
+            else:
+                logger.error('%s candidates found for email address %s in user(id:%s)`s domain(id:%s). '
+                             'Candidate ids are: %s'
+                             % (len(search_result), email, user.id, user.domain_id,
+                                [candidate_email.candidate_id for candidate_email in search_result]))
+                filtered_email_rows.append((_id, email))
+    return filtered_email_rows
+
+
 class EmailClientBase(object):
     """
     This is the base class for email-clients.
     """
 
-    def __init__(self, host, port, email, password, domain_id=None):
+    def __init__(self, host, port, email, password, user_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of server
@@ -342,7 +443,7 @@ class EmailClientBase(object):
         self.password = password
         self.client = None
         self.connection = None
-        self.domain_id = domain_id
+        self.user_id = user_id
 
     @staticmethod
     def get_client(host):
@@ -387,7 +488,8 @@ class EmailClientBase(object):
         pass
 
     @abstractmethod
-    def import_emails(self):
+    def import_emails(self, candidate_id, candidate_email):
+
         """
         This will import emails of user's account to getTalent database table email-conversations.
         Child classes will implement this.
@@ -398,12 +500,24 @@ class EmailClientBase(object):
         """
         This returns Ids and Emails of candidates in a user's domain.
         """
-        candidates = Candidate.get_all_in_user_domain(self.domain_id)
-        return [(candidate.id, candidate.emails) for candidate in candidates]
+        assert self.user_id, 'user_id is required for getting candidates'
+        user = User.get_by_id(self.user_id)
+        candidates = Candidate.get_all_in_user_domain(user.domain_id)
+        candidate_ids = [candidate.id for candidate in candidates]
+        return get_priority_emails(user, candidate_ids)
+
+    def email_conversation_importer(self):
+        """
+        This imports email-conversations from the candidates of user.
+        """
+        candidate_ids_and_emails = self.get_candidate_ids_and_emails()
+        self.connect()
+        self.authenticate()
+        return candidate_ids_and_emails
 
 
 class SMTP(EmailClientBase):
-    def __init__(self, host, port, email, password, domain_id=None):
+    def __init__(self, host, port, email, password, user_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of SMTP server
@@ -411,7 +525,7 @@ class SMTP(EmailClientBase):
         :param string email: Email address
         :param string password: Password
         """
-        super(SMTP, self).__init__(host, port, email, password, domain_id=domain_id)
+        super(SMTP, self).__init__(host, port, email, password, user_id=user_id)
         self.client = smtplib.SMTP
 
     def authenticate(self, connection_quit=True):
@@ -441,7 +555,7 @@ class SMTP(EmailClientBase):
         logger.info('Email has been sent from:%s, to:%s via SMTP server.' % (self.email, to_address))
         self.connection.quit()
 
-    def import_emails(self):
+    def import_emails(self, candidate_id, candidate_email):
         """
         We will only pass here as this client is of type "Outgoing"
         """
@@ -449,7 +563,7 @@ class SMTP(EmailClientBase):
 
 
 class IMAP(EmailClientBase):
-    def __init__(self, host, port, email, password, domain_id=None):
+    def __init__(self, host, port, email, password, user_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of SMTP server
@@ -457,7 +571,7 @@ class IMAP(EmailClientBase):
         :param string email: Email address
         :param string password: Password
         """
-        super(IMAP, self).__init__(host, port, email, password,domain_id=domain_id)
+        super(IMAP, self).__init__(host, port, email, password, user_id=user_id)
         self.client = imaplib.IMAP4_SSL
 
     def authenticate(self, connection_quit=True):
@@ -470,26 +584,32 @@ class IMAP(EmailClientBase):
             logger.exception(error.message)
             raise InvalidUsage('Invalid credentials provided. Could not authenticate with imap server')
 
-    def import_emails(self):
+    def email_conversation_importer(self):
+        """
+        This imports email-conversations from the candidates of user.
+        """
+        candidate_ids_and_emails = super(IMAP, self).email_conversation_importer()
+        self.connection.select("inbox")  # connect to inbox.
+        for candidate_id, candidate_email in candidate_ids_and_emails:
+            self.import_emails(candidate_id, candidate_email)
+        self.connection.close()
+        self.connection.logout()
+
+    def import_emails(self, candidate_id, candidate_email):
         """
         This will import emails of user's account to getTalent database table email-conversations.
         """
-        self.connect()
-        self.authenticate()
-        candidate_ids_and_emails = self.get_candidate_ids_and_emails()
-        search_criteria = '(FROM "no-reply@gettalent.com")'
-        typ, data = self.connection.search(None, search_criteria)
-        print "%s emails found" % len(data[0])
-        for num in data[0].split():
+        search_criteria = '(FROM "%s")' % candidate_email
+        typ, [searched_data] = self.connection.search(None, search_criteria)
+        msg_ids = [msg_id for msg_id in searched_data.split()]
+        logger.info("Account:%s, %s email(s) found from %s." % (self.email, len(msg_ids), candidate_email))
+        for num in msg_ids:
             typ, data = self.connection.fetch(num, '(RFC822)')
             raw_email = data[0][1]
-            # email_message = email.message_from_string(raw_email)
-            msg = email.message_from_string(raw_email)
-            print msg.get_payload(decode=True)
+            email_message = email.message_from_string(raw_email)
             for header in ['subject', 'to', 'from', 'date']:
-                print '%s: %s' % (header.title(), msg[header])
-            datetime_obj = parser.parse(msg['date'])
-            print datetime_obj
+                logger.info('%s: %s' % (header.title(), email_message[header]))
+            email_received_datetime = parser.parse(email_message['date'])
             # continue inside the same for loop as above
             raw_email_string = raw_email.decode('utf-8')
             # converts byte literal to string removing b''
@@ -498,25 +618,21 @@ class IMAP(EmailClientBase):
             for part in email_message.walk():
                 if part.get_content_type() == "text/plain":  # ignore attachments/html
                     body = part.get_payload(decode=True)
-                    print 'Body: %s' % body
-            print '----------------------'
-            # print 'Message %s\n%s\n' % (num, raw_email)
-        # if msg_ids:
-        #     msg_ids = ','.join(msg_ids.split(' '))
-        self.connection.close()
-        self.connection.logout()
+                    logger.info('Body: %s' % body)
+            logger.info('--------------------------------------------------------')
+        return True
 
 
 class POP(EmailClientBase):
-    def __init__(self, host, port, email, password, domain_id=None):
+    def __init__(self, host, port, email, password, user_id=None):
         """
         This sets values of attributes host, port, email and password.
-        :param string host: Hostname of SMTP server
+        :param string host: Hostname of POP server
         :param string port: Port number
         :param string email: Email address
         :param string password: Password
         """
-        super(POP, self).__init__(host, port, email, password, domain_id=domain_id)
+        super(POP, self).__init__(host, port, email, password, user_id=user_id)
         self.client = poplib.POP3_SSL
 
     def authenticate(self, connection_quit=True):
@@ -530,7 +646,7 @@ class POP(EmailClientBase):
             logger.exception(error.message)
             raise InvalidUsage('Invalid credentials provided. Could not authenticate with pop server')
 
-    def import_emails(self):
+    def import_emails(self, candidate_id, candidate_email):
         """
         This will import emails of user's account to getTalent database table email-conversations.
         """
@@ -556,12 +672,11 @@ def decrypt_password(password):
     return decrypt(app.config[TalentConfigKeys.ENCRYPTION_KEY], b64decode(password))
 
 
-# @celery_app.task(name='import_email_conversations')
-def import_email_conversations(email_client):
+@celery_app.task(name='import_email_conversations')
+def import_email_conversations(host, port, email, password, user_id):
     """
     This imports emails for given email-client
     """
-    client_class = EmailClientBase.get_client(email_client.host)
-    client = client_class(email_client.host, email_client.port, email_client.email,
-                          decrypt_password(email_client.password), email_client.user.domain_id)
-    client.import_emails()
+    client_class = EmailClientBase.get_client(host)
+    client = client_class(host, port, email, decrypt_password(password), user_id)
+    client.email_conversation_importer()
