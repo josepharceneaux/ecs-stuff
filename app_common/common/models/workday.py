@@ -38,3 +38,10 @@ class WorkdayTable(db.Model):
         """
         assert isinstance(reference, basestring), 'Reference should be a string'
         return cls.query.filter_by(workday_reference=reference).first()
+
+    @classmethod
+    def get_by_ats_id(cls, ats_id):
+        """
+        Return a Workday candidate identified by an ATSCandidate id.
+        """
+        return cls.query.filter_by(ats_candidate_id=ats_id).first()

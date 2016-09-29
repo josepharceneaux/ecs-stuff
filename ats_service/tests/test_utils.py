@@ -77,7 +77,6 @@ def create_and_validate_account(token, post_data):
     values = response.json()
     # This fails occasionally in parallel tests due to a race condition.
     # assert len(values) == 1
-    print "\n\nVALUES: {}\n".format(values['ats_list'])
     assert values['ats_list'][0]['login_url'] == post_data['ats_login']
     return account_id
 

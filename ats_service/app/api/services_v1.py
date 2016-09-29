@@ -36,7 +36,8 @@ from ats_utils import (validate_ats_account_data,
                        link_ats_candidate,
                        unlink_ats_candidate,
                        fetch_auth_data,
-                       create_ats_object)
+                       create_ats_object,
+                       match_ats_and_gt_candidates)
 
 # Why doesn't this work?
 # from ats_service.app import logger
@@ -239,7 +240,7 @@ class ATSCandidatesService(Resource):
 
         candidates = ATSCandidate.get_all(account_id)
         if candidates:
-            # TODO: Add the ATS-particular entry.
+            # TODO: Consider adding the ATS-particular entry.
             response = json.dumps(dict(candidate_list=candidates))
             headers = dict(Location=ATSServiceApiUrl.CANDIDATES % account_id)
             return ApiResponse(response, headers=headers, status=codes.OK)
@@ -400,6 +401,32 @@ class ATSCandidateLinkService(Resource):
         return ApiResponse(response, headers=headers, status=codes.OK)
 
 
+@api.route(ATSServiceApi.MATCH_AND_LINK)
+class ATSCandidateMatchLinkService(Resource):
+    """
+    Controller for /v1/ats-candidates/match-link/:account_id/:match-method
+    """
+
+    decorators = [require_oauth()]
+
+    def patch(self, account_id, match_method):
+        """
+        PATCH /v1/ats-candidates/match-link/:account_id/:match-method
+
+        Look for matches between an ATS candidate and a getTalent candidate.
+        :param int account_id: The ATS account id.
+        :param string match_method: The method used to determine matches.
+        :return: The number of matches found.
+        """
+        ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
+
+        matches = match_ats_and_gt_candidates(ats_service.app.logger, account_id, match_method, link=True)
+
+        response = json.dumps(dict(matches=matches))
+        headers = dict(Location=ATSServiceApiUrl.MATCH_AND_LINK % (account_id, match_method))
+        return ApiResponse(response, headers=headers, status=codes.OK)
+
+
 @api.route(ATSServiceApi.CANDIDATES_REFRESH)
 class ATSCandidateRefreshService(Resource):
     """
@@ -408,7 +435,7 @@ class ATSCandidateRefreshService(Resource):
 
     decorators = [require_oauth()]
 
-    def get(self, account_id):
+    def patch(self, account_id):
         """
         GET /v1/ats-candidates/refresh/:account_id
 
@@ -420,19 +447,21 @@ class ATSCandidateRefreshService(Resource):
 
         ats_service.app.logger.info("{} {} {} {}".format(request.method, request.path, request.user.email, request.user.id))
 
-        # Create an ATS-specific object
-        ats_name, url, user_id, credentials = fetch_auth_data(account_id)
-        if not url:
-            return '{{"account_id" : {},  "status" : "inactive"}}'.format(account_id)
+        ats_name, login_url, user_id, credentials = fetch_auth_data(account_id)
+        if not login_url:
+            response = json.dumps(dict(account_id=account_id))
+            headers = dict(Location=ATSServiceApiUrl.CANDIDATES_REFRESH % account_id)
+            return ApiResponse(response, headers=headers, status=codes.NOT_FOUND)
 
-        # Authenticate
-        ats_object = create_ats_object(ats_service.app.logger, ats_name, url, user_id, credentials)
+        # Create an ATS-specific object, authenticate
+        ats_object = create_ats_object(ats_service.app.logger, ats_name, login_url, user_id, credentials)
         ats_object.authenticate()
 
         # Get all candidate ids (references)
         individual_references = ats_object.fetch_individual_references()
 
         # For each candidate, fetch the candidate data and update our copy. Later this can be combined with the previous step.
+        # TODO: Refactor with code in ats_refresh.py
         return_list = []
         created_count = 0
         updated_count = 0

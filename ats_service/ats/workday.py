@@ -1,5 +1,5 @@
 """
-Library for integrating with Workday accounts.
+Library for integrating with Workday accounts. Provides a class implementing the standard ATS interface methods.
 """
 
 
@@ -104,3 +104,57 @@ class Workday(object):
 
         individual.save()
         return individual
+
+    @staticmethod
+    def workday_email_from_contact_data(data):
+        """
+        Workday Candidate Contact Data contains phone number, email address, website data and location data.
+        Exact format TBD.
+        :param string data: String containing elements above.
+        """
+        # Fake it for now
+        return [ 'joe@gettalent.com' ]
+
+    @staticmethod
+    def workday_phone_from_contact_data(data):
+        """
+        Workday Candidate Contact Data contains phone number, email address, website data and location data.
+        Exact format TBD.
+        :param string data: String containing elements above.
+        """
+        # Fake it for now
+        return [ '415 203 8545' ]
+
+    @staticmethod
+    def get_individual_contact_email_addresses(ats_candidate):
+        """
+        Return (from our local database) the main contact email address for an individual
+
+        :param ATSCandidate ats_candidate: ATSCandidate object.
+        """
+        # Get WorkdayTable entry
+        individual = WorkdayTable.get_by_ats_id(ats_candidate.id)
+        if not individual:
+            return []
+
+        # Extract email address from contact_data
+        email_list = workday_email_from_contact_data(individual.contact_data)
+
+        return email_list
+
+    @staticmethod
+    def get_individual_contact_phone_numbers(ats_candidate):
+        """
+        Return (from our local database) the main contact phone number for an individual
+
+        :param ATSCandidate ats_candidate: ATSCandidate object.
+        """
+        # Get WorkdayTable entry
+        individual = WorkdayTable.get_by_ats_id(ats_candidate.id)
+        if not individual:
+            return []
+
+        # Extract email address from contact_data
+        phone_list = workday_phone_from_contact_data(individual.contact_data)
+
+        return phone_list
