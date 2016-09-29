@@ -84,7 +84,7 @@ def assert_url_conversion(sms_campaign_sends):
 
 
 def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_sends, campaign_id, access_token,
-                                                       expected_blasts=1, blast_index=0, blast_timeout=20,
+                                                       expected_blasts=1, blast_index=0, blast_timeout=30,
                                                        sends_timeout=100):
     """
     This function assert the number of sends in database table "sms_campaign_blast" and

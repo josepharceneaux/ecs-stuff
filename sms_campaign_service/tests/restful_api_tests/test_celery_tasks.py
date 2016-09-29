@@ -190,7 +190,7 @@ class TestCampaignSchedule(object):
         in database.
         """
         data = generate_campaign_schedule_data()
-        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=5))
+        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'], headers=headers,
                                  data=json.dumps(data))
         assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
@@ -210,7 +210,7 @@ class TestCampaignSchedule(object):
         """
         data = generate_campaign_schedule_data().copy()
         data['frequency_id'] = Frequency.CUSTOM
-        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=5))
+        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
         response = requests.post(
             SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'],
             headers=headers, data=json.dumps(data))
@@ -234,7 +234,7 @@ class TestCampaignSchedule(object):
         """
         data = generate_campaign_schedule_data()
         data['frequency_id'] = Frequency.DAILY
-        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=5))
+        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'], headers=headers,
                                  data=json.dumps(data))
         assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
