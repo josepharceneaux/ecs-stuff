@@ -45,7 +45,9 @@ from email_campaign_service.tests.modules.handy_functions import (assert_valid_c
                                                                   create_email_campaign,
                                                                   EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS,
                                                                   EMAIL_CAMPAIGN_INVALID_FIELDS,
-                                                                  EMAIL_CAMPAIGN_EXPECT_SINGLE_FIELD)
+                                                                  EMAIL_CAMPAIGN_EXPECT_SINGLE_FIELD,
+                                                                  create_data_for_campaign_creation_with_all_parameters,
+                                                                  CREATE_EMAIL_CAMPAIGN_OPTIONAL_FIELDS)
 
 
 class TestGetCampaigns(object):
@@ -263,6 +265,7 @@ class TestGetCampaigns(object):
         assert response.status_code == requests.codes.OK
 
 
+
 class TestCreateCampaign(object):
     """
     Here are the tests for creating a campaign from endpoint /v1/email-campaigns
@@ -277,7 +280,7 @@ class TestCreateCampaign(object):
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
                                                          self.URL,
                                                          None)
-    @pytest.mark.qaf
+
     def test_create_email_campaign_without_client_id(self, access_token_first, talent_pipeline):
         """
         Here we provide valid data to create an email-campaign without email_client_id.
@@ -455,6 +458,58 @@ class TestCreateCampaign(object):
         assert 'campaign' in resp_object
         assert resp_object['campaign']['id']
 
+    @pytest.mark.parametrize("params", CREATE_EMAIL_CAMPAIGN_OPTIONAL_FIELDS)
+    @pytest.mark.qa
+    def test_create_email_campaign_except_single_parameter(self, access_token_first, talent_pipeline,
+                                                           params):
+        """
+                Here we provide valid data to create an email-campaign with optional.
+                It should get OK response.
+        """
+        subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign'
+        campaign_data = create_data_for_campaign_creation_with_all_parameters(access_token_first, talent_pipeline, subject)
+        del campaign_data[params]
+        response = create_email_campaign_via_api(access_token_first, campaign_data)
+        assert response.status_code == requests.codes.CREATED
+        resp_object = response.json()
+        assert 'campaign' in resp_object
+        assert resp_object['campaign']['id']
+
+    @pytest.mark.qa
+    def test_update_email_campaign_with_allowed_parameter(self, access_token_first, talent_pipeline,
+                                                          email_campaign_of_user_first):
+        """
+
+        :param access_token_first:
+        :param talent_pipeline:
+        :param email_campaign_of_user_first:
+        :return:
+        """
+
+        campaign_id = email_campaign_of_user_first.id
+        data = {'is_hidden': 1}
+        CampaignsTestsHelpers.request_for_ok_response('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id,
+                                                      access_token_first, data)
+        email_campaign = get_campaign_or_campaigns(
+            access_token_first, campaign_id=campaign_id)
+        assert email_campaign['is_hidden']
+
+    @pytest.mark.parametrize("params", [fake.word(), fake.random_number(2)])
+    @pytest.mark.qa
+    def test_update_email_campaign_with_invalid_data(self, access_token_first, talent_pipeline,
+                                                     email_campaign_of_user_first, params):
+        """
+        :param access_token_first:
+        :param talent_pipeline:
+        :param email_campaign_of_user_first:
+        :return:
+        """
+
+        campaign_id = email_campaign_of_user_first.id
+        data = {'is_hidden': params }
+        response = send_request('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id, access_token_first, data)
+        CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=400)
+
 
 class TestSendCampaign(object):
     """
@@ -534,7 +589,6 @@ class TestSendCampaign(object):
         if not campaign_with_candidate_having_no_email.email_client_id:
             json_resp = response.json()
             assert str(campaign_with_candidate_having_no_email.id) in json_resp['message']
-
 
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
             self, headers, user_first, campaign_with_valid_candidate):
