@@ -324,7 +324,7 @@ class TestURLRedirectionApi(object):
         But candidate should only get internal server error. So this test asserts we get internal
         server error.
         """
-        [smartlist_id] = sms_campaign_of_user_first['list_ids']
+        [smartlist_id] = sms_campaign_of_user_first['smartlist_ids']
         candidates = get_candidates_of_smartlist(smartlist_id, True, access_token_first)
         candidate_ids = [candidate_id for candidate_id in candidates]
         for candidate_id in candidate_ids:
@@ -383,7 +383,7 @@ class TestURLRedirectionMethods(object):
         as it uses candidate as primary key. We then test functionality of url_redirect().
         It should get ResourceNotFound Error.
         """
-        [smartlist_id] = sms_campaign_of_user_first['list_ids']
+        [smartlist_id] = sms_campaign_of_user_first['smartlist_ids']
         candidates = get_candidates_of_smartlist(smartlist_id, True, access_token_first)
         candidate_ids = [candidate_id for candidate_id in candidates]
         for candidate_id in candidate_ids:

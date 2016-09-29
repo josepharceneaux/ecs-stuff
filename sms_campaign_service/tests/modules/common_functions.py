@@ -191,7 +191,7 @@ def candidate_ids_associated_with_campaign(campaign, access_token, smartlist_ind
     :param campaign: SMS campaign object
     :param access_token: access token of user
     """
-    return get_candidates_of_smartlist(campaign['list_ids'][smartlist_index], True, access_token)
+    return get_candidates_of_smartlist(campaign['smartlist_ids'][smartlist_index], True, access_token)
 
 
 def reply_and_assert_response(campaign_obj, user_phone, candidate_phone, access_token,
@@ -275,7 +275,7 @@ def assert_valid_campaign_get(campaign_dict, referenced_campaign, compare_fields
         assert campaign_dict['id']
         assert campaign_dict['name']
         assert campaign_dict['body_text']
-        assert campaign_dict['list_ids']
+        assert campaign_dict['smartlist_ids']
         assert campaign_dict['user_id']
         CampaignsTestsHelpers.assert_valid_datetime_range(campaign_dict['added_datetime'])
 
