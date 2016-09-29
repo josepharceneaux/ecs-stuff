@@ -52,7 +52,7 @@ class TestSendSmsCampaign(object):
         :param sms_campaign_of_user_first: campaign dict
         :param headers: valid header to POST data
         """
-        smartlist_id = sms_campaign_of_user_first['list_ids'][0]
+        smartlist_id = sms_campaign_of_user_first['smartlist_ids'][0]
         campaign_id = sms_campaign_of_user_first['id']
         url = self.URL % campaign_id
         CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, url, access_token_first,
