@@ -277,7 +277,7 @@ class TestCreateCampaign(object):
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
                                                          self.URL,
                                                          None)
-
+    @pytest.mark.qaf
     def test_create_email_campaign_without_client_id(self, access_token_first, talent_pipeline):
         """
         Here we provide valid data to create an email-campaign without email_client_id.
@@ -451,9 +451,9 @@ class TestCreateCampaign(object):
         campaign_data.update(params)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == requests.codes.CREATED
-        #resp_object = response.json()
-        #assert 'campaign' in resp_object
-        #assert resp_object['campaign']['id']
+        resp_object = response.json()
+        assert 'campaign' in resp_object
+        assert resp_object['campaign']['id']
 
 
 class TestSendCampaign(object):
