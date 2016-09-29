@@ -233,6 +233,20 @@ class TestUpdateCampaign(object):
         url = URL % campaign_in_db['id']
         invalid_value_test(url, campaign_data, 'smartlist_ids', invalid_ids, token_first, method='put')
 
+    def test_campaign_update_with_deleted_or_hidden_smartlist_id(self, token_first, campaign_data, smartlist_first,
+                                                                 campaign_in_db):
+        """
+        Update campaign with deleted smartlist , API should raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        """
+        smartlist_id = smartlist_first['id']
+        url = URL % campaign_in_db['id']
+        data = campaign_data.copy()
+        data['smartlist_ids'] = [smartlist_id]
+        # Create a campaign with deleted smarlist. API will raise 400 error.
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist('put', url, token_first, data, smartlist_id)
+
     def test_campaign_update_with_invalid_name(self, token_first, campaign_data, smartlist_first, campaign_in_db):
         """
         Create a campaign with invalid name field, API should raise InvalidUsage 400

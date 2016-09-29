@@ -120,6 +120,9 @@ def validate_smartlist_ids(smartlist_ids, current_user):
         if not smartlist.user.domain_id == current_user.domain_id:
             raise ForbiddenError("validate_smartlist_ids: Smartlist(id:%s) do not belong to "
                                  "user's domain'" % str(smartlist_id))
+        if smartlist.is_hidden:
+            raise InvalidUsage('Associated Smartlist (id: %s) is deleted and can not be accessed'
+                               % smartlist.id)
 
 
 def validate_form_data(form_data, current_user, required_fields=('name', 'body_text', 'smartlist_ids')):

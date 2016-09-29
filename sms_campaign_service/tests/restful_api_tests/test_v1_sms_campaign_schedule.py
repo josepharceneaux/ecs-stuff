@@ -39,6 +39,18 @@ class TestSmsCampaignScheduleHTTPPOST(object):
             SmsCampaignApiUrl.CAMPAIGN, one_time_and_periodic)
         one_time_and_periodic['task_id'] = task_id
 
+    def test_campaign_schedule_with_deleted_smartlist(self, access_token_first,
+                                                      sms_campaign_of_user_first, one_time_and_periodic):
+        """
+        Here we schedule a campaign which is associated with a delete smartlist.
+        On scheduling such campaign, API will raise InvalidUsage 400 error.
+        """
+        campaign = sms_campaign_of_user_first
+        smartlist_id = campaign['list_ids'][0]
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL % campaign['id'],
+                                                                  access_token_first, one_time_and_periodic,
+                                                                  smartlist_id)
+
     def test_campaign_schedule_with_no_auth_header(self, access_token_first,
                                                    sms_campaign_of_user_first):
         """
@@ -292,6 +304,19 @@ class TestSmsCampaignScheduleHTTPPUT(object):
                                                               SmsCampaignApiUrl.CAMPAIGN, self.URL, self.HTTP_METHOD,
                                                               access_token_first,
                                                               data=generate_campaign_schedule_data())
+
+    def test_campaign_reschedule_with_deleted_smartlist(self, access_token_first, scheduled_sms_campaign_of_user_first,
+                                               sms_campaign_of_user_first, one_time_and_periodic):
+        """
+        Here we reschedule a campaign which is associated with a delete smartlist.
+        On rescheduling such campaign, API will raise InvalidUsage 400 error.
+        """
+        campaign = sms_campaign_of_user_first
+        campaign_id = campaign['id']
+        smartlist_id = sms_campaign_of_user_first['list_ids'][0]
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL % campaign_id,
+                                                                  access_token_first, one_time_and_periodic,
+                                                                  smartlist_id)
 
     def test_reschedule_campaign_with_invalid_frequency_id(self, access_token_first,
                                                            scheduled_sms_campaign_of_user_first):
