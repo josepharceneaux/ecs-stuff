@@ -101,6 +101,7 @@ class GTApis(object):
     ATS_SERVICE_PORT = 8015
     MOCK_SERVICE_PORT = 8016
     TALENTBOT_PORT = 8017
+    GRAPHQL_SERVICE_PORT = 8018
 
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
@@ -120,6 +121,7 @@ class GTApis(object):
     ATS_SERVICE_NAME = 'ats-service'
     MOCK_SERVICE_NAME = 'mock-service'
     TALENTBOT_SERVICE_NAME = 'talentbot-service'
+    GRAPHQL_SERVICE = 'graphql-service'
 
     # CORS headers
     CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com$",
@@ -875,6 +877,7 @@ class ATSServiceApi(object):
     CANDIDATES = '/' + VERSION + '/ats-candidates/<int:account_id>'
     CANDIDATES_REFRESH = '/' + VERSION + '/ats-candidates/refresh/<int:account_id>'
     CANDIDATE_LINK = '/' + VERSION + '/ats-candidates/link/<int:candidate_id>/<int:ats_candidate_id>'
+    MATCH_AND_LINK = '/' + VERSION  + '/ats-candidates/match-link/<int:account_id>/<string:match_method>'
 
 
 class ATSServiceApiUrl(object):
@@ -891,6 +894,7 @@ class ATSServiceApiUrl(object):
     CANDIDATES = HOST_NAME % ('/' + VERSION  + '/ats-candidates/%s')
     CANDIDATE_REFRESH = HOST_NAME % ('/' + VERSION  + '/ats-candidates/refresh/%s')
     CANDIDATE_LINK = HOST_NAME % ('/' + VERSION  + '/ats-candidates/link/%s/%s')
+    MATCH_AND_LINK = HOST_NAME % ('/' + VERSION  + '/ats-candidates/match-link/%s/%s')
 
 
 class MockServiceApi(object):

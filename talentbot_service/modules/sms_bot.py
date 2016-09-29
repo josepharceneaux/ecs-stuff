@@ -33,11 +33,9 @@ class SmsBot(TalentBot):
         Authenticates user
         :return: tuple(bool, int): (True|False, user_id|None)
         """
-        user_phone_id = UserPhone.query.with_entities(UserPhone.id).\
-            filter_by(value=mobile_number).first()
+        user_phone_id = UserPhone.get_by_phone_value(mobile_number)[0].id
         if user_phone_id:
-            talentbot_auth = TalentbotAuth.query.with_entities(TalentbotAuth.user_id).\
-                filter_by(user_phone_id=user_phone_id[0]).first()
+            talentbot_auth = TalentbotAuth.get_user_id(user_phone_id=user_phone_id)
             if talentbot_auth:
                 return True, talentbot_auth[0]
         return False, None

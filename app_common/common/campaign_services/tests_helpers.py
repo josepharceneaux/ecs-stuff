@@ -28,7 +28,7 @@ from campaign_utils import get_model, CampaignUtils
 from ..utils.validators import raise_if_not_instance_of
 from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
-from ..utils.test_utils import get_fake_dict, get_and_assert_zero
+from ..utils.test_utils import get_fake_dict, get_and_assert_zero, delete_smartlist
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..routes import (CandidatePoolApiUrl, PushCampaignApiUrl, SmsCampaignApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
@@ -759,6 +759,22 @@ class CampaignsTestsHelpers(object):
             print "Iterating %s." % invalid_item
             response = send_request('delete', url, access_token, data={'ids': invalid_item})
             CampaignsTestsHelpers.assert_non_ok_response(response)
+
+    @staticmethod
+    @contract
+    def send_request_with_deleted_smartlist(method, url, token, data, smartlist_id):
+        """
+        This helper method sends HTTP request to given url and verifies that API raised InvalidUsage 400 error.
+        :param http_method method: POST or PUT
+        :param string url: target api url
+        :param string token: access token
+        :param dict data: request body
+        :param int | long smartlist_id: smartlist id
+        """
+        delete_smartlist(smartlist_id, token)
+        resp = send_request(method, url, token, data)
+        assert resp.status_code == requests.codes.BAD
+        assert 'deleted' in resp.json()['error']['message']
 
 
 class FixtureHelpers(object):

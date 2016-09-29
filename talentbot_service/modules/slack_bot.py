@@ -37,9 +37,7 @@ class SlackBot(TalentBot):
         :param str channel_id: Slack channel Id
         :return: tuple (True|False, None|message, None|slack_client, user_id|None)
         """
-        talentbot_auth = TalentbotAuth.query.\
-            with_entities(TalentbotAuth.slack_user_token, TalentbotAuth.user_id).\
-            filter_by(slack_user_id=slack_user_id).first()
+        talentbot_auth = TalentbotAuth.get_talentbot_auth(slack_user_id=slack_user_id)
         if talentbot_auth:
             slack_user_token = talentbot_auth[0]
             user_id = talentbot_auth[1]
@@ -85,7 +83,7 @@ class SlackBot(TalentBot):
         """
         slack_client.rtm_connect()
         api_call_response = slack_client.api_call("users.setActive")
-        logger.info('bot state is active: %r' % str(api_call_response.get('ok')))
+        logger.info('bot state is active: %s' % str(api_call_response.get('ok')))
 
     def reply(self, chanel_id, msg, slack_client):
         """
