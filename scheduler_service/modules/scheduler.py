@@ -8,9 +8,9 @@ Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 
 # Standard imports
 import datetime
+import uuid
 
 # Third-party imports
-import uuid
 from urllib import urlencode
 from apscheduler.events import EVENT_JOB_ERROR, EVENT_JOB_ADDED, EVENT_JOB_MISSED, \
     EVENT_JOB_BEFORE_REMOVE
@@ -171,20 +171,50 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     :param content_type: format of post data
     :param post_data: post data like campaign name, smartlist ids etc
     :param is_jwt_request: (optional) if true, then use X-Talent-Secret-Id in header
+    :param kwargs: lock_uuid string
     """
 
+    """
+    Problem:
+        On jenkins, staging and prod, uwsgi initializes multiple Flask app instances(5 different processes) and
+    along with each Flask instance, APScheduler instance is initialized. The problem occurs when all 5 APScheduler
+    instances that are watching a job, executes that one job in parallel.
+
+    Solution:
+        One solution can be to run APScheduler in a single separate process and using RPC, Flask apps can communicate
+    with APScheduler process to create/get/execute/delete job(s). But that requires alot of changes in existing
+    service code.
+
+        Other solution can be to restrict scheduler callback method (run_job) to be called by one instance only.
+    To do this, when multiple instances call this method we can lock this method for next few seconds. So, first calling
+    APScheduler instance will set the lock and other 4 instances check that the function already has lock. So, they
+    will ignore job execution and simply return.
+
+    Legend:
+    ---->     time
+
+    Scenario:
+
+                0(ms)           20(ms)              30(ms)
+    Instance 1: --------->                                                            Ignored
+    Instance 2: ----------------->                                                    Ignored
+    Instance 3: ----->                                                                Acquires Lock
+    Instance 4: ------------->                                                        Ignored
+    Instance 5: ----------------------->                                              Ignored
+
+    """
     lock_uuid = kwargs.get('lock_uuid')
     if lock_uuid:
         if not redis_store.get(LOCK_KEY + lock_uuid):
             res = redis_store.set(LOCK_KEY + lock_uuid, True, nx=True, ex=4)
             # Multiple executions. No need to execute job if race condition occurs
             if not res:
-                logger.error('CODE-VERONICA: Race Escaping {}'.format(lock_uuid))
+                logger.info('CODE-VERONICA: Race Escaping {}'.format(lock_uuid))
                 return
-            logger.error('CODE-VERONICA: Worked {}'.format(lock_uuid))
+            logger.info('CODE-VERONICA: Worked {}'.format(lock_uuid))
         else:
             # Multiple executions. No need to execute job
-            logger.error('CODE-VERONICA: Escaping {}'.format(lock_uuid))
+            logger.info('CODE-VERONICA: Escaping {}'.format(lock_uuid))
             return
 
     # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
@@ -286,7 +316,8 @@ def schedule_job(data, user_id=None, access_token=None):
 
     callback_method = 'scheduler_service.modules.scheduler:run_job'
 
-    # make a UUID based on the host ID and current time
+    # make a UUID based on the host ID and current time and pass it to add job method to fix race condition.
+    # See run_job method above
     lock_uuid = str(uuid.uuid1()) + str(uuid.uuid4())
 
     if trigger == SchedulerUtils.PERIODIC:
