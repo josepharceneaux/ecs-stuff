@@ -13,9 +13,9 @@ import re
 from datetime import timedelta
 
 # Application Specific
-from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.modules.email_clients import SMTP
+from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.candidate import CandidateEmail

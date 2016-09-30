@@ -33,10 +33,9 @@ from flask import request, Blueprint
 
 # Service Specific
 from email_campaign_service.email_campaign_app import logger, app
-from email_campaign_service.modules.email_clients import EmailClientBase
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
-from email_campaign_service.modules.utils import (TASK_ALREADY_SCHEDULED, import_email_conversations,
-                                                  format_email_client_data)
+from email_campaign_service.modules.utils import (TASK_ALREADY_SCHEDULED, format_email_client_data)
+from email_campaign_service.modules.email_clients import (EmailClientBase, import_email_conversations)
 
 # Common utils
 from email_campaign_service.common.models.user import User

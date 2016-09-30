@@ -17,9 +17,9 @@ from dateutil import parser
 
 # Service Specific
 from email_campaign_service.common.models.user import User
-from email_campaign_service.email_campaign_app import logger
-from email_campaign_service.modules.utils import get_priority_emails
 from email_campaign_service.common.models.candidate import Candidate
+from email_campaign_service.email_campaign_app import logger, celery_app
+from email_campaign_service.modules.utils import get_priority_emails, decrypt_password
 from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)
 from email_campaign_service.common.models.email_campaign import (EmailClientCredentials, EmailConversations)
 
@@ -285,3 +285,34 @@ class POP(EmailClientBase):
         This will import emails of user's account to getTalent database table email-conversations.
         """
         pass
+
+
+@celery_app.task(name='import_email_conversations')
+def import_email_conversations(queue_name):
+    """
+    This gets all the records for incoming clients from database table email_client_credentials.
+    It then calls "import_email_conversations_per_account" to imports email-conversations for selected email-client.
+    """
+    email_clients = EmailClientCredentials.get_by_type(EmailClientCredentials.CLIENT_TYPES['incoming'])
+    for email_client in email_clients:
+        logger.info('Importing email-conversations from host:%s, account:%s, user_id:%s' % (email_client.host,
+                                                                                            email_client.email,
+                                                                                            email_client.user.id))
+        import_email_conversations_per_client.apply_async([email_client.host, email_client.port, email_client.email,
+                                                           email_client.password, email_client.user.id],
+                                                          queue_name=queue_name)
+
+
+@celery_app.task(name='import_email_conversations_per_client')
+def import_email_conversations_per_client(host, port, login_email, password, user_id):
+    """
+    It imports email-conversations for given client credentials.
+    :param string host: Host name
+    :param string port: Port number
+    :param string login_email: Email for login
+    :param string password: Encrypted login password
+    :param int|long user_id: Id of user
+    """
+    client_class = EmailClientBase.get_client(host)
+    client = client_class(host, port, login_email, decrypt_password(password), user_id)
+    client.email_conversation_importer()

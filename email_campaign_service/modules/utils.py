@@ -26,10 +26,8 @@ from email_campaign_service.common.redis_cache import redis_store
 from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.user import User, Serializer
-from email_campaign_service.modules.email_clients import EmailClientBase
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.common.models.email_campaign import (EmailCampaignSend,
-                                                                 EmailClientCredentials)
+from email_campaign_service.common.models.email_campaign import (EmailCampaignSend)
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
@@ -434,34 +432,3 @@ def decrypt_password(password):
     :param string password: Login password of user for email-client
     """
     return decrypt(app.config[TalentConfigKeys.ENCRYPTION_KEY], b64decode(password))
-
-
-@celery_app.task(name='import_email_conversations')
-def import_email_conversations(queue_name):
-    """
-    This gets all the records for incoming clients from database table email_client_credentials.
-    It then calls "import_email_conversations_per_account" to imports email-conversations for selected email-client.
-    """
-    email_clients = EmailClientCredentials.get_by_type(EmailClientCredentials.CLIENT_TYPES['incoming'])
-    for email_client in email_clients:
-        logger.info('Importing email-conversations from host:%s, account:%s, user_id:%s' % (email_client.host,
-                                                                                            email_client.email,
-                                                                                            email_client.user.id))
-        import_email_conversations_per_client.apply_async([email_client.host, email_client.port, email_client.email,
-                                                           email_client.password, email_client.user.id],
-                                                          queue_name=queue_name)
-
-
-@celery_app.task(name='import_email_conversations_per_client')
-def import_email_conversations_per_client(host, port, login_email, password, user_id):
-    """
-    It imports email-conversations for given client credentials.
-    :param string host: Host name
-    :param string port: Port number
-    :param string login_email: Email for login
-    :param string password: Encrypted login password
-    :param int|long user_id: Id of user
-    """
-    client_class = EmailClientBase.get_client(host)
-    client = client_class(host, port, login_email, decrypt_password(password), user_id)
-    client.email_conversation_importer()

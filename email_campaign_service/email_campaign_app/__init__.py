@@ -13,4 +13,5 @@ cache = Cache(app, config={'CACHE_TYPE': 'redis', 'CACHE_REDIS_URL': app.config[
 # Celery app
 celery_app = init_celery_app(app, CampaignUtils.EMAIL,
                              ['email_campaign_service.modules.email_marketing',
-                              'email_campaign_service.modules.utils'])
+                              'email_campaign_service.modules.utils',
+                              'email_campaign_service.modules.email_clients'])
