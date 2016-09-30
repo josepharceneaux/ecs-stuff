@@ -25,12 +25,11 @@ from email_campaign_service.modules.utils import (TRACKING_URL_TYPE,
                                                   get_candidates_from_smartlist,
                                                   do_mergetag_replacements,
                                                   create_email_campaign_url_conversions, SMTP, decrypt_password,
-                                                  get_candidate_id_email_by_priority, get_priority_emails)
+                                                  get_priority_emails)
 from email_campaign_service.modules import aws_constants as aws
 
 # Common Utils
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.user import Domain
 from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
@@ -52,7 +51,7 @@ from email_campaign_service.common.utils.handy_functions import (http_request,
                                                                  JSON_CONTENT_TYPE_HEADER)
 from email_campaign_service.common.utils.amazon_ses import send_email, get_default_email_info
 from email_campaign_service.common.models.candidate import (Candidate, CandidateEmail,
-                                                            CandidateSubscriptionPreference, EmailLabel)
+                                                            CandidateSubscriptionPreference)
 from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError, ResourceNotFound)
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
 from email_campaign_service.common.inter_service_calls.candidate_service_calls import \

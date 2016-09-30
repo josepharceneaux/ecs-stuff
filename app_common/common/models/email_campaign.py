@@ -492,3 +492,18 @@ class EmailClientCredentials(db.Model):
         for client_type in cls.INCOMING:
             conditions.append(cls.host.ilike('%{}%'.format(client_type)))
         return cls.query.filter(or_(*conditions)).all()
+
+
+class EmailConversations(db.Model):
+    __tablename__ = 'email_conversations'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column('user_id', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
+    candidate_id = db.Column('candidate_id', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
+    mailbox = db.Column('mailbox', db.String(10), nullable=False)
+    subject = db.Column('subject', db.String(100), nullable=False)
+    body = db.Column('body', db.String(1000), nullable=False)
+    email_received_datetime = db.Column('email_received_datetime', db.DateTime, nullable=False)
+    updated_datetime = db.Column('updated_datetime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
+
+    def __repr__(self):
+        return "<EmailConversations (id:%s)>" % self.id

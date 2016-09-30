@@ -3,7 +3,9 @@
 
 In this module, we have tests for following endpoints
 
-    1 - POST /v1/email-clients
+    - POST /v1/email-clients
+    - GET /v1/email-clients
+    - GET /v1/email-clients/:id
 """
 # Standard Library
 import json
@@ -13,7 +15,6 @@ import requests
 from requests import codes
 
 # Application Specific
-from email_campaign_service.common.models.user import User
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
@@ -166,18 +167,3 @@ class TestGetEmailClients(object):
         """
         response = requests.get(self.URL + '?type=%s' % fake.word(), headers=headers)
         assert response.status_code == codes.BAD
-
-
-class TestEmailConversations(object):
-    """
-    Here we test /v1/email-conversations
-    """
-    URL = EmailCampaignApiUrl.CONVERSATIONS
-
-    def test_post(self):
-        secret_key_id, access_token = User.generate_jw_token()
-        headers = {
-            'X-Talent-Secret-Key-ID': secret_key_id,
-            'Authorization': access_token}
-        requests.post(self.URL, headers=headers)
-        pass

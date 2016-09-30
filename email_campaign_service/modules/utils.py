@@ -36,7 +36,7 @@ from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.user import User, Serializer
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.models.email_campaign import (EmailCampaignSend,
-                                                                 EmailClientCredentials, EmailCampaign)
+                                                                 EmailClientCredentials, EmailConversations)
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
@@ -444,6 +444,7 @@ class EmailClientBase(object):
         self.client = None
         self.connection = None
         self.user_id = user_id
+        self.mailbox = None
 
     @staticmethod
     def get_client(host):
@@ -514,6 +515,28 @@ class EmailClientBase(object):
         self.connect()
         self.authenticate()
         return candidate_ids_and_emails
+
+    def save_email_conversation(self, candidate_id, subject, body, email_received_datetime):
+        """
+        This saves email-conversation in database table 'email_conversations'
+        :param int|long candidate_id: Id of candidate
+        :param string subject: Subject of email
+        :param string body: Body of email
+        :param datetime email_received_datetime: Datetime object for the received datetime of email
+        """
+        email_conversation_in_db = EmailConversations.filter_by_keywords(user_id=self.user_id,
+                                                                         candidate_id=candidate_id,
+                                                                         subject=subject,
+                                                                         body=body)
+        if not email_conversation_in_db:
+            email_conversation_data = {'user_id': self.user_id,
+                                       'candidate_id': candidate_id,
+                                       'mailbox': self.mailbox,
+                                       'subject': subject,
+                                       'body': body,
+                                       'email_received_datetime': email_received_datetime}
+            email_conversation = EmailConversations(**email_conversation_data)
+            EmailConversations.save(email_conversation)
 
 
 class SMTP(EmailClientBase):
@@ -589,11 +612,13 @@ class IMAP(EmailClientBase):
         This imports email-conversations from the candidates of user.
         """
         candidate_ids_and_emails = super(IMAP, self).email_conversation_importer()
-        self.connection.select("inbox")  # connect to inbox.
-        for candidate_id, candidate_email in candidate_ids_and_emails:
-            self.import_emails(candidate_id, candidate_email)
-        self.connection.close()
-        self.connection.logout()
+        for mailbox in ("inbox",):
+            self.mailbox = mailbox
+            self.connection.select(mailbox)
+            for candidate_id, candidate_email in candidate_ids_and_emails:
+                self.import_emails(candidate_id, candidate_email)
+            self.connection.close()
+            self.connection.logout()
 
     def import_emails(self, candidate_id, candidate_email):
         """
@@ -604,23 +629,22 @@ class IMAP(EmailClientBase):
         msg_ids = [msg_id for msg_id in searched_data.split()]
         logger.info("Account:%s, %s email(s) found from %s." % (self.email, len(msg_ids), candidate_email))
         for num in msg_ids:
+            body = ''
             typ, data = self.connection.fetch(num, '(RFC822)')
             raw_email = data[0][1]
-            email_message = email.message_from_string(raw_email)
-            for header in ['subject', 'to', 'from', 'date']:
-                logger.info('%s: %s' % (header.title(), email_message[header]))
-            email_received_datetime = parser.parse(email_message['date'])
-            # continue inside the same for loop as above
             raw_email_string = raw_email.decode('utf-8')
             # converts byte literal to string removing b''
             email_message = email.message_from_string(raw_email_string)
+            for header in ['subject', 'to', 'from', 'date']:
+                logger.info('%s: %s' % (header.title(), email_message[header]))
+            # convert string date to datetime object
+            email_received_datetime = parser.parse(email_message['date'])
             # this will loop through all the available multiparts in mail
             for part in email_message.walk():
                 if part.get_content_type() == "text/plain":  # ignore attachments/html
                     body = part.get_payload(decode=True)
                     logger.info('Body: %s' % body)
-            logger.info('--------------------------------------------------------')
-        return True
+            self.save_email_conversation(candidate_id, email_message['subject'], body, email_received_datetime)
 
 
 class POP(EmailClientBase):
@@ -645,6 +669,12 @@ class POP(EmailClientBase):
         except poplib.error_proto as error:
             logger.exception(error.message)
             raise InvalidUsage('Invalid credentials provided. Could not authenticate with pop server')
+
+    def email_conversation_importer(self):
+        """
+        This imports email-conversations from the candidates of user.
+        """
+        logger.info('POP email-conversations importer needs to be implemented')
 
     def import_emails(self, candidate_id, candidate_email):
         """
@@ -673,10 +703,32 @@ def decrypt_password(password):
 
 
 @celery_app.task(name='import_email_conversations')
-def import_email_conversations(host, port, email, password, user_id):
+def import_email_conversations(queue_name):
     """
-    This imports emails for given email-client
+    This gets all the records for incoming clients from database table email_client_credentials.
+    It then calls "import_email_conversations_per_account" to imports email-conversations for selected email-client.
+    """
+    email_clients = EmailClientCredentials.get_by_type(EmailClientCredentials.CLIENT_TYPES['incoming'])
+    for email_client in email_clients:
+        logger.info('Importing email-conversations from host:%s, account:%s, user_id:%s' % (email_client.host,
+                                                                                            email_client.email,
+                                                                                            email_client.user.id))
+        import_email_conversations_per_client.apply_async([email_client.host, email_client.port, email_client.email,
+                                                           email_client.password, email_client.user.id],
+                                                          queue_name=queue_name)
+
+
+@celery_app.task(name='import_email_conversations_per_client')
+def import_email_conversations_per_client(host, port, login_email, password, user_id):
+    """
+    It imports email-conversations for given client credentials.
+    :param string host: Host name
+    :param string port: Port number
+    :param string email: Email for login
+    :param string password: Encrypted login password
+    :param int|long user_id: Id of user
     """
     client_class = EmailClientBase.get_client(host)
-    client = client_class(host, port, email, decrypt_password(password), user_id)
+    client = client_class(host, port, login_email, decrypt_password(password), user_id)
     client.email_conversation_importer()
+

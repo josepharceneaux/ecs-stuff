@@ -24,6 +24,7 @@ from datetime import datetime, timedelta
 
 # Third Party
 import requests
+from requests import codes
 from simplecrypt import encrypt
 from flask_restful import Resource
 from flask import request, Blueprint
@@ -36,9 +37,9 @@ from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
 from email_campaign_service.common.utils.validators import get_json_data_if_validated
 from email_campaign_service.common.models.email_campaign import EmailClientCredentials, EmailCampaign
-from email_campaign_service.modules.utils import (TASK_ALREADY_SCHEDULED, import_email_conversations, decrypt_password)
+from email_campaign_service.modules.utils import (TASK_ALREADY_SCHEDULED, import_email_conversations)
 from email_campaign_service.modules.utils import (EmailClientBase, format_email_client_data)
-from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)
+from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError, ResourceNotFound)
 
 # Common utils
 from email_campaign_service.common.talent_api import TalentApi
@@ -100,7 +101,7 @@ class EmailClientsEndpoint(Resource):
         data['password'] = b64_password
         email_client = EmailClientCredentials(**data)
         EmailClientCredentials.save(email_client)
-        return {'id': email_client.id}, requests.codes.CREATED
+        return {'id': email_client.id}, codes.CREATED
 
     def get(self):
         """
@@ -142,15 +143,55 @@ class EmailClientsEndpoint(Resource):
         email_client_credentials = [email_client_credential.to_json() for email_client_credential in
                                     EmailClientCredentials.get_by_user_id_and_filter_by_name(request.user.id,
                                                                                              server_type)]
-        return {'email_client_credentials': email_client_credentials}, requests.codes.OK
+        return {'email_client_credentials': email_client_credentials}, codes.OK
+
+
+@api.route(EmailCampaignApi.CLIENT_WITH_ID)
+class EmailClientsWithId(Resource):
+
+    # Access token decorator
+    decorators = [require_oauth()]
+
+    def get(self, email_client_id):
+        """
+        This will get record from database table email_client_credentials for requested id.
+
+        .. Response::
+                       {
+                          "email_client_credentials": {
+                            "user_id": 1,
+                            "name": "Gmail",
+                            "updated_datetime": "2016-09-28 19:38:55",
+                            "id": 69,
+                            "port": "587",
+                            "host": "smtp.gmail.com",
+                            "password": "c2MAAh/OucvmgceAQ6qEFHpnDVm8wxsOGBo7+2iVToQSEQl8bSvMTjmhNTAj6phOaqDOI
+                                        q5NQWHpvZG9SHZDINYORwGSTqSK4zyHOBiaxvjBkQ==",
+                            "email": "gettalentmailtest@gmail.com"
+                          }
+                        }
+
+        .. Status:: 200 (Resource Found)
+                    400 (Bad request)
+                    401 (Unauthorized to access getTalent)
+                    404 (Resource not found)
+                    500 (Internal server error)
+        """
+        client_in_db = EmailClientCredentials.filter_by_keywords(id=email_client_id, user_id=request.user.id)
+        if not client_in_db:
+            raise ResourceNotFound('Email client with id:%s not found in database' % email_client_id)
+        if not client_in_db[0].user_id == request.user.id:
+            raise InvalidUsage('Email client(id:%s) not owned by requested user' % email_client_id)
+        return {'email_client_credentials': client_in_db[0].to_json()}, codes.OK
 
 
 @api.route(EmailCampaignApi.CONVERSATIONS)
 class EmailConversations(Resource):
+    """
+    This endpoint deals with email-conversations for the added email-clients of users.
+    """
 
-    # Access token decorator
-    decorators = [require_oauth(allow_null_user=True)]
-
+    @require_oauth(allow_null_user=True)
     def post(self):
         """
         This endpoint will be hit by scheduler-service. It will loop over the entries in database table
@@ -160,13 +201,57 @@ class EmailConversations(Resource):
         .. Status:: 401 (Unauthorized to access getTalent)
                     500 (Internal server error)
         """
-        email_clients = EmailClientCredentials.get_by_type(EmailClientCredentials.CLIENT_TYPES['incoming'])
         queue_name = EmailCampaign.__tablename__
-        for email_client in email_clients:
-            logger.info('Importing email-conversations for account:%s, user_id:%s' % (email_client.email,
-                                                                                      email_client.user.id))
-            import_email_conversations.apply_async([email_client.host, email_client.port, email_client.email,
-                                       email_client.password, email_client.user.id], queue_name=queue_name)
+        import_email_conversations.apply_async([queue_name], queue_name=queue_name)
+
+    @require_oauth()
+    def get(self):
+        """
+        This endpoint will return all the email-conversations in database table email-conversations for given user.
+
+        .. Response::
+            {
+                "email_conversations":
+                        [
+                            {
+                              "body": "Email campaign test",
+                              "user_id": 1,
+                              "updated_datetime": "2016-09-30 10:50:03",
+                              "email_received_datetime": "2016-09-27 08:02:03",
+                              "mailbox": "inbox",
+                              "candidate_id": 4,
+                              "id": 1,
+                              "subject": "55b04894 It is a test campaign"
+                            },
+                            {
+                              "body": "Email campaign test",
+                              "user_id": 1,
+                              "updated_datetime": "2016-09-30 10:50:05",
+                              "email_received_datetime": "2016-09-27 08:01:48",
+                              "mailbox": "inbox",
+                              "candidate_id": 4,
+                              "id": 2,
+                              "subject": "37e0bd0b It is a test campaign"
+                            },
+                            {
+                              "body": "Email campaign test",
+                              "user_id": 1,
+                              "updated_datetime": "2016-09-30 10:50:05",
+                              "email_received_datetime": "2016-09-27 08:01:49",
+                              "mailbox": "inbox",
+                              "candidate_id": 4,
+                              "id": 3,
+                              "subject": "d5957c8e It is a test campaign"
+                            }
+                        ]
+            }
+
+        .. Status:: 401 (Unauthorized to access getTalent)
+                    500 (Internal server error)
+        """
+        user = request.user
+        email_conversations = [email_conversation.to_json() for email_conversation in user.email_conversations]
+        return {'email_conversations': email_conversations}, codes.OK
 
 
 def schedule_job_for_email_conversations():
