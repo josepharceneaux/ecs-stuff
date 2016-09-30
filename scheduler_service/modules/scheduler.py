@@ -345,7 +345,7 @@ def schedule_job(data, user_id=None, access_token=None):
         except Exception as e:
             logger.error(e.message)
             raise JobNotCreatedError("Unable to create the job.")
-        logger.error('CODE-VERONICA: job id: {} schedule {}'.format(job.id, lock_uuid))
+        logger.info('CODE-VERONICA: job id: {} schedule {}'.format(job.id, lock_uuid))
         return job.id
     elif trigger == SchedulerUtils.ONE_TIME:
         valid_data = validate_one_time_job(data)
@@ -362,7 +362,7 @@ def schedule_job(data, user_id=None, access_token=None):
                                     kwargs=dict(lock_uuid=lock_uuid)
                                     )
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
-            logger.error('CODE-VERONICA: job id: {} schedule {}'.format(job.id, lock_uuid))
+            logger.info('CODE-VERONICA: job id: {} schedule {}'.format(job.id, lock_uuid))
             return job.id
         except Exception as e:
             logger.error(e.message)
