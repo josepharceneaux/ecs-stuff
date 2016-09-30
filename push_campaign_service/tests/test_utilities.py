@@ -36,7 +36,7 @@ def generate_campaign_schedule_data(frequency_id=1):
     :return: data
     :rtype dict
     """
-    start = datetime.utcnow() + timedelta(seconds=20)
+    start = datetime.utcnow() + timedelta(seconds=10)
     end = datetime.utcnow() + timedelta(days=10)
     data = {
         "frequency_id": frequency_id,
