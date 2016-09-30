@@ -1177,7 +1177,12 @@ def celery_error_handler(uuid):
 @celery_app.task(name='create_activity')
 def celery_create_activity(user_id, _type, source, params, error_message="Error occurred while creating activity"):
     """
-    This method create activity for campaign creation, delete, schedule etc.
+    This method creates activity for campaign create, delete, schedule etc. in a celery task.
+    :param int | long user_id: id of user
+    :param int _type: type of activity
+    :param db.Model source: source object. Basically it will be Model object.
+    :param dict params: activity params
+    :param string error_message: error message to show in case of any exception
     """
     try:
         # Add activity
