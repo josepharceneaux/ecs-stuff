@@ -12,18 +12,14 @@ import requests
 # Service Specific
 from sms_campaign_service.modules.custom_exceptions import SmsCampaignApiException
 from sms_campaign_service.tests.modules.common_functions import (assert_campaign_delete, assert_valid_campaign_get,
-                                                                 generate_campaign_schedule_data,
                                                                  generate_campaign_data)
 
 # Common Utils
-from sms_campaign_service.common.models.misc import Frequency
 from sms_campaign_service.common.tests.sample_data import fake
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
-from sms_campaign_service.common.models.smartlist import Smartlist
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from sms_campaign_service.common.error_handling import (UnauthorizedError, ResourceNotFound, ForbiddenError,
-                                                        InvalidUsage)
+from sms_campaign_service.common.error_handling import (UnauthorizedError, ForbiddenError, InvalidUsage)
 
 
 class TestSmsCampaignWithIdHTTPGET(object):
@@ -152,6 +148,18 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         CampaignsTestsHelpers.request_after_deleting_campaign(sms_campaign_of_user_first, self.URL,
                                                               self.URL, self.HTTP_METHOD, access_token_first,
                                                               campaign_valid_data)
+
+    def test_campaign_update_with_deleted_or_hidden_smartlist_id(self, sms_campaign_of_user_first, campaign_valid_data,
+                                                                 access_token_first):
+        """
+        Update campaign with deleted smartlist , API should raise InvalidUsage 400
+        """
+        smartlist_id = sms_campaign_of_user_first['smartlist_ids'][0]
+        url = self.URL % sms_campaign_of_user_first['id']
+        campaign_valid_data['smartlist_ids'] = [smartlist_id]
+        # Create a campaign with deleted smarlist. API will raise 400 error.
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, url, access_token_first,
+                                                                  campaign_valid_data, smartlist_id)
 
     def test_with_no_data(self, headers, sms_campaign_of_user_first):
         """

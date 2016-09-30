@@ -695,3 +695,4 @@ def delete_candidate_device(candidate_id, device_id,  token, expected_status=(20
     assert response.status_code in expected_status
     return response.json()
 
+

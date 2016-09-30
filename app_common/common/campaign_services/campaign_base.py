@@ -49,7 +49,7 @@ from ..inter_service_calls.candidate_pool_service_calls import get_candidates_of
 from validators import (validate_form_data,
                         validation_of_data_to_schedule_campaign,
                         validate_blast_candidate_url_conversion_in_db,
-                        raise_if_dict_values_are_not_int_or_long)
+                        raise_if_dict_values_are_not_int_or_long, validate_smartlist_ids)
 from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER,
                                      generate_jwt_headers)
 
@@ -740,6 +740,8 @@ class CampaignBase(object):
         # get campaign obj, scheduled task data and oauth_header
         campaign_obj, scheduled_task, oauth_header = cls.get_campaign_and_scheduled_task(campaign_id, request.user,
                                                                                          campaign_type)
+        smartlist_ids = [campaign_smartlist.smartlist_id for campaign_smartlist in campaign_obj.smartlists]
+        validate_smartlist_ids(smartlist_ids, request.user)
         # Updating scheduled task should not be allowed in POST request
         if scheduled_task and request.method == 'POST':
             raise ForbiddenError('Use PUT method instead to update already scheduled task')
@@ -1141,6 +1143,7 @@ class CampaignBase(object):
                                                                                              self.user.id),
                                error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
         self.smartlist_ids = [campaign_smartlist.smartlist_id for campaign_smartlist in campaign_smartlists]
+        validate_smartlist_ids(self.smartlist_ids, self.user)
         # Register function to be called after all candidates are fetched from smartlists
         callback = self.send_callback.subtask((self,), queue=self.campaign_type)
 
