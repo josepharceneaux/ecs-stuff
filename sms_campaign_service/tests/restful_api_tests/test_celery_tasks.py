@@ -46,7 +46,7 @@ from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
 from sms_campaign_service.modules.handy_functions import replace_ngrok_link_with_localhost
 from sms_campaign_service.tests.modules.common_functions import \
     (assert_on_blasts_sends_url_conversion_and_activity, assert_api_send_response, generate_campaign_schedule_data,
-     assert_campaign_schedule)
+     assert_campaign_schedule, delete_test_scheduled_task)
 
 
 class TestCeleryTasks(object):
@@ -193,7 +193,7 @@ class TestCampaignSchedule(object):
         data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=5))
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'], headers=headers,
                                  data=json.dumps(data))
-        assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
+        task_id = assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
         CampaignsTestsHelpers.get_blasts_with_polling(sms_campaign_of_user_first, access_token_first,
                                                       blasts_url=
                                                       SmsCampaignApiUrl.BLASTS % sms_campaign_of_user_first['id'],
@@ -201,6 +201,7 @@ class TestCampaignSchedule(object):
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
                                                            sms_campaign_of_user_first['id'], access_token_first,
                                                            blast_timeout=60)
+        delete_test_scheduled_task(task_id, headers)
 
     def test_periodic_campaign_schedule_and_validate_run(self, headers, user_first, access_token_first,
                                                          sms_campaign_of_user_first):
@@ -214,7 +215,7 @@ class TestCampaignSchedule(object):
         response = requests.post(
             SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'],
             headers=headers, data=json.dumps(data))
-        assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
+        task_id = assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
         # assert that scheduler has sent the campaign for the first time
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
                                                            sms_campaign_of_user_first['id'], access_token_first,
@@ -224,6 +225,7 @@ class TestCampaignSchedule(object):
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
                                                            sms_campaign_of_user_first['id'], access_token_first,
                                                            expected_blasts=2, blast_index=1,  blast_timeout=60)
+        delete_test_scheduled_task(task_id, headers)
 
     def test_campaign_daily_schedule_and_validate_task_run(self, headers, user_first,
                                                            access_token_first, sms_campaign_of_user_first):
@@ -237,9 +239,10 @@ class TestCampaignSchedule(object):
         data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=5))
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'], headers=headers,
                                  data=json.dumps(data))
-        assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
+        task_id = assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
                                                            sms_campaign_of_user_first['id'], access_token_first)
+        delete_test_scheduled_task(task_id, headers)
 
 
 class TestURLRedirectionApi(object):

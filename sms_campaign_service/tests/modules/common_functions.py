@@ -139,6 +139,7 @@ def assert_campaign_schedule(response, user_id, campaign_id, headers):
     """
     This asserts that campaign has scheduled successfully and we get 'task_id' in response.
     We also assert that 'start_datetime', 'end_datetime' and 'frequency_id' have been updated in database.
+    This also retuns task_id of scheduled campaign.
     """
     assert response.status_code == requests.codes.OK, response.json()['error']['message']
     assert 'task_id' in response.json()
@@ -153,6 +154,7 @@ def assert_campaign_schedule(response, user_id, campaign_id, headers):
     assert resp['start_datetime']
     if resp['frequency']:
         assert resp['end_datetime']
+    return response.json()['task_id']
 
 
 def assert_campaign_delete(response, user_id, campaign_id):
