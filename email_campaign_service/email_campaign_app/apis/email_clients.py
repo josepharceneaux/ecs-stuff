@@ -10,10 +10,12 @@ This file contains API endpoints for
         - EmailClients: /v1/email-clients
 
             POST    : Adds new server-side-email-client in database table email_client_credentials
+            GET    : GET email-client-credentials for requested user
 
         - EmailConversations: /v1/email-conversations
 
             POST     : Retrieves email-conversation of all the getTalent users
+            GET     :  Returns email-conversation for requested user
 
 """
 # Standard Library
@@ -30,22 +32,23 @@ from flask_restful import Resource
 from flask import request, Blueprint
 
 # Service Specific
-from email_campaign_service.common.models.user import User
 from email_campaign_service.email_campaign_app import logger, app
-from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
+from email_campaign_service.modules.email_clients import EmailClientBase
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
-from email_campaign_service.common.utils.validators import get_json_data_if_validated
-from email_campaign_service.common.models.email_campaign import EmailClientCredentials, EmailCampaign
-from email_campaign_service.modules.utils import (TASK_ALREADY_SCHEDULED, import_email_conversations)
-from email_campaign_service.modules.utils import (EmailClientBase, format_email_client_data)
-from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError, ResourceNotFound)
+from email_campaign_service.modules.utils import (TASK_ALREADY_SCHEDULED, import_email_conversations,
+                                                  format_email_client_data)
 
 # Common utils
+from email_campaign_service.common.models.user import User
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.utils.api_utils import api_route
 from email_campaign_service.common.utils.auth_utils import require_oauth
+from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
+from email_campaign_service.common.utils.validators import get_json_data_if_validated
+from email_campaign_service.common.models.email_campaign import EmailClientCredentials, EmailCampaign
 from email_campaign_service.common.routes import (EmailCampaignApi, EmailCampaignApiUrl, SchedulerApiUrl)
+from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError, ResourceNotFound)
 
 # Blueprint for email-clients API
 email_clients_blueprint = Blueprint('email_clients_api', __name__)

@@ -16,7 +16,7 @@ from email_campaign_service.common.models.smartlist import Smartlist
 from email_campaign_service.common.models.email_campaign import EmailClient, EmailClientCredentials
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity, ForbiddenError)
-from email_campaign_service.modules.utils import EmailClientBase
+from email_campaign_service.modules.email_clients import EmailClientBase
 
 
 def validate_datetime(datetime_text, field_name=None):

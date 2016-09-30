@@ -5,9 +5,6 @@
 
 This file contains fixtures for tests of email-campaign-service
 """
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.email_campaign_app import app
-from email_campaign_service.modules.utils import SMTP, decrypt_password
 
 __author__ = 'basit'
 
@@ -16,11 +13,14 @@ import re
 from datetime import timedelta
 
 # Application Specific
+from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.tests.conftest import *
+from email_campaign_service.modules.email_clients import SMTP
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
                                                                  EmailTemplateFolder, EmailCampaign,
                                                                  EmailClientCredentials)

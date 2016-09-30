@@ -1,3 +1,6 @@
+"""
+Here we have a function which schedules email-conversion-importer.
+"""
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 

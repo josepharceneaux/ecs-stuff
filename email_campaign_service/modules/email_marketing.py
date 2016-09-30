@@ -24,8 +24,9 @@ from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 from email_campaign_service.modules.utils import (TRACKING_URL_TYPE,
                                                   get_candidates_from_smartlist,
                                                   do_mergetag_replacements,
-                                                  create_email_campaign_url_conversions, SMTP, decrypt_password,
+                                                  create_email_campaign_url_conversions, decrypt_password,
                                                   get_priority_emails)
+from email_campaign_service.modules.email_clients import SMTP, decrypt_password
 from email_campaign_service.modules import aws_constants as aws
 
 # Common Utils
