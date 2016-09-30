@@ -430,7 +430,7 @@ def update_candidate_from_parsed_spreadsheet(candidate_dict, oauth_token):
                        headers={'Authorization': oauth_token, 'content-type': 'application/json'})
 
     if r.status_code == 200:
-        return True, {}
+        return True, r.json()
     else:
         return False, r.json()
 
