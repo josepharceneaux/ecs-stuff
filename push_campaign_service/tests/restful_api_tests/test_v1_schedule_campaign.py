@@ -347,6 +347,8 @@ class TestRescheduleCampaignUsingPUT(object):
         as the actual owner of the campaign. So we are expecting that , response will be OK and campaign will be
         rescheduled.
         """
+        # schedule_a_campaign fixture schedules a job. So, wait for next 10 seconds for the job to run and increase
+        # blast count
         sleep(10)
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = reschedule_campaign(campaign_in_db['id'], data, token_same_domain,
