@@ -195,7 +195,6 @@ class TestSchedulerExceptions(object):
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
             POST data while hitting the endpoint.
-        :return:
         """
 
         # Assign task_name in job post data (general task) with not allowed characters

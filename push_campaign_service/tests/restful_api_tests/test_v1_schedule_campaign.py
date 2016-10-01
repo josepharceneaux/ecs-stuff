@@ -36,10 +36,10 @@ Unschedule a campaign: /v1/push-campaigns/:id/schedule [DELETE]
 """
 # Builtin imports
 import sys
-from datetime import datetime
-# 3rd party imports
 from time import sleep
+from datetime import datetime
 
+# 3rd party imports
 from redo import retry
 from requests import codes
 
@@ -142,7 +142,7 @@ class TestScheduleCampaignUsingPOST(object):
 
         # campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
         # match_schedule_data(data, campaign)
-        retry(get_blasts, sleeptime=3, attempts=10, sleepscale=1, retry_exceptions=(AssertionError,),
+        retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
               args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
 
     def test_schedule_a_campaign_with_user_from_same_domain(self, smartlist_first, campaign_in_db,  talent_pool,
@@ -167,7 +167,7 @@ class TestScheduleCampaignUsingPOST(object):
         # There should be a campaign schedule activity
         assert_activity(Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_in_db['id'], 'push_campaign', token_same_domain)
 
-        retry(get_blasts, attempts=4, sleepscale=1, retry_exceptions=(AssertionError,),
+        retry(get_blasts, sleeptime=3, attempts=10, sleepscale=1, retry_exceptions=(AssertionError,),
               args=(campaign_id, token_first), kwargs={'count': 1})
 
     def test_schedule_a_campaign_with_user_from_diff_domain(self, token_first, token_second,
