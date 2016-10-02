@@ -36,15 +36,18 @@ Unschedule a campaign: /v1/push-campaigns/:id/schedule [DELETE]
 """
 # Builtin imports
 import sys
+from time import sleep
 from datetime import datetime
+
 # 3rd party imports
+from redo import retry
 from requests import codes
 
 # Application specific imports
 from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from push_campaign_service.tests.test_utilities import (generate_campaign_schedule_data,
                                                         schedule_campaign, reschedule_campaign, unschedule_campaign,
-                                                        get_campaign, match_schedule_data)
+                                                        get_campaign, match_schedule_data, get_blasts)
 from push_campaign_service.common.utils.test_utils import (invalid_data_test, unexpected_field_test,
                                                            missing_keys_test, invalid_value_test, assert_activity,
                                                            unauthorize_test)
@@ -137,11 +140,10 @@ class TestScheduleCampaignUsingPOST(object):
         # There should be a campaign schedule activity
         assert_activity(Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_in_db['id'], 'push_campaign', token_first)
 
-
-        campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
-        match_schedule_data(data, campaign)
-        # retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
-        #       args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
+        # campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
+        # match_schedule_data(data, campaign)
+        retry(get_blasts, sleeptime=3, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
+              args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
 
     def test_schedule_a_campaign_with_user_from_same_domain(self, smartlist_first, campaign_in_db,  talent_pool,
                                                             token_first, token_same_domain,  candidate_device_first):
@@ -158,14 +160,15 @@ class TestScheduleCampaignUsingPOST(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
-        match_schedule_data(data, campaign)
+
+        # campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
+        # match_schedule_data(data, campaign)
 
         # There should be a campaign schedule activity
         assert_activity(Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_in_db['id'], 'push_campaign', token_same_domain)
 
-        # retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
-        #       args=(campaign_id, token_first), kwargs={'count': 1})
+        retry(get_blasts, sleeptime=3, attempts=30, sleepscale=1, retry_exceptions=(AssertionError,),
+              args=(campaign_id, token_first), kwargs={'count': 1})
 
     def test_schedule_a_campaign_with_user_from_diff_domain(self, token_first, token_second,
                                                             campaign_in_db, candidate_device_first):
@@ -323,7 +326,7 @@ class TestRescheduleCampaignUsingPUT(object):
         """
         Reschedule a campaign with valid data and it should return 200 response.
         """
-
+        sleep(10)
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
         assert response.status_code == codes.OK
@@ -332,10 +335,10 @@ class TestRescheduleCampaignUsingPUT(object):
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
-        match_schedule_data(data, campaign)
-        # retry(get_blasts, attempts=20, sleepscale=1, sleeptime=3, retry_exceptions=(AssertionError,),
-        #       args=(campaign_in_db['id'], token_first), kwargs={'count': 2})
+        # campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
+        # match_schedule_data(data, campaign)
+        retry(get_blasts, attempts=30, sleepscale=1, sleeptime=3, retry_exceptions=(AssertionError,),
+              args=(campaign_in_db['id'], token_first), kwargs={'count': 2})
 
     def test_reschedule_a_campaign_with_user_from_same_domain(self, token_first, token_same_domain,
                                                             campaign_in_db, schedule_a_campaign):
@@ -344,17 +347,21 @@ class TestRescheduleCampaignUsingPUT(object):
         as the actual owner of the campaign. So we are expecting that , response will be OK and campaign will be
         rescheduled.
         """
-        data = generate_campaign_schedule_data()
+        # schedule_a_campaign fixture schedules a job. So, wait for next 10 seconds for the job to run and increase
+        # blast count
+        sleep(10)
+        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = reschedule_campaign(campaign_in_db['id'], data, token_same_domain,
                                        expected_status=(codes.OK,))
         assert 'task_id' in response
         assert 'message' in response
         task_id = response['task_id']
         assert task_id
-        campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
-        match_schedule_data(data, campaign)
-        # retry(get_blasts, attempts=20, sleepscale=1, retry_exceptions=(AssertionError,),
-        #       args=(campaign_id, token_first), kwargs={'count': 1})
+
+        # campaign = get_campaign(campaign_in_db['id'], token_first)['campaign']
+        # match_schedule_data(data, campaign)
+        retry(get_blasts, attempts=30, sleepscale=1, sleeptime=3, retry_exceptions=(AssertionError,),
+              args=(campaign_in_db['id'], token_first), kwargs={'count': 2})
 
     def test_campaign_reschedule_with_invalid_frequency_ids(self, token_first, campaign_in_db, schedule_a_campaign):
         """
