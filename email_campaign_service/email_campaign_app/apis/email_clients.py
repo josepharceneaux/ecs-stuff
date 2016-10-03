@@ -44,7 +44,7 @@ from email_campaign_service.modules.email_clients import (EmailClientBase, impor
 # Common utils
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.talent_api import TalentApi
-from email_campaign_service.common.utils.api_utils import api_route
+from email_campaign_service.common.utils.api_utils import api_route, ApiResponse
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
@@ -109,7 +109,8 @@ class EmailClientsEndpoint(Resource):
         data['password'] = b64_password
         email_client = EmailClientCredentials(**data)
         EmailClientCredentials.save(email_client)
-        return {'id': email_client.id}, codes.CREATED
+        headers = {'Location': EmailCampaignApiUrl.CLIENT_WITH_ID % email_client.id}
+        return ApiResponse(dict(id=email_client.id), status=requests.codes.CREATED, headers=headers)
 
     def get(self):
         """

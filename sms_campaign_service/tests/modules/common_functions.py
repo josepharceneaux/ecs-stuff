@@ -179,12 +179,12 @@ def assert_campaign_creation(response, user_id, expected_status_code):
     Here are asserts that make sure that campaign has been created successfully.
     It returns id of created SMS campaign.
     """
-    assert response.status_code == expected_status_code, \
-        'It should get status code ' + str(expected_status_code)
+    assert response.status_code == expected_status_code, 'It should get status code ' + str(expected_status_code)
     assert response.json()
     json_response = response.json()
     assert 'location' in response.headers
     assert 'id' in json_response
+    assert str(json_response['id']) in response.headers['Location']
     CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_CREATE, json_response['id'])
     return json_response['id']
 

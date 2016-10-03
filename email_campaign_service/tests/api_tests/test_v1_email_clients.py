@@ -15,10 +15,10 @@ import requests
 from requests import codes
 
 # Application Specific
-from email_campaign_service.common.models.email_campaign import EmailClientCredentials
 from email_campaign_service.common.tests.conftest import fake
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
+from email_campaign_service.common.models.email_campaign import EmailClientCredentials
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.tests.modules.handy_functions import (data_for_creating_email_clients,
                                                                   assert_email_client_fields)
@@ -47,6 +47,7 @@ class TestCreateEmailClients(object):
             response = requests.post(self.URL, headers=headers, data=json.dumps(email_client_data))
             assert response.ok
             assert 'id' in response.json()
+            assert str(response.json()['id']) in response.headers['Location']
 
     def test_create_email_client_with_invalid_email_format(self, headers):
         """
