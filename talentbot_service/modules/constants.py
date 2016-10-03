@@ -1,5 +1,5 @@
 """
-This module contains Talentbot constants
+This script contains Talentbot constants
 """
 from talentbot_service.common.models.sms_campaign import SmsCampaignBlast
 from talentbot_service.common.models.email_campaign import EmailCampaignBlast
@@ -29,18 +29,27 @@ STANDARD_MSG_LENGTH = 160
 MAILGUN_SENDING_ENDPOINT = "https://api.mailgun.net/v3/sandbox59cbb160934f43d7839e1788604c2c06." \
                            "mailgun.org/messages"
 MAILGUN_FROM = "TalentBot <postmaster@sandbox59cbb160934f43d7839e1788604c2c06.mailgun.org>"
-QUESTIONS = ['how many users are in my domain', 'how many candidates with skills',
-             'how many candidates from zipcode', 'what is the top performing email campaign from',
-             'How many candidate leads did x import into the y talent pool last month',
-             'what is your name'
-             , 'hint', 'help', 'what are your features', 'what can you do']
+QUESTIONS = ['how many users are in my domain', 'how many candidates are there with skills',
+             'how many candidates from zipcode',
+             'what is the top performing campaign from',
+             'How many candidate leads did import into the talent pool last',
+             'what is your name', 'hint', 'help', 'what are your features', 'what can you do',
+             'tell me the number of users in my domain', 'how many users exist in my domain',
+             'how many candidates know', 'candidates who know',
+             'number of candidates who has grasp on', 'candidates having skills',
+             'tell me the number of candidates who has mastered in skills',
+             'which were the top performing email campaign last',
+             'show me the top email sms push campaigns from', 'how many candidates added into the talent pool last',
+             'candidates who has grasp on', 'candidates having grasp on',
+             'tell me the number of candidates from zipcode', 'candidates with skills',
+             'what is the top performing email campaign from', 'what is the top performing sms campaign from',
+             'what is the top performing push campaign from']
 POSITIVE_MESSAGES = ['hmmmm', 'ok', 'fine', 'whatever', 'yeah', 'ahan', 'so so']
 BEST_QUESTION_MATCH_RATIO = 95
 FACEBOOK_API_URI = "https://graph.facebook.com/v2.6/me/messages"
 AUTHENTICATION_FAILURE_MSG = 'Sorry you are not registered to use this service\n' \
                             'Go to the http://www.gettalent.com to register yourself'
 SLACK_AUTH_URI = 'https://slack.com/api/oauth.access'
-PROCESS_MAX_TIME = 500
 CAMPAIGN_TYPES = {'sms': SmsCampaignBlast.top_performing_sms_campaign,
                   'email': EmailCampaignBlast.top_performing_email_campaign,
                   'push': PushCampaignBlast.top_performing_push_campaign}

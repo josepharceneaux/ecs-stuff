@@ -5,9 +5,6 @@ makes sure it is finished.
 """
 # Builtin imports
 from multiprocessing import Process
-# Service specific imports
-from talentbot_service import logger
-from talentbot_service.modules.constants import PROCESS_MAX_TIME
 
 
 class ProcessScheduler(object):
@@ -30,10 +27,6 @@ class ProcessScheduler(object):
         slack_handler_process = Process(target=slack_bot.handle_communication,
                                         args=(channel_id, message, slack_user_id, current_timestamp))
         slack_handler_process.start()
-        slack_handler_process.join(PROCESS_MAX_TIME)
-        if slack_handler_process.is_alive():
-            logger.info("Killing process: %s" % slack_handler_process.pid)
-            slack_handler_process.terminate()
 
     @staticmethod
     def schedule_fb_process(fb_user_id, message, facebook_bot):
@@ -47,7 +40,3 @@ class ProcessScheduler(object):
         fb_handler_process = Process(target=facebook_bot.handle_communication,
                                      args=(fb_user_id, message))
         fb_handler_process.start()
-        fb_handler_process.join(PROCESS_MAX_TIME)
-        if fb_handler_process.is_alive():
-            logger.info("Killing process: %s" % fb_handler_process.pid)
-            fb_handler_process.terminate()

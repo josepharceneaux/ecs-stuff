@@ -123,14 +123,20 @@ class PushCampaignBlast(db.Model):
         :param str year: Year of campaign started or updated
         :rtype: PushCampaignBlast
         """
-        if year:
+        if type(year) == datetime.datetime:
+            return cls.query.filter(cls.updated_datetime >= year). \
+                filter(PushCampaign.id == cls.campaign_id).\
+                filter(PushCampaign.user_id == user_id). \
+                filter(cls.sends > 0).order_by(desc(cls.clicks)).first()
+        if type(year) == unicode:
             return cls.query.filter(extract("year", cls.updated_datetime) == year). \
                 filter(PushCampaign.id == cls.campaign_id).\
                 filter(PushCampaign.user_id == user_id). \
+                filter(cls.sends > 0). \
                 order_by(desc(cls.clicks)).first()
 
         return cls.query.filter(PushCampaign.id == cls.campaign_id).\
-            filter(PushCampaign.user_id == user_id).order_by(desc(cls.clicks)).first()
+            filter(PushCampaign.user_id == user_id).filter(cls.sends > 0).order_by(desc(cls.clicks)).first()
 
 
 class PushCampaignSend(db.Model):

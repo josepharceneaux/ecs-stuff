@@ -108,17 +108,27 @@ class SmsCampaignBlast(db.Model):
         """
         from user import UserPhone
         user_phones = UserPhone.get_by_user_id(user_id)
-        if user_phones and year:
+        if user_phones and type(year) == datetime.datetime:
+            user_phone = user_phones[0]
+            return cls.query.filter(or_(cls.updated_time >= year,
+                                        cls.sent_datetime >= year)).\
+                filter(cls.sends > 0).\
+                filter(SmsCampaign.id == cls.campaign_id).\
+                filter(SmsCampaign.user_phone_id == user_phone.id). \
+                order_by(desc(cls.replies)).first()
+        if user_phones and type(year) == unicode:
             user_phone = user_phones[0]
             return cls.query.filter(or_(extract("year", cls.updated_time) == year,
                                         extract("year", cls.sent_datetime) == year)). \
-                filter(SmsCampaign.id == cls.campaign_id).\
+                filter(SmsCampaign.id == cls.campaign_id). \
+                filter(cls.sends > 0). \
                 filter(SmsCampaign.user_phone_id == user_phone.id). \
                 order_by(desc(cls.replies)).first()
         if user_phones and not year:
             user_phone = user_phones[0]
             return cls.query.filter(SmsCampaign.id == cls.campaign_id). \
-                filter(SmsCampaign.user_phone_id == user_phone.id).\
+                filter(SmsCampaign.user_phone_id == user_phone.id). \
+                filter(cls.sends > 0). \
                 order_by(desc(cls.replies)).first()
         return None
 

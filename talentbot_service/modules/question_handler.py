@@ -34,11 +34,14 @@ class QuestionHandler(object):
         Finds a specific word in user message and returns it's index
         :param str word: Word to be found in message_tokens
         :param list message_tokens: Tokens of user message
-        :return: int word_index
+        :rtype: int|None
         """
-        word_index = [message_tokens.index(temp_word) for temp_word
-                      in message_tokens if word in temp_word.lower()][0]
-        return word_index
+        try:
+            word_index = [message_tokens.index(temp_word) for temp_word
+                          in message_tokens if word in temp_word.lower()][0]
+            return word_index
+        except IndexError:
+            return None
 
     @staticmethod
     def append_list_with_spaces(_list):
@@ -73,6 +76,18 @@ class QuestionHandler(object):
             :return: str response_message
         """
         skill_index = cls.find_word_in_message('skill', message_tokens)
+        if not skill_index:
+            skill_index = cls.find_word_in_message('know', message_tokens)
+            if not skill_index:
+                skill_index = cls.find_word_in_message('grasp', message_tokens)
+                if skill_index:
+                    if len(message_tokens) > skill_index:
+                        if message_tokens[skill_index+1].lower() == 'on':
+                            skill_index += 1
+        if not skill_index:
+            raise IndexError
+        if len(message_tokens) <= skill_index+1:
+            return 'Please mention skills'
         extracted_skills = message_tokens[skill_index + 1::]
         count = Candidate.get_candidate_count_with_skills(extracted_skills, user_id)
         response_message = "There are %d candidates with skills %s"
@@ -109,6 +124,7 @@ class QuestionHandler(object):
         year = message_tokens[-1]
         is_valid_year = self.is_valid_year(year)
         campaign_method = CAMPAIGN_TYPES.get(campaign_type)
+        response_message = ""
         if not campaign_method:
             return "Wrong campaign type specified"
         if is_valid_year or year.lower() in 'campaigns' or year.lower() == 'from':
@@ -116,13 +132,71 @@ class QuestionHandler(object):
                 year = None
             campaign_blast = campaign_method(year, user_id)
             if campaign_blast:
-                response_message = 'Top performing %s campaign from %s is "%s"' \
-                                       % (campaign_type, year, campaign_blast.campaign.name)
+                if campaign_type == 'email':
+                    open_rate = (campaign_blast.opens / float(campaign_blast.sends)) * 100
+                    response_message = 'Top performing %s campaign from %s is "%s with open rate %d%% (%d/%d)"' \
+                                       % (campaign_type, year, campaign_blast.campaign.name, open_rate,
+                                          campaign_blast.opens, campaign_blast.sends)
+                if campaign_type == 'sms':
+                    click_rate = (campaign_blast.clicks / float(campaign_blast.sends)) * 100
+                    reply_rate = (campaign_blast.replies / float(campaign_blast.sends)) * 100
+                    response_message = 'Top performing %s campaign from %s is "%s with click rate %d%% (%d/%d)' \
+                                       ' and reply rate %d%% (%d/%d)"' \
+                                       % (campaign_type, year, campaign_blast.campaign.name, click_rate,
+                                          campaign_blast.clicks, campaign_blast.sends, reply_rate,
+                                          campaign_blast.replies, campaign_blast.sends)
+                if campaign_type == 'push':
+                    click_rate = (campaign_blast.clicks / float(campaign_blast.sends)) * 100
+                    response_message = 'Top performing %s campaign from %s is "%s with click rate %d%% (%d/%d)"' \
+                                       % (campaign_type, year, campaign_blast.campaign.name, click_rate,
+                                          campaign_blast.clicks, campaign_blast.sends)
             else:
                 response_message = "Oops! looks like you don't have %s campaign from %s" % \
                                        (campaign_type, year)
         else:
-            response_message = "Please enter a valid year greater than 1900"
+            last_index = self.find_word_in_message('last', message_tokens)
+            if last_index:
+                if len(message_tokens) > last_index + 1:
+                    duration = 1
+                    duration_type = message_tokens[last_index+1].lower()
+                    if message_tokens[last_index + 1].isdigit():
+                        duration = int(message_tokens[last_index + 1])
+                        duration_type = message_tokens[last_index+2]
+                    user_specific_date = None
+                    if duration_type.lower() in 'years':
+                        user_specific_date = datetime.datetime.utcnow() - relativedelta(years=duration)
+                    if duration_type.lower() in 'months':
+                        user_specific_date = datetime.datetime.utcnow() - relativedelta(months=duration)
+                    if duration_type.lower() in 'weeks':
+                        user_specific_date = datetime.datetime.utcnow() - relativedelta(weeks=duration)
+                    if duration_type.lower() in 'days':
+                        user_specific_date = datetime.datetime.utcnow() - relativedelta(days=duration)
+                    campaign_blast = campaign_method(user_specific_date, user_id)
+                    timespan = self.append_list_with_spaces(message_tokens[last_index::])
+                    if campaign_blast:
+                        if campaign_type == 'email':
+                            open_rate = (campaign_blast.opens / campaign_blast.sends) * 100
+                            response_message = 'Top performing %s campaign from %s is "%s with open rate %d%% (%d/%d)"' \
+                                               % (campaign_type, year, campaign_blast.campaign.name, open_rate,
+                                                  campaign_blast.opens, campaign_blast.sends)
+                        if campaign_type == 'sms':
+                            click_rate = (campaign_blast.clicks / campaign_blast.sends) * 100
+                            reply_rate = (campaign_blast.replies / campaign_blast.sends) * 100
+                            response_message = 'Top performing %s campaign from %s is "%s with click rate %d%% (%d/%d)' \
+                                               ' and reply rate %d%% (%d/%d)"' \
+                                               % (campaign_type, year, campaign_blast.campaign.name, click_rate,
+                                                  campaign_blast.clicks, campaign_blast.sends, reply_rate,
+                                                  campaign_blast.replies, campaign_blast.sends)
+                        if campaign_type == 'push':
+                            click_rate = (campaign_blast.clicks / campaign_blast.sends) * 100
+                            response_message = 'Top performing %s campaign from %s is "%s with click rate %d%% (%d/%d)"' \
+                                               % (campaign_type, year, campaign_blast.campaign.name, click_rate,
+                                                  campaign_blast.clicks, campaign_blast.sends)
+                    else:
+                        response_message = "Oops! looks like you don't have %s campaign from %s" % \
+                                               (campaign_type, timespan)
+            else:
+                response_message = "Please enter a valid year greater than 1900"
 
         return response_message.replace("None", "all the times")
 
@@ -136,6 +210,10 @@ class QuestionHandler(object):
         """
         talent_index = self.find_word_in_message('talent', message_tokens)
         import_index = self.find_word_in_message('import', message_tokens)
+        if not import_index:
+            import_index = self.find_word_in_message('add', message_tokens)
+        if not talent_index or not import_index:
+            raise IndexError
         # Extracting talent pool name from user's message
         if message_tokens[import_index + 2].lower() != 'the':
             talent_pool_name = message_tokens[import_index + 2:talent_index:]
@@ -144,20 +222,38 @@ class QuestionHandler(object):
         # Extracting username from user message
         user_name = message_tokens[import_index - 1]
         spaced_talent_pool_name = self.append_list_with_spaces(talent_pool_name)
-        try:
-            last_index = self.find_word_in_message('last', message_tokens)
-        except IndexError:  # Word 'last' not found in message
-            last_index = len(message_tokens)
-        user_specific_date = None
-        if len(message_tokens) > last_index + 2:
-            if message_tokens[last_index + 1].isdigit():
-                months = int(message_tokens[last_index + 1])
-                user_specific_date = datetime.datetime.utcnow() - relativedelta(months=months)
-        count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
-                                                                user_specific_date, user_id)
-        response_message = "%s added %d candidates in %stalent pool" %\
-                           (user_name.title(), count, spaced_talent_pool_name)
-        return response_message
+        year = message_tokens[-1]
+        is_valid_year = self.is_valid_year(year)
+        if is_valid_year:
+            count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
+                                                                    year, user_id)
+            response_message = "%s added %d candidates in %stalent pool" % \
+                               (user_name.title(), count, spaced_talent_pool_name)
+            return response_message
+        last_index = self.find_word_in_message('last', message_tokens)
+        if last_index:
+            if len(message_tokens) > last_index + 1:
+                duration = 1
+                duration_type = message_tokens[last_index + 1].lower()
+                if message_tokens[last_index + 1].isdigit():
+                    duration = int(message_tokens[last_index + 1])
+                    duration_type = message_tokens[last_index + 2]
+                user_specific_date = None
+                if duration_type.lower() in 'years':
+                    user_specific_date = datetime.datetime.utcnow() - relativedelta(years=duration)
+                if duration_type.lower() in 'months':
+                    user_specific_date = datetime.datetime.utcnow() - relativedelta(months=duration)
+                if duration_type.lower() in 'weeks':
+                    user_specific_date = datetime.datetime.utcnow() - relativedelta(weeks=duration)
+                if duration_type.lower() in 'days':
+                    user_specific_date = datetime.datetime.utcnow() - relativedelta(days=duration)
+                count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
+                                                                        user_specific_date, user_id)
+                response_message = "%s added %d candidates in %stalent pool" % \
+                                   (user_name.title(), count, spaced_talent_pool_name)
+                return response_message
+            response_message = "Please enter a valid year greater than 1900"
+            return response_message
 
     @classmethod
     def question_5_handler(cls, *args):
