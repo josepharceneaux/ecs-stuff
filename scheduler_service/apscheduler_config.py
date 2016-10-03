@@ -8,7 +8,7 @@ from scheduler_service.modules.scheduler import flask_app
 
 __author__ = 'saad'
 
-MAX_THREAD_POOLS = 12
+MAX_THREAD_POOLS = 25
 LOCK_KEY = 'apscheduler_'
 
 url = urlparse(flask_app.config[TalentConfigKeys.REDIS_URL_KEY])
@@ -19,7 +19,7 @@ else:
 
 executors = {
     'default': ThreadPoolExecutor(MAX_THREAD_POOLS),
-    'processpool': ProcessPoolExecutor(max_workers=5)
+    'processpool': ProcessPoolExecutor(max_workers=12)
 }
 
 jobstores = {
