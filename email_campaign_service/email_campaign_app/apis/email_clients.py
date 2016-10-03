@@ -12,6 +12,10 @@ This file contains API endpoints for
             POST    : Adds new server-side-email-client in database table email_client_credentials
             GET    : GET email-client-credentials for requested user
 
+        - EmailClientsWithId: /v1/email-clients/%s
+
+            GET    : GET email-client-credentials for requested Id
+
         - EmailConversations: /v1/email-conversations
 
             POST     : Retrieves email-conversation of all the getTalent users
@@ -44,10 +48,12 @@ from email_campaign_service.common.utils.api_utils import api_route
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.common.utils.validators import get_json_data_if_validated
+from email_campaign_service.common.utils.validators import get_json_data_if_validated, \
+    raise_if_not_positive_int_or_long
 from email_campaign_service.common.models.email_campaign import EmailClientCredentials, EmailCampaign
 from email_campaign_service.common.routes import (EmailCampaignApi, EmailCampaignApiUrl, SchedulerApiUrl)
-from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError, ResourceNotFound)
+from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError, ResourceNotFound,
+                                                          ForbiddenError)
 
 # Blueprint for email-clients API
 email_clients_blueprint = Blueprint('email_clients_api', __name__)
@@ -176,15 +182,17 @@ class EmailClientsWithId(Resource):
         .. Status:: 200 (Resource Found)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
+                    403 (Unauthorized to access requested resource)
                     404 (Resource not found)
                     500 (Internal server error)
         """
-        client_in_db = EmailClientCredentials.filter_by_keywords(id=email_client_id, user_id=request.user.id)
+        raise_if_not_positive_int_or_long(email_client_id)
+        client_in_db = EmailClientCredentials.get_by_id(email_client_id)
         if not client_in_db:
             raise ResourceNotFound('Email client with id:%s not found in database' % email_client_id)
-        if not client_in_db[0].user_id == request.user.id:
-            raise InvalidUsage('Email client(id:%s) not owned by requested user' % email_client_id)
-        return {'email_client_credentials': client_in_db[0].to_json()}, codes.OK
+        if not client_in_db.user.domain_id == request.user.domain_id:
+            raise ForbiddenError('Email client(id:%s) not owned by requested user`s domain' % email_client_id)
+        return {'email_client_credentials': client_in_db.to_json()}, codes.OK
 
 
 @api.route(EmailCampaignApi.CONVERSATIONS)

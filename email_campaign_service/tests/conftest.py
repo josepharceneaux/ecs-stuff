@@ -316,6 +316,7 @@ def email_clients(request, headers):
     """
     email_client_ids = []
     for email_client_data in data_for_creating_email_clients():
+        print 'connecting with host:%s' % email_client_data['host']
         response = requests.post(EmailCampaignApiUrl.CLIENTS, headers=headers, data=json.dumps(email_client_data))
         assert response.ok
         assert 'id' in response.json()
