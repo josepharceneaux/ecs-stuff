@@ -143,7 +143,7 @@ def assert_campaign_schedule(response, user_id, campaign_id, headers):
     """
     assert response.status_code == requests.codes.OK, response.json()['error']['message']
     assert 'task_id' in response.json()
-    CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_id)
+    CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_id, timeout=40)
     # get updated record to verify the changes we made
     response_get = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign_id, headers=headers)
     assert response_get.status_code == requests.codes.OK, 'Response should be ok (200)'

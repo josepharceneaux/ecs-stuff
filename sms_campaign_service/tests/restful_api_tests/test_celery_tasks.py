@@ -212,19 +212,18 @@ class TestCampaignSchedule(object):
         data = generate_campaign_schedule_data().copy()
         data['frequency_id'] = Frequency.CUSTOM
         data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
-        response = requests.post(
-            SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'],
-            headers=headers, data=json.dumps(data))
+        response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'],
+                                 headers=headers, data=json.dumps(data))
         task_id = assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
         # assert that scheduler has sent the campaign for the first time
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
                                                            sms_campaign_of_user_first['id'], access_token_first,
-                                                           blast_timeout=60)
+                                                           blast_timeout=80)
 
         # assert that scheduler has sent the campaign for the second time
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
                                                            sms_campaign_of_user_first['id'], access_token_first,
-                                                           expected_blasts=2, blast_index=1,  blast_timeout=60)
+                                                           expected_blasts=2, blast_index=1,  blast_timeout=80)
         delete_test_scheduled_task(task_id, headers)
 
     def test_campaign_daily_schedule_and_validate_task_run(self, headers, user_first,
