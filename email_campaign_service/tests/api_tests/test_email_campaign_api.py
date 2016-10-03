@@ -506,7 +506,7 @@ class TestCreateCampaign(object):
         """
 
         campaign_id = email_campaign_of_user_first.id
-        data = {'is_hidden': params }
+        data = {'is_hidden': params}
         response = send_request('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id, access_token_first, data)
         CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=400)
 

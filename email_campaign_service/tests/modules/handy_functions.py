@@ -10,7 +10,8 @@
 import json
 import uuid
 import imaplib
-from datetime import datetime, timedelta
+import datetime
+
 # Third Party
 import requests
 from redo import retry
@@ -49,16 +50,20 @@ EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS = [{'from': fake.safe_email()}, {'from': fake
                                       'reply_to': fake.safe_email()}, {'from': fake.safe_email(),
                                       'reply_to': fake.safe_email(), 'body_text': fake.sentence()},
                                       {'from': fake.safe_email(), 'reply_to': fake.safe_email(), 'description': fake.sentence(),
-                                       'body_text': fake.sentence(), 'start_datetime': DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=20))},
+                                       'body_text': fake.sentence(), 'start_datetime': DatetimeUtils.to_utc_str(datetime.datetime.utcnow() + datetime.timedelta(minutes=20))},
                                       {'from': fake.safe_email(), 'reply_to': fake.safe_email(),
                                        'body_text': fake.sentence(), 'start_datetime': DatetimeUtils.to_utc_str(
-                                         datetime.utcnow() + timedelta(minutes=20)), 'end_datetime': DatetimeUtils.to_utc_str(
-                                         datetime.utcnow() + timedelta(minutes=40))}]
+                                         datetime.datetime.utcnow() + datetime.timedelta(minutes=20)), 'end_datetime': DatetimeUtils.to_utc_str(
+                                         datetime.datetime.utcnow() + datetime.timedelta(minutes=40))}]
 
-EMAIL_CAMPAIGN_INVALID_FIELDS = ['?page=-5', '?per_page=51', '?sort_type=ASER', '?sort_type=DSCEE', '?sort_by=id']
+EMAIL_CAMPAIGN_INVALID_FIELDS = ['?page=-5', '?per_page=%s' % fake.random_int(51,), '?sort_type=ASER', '?sort_type=DSCEE', '?sort_by=id']
 EMAIL_CAMPAIGN_EXPECT_SINGLE_FIELD = ['?page=1&sort_type=ASC&?sort_by=name', '?per_page=2&sort_type=ASC&?sort_by=name',
                                        '?page=1&per_page=2&?sort_by=name']
 CREATE_EMAIL_CAMPAIGN_OPTIONAL_FIELDS = ['from', 'reply_to', 'body_text', 'description', 'start_datetime', 'end_datetime']
+EMAIL_TEMPLATE_INVALID_DATA_TYPES = [{'name': fake.random_number(), 'is_immutable': 1}, {'name': fake.word(),
+                                                                                         'is_immutable': fake.random_int(2,)},
+                                     {'name': fake.word(), 'is_immutable': fake.word()}, {'name': fake.word(),
+                                     'is_immutable': 1, 'parent_id': fake.word()}]
 
 
 class EmailCampaignTypes(object):
@@ -557,8 +562,8 @@ def create_data_for_campaign_creation_with_all_parameters(access_token, talent_p
                                                                             emails_list=True,
                                                                             assert_candidates=assert_candidates,
                                                                             )
-    start_datetime = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=20))
-    end_datetime = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(minutes=40))
+    start_datetime = DatetimeUtils.to_utc_str(datetime.datetime.utcnow() + datetime.timedelta(minutes=20))
+    end_datetime = DatetimeUtils.to_utc_str(datetime.datetime.utcnow() + datetime.timedelta(minutes=40))
 
     return {'name': campaign_name,
             'from': email_from,
