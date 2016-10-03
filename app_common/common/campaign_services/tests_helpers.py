@@ -379,14 +379,15 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def assert_for_activity(user_id, _type, source_id):
+    def assert_for_activity(user_id, _type, source_id, timeout=60):
         """
         This verifies that activity has been created for given action
         :param positive user_id: Id of user
         :param positive _type: Type number of activity
         :param positive source_id: Id of activity source
         """
-        retry(_assert_activity, args=(user_id, _type, source_id), sleeptime=3, attempts=20, sleepscale=1,
+        attempts = timeout / 3 + 1
+        retry(_assert_activity, args=(user_id, _type, source_id), sleeptime=3, attempts=attempts, sleepscale=1,
               retry_exceptions=(AssertionError,))
 
     @staticmethod
