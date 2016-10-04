@@ -613,12 +613,14 @@ def test_health_check():
     response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK + '/')
     assert response.status_code == requests.codes.OK
 
+
 test_mail_data = {
-      "subject": "Test Email",
-      "from": "Zohaib Ijaz",
-      "body_html": "<html><body><h1>Welcome to email campaign service <a href=https://www.github.com>Github</a></h1></body></html>",
-      "email_address_list": [app.config[TalentConfigKeys.GT_GMAIL_ID]]
-    }
+    "subject": "Test Email",
+    "from": "no-reply@gettalent.com",
+    "body_html": "<html><body><h1>Welcome to email campaign service "
+                 "<a href=https://www.github.com>Github</a></h1></body></html>",
+    "email_address_list": [app.config[TalentConfigKeys.GT_GMAIL_ID]]
+}
 
 
 def test_test_email_with_valid_data(access_token_first):
