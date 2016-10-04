@@ -220,3 +220,15 @@ def resume_file_from_params(parse_params):
         )
 
     return resume_file
+
+
+def extra_skills_parsing(encoded_text):
+    url = current_app.config["JD_URL"]
+    payload = json.dumps({'text': encoded_text})
+    try:
+        skills_response = requests.post(url, data=payload)
+    except requests.exceptions.ConnectionError:
+        logger.exception("Unable to obtain extra skills from lambda call")
+
+    loaded_response = json.loads(skills_response.content)
+    return loaded_response.get('skills')

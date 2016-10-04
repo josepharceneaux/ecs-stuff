@@ -69,10 +69,6 @@ class PhoneInput(graphene.InputObjectType):
 
 
 class CreateCandidate(graphene.Mutation):
-    ok = graphene.Boolean()
-    id = graphene.Int()
-    candidate = graphene.Field('CandidateType')
-
     class Input(object):
         """
         Class contains optional input fields for creating candidate
@@ -98,6 +94,10 @@ class CreateCandidate(graphene.Mutation):
         educations = graphene.List(EducationInput)
         emails = graphene.List(EmailInput)
         phones = graphene.List(PhoneInput)
+
+    ok = graphene.Boolean()
+    id = graphene.Int()
+    candidate = graphene.Field(lambda: CandidateType)
 
     @classmethod
     def mutate(cls, instance, args, info):

@@ -702,7 +702,7 @@ class TestUpdateCandidateSocialNetwork(object):
         assert social_networks_after_update[-1]['name'] == 'LinkedIn'
         assert social_networks_after_update[-1]['profile_url'] == 'https://www.linkedin.com/company/sara'
 
-    def test_update_social_network(self, access_token_first, user_first, talent_pool):
+    def test_update_social_network(self, access_token_first, talent_pool):
         """
         Test:   Update a CandidateSocialNetwork.
                 Number of candidate's social_networks should remain unchanged.
