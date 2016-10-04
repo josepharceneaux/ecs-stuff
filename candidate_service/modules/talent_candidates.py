@@ -1088,7 +1088,7 @@ def classification_type_id_from_degree_type(degree_type):
     return matching_classification_type_id
 
 
-def social_network_id_from_name(name):
+def social_network_id_from_name(name=None):
     """
     Function gets social_network ID from social network's name
     e.g. 'Facebook' => 1
@@ -2293,7 +2293,7 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, is_updat
     for social_network in social_networks:
 
         social_network_dict = dict(
-            social_network_id=social_network_id_from_name(social_network['name'].strip()),
+            social_network_id=social_network_id_from_name((social_network.get('name') or '').strip()),
             social_profile_url=social_network['profile_url'].strip()
         )
 
@@ -2312,8 +2312,15 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, is_updat
                                      error_code=custom_error.SOCIAL_NETWORK_FORBIDDEN)
 
             # Track all changes
-            track_edits(update_dict=social_network_dict, table_name='candidate_social_network',
-                        candidate_id=candidate_id, user_id=user_id, query_obj=can_sn_obj)
+            track_edits(update_dict=social_network_dict,
+                        table_name='candidate_social_network',
+                        candidate_id=candidate_id,
+                        user_id=user_id,
+                        query_obj=can_sn_obj)
+
+            # If social network name is None, we assume the name remains the same
+            if not social_network_dict['social_network_id']:
+                del social_network_dict['social_network_id']
 
             can_sn_obj.update(**social_network_dict)
 
@@ -2324,8 +2331,10 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, is_updat
                 db.session.add(CandidateSocialNetwork(**social_network_dict))
 
                 if is_updating:  # Track all updates
-                    track_edits(update_dict=social_network_dict, table_name='candidate_social_network',
-                                candidate_id=candidate_id, user_id=user_id)
+                    track_edits(update_dict=social_network_dict,
+                                table_name='candidate_social_network',
+                                candidate_id=candidate_id,
+                                user_id=user_id)
 
 
 def _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating, is_updating):

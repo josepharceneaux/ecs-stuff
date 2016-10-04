@@ -84,7 +84,7 @@ def assert_url_conversion(sms_campaign_sends):
 
 
 def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_sends, campaign_id, access_token,
-                                                       expected_blasts=1, blast_index=0, blast_timeout=30,
+                                                       expected_blasts=1, blast_index=0, blast_timeout=60,
                                                        sends_timeout=100):
     """
     This function assert the number of sends in database table "sms_campaign_blast" and
@@ -143,7 +143,7 @@ def assert_campaign_schedule(response, user_id, campaign_id, headers):
     """
     assert response.status_code == requests.codes.OK, response.json()['error']['message']
     assert 'task_id' in response.json()
-    CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_id)
+    CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_id, timeout=40)
     # get updated record to verify the changes we made
     response_get = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign_id, headers=headers)
     assert response_get.status_code == requests.codes.OK, 'Response should be ok (200)'
