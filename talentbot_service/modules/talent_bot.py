@@ -46,9 +46,13 @@ class TalentBot(object):
                               '9': {'question': list_of_questions[9], 'threshold': 90,
                                     'handler': self.handler.question_6_handler},
                               # Domain question alternates
-                              '10': {'question': list_of_questions[10], 'threshold': 70,
+                              '10': {'question': list_of_questions[10], 'threshold': 90,
                                      'handler': self.handler.question_0_handler},
-                              '11': {'question': list_of_questions[11], 'threshold': 70,
+                              '11': {'question': list_of_questions[11], 'threshold': 90,
+                                     'handler': self.handler.question_0_handler},
+                              '28': {'question': list_of_questions[28], 'threshold': 90,
+                                     'handler': self.handler.question_0_handler},
+                              '29': {'question': list_of_questions[29], 'threshold': 90,
                                      'handler': self.handler.question_0_handler},
                               # Skills question alternates
                               '12': {'question': list_of_questions[12], 'threshold': 95,
@@ -67,6 +71,8 @@ class TalentBot(object):
                                      'handler': self.handler.question_1_handler},
                               '23': {'question': list_of_questions[23], 'threshold': 95,
                                      'handler': self.handler.question_1_handler},
+                              '30': {'question': list_of_questions[30], 'threshold': 95,
+                                     'handler': self.handler.question_1_handler},
                               # Top campaign alternates
                               '17': {'question': list_of_questions[17], 'threshold': 70,
                                      'handler': self.handler.question_3_handler},
@@ -78,12 +84,14 @@ class TalentBot(object):
                                      'handler': self.handler.question_3_handler},
                               '26': {'question': list_of_questions[26], 'threshold': 70,
                                      'handler': self.handler.question_3_handler},
+                              '27': {'question': list_of_questions[27], 'threshold': 70,
+                                     'handler': self.handler.question_3_handler},
                               # Import question alternates
                               '19': {'question': list_of_questions[19], 'threshold': 69,
                                      'handler': self.handler.question_4_handler},
                               # Zipcode question alternates
                               '22': {'question': list_of_questions[22], 'threshold': 79,
-                                    'handler': self.handler.question_2_handler},
+                                     'handler': self.handler.question_2_handler},
                               }
         self.bot_name = bot_name
         self.error_messages = error_messages

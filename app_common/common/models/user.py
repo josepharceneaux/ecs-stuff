@@ -828,6 +828,8 @@ class TalentbotAuth(db.Model):
     slack_team_name = db.Column('SlackTeamName', db.String(50))
     facebook_user_id = db.Column('FacebookUserId', db.String(50), unique=True)
     slack_user_token = db.Column('SlackUsertoken', db.String(70))
+    bot_id = db.Column('BotId', db.String(70), nullable=True)
+    bot_token = db.Column('BotToken', db.String(255), nullable=True)
 
     @staticmethod
     def get_user_id(**kwargs):
@@ -849,6 +851,5 @@ class TalentbotAuth(db.Model):
         :return: TalentbotAuth tb_auth: TalentbotAuth matched object
         """
         key = kwargs.keys()
-        tb_auth = TalentbotAuth.query.with_entities(TalentbotAuth.slack_user_token, TalentbotAuth.user_id).\
-            filter(getattr(TalentbotAuth, key[0]) == kwargs.get(key[0])).first()
+        tb_auth = TalentbotAuth.query.filter(getattr(TalentbotAuth, key[0]) == kwargs.get(key[0])).first()
         return tb_auth

@@ -32,7 +32,7 @@ MAILGUN_FROM = "TalentBot <postmaster@sandbox59cbb160934f43d7839e1788604c2c06.ma
 QUESTIONS = ['how many users are in my domain', 'how many candidates are there with skills',
              'how many candidates from zipcode',
              'what is the top performing campaign from',
-             'How many candidate leads did import into the talent pool last',
+             'How many candidate leads did x import into the y talent pool last',
              'what is your name', 'hint', 'help', 'what are your features', 'what can you do',
              'tell me the number of users in my domain', 'how many users exist in my domain',
              'how many candidates know', 'candidates who know',
@@ -42,8 +42,9 @@ QUESTIONS = ['how many users are in my domain', 'how many candidates are there w
              'show me the top email sms push campaigns from', 'how many candidates added into the talent pool last',
              'candidates who has grasp on', 'candidates having grasp on',
              'tell me the number of candidates from zipcode', 'candidates with skills',
-             'what is the top performing email campaign from', 'what is the top performing sms campaign from',
-             'what is the top performing push campaign from']
+             'what is the top performing email campaign from last', 'what is the top performing sms campaign from last',
+             'what is the top performing push campaign from last', 'which was the top smsemailpush campaign last',
+             'how many candidates are there in my domain', 'candidates in my domain', 'how many candidates has grasp on']
 POSITIVE_MESSAGES = ['hmmmm', 'ok', 'fine', 'whatever', 'yeah', 'ahan', 'so so']
 BEST_QUESTION_MATCH_RATIO = 95
 FACEBOOK_API_URI = "https://graph.facebook.com/v2.6/me/messages"

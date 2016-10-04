@@ -50,10 +50,7 @@ class QuestionHandler(object):
         :param _list: list
         :return: str result
         """
-        result = ""
-        for element in _list:
-            result += element + " "
-        return result
+        return ' '.join(_list)
 
     @classmethod
     def question_0_handler(cls, message_tokens, user_id):
@@ -63,9 +60,12 @@ class QuestionHandler(object):
         :param message_tokens: User message tokens
         :return: str response_message
         """
-        count, domain_name = User.get_user_count_in_domain(user_id)
-        response_message = "Users in domain %s : %d" % (domain_name, count)
-        return response_message
+        number_of_users, domain_name = User.get_user_count_in_domain(user_id)
+        candidate_index = cls.find_word_in_message('cand', message_tokens)
+        if candidate_index >= 0:
+            number_of_candidates = Candidate.get_count_of_candidates_owned_by_user(user_id)
+            return "Candidates in domain %s : %d" % (domain_name, number_of_candidates)
+        return "Users in domain %s : %d" % (domain_name, number_of_users)
 
     @classmethod
     def question_1_handler(cls, message_tokens, user_id):
@@ -119,84 +119,87 @@ class QuestionHandler(object):
             :param message_tokens: User message tokens
             :return: str response_message
         """
-        campaign_type_index = self.find_word_in_message('campaign', message_tokens)
-        campaign_type = message_tokens[campaign_type_index-1].lower()
-        year = message_tokens[-1]
-        is_valid_year = self.is_valid_year(year)
+        campaign_index = self.find_word_in_message('camp', message_tokens)
+        if not campaign_index:
+            raise IndexError
+        campaign_type = message_tokens[campaign_index-1].lower()
+        user_specific_date = message_tokens[-1]
+        is_valid_year = self.is_valid_year(user_specific_date)
         campaign_method = CAMPAIGN_TYPES.get(campaign_type)
         response_message = ""
+        if not is_valid_year:
+            user_specific_date = None
+        last_index = self.find_word_in_message('last', message_tokens)
+        if last_index:
+            if len(message_tokens) > last_index + 1:
+                duration = 1
+                duration_type = message_tokens[last_index+1].lower()
+                if message_tokens[last_index + 1].isdigit():
+                    duration = int(message_tokens[last_index + 1])
+                    duration_type = message_tokens[last_index+2]
+                if duration_type.lower() in 'years':
+                    user_specific_date = datetime.datetime.utcnow() - relativedelta(years=duration)
+                if duration_type.lower() in 'months':
+                    user_specific_date = datetime.datetime.utcnow() - relativedelta(months=duration)
+                if duration_type.lower() in 'weeks':
+                    user_specific_date = datetime.datetime.utcnow() - relativedelta(weeks=duration)
+                if duration_type.lower() in 'days':
+                    user_specific_date = datetime.datetime.utcnow() - relativedelta(days=duration)
         if not campaign_method:
-            return "Wrong campaign type specified"
-        if is_valid_year or year.lower() in 'campaigns' or year.lower() == 'from':
-            if year.lower() in 'campaigns' or year.lower() == 'from':
-                year = None
-            campaign_blast = campaign_method(year, user_id)
+            campaign_list = ['Top Campaigns are following:']
+            campaign_blast = CAMPAIGN_TYPES.get("email")(user_specific_date, user_id)
             if campaign_blast:
-                if campaign_type == 'email':
-                    open_rate = (campaign_blast.opens / float(campaign_blast.sends)) * 100
-                    response_message = 'Top performing %s campaign from %s is "%s with open rate %d%% (%d/%d)"' \
-                                       % (campaign_type, year, campaign_blast.campaign.name, open_rate,
-                                          campaign_blast.opens, campaign_blast.sends)
-                if campaign_type == 'sms':
-                    click_rate = (campaign_blast.clicks / float(campaign_blast.sends)) * 100
-                    reply_rate = (campaign_blast.replies / float(campaign_blast.sends)) * 100
-                    response_message = 'Top performing %s campaign from %s is "%s with click rate %d%% (%d/%d)' \
-                                       ' and reply rate %d%% (%d/%d)"' \
-                                       % (campaign_type, year, campaign_blast.campaign.name, click_rate,
-                                          campaign_blast.clicks, campaign_blast.sends, reply_rate,
-                                          campaign_blast.replies, campaign_blast.sends)
-                if campaign_type == 'push':
-                    click_rate = (campaign_blast.clicks / float(campaign_blast.sends)) * 100
-                    response_message = 'Top performing %s campaign from %s is "%s with click rate %d%% (%d/%d)"' \
-                                       % (campaign_type, year, campaign_blast.campaign.name, click_rate,
-                                          campaign_blast.clicks, campaign_blast.sends)
-            else:
-                response_message = "Oops! looks like you don't have %s campaign from %s" % \
-                                       (campaign_type, year)
+                open_rate = (campaign_blast.opens / float(campaign_blast.sends)) * 100
+                response_message = 'Email Campaign: "%s", open rate %d%% (%d/%d)"' \
+                                   % (campaign_blast.campaign.name, open_rate,
+                                      campaign_blast.opens, campaign_blast.sends)
+                campaign_list.append(response_message)
+            campaign_blast = CAMPAIGN_TYPES.get("sms")(user_specific_date, user_id)
+            if campaign_blast:
+                click_rate = (campaign_blast.clicks / float(campaign_blast.sends)) * 100
+                reply_rate = (campaign_blast.replies / float(campaign_blast.sends)) * 100
+                response_message = 'SMS Campaign: "%s" with click rate %d%% (%d/%d)' \
+                                   ' and reply rate %d%% (%d/%d)"' \
+                                   % (campaign_blast.campaign.name, click_rate,
+                                      campaign_blast.clicks, campaign_blast.sends, reply_rate,
+                                      campaign_blast.replies, campaign_blast.sends)
+                campaign_list.append(response_message)
+            campaign_blast = CAMPAIGN_TYPES.get("push")(user_specific_date, user_id)
+            if campaign_blast:
+                click_rate = (campaign_blast.clicks / float(campaign_blast.sends)) * 100
+                response_message = 'Push Campaign: "%s" with click rate %d%% (%d/%d)"' \
+                                   % (campaign_blast.campaign.name, click_rate,
+                                      campaign_blast.clicks, campaign_blast.sends)
+                campaign_list.append(response_message)
+            if len(campaign_list) < 2:
+                campaign_list[0] = "Looks like you don't have any campaigns"
+            return '\n'.join(campaign_list)
+        campaign_blast = campaign_method(user_specific_date, user_id)
+        timespan = self.append_list_with_spaces(message_tokens[last_index::])
+        if campaign_blast:
+            if type(user_specific_date) == datetime.datetime:
+                user_specific_date = user_specific_date.date()
+            if campaign_type == 'email':
+                open_rate = (campaign_blast.opens / float(campaign_blast.sends)) * 100
+                response_message = 'Top performing %s campaign from %s is "%s" with open rate %d%% (%d/%d)"' \
+                                   % (campaign_type, user_specific_date, campaign_blast.campaign.name, open_rate,
+                                      campaign_blast.opens, campaign_blast.sends)
+            if campaign_type == 'sms':
+                click_rate = (campaign_blast.clicks / float(campaign_blast.sends)) * 100
+                reply_rate = (campaign_blast.replies / float(campaign_blast.sends)) * 100
+                response_message = 'Top performing %s campaign from %s is "%s" with click rate %d%% (%d/%d)' \
+                                   ' and reply rate %d%% (%d/%d)"' \
+                                   % (campaign_type, user_specific_date, campaign_blast.campaign.name, click_rate,
+                                      campaign_blast.clicks, campaign_blast.sends, reply_rate,
+                                      campaign_blast.replies, campaign_blast.sends)
+            if campaign_type == 'push':
+                click_rate = (campaign_blast.clicks / float(campaign_blast.sends)) * 100
+                response_message = 'Top performing %s campaign from %s is "%s" with click rate %d%% (%d/%d)"' \
+                                   % (campaign_type, user_specific_date, campaign_blast.campaign.name, click_rate,
+                                      campaign_blast.clicks, campaign_blast.sends)
         else:
-            last_index = self.find_word_in_message('last', message_tokens)
-            if last_index:
-                if len(message_tokens) > last_index + 1:
-                    duration = 1
-                    duration_type = message_tokens[last_index+1].lower()
-                    if message_tokens[last_index + 1].isdigit():
-                        duration = int(message_tokens[last_index + 1])
-                        duration_type = message_tokens[last_index+2]
-                    user_specific_date = None
-                    if duration_type.lower() in 'years':
-                        user_specific_date = datetime.datetime.utcnow() - relativedelta(years=duration)
-                    if duration_type.lower() in 'months':
-                        user_specific_date = datetime.datetime.utcnow() - relativedelta(months=duration)
-                    if duration_type.lower() in 'weeks':
-                        user_specific_date = datetime.datetime.utcnow() - relativedelta(weeks=duration)
-                    if duration_type.lower() in 'days':
-                        user_specific_date = datetime.datetime.utcnow() - relativedelta(days=duration)
-                    campaign_blast = campaign_method(user_specific_date, user_id)
-                    timespan = self.append_list_with_spaces(message_tokens[last_index::])
-                    if campaign_blast:
-                        if campaign_type == 'email':
-                            open_rate = (campaign_blast.opens / campaign_blast.sends) * 100
-                            response_message = 'Top performing %s campaign from %s is "%s with open rate %d%% (%d/%d)"' \
-                                               % (campaign_type, year, campaign_blast.campaign.name, open_rate,
-                                                  campaign_blast.opens, campaign_blast.sends)
-                        if campaign_type == 'sms':
-                            click_rate = (campaign_blast.clicks / campaign_blast.sends) * 100
-                            reply_rate = (campaign_blast.replies / campaign_blast.sends) * 100
-                            response_message = 'Top performing %s campaign from %s is "%s with click rate %d%% (%d/%d)' \
-                                               ' and reply rate %d%% (%d/%d)"' \
-                                               % (campaign_type, year, campaign_blast.campaign.name, click_rate,
-                                                  campaign_blast.clicks, campaign_blast.sends, reply_rate,
-                                                  campaign_blast.replies, campaign_blast.sends)
-                        if campaign_type == 'push':
-                            click_rate = (campaign_blast.clicks / campaign_blast.sends) * 100
-                            response_message = 'Top performing %s campaign from %s is "%s with click rate %d%% (%d/%d)"' \
-                                               % (campaign_type, year, campaign_blast.campaign.name, click_rate,
-                                                  campaign_blast.clicks, campaign_blast.sends)
-                    else:
-                        response_message = "Oops! looks like you don't have %s campaign from %s" % \
-                                               (campaign_type, timespan)
-            else:
-                response_message = "Please enter a valid year greater than 1900"
+            response_message = "Oops! looks like you don't have %s campaign from %s" % \
+                                    (campaign_type, timespan)
 
         return response_message.replace("None", "all the times")
 
@@ -213,7 +216,7 @@ class QuestionHandler(object):
         if not import_index:
             import_index = self.find_word_in_message('add', message_tokens)
         if not talent_index or not import_index:
-            raise IndexError
+            return "Your question is vague"
         # Extracting talent pool name from user's message
         if message_tokens[import_index + 2].lower() != 'the':
             talent_pool_name = message_tokens[import_index + 2:talent_index:]
@@ -227,7 +230,7 @@ class QuestionHandler(object):
         if is_valid_year:
             count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
                                                                     year, user_id)
-            response_message = "%s added %d candidates in %stalent pool" % \
+            response_message = "%s added %d candidates in %s talent pool" % \
                                (user_name.title(), count, spaced_talent_pool_name)
             return response_message
         last_index = self.find_word_in_message('last', message_tokens)
@@ -235,7 +238,7 @@ class QuestionHandler(object):
             if len(message_tokens) > last_index + 1:
                 duration = 1
                 duration_type = message_tokens[last_index + 1].lower()
-                if message_tokens[last_index + 1].isdigit():
+                if message_tokens[last_index + 1].isdigit() and len(message_tokens) > last_index + 2:
                     duration = int(message_tokens[last_index + 1])
                     duration_type = message_tokens[last_index + 2]
                 user_specific_date = None
@@ -249,11 +252,14 @@ class QuestionHandler(object):
                     user_specific_date = datetime.datetime.utcnow() - relativedelta(days=duration)
                 count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
                                                                         user_specific_date, user_id)
-                response_message = "%s added %d candidates in %stalent pool" % \
+                response_message = "%s added %d candidates in %s talent pool" % \
                                    (user_name.title(), count, spaced_talent_pool_name)
                 return response_message
-            response_message = "Please enter a valid year greater than 1900"
-            return response_message
+        count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
+                                                                None, user_id)
+        response_message = "%s added %d candidates in %s talent pool" % (user_name.title(), count,
+                                                                        spaced_talent_pool_name)
+        return response_message
 
     @classmethod
     def question_5_handler(cls, *args):

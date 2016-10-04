@@ -39,13 +39,13 @@ class SlackBot(TalentBot):
         """
         talentbot_auth = TalentbotAuth.get_talentbot_auth(slack_user_id=slack_user_id)
         if talentbot_auth:
-            slack_user_token = talentbot_auth[0]
-            user_id = talentbot_auth[1]
+            slack_user_token = talentbot_auth.slack_user_token
+            user_id = talentbot_auth.user_id
             if slack_user_token and user_id:
                 slack_client = SlackClient(slack_user_token)
                 try:
                     at_bot = self.get_bot_id(slack_client)
-                    self.set_bot_state_active(slack_client)
+                    self.set_bot_state_active(talentbot_auth.bot_token)
                 except NotFoundError as error:
                     logger.error(error.message)
                     return False, None, None, None
@@ -77,13 +77,16 @@ class SlackBot(TalentBot):
                     return temp_at_bot
         raise NotFoundError("could not find bot user with the name %s" % self.bot_name)
 
-    def set_bot_state_active(self, slack_client):
+    def set_bot_state_active(self, bot_token):
         """
         Sets Slack bot state active
+        :param str bot_token: bot token
         """
-        slack_client.rtm_connect()
-        api_call_response = slack_client.api_call("users.setActive")
-        logger.info('bot state is active: %s' % str(api_call_response.get('ok')))
+        if bot_token:
+            slack_client = SlackClient(bot_token)
+            slack_client.rtm_connect()
+            api_call_response = slack_client.api_call("users.setActive")
+            logger.info('bot state is active: %s' % str(api_call_response.get('ok')))
 
     def reply(self, chanel_id, msg, slack_client):
         """
@@ -94,7 +97,7 @@ class SlackBot(TalentBot):
         """
         logger.info('slack reply: %s' % msg)
         slack_client.api_call("chat.postMessage", channel=chanel_id,
-                              text=msg)
+                              text=msg, set_active=True)
 
     def handle_communication(self, channel_id, message, slack_user_id, timestamp):
         """
