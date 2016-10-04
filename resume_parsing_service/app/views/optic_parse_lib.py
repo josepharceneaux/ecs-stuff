@@ -456,9 +456,9 @@ def parse_candidate_skills(bg_skills_xml_list, encoded_resume_text=None):
         bonus_skills = extra_skills_parsing(encoded_resume_text)
 
         for bonus_skill in bonus_skills:
-            if bonus_skill not in skills_parsed:
-                output.append({'name': bonus_skill, 'last_used_date': None, 'months_used': None})
+            if bonus_skill.lower() not in skills_parsed:
                 skills_parsed.add(bonus_skill.lower())
+                output.append({'name': bonus_skill, 'last_used_date': None, 'months_used': None})
 
     return output
 
