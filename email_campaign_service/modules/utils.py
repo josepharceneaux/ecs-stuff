@@ -358,7 +358,7 @@ def get_priority_emails(user, candidate_ids):
     :rtype: list[tuple]
     """
     # Get candidate emails sorted by updated time and then by candidate_id
-    candidate_email_rows = CandidateEmail.get_emails_sorted_by_updated_time_and_candidate_id(candidate_ids)
+    candidate_email_rows = CandidateEmail.get_emails_by_updated_time_candidate_id_desc(candidate_ids)
 
     # list of tuples (candidate id, email address)
     group_id_and_email_and_labels = []

@@ -497,7 +497,7 @@ class CandidateEmail(db.Model):
             filter(cls.address.in_(email_addresses)).all()
 
     @classmethod
-    def get_emails_sorted_by_updated_time_and_candidate_id(cls, candidate_ids):
+    def get_emails_by_updated_time_candidate_id_desc(cls, candidate_ids):
         """
         Get candidate emails sorted by updated time and then by candidate_id
         :param list candidate_ids: List of candidate Ids
