@@ -379,7 +379,7 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def assert_for_activity(user_id, _type, source_id, timeout=60):
+    def assert_for_activity(user_id, _type, source_id, timeout=80):
         """
         This verifies that activity has been created for given action
         :param positive user_id: Id of user

@@ -464,7 +464,6 @@ class TestSendCampaign(object):
             json_resp = response.json()
             assert str(campaign_with_candidate_having_no_email.id) in json_resp['message']
 
-
     def test_campaign_send_to_two_candidates_with_unique_email_addresses(
             self, headers, user_first, campaign_with_valid_candidate):
         """
@@ -494,8 +493,7 @@ class TestSendCampaign(object):
             assert str(campaign_with_valid_candidate.id) in json_resp['message']
 
     def test_campaign_send_to_two_candidates_with_same_email_address_in_diff_domain(
-            self, headers, user_first,
-            campaign_with_candidates_having_same_email_in_diff_domain):
+            self, headers, user_first, campaign_with_candidates_having_same_email_in_diff_domain):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates associated. One more candidate exists in some other domain with same email
@@ -503,7 +501,7 @@ class TestSendCampaign(object):
         """
         campaign = campaign_with_candidates_having_same_email_in_diff_domain
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first, 2, abort_time_for_sends=300)
+        assert_campaign_send(response, campaign, user_first, 2)
 
     def test_campaign_send_with_email_client_id(self, send_email_campaign_by_client_id_response, user_first):
         """
@@ -579,19 +577,14 @@ class TestSendCampaign(object):
         :param talent_pipeline: valid talent pipeline
         :param email_campaign_of_user_first: email campaign associated with user first
         """
-        smartlist_id1, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
-                                                                                 talent_pipeline,
-                                                                                 count=20,
-                                                                                 emails_list=True)
-        smartlist_id2, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
-                                                                                 talent_pipeline,
-                                                                                 count=20,
-                                                                                 emails_list=True)
+        smartlist_id1, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
+                                                                                 count=20, emails_list=True)
+        smartlist_id2, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first, talent_pipeline,
+                                                                                 count=20, emails_list=True)
         campaign = email_campaign_of_user_first
-        create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2],
-                                         email_campaign_id=campaign.id)
+        create_email_campaign_smartlists(smartlist_ids=[smartlist_id1, smartlist_id2], email_campaign_id=campaign.id)
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first, 40, abort_time_for_sends=300)
+        assert_campaign_send(response, campaign, user_first, 40)
 
     def test_send_campaign_with_two_smartlists_having_same_candidate(
             self, headers, user_first, campaign_with_same_candidate_in_multiple_smartlists):

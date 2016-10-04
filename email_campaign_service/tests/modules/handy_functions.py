@@ -252,11 +252,11 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
     sends_url_conversions = []
     # assert on activity of individual campaign sends
     for campaign_send in campaign_sends:
-        assert campaign_send.ses_message_id
-        assert campaign_send.ses_request_id
         # Get "email_campaign_send_url_conversion" records
         sends_url_conversions.extend(campaign_send.url_conversions)
         if not email_client:
+            assert campaign_send.ses_message_id
+            assert campaign_send.ses_request_id
             CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
                                                       campaign_send.id)
     if campaign_sends:
