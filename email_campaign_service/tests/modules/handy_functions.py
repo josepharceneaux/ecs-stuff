@@ -229,7 +229,7 @@ def assert_and_delete_email(subject, username=app.config[TalentConfigKeys.GT_GMA
     return msg_ids
 
 
-def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False, expected_status=200,
+def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False, expected_status=codes.OK,
                          abort_time_for_sends=300):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
@@ -262,7 +262,7 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
     if campaign_sends:
         # assert on activity for whole campaign send
         CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_SEND, campaign.id)
-        # TODO: Emails are not being received within expected time range
+        # TODO: Emails are not being received within expected time range, commenting for now (basit)
         # if not email_client:
         #     assert retry(assert_and_delete_email, sleeptime=5, attempts=80, sleepscale=1,
         #                  args=(campaign.subject,), retry_exceptions=(AssertionError, imaplib.IMAP4_SSL.error)), \
