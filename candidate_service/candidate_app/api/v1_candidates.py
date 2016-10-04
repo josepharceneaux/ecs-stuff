@@ -543,6 +543,25 @@ class CandidatesResource(Resource):
         logger.info('BENCHMARK - candidate PATCH: {}'.format(time() - start_time))
         return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
 
+    @require_all_permissions(Permission.PermissionNames.CAN_DELETE_CANDIDATES)
+    def delete(self):
+
+        body_dict = request.get_json(silent=True)
+        if body_dict:
+            candidate_ids = body_dict.get('_candidate_ids')
+
+            # Candidate IDs must belong to user's domain
+            if not do_candidates_belong_to_users_domain(request.user, candidate_ids):
+                raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+            # http://docs.sqlalchemy.org/en/rel_1_0/orm/query.html#sqlalchemy.orm.query.Query.delete
+            try:
+                Candidate.query.filter(Candidate.id.in_(candidate_ids)).delete(synchronize_session=False)
+                db.session.commit()
+                return '', requests.codes.NO_CONTENT
+            except Exception as e:
+                raise InternalServerError(error_message="Oops. Something went wrong: {}".format(e.message))
+
 
 class CandidateResource(Resource):
     decorators = [require_oauth()]

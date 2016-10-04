@@ -22,7 +22,8 @@ tables = [
     "candidate_reference",
     "candidate_education",
     "candidate_experience",
-    "candidate_military_service"
+    "candidate_military_service",
+    "candidate_language"
 ]
 for table in tables:
 
