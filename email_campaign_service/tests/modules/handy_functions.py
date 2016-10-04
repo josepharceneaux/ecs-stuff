@@ -231,7 +231,7 @@ def assert_and_delete_email(subject, username=app.config[TalentConfigKeys.GT_GMA
 
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False, expected_status=codes.OK,
-                         abort_time_for_sends=300):
+                         abort_time_for_sends=300, via_amazon_ses=True):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
@@ -256,8 +256,10 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         # Get "email_campaign_send_url_conversion" records
         sends_url_conversions.extend(campaign_send.url_conversions)
         if not email_client:
-            assert campaign_send.ses_message_id
-            assert campaign_send.ses_request_id
+            if via_amazon_ses:  # If email-campaign is sent via Amazon SES, we should have message_id and request_id
+                                # saved in database table "email_campaign_sends"
+                assert campaign_send.ses_message_id
+                assert campaign_send.ses_request_id
             CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
                                                       campaign_send.id)
     if campaign_sends:

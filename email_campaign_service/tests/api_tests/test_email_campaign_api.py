@@ -542,7 +542,7 @@ class TestSendCampaign(object):
         """
         campaign = email_campaign_with_outgoing_email_client
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first)
+        assert_campaign_send(response, campaign, user_first, via_amazon_ses=False)
 
     def test_campaign_send_with_email_client_id(self, send_email_campaign_by_client_id_response, user_first):
         """
