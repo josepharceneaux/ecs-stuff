@@ -503,6 +503,7 @@ class CandidateEmail(db.Model):
         :param list candidate_ids: List of candidate Ids
         :rtype: list
         """
+        assert isinstance(candidate_ids, list) and candidate_ids, 'list of candidate_ids cannot be empty'
         candidate_email_rows = cls.query.with_entities(cls.candidate_id,
                                                        cls.address, cls.updated_time, cls.email_label_id) \
             .filter(CandidateEmail.candidate_id.in_(candidate_ids)).order_by(desc(CandidateEmail.updated_time),

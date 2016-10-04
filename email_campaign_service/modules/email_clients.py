@@ -2,7 +2,17 @@
     Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 
     Here we have classes for email-clients.
+    We have two types of email-clients.
+        1) Outgoing (SMTP). This will serve in sending email-campaigns via user's personal email-account.
+        2) Incoming (IMAP or POP). This will serve importing email-conversations from user's personal email-account.
 
+    We have a base class EmailClientBase which has following methods.
+        - connect()
+        - authenticate()
+        - import_emails()
+        - get_candidate_ids_and_emails()
+        - email_conversation_importer
+        - save_email_conversations()
 """
 # Standard Library
 import email
@@ -29,20 +39,45 @@ __author__ = 'basit'
 
 class EmailClientBase(object):
     """
-    This is the base class for email-clients.
+    - This is the base class for email-clients. This contains following methods:
+
+    * __init__()
+        - It takes "host", "port", "email", "password" and "user_id" as keyword argument and sets
+            the values of respective attributes.
+
+    * connect(self)
+        This connects to client using "host" and "port".
+
+    * authenticate()(self, connection_quit=True):
+        This method is used to login into email-client's server using "email" and "password"
+
+    * import_emails(self, candidate_id, candidate_email)
+        This search selected mailbox for given candidate_email and saves email-conversation(s) by
+        calling save_email_conversations().
+
+    * get_candidate_ids_and_emails(self)
+        This gets all the candidates in user's domain and gets their emails saved in our database table
+        candidate_email.
+
+    * email_conversation_importer(self)
+        This selects mailbox (e.g. "INBOX") and imports email-conversations from the candidates of user.
+
+    * save_email_conversations(self ,candidate_id, subject, body, email_received_datetime)
+        This saves email-conversation in database table email-conversations. It also ensures
+        saving unique records in database.
     """
 
-    def __init__(self, host, port, email, password, user_id=None):
+    def __init__(self, host, port, login_email, password, user_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of server
         :param string port: Port number
-        :param string email: Email address
+        :param string login_email: Email address
         :param string password: Password
         """
         self.host = host
         self.port = str(port).strip() if port else ''
-        self.email = email
+        self.email = login_email
         self.password = password
         self.client = None
         self.connection = None
@@ -55,6 +90,7 @@ class EmailClientBase(object):
         This gets the required client for given host.
         :param string host: Hostname e.g. smtp.gmail.com
         """
+        host = host.strip().lower()
         if 'smtp' in host:
             client = SMTP
         elif 'imap' in host:
@@ -143,15 +179,19 @@ class EmailClientBase(object):
 
 
 class SMTP(EmailClientBase):
-    def __init__(self, host, port, email, password, user_id=None):
+    """
+    Class for connecting and sending emails with SMTP server
+    """
+
+    def __init__(self, host, port, login_email, password, user_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of SMTP server
         :param string port: Port number
-        :param string email: Email address
+        :param string login_email: Email address
         :param string password: Password
         """
-        super(SMTP, self).__init__(host, port, email, password, user_id=user_id)
+        super(SMTP, self).__init__(host, port, login_email, password, user_id=user_id)
         self.client = smtplib.SMTP
 
     def authenticate(self, connection_quit=True):
@@ -163,7 +203,7 @@ class SMTP(EmailClientBase):
             self.connection.login(self.email, self.password)
         except smtplib.SMTPAuthenticationError as error:
             logger.exception(error.smtp_error)
-            raise InvalidUsage('Invalid credentials provided. Could not authenticate with smtp server')
+            raise InvalidUsage('Invalid credentials provided. Could not authenticate with SMTP server')
         if connection_quit:
             self.connection.quit()
 
@@ -189,15 +229,19 @@ class SMTP(EmailClientBase):
 
 
 class IMAP(EmailClientBase):
-    def __init__(self, host, port, email, password, user_id=None):
+    """
+    Class for connecting and importing email-conversations with IMAP server
+    """
+
+    def __init__(self, host, port, login_email, password, user_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of SMTP server
         :param string port: Port number
-        :param string email: Email address
+        :param string login_email: Email address
         :param string password: Password
         """
-        super(IMAP, self).__init__(host, port, email, password, user_id=user_id)
+        super(IMAP, self).__init__(host, port, login_email, password, user_id=user_id)
         self.client = imaplib.IMAP4_SSL
 
     def authenticate(self, connection_quit=True):
@@ -208,7 +252,7 @@ class IMAP(EmailClientBase):
             self.connection.login(self.email, self.password)
         except imaplib.IMAP4_SSL.error as error:
             logger.exception(error.message)
-            raise InvalidUsage('Invalid credentials provided. Could not authenticate with imap server')
+            raise InvalidUsage('Invalid credentials provided. Could not authenticate with IMAP server')
 
     def email_conversation_importer(self):
         """
@@ -252,15 +296,19 @@ class IMAP(EmailClientBase):
 
 
 class POP(EmailClientBase):
-    def __init__(self, host, port, email, password, user_id=None):
+    """
+    Class for connecting and importing email-conversations with POP server
+    """
+
+    def __init__(self, host, port, login_email, password, user_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of POP server
         :param string port: Port number
-        :param string email: Email address
+        :param string login_email: Email address
         :param string password: Password
         """
-        super(POP, self).__init__(host, port, email, password, user_id=user_id)
+        super(POP, self).__init__(host, port, login_email, password, user_id=user_id)
         self.client = poplib.POP3_SSL
 
     def authenticate(self, connection_quit=True):
@@ -272,7 +320,7 @@ class POP(EmailClientBase):
             self.connection.pass_(self.password)
         except poplib.error_proto as error:
             logger.exception(error.message)
-            raise InvalidUsage('Invalid credentials provided. Could not authenticate with pop server')
+            raise InvalidUsage('Invalid credentials provided. Could not authenticate with POP server')
 
     def email_conversation_importer(self):
         """
@@ -293,7 +341,7 @@ def import_email_conversations(queue_name):
     This gets all the records for incoming clients from database table email_client_credentials.
     It then calls "import_email_conversations_per_account" to imports email-conversations for selected email-client.
     """
-    email_clients = EmailClientCredentials.get_by_type(EmailClientCredentials.CLIENT_TYPES['incoming'])
+    email_clients = EmailClientCredentials.get_by_client_type(EmailClientCredentials.CLIENT_TYPES['incoming'])
     for email_client in email_clients:
         logger.info('Importing email-conversations from host:%s, account:%s, user_id:%s' % (email_client.host,
                                                                                             email_client.email,

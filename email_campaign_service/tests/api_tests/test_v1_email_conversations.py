@@ -24,7 +24,7 @@ class TestEmailConversations(object):
     """
     Here we test /v1/email-conversations
     """
-    URL = EmailCampaignApiUrl.CONVERSATIONS
+    URL = EmailCampaignApiUrl.EMAIL_CONVERSATIONS
 
     def test_run_importer_and_get_imported_email_conversation(self, campaign_for_email_conversation_importer, headers):
         """

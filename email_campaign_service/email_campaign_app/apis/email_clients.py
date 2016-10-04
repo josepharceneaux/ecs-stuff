@@ -12,7 +12,7 @@ This file contains API endpoints for
             POST    : Adds new server-side-email-client in database table email_client_credentials
             GET    : GET email-client-credentials for requested user
 
-        - EmailClientsWithId: /v1/email-clients/%s
+        - EmailClientsWithId: /v1/email-clients/:id
 
             GET    : GET email-client-credentials for requested Id
 
@@ -48,8 +48,8 @@ from email_campaign_service.common.utils.api_utils import api_route, ApiResponse
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.common.utils.validators import get_json_data_if_validated, \
-    raise_if_not_positive_int_or_long
+from email_campaign_service.common.utils.validators import (get_json_data_if_validated,
+                                                            raise_if_not_positive_int_or_long)
 from email_campaign_service.common.models.email_campaign import EmailClientCredentials, EmailCampaign
 from email_campaign_service.common.routes import (EmailCampaignApi, EmailCampaignApiUrl, SchedulerApiUrl)
 from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError, ResourceNotFound,
@@ -62,7 +62,7 @@ api.init_app(email_clients_blueprint)
 api.route = types.MethodType(api_route, api)
 
 
-@api.route(EmailCampaignApi.CLIENTS)
+@api.route(EmailCampaignApi.EMAIL_CLIENTS)
 class EmailClientsEndpoint(Resource):
 
     # Access token decorator
@@ -109,7 +109,7 @@ class EmailClientsEndpoint(Resource):
         data['password'] = b64_password
         email_client = EmailClientCredentials(**data)
         EmailClientCredentials.save(email_client)
-        headers = {'Location': EmailCampaignApiUrl.CLIENT_WITH_ID % email_client.id}
+        headers = {'Location': EmailCampaignApiUrl.EMAIL_CLIENT_WITH_ID % email_client.id}
         return ApiResponse(dict(id=email_client.id), status=requests.codes.CREATED, headers=headers)
 
     def get(self):
@@ -155,8 +155,12 @@ class EmailClientsEndpoint(Resource):
         return {'email_client_credentials': email_client_credentials}, codes.OK
 
 
-@api.route(EmailCampaignApi.CLIENT_WITH_ID)
+@api.route(EmailCampaignApi.EMAIL_CLIENT_WITH_ID)
 class EmailClientsWithId(Resource):
+    """
+    This endpoint looks like /v1/email-clients/:id.
+    We can get an email-client with its id in database table "email_client_credentials".
+    """
 
     # Access token decorator
     decorators = [require_oauth()]
@@ -196,7 +200,7 @@ class EmailClientsWithId(Resource):
         return {'email_client_credentials': client_in_db.to_json()}, codes.OK
 
 
-@api.route(EmailCampaignApi.CONVERSATIONS)
+@api.route(EmailCampaignApi.EMAIL_CONVERSATIONS)
 class EmailConversations(Resource):
     """
     This endpoint deals with email-conversations for the added email-clients of users.
@@ -269,7 +273,7 @@ def schedule_job_for_email_conversations():
     """
     Schedule general job that hits /v1/email-conversations endpoint every hour.
     """
-    url = EmailCampaignApiUrl.CONVERSATIONS
+    url = EmailCampaignApiUrl.EMAIL_CONVERSATIONS
     task_name = 'get_email_conversations'
     start_datetime = datetime.utcnow() + timedelta(seconds=15)
     # Schedule for next 100 years

@@ -30,7 +30,7 @@ class TestCreateEmailClients(object):
     """
     Here are the tests of /v1/email-campaigns
     """
-    URL = EmailCampaignApiUrl.CLIENTS
+    URL = EmailCampaignApiUrl.EMAIL_CLIENTS
     HTTP_METHOD = 'post'
 
     def test_with_invalid_token(self):
@@ -87,7 +87,7 @@ class TestCreateEmailClients(object):
         invalid_key_values = [(key, CampaignsTestsHelpers.INVALID_STRING) for key in email_client_data]
         for key, values in invalid_key_values:
             for value in values:
-                if key not in EMAIL_CLIENTS_SCHEMA['required'] and value in (None, '', '      '):
+                if key not in EMAIL_CLIENTS_SCHEMA['required'] and value in (None, '', '        '):
                     pass
                 else:
                     data = email_client_data.copy()
@@ -122,7 +122,7 @@ class TestGetEmailClients(object):
     """
     Here are the tests of /v1/email-campaigns
     """
-    URL = EmailCampaignApiUrl.CLIENTS
+    URL = EmailCampaignApiUrl.EMAIL_CLIENTS
     HTTP_METHOD = 'get'
 
     def test_with_invalid_token(self):
@@ -183,7 +183,7 @@ class TestGetEmailClientsWithId(object):
     """
     Here are the tests of /v1/email-campaigns
     """
-    URL = EmailCampaignApiUrl.CLIENT_WITH_ID
+    URL = EmailCampaignApiUrl.EMAIL_CLIENT_WITH_ID
     HTTP_METHOD = 'get'
 
     def test_with_invalid_token(self):

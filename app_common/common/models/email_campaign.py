@@ -469,7 +469,9 @@ class EmailClientCredentials(db.Model):
         :type search_keyword:  string
         :rtype: list
         """
-        assert user_id, 'user_id not given'
+        assert isinstance(user_id, (int, long)) and user_id, 'user_id not given'
+        assert isinstance(search_keyword, basestring) and search_keyword, 'search_keyword not given'
+        search_keyword = search_keyword.strip()
         if search_keyword not in cls.CLIENT_TYPES:
             raise InvalidUsage('Invalid value of param `type` provided')
         client_types = getattr(cls, search_keyword.upper())
@@ -479,13 +481,15 @@ class EmailClientCredentials(db.Model):
         return cls.query.filter(or_(*conditions), cls.user_id == user_id).all()
 
     @classmethod
-    def get_by_type(cls, client_type):
+    def get_by_client_type(cls, client_type):
         """
         This gets email-client-credentials for given client type.
         Valid values of parameter are 'incoming' or 'outgoing'.
         :type client_type:  string
         :rtype: list
         """
+        assert isinstance(client_type, basestring) and client_type, 'client_type not given'
+        client_type = client_type.strip()
         if client_type not in cls.CLIENT_TYPES:
             raise InvalidUsage('Invalid value of param `client_type` provided')
         conditions = []
