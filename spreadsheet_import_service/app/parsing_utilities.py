@@ -294,6 +294,8 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                                   custom_fields=custom_fields,
                                   skills=skills)
 
+            candidate_data = {key: value for key, value in candidate_data if value is not None}
+
             created, response = create_candidates_from_parsed_spreadsheet(candidate_data, oauth_token)
 
             if created:
