@@ -89,9 +89,9 @@ def parse_resume(file_obj, filename_str, cache_key):
     optic_response = fetch_optic_response(encoded_resume, filename_str)
 
     if optic_response:
-        redis_store.set(cache_key, optic_response)
+        redis_store.hmset(cache_key, {'bg_data': optic_response, 'doc_content': encoded_resume})
         redis_store.expire(cache_key, RESUME_EXPIRE_TIME)
-        candidate_data = parse_optic_xml(optic_response)
+        candidate_data = parse_optic_xml(optic_response, encoded_resume)
         return {'raw_response': optic_response, 'candidate': candidate_data}
 
     else:

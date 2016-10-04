@@ -20,9 +20,8 @@ import pycountry
 from flask import current_app
 from resume_parsing_service.app import logger
 from resume_parsing_service.app.constants import error_constants
-# from resume_parsing_service.app.views.OauthClient import OAuthClient
 from resume_parsing_service.app.views.oauth_client2 import get_authorization_string
-# from resume_parsing_service.app.views.oauth1_utils import gen_auth, gen_key, gen_string
+from resume_parsing_service.app.views.utils import extra_skills_parsing
 from resume_parsing_service.common.error_handling import InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 from resume_parsing_service.common.utils.handy_functions import normalize_value
@@ -98,11 +97,12 @@ def fetch_optic_response(resume, filename_str):
 
 
 @contract
-def parse_optic_xml(resume_xml_text):
+def parse_optic_xml(resume_xml_text, encoded_resume_text):
     """
     Takes in a Burning Glass XML tree in string format and returns a candidate JSON object.
     :param string resume_xml_text: An XML tree represented in unicode format. It is a slightly
                                    processed response from the Burning Glass API.
+    :param string encoded_resume_text: b64 encoded resume text for skills parsing.
     :return: Results of various parsing functions on the input xml string.
     :rtype: dict
     """
@@ -127,7 +127,7 @@ def parse_optic_xml(resume_xml_text):
         phones=parse_candidate_phones(contact_xml_list),
         work_experiences=parse_candidate_experiences(experience_xml_list),
         educations=parse_candidate_educations(educations_xml_list),
-        skills=parse_candidate_skills(skill_xml_list),
+        skills=parse_candidate_skills(skill_xml_list, encoded_resume_text),
         addresses=parse_candidate_addresses(contact_xml_list),
         talent_pool_ids={'add': None},
         references=references,
@@ -405,14 +405,14 @@ def parse_candidate_educations(bg_educations_xml_list):
 
 
 @contract
-def parse_candidate_skills(bg_skills_xml_list):
+def parse_candidate_skills(bg_skills_xml_list, encoded_resume_text):
     """
     Parses a skill list from a list of skill tags found in a BGXML response.
     :param bs4_ResultSet bg_skills_xml_list:
     :return: List of dicts containing skill data.
     :rtype: list(dict)
     """
-    skills_parsed = {}
+    skills_parsed = set()
     output = []
 
     for skill in bg_skills_xml_list:
@@ -448,7 +448,14 @@ def parse_candidate_skills(bg_skills_xml_list):
 
         if processed_skill['name'] not in skills_parsed:
             output.append(processed_skill)
-            skills_parsed[processed_skill['name']] = True
+            skills_parsed.add(processed_skill['name'].lower())
+
+    bonus_skills = extra_skills_parsing(encoded_resume_text)
+
+    for bonus_skill in bonus_skills:
+        if bonus_skill not in skills_parsed:
+            output.append({'name': bonus_skill, 'last_used_date': None, 'months_used': None})
+            skills_parsed.add(bonus_skill.lower())
 
     return output
 
