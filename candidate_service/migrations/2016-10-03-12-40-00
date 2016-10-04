@@ -1,0 +1,15 @@
+"""
+This script adds start_year, start_month, end_year, and end_month columns to candidate_military_service table
+"""
+
+from candidate_service.common.models.db import db
+from candidate_service.common.models.candidate_edit import CandidateEdit
+from sqlalchemy.dialects.mysql import TINYINT, SMALLINT
+
+db.session.execute("""
+                   ALTER TABLE `candidate_military_service`
+                       ADD COLUMN `start_year` SMALLINT,
+                       ADD COLUMN `start_month` TINYINT,
+                       ADD COLUMN `end_year` SMALLINT,
+                       ADD COLUMN `end_month` TINYINT;
+                   """)
