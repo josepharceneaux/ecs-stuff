@@ -94,7 +94,7 @@ class CandidatesResource(Resource):
     decorators = [require_oauth()]
 
     @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
-    def post(self):
+    def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates
         Input: {'candidates': [CandidateObject, CandidateObject, ...]}
