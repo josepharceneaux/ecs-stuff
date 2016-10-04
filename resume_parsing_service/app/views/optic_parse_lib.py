@@ -405,7 +405,7 @@ def parse_candidate_educations(bg_educations_xml_list):
 
 
 @contract
-def parse_candidate_skills(bg_skills_xml_list, encoded_resume_text):
+def parse_candidate_skills(bg_skills_xml_list, encoded_resume_text=None):
     """
     Parses a skill list from a list of skill tags found in a BGXML response.
     :param bs4_ResultSet bg_skills_xml_list:
@@ -427,6 +427,9 @@ def parse_candidate_skills(bg_skills_xml_list, encoded_resume_text):
         parsed_name = name or skill_text
         processed_skill = {'name': parsed_name, 'last_used_date': None, 'months_used': None}
 
+        if processed_skill['name'].lower() in skills_parsed:
+            continue # skip further processing if duplicate.
+
         if start_days and end_days:
             """
             BurningGlass skill start and end dates come in the format of 6 digit whole numbers.
@@ -446,16 +449,16 @@ def parse_candidate_skills(bg_skills_xml_list, encoded_resume_text):
         if months_used and months_used > 0: # Rarely a skill will have an end before the start.
             processed_skill['months_used'] = int(months_used)
 
-        if processed_skill['name'] not in skills_parsed:
-            output.append(processed_skill)
-            skills_parsed.add(processed_skill['name'].lower())
+        output.append(processed_skill)
+        skills_parsed.add(processed_skill['name'].lower())
 
-    bonus_skills = extra_skills_parsing(encoded_resume_text)
+    if encoded_resume_text:
+        bonus_skills = extra_skills_parsing(encoded_resume_text)
 
-    for bonus_skill in bonus_skills:
-        if bonus_skill not in skills_parsed:
-            output.append({'name': bonus_skill, 'last_used_date': None, 'months_used': None})
-            skills_parsed.add(bonus_skill.lower())
+        for bonus_skill in bonus_skills:
+            if bonus_skill not in skills_parsed:
+                output.append({'name': bonus_skill, 'last_used_date': None, 'months_used': None})
+                skills_parsed.add(bonus_skill.lower())
 
     return output
 
