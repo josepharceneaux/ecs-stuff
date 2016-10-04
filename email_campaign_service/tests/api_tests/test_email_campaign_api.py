@@ -261,7 +261,7 @@ class TestCreateCampaign(object):
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject, assert_candidates=False)
         # GET email-client-id
-        response = requests.get(EmailCampaignApiUrl.CLIENTS + '?type=outgoing', headers=headers)
+        response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=outgoing', headers=headers)
         assert response.ok
         assert response.json()
         email_client_response = response.json()['email_client_credentials']
@@ -281,7 +281,7 @@ class TestCreateCampaign(object):
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject, assert_candidates=False)
         # GET email-client-id
-        response = requests.get(EmailCampaignApiUrl.CLIENTS + '?type=incoming', headers=headers)
+        response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=incoming', headers=headers)
         assert response.ok
         assert response.json()
         email_client_response = response.json()['email_client_credentials']

@@ -317,7 +317,7 @@ def email_clients(request, headers):
     email_client_ids = []
     for email_client_data in data_for_creating_email_clients():
         print 'connecting with host:%s' % email_client_data['host']
-        response = requests.post(EmailCampaignApiUrl.CLIENTS, headers=headers, data=json.dumps(email_client_data))
+        response = requests.post(EmailCampaignApiUrl.EMAIL_CLIENTS, headers=headers, data=json.dumps(email_client_data))
         assert response.ok
         assert 'id' in response.json()
         email_client_ids.append(response.json()['id'])
@@ -339,7 +339,7 @@ def outgoing_email_client(headers):
     """
     email_clients_data = data_for_creating_email_clients(key='outgoing')
     for email_client_data in email_clients_data:
-        response = requests.post(EmailCampaignApiUrl.CLIENTS, headers=headers, data=json.dumps(email_client_data))
+        response = requests.post(EmailCampaignApiUrl.EMAIL_CLIENTS, headers=headers, data=json.dumps(email_client_data))
         assert response.ok
         assert 'id' in response.json()
         return response.json()['id']
@@ -359,7 +359,7 @@ def email_campaign_with_outgoing_email_client(access_token_first, talent_pipelin
                                                              + timedelta(weeks=1) + timedelta(days=4))
 
     # GET email-client-id
-    response = requests.get(EmailCampaignApiUrl.CLIENTS + '?type=outgoing', headers=headers)
+    response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=outgoing', headers=headers)
     assert response.ok
     assert response.json()
     email_client_response = response.json()['email_client_credentials']
@@ -377,7 +377,7 @@ def email_campaign_with_outgoing_email_client(access_token_first, talent_pipelin
 
 
 @pytest.fixture()
-def campaign_for_email_conversation_importer(email_clients, headers, candidate_first):
+def data_for_email_conversation_importer(email_clients, headers, candidate_first):
     """
     We need to
     - Send an email to 'gettalentmailtest@gmail.com'. For this we will add an SMTP client for the user.
@@ -389,7 +389,7 @@ def campaign_for_email_conversation_importer(email_clients, headers, candidate_f
                                      email_label_id=CandidateEmail.labels_mapping['Primary'])
     CandidateEmail.save(candidate_email)
     # GET email-client-id
-    response = requests.get(EmailCampaignApiUrl.CLIENT_WITH_ID % email_clients[0], headers=headers)
+    response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENT_WITH_ID % email_clients[0], headers=headers)
     assert response.ok
     assert response.json()
     email_client_response = response.json()['email_client_credentials']

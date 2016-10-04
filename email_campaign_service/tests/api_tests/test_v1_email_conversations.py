@@ -8,8 +8,8 @@ In this module, we have tests for following endpoints
 
 """
 # Third Party
-from redo import retry
 import requests
+from redo import retry
 from requests import codes
 
 # Application Specific
@@ -26,11 +26,11 @@ class TestEmailConversations(object):
     """
     URL = EmailCampaignApiUrl.EMAIL_CONVERSATIONS
 
-    def test_run_importer_and_get_imported_email_conversation(self, campaign_for_email_conversation_importer, headers):
+    def test_run_importer_and_get_imported_email_conversation(self, data_for_email_conversation_importer, headers):
         """
         This tests we import email-conversation with a specific subject and body successfully.
         """
-        subject, body = campaign_for_email_conversation_importer
+        subject, body = data_for_email_conversation_importer
         secret_key_id, access_token = User.generate_jw_token()
         headers_for_importer = {'X-Talent-Secret-Key-ID': secret_key_id, 'Authorization': access_token}
         # This will run the importer for email-conversations
