@@ -2,6 +2,8 @@
 """
 test_utilities.py: helper methods for testing social network service endpoints
 """
+
+
 __author__ = 'zohaib'
 
 # Standard Library
@@ -16,7 +18,7 @@ from dateutil.parser import parse
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.modules.utilities import unix_time
-from social_network_service.modules.utilities import snake_case_to_camel_case
+from social_network_service.common.utils.handy_functions import snake_case_to_camel_case
 from social_network_service.modules.utilities import camel_case_to_title_case
 from social_network_service.modules.utilities import camel_case_to_snake_case
 from social_network_service.modules.utilities import convert_keys_to_snake_case

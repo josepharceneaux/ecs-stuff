@@ -542,11 +542,11 @@ def organizer_in_db(user_first):
     social_network = SocialNetwork.get_by_name(EVENTBRITE.title())
     organizer = {
         "user_id": user_first['id'],
-        "name": "Saad Abdullah",
-        "email": "testemail@gmail.com",
-        "about": "He is a testing engineer",
+        "name": "Zohaib Ijaz 5555",
+        "email": "mzohaib.qc@gmail.com",
+        "about": "abc",
         "social_network_id": social_network.id,
-        "social_network_organizer_id": "11000067214"
+        "social_network_organizer_id": "11576432727"
     }
 
     organizer_obj = EventOrganizer(**organizer)

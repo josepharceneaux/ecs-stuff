@@ -10,8 +10,11 @@ import datetime
 import requests
 
 # Service imports
+from requests import codes
+
 from social_network_service.common.models.db import db
 from social_network_service.common.models.event import Event
+from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.social_network_app import logger
 from social_network_service.common.utils.handy_functions import send_request
 
@@ -107,3 +110,19 @@ def assert_event(user_id, social_network_event_id):
     event = Event.get_by_user_and_social_network_event_id(user_id=user_id,
                                                           social_network_event_id=social_network_event_id)
     assert event
+
+
+def get_graphql_data(query, token, expected_status=(codes.OK,)):
+    """
+    This function is to avoid some redundant, repeatable code like passing SN service url, asserting OK response etc.
+    :param dict query: GrapgQL query for SN service endpoin
+    :param string token: access token
+    :param list | tuple expected_status: list/tuple of HTTP status codes
+    :return:
+    """
+    print('Query: %s' % query)
+    response = send_request('get', SocialNetworkApiUrl.GRAPHQL, token, data=query)
+    print('get_graphql_data. Response: %s' % response.content)
+    assert response.status_code in expected_status
+    json_response = response.json()
+    return json_response

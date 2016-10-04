@@ -22,6 +22,7 @@ from pytz import timezone
 from social_network_service.common.error_handling import InvalidUsage
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.models.misc import Activity
+from social_network_service.common.utils.handy_functions import snake_case_to_camel_case
 from social_network_service.custom_exceptions import *
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.candidate import SocialNetwork
@@ -406,21 +407,6 @@ def camel_case_to_title_case(name):
     """
     name_ = camel_case_to_snake_case(name)
     return ' '.join(name_.split('_')).title()
-
-
-def snake_case_to_camel_case(name):
-    """ Convert string or unicode from lower-case underscore to camel-case
-        e.g. appt_type_id --> apptTypeId
-
-            :Example:
-
-                result = snake_case_to_camel_case('social_network_id')
-                assert result == 'socialNetworkId'
-    """
-    splitted_string = name.split('_')
-    # use string's class to work on the string to keep its type
-    class_ = name.__class__
-    return splitted_string[0] + class_.join('', map(class_.capitalize, splitted_string[1:]))
 
 
 def convert_keys_to_camel_case(dictionary):
