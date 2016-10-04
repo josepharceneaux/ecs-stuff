@@ -148,9 +148,7 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
         }
     """
     raise_if_not_instance_of(key, basestring)
-    raise_if_not_instance_of(query, Query)
-    # error_out=false, do nor raise error if these is no object to return but return an empty list
-    results = query.paginate(page, per_page, error_out=False)
+    results = get_paginated_list(query, page, per_page)
     # convert model objects to serializable dictionaries
     items = [parser(item, include_fields) for item in results.items]
     headers = generate_pagination_headers(results.total, per_page, page)
@@ -175,3 +173,10 @@ def generate_pagination_headers(results_count, results_per_page, current_page):
         'X-Page': current_page,
         'Access-Control-Expose-Headers': 'X-Total, X-Per-Page, X-Page'
     }
+
+
+def get_paginated_list(query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE):
+    raise_if_not_instance_of(query, Query)
+    # error_out=false, do nor raise error if these is no object to return but return an empty list
+    results = query.paginate(page, per_page, error_out=False)
+    return results

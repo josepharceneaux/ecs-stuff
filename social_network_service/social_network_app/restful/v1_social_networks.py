@@ -409,21 +409,8 @@ class GetTokenValidityResource(Resource):
 
         """
         user_id = request.user.id
-        # Get social network specified by social_network_id
-        social_network = SocialNetwork.get_by_id(social_network_id)
-        if social_network:
-            user_social_network_credential = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_id, social_network_id)
-            if user_social_network_credential:
-                # Get social network specific Social Network class
-                social_network_class = get_class(social_network.name, 'social_network')
-                # create social network object which will validate
-                # and refresh access token (if possible)
-                sn = social_network_class(user_id=user_id,
-                                          social_network=social_network
-                                          )
-                return dict(status=sn.access_token_status)
-        else:
-            raise ResourceNotFound("Invalid social network id given")
+        status = is_token_valid(social_network_id, user_id)
+        return dict(status=status)
 
 
 @api.route(SocialNetworkApi.TOKEN_REFRESH)
@@ -1127,3 +1114,22 @@ class ProcessAccessTokenResource(Resource):
         else:
             raise ResourceNotFound('Social Network not found')
 
+
+def is_token_valid(social_network_id, user_id):
+    # Get social network specified by social_network_id
+    social_network = SocialNetwork.get_by_id(social_network_id)
+    if social_network:
+        user_social_network_credential = UserSocialNetworkCredential.get_by_user_and_social_network_id(
+            user_id, social_network_id)
+        if user_social_network_credential:
+            # Get social network specific Social Network class
+            social_network_class = get_class(social_network.name, 'social_network')
+            # create social network object which will validate
+            # and refresh access token (if possible)
+            sn = social_network_class(user_id=user_id,
+                                      social_network=social_network
+                                      )
+            return sn.access_token_status, social_network.name
+        return False, social_network.name
+    else:
+        raise ResourceNotFound("Invalid social network id given")

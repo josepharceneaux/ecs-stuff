@@ -6,6 +6,7 @@
 
 # 3rd party imports
 from flask import request, redirect
+from flask.ext.graphql import GraphQLView
 
 # Application specific imports
 from restful.v1_data import data_blueprint
@@ -15,11 +16,13 @@ from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
 from social_network_service.modules.constants import MEETUP_CODE_LENGTH
 from social_network_service.modules.social_network.twitter import Twitter
+from social_network_service.common.utils.auth_utils import require_oauth
 from social_network_service.social_network_app import app
 from restful.v1_social_networks import social_network_blueprint
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.social_network_app.restful.v1_importer import rsvp_blueprint
+from social_network_service.social_network_app.graphql.query import schema
 
 # Register Blueprints for different APIs
 
@@ -31,6 +34,8 @@ api = TalentApi(app)
 
 # Initialize Redis Cache
 redis_store.init_app(app)
+
+app.add_url_rule(SocialNetworkApi.GRAPHQL, view_func=require_oauth()(GraphQLView.as_view('graphql', schema=schema, graphiql=True)))
 
 
 @app.route('/')

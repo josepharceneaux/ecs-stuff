@@ -664,6 +664,12 @@ class SocialNetwork(db.Model):
         assert isinstance(ids, list)
         return cls.query.filter(SocialNetwork.id.in_(ids)).all()
 
+    @classmethod
+    def get_subscribed_social_networks(cls, user_id):
+        from user import UserSocialNetworkCredential
+        subscribed_data = UserSocialNetworkCredential.get_by_user_id(user_id=user_id)
+        return cls.query.filter(cls.id.in_([sn.social_network_id for sn in subscribed_data])).all()
+
 
 class CandidateSocialNetwork(db.Model):
     __tablename__ = 'candidate_social_network'
