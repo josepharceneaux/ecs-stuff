@@ -2318,6 +2318,10 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, is_updat
                         user_id=user_id,
                         query_obj=can_sn_obj)
 
+            # If social network name is None, we assume the name remains the same
+            if not social_network_dict['social_network_id']:
+                del social_network_dict['social_network_id']
+
             can_sn_obj.update(**social_network_dict)
 
         else:  # Add
