@@ -577,3 +577,18 @@ def create_data_for_campaign_creation_with_all_parameters(access_token, talent_p
             'start_datetime': start_datetime,
             'end_datetime': end_datetime
             }
+
+
+def assert_and_delete_template_folder(template_folder_id, headers, data=None):
+    """
+
+    :param template_folder_id: folder which you delete
+    :param data:
+    :param headers:
+    :return:
+    """
+
+    response = requests.delete(url=EmailCampaignApiUrl.TEMPLATE_FOLDER % template_folder_id,
+                               data=json.dumps(data), headers=headers)
+    assert response.status_code == requests.codes.NO_CONTENT
+

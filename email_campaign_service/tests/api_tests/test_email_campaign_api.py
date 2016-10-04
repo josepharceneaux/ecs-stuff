@@ -172,7 +172,6 @@ class TestGetCampaigns(object):
                                                     pagination_query='?page=2')
         assert len(email_campaigns) == 0
 
-
     def test_get_campaigns_with_invalid_sort_type(self, headers):
         """
         Test GET API of email_campaigns for getting all campaigns in logged-in user's domain with invalid value
