@@ -13,10 +13,11 @@ from bs4 import BeautifulSoup
 from dateutil.relativedelta import relativedelta
 
 # Service Specific
+from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.email_campaign_app import (logger, celery_app)
 
 # Common Utils
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from email_campaign_service.email_campaign_app import cache, app
 from email_campaign_service.common.redis_cache import redis_store
 from email_campaign_service.common.models.user import User, Serializer
@@ -105,14 +106,22 @@ def do_mergetag_replacements(texts, candidate=None):
 
 
 def do_prefs_url_replacement(text, candidate_id):
-
-    assert candidate_id
-
-    if app.config[TalentConfigKeys.ENV_KEY] == 'prod':
+    """
+    Here we do the replacement of merge tag "*|PREFERENCES_URL|*". After replacement this will become the
+    URL for the candidate to unsubscribe the email-campaign.
+    :param string text: This maybe subject, body_html or body_text of email-campaign
+    :param int|long candidate_id: Id of candidate to which email-campaign is supposed to be sent
+    :rtype: string
+    """
+    if not isinstance(text, basestring):
+        raise InvalidUsage('Text should be non-empty string')
+    if not isinstance(candidate_id, (int, long)):
+        raise InvalidUsage('candidate_id should be positive int"long')
+    if app.config[TalentConfigKeys.ENV_KEY] == TalentEnvs.PROD:
         host_name = 'https://app.gettalent.com/'
     else:
         host_name = 'http://staging.gettalent.com/'
-
+        
     secret_key_id = jwt_security_key()
     secret_key = redis_store.get(secret_key_id)
     s = Serializer(secret_key, expires_in=SIX_MONTHS_EXPIRATION_TIME)

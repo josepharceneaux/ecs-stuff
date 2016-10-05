@@ -24,7 +24,8 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   EmailCampaignTypes, send_campaign_with_client_id)
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from email_campaign_service.modules.utils import DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG
+from email_campaign_service.modules.utils import DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG, \
+    DEFAULT_PREFERENCES_URL_MERGETAG
 
 EMAIL_CAMPAIGN_TYPES = [EmailCampaignTypes.WITHOUT_CLIENT, EmailCampaignTypes.WITH_CLIENT]
 
@@ -91,7 +92,9 @@ def email_campaign_with_merge_tags(user_first, access_token_first, headers, tale
                                                                                        assert_candidates=True)
     create_email_campaign_smartlists(smartlist_ids=[smartlist_id], email_campaign_id=email_campaign.id)
     # Update email-campaign's body text
-    starting_string = 'Hello %s %s,' % (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG)
+    starting_string = 'Hello %s %s, unsubscribe URL is:%s' % (DEFAULT_FIRST_NAME_MERGETAG,
+                                                              DEFAULT_LAST_NAME_MERGETAG,
+                                                              DEFAULT_PREFERENCES_URL_MERGETAG)
     email_campaign.update(body_text=starting_string + email_campaign.body_text)
     email_campaign.update(body_html=starting_string + email_campaign.body_html)
     candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id[0], headers=headers)

@@ -509,6 +509,8 @@ class TestSendCampaign(object):
         """
         User auth token is valid, campaign has one smartlist associated. Smartlist has one
         candidate associated. We assert that received email has correctly replaced merge tags.
+        If candidate's first name is `John` and last name is `Doe`, and email body is like
+        'Hello *|FIRSTNAME|* *|LASTNAME|*,', it will become 'Hello John Doe,'
         """
         campaign, candidate = email_campaign_with_merge_tags
         response = requests.post(self.URL % campaign.id, headers=headers)
@@ -519,6 +521,7 @@ class TestSendCampaign(object):
         assert len(email_bodies) == 1
         assert candidate['first_name'] in email_bodies[0]
         assert candidate['last_name'] in email_bodies[0]
+        assert str(candidate['id']) in email_bodies[0]  # This will be in unsubscribe URL.
 
     def test_campaign_send_with_email_client_id(self, send_email_campaign_by_client_id_response, user_first):
         """
@@ -561,6 +564,7 @@ class TestSendCampaign(object):
         for entity in ('new_text', 'new_html'):
             assert candidate['first_name'] in email_campaign_send[entity]
             assert candidate['last_name'] in email_campaign_send[entity]
+            assert str(candidate['id']) in email_campaign_send[entity]  # This will be in unsubscribe URL.
         assert_campaign_send(response, email_campaign, user_first, expected_sends, email_client=True)
 
     def test_redirect_url(self, send_email_campaign_by_client_id_response):
