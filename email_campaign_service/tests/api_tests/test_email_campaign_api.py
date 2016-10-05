@@ -39,7 +39,9 @@ from email_campaign_service.tests.modules.handy_functions import (assert_valid_c
                                                                   create_email_campaign_via_api,
                                                                   create_data_for_campaign_creation,
                                                                   create_email_campaign_smartlists,
-                                                                  assert_and_delete_email)
+                                                                  assert_and_delete_email,
+                                                                  send_campaign_with_client_id, get_mail_connection,
+                                                                  fetch_emails)
 
 
 class TestGetCampaigns(object):
@@ -503,6 +505,21 @@ class TestSendCampaign(object):
         response = requests.post(self.URL % campaign.id, headers=headers)
         assert_campaign_send(response, campaign, user_first, 2)
 
+    def test_campaign_send_with_merge_tags(self, headers, user_first, email_campaign_with_merge_tags):
+        """
+        User auth token is valid, campaign has one smartlist associated. Smartlist has one
+        candidate associated. We assert that received email has correctly replaced merge tags.
+        """
+        campaign, candidate = email_campaign_with_merge_tags
+        response = requests.post(self.URL % campaign.id, headers=headers)
+        msg_ids = assert_campaign_send(response, campaign, user_first, 1, delete_email=False)
+        mail_connection = get_mail_connection(app.config[TalentConfigKeys.GT_GMAIL_ID],
+                                              app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
+        email_bodies = fetch_emails(mail_connection, msg_ids)
+        assert len(email_bodies) == 1
+        assert candidate['first_name'] in email_bodies[0]
+        assert candidate['last_name'] in email_bodies[0]
+
     def test_campaign_send_with_email_client_id(self, send_email_campaign_by_client_id_response, user_first):
         """
         Email client can be Outlook Plugin, Browser etc.
@@ -525,6 +542,26 @@ class TestSendCampaign(object):
         response = send_email_campaign_by_client_id_response['response']
         campaign = send_email_campaign_by_client_id_response['campaign']
         assert_campaign_send(response, campaign, user_first, 2, email_client=True)
+
+    def test_campaign_send_with_email_client_id_using_merge_tags(self, email_campaign_with_merge_tags, user_first,
+                                                                 access_token_first):
+        """
+        This is the test for merge tags. We assert that merge tags has been successfully replaced with
+        candidate's info.
+        If candidate's first name is `John` and last name is `Doe`, and email body is like
+        'Hello *|FIRSTNAME|* *|LASTNAME|*,', it will become 'Hello John Doe,'
+        """
+        expected_sends = 1
+        email_campaign, candidate = email_campaign_with_merge_tags
+        send_response = send_campaign_with_client_id(email_campaign, access_token_first)
+        response = send_response['response']
+        email_campaign_sends = send_response['response'].json()['email_campaign_sends']
+        assert len(email_campaign_sends) == 1
+        email_campaign_send = email_campaign_sends[0]
+        for entity in ('new_text', 'new_html'):
+            assert candidate['first_name'] in email_campaign_send[entity]
+            assert candidate['last_name'] in email_campaign_send[entity]
+        assert_campaign_send(response, email_campaign, user_first, expected_sends, email_client=True)
 
     def test_redirect_url(self, send_email_campaign_by_client_id_response):
         """
