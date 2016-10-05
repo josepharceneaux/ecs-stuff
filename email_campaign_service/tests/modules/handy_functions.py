@@ -294,7 +294,6 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
     if campaign_sends:
         # assert on activity for whole campaign send
         CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_SEND, campaign.id)
-        # TODO: Emails are not being received within expected time range, commenting for now (basit)
         if not email_client:
             msg_ids = retry(assert_and_delete_email, sleeptime=5, attempts=80, sleepscale=1,
                             args=(campaign.subject,), kwargs=dict(delete_email=delete_email),

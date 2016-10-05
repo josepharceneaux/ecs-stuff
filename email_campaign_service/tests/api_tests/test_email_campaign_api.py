@@ -664,10 +664,8 @@ def test_test_email_with_valid_data(access_token_first):
     data['subject'] = subject
     response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
     assert response.status_code == requests.codes.OK
-
-    # TODO: Emails are not being received within expected time range, commenting for now (basit)
-    # retry(assert_and_delete_email, sleeptime=5, attempts=10, sleepscale=1,
-    #       args=(subject,), retry_exceptions=(AssertionError,))
+    assert retry(assert_and_delete_email, sleeptime=5, attempts=10, sleepscale=1, args=(subject,),
+                 retry_exceptions=(AssertionError,))
 
 
 def test_test_email_with_invalid_email_address(access_token_first):

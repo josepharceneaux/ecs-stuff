@@ -5,17 +5,16 @@
 
 This file contains fixtures for tests of email-campaign-service
 """
-from email_campaign_service.modules.utils import DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG
 
 __author__ = 'basit'
 
 # Application Specific
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.models.misc import Frequency
-from email_campaign_service.common.routes import EmailCampaignApiUrl, CandidateApiUrl
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.models.email_campaign import (UserEmailTemplate,
                                                                  EmailTemplateFolder)
+from email_campaign_service.common.routes import (EmailCampaignApiUrl, CandidateApiUrl)
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   create_email_campaign_smartlist,
                                                                   send_campaign_helper,
@@ -25,6 +24,7 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   EmailCampaignTypes, send_campaign_with_client_id)
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.modules.utils import DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG
 
 EMAIL_CAMPAIGN_TYPES = [EmailCampaignTypes.WITHOUT_CLIENT, EmailCampaignTypes.WITH_CLIENT]
 
