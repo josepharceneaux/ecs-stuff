@@ -99,26 +99,36 @@ class SmsCampaignBlast(db.Model):
         return "<SMSCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
 
     @classmethod
-    def top_performing_sms_campaign(cls, year, user_id):
+    def top_performing_sms_campaign(cls, datetime_value, user_id):
         """
         This method returns top performing SMS campaign from a specific year
         :param int user_id: User Id
-        :param year: Year of campaign started or updated
-        :rtype: SmsCampaignBlast|None
+        :param datetime|str datetime_value: Year of campaign started or updated
+        :rtype SmsCampaignBlast|None
         """
         from user import UserPhone
         user_phones = UserPhone.get_by_user_id(user_id)
-        if user_phones and year:
-            user_phone = user_phones[0]
-            return cls.query.filter(or_(extract("year", cls.updated_time) == year,
-                                        extract("year", cls.sent_datetime) == year)). \
+        if user_phones and isinstance(datetime_value, datetime.datetime):
+            user_phone_ids = [user_phone.id for user_phone in user_phones]
+            return cls.query.filter(or_(cls.updated_time >= datetime_value,
+                                        cls.sent_datetime >= datetime_value)).\
+                filter(cls.sends > 0).\
                 filter(SmsCampaign.id == cls.campaign_id).\
-                filter(SmsCampaign.user_phone_id == user_phone.id). \
+                filter(SmsCampaign.user_phone_id.in_(user_phone_ids)). \
                 order_by(desc(cls.replies)).first()
-        if user_phones and not year:
-            user_phone = user_phones[0]
+        if user_phones and isinstance(datetime_value, basestring):
+            user_phone_ids = [user_phone.id for user_phone in user_phones]
+            return cls.query.filter(or_(extract("year", cls.updated_time) == datetime_value,
+                                        extract("year", cls.sent_datetime) == datetime_value)). \
+                filter(SmsCampaign.id == cls.campaign_id). \
+                filter(cls.sends > 0). \
+                filter(SmsCampaign.user_phone_id.in_(user_phone_ids)). \
+                order_by(desc(cls.replies)).first()
+        if user_phones and not datetime_value:
+            user_phone_ids = [user_phone.id for user_phone in user_phones]
             return cls.query.filter(SmsCampaign.id == cls.campaign_id). \
-                filter(SmsCampaign.user_phone_id == user_phone.id).\
+                filter(SmsCampaign.user_phone_id.in_(user_phone_ids)). \
+                filter(cls.sends > 0). \
                 order_by(desc(cls.replies)).first()
         return None
 
