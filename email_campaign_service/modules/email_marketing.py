@@ -11,14 +11,11 @@ import os
 import json
 import getpass
 import itertools
-from base64 import b64decode
 from datetime import datetime, timedelta
 
 # Third Party
 from celery import chord
 from redo import retrier
-from sqlalchemy import desc
-from simplecrypt import decrypt
 
 # Service Specific
 from email_campaign_service.json_schema.test_email import TEST_EMAIL_SCHEMA
@@ -27,12 +24,13 @@ from email_campaign_service.email_campaign_app import (logger, celery_app, app)
 from email_campaign_service.modules.utils import (TRACKING_URL_TYPE,
                                                   get_candidates_from_smartlist,
                                                   do_mergetag_replacements,
-                                                  create_email_campaign_url_conversions, SMTP)
+                                                  create_email_campaign_url_conversions, decrypt_password,
+                                                  get_priority_emails)
+from email_campaign_service.modules.email_clients import SMTP, decrypt_password
 from email_campaign_service.modules import aws_constants as aws
 
 # Common Utils
 from email_campaign_service.common.models.db import db
-from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.user import Domain
 from email_campaign_service.common.models.misc import (Frequency, Activity)
 from email_campaign_service.common.utils.scheduler_utils import SchedulerUtils
@@ -54,7 +52,7 @@ from email_campaign_service.common.utils.handy_functions import (http_request,
                                                                  JSON_CONTENT_TYPE_HEADER)
 from email_campaign_service.common.utils.amazon_ses import send_email, get_default_email_info
 from email_campaign_service.common.models.candidate import (Candidate, CandidateEmail,
-                                                            CandidateSubscriptionPreference, EmailLabel)
+                                                            CandidateSubscriptionPreference)
 from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError, ResourceNotFound)
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
 from email_campaign_service.common.inter_service_calls.candidate_service_calls import \
@@ -360,7 +358,7 @@ def process_campaign_send(celery_result, user_id, campaign_id, list_ids, new_can
     all_candidate_ids = list(set(all_candidate_ids))  # Unique candidates
     campaign = EmailCampaign.get_by_id(campaign_id)
     subscribed_candidate_ids = get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only)
-    candidate_ids_and_emails = get_filtered_email_rows(campaign, subscribed_candidate_ids)
+    candidate_ids_and_emails = get_priority_emails(campaign.user, subscribed_candidate_ids)
     if candidate_ids_and_emails:
         email_campaign_blast_id, blast_params, blast_datetime = notify_and_get_blast_params(campaign,
                                                                                             new_candidates_only,
@@ -425,42 +423,7 @@ def get_email_campaign_candidate_ids_and_emails(campaign, new_candidates_only=Fa
         raise InternalServerError('No candidate(s) found for smartlist_ids %s.' % list_ids,
                                   error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
     subscribed_candidate_ids = get_subscribed_candidate_ids(campaign, all_candidate_ids, new_candidates_only)
-    return get_filtered_email_rows(campaign, subscribed_candidate_ids)
-
-
-def get_candidate_id_email_by_priority(email_info_tuple, email_labels):
-    """
-    Get the primary_label_id from email_labels tuple list, using that find primary email address in emails_obj.
-    If found then simply return candidate_id and primary email_address otherwise return first email address.
-    :param (int, str, int) email_info_tuple: (candidate_id, email_address, email_label_id)
-    :param [(int, str)] email_labels: Tuple containing structure [( email_label_id, email_label_description )]
-    :return: candidate_id, email_address
-    :rtype: tuple
-    """
-    if not(isinstance(email_info_tuple, list) and len(email_info_tuple) > 0):
-        raise InternalServerError("get_candidate_id_email_by_priority: emails_obj is either not a list or is empty")
-
-    # Get the primary_label_id from email_labels tuple list, using that find primary email address in emails_obj
-    # python next method will return the first object from email_labels where primary label matches
-    primary_email_id = int(next(email_label_id for email_label_id, email_label_desc in email_labels
-                                if email_label_desc.lower() == EmailLabel.PRIMARY_DESCRIPTION.lower()))
-
-    # Find primary email address using email label id
-    candidate_email_tuple_iterator = ((candidate_id, email_address) for candidate_id, email_address, email_label_id in email_info_tuple
-                                      if email_label_id == primary_email_id)
-
-    candidate_id_and_email_address = next(
-        candidate_email_tuple_iterator,
-        None)
-
-    # If candidate primary email is found, then just return that
-    if candidate_id_and_email_address:
-        return candidate_id_and_email_address
-
-    # If primary email not found, then return first email which is last added email
-    # Get first tuple from a list of emails_obj and return candidate_id and email_address
-    candidate_id, email_address, _ = email_info_tuple[0]
-    return candidate_id, email_address
+    return get_priority_emails(campaign.user, subscribed_candidate_ids)
 
 
 def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candidate_address,
@@ -529,8 +492,7 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
             if not email_client_credentials:
                 raise ResourceNotFound("EmailClientCredentials(id:%s) not found for user(id:%s)."
                                        % (email_client_credentials_id, user_id))
-            decrypted_password = decrypt(app.config[TalentConfigKeys.ENCRYPTION_KEY],
-                                         b64decode(email_client_credentials.password))
+            decrypted_password = decrypt_password(email_client_credentials.password)
             client = SMTP(email_client_credentials.host,email_client_credentials.port,
                           email_client_credentials.email, decrypted_password)
             client.send_email(to_addresses, subject, new_text)
@@ -558,7 +520,6 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
                                         email_campaign_blast_id, e)
             return False
 
-        environment = os.getenv(TalentConfigKeys.ENV_KEY) or 'local'
         username = getpass.getuser()
         # Save SES message ID & request ID
         logger.info('''Marketing email sent successfully.
@@ -567,7 +528,7 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
                        System User Name: %s,
                        Environment   : %s,
                        Email Response: %s
-                    ''', to_addresses, user_id, username, environment, email_response)
+                    ''', to_addresses, user_id, username, app.config[TalentConfigKeys.ENV_KEY], email_response)
         request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
         message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
         email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
@@ -1066,89 +1027,6 @@ def get_smartlist_candidates_via_celery(user_id, campaign_id, new_candidates_onl
     # tasks in list finish running without raising any error. Otherwise callback
     # results in failure status.
     chord(tasks)(callback)
-
-
-def get_filtered_email_rows(campaign, subscribed_candidate_ids):
-    """
-    Filter email addresses of candidates to eliminate duplicates and/or multiple addresses for
-    any candidate.
-    :param campaign: Email Campaign
-    :param subscribed_candidate_ids: Ids of subscribed candidates.
-    :type campaign: EmailCampaign
-    :type subscribed_candidate_ids: list
-    :return List of email addresses of candidates.
-    :rtype list
-    """
-    if not isinstance(campaign, EmailCampaign):
-        raise InternalServerError(error_message='Valid EmailCampaign object must be provided.')
-    if not isinstance(subscribed_candidate_ids, list) or len(subscribed_candidate_ids) < 0:
-        raise InternalServerError(error_message='subscribed_candidate_ids must be provided')
-
-    # Get candidate emails sorted by updated time and then by candidate_id
-    candidate_email_rows = CandidateEmail.query.with_entities(CandidateEmail.candidate_id,
-                                                              CandidateEmail.address,
-                                                              CandidateEmail.updated_time,
-                                                              CandidateEmail.email_label_id) \
-        .filter(CandidateEmail.candidate_id.in_(subscribed_candidate_ids)) \
-        .order_by(desc(CandidateEmail.updated_time), CandidateEmail.candidate_id)
-    """
-        candidate_email_rows data will be
-        1   candidate0_ryk@gmail.com    2016-02-20T11:22:00Z    1
-        1   candidate0_lhr@gmail.com    2016-03-20T11:22:00Z    2
-        2   candidate1_isb@gmail.com    2016-02-20T11:22:00Z    4
-        2   candidate1_lhr@gmail.com    2016-03-20T11:22:00Z    3
-    """
-
-    # list of tuples (candidate id, email address)
-    group_id_and_email_and_labels = []
-
-    # ids_and_email_and_labels will be [(1, 'saad_ryk@hotmail.com', 1), (2, 'saad_lhr@gmail.com', 3), ...]
-    # id_email_label: (id, email, label)
-    ids_and_email_and_labels = [(row.candidate_id, row.address, row.email_label_id) for row in candidate_email_rows]
-
-    """
-    After running groupby clause, the data will look like
-    group_id_and_email_and_labels = [[(candidate_id1, email_address1, email_label1),
-        (candidate_id2, email_address2, email_label2)],... ]
-    """
-
-    for key, group_id_email_label in itertools.groupby(ids_and_email_and_labels, lambda id_email_label: id_email_label[0]):
-        group_id_and_email_and_labels.append(list(group_id_email_label))
-    filtered_email_rows = []
-
-    # Check if primary EmailLabel exist in db
-    if not EmailLabel.get_primary_label_description() == EmailLabel.PRIMARY_DESCRIPTION:
-        raise InternalServerError(
-            "get_email_campaign_candidate_ids_and_emails: Email label with primary description not found in db.")
-
-    # We don't know email_label id of primary email. So, get that from db
-    email_label_id_desc_tuples = [(email_label.id, email_label.description) for email_label in EmailLabel.query.all()]
-
-    # If there are multiple emails of a single candidate, then get the primary email if it exist, otherwise get any
-    # other email
-    for id_and_email_and_label in group_id_and_email_and_labels:
-        _id, email = get_candidate_id_email_by_priority(id_and_email_and_label, email_label_id_desc_tuples)
-        search_result = CandidateEmail.search_email_in_user_domain(User, campaign.user, email)
-        if CandidateEmail.is_bounced_email(email):
-            logger.info('Skipping this email because this email address is marked as bounced.'
-                        'CandidateId : %s, Email: %s, EmailCampaignId: %s' % (_id, email, campaign.id))
-            continue
-        # If there is only one candidate for an email-address in user's domain, we are good to go,
-        # otherwise log error and send campaign email to that email id only once.
-        if len(search_result) == 1:
-            filtered_email_rows.append((_id, email))
-        else:
-            # Check if this email is already present in list of addresses to which campaign would be sent.
-            # If so, omit the entry and continue.
-            if any(email in emails for emails in filtered_email_rows):
-                continue
-            else:
-                logger.error('%s candidates found for email address %s in user(id:%s)`s domain(id:%s). '
-                             'Candidate ids are: %s'
-                             % (len(search_result), email, campaign.user.id, campaign.user.domain_id,
-                                [candidate_email.candidate_id for candidate_email in search_result]))
-                filtered_email_rows.append((_id, email))
-    return filtered_email_rows
 
 
 def notify_and_get_blast_params(campaign, new_candidates_only, candidate_ids_and_emails):

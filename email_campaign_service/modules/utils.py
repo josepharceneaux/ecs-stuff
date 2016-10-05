@@ -5,19 +5,17 @@ Here we have helper functions used in email-campaign-service
 import os
 import json
 import uuid
-import poplib
 import urllib
-import smtplib
-import imaplib
+import itertools
 import HTMLParser
-from _socket import gaierror
 from urllib import urlencode
 from datetime import datetime
-from abc import abstractmethod
+from base64 import b64decode
 from urlparse import (parse_qs, urlsplit, urlunsplit)
 
 # Third Party
 from bs4 import BeautifulSoup
+from simplecrypt import decrypt
 from dateutil.relativedelta import relativedelta
 
 # Service Specific
@@ -29,14 +27,14 @@ from email_campaign_service.common.models.misc import UrlConversion
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.user import User, Serializer
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.common.models.email_campaign import (EmailCampaignSend,
-                                                                 EmailClientCredentials)
+from email_campaign_service.common.models.email_campaign import (EmailCampaignSend)
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
                                                             raise_if_not_positive_int_or_long)
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
-from email_campaign_service.common.error_handling import (InternalServerError, InvalidUsage)
+from email_campaign_service.common.error_handling import (InternalServerError)
+from email_campaign_service.common.models.candidate import CandidateEmail, EmailLabel
 from email_campaign_service.common.campaign_services.validators import raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 
@@ -48,6 +46,7 @@ TRACKING_PIXEL_URL = "https://s3-us-west-1.amazonaws.com/gettalent-static/pixel.
 TRACKING_URL_TYPE = 0
 TEXT_CLICK_URL_TYPE = 1
 HTML_CLICK_URL_TYPE = 2
+TASK_ALREADY_SCHEDULED = 6057
 
 
 @celery_app.task(name='get_candidates_from_smartlist')
@@ -317,157 +316,103 @@ def get_valid_send_obj(requested_campaign_id, send_id, current_user, campaign_ty
     return EmailCampaignSend.get_valid_send_object(send_id, requested_campaign_id)
 
 
-class EmailClients(object):
+def get_candidate_id_email_by_priority(email_info_tuple, email_labels):
     """
-    This is the base class for email-clients.
+    Get the primary_label_id from email_labels tuple list, using that find primary email address in emails_obj.
+    If found then simply return candidate_id and primary email_address otherwise return first email address.
+    :param (int, str, int) email_info_tuple: (candidate_id, email_address, email_label_id)
+    :param [(int, str)] email_labels: Tuple containing structure [( email_label_id, email_label_description )]
+    :return: candidate_id, email_address
+    :rtype: tuple
+    """
+    if not(isinstance(email_info_tuple, list) and len(email_info_tuple) > 0):
+        raise InternalServerError("get_candidate_id_email_by_priority: emails_obj is either not a list or is empty")
+
+    # Get the primary_label_id from email_labels tuple list, using that find primary email address in emails_obj
+    # python next method will return the first object from email_labels where primary label matches
+    primary_email_id = int(next(email_label_id for email_label_id, email_label_desc in email_labels
+                                if email_label_desc.lower() == EmailLabel.PRIMARY_DESCRIPTION.lower()))
+
+    # Find primary email address using email label id
+    candidate_email_tuple_iterator = ((candidate_id, email_address)
+                                      for candidate_id, email_address, email_label_id in email_info_tuple
+                                      if email_label_id == primary_email_id)
+
+    candidate_id_and_email_address = next(candidate_email_tuple_iterator, None)
+
+    # If candidate primary email is found, then just return that
+    if candidate_id_and_email_address:
+        return candidate_id_and_email_address
+
+    # If primary email not found, then return first email which is last added email
+    # Get first tuple from a list of emails_obj and return candidate_id and email_address
+    candidate_id, email_address, _ = email_info_tuple[0]
+    return candidate_id, email_address
+
+
+def get_priority_emails(user, candidate_ids):
+    """
+    This returns tuple (candidate_id, email) choosing priority email form all the emails of candidate.
+    :type user: User
+    :type candidate_ids: list
+    :rtype: list[tuple]
+    """
+    # Get candidate emails sorted by updated time and then by candidate_id
+    candidate_email_rows = CandidateEmail.get_emails_by_updated_time_candidate_id_desc(candidate_ids)
+
+    # list of tuples (candidate id, email address)
+    group_id_and_email_and_labels = []
+
+    # ids_and_email_and_labels will be [(1, 'saad_ryk@hotmail.com', 1), (2, 'saad_lhr@gmail.com', 3), ...]
+    # id_email_label: (id, email, label)
+    ids_and_email_and_labels = [(row.candidate_id, row.address, row.email_label_id)
+                                for row in candidate_email_rows]
+
+    """
+    After running groupby clause, the data will look like
+    group_id_and_email_and_labels = [[(candidate_id1, email_address1, email_label1),
+        (candidate_id2, email_address2, email_label2)],... ]
     """
 
-    def __init__(self, host, port, email, password):
-        """
-        This sets values of attributes host, port, email and password.
-        :param string host: Hostname of server
-        :param string port: Port number
-        :param string email: Email address
-        :param string password: Password
-        """
-        self.host = host
-        self.port = str(port).strip() if port else ''
-        self.email = email
-        self.password = password
-        self.client = None
-        self.connection = None
+    for key, group_id_email_label in itertools.groupby(ids_and_email_and_labels,
+                                                       lambda id_email_label: id_email_label[0]):
+        group_id_and_email_and_labels.append(list(group_id_email_label))
+    filtered_email_rows = []
 
-    @staticmethod
-    def get_client(host):
-        """
-        This gets the required client for given host.
-        :param string host: Hostname e.g. smtp.gmail.com
-        """
-        if 'smtp' in host:
-            client = SMTP
-        elif 'imap' in host:
-            client = IMAP
-        elif 'pop' in host:
-            client = POP
+    # Check if primary EmailLabel exist in db
+    if not EmailLabel.get_primary_label_description() == EmailLabel.PRIMARY_DESCRIPTION:
+        raise InternalServerError(
+            "get_email_campaign_candidate_ids_and_emails: Email label with primary description not found in db.")
+
+    # We don't know email_label id of primary email. So, get that from db
+    email_label_id_desc_tuples = [(email_label.id, email_label.description)
+                                  for email_label in EmailLabel.query.all()]
+
+    # If there are multiple emails of a single candidate, then get the primary email if it exist, otherwise get any
+    # other email
+    for id_and_email_and_label in group_id_and_email_and_labels:
+        _id, email = get_candidate_id_email_by_priority(id_and_email_and_label, email_label_id_desc_tuples)
+        search_result = CandidateEmail.search_email_in_user_domain(User, user, email)
+        if CandidateEmail.is_bounced_email(email):
+            logger.info('Skipping this email because this email address is marked as bounced.'
+                        'CandidateId : %s, Email: %s.' % (_id, email))
+            continue
+        # If there is only one candidate for an email-address in user's domain, we are good to go,
+        # otherwise log error and send campaign email to that email id only once.
+        if len(search_result) == 1:
+            filtered_email_rows.append((_id, email))
         else:
-            raise InvalidUsage('Unknown host provided')
-        return client
-
-    @staticmethod
-    def is_outgoing(host):
-        """
-        This returns True/False that given host is "outgoing" or not.
-        :type host: string
-        :rtype: bool
-        """
-        for client_type in EmailClientCredentials.OUTGOING:
-            if client_type in host:
-                return True
-        return False
-
-    def connect(self):
-        """
-        This connects with SMTP/IMAP/POP server and sets the value of attribute 'connection'.
-        """
-        try:
-            self.connection = self.client(self.host, port=self.port) if self.port else self.client(self.host)
-        except gaierror as error:
-            logger.exception(error.message)
-            raise InternalServerError('Error occurred while connecting with given server')
-
-    @abstractmethod
-    def authenticate(self, connection_quit=True):
-        """
-        This will authenticate with email-client using email and password. Child classes will implement this.
-        """
-        pass
-
-
-class SMTP(EmailClients):
-    def __init__(self, host, port, email, password):
-        """
-        This sets values of attributes host, port, email and password.
-        :param string host: Hostname of SMTP server
-        :param string port: Port number
-        :param string email: Email address
-        :param string password: Password
-        """
-        super(SMTP, self).__init__(host, port, email, password)
-        self.client = smtplib.SMTP
-
-    def authenticate(self, connection_quit=True):
-        """
-        This first connects with SMTP server. It then tries to login to server.
-        """
-        self.connection.starttls()
-        try:
-            self.connection.login(self.email, self.password)
-        except smtplib.SMTPAuthenticationError as error:
-            logger.exception(error.smtp_error)
-            raise InvalidUsage('Invalid credentials provided. Could not authenticate with smtp server')
-        if connection_quit:
-            self.connection.quit()
-
-    def send_email(self, to_address, subject, body):
-        """
-        This connects and authenticate with SMTP server and sends email to given email-address
-        :param string to_address: Recipient's email address
-        :param string subject: Subject of email
-        :param string body: Body of email
-        """
-        self.connect()
-        self.authenticate(connection_quit=False)
-        msg = "From: %s\r\nTo: %s\r\nSubject: %s\n%s\n" % (self.email, to_address, subject, body)
-        self.connection.sendmail(self.email, [to_address], msg)
-        logger.info('Email has been sent from:%s, to:%s via SMTP server.' % (self.email, to_address))
-        self.connection.quit()
-
-
-class IMAP(EmailClients):
-    def __init__(self, host, port, email, password):
-        """
-        This sets values of attributes host, port, email and password.
-        :param string host: Hostname of SMTP server
-        :param string port: Port number
-        :param string email: Email address
-        :param string password: Password
-        """
-        super(IMAP, self).__init__(host, port, email, password)
-        self.client = imaplib.IMAP4_SSL
-
-    def authenticate(self, connection_quit=True):
-        """
-        This first connects with IMAP server. It then tries to login to server.
-        """
-        try:
-            self.connection.login(self.email, self.password)
-        except imaplib.IMAP4_SSL.error as error:
-            logger.exception(error.message)
-            raise InvalidUsage('Invalid credentials provided. Could not authenticate with imap server')
-
-
-class POP(EmailClients):
-    def __init__(self, host, port, email, password):
-        """
-        This sets values of attributes host, port, email and password.
-        :param string host: Hostname of SMTP server
-        :param string port: Port number
-        :param string email: Email address
-        :param string password: Password
-        """
-        super(POP, self).__init__(host, port, email, password)
-        self.client = poplib.POP3_SSL
-
-    def authenticate(self, connection_quit=True):
-        """
-        This first connects with POP server. It then tries to login to server.
-        """
-        try:
-            self.connection.user(self.email)
-            self.connection.pass_(self.password)
-        except poplib.error_proto as error:
-            logger.exception(error.message)
-            raise InvalidUsage('Invalid credentials provided. Could not authenticate with pop server')
+            # Check if this email is already present in list of addresses to which campaign would be sent.
+            # If so, omit the entry and continue.
+            if any(email in emails for emails in filtered_email_rows):
+                continue
+            else:
+                logger.error('%s candidates found for email address %s in user(id:%s)`s domain(id:%s). '
+                             'Candidate ids are: %s'
+                             % (len(search_result), email, user.id, user.domain_id,
+                                [candidate_email.candidate_id for candidate_email in search_result]))
+                filtered_email_rows.append((_id, email))
+    return filtered_email_rows
 
 
 def format_email_client_data(email_client_data):
@@ -478,6 +423,12 @@ def format_email_client_data(email_client_data):
     :return: Dictionary of formatted data
     :rtype: dict
     """
-    for key, value in email_client_data.iteritems():
-        email_client_data[key] = value.strip()
-    return email_client_data
+    return {key: value.strip() for key, value in email_client_data.iteritems()}
+
+
+def decrypt_password(password):
+    """
+    This decrypts the given password
+    :param string password: Login password of user for email-client
+    """
+    return decrypt(app.config[TalentConfigKeys.ENCRYPTION_KEY], b64decode(password))

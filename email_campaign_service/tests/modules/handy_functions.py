@@ -30,7 +30,8 @@ from email_campaign_service.common.routes import (EmailCampaignApiUrl,
 from email_campaign_service.common.utils.amazon_ses import (send_email,
                                                             get_default_email_info)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign,
-                                                                 EmailClient, EmailCampaignSend)
+                                                                 EmailClient, EmailCampaignSend,
+                                                                 EmailClientCredentials)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.utils.handy_functions import define_and_send_request
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
@@ -230,7 +231,7 @@ def assert_and_delete_email(subject, username=app.config[TalentConfigKeys.GT_GMA
 
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False, expected_status=codes.OK,
-                         abort_time_for_sends=300):
+                         abort_time_for_sends=300, via_amazon_ses=True):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
@@ -255,8 +256,10 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         # Get "email_campaign_send_url_conversion" records
         sends_url_conversions.extend(campaign_send.url_conversions)
         if not email_client:
-            assert campaign_send.ses_message_id
-            assert campaign_send.ses_request_id
+            if via_amazon_ses:  # If email-campaign is sent via Amazon SES, we should have message_id and request_id
+                                # saved in database table "email_campaign_sends"
+                assert campaign_send.ses_message_id
+                assert campaign_send.ses_request_id
             CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
                                                       campaign_send.id)
     if campaign_sends:
@@ -534,14 +537,14 @@ def data_for_creating_email_clients(key=None):
     :rtype: list[dict]
     """
     data = {
-        'outgoing': [{
+        EmailClientCredentials.CLIENT_TYPES['outgoing']: [{
             "host": "smtp.gmail.com",
             "port": "587",
             "name": "Gmail",
             "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
             "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
         }],
-        'incoming': [{
+        EmailClientCredentials.CLIENT_TYPES['incoming']: [{
             "host": "imap.gmail.com",
             "port": "",
             "name": "Gmail",
@@ -560,8 +563,8 @@ def data_for_creating_email_clients(key=None):
     if key:
         return data[key]
     email_clients_data = []
-    for key in ('incoming', 'outgoing'):
-        for email_client_data in data_for_creating_email_clients(key=key):
+    for client_type in EmailClientCredentials.CLIENT_TYPES:
+        for email_client_data in data_for_creating_email_clients(key=client_type):
             email_clients_data.append(email_client_data)
     return email_clients_data
 

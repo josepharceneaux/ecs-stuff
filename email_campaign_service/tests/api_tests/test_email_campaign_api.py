@@ -252,7 +252,7 @@ class TestCreateCampaign(object):
         assert 'campaign' in resp_object
 
     def test_create_email_campaign_with_outgoing_email_client(self, access_token_first, talent_pipeline,
-                                                              create_email_clients, headers):
+                                                              email_clients, headers):
         """
         Here we provide valid data to create an email-campaign with email_client_credentials_id.
         It should get OK response.
@@ -261,7 +261,7 @@ class TestCreateCampaign(object):
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject, assert_candidates=False)
         # GET email-client-id
-        response = requests.get(EmailCampaignApiUrl.CLIENTS + '?type=outgoing', headers=headers)
+        response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=outgoing', headers=headers)
         assert response.ok
         assert response.json()
         email_client_response = response.json()['email_client_credentials']
@@ -273,7 +273,7 @@ class TestCreateCampaign(object):
         assert 'campaign' in resp_object
 
     def test_create_email_campaign_with_incoming_email_client(self, access_token_first, talent_pipeline,
-                                                              create_email_clients, headers):
+                                                              email_clients, headers):
         """
         Here we provide email-client of type "incoming". email-campaign should not be created.
         """
@@ -281,7 +281,7 @@ class TestCreateCampaign(object):
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject, assert_candidates=False)
         # GET email-client-id
-        response = requests.get(EmailCampaignApiUrl.CLIENTS + '?type=incoming', headers=headers)
+        response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=incoming', headers=headers)
         assert response.ok
         assert response.json()
         email_client_response = response.json()['email_client_credentials']
@@ -542,7 +542,7 @@ class TestSendCampaign(object):
         """
         campaign = email_campaign_with_outgoing_email_client
         response = requests.post(self.URL % campaign.id, headers=headers)
-        assert_campaign_send(response, campaign, user_first)
+        assert_campaign_send(response, campaign, user_first, via_amazon_ses=False)
 
     def test_campaign_send_with_email_client_id(self, send_email_campaign_by_client_id_response, user_first):
         """

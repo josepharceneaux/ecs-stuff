@@ -16,7 +16,7 @@ from email_campaign_service.common.models.smartlist import Smartlist
 from email_campaign_service.common.models.email_campaign import EmailClient, EmailClientCredentials
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity, ForbiddenError)
-from email_campaign_service.modules.utils import EmailClients
+from email_campaign_service.modules.email_clients import EmailClientBase
 
 
 def validate_datetime(datetime_text, field_name=None):
@@ -98,7 +98,7 @@ def validate_and_format_request_data(data, user_id):
     # In case user wants to send email-campaign with its own account
     if email_client_credentials_id:
         email_client_credentials = EmailClientCredentials.get_by_id(email_client_credentials_id)
-        if not EmailClients.is_outgoing(email_client_credentials.host):
+        if not EmailClientBase.is_outgoing(email_client_credentials.host):
             raise InvalidUsage("Selected email-client must be of type `outgoing`")
 
     # Validation for list ids belonging to same domain

@@ -14,12 +14,16 @@ from datetime import timedelta
 
 # Application Specific
 from email_campaign_service.common.tests.conftest import *
+from email_campaign_service.modules.email_clients import SMTP
+from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.candidate import CandidateEmail
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
-                                                                 EmailTemplateFolder, EmailCampaign)
+                                                                 EmailTemplateFolder, EmailCampaign,
+                                                                 EmailClientCredentials)
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   create_email_campaign_smartlist,
                                                                   send_campaign_helper,
@@ -152,7 +156,7 @@ def candidate_in_other_domain(user_from_diff_domain):
                           user_id=user_from_diff_domain.id)
     Candidate.save(candidate)
     candidate_email = CandidateEmail(candidate_id=candidate.id,
-                                     address=gen_salt(20), email_label_id=1)
+                                     address=gen_salt(20), email_label_id=CandidateEmail.labels_mapping['Primary'])
     CandidateEmail.save(candidate_email)
     return candidate
 
@@ -305,29 +309,37 @@ def email_templates_bulk(headers, user_first):
 
 
 @pytest.fixture()
-def create_email_clients(headers):
+def email_clients(request, headers):
     """
     This add 3 email clients for user_first.
     :rtype: list
     """
     email_client_ids = []
     for email_client_data in data_for_creating_email_clients():
-        response = requests.post(EmailCampaignApiUrl.CLIENTS, headers=headers, data=json.dumps(email_client_data))
+        print 'connecting with host:%s' % email_client_data['host']
+        response = requests.post(EmailCampaignApiUrl.EMAIL_CLIENTS, headers=headers, data=json.dumps(email_client_data))
         assert response.ok
         assert 'id' in response.json()
         email_client_ids.append(response.json()['id'])
+
+    def fin():  # Better to have finalizer here so that importer does not need to import all the accounts
+        try:
+            [EmailClientCredentials.delete(email_client_id) for email_client_id in email_client_ids]
+        except Exception:
+            pass
+    request.addfinalizer(fin)
     return email_client_ids
 
 
 @pytest.fixture()
-def create_outgoing_email_client(headers):
+def outgoing_email_client(headers):
     """
     This add 3 outgoing(SMTP) email-clients for user_first.
     :rtype: list
     """
     email_clients_data = data_for_creating_email_clients(key='outgoing')
     for email_client_data in email_clients_data:
-        response = requests.post(EmailCampaignApiUrl.CLIENTS, headers=headers, data=json.dumps(email_client_data))
+        response = requests.post(EmailCampaignApiUrl.EMAIL_CLIENTS, headers=headers, data=json.dumps(email_client_data))
         assert response.ok
         assert 'id' in response.json()
         return response.json()['id']
@@ -335,7 +347,7 @@ def create_outgoing_email_client(headers):
 
 @pytest.fixture()
 def email_campaign_with_outgoing_email_client(access_token_first, talent_pipeline, headers,
-                                              create_outgoing_email_client):
+                                              outgoing_email_client):
     """
     This creates an email-campaign which will be sent via an SMTP server added by user.
     """
@@ -347,7 +359,7 @@ def email_campaign_with_outgoing_email_client(access_token_first, talent_pipelin
                                                              + timedelta(weeks=1) + timedelta(days=4))
 
     # GET email-client-id
-    response = requests.get(EmailCampaignApiUrl.CLIENTS + '?type=outgoing', headers=headers)
+    response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=outgoing', headers=headers)
     assert response.ok
     assert response.json()
     email_client_response = response.json()['email_client_credentials']
@@ -362,3 +374,29 @@ def email_campaign_with_outgoing_email_client(access_token_first, talent_pipelin
     email_campaign = EmailCampaign.get_by_id(resp_object['campaign']['id'])
     assert email_campaign
     return email_campaign
+
+
+@pytest.fixture()
+def data_for_email_conversation_importer(email_clients, headers, candidate_first):
+    """
+    We need to
+    - Send an email to 'gettalentmailtest@gmail.com'. For this we will add an SMTP client for the user.
+    - Add an IMAP client for user to retrieve email-conversations (email_clients will server this purpose).
+    """
+    # Add candidate's email with value of test account "gettalentmailtest@gmail.com"
+    candidate_email = CandidateEmail(candidate_id=candidate_first.id,
+                                     address=app.config[TalentConfigKeys.GT_GMAIL_ID],
+                                     email_label_id=CandidateEmail.labels_mapping['Primary'])
+    CandidateEmail.save(candidate_email)
+    # GET email-client-id
+    response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENT_WITH_ID % email_clients[0], headers=headers)
+    assert response.ok
+    assert response.json()
+    email_client_response = response.json()['email_client_credentials']
+    subject = '%s-email-conversations-importer' % fake.uuid4()[0:8]
+    body = fake.sentence()
+    # Send email
+    client = SMTP(email_client_response['host'], email_client_response['port'],
+                  email_client_response['email'], app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
+    client.send_email(app.config[TalentConfigKeys.GT_GMAIL_ID], subject, body)
+    return subject, body

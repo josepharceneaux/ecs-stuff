@@ -1,4 +1,4 @@
-from sqlalchemy import and_
+from sqlalchemy import and_, desc
 from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
@@ -133,6 +133,16 @@ class Candidate(db.Model):
         """
         return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
             filter(Candidate.user_id == user_id).filter(CandidateAddress.zip_code == zipcode).count()
+
+    @classmethod
+    def get_all_in_user_domain(cls, domain_id):
+        """
+        This method returns number of candidates from a certain zipcode
+        :param int|long domain_id: Domain Id
+        """
+        assert domain_id, 'domain_id not provided'
+        from user import User  # This has to be here to avoid circular import
+        return cls.query.join(User, User.domain_id == domain_id).filter(Candidate.user_id == User.id).all()
 
 
 class CandidateStatus(db.Model):
@@ -485,6 +495,27 @@ class CandidateEmail(db.Model):
         return cls.query.join(Candidate).join(User). \
             filter(User.domain_id == domain_id). \
             filter(cls.address.in_(email_addresses)).all()
+
+    @classmethod
+    def get_emails_by_updated_time_candidate_id_desc(cls, candidate_ids):
+        """
+        Get candidate emails sorted by updated time and then by candidate_id
+        :param list candidate_ids: List of candidate Ids
+        :rtype: list
+        """
+        assert isinstance(candidate_ids, list) and candidate_ids, 'list of candidate_ids cannot be empty'
+        candidate_email_rows = cls.query.with_entities(cls.candidate_id,
+                                                       cls.address, cls.updated_time, cls.email_label_id) \
+            .filter(CandidateEmail.candidate_id.in_(candidate_ids)).order_by(desc(CandidateEmail.updated_time),
+                                                                             CandidateEmail.candidate_id)
+        """
+            candidate_email_rows data will be
+            1   candidate0_ryk@gmail.com    2016-02-20T11:22:00Z    1
+            1   candidate0_lhr@gmail.com    2016-03-20T11:22:00Z    2
+            2   candidate1_isb@gmail.com    2016-02-20T11:22:00Z    4
+            2   candidate1_lhr@gmail.com    2016-03-20T11:22:00Z    3
+        """
+        return candidate_email_rows
 
 
 class CandidatePhoto(db.Model):

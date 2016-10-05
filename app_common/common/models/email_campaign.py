@@ -438,8 +438,10 @@ class EmailClientCredentials(db.Model):
     password = db.Column('password', db.String(512), nullable=False)
     updated_datetime = db.Column('updated_datetime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
 
-    OUTGOING = ['smtp']
-    INCOMING = ['imap', 'pop']
+    CLIENT_TYPES = {'incoming': 'incoming',
+                    'outgoing': 'outgoing'}
+    OUTGOING = ('smtp',)
+    INCOMING = ('imap', 'pop')
 
     def __repr__(self):
         return "<EmailClientCredentials (id:%s)>" % self.id
@@ -467,11 +469,45 @@ class EmailClientCredentials(db.Model):
         :type search_keyword:  string
         :rtype: list
         """
-        assert user_id, 'user_id not given'
-        if search_keyword not in ('incoming', 'outgoing'):
+        assert isinstance(user_id, (int, long)) and user_id, 'user_id not given'
+        assert isinstance(search_keyword, basestring) and search_keyword, 'search_keyword not given'
+        search_keyword = search_keyword.strip()
+        if search_keyword not in cls.CLIENT_TYPES:
             raise InvalidUsage('Invalid value of param `type` provided')
         client_types = getattr(cls, search_keyword.upper())
         conditions = []
         for client_type in client_types:
             conditions.append(cls.host.ilike('%{}%'.format(client_type)))
         return cls.query.filter(or_(*conditions), cls.user_id == user_id).all()
+
+    @classmethod
+    def get_by_client_type(cls, client_type):
+        """
+        This gets email-client-credentials for given client type.
+        Valid values of parameter are 'incoming' or 'outgoing'.
+        :type client_type:  string
+        :rtype: list
+        """
+        assert isinstance(client_type, basestring) and client_type, 'client_type not given'
+        client_type = client_type.strip()
+        if client_type not in cls.CLIENT_TYPES:
+            raise InvalidUsage('Invalid value of param `client_type` provided')
+        conditions = []
+        for client_type in cls.INCOMING:
+            conditions.append(cls.host.ilike('%{}%'.format(client_type)))
+        return cls.query.filter(or_(*conditions)).all()
+
+
+class EmailConversations(db.Model):
+    __tablename__ = 'email_conversations'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column('user_id', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
+    candidate_id = db.Column('candidate_id', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
+    mailbox = db.Column('mailbox', db.String(10), nullable=False)
+    subject = db.Column('subject', db.String(100), nullable=False)
+    body = db.Column('body', db.String(1000), nullable=False)
+    email_received_datetime = db.Column('email_received_datetime', db.DateTime, nullable=False)
+    updated_datetime = db.Column('updated_datetime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
+
+    def __repr__(self):
+        return "<EmailConversations (id:%s)>" % self.id
