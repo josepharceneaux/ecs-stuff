@@ -544,11 +544,15 @@ class CandidatesResource(Resource):
         return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
 
     @require_all_permissions(Permission.PermissionNames.CAN_DELETE_CANDIDATES)
-    def delete(self):
-
+    def delete(self, **kwargs):
         body_dict = request.get_json(silent=True)
         if body_dict:
             candidate_ids = body_dict.get('_candidate_ids')
+            candidate_emails = body_dict.get('_candidate_emails')
+
+            if candidate_emails:
+                candidate_ids = [candidate.id for candidate in Candidate.query.join(
+                    CandidateEmail).filter(CandidateEmail.address.in_(candidate_emails)).all()]
 
             # Candidate IDs must belong to user's domain
             if not do_candidates_belong_to_users_domain(request.user, candidate_ids):
