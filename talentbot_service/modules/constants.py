@@ -4,7 +4,7 @@ This script contains Talentbot constants
 from talentbot_service.common.models.sms_campaign import SmsCampaignBlast
 from talentbot_service.common.models.email_campaign import EmailCampaignBlast
 from talentbot_service.common.models.push_campaign import PushCampaignBlast
-BOT_NAME = "talentbot"
+BOT_NAME = "gtbot"
 AT_BOT = ""
 READ_WEB_SOCKET_DELAY = 1
 ERROR_MESSAGE = ['Hmm, I do not know this', 'I will have to ask @kamal about that',
@@ -13,13 +13,13 @@ ERROR_MESSAGE = ['Hmm, I do not know this', 'I will have to ask @kamal about tha
 BOT_IMAGE = 'https://d13yacurqjgara.cloudfront.net/users' \
             '/15084/screenshots/702565/attachments/64916/Space_Ghost-iPad---1024x1024.jpg'
 GREETINGS = ['hello', 'hey', 'howdy', 'greetings', 'hi']
-HINT = '''I am Talent Bot @kamal is teaching me new things, right now I can answer following questions for you:_
+HINT = '''I am %s @kamal is teaching me new things, right now I can answer following questions for you:_
 1- How many users are there in my domain?
 2- How many candidates are there with skills [skills separated with space]?
 3- How many candidates from zipcode [zipcode]?
 4- What is the top performing [x] campaign from [year]?
 5- How many candidate leads did [user name] import into the [talent pool name] talent pool in last n months?
-*GOOD LUCK*'''
+*GOOD LUCK*''' % BOT_NAME
 OK_RESPONSE = ['hmm', '**nodes**']
 TWILIO_NUMBER = "+12015617985"
 FACEBOOK_MESSAGE_LIMIT = 319
