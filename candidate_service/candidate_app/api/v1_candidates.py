@@ -562,6 +562,9 @@ class CandidatesResource(Resource):
             try:
                 Candidate.query.filter(Candidate.id.in_(candidate_ids)).delete(synchronize_session=False)
                 db.session.commit()
+
+                # Delete candidate from cloud search
+                delete_candidate_documents(candidate_ids)
                 return '', requests.codes.NO_CONTENT
             except Exception as e:
                 raise InternalServerError(error_message="Oops. Something went wrong: {}".format(e.message))
