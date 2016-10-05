@@ -2,6 +2,7 @@
 """Unit tests for formatting and accuracy for offline testing."""
 __author__ = 'erik@gettalent.com'
 # pylint: disable=wrong-import-position
+from base64 import b64encode
 # Third party.
 from bs4 import BeautifulSoup as bs4
 from jsonschema import validate, FormatChecker
@@ -18,6 +19,7 @@ from .resume_xml import PDF_13
 from .resume_xml import PDF_14
 from .resume_xml import REFERENCE_XML
 # Modules being tested.
+from resume_parsing_service.app import app
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_addresses
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_educations
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_emails
@@ -27,6 +29,7 @@ from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_pho
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_skills
 from resume_parsing_service.app.views.optic_parse_lib import parse_candidate_reference
 from resume_parsing_service.app.views.optic_parse_lib import is_experience_already_exists
+from resume_parsing_service.app.views.utils import extra_skills_parsing
 # JSON Schemas
 from json_schemas import (EMAIL_SCHEMA, PHONE_SCHEMA, EXPERIENCE_SCHEMA, EDU_SCHEMA,\
                           SKILL_SCHEMA, ADDRESS_SCHEMA)
@@ -236,6 +239,16 @@ def test_skills_duplicates():
     for skill in skills:
         skills_set.add(skill['name'])
     assert len(skills) == len(skills_set)
+
+
+def test_extra_skill_parsing():
+    for resume_xml in (DOCX, DUPED_EXPERIENCE, GET_1301, GET_626a, GET_626b, GET_642, GET_646, PDF,
+                       PDF_13, PDF_14):
+        encoded_soup_text = b64encode(bs4(resume_xml, 'lxml').getText().encode('utf8', 'replace'))
+        with app.app_context():
+            extra_skills = extra_skills_parsing(encoded_soup_text)
+            assert(extra_skills)
+
 
 
 def test_address_parsing():
