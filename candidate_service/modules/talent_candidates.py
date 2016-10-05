@@ -426,8 +426,9 @@ def candidate_military_services(candidate_id):
     :rtype              [dict]
     """
     assert isinstance(candidate_id, (int, long))
-    military_experiences = db.session.query(CandidateMilitaryService).\
-        filter_by(candidate_id=candidate_id).order_by(CandidateMilitaryService.to_date.desc())
+    military_experiences = CandidateMilitaryService.query.\
+        filter_by(candidate_id=candidate_id).\
+        order_by(CandidateMilitaryService.to_date.desc())
     return [{'id': military_info.id,
              'branch': military_info.branch,
              'status': military_info.service_status,
@@ -435,6 +436,10 @@ def candidate_military_services(candidate_id):
              'highest_rank': military_info.highest_rank,
              'from_date': str(military_info.from_date.date()) if military_info.from_date else None,
              'to_date': str(military_info.to_date.date()) if military_info.from_date else None,
+             'start_year': military_info.start_year,
+             'start_month': military_info.start_month,
+             'end_year': military_info.end_year,
+             'end_month': military_info.end_month,
              'country': get_country_name(military_info.iso3166_country),
              'comments': military_info.comments
              } for military_info in military_experiences]
@@ -1088,7 +1093,7 @@ def classification_type_id_from_degree_type(degree_type):
     return matching_classification_type_id
 
 
-def social_network_id_from_name(name):
+def social_network_id_from_name(name=None):
     """
     Function gets social_network ID from social network's name
     e.g. 'Facebook' => 1
@@ -2131,7 +2136,11 @@ def _add_or_update_military_services(candidate, military_services, user_id, is_u
             branch=military_service['branch'].strip() if military_service.get('branch') else None,
             comments=military_service['comments'].strip() if military_service.get('comments') else None,
             from_date=from_date,
-            to_date=to_date
+            to_date=to_date,
+            start_year=military_service.get('start_year'),
+            start_month=military_service.get('start_month'),
+            end_year=military_service.get('end_year'),
+            end_month=military_service.get('end_month')
         )
 
         # Remove keys with empty values
@@ -2293,7 +2302,7 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, is_updat
     for social_network in social_networks:
 
         social_network_dict = dict(
-            social_network_id=social_network_id_from_name(social_network['name'].strip()),
+            social_network_id=social_network_id_from_name((social_network.get('name') or '').strip()),
             social_profile_url=social_network['profile_url'].strip()
         )
 
@@ -2312,8 +2321,15 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, is_updat
                                      error_code=custom_error.SOCIAL_NETWORK_FORBIDDEN)
 
             # Track all changes
-            track_edits(update_dict=social_network_dict, table_name='candidate_social_network',
-                        candidate_id=candidate_id, user_id=user_id, query_obj=can_sn_obj)
+            track_edits(update_dict=social_network_dict,
+                        table_name='candidate_social_network',
+                        candidate_id=candidate_id,
+                        user_id=user_id,
+                        query_obj=can_sn_obj)
+
+            # If social network name is None, we assume the name remains the same
+            if not social_network_dict['social_network_id']:
+                del social_network_dict['social_network_id']
 
             can_sn_obj.update(**social_network_dict)
 
@@ -2324,8 +2340,10 @@ def _add_or_update_social_networks(candidate, social_networks, user_id, is_updat
                 db.session.add(CandidateSocialNetwork(**social_network_dict))
 
                 if is_updating:  # Track all updates
-                    track_edits(update_dict=social_network_dict, table_name='candidate_social_network',
-                                candidate_id=candidate_id, user_id=user_id)
+                    track_edits(update_dict=social_network_dict,
+                                table_name='candidate_social_network',
+                                candidate_id=candidate_id,
+                                user_id=user_id)
 
 
 def _add_or_update_candidate_talent_pools(candidate_id, talent_pool_ids, is_creating, is_updating):

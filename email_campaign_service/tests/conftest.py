@@ -242,7 +242,7 @@ def template_id(domain_id):
     return template['id']
 
 
-@pytest.fixture(params=['name', 'subject', 'description', 'body_html', 'frequency_id', 'list_ids'])
+@pytest.fixture(params=['name', 'subject', 'body_html', 'frequency_id', 'list_ids'])
 def invalid_data_for_campaign_creation(request):
     """
     This function returns the data to create an email campaign. It also removes a required

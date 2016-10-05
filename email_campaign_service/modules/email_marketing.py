@@ -1036,7 +1036,7 @@ def get_smartlist_candidates_via_celery(user_id, campaign_id, new_candidates_onl
     :type user_id: int | long
     :type campaign_id: int | long
     :type new_candidates_only: bool
-    :returns list of amrtlist candidates
+    :returns list of smartlist candidates
     :rtype list
     """
     raise_if_not_positive_int_or_long(user_id)
@@ -1233,5 +1233,5 @@ def send_test_email(user, request):
                    email_format='html')
     except Exception as e:
         logger.error('Error occurred while sending test email. Error: %s', e)
-        raise InternalServerError('Unable to send emails to test email addresses.')
+        raise InternalServerError('Unable to send emails to test email addresses:%s.' % data['email_address_list'])
 

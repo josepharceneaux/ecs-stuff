@@ -94,7 +94,7 @@ class CandidatesResource(Resource):
     decorators = [require_oauth()]
 
     @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
-    def post(self):
+    def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates
         Input: {'candidates': [CandidateObject, CandidateObject, ...]}
@@ -543,6 +543,29 @@ class CandidatesResource(Resource):
         logger.info('BENCHMARK - candidate PATCH: {}'.format(time() - start_time))
         return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
 
+    @require_all_permissions(Permission.PermissionNames.CAN_DELETE_CANDIDATES)
+    def delete(self, **kwargs):
+        body_dict = request.get_json(silent=True)
+        if body_dict:
+            candidate_ids = body_dict.get('_candidate_ids')
+            candidate_emails = body_dict.get('_candidate_emails')
+
+            if candidate_emails:
+                candidate_ids = [candidate.id for candidate in Candidate.query.join(
+                    CandidateEmail).filter(CandidateEmail.address.in_(candidate_emails)).all()]
+
+            # Candidate IDs must belong to user's domain
+            if not do_candidates_belong_to_users_domain(request.user, candidate_ids):
+                raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+            # http://docs.sqlalchemy.org/en/rel_1_0/orm/query.html#sqlalchemy.orm.query.Query.delete
+            try:
+                Candidate.query.filter(Candidate.id.in_(candidate_ids)).delete(synchronize_session=False)
+                db.session.commit()
+                return '', requests.codes.NO_CONTENT
+            except Exception as e:
+                raise InternalServerError(error_message="Oops. Something went wrong: {}".format(e.message))
+
 
 class CandidateResource(Resource):
     decorators = [require_oauth()]
@@ -561,6 +584,7 @@ class CandidateResource(Resource):
         :return:    A dict of candidate info
         """
         start_time = time()
+
         # Get authenticated user
         authed_user = request.user
 
