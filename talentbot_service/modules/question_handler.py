@@ -106,6 +106,8 @@ class QuestionHandler(object):
             :return: str response_message
         """
         zip_index = cls.find_word_in_message('zip', message_tokens)
+        if not zip_index:
+            raise IndexError
         zipcode = message_tokens[zip_index + 1]
         count = Candidate.get_candidate_count_from_zipcode(zipcode, user_id)
         response_message = "Number of candidates from zipcode %s : %d" % \
