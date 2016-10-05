@@ -101,7 +101,7 @@ class TalentBot(object):
         """
         Removes '?','.',':' and spaces from user's message
         :param str message: User's message
-        :return: str message
+        :rtype: str
         """
         cleaned_message = message.rstrip('?. ')
         cleaned_message = cleaned_message.lstrip(': ')
@@ -149,7 +149,7 @@ class TalentBot(object):
         Matches user message with predefined messages and returns matched ratio
         :param str message: User message
         :param dict question:
-        :return: int partial_ratio
+        :rtype: int
         """
         match_ratio = fuzz.partial_ratio(question, message.lower())
         logger.info("%s : %d%% matched" % (message, match_ratio))
@@ -159,7 +159,7 @@ class TalentBot(object):
     def authenticate_user(self, *args):
         """
         Authenticates user
-        :return: True|False
+        :rtype: True|False
         """
         pass
 

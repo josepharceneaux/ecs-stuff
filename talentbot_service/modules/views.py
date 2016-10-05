@@ -4,6 +4,7 @@ Facebook, Email, SMS and Slack
 """
 # Builtin imports
 from multiprocessing import Process
+import json
 # Common utils
 from talentbot_service.common.talent_config_manager import TalentConfigKeys
 from talentbot_service.common.models.user import TalentbotAuth
@@ -16,11 +17,10 @@ from talentbot_service.modules.slack_bot import SlackBot
 from talentbot_service.modules.sms_bot import SmsBot
 from talentbot_service.modules.process_scheduler import ProcessScheduler
 from constants import TWILIO_NUMBER, ERROR_MESSAGE, STANDARD_MSG_LENGTH, QUESTIONS, BOT_NAME, \
-    MAILGUN_SENDING_ENDPOINT, BOT_IMAGE, TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID
+    MAILGUN_SENDING_ENDPOINT, BOT_IMAGE, TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID,  SLACK_AUTH_URI
 from talentbot_service import app, logger
 # 3rd party imports
 from flask import request
-import json
 from urllib import quote
 
 mailgun_api_key = app.config[TalentConfigKeys.MAILGUN_API_KEY]
@@ -139,9 +139,9 @@ def get_new_user_credentials():
     code = request.args.get('code')
     client_id = app.config['SLACK_APP_CLIENT_ID']
     client_secret = app.config['SLACK_APP_CLIENT_SECRET']
-    response = send_request('POST', 'https://slack.com/api/oauth.access', access_token=None,
+    response = send_request('POST', SLACK_AUTH_URI, access_token=None,
                             params={'client_id': client_id, 'client_secret': client_secret, 'code': code})
-    json_result = json.loads(response.content)
+    json_result = response.json()
     if json_result.get('ok'):
         access_token = json_result['access_token']
         team_id = json_result['team_id']
@@ -161,6 +161,6 @@ def get_new_user_credentials():
         auth_entry.slack_user_token = access_token
         auth_entry.bot_id = bot_id
         auth_entry.bot_token = bot_token
-        auth_entry.save()
+        TalentbotAuth.save(auth_entry)
         return "Your slack token has been updated"
     return "Your slack id already exists"

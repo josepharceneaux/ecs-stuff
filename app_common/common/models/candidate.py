@@ -112,15 +112,6 @@ class Candidate(db.Model):
         cls.query.filter_by(id=candidate_id).first().is_web_hidden = 1
         db.session.commit()
 
-    @classmethod
-    def get_count_of_candidates_owned_by_user(cls, user_id):
-        """
-        This method returns count of candidates owned by a specific user
-        :param user_id: User id
-        :rtype: int
-        """
-        return cls.query.filter(cls.user_id == user_id).count()
-
     @staticmethod
     def get_candidate_count_with_skills(skills, user_id):
         """

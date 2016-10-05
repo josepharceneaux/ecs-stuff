@@ -35,7 +35,7 @@ class SlackBot(TalentBot):
         :param str slack_user_id: User's slack Id
         :param str message: User's message
         :param str channel_id: Slack channel Id
-        :return: tuple (True|False, None|message, None|slack_client, user_id|None)
+        :rtype: tuple (True|False, None|str, None|Slack_client, TalentbotAuth.slack_user_id|None)
         """
         talentbot_auth = TalentbotAuth.get_talentbot_auth(slack_user_id=slack_user_id)
         if talentbot_auth:
@@ -64,7 +64,7 @@ class SlackBot(TalentBot):
         """
         Gets bot Id
         :param SlackClient slack_client: SlackClient object
-        :return str|None
+        :rtype: str|None
         """
         api_call = slack_client.api_call("users.list")
         if api_call.get('ok'):
@@ -81,6 +81,7 @@ class SlackBot(TalentBot):
         """
         Sets Slack bot state active
         :param str bot_token: bot token
+        :rtype: None
         """
         if bot_token:
             slack_client = SlackClient(bot_token)
@@ -94,6 +95,7 @@ class SlackBot(TalentBot):
         :param SlackClient slack_client: Slack Client RTM object
         :param str chanel_id: Slack channel id
         :param str msg: Message received to bot
+        :rtype: None
         """
         logger.info('slack reply: %s' % msg)
         slack_client.api_call("chat.postMessage", channel=chanel_id,
@@ -106,6 +108,7 @@ class SlackBot(TalentBot):
         :param str channel_id: Slack channel Id from which message is received
         :param str message: User's message
         :param str timestamp: Current message timestamp
+        :rtype: None
         """
         is_authenticated, message, slack_client, user_id = self.authenticate_user(slack_user_id, message, channel_id)
         if is_authenticated:
@@ -114,7 +117,10 @@ class SlackBot(TalentBot):
             self.recent_user_id = slack_user_id
             try:
                 response_generated = self.parse_message(message, user_id)
-                self.reply(channel_id, response_generated, slack_client)
+                if response_generated:
+                    self.reply(channel_id, response_generated, slack_client)
+                else:
+                    raise IndexError
             except (IndexError, NameError, KeyError):
                 error_response = random.choice(self.error_messages)
                 self.reply(channel_id, error_response, slack_client)

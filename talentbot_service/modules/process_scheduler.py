@@ -23,6 +23,7 @@ class ProcessScheduler(object):
         :param str message: User's message
         :param str slack_user_id: User's Slack Id
         :param str current_timestamp: Current timestamp
+        :rtype: None
         """
         slack_handler_process = Process(target=slack_bot.handle_communication,
                                         args=(channel_id, message, slack_user_id, current_timestamp))
@@ -36,6 +37,7 @@ class ProcessScheduler(object):
         :param FacebookBot facebook_bot: FacebookBot object
         :param str fb_user_id: User's Facebook Id
         :param message: User's message
+        :rtype: None
         """
         fb_handler_process = Process(target=facebook_bot.handle_communication,
                                      args=(fb_user_id, message))

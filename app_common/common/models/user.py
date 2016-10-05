@@ -209,16 +209,16 @@ class User(db.Model):
         return User.query.filter_by(email=email).first()
 
     @staticmethod
-    def get_user_count_in_domain(user_id):
+    def get_users_in_domain(user_id):
         """
-        This method returns count of users in a domain
+        This method returns users in a domain and domain name
         :param int user_id: User Id
-        :return: tuple(int, str) : (Number of users, domain name)
+        :return: tuple(list, str) : (User list, domain name)
         """
         domain_name = User.query.with_entities(Domain.name).filter(User.domain_id == Domain.id).filter(User.id == user_id).first()
-        count = User.query.filter(User.domain_id == Domain.id).\
-            filter(User.id == user_id).count()
-        return count, domain_name[0]
+        users = User.query.filter(User.domain_id == Domain.id).\
+            filter(User.id == user_id).all()
+        return users, domain_name[0]
 
 
 class UserPhone(db.Model):
@@ -836,9 +836,12 @@ class TalentbotAuth(db.Model):
         """
         Returns User Id from TalentbotAuth table against passed key
         :param dict kwargs: Passed kwargs
-        :return: tuple user_id = User Id
+        :return: User id
+        :rtype User.id|None
         """
         key = kwargs.keys()
+        if not key:
+            return None
         user_id = TalentbotAuth.query.with_entities(TalentbotAuth.user_id).\
             filter(getattr(TalentbotAuth, key[0]) == kwargs.get(key[0])).first()
         return user_id
@@ -848,8 +851,11 @@ class TalentbotAuth(db.Model):
         """
         Returns TalentbotAuth object against kwarg
         :param dict kwargs: Passed kwargs
-        :return: TalentbotAuth tb_auth: TalentbotAuth matched object
+        :return: TalentbotAuth matched object
+        :rtype: TalentbotAuth|None
         """
         key = kwargs.keys()
+        if not key:
+            return None
         tb_auth = TalentbotAuth.query.filter(getattr(TalentbotAuth, key[0]) == kwargs.get(key[0])).first()
         return tb_auth

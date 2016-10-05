@@ -116,25 +116,24 @@ class PushCampaignBlast(db.Model):
         return "<PushCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
 
     @classmethod
-    def top_performing_push_campaign(cls, year, user_id):
+    def top_performing_push_campaign(cls, datetime_value, user_id):
         """
         This method returns top performing push campaign from a specific year
         :param int user_id: User Id
-        :param str year: Year of campaign started or updated
+        :param str datetime_value: Year of campaign started or updated
         :rtype: PushCampaignBlast
         """
-        if type(year) == datetime.datetime:
-            return cls.query.filter(cls.updated_datetime >= year). \
+        if isinstance(datetime_value, datetime.datetime):
+            return cls.query.filter(cls.updated_datetime >= datetime_value). \
                 filter(PushCampaign.id == cls.campaign_id).\
                 filter(PushCampaign.user_id == user_id). \
                 filter(cls.sends > 0).order_by(desc(cls.clicks)).first()
-        if type(year) == unicode:
-            return cls.query.filter(extract("year", cls.updated_datetime) == year). \
+        if isinstance(datetime_value, basestring):
+            return cls.query.filter(extract("year", cls.updated_datetime) == datetime_value). \
                 filter(PushCampaign.id == cls.campaign_id).\
                 filter(PushCampaign.user_id == user_id). \
                 filter(cls.sends > 0). \
                 order_by(desc(cls.clicks)).first()
-
         return cls.query.filter(PushCampaign.id == cls.campaign_id).\
             filter(PushCampaign.user_id == user_id).filter(cls.sends > 0).order_by(desc(cls.clicks)).first()
 
