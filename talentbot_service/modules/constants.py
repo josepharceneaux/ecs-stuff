@@ -47,7 +47,9 @@ QUESTIONS = ['how many users are in my domain', 'how many candidates are there w
              'how many candidates are there in my domain', 'candidates in my domain',
              'how many candidates has grasp on', 'what are the talent pools in my domain',
              'which talent pools exist in my domain', 'what talent pools my domain has',
-             'what talent pools are there in my domain', 'what talent pools in my domain', 'talent pools in my domain']
+             'what talent pools are there in my domain', 'what talent pools in my domain', 'talent pools in my domain',
+             'what is my group', 'what group am I part of', 'my group', 'what group does', 'which group does',
+             'which group do i belong to']
 POSITIVE_MESSAGES = ['hmmmm', 'ok', 'fine', 'whatever', 'yeah', 'ahan', 'so so']
 BEST_QUESTION_MATCH_RATIO = 95
 FACEBOOK_API_URI = "https://graph.facebook.com/v2.6/me/messages"

@@ -8,6 +8,7 @@ from flask import request, current_app
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
+from sqlalchemy import or_
 
 from db import db
 from ..models.event import Event
@@ -219,6 +220,29 @@ class User(db.Model):
             filter(User.id == user_id).first()
         users = User.query.filter(User.domain_id == domain_id).all()
         return users, domain_name
+
+    @classmethod
+    def get_by_id(cls, user_id):
+        """
+        The method returns user against user id
+        :param int user_id: User Id
+        :rtype: list
+        """
+        return cls.query.filter(cls.id == user_id).all()
+
+    @classmethod
+    def get_by_name(cls, user_id, name):
+        """
+        This method returns user against a name
+        :param str name: User's first or last name
+        :param int user_id: User Id
+        :rtype: User
+        """
+        users = cls.get_by_id(user_id)
+        if users:
+            user = users[0]
+            return cls.query.filter(or_(cls.first_name == name, cls.last_name == name)).\
+                filter(cls.domain_id == user.domain_id).all()
 
 
 class UserPhone(db.Model):

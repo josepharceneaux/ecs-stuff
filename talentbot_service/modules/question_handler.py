@@ -11,6 +11,7 @@ response
  - question_5_handler()
  - question_6_handler()
  - question_7_handler()
+ - question_8_handler()
 """
 # Builtin imports
 import datetime
@@ -216,23 +217,31 @@ class QuestionHandler(object):
         import_index = self.find_word_in_message('import', message_tokens)
         if not import_index:
             import_index = self.find_word_in_message('add', message_tokens)
-        if not talent_index or not import_index:
+        if not import_index:
             return "Your question is vague"
         # Extracting talent pool name from user's message
-        if message_tokens[import_index + 2].lower() != 'the':
-            talent_pool_name = message_tokens[import_index + 2:talent_index:]
+        if talent_index is not None:
+            if message_tokens[import_index + 2].lower() != 'the':
+                talent_pool_name = message_tokens[import_index + 2:talent_index:]
+            else:
+                talent_pool_name = message_tokens[import_index + 3:talent_index:]
+            spaced_talent_pool_name = self.append_list_with_spaces(talent_pool_name)
         else:
-            talent_pool_name = message_tokens[import_index + 3:talent_index:]
+            spaced_talent_pool_name = None
         # Extracting username from user message
         user_name = message_tokens[import_index - 1]
-        spaced_talent_pool_name = self.append_list_with_spaces(talent_pool_name)
+        is_asking_about_each_user = self.find_word_in_message('each', message_tokens)
+        if is_asking_about_each_user is not None:
+            user_name = None
         year = message_tokens[-1]
         is_valid_year = self.is_valid_year(year)
         if is_valid_year is True:
             count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
                                                                     year, user_id)
+            if isinstance(count, basestring):
+                return count
             response_message = "%s added %d candidates in %s talent pool" % \
-                               (user_name.title(), count, spaced_talent_pool_name)
+                               (user_name, count, spaced_talent_pool_name)
             return response_message
         if is_valid_year == -1:
             return "Please enter a valid year greater than 1900 and smaller than current year."
@@ -242,14 +251,18 @@ class QuestionHandler(object):
                 user_specific_date = self.extract_datetime_from_question(last_index, message_tokens)
                 count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
                                                                         user_specific_date, user_id)
+                if isinstance(count, basestring):
+                    return count
                 response_message = "%s added %d candidates in %s talent pool" % \
-                                   (user_name.title(), count, spaced_talent_pool_name)
+                                   (user_name, count, spaced_talent_pool_name)
                 return response_message
         count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
                                                                 None, user_id)
-        response_message = "%s added %d candidates in %s talent pool" % (user_name.title(), count,
+        if isinstance(count, basestring):
+            return count
+        response_message = "%s added %d candidates in %s talent pool" % (user_name, count,
                                                                          spaced_talent_pool_name)
-        return response_message
+        return response_message.replace('None', 'all').title()
 
     @classmethod
     def question_5_handler(cls, *args):
@@ -287,6 +300,33 @@ class QuestionHandler(object):
             response = '%s%s'
             return response % (header[0], talent_pool_names[::])
         return "Seems like there is no talent pool in your domain"
+
+    @classmethod
+    def question_8_handler(cls, message_tokens, user_id):
+        """
+        This method handles question What is my group and what group a user belong to
+        :param message_tokens:
+        :param int user_id: User Id
+        :rtype: str
+        """
+        belong_index = cls.find_word_in_message('belong', message_tokens)
+        is_user_asking_about_himslef = cls.find_word_in_message('i', message_tokens)
+        if belong_index is not None and is_user_asking_about_himslef is None:
+            user_name = message_tokens[belong_index - 1]
+            users = User.get_by_name(user_id, user_name)
+            if users:
+                user = users[0]
+                response = "%s's group is '%s'" % (user_name, user.user_group.name)
+                return response
+            response = 'No user with name "%s" exists in your domain' % user_name
+            return response
+        users = User.get_by_id(user_id)
+        if users:
+            user = users[0]
+            response = "Your group is '%s'" % user.user_group.name
+            return response
+        response = "Something went wrong you do not exist as a user contact to the developer"
+        return response
 
     @staticmethod
     def is_valid_year(year):
@@ -336,7 +376,7 @@ class QuestionHandler(object):
         """
         This method creates an ordered list
         :param list _list: List of same string elements
-        :rtype list:
+        :rtype str:
         """
         for list_element in _list:
             ordered_talent_pool_name = "%d- %s" % (_list.index(list_element) + 1, list_element)

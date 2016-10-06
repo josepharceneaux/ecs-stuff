@@ -11,7 +11,7 @@ import random
 import re
 from abc import abstractmethod
 # App specific imports
-from constants import BEST_QUESTION_MATCH_RATIO, GREETINGS
+from constants import BEST_QUESTION_MATCH_RATIO, GREETINGS, POSITIVE_MESSAGES
 from talentbot_service.modules.question_handler import QuestionHandler
 from talentbot_service import logger
 # 3rd party imports
@@ -105,6 +105,19 @@ class TalentBot(object):
                                      'handler': self.handler.question_7_handler},
                               '36': {'question': list_of_questions[36], 'threshold': 95,
                                      'handler': self.handler.question_7_handler},
+                              # What is my group
+                              '37': {'question': list_of_questions[37], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '38': {'question': list_of_questions[38], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '39': {'question': list_of_questions[39], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '40': {'question': list_of_questions[40], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '41': {'question': list_of_questions[41], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '42': {'question': list_of_questions[42], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
                               }
         self.bot_name = bot_name
         self.error_messages = error_messages
@@ -131,6 +144,9 @@ class TalentBot(object):
         is_greetings = self.check_for_greetings(message)
         if is_greetings:
             return is_greetings
+        is_positive_message = self.check_for_positive_messages(message)
+        if is_positive_message:
+            return is_positive_message
         message_tokens = self.tokenize_message(message)
         max_match_ratio = 0
         message_handler = None
@@ -179,11 +195,21 @@ class TalentBot(object):
     @staticmethod
     def check_for_greetings(message):
         """
-        Checks if user is greeting out bot
+        Checks if user is greeting bot
         :param str message: User's message
-        :return: Response message|None
         :rtype: str|None
         """
         if message.lower() in GREETINGS:
             return random.choice(GREETINGS)
+        return None
+
+    @staticmethod
+    def check_for_positive_messages(message):
+        """
+        Checks if user is saying things like ok, hmm etc
+        :param str message: User's message
+        :rtype: str|None
+        """
+        if message.lower() in POSITIVE_MESSAGES:
+            return random.choice(POSITIVE_MESSAGES)
         return None
