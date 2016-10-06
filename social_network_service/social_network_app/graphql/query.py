@@ -15,9 +15,9 @@ class Query(ObjectType):
 
     """
         me {
-            firstName
-            lastName
-            domainId
+            first_name
+            last_name
+            domain_id
 
             role {
                 id
@@ -30,8 +30,8 @@ class Query(ObjectType):
 
             events {
                 title
-                startDatetime
-                endDatetime
+                start_datetime
+                end_datetime
                 organizer {
                     id
                     name
@@ -46,9 +46,9 @@ class Query(ObjectType):
 
     """
         user (id: 123) {
-            firstName
-            lastName
-            domainId
+            first_name
+            last_name
+            domain_id
 
             role {
                 id
@@ -61,8 +61,8 @@ class Query(ObjectType):
 
             events {
                 title
-                startDatetime
-                endDatetime
+                start_datetime
+                end_datetime
                 organizer {
                     id
                     name
@@ -79,8 +79,8 @@ class Query(ObjectType):
     """
         event (id: 123) {
             title
-            startDatetime
-            endDatetime
+            start_datetime
+            end_datetime
             organizer {
                 id
                 name
@@ -95,8 +95,8 @@ class Query(ObjectType):
     """
         events (page:1, perPage=10) {
             title
-            startDatetime
-            endDatetime
+            start_datetime
+            end_datetime
             organizer {
                 id
                 name
@@ -111,11 +111,11 @@ class Query(ObjectType):
 
     """
         venues {
-            addressLine1
-            addressLine2
+            address_line_1
+            address_line_2
             latitude
             longitude
-            zipCode
+            zip_code
             city
             country
         }
@@ -126,8 +126,8 @@ class Query(ObjectType):
 
     """
         venue(id: 123) {
-            addressLine1
-            addressLine2
+            address_line_1
+            address_line_2
         }
     """
     venue = graphene.Field(
@@ -158,7 +158,7 @@ class Query(ObjectType):
     )
 
     """
-        socialNetwork (name : Meetup) {
+        social_network (name : Meetup) {
             id
             name
             url
@@ -170,7 +170,7 @@ class Query(ObjectType):
     )
 
     """
-        socialNetworks {
+        social_networks {
             id
             name
             url
@@ -181,7 +181,7 @@ class Query(ObjectType):
     )
 
     """
-        subscribedSocialNetworks {
+        subscribed_social_networks {
             id
             name
             url
@@ -192,7 +192,7 @@ class Query(ObjectType):
     )
 
     """
-        meetupGroups {
+        meetup_groups {
             id
             name
             urlname
@@ -213,7 +213,7 @@ class Query(ObjectType):
     )
 
     """
-        snTokenStatus (id: 123) {
+        sn_token_status (id: 123) {
             status
         }
     """
@@ -332,4 +332,4 @@ class Query(ObjectType):
         return SocialNetworkTokenStatusType(status=status, name=name)
 
 
-schema = graphene.Schema(query=Query)
+schema = graphene.Schema(query=Query, auto_camelcase=False)

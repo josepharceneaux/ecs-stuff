@@ -3,7 +3,6 @@ This module contains utility functions to handle GraphQL data and queries.
 """
 from contracts import contract
 from sqlalchemy import inspect
-from ..utils.handy_functions import snake_case_to_camel_case
 
 __author__ = 'mzohaibqc'
 
@@ -17,7 +16,7 @@ def get_fields(model, include=None, exclude=None, relationships=None):
     :param list | tuple | None include: while fields to include, None for all
     :param list | tuple | None exclude: which fields to exclude, None for no exclusion
     :param list | tuple | None relationships: list of relationships that you want to add in fields like
-    eventOrganizer for Event fields.
+    event_organizer for Event fields.
     :return: list of fields
     :rtype: list
 
@@ -34,7 +33,7 @@ def get_fields(model, include=None, exclude=None, relationships=None):
                 ['currency', 'description', 'endDatetime', 'groupUrlName', 'id', 'maxAttendees', 'organizerId',
                 'registrationInstruction', 'socialNetworkEventId', 'socialNetworkGroupId', 'socialNetworkId',
                 'startDatetime', 'ticketsId', 'timezone', 'url', 'userId', 'venueId']
-            >>> get_fields(Event, relationships=('eventOrganizer',))
+            >>> get_fields(Event, relationships=('event_organizer',))
                 ['cost', 'currency', 'description', 'endDatetime', 'eventOrganizer',
                 ['about', 'email', 'event', 'id', 'name', 'socialNetworkId', 'socialNetworkOrganizerId', 'user',
                 'userId'], 'groupUrlName', 'id', 'maxAttendees', 'organizerId', 'registrationInstruction',
@@ -44,13 +43,12 @@ def get_fields(model, include=None, exclude=None, relationships=None):
     fields = []
     column_keys = inspect(model).mapper.column_attrs._data._list
     relationship_keys = inspect(model).mapper.relationships._data._list
-    column_keys = map(snake_case_to_camel_case, column_keys)
     for key in column_keys:
         if (not include or key in include) and (not exclude or key not in exclude):
             fields.append(key)
     for key in relationship_keys:
-        if relationships and snake_case_to_camel_case(key) in relationships:
-            fields.append(snake_case_to_camel_case(key))
+        if relationships and key in relationships:
+            fields.append(key)
             relationship_class = getattr(model, key).mapper.class_
             fields.append(get_fields(relationship_class))
     return fields
@@ -60,7 +58,7 @@ def get_fields(model, include=None, exclude=None, relationships=None):
 def get_query(key, fields, args=None, return_str=False):
     """
     This function takes response key, list of expected response fields and optional args and returns
-    GraphQL compatible query. Fields name should be camel case like socialNetworkId.
+    GraphQL compatible query.
     :param string key: response key
     :param list | tuple fields: list of fields to be retrieved
     :param dict | None args: optional args
@@ -77,9 +75,9 @@ def get_query(key, fields, args=None, return_str=False):
                     "query" : "{ events { id title cost description } }"
                 }
 
-            >>> get_query(key, fields, args=dict(page=1, perPage=10))
+            >>> get_query(key, fields, args=dict(page=1, per_page=10))
                 {
-                    "query" : "{ events (page: 1, perPage=10) { id title cost description } }"
+                    "query" : "{ events (page: 1, per_page=10) { id title cost description } }"
                 }
 
             >>> key = "event"

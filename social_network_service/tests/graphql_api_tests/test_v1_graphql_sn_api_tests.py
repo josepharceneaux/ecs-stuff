@@ -8,7 +8,6 @@ from social_network_service.common.models.venue import Venue
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.event_organizer import EventOrganizer
-from social_network_service.common.utils.handy_functions import camel_case_to_snake_case
 from social_network_service.tests.helper_functions import get_graphql_data
 from social_network_service.common.utils.graphql_utils import (get_query, validate_graphql_response, get_fields)
 
@@ -34,7 +33,7 @@ def test_get_event(token_first, eventbrite_event):
     """
     response = assert_valid_response('event', Event, token_first, eventbrite_event['id'])
     event = response['data']['event']
-    match_data(event, eventbrite_event, get_fields(Event, exclude=('organizerId', 'url')))
+    match_data(event, eventbrite_event, get_fields(Event, exclude=('organizer_id', 'url')))
 
 
 def test_get_events_pagination(token_first, eventbrite_event, meetup_event):
@@ -44,13 +43,13 @@ def test_get_events_pagination(token_first, eventbrite_event, meetup_event):
     """
     assert_valid_response('event', Event, token_first, eventbrite_event['id'])
     fields = get_fields(Event)
-    query = get_query('events', fields, args=dict(page=1, perPage=10))
+    query = get_query('events', fields, args=dict(page=1, per_page=10))
     response = get_graphql_data(query, token_first)
     assert 'errors' not in response, 'Response: %s\nQuery: %s' % (response, query)
     validate_graphql_response('events', response, fields, is_array=True)
 
     # Since there were only two events created, now getting events for second page will return no events
-    query = get_query('events', fields, args=dict(page=2, perPage=10))
+    query = get_query('events', fields, args=dict(page=2, per_page=10))
     response = get_graphql_data(query, token_first)
     assert 'errors' not in response, 'Response: %s\nQuery: %s' % (response, query)
     assert response['data']['events'] == []
@@ -59,9 +58,9 @@ def test_get_events_pagination(token_first, eventbrite_event, meetup_event):
 def test_get_event_relationship_objects(token_first):
     """
     This test validates that by adding model relationships and their fields will work and Graphql will return those
-    relationships data as well. e.g. in this case, we are getting eventOrganizer data inside events data
+    relationships data as well. e.g. in this case, we are getting event_organizer data inside events data
     """
-    fields = get_fields(Event, relationships=('eventOrganizer',))
+    fields = get_fields(Event, relationships=('event_organizer',))
     query = get_query('events', fields)
     response = get_graphql_data(query, token_first)
     assert 'errors' not in response, 'Response: %s\nQuery: %s' % (response, query)
@@ -88,34 +87,34 @@ def test_get_organizer(token_first, organizer_in_db):
 
 def test_get_social_network(token_first, eventbrite):
     """
-    This test validates that `socialNetwork` and `socialNetworks` queries are working fine. it also matches
+    This test validates that `social_network` and `social_networks` queries are working fine. it also matches
      eventbrite id with returned data.
     """
-    assert_valid_response('socialNetwork', SocialNetwork, token_first, eventbrite['id'], ignore_id_test=True)
+    assert_valid_response('social_network', SocialNetwork, token_first, eventbrite['id'], ignore_id_test=True)
     fields = get_fields(SocialNetwork)
-    query = get_query('socialNetwork', fields, args=dict(name='Eventbrite'))
+    query = get_query('social_network', fields, args=dict(name='Eventbrite'))
     response = get_graphql_data(query, token_first)
     assert 'errors' not in response, 'Response: %s\nQuery: %s' % (response, query)
-    validate_graphql_response('socialNetwork', response, fields)
-    assert response['data']['socialNetwork']['id'] == eventbrite['id']
+    validate_graphql_response('social_network', response, fields)
+    assert response['data']['social_network']['id'] == eventbrite['id']
 
 
 def test_get_subscribed_social_network(token_first):
     """
     This test validates that `subscribedSocialNetwork` query is returning a list of subscribed social networks.
     """
-    assert_valid_response('subscribedSocialNetwork', SocialNetwork, token_first, None, ignore_id_test=True)
+    assert_valid_response('subscribed_social_network', SocialNetwork, token_first, None, ignore_id_test=True)
 
 
 def test_get_meetup_groups(token_first):
     """
-    This test validates that `meetupGroups` query is returning a list of user's groups on meetup.
+    This test validates that `meetup_groups` query is returning a list of user's groups on meetup.
     """
     fields = ['id', 'name', 'urlname']
-    query = get_query('meetupGroups', fields)
+    query = get_query('meetup_groups', fields)
     response = get_graphql_data(query, token_first)
     assert 'errors' not in response, 'Response: %s\nQuery: %s' % (response, query)
-    validate_graphql_response('meetupGroups', response, fields, is_array=True)
+    validate_graphql_response('meetup_groups', response, fields, is_array=True)
 
 
 def test_get_timezones(token_first):
@@ -131,15 +130,15 @@ def test_get_timezones(token_first):
 
 def test_get_sn_token_status(token_first, eventbrite):
     """
-    Validate that Graphql endpoint will return token status for given social network id for `snTokenStatus` query.
+    Validate that Graphql endpoint will return token status for given social network id for `sn_token_status` query.
     In this case, Eventbrite is the social_network and token status should be True.
     """
     fields = ['status']
-    query = get_query('snTokenStatus', fields, args=dict(id=eventbrite['id']))
+    query = get_query('sn_token_status', fields, args=dict(id=eventbrite['id']))
     response = get_graphql_data(query, token_first)
     assert 'errors' not in response, 'Response: %s\nQuery: %s' % (response, query)
-    validate_graphql_response('snTokenStatus', response, fields)
-    assert response['data']['snTokenStatus']['status'] is True
+    validate_graphql_response('sn_token_status', response, fields)
+    assert response['data']['sn_token_status']['status'] is True
 
 
 def assert_valid_response(key, model, token, obj_id, ignore_id_test=False):
@@ -173,5 +172,5 @@ def match_data(graphql_obj, restful_obj, fields):
     :param list | tuple fields: list of fields to be matched
     """
     for field in fields:
-        assert graphql_obj[field] == restful_obj[camel_case_to_snake_case(field)], \
-            'field: %s, GraphqlObj: %s\nRestfulObj: %s' % (field, graphql_obj, restful_obj)
+        assert graphql_obj[field] == restful_obj[field], 'field: %s, GraphqlObj: %s\nRestfulObj: %s' \
+                                                         % (field, graphql_obj, restful_obj)

@@ -114,7 +114,7 @@ def assert_event(user_id, social_network_event_id):
 def get_graphql_data(query, token, expected_status=(codes.OK,)):
     """
     This function is to avoid some redundant, repeatable code like passing SN service url, asserting OK response etc.
-    :param dict query: GrapgQL query for SN service endpoin
+    :param dict query: GraphQL query for SN service endpoint
     :param string token: access token
     :param list | tuple expected_status: list/tuple of HTTP status codes
     :return:
