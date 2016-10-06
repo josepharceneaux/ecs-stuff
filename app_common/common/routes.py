@@ -353,6 +353,7 @@ class CandidateApi(object):
 
     SOCIAL_NETWORKS = '/' + VERSION + '/candidates/<int:candidate_id>/social_networks'
     SOCIAL_NETWORK = '/' + VERSION + '/candidates/<int:candidate_id>/social_networks/<int:id>'
+    CHECK_SOCIAL_NETWORK = '/' + VERSION + '/candidates/social_network'
 
     WORK_PREFERENCES = '/' + VERSION + '/candidates/<int:candidate_id>/work_preferences'
     WORK_PREFERENCE = '/' + VERSION + '/candidates/<int:candidate_id>/work_preferences/<int:id>'
@@ -442,6 +443,7 @@ class CandidateApiUrl(object):
 
     SOCIAL_NETWORKS = HOST_NAME % ('/' + VERSION + '/candidates/%s/social_networks')
     SOCIAL_NETWORK = HOST_NAME % ('/' + VERSION + '/candidates/%s/social_networks/%s')
+    CHECK_SOCIAL_NETWORK = HOST_NAME % ('/' + VERSION + '/candidates/social_network')
 
     WORK_PREFERENCES = HOST_NAME % ('/' + VERSION + '/candidates/%s/work_preferences')
     WORK_PREFERENCE_ID = HOST_NAME % ('/' + VERSION + '/candidates/%s/work_preferences/%s')
