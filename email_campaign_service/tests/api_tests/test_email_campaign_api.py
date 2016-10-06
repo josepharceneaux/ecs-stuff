@@ -45,9 +45,10 @@ from email_campaign_service.tests.modules.handy_functions import (assert_valid_c
                                                                   create_email_campaign,
                                                                   EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS,
                                                                   EMAIL_CAMPAIGN_INVALID_FIELDS,
-                                                                  EMAIL_CAMPAIGN_EXPECT_SINGLE_FIELD,
+                                                                  EMAIL_CAMPAIGN_EXCEPT_SINGLE_FIELD,
                                                                   create_data_for_campaign_creation_with_all_parameters,
-                                                                  CREATE_EMAIL_CAMPAIGN_OPTIONAL_FIELDS)
+                                                                  CREATE_EMAIL_CAMPAIGN_OPTIONAL_FIELDS,
+                                                                  UPDATE_WITH_INVALID_DATA)
 
 
 class TestGetCampaigns(object):
@@ -215,15 +216,15 @@ class TestGetCampaigns(object):
         assert response.status_code == requests.codes.BAD
         assert str(MAX_PAGE_SIZE) in response.json()['error']['message']
 
-    @pytest.mark.parametrize("params", EMAIL_CAMPAIGN_INVALID_FIELDS)
     @pytest.mark.qa
-    def test_get_campaign_with_invalid_field_one_by_one(self, access_token_first, params):
+    def test_get_campaign_with_invalid_field_one_by_one(self, access_token_first):
         """
-         Test checks that with invalid values ......
+         Test checks that with invalid values
         """
-        response = requests.get(url=EmailCampaignApiUrl.CAMPAIGNS + params,
-                                headers={'Authorization': 'Bearer %s' % access_token_first})
-        assert response.status_code == requests.codes.BAD_REQUEST
+        for param in EMAIL_CAMPAIGN_INVALID_FIELDS:
+            response = requests.get(url=EmailCampaignApiUrl.CAMPAIGN % param,
+                                    headers={'Authorization': 'Bearer %s' % access_token_first})
+            assert response.status_code == requests.codes.BAD_REQUEST
 
     @pytest.mark.qa
     def test_get_all_campaigns_in_dsc(self, user_first,
@@ -253,16 +254,15 @@ class TestGetCampaigns(object):
         email_campaigns = get_campaign_or_campaigns(access_token_first, pagination_query='?sort_type=ASC')
         assert email_campaigns[0]['added_datetime'] < email_campaigns[1]['added_datetime']
 
-    @pytest.mark.parametrize("params", EMAIL_CAMPAIGN_EXPECT_SINGLE_FIELD)
     @pytest.mark.qa
-    def test_get_campaign_except_single_field(self, access_token_first, params):
+    def test_get_campaign_except_single_field(self, access_token_first):
         """
-         Test checks that with invalid values ......
+         Test to get campaign except single field.
         """
-        response = requests.get(url=EmailCampaignApiUrl.CAMPAIGNS + params,
-                                headers={'Authorization': 'Bearer %s' % access_token_first})
-        assert response.status_code == requests.codes.OK
-
+        for param in EMAIL_CAMPAIGN_EXCEPT_SINGLE_FIELD:
+            response = requests.get(url=EmailCampaignApiUrl.CAMPAIGN % param,
+                                    headers={'Authorization': 'Bearer %s' % access_token_first})
+            assert response.status_code == requests.codes.OK
 
 
 class TestCreateCampaign(object):
@@ -440,9 +440,8 @@ class TestCreateCampaign(object):
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == ForbiddenError.http_status_code()
 
-    @pytest.mark.parametrize("params", EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS)
     @pytest.mark.qa
-    def test_create_email_campaign_with_optional_parameters(self, access_token_first, talent_pipeline, params):
+    def test_create_email_campaign_with_optional_parameters(self, access_token_first, talent_pipeline):
         """
         Here we provide valid data to create an email-campaign with optional.
         It should get OK response.
@@ -450,29 +449,30 @@ class TestCreateCampaign(object):
         subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign'
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject)
-        campaign_data.update(params)
-        response = create_email_campaign_via_api(access_token_first, campaign_data)
-        assert response.status_code == requests.codes.CREATED
-        resp_object = response.json()
-        assert 'campaign' in resp_object
-        assert resp_object['campaign']['id']
+        for param in EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS:
+            campaign_data.update(param)
+            response = create_email_campaign_via_api(access_token_first, campaign_data)
+            assert response.status_code == requests.codes.CREATED
+            resp_object = response.json()
+            assert 'campaign' in resp_object
+            assert resp_object['campaign']['id']
 
-    @pytest.mark.parametrize("params", CREATE_EMAIL_CAMPAIGN_OPTIONAL_FIELDS)
     @pytest.mark.qa
-    def test_create_email_campaign_except_single_parameter(self, access_token_first, talent_pipeline,
-                                                           params):
+    def test_create_email_campaign_except_single_parameter(self, access_token_first, talent_pipeline):
         """
                 Here we provide valid data to create an email-campaign with optional.
                 It should get OK response.
         """
         subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign'
-        campaign_data = create_data_for_campaign_creation_with_all_parameters(access_token_first, talent_pipeline, subject)
-        del campaign_data[params]
-        response = create_email_campaign_via_api(access_token_first, campaign_data)
-        assert response.status_code == requests.codes.CREATED
-        resp_object = response.json()
-        assert 'campaign' in resp_object
-        assert resp_object['campaign']['id']
+        campaign_data = create_data_for_campaign_creation_with_all_parameters(access_token_first, talent_pipeline,
+                                                                              subject)
+        for param in CREATE_EMAIL_CAMPAIGN_OPTIONAL_FIELDS:
+            del campaign_data[param]
+            response = create_email_campaign_via_api(access_token_first, campaign_data)
+            assert response.status_code == requests.codes.CREATED
+            resp_object = response.json()
+            assert 'campaign' in resp_object
+            assert resp_object['campaign']['id']
 
     @pytest.mark.qa
     def test_update_email_campaign_with_allowed_parameter(self, access_token_first, talent_pipeline,
@@ -493,10 +493,9 @@ class TestCreateCampaign(object):
             access_token_first, campaign_id=campaign_id)
         assert email_campaign['is_hidden']
 
-    @pytest.mark.parametrize("params", [fake.word(), fake.random_number(2)])
     @pytest.mark.qa
     def test_update_email_campaign_with_invalid_data(self, access_token_first, talent_pipeline,
-                                                     email_campaign_of_user_first, params):
+                                                     email_campaign_of_user_first):
         """
         :param access_token_first:
         :param talent_pipeline:
@@ -505,9 +504,10 @@ class TestCreateCampaign(object):
         """
 
         campaign_id = email_campaign_of_user_first.id
-        data = {'is_hidden': params}
-        response = send_request('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id, access_token_first, data)
-        CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=400)
+        for param in UPDATE_WITH_INVALID_DATA:
+            data = {'is_hidden': param}
+            response = send_request('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id, access_token_first, data)
+            CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=400)
 
 
 class TestSendCampaign(object):
@@ -554,7 +554,6 @@ class TestSendCampaign(object):
             if not email_campaign_of_user_first.email_client_id:
                 json_resp = response.json()
                 assert str(email_campaign_of_user_first.id) in json_resp['message']
-
 
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
                                                      email_campaign_in_other_domain):
@@ -728,7 +727,7 @@ class TestSendCampaign(object):
         assert_campaign_send(response, campaign, user_first, expected_count=1)
 
 
-# Test for healthcheck
+# Test for health check
 def test_health_check():
     response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK)
     assert response.status_code == requests.codes.OK

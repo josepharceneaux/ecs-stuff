@@ -70,16 +70,16 @@ class TestEmailTemplateFolders(object):
                                  headers=headers)
         CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=400)
 
-    @pytest.mark.parametrize("params", EMAIL_TEMPLATE_INVALID_DATA_TYPES)
     @pytest.mark.qa
-    def test_create_email_template_folder_with_invalid_data_type(self, headers, params):
+    def test_create_email_template_folder_with_invalid_data_type(self, headers):
         """
         test to create email template with invalid data_types
         """
-        data = params
-        response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
-                                 headers=headers)
-        CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=400)
+        for param in EMAIL_TEMPLATE_INVALID_DATA_TYPES:
+            data = param
+            response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
+                                     headers=headers)
+            CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=400)
 
     @pytest.mark.qa
     def test_create_email_template_folder_with_non_existing_parent_id(self, headers):
