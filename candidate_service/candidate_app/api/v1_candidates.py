@@ -22,7 +22,6 @@ from candidate_service.candidate_app import logger
 from candidate_service.common.models.db import db
 
 # Validators
-
 from candidate_service.common.talent_config_manager import TalentConfigKeys
 from candidate_service.common.talent_config_manager import TalentEnvs
 from candidate_service.common.utils.models_utils import to_json
