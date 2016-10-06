@@ -174,34 +174,132 @@ class NoteType(graphene.ObjectType):
         return self.get('owner_user_id')
 
 
-# class PhotoType(graphene.ObjectType):
-#     pass
-#
-#
+class PhotoType(graphene.ObjectType):
+    name = 'PhotoType'
+
+    image_url = graphene.String()
+    is_default = graphene.Boolean(resolver=resolve_is_default)
+    added_datetime = graphene.String(resolver=resolve_added_datetime)
+    updated_datetime = graphene.String(resolver=resolve_updated_datetime)
+
+    def resolve_image_url(self, args, context, info):
+        return self.get('image_url')
+
+
 class PreferredLocationType(graphene.ObjectType):
     name = 'PreferredLocationType'
 
+    city = graphene.String(resolver=resolve_city)
+    iso3166_subdivision = graphene.String(resolver=resolve_iso3166_subdivision)
+    iso3166_country = graphene.String(resolver=resolve_iso3166_country)
+    zip_code = graphene.String(resolver=resolve_zip_code)
+    added_datetime = graphene.String(resolver=resolve_added_datetime)
 
 
+class ReferenceType(graphene.ObjectType):
+    name = 'ReferenceType'
 
-# class ReferenceType(graphene.ObjectType):
-#     pass
-#
-#
-# class SkillType(graphene.ObjectType):
-#     pass
-#
-#
-# class SocialNetworkType(graphene.ObjectType):
-#     pass
-#
-#
-# class TagType(graphene.ObjectType):
-#     pass
+    person_name = graphene.String()
+    position_title = graphene.String()
+    comments = graphene.String(resolver=resolve_comments)
+    added_datetime = graphene.String(resolver=resolve_added_datetime)
+    updated_datetime = graphene.String(resolver=resolve_updated_datetime)
+
+    def resolve_person_name(self, args, context, info):
+        return self.get('person_name')
+
+    def resolve_position_title(self, args, context, info):
+        return self.get('position_title')
 
 
-# class WorkPreferenceType(graphene.ObjectType):
-#     pass
+class SkillType(graphene.ObjectType):
+    name = 'SkillType'
+
+    description = graphene.String()
+    total_months_used = graphene.Int()
+    last_used_year = graphene.Int()
+    last_used_month = graphene.Int()
+    added_datetime = graphene.String(resolver=resolve_added_datetime)
+    updated_datetime = graphene.String(resolver=resolve_updated_datetime)
+
+    def resolve_description(self, args, context, info):
+        return self.get('description')
+
+    def resolve_total_months_used(self, args, context, info):
+        return self.get('total_months_used')
+
+    def resolve_last_used_year(self, args, contect, info):
+        return self.get('last_used_year')
+
+    def resolve_last_used_month(self, args, context, info):
+        return self.get('last_used_month')
+
+
+class SocialNetworkType(graphene.ObjectType):
+    name = 'SocialNetworkType'
+
+    social_network_name = graphene.String()
+    profile_url = graphene.String()
+    added_datetime = graphene.String(resolver=resolve_added_datetime)
+    updated_datetime = graphene.String(resolver=resolve_updated_datetime)
+
+    def resolve_social_network_name(self, args, context, info):
+        return self.get('social_network_name')
+
+    def resolve_profile_url(self, args, context, info):
+        return self.get('profile_url')
+
+
+class TagType(graphene.ObjectType):
+    name = 'TagType'
+
+    tag_name = graphene.String()
+    added_datetime = graphene.String(resolver=resolve_added_datetime)
+    updated_datetime = graphene.String(resolver=resolve_updated_datetime)
+
+    def resolve_tag_name(self, args, context, info):
+        return self.get('tag_name')
+
+
+class WorkPreferenceType(graphene.ObjectType):
+    name = 'WorkPreferenceType'
+
+    relocate = graphene.Boolean()
+    authorization = graphene.String()
+    telecommute = graphene.Boolean()
+    travel_percentage = graphene.Int()
+    hourly_rate = graphene.Float()
+    salary = graphene.Int()
+    tax_terms = graphene.String()
+    security_clearance = graphene.Boolean()
+    third_party = graphene.Boolean()
+
+    def resolve_relocate(self, args, context, info):
+        return self.get('relocate')
+
+    def resolve_authorization(self, args, context, info):
+        return self.get('authorization')
+
+    def resolve_telecommute(self, args, context, info):
+        return self.get('telecommute')
+
+    def resolve_travel_percentage(self, args, context, info):
+        return self.get('travel_percentage')
+
+    def resolve_hourly_rate(self, args, context, info):
+        return self.get('hourly_rate')
+
+    def resolve_salary(self, args, context, info):
+        return self.get('salary')
+
+    def resolve_tax_terms(self, args, context, info):
+        return self.get('tax_terms')
+
+    def resolve_security_clearance(self, args, context, info):
+        return self.get('security_clearance')
+
+    def resolve_third_party(self, args, context, info):
+        return self.get('third_party')
 
 
 class PhoneType(graphene.ObjectType):
@@ -287,16 +385,16 @@ class CandidateType(graphene.ObjectType):
     emails = graphene.List(CandidateEmailType)
     experiences = graphene.List(ExperienceType)
 
-    # military_service = graphene.List(MilitaryServiceType)
-    # notes = graphene.List(NoteType)
-    # phones = graphene.List(PhoneType)
-    # photos = graphene.List(PhotoType)
-    # preferred_locations = graphene.List(PreferredLocationType)
-    # references = graphene.List(ReferenceType)
-    # skills = graphene.List(SkillType)
-    # social_networks = graphene.List(SocialNetworkType)
-    # tags = graphene.List(TagType)
-    # work_preference = graphene.Field(WorkPreferenceType)
+    military_service = graphene.List(MilitaryServiceType)
+    notes = graphene.List(NoteType)
+    phones = graphene.List(PhoneType)
+    photos = graphene.List(PhotoType)
+    preferred_locations = graphene.List(PreferredLocationType)
+    references = graphene.List(ReferenceType)
+    skills = graphene.List(SkillType)
+    social_networks = graphene.List(SocialNetworkType)
+    tags = graphene.List(TagType)
+    work_preference = graphene.Field(WorkPreferenceType)
 
     # Resolvers for candidate's secondary attributes
     def resolve_areas_of_interest(self, args, context, info):
