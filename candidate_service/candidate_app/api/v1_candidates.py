@@ -1211,6 +1211,29 @@ class CandidateSkillResource(Resource):
 class CandidateSocialNetworkResource(Resource):
     decorators = [require_oauth()]
 
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        check if social network url exists for user's domain
+        :param args: ?url=xxx
+        :return: candidate id if found, raise 404 else
+        """
+        auth_user = request.user
+        social_network_url = request.args.get('url')
+        if social_network_url:
+            users_in_domain = [user.id for user in User.all_users_of_domain(domain_id=auth_user.domain_id)]
+
+            candidate_query = db.session.query(Candidate).join(CandidateSocialNetwork)\
+                .filter(CandidateSocialNetwork.social_profile_url == social_network_url,
+                        Candidate.user_id.in_(users_in_domain))\
+                .first()
+            if candidate_query:
+                return {"candidate_id": candidate_query.id}
+            else:
+                raise NotFoundError(error_message="Social network url not found for your domain")
+
+        raise InvalidUsage(error_message="Valid social network profile is required")
+
     @require_all_permissions(Permission.PermissionNames.CAN_DELETE_CANDIDATE_SOCIAL_PROFILE)
     def delete(self, **kwargs):
         """
