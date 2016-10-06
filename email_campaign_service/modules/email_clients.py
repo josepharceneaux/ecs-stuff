@@ -119,6 +119,9 @@ class EmailClientBase(object):
         except gaierror as error:
             logger.exception(error.message)
             raise InternalServerError('Error occurred while connecting with given server')
+        except smtplib.SMTPServerDisconnected as error:
+            logger.exception(error.message)
+            raise InternalServerError('Unexpectedly Connection closed with given server')
 
     @abstractmethod
     def authenticate(self, connection_quit=True):
