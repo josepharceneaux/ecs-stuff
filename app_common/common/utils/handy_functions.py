@@ -94,7 +94,7 @@ def snake_case_to_camel_case(name):
     splitted_string = name.split('_')
     # use string's class to work on the string to keep its type
     class_ = name.__class__
-    return splitted_string[0] + class_.join('', map(class_.capitalize, splitted_string[1:]))
+    return splitted_string[0] + str.join('', map(class_.capitalize, splitted_string[1:]))
 
 
 def url_conversion(long_url):

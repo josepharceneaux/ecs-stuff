@@ -8,10 +8,9 @@ import datetime
 
 # Third Party
 import requests
-
-# Service imports
 from requests import codes
 
+# Service imports
 from social_network_service.common.models.db import db
 from social_network_service.common.models.event import Event
 from social_network_service.common.routes import SocialNetworkApiUrl
