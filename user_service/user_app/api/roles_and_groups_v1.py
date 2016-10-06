@@ -17,15 +17,14 @@ class UserRolesApi(Resource):
     @require_all_permissions(Permission.PermissionNames.CAN_GET_USER_ROLE)
     def get(self, **kwargs):
         """
-        GET /users/<user_id>/roles Fetch all roles of a user
+        GET /users/<user_id>/roles Fetch all permissions of a user
 
-        :return A dictionary containing role ids of all roles of a given user
+        :return A dictionary containing role Name and permissions of that role
         :rtype: dict
         """
 
         requested_user_id = kwargs.get('user_id')
         requested_user = User.query.get(requested_user_id)
-        role_id_only = request.args.get('role_id_only', True)
 
         if not requested_user:
             raise NotFoundError("User with user_id %s doesn't exist" % requested_user_id)
@@ -33,10 +32,6 @@ class UserRolesApi(Resource):
         if request.user.role.name != 'TALENT_ADMIN' and requested_user.domain_id != request.user.domain_id:
             raise UnauthorizedError("User %s doesn't have appropriate permission to get roles of user %s" % (
                 request.user.id, requested_user.id))
-
-        if str(role_id_only).lower() not in ['0', 'false', 'true', '1']:
-            raise InvalidUsage(error_message="Invalid value of role_id_only. role_id_only should have value `true`"
-                                             " or `false`")
 
         # GET all roles of given user
         permissions = [permission.name for permission in requested_user.role.get_all_permissions_of_role()]

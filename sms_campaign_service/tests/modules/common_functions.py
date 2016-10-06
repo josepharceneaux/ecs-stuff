@@ -84,7 +84,7 @@ def assert_url_conversion(sms_campaign_sends):
 
 
 def assert_on_blasts_sends_url_conversion_and_activity(user_id, expected_sends, campaign_id, access_token,
-                                                       expected_blasts=1, blast_index=0, blast_timeout=20,
+                                                       expected_blasts=1, blast_index=0, blast_timeout=60,
                                                        sends_timeout=100):
     """
     This function assert the number of sends in database table "sms_campaign_blast" and
@@ -139,18 +139,22 @@ def assert_campaign_schedule(response, user_id, campaign_id, headers):
     """
     This asserts that campaign has scheduled successfully and we get 'task_id' in response.
     We also assert that 'start_datetime', 'end_datetime' and 'frequency_id' have been updated in database.
+    This also retuns task_id of scheduled campaign.
     """
-    assert response.status_code == 200, response.json()['error']['message']
+    assert response.status_code == requests.codes.OK, response.json()['error']['message']
     assert 'task_id' in response.json()
-    CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_id)
+    CampaignsTestsHelpers.assert_for_activity(user_id, Activity.MessageIds.CAMPAIGN_SCHEDULE, campaign_id, timeout=40)
     # get updated record to verify the changes we made
     response_get = requests.get(SmsCampaignApiUrl.CAMPAIGN % campaign_id, headers=headers)
     assert response_get.status_code == requests.codes.OK, 'Response should be ok (200)'
     resp = response_get.json()['campaign']
-    assert resp['frequency'].lower() in Frequency.standard_frequencies()
+    frequencies = Frequency.standard_frequencies().keys()
+    frequencies.append('custom')
+    assert resp['frequency'].lower() in frequencies
     assert resp['start_datetime']
     if resp['frequency']:
         assert resp['end_datetime']
+    return response.json()['task_id']
 
 
 def assert_campaign_delete(response, user_id, campaign_id):
@@ -191,7 +195,7 @@ def candidate_ids_associated_with_campaign(campaign, access_token, smartlist_ind
     :param campaign: SMS campaign object
     :param access_token: access token of user
     """
-    return get_candidates_of_smartlist(campaign['list_ids'][smartlist_index], True, access_token)
+    return get_candidates_of_smartlist(campaign['smartlist_ids'][smartlist_index], True, access_token)
 
 
 def reply_and_assert_response(campaign_obj, user_phone, candidate_phone, access_token,
@@ -275,7 +279,7 @@ def assert_valid_campaign_get(campaign_dict, referenced_campaign, compare_fields
         assert campaign_dict['id']
         assert campaign_dict['name']
         assert campaign_dict['body_text']
-        assert campaign_dict['list_ids']
+        assert campaign_dict['smartlist_ids']
         assert campaign_dict['user_id']
         CampaignsTestsHelpers.assert_valid_datetime_range(campaign_dict['added_datetime'])
 

@@ -32,7 +32,7 @@ class FacebookBot(TalentBot):
         """
         Authenticates user
         :param fb_user_id:
-        :rtype tuple (bool, int): (True|False, user_id)
+        :rtype: (True|False, TalentbotAuth.facebook_user_id)
         """
         user_id = TalentbotAuth.get_user_id(facebook_user_id=fb_user_id)
         if user_id:
@@ -44,6 +44,7 @@ class FacebookBot(TalentBot):
         Handles the communication between user and bot
         :param str fb_user_id: Facebook user Id of sender
         :param str message: User's message
+        :rtype: None
         """
         is_authenticated, user_id = self.authenticate_user(fb_user_id)
         if is_authenticated:
@@ -51,6 +52,8 @@ class FacebookBot(TalentBot):
                 self.sender_action(fb_user_id, "mark_seen")
                 self.sender_action(fb_user_id, "typing_on")
                 response_generated = self.parse_message(message, user_id)
+                if not response_generated:
+                    raise IndexError
                 if len(response_generated) > FACEBOOK_MESSAGE_LIMIT:
                     tokens = response_generated.split('\n')
                     split_response_message = ""
@@ -76,6 +79,7 @@ class FacebookBot(TalentBot):
         Lets Facebook know what bot's doing e.g: typing_on or typing_off
         :param str user_id: Facebook user Id
         :param str action: Bot's action
+        :rtype: None
         """
         data = {
             "recipient": {"id": user_id},
@@ -91,6 +95,7 @@ class FacebookBot(TalentBot):
         Replies to facebook user
         :param str fb_user_id: facebook user id who has sent us message
         :param str msg: Our response message
+        :rtype: None
         """
         data = {
             "recipient": {"id": fb_user_id},

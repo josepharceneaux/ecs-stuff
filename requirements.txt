@@ -104,4 +104,6 @@ python-Levenshtein==0.12.0
 slackclient==1.0.1
 
 # Python version of Facebook's Graphql
-graphene==1.0
+GraphQL-core==1.0
+Flask-GraphQL==1.3.0
+graphene==1.0.1

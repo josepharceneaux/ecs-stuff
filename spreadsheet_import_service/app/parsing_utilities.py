@@ -294,6 +294,8 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                                   custom_fields=custom_fields,
                                   skills=skills)
 
+            candidate_data = {key: value for key, value in candidate_data.items() if value is not None}
+
             created, response = create_candidates_from_parsed_spreadsheet(candidate_data, oauth_token)
 
             if created:
@@ -430,7 +432,7 @@ def update_candidate_from_parsed_spreadsheet(candidate_dict, oauth_token):
                        headers={'Authorization': oauth_token, 'content-type': 'application/json'})
 
     if r.status_code == 200:
-        return True, {}
+        return True, r.json()
     else:
         return False, r.json()
 
