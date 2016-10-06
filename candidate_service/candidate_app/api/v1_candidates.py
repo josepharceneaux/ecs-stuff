@@ -550,8 +550,12 @@ class CandidatesResource(Resource):
             candidate_emails = body_dict.get('_candidate_emails')
 
             if candidate_emails:
-                candidate_ids = [candidate.id for candidate in Candidate.query.join(
-                    CandidateEmail).filter(CandidateEmail.address.in_(candidate_emails)).all()]
+                domain_candidates_from_email_addresses = Candidate.query.join(CandidateEmail).join(User).filter(
+                    CandidateEmail.address.in_(candidate_emails)).filter(
+                    User.domain_id == request.user.domain_id
+                ).all()
+
+                candidate_ids = [candidate.id for candidate in domain_candidates_from_email_addresses]
 
             # Candidate IDs must belong to user's domain
             if not do_candidates_belong_to_users_domain(request.user, candidate_ids):
