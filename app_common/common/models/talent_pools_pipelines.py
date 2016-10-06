@@ -35,6 +35,15 @@ class TalentPool(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    @classmethod
+    def get_talent_pools_in_user_domain(cls, user_id):
+        """
+        This method returns talent pools in a user's domain
+        :param int user_id: User Id
+        :rtype: list
+        """
+        return cls.query.filter(cls.user_id == user_id).all()
+
 
 class TalentPoolCandidate(db.Model):
     __tablename__ = 'talent_pool_candidate'

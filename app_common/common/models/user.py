@@ -215,10 +215,10 @@ class User(db.Model):
         :param int user_id: User Id
         :return: tuple(list, str) : (User list, domain name)
         """
-        domain_name = User.query.with_entities(Domain.name).filter(User.domain_id == Domain.id).filter(User.id == user_id).first()
-        users = User.query.filter(User.domain_id == Domain.id).\
-            filter(User.id == user_id).all()
-        return users, domain_name[0]
+        domain_name, domain_id = User.query.with_entities(Domain.name, Domain.id).filter(User.domain_id == Domain.id).\
+            filter(User.id == user_id).first()
+        users = User.query.filter(User.domain_id == domain_id).all()
+        return users, domain_name
 
 
 class UserPhone(db.Model):

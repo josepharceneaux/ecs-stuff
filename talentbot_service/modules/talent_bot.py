@@ -25,7 +25,7 @@ class TalentBot(object):
     """
     def __init__(self, list_of_questions, bot_name, error_messages):
         self.handler = QuestionHandler()
-        self.question_dict = {'0': {'question': list_of_questions[0], 'threshold': 70,
+        self.question_dict = {'0': {'question': list_of_questions[0], 'threshold': 90,
                                     'handler': self.handler.question_0_handler},
                               '1': {'question': list_of_questions[1], 'threshold': 95,
                                     'handler': self.handler.question_1_handler},
@@ -92,6 +92,19 @@ class TalentBot(object):
                               # Zipcode question alternates
                               '22': {'question': list_of_questions[22], 'threshold': 79,
                                      'handler': self.handler.question_2_handler},
+                              # What talent pools in my domain
+                              '31': {'question': list_of_questions[31], 'threshold': 95,
+                                     'handler': self.handler.question_7_handler},
+                              '32': {'question': list_of_questions[32], 'threshold': 95,
+                                     'handler': self.handler.question_7_handler},
+                              '33': {'question': list_of_questions[33], 'threshold': 95,
+                                     'handler': self.handler.question_7_handler},
+                              '34': {'question': list_of_questions[34], 'threshold': 95,
+                                     'handler': self.handler.question_7_handler},
+                              '35': {'question': list_of_questions[35], 'threshold': 95,
+                                     'handler': self.handler.question_7_handler},
+                              '36': {'question': list_of_questions[36], 'threshold': 95,
+                                     'handler': self.handler.question_7_handler},
                               }
         self.bot_name = bot_name
         self.error_messages = error_messages

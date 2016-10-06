@@ -10,6 +10,7 @@ response
  - question_4_handler()
  - question_5_handler()
  - question_6_handler()
+ - question_7_handler()
 """
 # Builtin imports
 import datetime
@@ -18,6 +19,8 @@ from dateutil.relativedelta import relativedelta
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.candidate import Candidate
 from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate
+from talentbot_service.common.models.talent_pools_pipelines import TalentPool
+# App specific imports
 from talentbot_service.modules.constants import HINT, BOT_NAME, CAMPAIGN_TYPES
 
 
@@ -66,7 +69,8 @@ class QuestionHandler(object):
             return None
         candidate_index = cls.find_word_in_message('cand', message_tokens)
         if candidate_index is not None:
-            number_of_candidates = len(users[0].candidates)
+            user = [user for user in users if user.id == user_id]
+            number_of_candidates = len(user[0].candidates)
             return "Candidates in domain %s : %d" % (domain_name, number_of_candidates)
         return "Users in domain %s : %d" % (domain_name, len(users))
 
@@ -141,11 +145,11 @@ class QuestionHandler(object):
             if len(message_tokens) > last_index + 1:
                 user_specific_date = self.extract_datetime_from_question(last_index, message_tokens)
         if not campaign_method:
-            campaign_list = ['Top Campaigns are following:']
+            campaign_list = ['Top Campaigns are following:\n']
             campaign_blast = CAMPAIGN_TYPES.get("email")(user_specific_date, user_id)
             if campaign_blast:
                 open_rate = self.calculate_percentage(campaign_blast.opens, campaign_blast.sends)
-                response_message = 'Email Campaign: "%s", open rate %d%% (%d/%d)"' \
+                response_message = 'Email Campaign: "%s", open rate %d%% (%d/%d)' \
                                    % (campaign_blast.campaign.name, open_rate,
                                       campaign_blast.opens, campaign_blast.sends)
                 campaign_list.append(response_message)
@@ -154,7 +158,7 @@ class QuestionHandler(object):
                 click_rate = self.calculate_percentage(campaign_blast.clicks, campaign_blast.sends)
                 reply_rate = self.calculate_percentage(campaign_blast.replies, campaign_blast.sends)
                 response_message = 'SMS Campaign: "%s" with click rate %d%% (%d/%d)' \
-                                   ' and reply rate %d%% (%d/%d)"' \
+                                   ' and reply rate %d%% (%d/%d)' \
                                    % (campaign_blast.campaign.name, click_rate,
                                       campaign_blast.clicks, campaign_blast.sends, reply_rate,
                                       campaign_blast.replies, campaign_blast.sends)
@@ -162,34 +166,36 @@ class QuestionHandler(object):
             campaign_blast = CAMPAIGN_TYPES.get("push")(user_specific_date, user_id)
             if campaign_blast:
                 click_rate = self.calculate_percentage(campaign_blast.clicks, campaign_blast.sends)
-                response_message = 'Push Campaign: "%s" with click rate %d%% (%d/%d)"' \
+                response_message = 'Push Campaign: "%s" with click rate %d%% (%d/%d)' \
                                    % (campaign_blast.campaign.name, click_rate,
                                       campaign_blast.clicks, campaign_blast.sends)
                 campaign_list.append(response_message)
             if len(campaign_list) < 2:
-                campaign_list[0] = "Looks like you don't have any campaigns"
-            return '\n'.join(campaign_list)
+                campaign_list[0] = "Looks like you don't have any campaigns since that time"
+            return '%s%s' % (campaign_list[0], self.create_ordered_list(campaign_list[1::]))
         campaign_blast = campaign_method(user_specific_date, user_id)
         timespan = self.append_list_with_spaces(message_tokens[last_index::])
+        if is_valid_year:
+            timespan = user_specific_date
         if campaign_blast:
             if isinstance(user_specific_date, datetime.datetime):
                 user_specific_date = user_specific_date.date()
             if campaign_type == 'email':
                 open_rate = self.calculate_percentage(campaign_blast.opens, campaign_blast.sends)
-                response_message = 'Top performing %s campaign from %s is "%s" with open rate %d%% (%d/%d)"' \
+                response_message = 'Top performing %s campaign from %s is "%s" with open rate %d%% (%d/%d)' \
                                    % (campaign_type, user_specific_date, campaign_blast.campaign.name, open_rate,
                                       campaign_blast.opens, campaign_blast.sends)
             if campaign_type == 'sms':
                 click_rate = self.calculate_percentage(campaign_blast.clicks, campaign_blast.sends)
                 reply_rate = self.calculate_percentage(campaign_blast.replies, campaign_blast.sends)
                 response_message = 'Top performing %s campaign from %s is "%s" with click rate %d%% (%d/%d)' \
-                                   ' and reply rate %d%% (%d/%d)"' \
+                                   ' and reply rate %d%% (%d/%d)' \
                                    % (campaign_type, user_specific_date, campaign_blast.campaign.name, click_rate,
                                       campaign_blast.clicks, campaign_blast.sends, reply_rate,
                                       campaign_blast.replies, campaign_blast.sends)
             if campaign_type == 'push':
                 click_rate = self.calculate_percentage(campaign_blast.clicks, campaign_blast.sends)
-                response_message = 'Top performing %s campaign from %s is "%s" with click rate %d%% (%d/%d)"' \
+                response_message = 'Top performing %s campaign from %s is "%s" with click rate %d%% (%d/%d)' \
                                    % (campaign_type, user_specific_date, campaign_blast.campaign.name, click_rate,
                                       campaign_blast.clicks, campaign_blast.sends)
         else:
@@ -265,6 +271,23 @@ class QuestionHandler(object):
         if args:
             return HINT
 
+    @classmethod
+    def question_7_handler(cls, message_tokens, user_id):
+        """
+        This method handles question what talent are pools in my domain
+        :param int user_id: User Id
+        :param message_tokens: User message tokens
+        :rtype: str
+        """
+        talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id)
+        if talent_pools:
+            talent_pool_names = [talent_pool.name for talent_pool in talent_pools]
+            talent_pool_names = cls.create_ordered_list(talent_pool_names)
+            header = ["There are %d talent pools in your domain\n" % len(talent_pools)]
+            response = '%s%s'
+            return response % (header[0], talent_pool_names[::])
+        return "Seems like there is no talent pool in your domain"
+
     @staticmethod
     def is_valid_year(year):
         """
@@ -307,3 +330,15 @@ class QuestionHandler(object):
         if duration_type.lower() in 'days':
             user_specific_date = datetime.datetime.utcnow() - relativedelta(days=duration)
         return user_specific_date
+
+    @staticmethod
+    def create_ordered_list(_list):
+        """
+        This method creates an ordered list
+        :param list _list: List of same string elements
+        :rtype list:
+        """
+        for list_element in _list:
+            ordered_talent_pool_name = "%d- %s" % (_list.index(list_element) + 1, list_element)
+            _list[_list.index(list_element)] = ordered_talent_pool_name
+        return '\n\n'.join(_list)
