@@ -2,6 +2,7 @@
 # pylint: disable=wrong-import-position, fixme, import-error
 __author__ = 'erik@getTalent.com'
 # Standard Library
+from base64 import b64encode
 from time import time
 import datetime
 import HTMLParser
@@ -106,6 +107,7 @@ def parse_optic_xml(resume_xml_text, encoded_resume_text):
     :return: Results of various parsing functions on the input xml string.
     :rtype: dict
     """
+    encoded_soup_text = b64encode(bs4(resume_xml_text, 'lxml').getText().encode('utf8', 'replace'))
     contact_xml_list = bs4(resume_xml_text, 'lxml').findAll('contact')
     experience_xml_list = bs4(resume_xml_text, 'lxml').findAll('experience')
     educations_xml_list = bs4(resume_xml_text, 'lxml').findAll('education')
@@ -127,7 +129,7 @@ def parse_optic_xml(resume_xml_text, encoded_resume_text):
         phones=parse_candidate_phones(contact_xml_list),
         work_experiences=parse_candidate_experiences(experience_xml_list),
         educations=parse_candidate_educations(educations_xml_list),
-        skills=parse_candidate_skills(skill_xml_list, encoded_resume_text),
+        skills=parse_candidate_skills(skill_xml_list, encoded_soup_text),
         addresses=parse_candidate_addresses(contact_xml_list),
         talent_pool_ids={'add': None},
         references=references,
