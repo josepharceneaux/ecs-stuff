@@ -250,7 +250,6 @@ def test_extra_skill_parsing():
             assert(extra_skills)
 
 
-
 def test_address_parsing():
     """Tests addresses are parsed and formatted properly"""
     for xml in XML_MAPS:
