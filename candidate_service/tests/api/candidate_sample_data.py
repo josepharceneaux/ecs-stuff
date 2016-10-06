@@ -22,7 +22,8 @@ fake = Faker()
 CURRENT_DATE = datetime.datetime.utcnow()
 
 
-def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, custom_fields=None, source_id=None):
+def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, custom_fields=None,
+                                   source_id=None, number_of_candidates=1):
     """
     Function creates a sample data for Candidate and all of candidate's related fields.
     If domain_id is provided, areas_of_interest and custom_fields will also be created. This is
@@ -56,246 +57,250 @@ def generate_single_candidate_data(talent_pool_ids, areas_of_interest=None, cust
     # Product IDs are from a static table so 1 should always be available
     source_product_id = Product.MOBILE
 
-    data = {'candidates':
-        [
-            {
-                'first_name': fake.first_name(),
-                'middle_name': fake.first_name(),
-                'last_name': fake.last_name(),
-                'objective': fake.bs(),
-                'summary': fake.bs(),
-                'status_id': CandidateStatus.DEFAULT_STATUS_ID,
-                'source_id': source_id,
-                'source_product_id': source_product_id,
-                'emails': [
-                    {
-                        'label': EmailLabel.PRIMARY_DESCRIPTION,
-                        'address': fake.safe_email(),
-                        'is_default': True
-                    },
-                    {
-                        'label': EmailLabel.WORK_DESCRIPTION,
-                        'address': fake.company_email(),
-                        'is_default': False
-                    },
-                    {
-                        'label': EmailLabel.OTHER_DESCRIPTION,
-                        'address': fake.company_email()
-                    }
-                ],
-                'addresses': [
-                    {
-                        'address_line_1': fake.street_address(),
-                        'address_line_2': fake.street_address(),
-                        'city': fake.city(),
-                        'state': fake.state(),
-                        'zip_code': fake.zipcode(),
-                        'country_code': fake.country_code(),
-                        'is_default': True,
-                        'po_box': None
-                    },
-                    {
-                        'address_line_1': fake.street_address(),
-                        'address_line_2': fake.street_address(),
-                        'city': fake.city(),
-                        'state': fake.state(),
-                        'zip_code': fake.postcode(),
-                        'country_code': fake.country_code(),
-                        'is_default': False,
-                        'po_box': None
-                    }
-                ],
-                'areas_of_interest': [
-                    {
-                        'area_of_interest_id': area_of_interest.id
-                    } for area_of_interest in aois],
-                'custom_fields': [
-                    {
-                        'custom_field_id': custom_field.id, 'values': [fake.word() for _ in range(3)]
-                    } for custom_field in cfs],
-                'educations': [
-                    {
-                        'school_name': fake.word(),
-                        'city': fake.city(),
-                        'state': fake.state(),
-                        'country_code': fake.country_code(),
-                        'school_type': random.choice(['university', 'college', 'technical school']),
-                        'is_current': True,
-                        'degrees': [
-                            {
-                                'type': degree_type_1,
-                                'title': degree_type_1 + ' ' + major_1,
-                                'start_year': CURRENT_DATE.year - 5,
-                                'start_month': CURRENT_DATE.month,
-                                'end_year': CURRENT_DATE.year - 1,
-                                'end_month': CURRENT_DATE.month,
-                                'gpa': float('{0:.1f}'.format(random.uniform(2, 4))),
-                                'bullets': [
-                                    {
-                                        'major': major_1,
-                                        'comments': fake.bs()
-                                    }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        'school_name': fake.word(),
-                        'city': fake.city(),
-                        'state': fake.state(),
-                        'country_code': fake.country_code(),
-                        'school_type': random.choice(['university', 'college', 'technical school']),
-                        'is_current': False,
-                        'degrees': [
-                            {
-                                'type': degree_type_2,
-                                'title': degree_type_2 + ' ' + major_2,
-                                'start_year': CURRENT_DATE.year - 10,
-                                'start_month': CURRENT_DATE.month,
-                                'end_year': CURRENT_DATE.year - 6,
-                                'end_month': CURRENT_DATE.month,
-                                'gpa': float('{0:.2f}'.format(random.uniform(2, 4))),
-                                'bullets': [
-                                    {
-                                        'major': major_2,
-                                        'comments': fake.bs()
-                                    }
-                                ]
-                            }
-                        ]
-                    }
-                ],
-                'phones': [
-                    {
-                        'label': PhoneLabel.DEFAULT_LABEL,
-                        'value': generate_international_phone_number(extension=True),
-                        'is_default': True
-                    },
-                    {
-                        'label': PhoneLabel.OTHER_LABEL,
-                        'value': generate_international_phone_number(extension=False),
-                        'is_default': False
-                    }
-                ],
-                'work_preference': {
-                    "relocate": False,
-                    "authorization": random.choice(["US Citizen", "Have H1 Visa", "Green Card Holder"]),
-                    "telecommute": True,
-                    "travel_percentage": randrange(0, 100),
-                    "hourly_rate": float('%.2f' % random.uniform(20, 90)),
-                    "salary": randrange(50000, 300000),
-                    "employment_type": random.choice(["full-time employment", "Contract", "Temporary"]),
-                    "security_clearance": None,
-                    "third_party": False
+    def _make_data():
+        return {
+            'first_name': fake.first_name(),
+            'middle_name': fake.first_name(),
+            'last_name': fake.last_name(),
+            'objective': fake.bs(),
+            'summary': fake.bs(),
+            'status_id': CandidateStatus.DEFAULT_STATUS_ID,
+            'source_id': source_id,
+            'source_product_id': source_product_id,
+            'emails': [
+                {
+                    'label': EmailLabel.PRIMARY_DESCRIPTION,
+                    'address': fake.safe_email(),
+                    'is_default': True
                 },
-                'work_experiences': [
-                    {
-                        'organization': fake.company(),
-                        'position': fake.job(),
-                        'city': fake.city(),
-                        'subdivision_code': 'US-CA',  # TODO: Generate random subdivision codes
-                        'state': fake.state(),  # TODO: state should soon be deprecated in favor of subdivision code
-                        'start_month': CURRENT_DATE.month,
-                        'start_year': CURRENT_DATE.year - 10,
-                        'end_month': CURRENT_DATE.month,
-                        'end_year': CURRENT_DATE.year - 5,
-                        'is_current': False,
-                        'country_code': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
-                        'bullets': [
-                            {
-                                'description': fake.bs()
-                            },
-                            {
-                                'description': fake.bs()
-                            }
-                        ]
-                    },
-                    {
-                        'organization': fake.company(),
-                        'position': fake.job(),
-                        'city': fake.city(),
-                        'subdivision_code': 'US-CA',  # TODO: Generate random subdivision codes
-                        'state': fake.state(),  # TODO: state should soon be deprecated in favor of subdivision code
-                        'start_month': CURRENT_DATE.month,
-                        'start_year': CURRENT_DATE.year - 5,
-                        'is_current': True,
-                        'country_code': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
-                        'bullets': [
-                            {
-                                'description': fake.bs()
-                            },
-                            {
-                                'description': fake.bs()
-                            }
-                        ]
-                    }
-                ],
-                'military_services': [
-                    {
-                        'country_code': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
-                        'branch': fake.military_ship(),
-                        'highest_rank': random.choice(['lieutenant', 'captain', 'colonel', 'general']),
-                        'status': random.choice(['active', 'inactive', 'discharged']),
-                        'highest_grade': '0-1',
-                        'comments': fake.bs(),
-                        'from_date': CURRENT_DATE.strftime("{}-%m-%d".format(CURRENT_DATE.year - 20)),
-                        'to_date': CURRENT_DATE.strftime("{}-%m-%d".format(CURRENT_DATE.year - 16))
-                    },
-                    {
-                        'country_code': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
-                        'branch': fake.military_ship(),
-                        'highest_rank': random.choice(['lieutenant', 'captain', 'colonel', 'general']),
-                        'status': random.choice(['active', 'inactive', 'discharged']),
-                        'highest_grade': '0-1',
-                        'comments': fake.bs(),
-                        'from_date': CURRENT_DATE.strftime("{}-%m-%d".format(CURRENT_DATE.year - 17)),
-                        'to_date': CURRENT_DATE.strftime("{}-%m-%d".format(CURRENT_DATE.year - 14))
-                    }
-                ],
-                'preferred_locations': [
-                    {
-                        'city': fake.city(),
-                        'state': fake.state(), # TODO: state should soon be deprecated in favor of subdivision code
-                        'country_code': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
-                        'subdivision_code': 'US-CA'
-                    },
-                    {
-                        'city': fake.city(),
-                        'state': fake.state(), # TODO: state should soon be deprecated in favor of subdivision code
-                        'country_code': fake.country_code(), # TODO: country should soon be deprecated in favor of ISO country codes
-                        'subdivision_code': 'US-CA'
-                    }
-                ],
-                'skills': [
-                    {
-                        'name': random.choice(['payroll', 'sql', 'unix', 'pricing']),
-                        'months_used': random.randint(10, 30),
-                        'last_used_date': CURRENT_DATE.strftime("{}-%m-%d".format(CURRENT_DATE.year - 2)),
-                    },
-                    {
-                        'name': random.choice(['payroll', 'sql', 'unix', 'pricing']),
-                        'months_used': random.randint(10, 30),
-                        'last_used_date': CURRENT_DATE.strftime("{}-%m-%d".format(CURRENT_DATE.year - 5)),
-                    }
-                ],
-                'social_networks': [
-                    {
-                        'profile_url': 'http://www.facebook.com/1024359318',
-                        'name': 'Facebook'
-                    },
-                    {
-                        'profile_url': 'https://twitter.com/dmcnulla',
-                        'name': 'Twitter'
-                    }
-                ],
-                'talent_pool_ids': {
-                    'add': talent_pool_ids
+                {
+                    'label': EmailLabel.WORK_DESCRIPTION,
+                    'address': fake.company_email(),
+                    'is_default': False
                 },
-                'resume_url': fake.url()
-            }
-        ]
-    }
-    return data
+                {
+                    'label': EmailLabel.OTHER_DESCRIPTION,
+                    'address': fake.company_email()
+                }
+            ],
+            'addresses': [
+                {
+                    'address_line_1': fake.street_address(),
+                    'address_line_2': fake.street_address(),
+                    'city': fake.city(),
+                    'state': fake.state(),
+                    'zip_code': fake.zipcode(),
+                    'country_code': fake.country_code(),
+                    'is_default': True,
+                    'po_box': None
+                },
+                {
+                    'address_line_1': fake.street_address(),
+                    'address_line_2': fake.street_address(),
+                    'city': fake.city(),
+                    'state': fake.state(),
+                    'zip_code': fake.postcode(),
+                    'country_code': fake.country_code(),
+                    'is_default': False,
+                    'po_box': None
+                }
+            ],
+            'areas_of_interest': [
+                {
+                    'area_of_interest_id': area_of_interest.id
+                } for area_of_interest in aois],
+            'custom_fields': [
+                {
+                    'custom_field_id': custom_field.id, 'values': [fake.word() for _ in range(3)]
+                } for custom_field in cfs],
+            'educations': [
+                {
+                    'school_name': fake.word(),
+                    'city': fake.city(),
+                    'state': fake.state(),
+                    'country_code': fake.country_code(),
+                    'school_type': random.choice(['university', 'college', 'technical school']),
+                    'is_current': True,
+                    'degrees': [
+                        {
+                            'type': degree_type_1,
+                            'title': degree_type_1 + ' ' + major_1,
+                            'start_year': CURRENT_DATE.year - 5,
+                            'start_month': CURRENT_DATE.month,
+                            'end_year': CURRENT_DATE.year - 1,
+                            'end_month': CURRENT_DATE.month,
+                            'gpa': float('{0:.1f}'.format(random.uniform(2, 4))),
+                            'bullets': [
+                                {
+                                    'major': major_1,
+                                    'comments': fake.bs()
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    'school_name': fake.word(),
+                    'city': fake.city(),
+                    'state': fake.state(),
+                    'country_code': fake.country_code(),
+                    'school_type': random.choice(['university', 'college', 'technical school']),
+                    'is_current': False,
+                    'degrees': [
+                        {
+                            'type': degree_type_2,
+                            'title': degree_type_2 + ' ' + major_2,
+                            'start_year': CURRENT_DATE.year - 10,
+                            'start_month': CURRENT_DATE.month,
+                            'end_year': CURRENT_DATE.year - 6,
+                            'end_month': CURRENT_DATE.month,
+                            'gpa': float('{0:.2f}'.format(random.uniform(2, 4))),
+                            'bullets': [
+                                {
+                                    'major': major_2,
+                                    'comments': fake.bs()
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ],
+            'phones': [
+                {
+                    'label': PhoneLabel.DEFAULT_LABEL,
+                    'value': generate_international_phone_number(extension=True),
+                    'is_default': True
+                },
+                {
+                    'label': PhoneLabel.OTHER_LABEL,
+                    'value': generate_international_phone_number(extension=False),
+                    'is_default': False
+                }
+            ],
+            'work_preference': {
+                "relocate": False,
+                "authorization": random.choice(["US Citizen", "Have H1 Visa", "Green Card Holder"]),
+                "telecommute": True,
+                "travel_percentage": randrange(0, 100),
+                "hourly_rate": float('%.2f' % random.uniform(20, 90)),
+                "salary": randrange(50000, 300000),
+                "employment_type": random.choice(["full-time employment", "Contract", "Temporary"]),
+                "security_clearance": None,
+                "third_party": False
+            },
+            'work_experiences': [
+                {
+                    'organization': fake.company(),
+                    'position': fake.job(),
+                    'city': fake.city(),
+                    'subdivision_code': 'US-CA',  # TODO: Generate random subdivision codes
+                    'state': fake.state(),  # TODO: state should soon be deprecated in favor of subdivision code
+                    'start_month': CURRENT_DATE.month,
+                    'start_year': CURRENT_DATE.year - 10,
+                    'end_month': CURRENT_DATE.month,
+                    'end_year': CURRENT_DATE.year - 5,
+                    'is_current': False,
+                    'country_code': fake.country_code(),
+                    # TODO: country should soon be deprecated in favor of ISO country codes
+                    'bullets': [
+                        {
+                            'description': fake.bs()
+                        },
+                        {
+                            'description': fake.bs()
+                        }
+                    ]
+                },
+                {
+                    'organization': fake.company(),
+                    'position': fake.job(),
+                    'city': fake.city(),
+                    'subdivision_code': 'US-CA',  # TODO: Generate random subdivision codes
+                    'state': fake.state(),  # TODO: state should soon be deprecated in favor of subdivision code
+                    'start_month': CURRENT_DATE.month,
+                    'start_year': CURRENT_DATE.year - 5,
+                    'is_current': True,
+                    'country_code': fake.country_code(),
+                    # TODO: country should soon be deprecated in favor of ISO country codes
+                    'bullets': [
+                        {
+                            'description': fake.bs()
+                        },
+                        {
+                            'description': fake.bs()
+                        }
+                    ]
+                }
+            ],
+            'military_services': [
+                {
+                    'country_code': fake.country_code(),
+                    # TODO: country should soon be deprecated in favor of ISO country codes
+                    'branch': fake.military_ship(),
+                    'highest_rank': random.choice(['lieutenant', 'captain', 'colonel', 'general']),
+                    'status': random.choice(['active', 'inactive', 'discharged']),
+                    'highest_grade': '0-1',
+                    'comments': fake.bs(),
+                    'from_date': CURRENT_DATE.strftime("{}-%m-%d".format(CURRENT_DATE.year - 20)),
+                    'to_date': CURRENT_DATE.strftime("{}-%m-%d".format(CURRENT_DATE.year - 16))
+                },
+                {
+                    'country_code': fake.country_code(),
+                    # TODO: country should soon be deprecated in favor of ISO country codes
+                    'branch': fake.military_ship(),
+                    'highest_rank': random.choice(['lieutenant', 'captain', 'colonel', 'general']),
+                    'status': random.choice(['active', 'inactive', 'discharged']),
+                    'highest_grade': '0-1',
+                    'comments': fake.bs(),
+                    'from_date': CURRENT_DATE.strftime("{}-%m-%d".format(CURRENT_DATE.year - 17)),
+                    'to_date': CURRENT_DATE.strftime("{}-%m-%d".format(CURRENT_DATE.year - 14))
+                }
+            ],
+            'preferred_locations': [
+                {
+                    'city': fake.city(),
+                    'state': fake.state(),  # TODO: state should soon be deprecated in favor of subdivision code
+                    'country_code': fake.country_code(),
+                    # TODO: country should soon be deprecated in favor of ISO country codes
+                    'subdivision_code': 'US-CA'
+                },
+                {
+                    'city': fake.city(),
+                    'state': fake.state(),  # TODO: state should soon be deprecated in favor of subdivision code
+                    'country_code': fake.country_code(),
+                    # TODO: country should soon be deprecated in favor of ISO country codes
+                    'subdivision_code': 'US-CA'
+                }
+            ],
+            'skills': [
+                {
+                    'name': random.choice(['payroll', 'sql', 'unix', 'pricing']),
+                    'months_used': random.randint(10, 30),
+                    'last_used_date': CURRENT_DATE.strftime("{}-%m-%d".format(CURRENT_DATE.year - 2)),
+                },
+                {
+                    'name': random.choice(['payroll', 'sql', 'unix', 'pricing']),
+                    'months_used': random.randint(10, 30),
+                    'last_used_date': CURRENT_DATE.strftime("{}-%m-%d".format(CURRENT_DATE.year - 5)),
+                }
+            ],
+            'social_networks': [
+                {
+                    'profile_url': 'http://www.facebook.com/1024359318',
+                    'name': 'Facebook'
+                },
+                {
+                    'profile_url': 'https://twitter.com/dmcnulla',
+                    'name': 'Twitter'
+                }
+            ],
+            'talent_pool_ids': {
+                'add': talent_pool_ids
+            },
+            'resume_url': fake.url()
+        }
+
+    return dict(candidates=[_make_data() for _ in xrange(number_of_candidates)])
 
 
 class GenerateCandidateData(object):

@@ -4,10 +4,12 @@ Facebook, Email, SMS and Slack
 """
 # Builtin imports
 from multiprocessing import Process
+import json
 # Common utils
 from talentbot_service.common.talent_config_manager import TalentConfigKeys
 from talentbot_service.common.models.user import TalentbotAuth
 from talentbot_service.common.routes import TalentBotApiUrl
+from talentbot_service.common.utils.handy_functions import send_request
 # Service specific
 from talentbot_service.modules.email_bot import EmailBot
 from talentbot_service.modules.facebook_bot import FacebookBot
@@ -15,11 +17,10 @@ from talentbot_service.modules.slack_bot import SlackBot
 from talentbot_service.modules.sms_bot import SmsBot
 from talentbot_service.modules.process_scheduler import ProcessScheduler
 from constants import TWILIO_NUMBER, ERROR_MESSAGE, STANDARD_MSG_LENGTH, QUESTIONS, BOT_NAME, \
-    MAILGUN_SENDING_ENDPOINT, BOT_IMAGE, TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID
+    MAILGUN_SENDING_ENDPOINT, BOT_IMAGE, TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID,  SLACK_AUTH_URI
 from talentbot_service import app, logger
 # 3rd party imports
 from flask import request
-from slackclient import SlackClient
 from urllib import quote
 
 mailgun_api_key = app.config[TalentConfigKeys.MAILGUN_API_KEY]
@@ -38,7 +39,7 @@ def index():
     Just returns Add to Slack button for testing purpose
     :rtype: str
     """
-    return '''<a href="https://slack.com/oauth/authorize?scope=bot+users%3Aread+chat%3Awrite%3Abot&client_id=19996241921.72874812897">
+    return '''<a href="https://slack.com/oauth/authorize?scope=bot+users%3Aread+users%3Awrite+chat%3Awrite%3Abot&client_id=19996241921.72874812897">
            <img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img
            '/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https:
            //platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>'''
@@ -138,18 +139,28 @@ def get_new_user_credentials():
     code = request.args.get('code')
     client_id = app.config['SLACK_APP_CLIENT_ID']
     client_secret = app.config['SLACK_APP_CLIENT_SECRET']
-    client = SlackClient(app.config['SLACK_BOT_TOKEN'])
-    response = client.api_call('oauth.access', code=code, client_id=client_id, client_secret=client_secret)
-
-    if response.get('ok'):
-        access_token = response['access_token']
-        team_id = response['team_id']
-        team_name = response['team_name']
-        user_id = response['user_id']
+    response = send_request('POST', SLACK_AUTH_URI, access_token=None,
+                            params={'client_id': client_id, 'client_secret': client_secret, 'code': code})
+    json_result = response.json()
+    if json_result.get('ok'):
+        access_token = json_result['access_token']
+        team_id = json_result['team_id']
+        team_name = json_result['team_name']
+        user_id = json_result['user_id']
         auth_entry = TalentbotAuth.query.filter_by(slack_user_id=user_id).first()
+        bot_id = json_result['bot']['bot_user_id']
+        bot_token = json_result['bot']['bot_access_token']
+
         if not auth_entry:
+
             talent_bot_auth = TalentbotAuth(slack_user_token=access_token, slack_team_id=team_id,
-                                            slack_user_id=user_id, slack_team_name=team_name)
+                                            slack_user_id=user_id, slack_team_name=team_name, bot_id=bot_id,
+                                            bot_token=bot_token)
             talent_bot_auth.save()
             return "Your Slack credentials have been saved"
+        auth_entry.slack_user_token = access_token
+        auth_entry.bot_id = bot_id
+        auth_entry.bot_token = bot_token
+        TalentbotAuth.save(auth_entry)
+        return "Your slack token has been updated"
     return "Your slack id already exists"

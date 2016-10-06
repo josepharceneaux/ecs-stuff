@@ -426,8 +426,9 @@ def candidate_military_services(candidate_id):
     :rtype              [dict]
     """
     assert isinstance(candidate_id, (int, long))
-    military_experiences = db.session.query(CandidateMilitaryService).\
-        filter_by(candidate_id=candidate_id).order_by(CandidateMilitaryService.to_date.desc())
+    military_experiences = CandidateMilitaryService.query.\
+        filter_by(candidate_id=candidate_id).\
+        order_by(CandidateMilitaryService.to_date.desc())
     return [{'id': military_info.id,
              'branch': military_info.branch,
              'status': military_info.service_status,
@@ -435,6 +436,10 @@ def candidate_military_services(candidate_id):
              'highest_rank': military_info.highest_rank,
              'from_date': str(military_info.from_date.date()) if military_info.from_date else None,
              'to_date': str(military_info.to_date.date()) if military_info.from_date else None,
+             'start_year': military_info.start_year,
+             'start_month': military_info.start_month,
+             'end_year': military_info.end_year,
+             'end_month': military_info.end_month,
              'country': get_country_name(military_info.iso3166_country),
              'comments': military_info.comments
              } for military_info in military_experiences]
@@ -2131,7 +2136,11 @@ def _add_or_update_military_services(candidate, military_services, user_id, is_u
             branch=military_service['branch'].strip() if military_service.get('branch') else None,
             comments=military_service['comments'].strip() if military_service.get('comments') else None,
             from_date=from_date,
-            to_date=to_date
+            to_date=to_date,
+            start_year=military_service.get('start_year'),
+            start_month=military_service.get('start_month'),
+            end_year=military_service.get('end_year'),
+            end_month=military_service.get('end_month')
         )
 
         # Remove keys with empty values

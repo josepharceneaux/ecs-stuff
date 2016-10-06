@@ -63,19 +63,25 @@ class TalentPoolCandidate(db.Model):
         :param str user_name: User name
         :param int user_id: User Id
         :param str talent_pool_name: Talent pool name
-        :param datetime|None user_specific_date: Datetime this should be later than or equal to updated_time
+        :param datetime|None|basestring user_specific_date: Datetime this should be later than or equal to updated_time
         or added_time
         :rtype: int
         """
-        if user_specific_date:
+        if isinstance(user_specific_date, datetime):
             return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
                 .filter(or_((cls.added_time >= user_specific_date), (
                  cls.updated_time >= user_specific_date))) \
                 .filter(User.first_name == user_name).\
-                filter(User.id == user_id).filter(TalentPool.name == talent_pool_name).distinct().count()
+                filter(and_(User.id == user_id, TalentPool.name == talent_pool_name)).distinct().count()
+        if isinstance(user_specific_date, basestring):
+            return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
+                .filter(or_((extract("year", cls.added_time) == user_specific_date), (
+                 extract("year", cls.updated_time) == user_specific_date))) \
+                .filter(User.first_name == user_name). \
+                filter(and_(User.id == user_id, TalentPool.name == talent_pool_name)).distinct().count()
         return cls.query.filter(cls.talent_pool_id == TalentPool.id)\
-            .filter(User.first_name == user_name).\
-            filter(User.id == user_id).filter(TalentPool.name == talent_pool_name).distinct().count()
+            .filter(User.first_name == user_name). \
+            filter(and_(User.id == user_id, TalentPool.name == talent_pool_name)).distinct().count()
 
 
 class TalentPoolGroup(db.Model):
