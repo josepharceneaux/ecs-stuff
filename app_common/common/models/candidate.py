@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship, backref
 import datetime
 from ..error_handling import InternalServerError
 from ..utils.validators import raise_if_not_positive_int_or_long
-from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
+from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT, SMALLINT
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
@@ -941,6 +941,10 @@ class CandidateMilitaryService(db.Model):
     comments = db.Column('Comments', db.String(5000))
     from_date = db.Column('FromDate', db.DateTime)
     to_date = db.Column('ToDate', db.DateTime)
+    start_year = db.Column(SMALLINT)
+    start_month = db.Column(TINYINT)
+    end_year = db.Column(SMALLINT)
+    end_month = db.Column(SMALLINT)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined

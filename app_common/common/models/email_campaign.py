@@ -199,22 +199,28 @@ class EmailCampaignBlast(db.Model):
         return "<EmailCampaignBlast (Sends: %s, Opens: %s)>" % (self.sends, self.opens)
 
     @classmethod
-    def top_performing_email_campaign(cls, year, user_id):
+    def top_performing_email_campaign(cls, datetime_value, user_id):
         """
-        This method returns top performing email campaign from a specific year
+        This method returns top performing email campaign from a specific datetime
         :param int user_id: User Id
-        :param str year: Year of campaign started or updated
+        :param str|datetime datetime_value: date during campaign started or updated
         :rtype: EmailCampaignBlast
         """
-        if year:
-            return cls.query.filter(or_(extract("year", cls.updated_datetime) == year,
-                                        extract("year", cls.sent_datetime) == year)). \
-                filter(EmailCampaign.id == cls.campaign_id).\
-                filter(EmailCampaign.user_id == user_id). \
+        if isinstance(datetime_value, datetime.datetime):
+            return cls.query.filter(or_(cls.updated_datetime >= datetime_value,
+                                        cls.sent_datetime >= datetime_value)). \
+                filter(EmailCampaign.id == cls.campaign_id). \
+                filter(cls.sends > 0).filter(EmailCampaign.user_id == user_id). \
                 order_by(desc(cls.opens)).first()
-
+        if isinstance(datetime_value, basestring):
+            return cls.query.filter(or_(extract("year", cls.updated_datetime) == datetime_value,
+                                        extract("year", cls.sent_datetime) == datetime_value)). \
+                filter(EmailCampaign.id == cls.campaign_id). \
+                filter(EmailCampaign.user_id == user_id). \
+                filter(cls.sends > 0). \
+                order_by(desc(cls.opens)).first()
         return cls.query.filter(EmailCampaign.id == cls.campaign_id).\
-            filter(EmailCampaign.user_id == user_id).order_by(desc(cls.opens)).first()
+            filter(EmailCampaign.user_id == user_id).filter(cls.sends > 0).order_by(desc(cls.opens)).first()
 
 
 class EmailCampaignSend(db.Model):
