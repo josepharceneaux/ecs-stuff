@@ -1192,15 +1192,14 @@ class CandidateSocialNetworkResource(Resource):
         auth_user = request.user
         social_network_url = request.args.get('url')
         if social_network_url:
-            users_in_domain = [int(domain_user.id) for domain_user in
-                              db.session.query(User).filter(User.domain_id == auth_user.domain_id).all()]
+            users_in_domain = [user.id for user in User.all_users_of_domain(domain_id=auth_user.domain_id)]
 
             candidate_query = db.session.query(Candidate).join(CandidateSocialNetwork)\
                 .filter(CandidateSocialNetwork.social_profile_url == social_network_url,
                         Candidate.user_id.in_(users_in_domain))\
                 .first()
             if candidate_query:
-                return {"cid": candidate_query.id}
+                return {"candidate_id": candidate_query.id}
             else:
                 raise NotFoundError(error_message="Social network url not found for your domain")
 
