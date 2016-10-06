@@ -1,24 +1,23 @@
 # Standard library
-import requests
 
 # Flask specific
 from flask import request
 
 # Graphene related
 import graphene
+
 from graphql_service.modules.schema import CandidateType
 
 # Models
-from graphql_service.common.models.candidate import Candidate
+from graphql_service.common.models.user import Permission
 
 # Validators
-from graphql_service.common.utils.candidate_utils import get_candidate_if_validated
 
 # Authentication & Permissions
 from graphql_service.common.utils.auth_utils import require_oauth, require_all_permissions
-from graphql_service.common.models.user import Permission
 
-from ..dynamodb.dynamo_actions import DynamoDB
+# Utilities
+from graphql_service.dynamodb.dynamo_actions import DynamoDB
 
 
 class CandidateQuery(graphene.ObjectType):
@@ -29,7 +28,7 @@ class CandidateQuery(graphene.ObjectType):
 
     # @require_oauth()
     # @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
-    def resolve_candidate(self, args, info):
+    def resolve_candidate(self, args, context, info):
         """
         Function will check if candidate exists or hidden using MySQL database;
         if found, it is assumed that candidate also exists in DynamoDB and will
