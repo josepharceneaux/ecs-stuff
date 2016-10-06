@@ -1,8 +1,8 @@
 # Standard Imports
-import urllib
 import os
 import json
 import uuid
+import urllib
 import HTMLParser
 from urllib import urlencode
 from datetime import datetime
@@ -13,21 +13,20 @@ from bs4 import BeautifulSoup
 from dateutil.relativedelta import relativedelta
 
 # Service Specific
-from email_campaign_service.email_campaign_app import (logger, celery_app, cache, app)
+from email_campaign_service.email_campaign_app import (logger, celery_app, cache)
 
 # Common Utils
 from email_campaign_service.common.redis_cache import redis_store
 from email_campaign_service.common.models.misc import UrlConversion
-from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.common.models.user import User, Serializer
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
+from email_campaign_service.common.routes import (EmailCampaignApiUrl, get_web_app_url)
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
                                                             raise_if_not_positive_int_or_long)
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
-from email_campaign_service.common.talent_config_manager import (TalentConfigKeys, TalentEnvs)
 from email_campaign_service.common.campaign_services.validators import raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 
@@ -110,15 +109,11 @@ def do_prefs_url_replacement(text, candidate_id):
     :param int|long candidate_id: Id of candidate to which email-campaign is supposed to be sent
     :rtype: string
     """
-    if not isinstance(text, basestring):
+    if not (isinstance(text, basestring) and text):
         raise InvalidUsage('Text should be non-empty string')
-    if not isinstance(candidate_id, (int, long)):
+    if not (isinstance(candidate_id, (int, long)) and candidate_id):
         raise InvalidUsage('candidate_id should be positive int"long')
-    if app.config[TalentConfigKeys.ENV_KEY] == TalentEnvs.PROD:
-        host_name = 'https://app.gettalent.com/'
-    else:
-        host_name = 'http://staging.gettalent.com/'
-
+    host_name = get_web_app_url()
     secret_key_id = jwt_security_key()
     secret_key = redis_store.get(secret_key_id)
     s = Serializer(secret_key, expires_in=SIX_MONTHS_EXPIRATION_TIME)
@@ -127,7 +122,7 @@ def do_prefs_url_replacement(text, candidate_id):
         "candidate_id": candidate_id
     }
 
-    unsubscribe_url = host_name + ('candidates/%s/preferences?%s' % (str(candidate_id), urllib.urlencode({
+    unsubscribe_url = host_name + ('/candidates/%s/preferences?%s' % (str(candidate_id), urllib.urlencode({
         'secret_key_id': secret_key_id,
         'token': s.dumps(payload)
     })))
