@@ -40,6 +40,7 @@ class DynamoDB(object):
         candidate_data = response.get('Item')
         if candidate_data:
             return replace_decimal(response['Item'])
+        return None
 
     @classmethod
     def delete_candidate(cls, candidate_id):

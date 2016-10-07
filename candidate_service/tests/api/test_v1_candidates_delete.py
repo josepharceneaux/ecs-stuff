@@ -195,6 +195,50 @@ class TestBulkDelete(object):
         print response_info(bulk_del_resp)
         assert bulk_del_resp.status_code == requests.codes.NO_CONTENT
 
+    def test_delete_candidates_with_same_emails_from_diff_domains(self, user_first, access_token_first, talent_pool,
+                                                                  talent_pool_second, access_token_second):
+        """
+        Test: Create two candidates with identical email addresses in different domains, then delete one them
+        """
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
+
+        identical_email = fake.safe_email()
+
+        def _candidate_data(talent_pool_id):
+            return {
+                'candidates': [
+                    {
+                        'talent_pool_ids': {'add': [talent_pool_id]},
+                        'emails': [{'address': identical_email}]
+                    }
+                ]
+            }
+
+        # Create first candidate in user_first's domain
+        candidate_first_data = _candidate_data(talent_pool.id)
+        create_first = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, candidate_first_data)
+        print response_info(create_first)
+        assert create_first.status_code == requests.codes.CREATED
+
+        # Create second candidate in user_second's domain
+        candidate_second_data = _candidate_data(talent_pool_second.id)
+        create_second = send_request('post', CandidateApiUrl.CANDIDATES, access_token_second, candidate_second_data)
+        print response_info(create_second)
+        assert create_second.status_code == requests.codes.CREATED
+
+        # Delete user_first's candidate using candidate's email address
+        data = {'_candidate_emails': [identical_email]}
+        del_first = send_request('delete', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(del_first)
+        assert del_first.status_code == requests.codes.NO_CONTENT
+
+        # Candidate second should not have been deleted
+        candidate_second_id = create_second.json()['candidates'][0]['id']
+        get_candidate_second = send_request('get', CandidateApiUrl.CANDIDATE % candidate_second_id, access_token_second)
+        print response_info(get_candidate_second)
+        assert get_candidate_second.status_code == requests.codes.OK
+
 
 class TestHideCandidate(object):
     """

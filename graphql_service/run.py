@@ -1,8 +1,9 @@
+from flask_graphql import GraphQLView
+
 from graphql_service.application import app
 from graphql_service.common.routes import GTApis
-from flask_graphql import GraphQLView
-from graphql_service.modules.schema import schema
 from graphql_service.common.talent_config_manager import TalentEnvs
+from graphql_service.modules.schema import schema
 
 app.add_url_rule(
     rule='/graphql',
