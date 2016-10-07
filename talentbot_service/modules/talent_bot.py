@@ -89,6 +89,10 @@ class TalentBot(object):
                               # Import question alternates
                               '19': {'question': list_of_questions[19], 'threshold': 69,
                                      'handler': self.handler.question_4_handler},
+                              '43': {'question': list_of_questions[43], 'threshold': 95,
+                                     'handler': self.handler.question_4_handler},
+                              '44': {'question': list_of_questions[44], 'threshold': 95,
+                                     'handler': self.handler.question_4_handler},
                               # Zipcode question alternates
                               '22': {'question': list_of_questions[22], 'threshold': 79,
                                      'handler': self.handler.question_2_handler},

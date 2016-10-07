@@ -19,6 +19,8 @@ HINT = '''I am %s @kamal is teaching me new things, right now I can answer follo
 3- How many candidates from zipcode [zipcode]?
 4- What is the top performing [x] campaign from [year]?
 5- How many candidate leads did [user name] import into the [talent pool name] talent pool in last n months?
+6- What is my group or Which group a user belongs to?
+7- What are the talent pools in my domain?
 *GOOD LUCK*''' % BOT_NAME
 OK_RESPONSE = ['hmm', '**nodes**']
 TWILIO_NUMBER = "+12015617985"
@@ -49,7 +51,8 @@ QUESTIONS = ['how many users are in my domain', 'how many candidates are there w
              'which talent pools exist in my domain', 'what talent pools my domain has',
              'what talent pools are there in my domain', 'what talent pools in my domain', 'talent pools in my domain',
              'what is my group', 'what group am I part of', 'my group', 'what group does', 'which group does',
-             'which group do i belong to']
+             'which group do i belong to', 'how many candidates did every user added',
+             'how many candidate leads did every user import']
 POSITIVE_MESSAGES = ['hmmmm', 'ok', 'fine', 'whatever', 'yeah', 'ahan', 'so so']
 BEST_QUESTION_MATCH_RATIO = 95
 FACEBOOK_API_URI = "https://graph.facebook.com/v2.6/me/messages"

@@ -48,6 +48,21 @@ class QuestionHandler(object):
             return None
 
     @staticmethod
+    def find_exact_word_in_message(word, message_tokens):
+        """
+        Finds a specific exact word in user message and returns it's index
+        :param str word: Word to be found in message_tokens
+        :param list message_tokens: Tokens of user message
+        :rtype: int|None
+        """
+        try:
+            word_index = [message_tokens.index(temp_word) for temp_word
+                          in message_tokens if word == temp_word.lower()][0]
+            return word_index
+        except IndexError:
+            return None
+
+    @staticmethod
     def append_list_with_spaces(_list):
         """
         Append a list elements with spaces between then
@@ -229,10 +244,21 @@ class QuestionHandler(object):
         else:
             spaced_talent_pool_name = None
         # Extracting username from user message
+        if spaced_talent_pool_name:
+            if spaced_talent_pool_name.lower() in ['each', 'every', 'all']:
+                spaced_talent_pool_name = None
         user_name = message_tokens[import_index - 1]
-        is_asking_about_each_user = self.find_word_in_message('each', message_tokens)
+        is_asking_about_each_user = self.find_word_in_message('user', message_tokens)
         if is_asking_about_each_user is not None:
             user_name = None
+        else:
+            is_asking_about_each_user = self.find_word_in_message('everyone', message_tokens)
+            if is_asking_about_each_user is not None:
+                user_name = None
+            else:
+                is_asking_about_each_user = self.find_word_in_message('everybody', message_tokens)
+                if is_asking_about_each_user is not None:
+                    user_name = None
         year = message_tokens[-1]
         is_valid_year = self.is_valid_year(year)
         if is_valid_year is True:
@@ -240,6 +266,10 @@ class QuestionHandler(object):
                                                                     year, user_id)
             if isinstance(count, basestring):
                 return count
+            if not user_name:
+                user_name = "Everyone totally"
+            if not spaced_talent_pool_name:
+                spaced_talent_pool_name = "all"
             response_message = "%s added %d candidates in %s talent pool" % \
                                (user_name, count, spaced_talent_pool_name)
             return response_message
@@ -253,6 +283,10 @@ class QuestionHandler(object):
                                                                         user_specific_date, user_id)
                 if isinstance(count, basestring):
                     return count
+                if not user_name:
+                    user_name = "Everyone totally"
+                if not spaced_talent_pool_name:
+                    spaced_talent_pool_name = "all"
                 response_message = "%s added %d candidates in %s talent pool" % \
                                    (user_name, count, spaced_talent_pool_name)
                 return response_message
@@ -260,9 +294,13 @@ class QuestionHandler(object):
                                                                 None, user_id)
         if isinstance(count, basestring):
             return count
+        if not user_name:
+            user_name = "Everyone totally"
+        if not spaced_talent_pool_name:
+            spaced_talent_pool_name = "all"
         response_message = "%s added %d candidates in %s talent pool" % (user_name, count,
                                                                          spaced_talent_pool_name)
-        return response_message.replace('None', 'all').title()
+        return response_message
 
     @classmethod
     def question_5_handler(cls, *args):
@@ -310,7 +348,7 @@ class QuestionHandler(object):
         :rtype: str
         """
         belong_index = cls.find_word_in_message('belong', message_tokens)
-        is_user_asking_about_himslef = cls.find_word_in_message('i', message_tokens)
+        is_user_asking_about_himslef = cls.find_exact_word_in_message('i', message_tokens)
         if belong_index is not None and is_user_asking_about_himslef is None:
             user_name = message_tokens[belong_index - 1]
             users = User.get_by_name(user_id, user_name)
@@ -325,7 +363,7 @@ class QuestionHandler(object):
             user = users[0]
             response = "Your group is '%s'" % user.user_group.name
             return response
-        response = "Something went wrong you do not exist as a user contact to the developer"
+        response = "Something went wrong you do not exist as a user contact the developer"
         return response
 
     @staticmethod
