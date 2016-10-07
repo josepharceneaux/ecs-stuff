@@ -1,8 +1,11 @@
-from ..utils.models_utils import init_talent_app
+"""
+This module contains tests for graphql_utils functions. Tests validate that these functions are working fine
+and are not broken by any change in this code or any other code.
+"""
+# importing test_app to use models
+from .app import test_app
 from ..utils.graphql_utils import get_fields, get_query
 from ..models.venue import Venue
-
-test_app, logger = init_talent_app('test_app')
 
 
 def test_get_fields():

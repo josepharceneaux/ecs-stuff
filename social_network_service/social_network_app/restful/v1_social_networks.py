@@ -37,7 +37,6 @@ This file contains API endpoints related to social network.
 
 """
 # Standard imports
-import json
 import types
 
 # 3rd party imports
@@ -51,7 +50,7 @@ from social_network_service.modules.social_network.base import SocialNetworkBase
 from social_network_service.social_network_app import logger
 from social_network_service.modules.social_network.meetup import Meetup
 from social_network_service.modules.social_network.eventbrite import Eventbrite
-from social_network_service.modules.utilities import get_class
+from social_network_service.modules.utilities import get_class, is_token_valid
 
 from social_network_service.common.error_handling import *
 from social_network_service.common.models.venue import Venue
@@ -1113,23 +1112,3 @@ class ProcessAccessTokenResource(Resource):
             return dict(message='User credentials added successfully'), 201
         else:
             raise ResourceNotFound('Social Network not found')
-
-
-def is_token_valid(social_network_id, user_id):
-    # Get social network specified by social_network_id
-    social_network = SocialNetwork.get_by_id(social_network_id)
-    if social_network:
-        user_social_network_credential = UserSocialNetworkCredential.get_by_user_and_social_network_id(
-            user_id, social_network_id)
-        if user_social_network_credential:
-            # Get social network specific Social Network class
-            social_network_class = get_class(social_network.name, 'social_network')
-            # create social network object which will validate
-            # and refresh access token (if possible)
-            sn = social_network_class(user_id=user_id,
-                                      social_network=social_network
-                                      )
-            return sn.access_token_status, social_network.name
-        return False, social_network.name
-    else:
-        raise ResourceNotFound("Invalid social network id given")

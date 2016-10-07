@@ -91,6 +91,8 @@ def snake_case_to_camel_case(name):
                 result = snake_case_to_camel_case('social_network_id')
                 assert result == 'socialNetworkId'
     """
+    if not isinstance(name, basestring):
+        raise InvalidUsage('Include name as str.')
     splitted_string = name.split('_')
     # use string's class to work on the string to keep its type
     class_ = name.__class__

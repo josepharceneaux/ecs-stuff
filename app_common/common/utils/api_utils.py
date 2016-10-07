@@ -175,7 +175,15 @@ def generate_pagination_headers(results_count, results_per_page, current_page):
     }
 
 
+@contract
 def get_paginated_list(query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE):
+    """
+    This function just applies pagination params an query and returns results.
+    :param type(t) query:
+    :param int | long page: page number
+    :param int per_page: number items per page
+    :rtype: type(s)
+    """
     raise_if_not_instance_of(query, Query)
     # error_out=false, do nor raise error if these is no object to return but return an empty list
     results = query.paginate(page, per_page, error_out=False)

@@ -117,7 +117,6 @@ def get_graphql_data(query, token, expected_status=(codes.OK,)):
     :param dict query: GraphQL query for SN service endpoint
     :param string token: access token
     :param list | tuple expected_status: list/tuple of HTTP status codes
-    :return:
     """
     print('Query: %s' % query)
     response = send_request('get', SocialNetworkApiUrl.GRAPHQL, token, data=query)

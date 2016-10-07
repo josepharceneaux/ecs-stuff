@@ -14,7 +14,7 @@ from restful.v1_events import events_blueprint
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
-from social_network_service.common.talent_config_manager import TalentEnvs
+from social_network_service.common.talent_config_manager import TalentEnvs, TalentConfigKeys
 from social_network_service.modules.constants import MEETUP_CODE_LENGTH
 from social_network_service.modules.social_network.twitter import Twitter
 from social_network_service.common.utils.auth_utils import require_oauth
@@ -39,7 +39,7 @@ redis_store.init_app(app)
 app.add_url_rule(SocialNetworkApi.GRAPHQL,
                  view_func=require_oauth()(
                      GraphQLView.as_view('graphql', schema=schema,
-                                         graphiql=app.config['GT_ENVIRONMENT'] == TalentEnvs.DEV)))
+                                         graphiql=app.config[TalentConfigKeys.ENV_KEY] == TalentEnvs.DEV)))
 
 
 @app.route('/')

@@ -1,10 +1,11 @@
 """
 This module contains utility functions to handle GraphQL data and queries.
+
+:Authors:
+    - Zohaib Ijaz    <mzohaib.qc@gmail.com>
 """
 from contracts import contract
 from sqlalchemy import inspect
-
-__author__ = 'mzohaibqc'
 
 
 @contract

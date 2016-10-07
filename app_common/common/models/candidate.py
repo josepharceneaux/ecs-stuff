@@ -666,6 +666,12 @@ class SocialNetwork(db.Model):
 
     @classmethod
     def get_subscribed_social_networks(cls, user_id):
+        """
+        This method returns those social networks that a user has subscribed.
+        :param int | long user_id: user id
+        :return: list of social networks
+        :rtype: list
+        """
         from user import UserSocialNetworkCredential
         subscribed_data = UserSocialNetworkCredential.get_by_user_id(user_id=user_id)
         return cls.query.filter(cls.id.in_([sn.social_network_id for sn in subscribed_data])).all()

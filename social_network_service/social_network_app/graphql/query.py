@@ -5,7 +5,7 @@ This module contains GraphQL schema for social network service.
 from social_network_service.common.graphql_types.types import *
 from social_network_service.modules.social_network.meetup import Meetup
 from social_network_service.common.error_handling import InternalServerError
-from social_network_service.common.utils.api_utils import get_paginated_list
+from social_network_service.common.utils.api_utils import get_paginated_list, DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from social_network_service.social_network_app.restful.v1_data import get_timezones
 from social_network_service.social_network_app.restful.v1_social_networks import is_token_valid
 
@@ -249,8 +249,8 @@ class Query(ObjectType):
         """
         Resolves current user's events specified by page number and per page args.
         """
-        page = args.get('page', 1)
-        per_page = args.get('per_page', 20)
+        page = args.get('page', DEFAULT_PAGE)
+        per_page = args.get('per_page', DEFAULT_PAGE_SIZE)
         events = request.user.events.order_by(Event.start_datetime.desc())
         return get_paginated_list(events, page, per_page).items
 

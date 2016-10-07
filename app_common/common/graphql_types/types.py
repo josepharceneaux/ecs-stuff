@@ -2,6 +2,28 @@
 This module contains Graphene types for SqlAlchemy models. Instead of defining all our fields
 manually for each and every model, we will make use of `SQLAlchemyObjectType` to easily create
 our Graphene types from existing models.
+
+In order to create a Graphene type of an SqlAlchemy model, simply create a class and inherit it from
+`graphene_sqlalchemy.SQLAlchemyObjectType`. Add a nested `Meta` class with `user` attribute with value as
+ SqlAlchemy model. e.g. for User model
+
+ class UserType(SQLAlchemyObjectType):
+
+    class Meta:
+        model = User
+
+By default, id field is being returned as string value like "1", "123" etc. so we need to explicitly define
+`id` fields as Int field. so it will look like
+
+class UserType(SQLAlchemyObjectType):
+    id = graphene.Int()
+
+    class Meta:
+        model = User
+
+:Authors:
+    - Zohaib Ijaz    <mzohaib.qc@gmail.com>
+
 """
 # 3rd party imports
 import graphene
