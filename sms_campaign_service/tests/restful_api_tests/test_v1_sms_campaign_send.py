@@ -56,7 +56,7 @@ class TestSendSmsCampaign(object):
         campaign_id = sms_campaign_of_user_first['id']
         url = self.URL % campaign_id
         CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, url, access_token_first,
-                                                                  {}, smartlist_id)
+                                                                  smartlist_id)
 
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
                                                      sms_campaign_in_other_domain):

@@ -157,9 +157,9 @@ class TestSmsCampaignWithIdHTTPPUT(object):
         smartlist_id = sms_campaign_of_user_first['smartlist_ids'][0]
         url = self.URL % sms_campaign_of_user_first['id']
         campaign_valid_data['smartlist_ids'] = [smartlist_id]
-        # Create a campaign with deleted smarlist. API will raise 400 error.
+        # Create a campaign with deleted smartlist. API will raise 400 error.
         CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, url, access_token_first,
-                                                                  campaign_valid_data, smartlist_id)
+                                                                  smartlist_id, campaign_valid_data)
 
     def test_with_no_data(self, headers, sms_campaign_of_user_first):
         """

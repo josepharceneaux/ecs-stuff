@@ -75,18 +75,16 @@ def create_email_campaign(user):
     return email_campaign
 
 
-def create_email_campaign_smartlist(access_token, talent_pipeline, campaign,
-                                    emails_list=True, count=1, assert_candidates=True):
+def create_email_campaign_smartlist(access_token, talent_pipeline, campaign, emails_list=True, count=1,
+                                    assert_candidates=True):
     """
     This associates smartlist ids with given campaign
     """
     # create candidate
-    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token, talent_pipeline, count=count, emails_list=emails_list,
-        assert_candidates=assert_candidates)
-
-    create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
-                                     email_campaign_id=campaign.id)
+    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token, talent_pipeline,
+                                                                            count=count, emails_list=emails_list,
+                                                                            assert_candidates=assert_candidates)
+    create_email_campaign_smartlists(smartlist_ids=[smartlist_id], email_campaign_id=campaign.id)
     return campaign
 
 
@@ -441,24 +439,21 @@ def create_email_campaign_via_api(access_token, data, is_json=True):
 
 
 def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
-                                      campaign_name=fake.name(), assert_candidates=True):
+                                      campaign_name=fake.name(), assert_candidates=True, create_smartlist=True):
     """
     This function returns the required data to create an email campaign
-    :param access_token: access token of user
-    :param talent_pipeline: talent_pipeline of user
-    :param subject: Subject of campaign
-    :param campaign_name: Name of campaign
     """
+    smartlist_id = ''
     email_from = 'no-reply@gettalent.com'
     reply_to = fake.safe_email()
     body_text = fake.sentence()
     description = fake.paragraph()
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
-    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
-                                                                            talent_pipeline,
-                                                                            emails_list=True,
-                                                                            assert_candidates=assert_candidates,
-                                                                            )
+    if create_smartlist:
+        smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
+                                                                                talent_pipeline,
+                                                                                emails_list=True,
+                                                                                assert_candidates=assert_candidates)
     return {'name': campaign_name,
             'subject': subject,
             'description': description,
@@ -467,7 +462,7 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
             'body_html': body_html,
             'body_text': body_text,
             'frequency_id': Frequency.ONCE,
-            'list_ids': [smartlist_id]
+            'list_ids': [smartlist_id] if smartlist_id else []
             }
 
 
