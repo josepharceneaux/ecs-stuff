@@ -43,13 +43,14 @@ class CampaignsTestsHelpers(object):
     This class contains common helper methods for tests of sms_campaign_service and push_campaign_service etc.
     """
     # This list is used to update/delete a campaign, e.g. sms-campaign with invalid id
-    INVALID_ID = [fake.word(), 0, None, dict(), list(), '', '        ']
+    INVALID_ID = [fake.word(), 0, None, dict(), list(), '', '      ']
     # This list is used to create/update a campaign, e.g. sms-campaign with invalid name and body_text.
     INVALID_STRING = INVALID_ID[1:]
     # This list is used to schedule/reschedule a campaign e.g. sms-campaign with invalid frequency Id.
     INVALID_FREQUENCY_IDS = copy.copy(INVALID_ID)
     # Remove 0 from list as it is valid frequency_id and replace it with sys.maxint
     INVALID_FREQUENCY_IDS[1] = sys.maxint
+
     # Invalid values for required text field
     INVALID_TEXT_VALUES = ['', '  ', 0,  {}, [], None, True]
 
