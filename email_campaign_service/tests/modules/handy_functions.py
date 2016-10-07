@@ -550,14 +550,14 @@ def assert_valid_template_folder(template_folder_dict, domain_id, expected_name)
 
 
 def create_data_for_campaign_creation_with_all_parameters(access_token, talent_pipeline, subject,
-                                                          campaign_name=fake.name(), assert_candidates=True ):
+                                                          campaign_name=fake.name(), assert_candidates=True):
     """
     This function returns the all data to create an email campaign
     :param access_token: access token of user
     :param talent_pipeline: talent_pipeline of user
     :param subject: Subject of campaign
     :param campaign_name: Name of campaign
-
+    :param assert_candidates: allow to assert candidate
     """
     email_from = 'no-reply@gettalent.com'
     reply_to = fake.safe_email()

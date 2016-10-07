@@ -41,7 +41,6 @@ from email_campaign_service.tests.modules.handy_functions import (assert_valid_c
                                                                   create_email_campaign_via_api,
                                                                   create_data_for_campaign_creation,
                                                                   create_email_campaign_smartlists,
-                                                                  assert_and_delete_email,
                                                                   create_email_campaign,
                                                                   EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS,
                                                                   EMAIL_CAMPAIGN_INVALID_FIELDS,
@@ -219,7 +218,9 @@ class TestGetCampaigns(object):
     @pytest.mark.qa
     def test_get_campaign_with_invalid_field_one_by_one(self, access_token_first):
         """
-         Test checks that with invalid values
+         This test is make sure that data is not retrieved with invalid fields and also
+         assure us of all possible checks are handled for every field. That's why the
+         test is executed with one by one invalid field.
         """
         for param in EMAIL_CAMPAIGN_INVALID_FIELDS:
             response = requests.get(url=EmailCampaignApiUrl.CAMPAIGN % param,
@@ -227,11 +228,11 @@ class TestGetCampaigns(object):
             assert response.status_code == requests.codes.BAD_REQUEST
 
     @pytest.mark.qa
-    def test_get_all_campaigns_in_dsc(self, user_first,
-                                      user_same_domain,
-                                      access_token_first):
+    def test_get_all_campaigns_in_desc(self, user_first, user_same_domain, access_token_first):
+
         """
-        Test GET API of email_campaigns for getting all campaigns in Descending order'
+        This test to is to make sure the GET endpoint get_all_email_campaigns
+        is retrieving all campaigns in descending order'
         """
         # Test GET api of email campaign
         create_email_campaign(user_first)
@@ -245,7 +246,8 @@ class TestGetCampaigns(object):
                                       user_same_domain,
                                       access_token_first):
         """
-        Test GET API of email_campaigns for getting all campaigns in ascending order'
+        This test to is to make sure the GET endpoint get_all_email_campaigns
+        is retrieving all campaigns in descending order'
         """
         # Test GET api of email campaign
         create_email_campaign(user_first)
@@ -257,7 +259,7 @@ class TestGetCampaigns(object):
     @pytest.mark.qa
     def test_get_campaign_except_single_field(self, access_token_first):
         """
-         Test to get campaign except single field.
+        This test certify that data of campaign is retrieved  except single field.
         """
         for param in EMAIL_CAMPAIGN_EXCEPT_SINGLE_FIELD:
             response = requests.get(url=EmailCampaignApiUrl.CAMPAIGN % param,
@@ -443,7 +445,7 @@ class TestCreateCampaign(object):
     @pytest.mark.qa
     def test_create_email_campaign_with_optional_parameters(self, access_token_first, talent_pipeline):
         """
-        Here we provide valid data to create an email-campaign with optional.
+        The test is to examine,the valid data provided to create an email-campaign with optional.
         It should get OK response.
         """
         subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign'
@@ -475,12 +477,13 @@ class TestCreateCampaign(object):
             assert resp_object['campaign']['id']
 
     @pytest.mark.qa
-    def test_update_email_campaign_with_allowed_parameter(self, access_token_first, talent_pipeline,
+    def test_update_email_campaign_with_allowed_parameter(self, access_token_first,
                                                           email_campaign_of_user_first):
         """
+         The test is to make sure that email campaign update functionality with allowed parameters/fields
+         is working properly or not.Should return 200 status ok.
 
         :param access_token_first:
-        :param talent_pipeline:
         :param email_campaign_of_user_first:
         :return:
         """
@@ -494,11 +497,13 @@ class TestCreateCampaign(object):
         assert email_campaign['is_hidden']
 
     @pytest.mark.qa
-    def test_update_email_campaign_with_invalid_data(self, access_token_first, talent_pipeline,
+    def test_update_email_campaign_with_invalid_data(self, access_token_first,
                                                      email_campaign_of_user_first):
         """
+         This test to make sure that update email campaign with invalid data is not
+         possible, only valid data is acceptable.Should return 400 bad request on invalid data.
+
         :param access_token_first:
-        :param talent_pipeline:
         :param email_campaign_of_user_first:
         :return:
         """
@@ -507,7 +512,7 @@ class TestCreateCampaign(object):
         for param in UPDATE_WITH_INVALID_DATA:
             data = {'is_hidden': param}
             response = send_request('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id, access_token_first, data)
-            CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=400)
+            CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.bad_request)
 
 
 class TestSendCampaign(object):
@@ -577,7 +582,7 @@ class TestSendCampaign(object):
     def test_post_with_one_smartlist_one_candidate_with_no_email(
             self, headers, campaign_with_candidate_having_no_email):
         """
-        User auth token is valid, campaign has one smart list associated. Smartlist has one
+        User auth token is valid, campaign has one smart list associated. Smart list has one
         candidate having no email associated. So, sending email campaign should fail.
         """
         response = requests.post(
