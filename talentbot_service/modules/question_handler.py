@@ -87,8 +87,8 @@ class QuestionHandler(object):
         if candidate_index is not None:
             user = [user for user in users if user.id == user_id]
             number_of_candidates = len(user[0].candidates)
-            return "Candidates in domain %s : %d" % (domain_name, number_of_candidates)
-        return "Users in domain %s : %d" % (domain_name, len(users))
+            return "Candidates in domain `%s` : `%d`" % (domain_name, number_of_candidates)
+        return "Users in domain `%s` : `%d`" % (domain_name, len(users))
 
     @classmethod
     def question_1_handler(cls, message_tokens, user_id):
@@ -113,7 +113,7 @@ class QuestionHandler(object):
             return 'Please mention skills'
         extracted_skills = message_tokens[skill_index + 1::]
         count = Candidate.get_candidate_count_with_skills(extracted_skills, user_id)
-        response_message = "There are %d candidates with skills %s"
+        response_message = "There are `%d` candidates with skills %s"
         response_message = response_message % (count, ' '.join(extracted_skills))
         if count == 1:
             response_message = response_message.replace('are', 'is'). \
@@ -133,7 +133,7 @@ class QuestionHandler(object):
             raise IndexError
         zipcode = message_tokens[zip_index + 1]
         count = Candidate.get_candidate_count_from_zipcode(zipcode, user_id)
-        response_message = "Number of candidates from zipcode %s : %d" % \
+        response_message = "Number of candidates from zipcode `%s` : `%d`" % \
                            (message_tokens[zip_index + 1], count)
         return response_message
 
@@ -153,19 +153,22 @@ class QuestionHandler(object):
         campaign_method = CAMPAIGN_TYPES.get(campaign_type)
         response_message = ""
         if is_valid_year == -1:
-            return "Please enter a valid year greater than 1900 and smaller than current year."
+            return "Please enter a valid year greater than `1900` and smaller than `current year`."
         if is_valid_year is False:
             user_specific_date = None
         last_index = self.find_word_in_message('last', message_tokens)
-        if last_index:
+        if last_index and not is_valid_year:
             if len(message_tokens) > last_index + 1:
                 user_specific_date = self.extract_datetime_from_question(last_index, message_tokens)
         if not campaign_method:
             campaign_list = ['Top Campaigns are following:\n']
+            if not isinstance(user_specific_date, datetime.datetime) and not is_valid_year \
+               and user_specific_date is None and message_tokens[-1].lower() not in ['campaigns']:
+                campaign_list = ['No valid duration found, Top campaigns from all the times:\n']
             campaign_blast = CAMPAIGN_TYPES.get("email")(user_specific_date, user_id)
             if campaign_blast:
                 open_rate = self.calculate_percentage(campaign_blast.opens, campaign_blast.sends)
-                response_message = 'Email Campaign: "%s", open rate %d%% (%d/%d)' \
+                response_message = '*Email Campaign:* `%s`, open rate `%d%%` (%d/%d)' \
                                    % (campaign_blast.campaign.name, open_rate,
                                       campaign_blast.opens, campaign_blast.sends)
                 campaign_list.append(response_message)
@@ -173,8 +176,8 @@ class QuestionHandler(object):
             if campaign_blast:
                 click_rate = self.calculate_percentage(campaign_blast.clicks, campaign_blast.sends)
                 reply_rate = self.calculate_percentage(campaign_blast.replies, campaign_blast.sends)
-                response_message = 'SMS Campaign: "%s" with click rate %d%% (%d/%d)' \
-                                   ' and reply rate %d%% (%d/%d)' \
+                response_message = '*SMS Campaign:* `%s` with click rate `%d%%` (%d/%d)' \
+                                   ' and reply rate `%d%%` (%d/%d)' \
                                    % (campaign_blast.campaign.name, click_rate,
                                       campaign_blast.clicks, campaign_blast.sends, reply_rate,
                                       campaign_blast.replies, campaign_blast.sends)
@@ -182,7 +185,7 @@ class QuestionHandler(object):
             campaign_blast = CAMPAIGN_TYPES.get("push")(user_specific_date, user_id)
             if campaign_blast:
                 click_rate = self.calculate_percentage(campaign_blast.clicks, campaign_blast.sends)
-                response_message = 'Push Campaign: "%s" with click rate %d%% (%d/%d)' \
+                response_message = '*Push Campaign:* `%s` with click rate `%d%%` (%d/%d)' \
                                    % (campaign_blast.campaign.name, click_rate,
                                       campaign_blast.clicks, campaign_blast.sends)
                 campaign_list.append(response_message)
@@ -198,26 +201,28 @@ class QuestionHandler(object):
                 user_specific_date = user_specific_date.date()
             if campaign_type == 'email':
                 open_rate = self.calculate_percentage(campaign_blast.opens, campaign_blast.sends)
-                response_message = 'Top performing %s campaign from %s is "%s" with open rate %d%% (%d/%d)' \
+                response_message = 'Top performing `%s` campaign from `%s` is `%s` with open rate `%d%%` (%d/%d)' \
                                    % (campaign_type, user_specific_date, campaign_blast.campaign.name, open_rate,
                                       campaign_blast.opens, campaign_blast.sends)
             if campaign_type == 'sms':
                 click_rate = self.calculate_percentage(campaign_blast.clicks, campaign_blast.sends)
                 reply_rate = self.calculate_percentage(campaign_blast.replies, campaign_blast.sends)
-                response_message = 'Top performing %s campaign from %s is "%s" with click rate %d%% (%d/%d)' \
-                                   ' and reply rate %d%% (%d/%d)' \
+                response_message = 'Top performing `%s` campaign from `%s` is `%s` with click rate `%d%%` (%d/%d)' \
+                                   ' and reply rate `%d%%` (%d/%d)' \
                                    % (campaign_type, user_specific_date, campaign_blast.campaign.name, click_rate,
                                       campaign_blast.clicks, campaign_blast.sends, reply_rate,
                                       campaign_blast.replies, campaign_blast.sends)
             if campaign_type == 'push':
                 click_rate = self.calculate_percentage(campaign_blast.clicks, campaign_blast.sends)
-                response_message = 'Top performing %s campaign from %s is "%s" with click rate %d%% (%d/%d)' \
+                response_message = 'Top performing `%s` campaign from `%s` is `%s` with click rate `%d%%` (%d/%d)' \
                                    % (campaign_type, user_specific_date, campaign_blast.campaign.name, click_rate,
                                       campaign_blast.clicks, campaign_blast.sends)
         else:
-            response_message = "Oops! looks like you don't have %s campaign from %s" % \
+            response_message = "Oops! looks like you don't have `%s` campaign from `%s`" % \
                                     (campaign_type, timespan)
-
+        if not isinstance(user_specific_date, datetime.datetime) and not is_valid_year \
+                and user_specific_date is None and message_tokens[-1].lower() not in ['campaigns']:
+            response_message = 'No valid time duration found\n %s' % response_message
         return response_message.replace("None", "all the times")
 
     def question_4_handler(self, message_tokens, user_id):
@@ -270,7 +275,7 @@ class QuestionHandler(object):
                 user_name = "Everyone totally"
             if not spaced_talent_pool_name:
                 spaced_talent_pool_name = "all"
-            response_message = "%s added %d candidates in %s talent pool" % \
+            response_message = "`%s` added `%d` candidates in `%s` talent pool" % \
                                (user_name, count, spaced_talent_pool_name)
             return response_message
         if is_valid_year == -1:
@@ -287,7 +292,7 @@ class QuestionHandler(object):
                     user_name = "Everyone totally"
                 if not spaced_talent_pool_name:
                     spaced_talent_pool_name = "all"
-                response_message = "%s added %d candidates in %s talent pool" % \
+                response_message = "`%s` added `%d` candidates in `%s` talent pool" % \
                                    (user_name, count, spaced_talent_pool_name)
                 return response_message
         count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
@@ -298,8 +303,8 @@ class QuestionHandler(object):
             user_name = "Everyone totally"
         if not spaced_talent_pool_name:
             spaced_talent_pool_name = "all"
-        response_message = "%s added %d candidates in %s talent pool" % (user_name, count,
-                                                                         spaced_talent_pool_name)
+        response_message = "`%s` added `%d` candidates in `%s` talent pool" % (user_name, count,
+                                                                               spaced_talent_pool_name)
         return response_message
 
     @classmethod
@@ -310,7 +315,7 @@ class QuestionHandler(object):
         :rtype: str|None
         """
         if args:
-            return "My name is " + BOT_NAME
+            return "My name is `%s`" % BOT_NAME
 
     @classmethod
     def question_6_handler(cls, *args):
@@ -334,7 +339,7 @@ class QuestionHandler(object):
         if talent_pools:
             talent_pool_names = [talent_pool.name for talent_pool in talent_pools]
             talent_pool_names = cls.create_ordered_list(talent_pool_names)
-            header = ["There are %d talent pools in your domain\n" % len(talent_pools)]
+            header = ["There are `%d` talent pools in your domain\n" % len(talent_pools)]
             response = '%s%s'
             return response % (header[0], talent_pool_names[::])
         return "Seems like there is no talent pool in your domain"
@@ -348,20 +353,22 @@ class QuestionHandler(object):
         :rtype: str
         """
         belong_index = cls.find_word_in_message('belong', message_tokens)
+        if belong_index is None:
+            belong_index = cls.find_word_in_message('part', message_tokens)
         is_user_asking_about_himslef = cls.find_exact_word_in_message('i', message_tokens)
         if belong_index is not None and is_user_asking_about_himslef is None:
             user_name = message_tokens[belong_index - 1]
             users = User.get_by_name(user_id, user_name)
             if users:
                 user = users[0]
-                response = "%s's group is '%s'" % (user_name, user.user_group.name)
+                response = "`%s's` group is `%s`" % (user_name, user.user_group.name)
                 return response
-            response = 'No user with name "%s" exists in your domain' % user_name
+            response = 'No user with name `%s` exists in your domain' % user_name
             return response
         users = User.get_by_id(user_id)
         if users:
             user = users[0]
-            response = "Your group is '%s'" % user.user_group.name
+            response = "Your group is `%s`" % user.user_group.name
             return response
         response = "Something went wrong you do not exist as a user contact the developer"
         return response

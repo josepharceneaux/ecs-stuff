@@ -44,8 +44,11 @@ class SlackBot(TalentBot):
             if slack_user_token and user_id:
                 slack_client = SlackClient(slack_user_token)
                 try:
-                    at_bot = self.get_bot_id(slack_client)
-                    self.set_bot_state_active(talentbot_auth.bot_token)
+                    if talentbot_auth.bot_id:
+                        at_bot = talentbot_auth.bot_id
+                    else:
+                        at_bot = self.get_bot_id(slack_client)
+                        self.set_bot_state_active(talentbot_auth.bot_token)
                 except NotFoundError as error:
                     logger.error(error.message)
                     return False, None, None, None

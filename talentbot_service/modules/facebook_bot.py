@@ -54,6 +54,7 @@ class FacebookBot(TalentBot):
                 response_generated = self.parse_message(message, user_id)
                 if not response_generated:
                     raise IndexError
+                response_generated = self.clean_response_message(response_generated)
                 if len(response_generated) > FACEBOOK_MESSAGE_LIMIT:
                     tokens = response_generated.split('\n')
                     split_response_message = ""

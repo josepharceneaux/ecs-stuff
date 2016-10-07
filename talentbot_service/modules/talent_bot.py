@@ -54,6 +54,12 @@ class TalentBot(object):
                                      'handler': self.handler.question_0_handler},
                               '29': {'question': list_of_questions[29], 'threshold': 90,
                                      'handler': self.handler.question_0_handler},
+                              '45': {'question': list_of_questions[45], 'threshold': 90,
+                                     'handler': self.handler.question_0_handler},
+                              '46': {'question': list_of_questions[46], 'threshold': 90,
+                                     'handler': self.handler.question_0_handler},
+                              '47': {'question': list_of_questions[47], 'threshold': 90,
+                                     'handler': self.handler.question_0_handler},
                               # Skills question alternates
                               '12': {'question': list_of_questions[12], 'threshold': 95,
                                      'handler': self.handler.question_1_handler},
@@ -86,28 +92,40 @@ class TalentBot(object):
                                      'handler': self.handler.question_3_handler},
                               '27': {'question': list_of_questions[27], 'threshold': 70,
                                      'handler': self.handler.question_3_handler},
+                              '49': {'question': list_of_questions[49], 'threshold': 95,
+                                     'handler': self.handler.question_3_handler},
                               # Import question alternates
-                              '19': {'question': list_of_questions[19], 'threshold': 69,
+                              '19': {'question': list_of_questions[19], 'threshold': 85,
                                      'handler': self.handler.question_4_handler},
                               '43': {'question': list_of_questions[43], 'threshold': 95,
                                      'handler': self.handler.question_4_handler},
                               '44': {'question': list_of_questions[44], 'threshold': 95,
                                      'handler': self.handler.question_4_handler},
+                              '50': {'question': list_of_questions[50], 'threshold': 80,
+                                     'handler': self.handler.question_4_handler},
                               # Zipcode question alternates
                               '22': {'question': list_of_questions[22], 'threshold': 79,
                                      'handler': self.handler.question_2_handler},
+                              '48': {'question': list_of_questions[48], 'threshold': 90,
+                                     'handler': self.handler.question_2_handler},
+                              '52': {'question': list_of_questions[52], 'threshold': 90,
+                                     'handler': self.handler.question_2_handler},
+                              '53': {'question': list_of_questions[53], 'threshold': 90,
+                                     'handler': self.handler.question_2_handler},
                               # What talent pools in my domain
-                              '31': {'question': list_of_questions[31], 'threshold': 95,
+                              '31': {'question': list_of_questions[31], 'threshold': 97,
                                      'handler': self.handler.question_7_handler},
-                              '32': {'question': list_of_questions[32], 'threshold': 95,
+                              '32': {'question': list_of_questions[32], 'threshold': 97,
                                      'handler': self.handler.question_7_handler},
-                              '33': {'question': list_of_questions[33], 'threshold': 95,
+                              '33': {'question': list_of_questions[33], 'threshold': 97,
                                      'handler': self.handler.question_7_handler},
-                              '34': {'question': list_of_questions[34], 'threshold': 95,
+                              '34': {'question': list_of_questions[34], 'threshold': 97,
                                      'handler': self.handler.question_7_handler},
-                              '35': {'question': list_of_questions[35], 'threshold': 95,
+                              '35': {'question': list_of_questions[35], 'threshold': 97,
                                      'handler': self.handler.question_7_handler},
-                              '36': {'question': list_of_questions[36], 'threshold': 95,
+                              '36': {'question': list_of_questions[36], 'threshold': 97,
+                                     'handler': self.handler.question_7_handler},
+                              '51': {'question': list_of_questions[51], 'threshold': 97,
                                      'handler': self.handler.question_7_handler},
                               # What is my group
                               '37': {'question': list_of_questions[37], 'threshold': 95,
@@ -217,3 +235,15 @@ class TalentBot(object):
         if message.lower() in POSITIVE_MESSAGES:
             return random.choice(POSITIVE_MESSAGES)
         return None
+
+    @classmethod
+    def clean_response_message(cls, response_message):
+        """
+        Replaces back-ticks and asterisks from message which are only meaningful in Slack
+        :param str response_message:
+        :rtype: str
+        """
+        response_message = response_message.replace('*', '')
+        response_message = response_message.replace('`', "'")
+        response_message = response_message.replace('>>>', '')
+        return response_message

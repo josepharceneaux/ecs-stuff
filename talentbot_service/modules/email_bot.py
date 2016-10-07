@@ -77,6 +77,7 @@ class EmailBot(TalentBot):
                 response_generated = self.parse_message(message, user_id)
                 if not response_generated:
                     raise IndexError
+                response_generated = self.clean_response_message(response_generated)
                 self.reply(recipient, subject, "<br />".join(response_generated.split("\n")), MAILGUN_FROM)
             except (IndexError, NameError, KeyError):
                 error_response = random.choice(self.error_messages)
