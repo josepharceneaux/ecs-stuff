@@ -5,6 +5,7 @@ import time
 import uuid
 
 from flask import request, current_app
+from dateutil.parser import parse
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
@@ -86,38 +87,39 @@ class User(db.Model):
 
     @staticmethod
     def verify_jw_token(secret_key_id, token, allow_null_user=False, allow_candidate=False):
-        secret_key = redis_store.get(secret_key_id)
-        if not secret_key:
-            raise UnauthorizedError(
-                error_message='Error retrieving secret key from redis. \
-                secret_key_id: {}, token: {}'.format(secret_key_id, token))
-        s = Serializer(secret_key)
+
+        s = Serializer(redis_store.get(secret_key_id) or '')
         try:
             data = s.loads(token)
-        except SignatureExpired:
-            raise UnauthorizedError(error_message="Your JSON web token has been expired")
         except BadSignature:
-            raise UnauthorizedError(error_message="Your JSON web token is not valid")
+            raise UnauthorizedError("Your Token is not found", error_code=11)
+        except SignatureExpired:
+                raise UnauthorizedError("Your Token has expired", error_code=12)
+        except Exception:
+            raise UnauthorizedError("Your Token is not found", error_code=11)
 
-        if 'user_id' in data and data['user_id']:
+        if 'user_id' in data:
             user = User.query.get(data['user_id'])
             if user:
+                if 'created_at' in data and user.password_reset_time > parse(data['created_at']):
+                    redis_store.delete(secret_key_id)
+                    raise UnauthorizedError("Your token has expired due to password reset", error_code=12)
+
                 request.user = user
                 request.candidate = None
                 return
-        elif allow_candidate:
-            if 'candidate_id' in data:
-                candidate = Candidate.query.get(data['candidate_id'])
-                if candidate:
-                    request.candidate = candidate
-                    request.user = None
-                    return
+        elif allow_candidate and 'candidate_id' in data:
+            candidate = Candidate.query.get(data['candidate_id'])
+            if candidate:
+                request.candidate = candidate
+                request.user = None
+                return
         elif allow_null_user:
             request.user = None
             request.candidate = None
             return
 
-        raise UnauthorizedError(error_message="User %s doesn't exist in database" % data['user_id'])
+        raise UnauthorizedError("Your Token is invalid", error_code=13)
 
     def to_dict(self):
         """
