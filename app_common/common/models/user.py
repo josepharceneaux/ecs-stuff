@@ -222,15 +222,6 @@ class User(db.Model):
         return users, domain_name
 
     @classmethod
-    def get_by_id(cls, user_id):
-        """
-        The method returns user against user id
-        :param int user_id: User Id
-        :rtype: list
-        """
-        return cls.query.filter(cls.id == user_id).all()
-
-    @classmethod
     def get_by_name(cls, user_id, name):
         """
         This method returns user against a name
@@ -238,9 +229,8 @@ class User(db.Model):
         :param int user_id: User Id
         :rtype: User
         """
-        users = cls.get_by_id(user_id)
-        if users:
-            user = users[0]
+        user = cls.get_by_id(user_id)
+        if user:
             return cls.query.filter(or_(cls.first_name == name, cls.last_name == name)).\
                 filter(cls.domain_id == user.domain_id).all()
 

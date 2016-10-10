@@ -400,9 +400,8 @@ class QuestionHandler(object):
                 return response
             response = 'No user with name `%s` exists in your domain' % user_name
             return response
-        users = User.get_by_id(user_id)
-        if users:
-            user = users[0]
+        user = User.get_by_id(user_id)
+        if user:
             response = "Your group is `%s`" % user.user_group.name
             return response
         response = "Something went wrong you do not exist as a user contact the developer"
