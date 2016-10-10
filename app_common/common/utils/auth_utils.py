@@ -39,7 +39,7 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False, allow_candid
                     secret_key_id = request.headers['X-Talent-Secret-Key-ID']
                     json_web_token = oauth_token.replace('Bearer', '').strip()
                     User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
-                    request.oauth_token = json_web_token
+                    request.oauth_token = ''
                     return func(*args, **kwargs)
                 except KeyError:
                     pass
@@ -104,7 +104,7 @@ def require_all_permissions(*permission_names):
         @wraps(func)
         def authenticate_permission(*args, **kwargs):
             # For server-to-server Auth roles check should be skipped
-            if not request.user:
+            if not request.oauth_token:
                 return func(*args, **kwargs)
 
             if not permission_names:
@@ -132,7 +132,7 @@ def require_any_permission(*permission_names):
         @wraps(func)
         def authenticate_permission(*args, **kwargs):
             # For server-to-server Auth roles check should be skipped
-            if not request.user:
+            if not request.oauth_token:
                 return func(*args, **kwargs)
 
             if not permission_names:
