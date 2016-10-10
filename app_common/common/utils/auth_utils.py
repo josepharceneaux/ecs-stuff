@@ -133,7 +133,7 @@ def require_any_permission(*permission_names):
         @wraps(func)
         def authenticate_permission(*args, **kwargs):
             # For server-to-server Auth roles check should be skipped
-            
+
             if not permission_names:
                 # Permission list is empty so it means func is not permission protected
                 return func(*args, **kwargs)

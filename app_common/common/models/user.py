@@ -98,7 +98,7 @@ class User(db.Model):
         except Exception:
             raise UnauthorizedError("Your Token is not found", error_code=11)
 
-        if 'user_id' in data:
+        if 'user_id' in data and data['user_id']:
             user = User.query.get(data['user_id'])
             if user:
                 if 'created_at' in data and user.password_reset_time > parse(data['created_at']):
@@ -108,7 +108,7 @@ class User(db.Model):
                 request.user = user
                 request.candidate = None
                 return
-        elif allow_candidate and 'candidate_id' in data:
+        elif allow_candidate and 'candidate_id' in data and data['candidate_id']:
             candidate = Candidate.query.get(data['candidate_id'])
             if candidate:
                 request.candidate = candidate
