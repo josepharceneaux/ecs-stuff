@@ -16,6 +16,7 @@ response
 # Builtin imports
 import datetime
 from dateutil.relativedelta import relativedelta
+import sys
 # Common utils
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.candidate import Candidate
@@ -87,8 +88,8 @@ class QuestionHandler(object):
         if candidate_index is not None:
             user = [user for user in users if user.id == user_id]
             number_of_candidates = len(user[0].candidates)
-            return "Candidates in domain `%s` : `%d`" % (domain_name, number_of_candidates)
-        return "Users in domain `%s` : `%d`" % (domain_name, len(users))
+            return "Candidates in domain `%s` : %d" % (domain_name, number_of_candidates)
+        return "Users in domain `%s` : %d" % (domain_name, len(users))
 
     @classmethod
     def question_1_handler(cls, message_tokens, user_id):
@@ -160,8 +161,13 @@ class QuestionHandler(object):
         if last_index and not is_valid_year:
             if len(message_tokens) > last_index + 1:
                 user_specific_date = self.extract_datetime_from_question(last_index, message_tokens)
+                if isinstance(user_specific_date, basestring):
+                    return user_specific_date
         if not campaign_method:
-            campaign_list = ['Top Campaigns are following:\n']
+            if not campaign_type.lower() in ['all', 'every', 'performing', 'tops']:
+                campaign_list = ['No valid campaign type found, all top campaigns are following:\n']
+            else:
+                campaign_list = ['Top Campaigns are following:\n']
             if not isinstance(user_specific_date, datetime.datetime) and not is_valid_year \
                and user_specific_date is None and message_tokens[-1].lower() not in ['campaigns']:
                 campaign_list = ['No valid duration found, Top campaigns from all the times:\n']
@@ -201,24 +207,24 @@ class QuestionHandler(object):
                 user_specific_date = user_specific_date.date()
             if campaign_type == 'email':
                 open_rate = self.calculate_percentage(campaign_blast.opens, campaign_blast.sends)
-                response_message = 'Top performing `%s` campaign from `%s` is `%s` with open rate `%d%%` (%d/%d)' \
+                response_message = 'Top performing `%s` campaign from %s is `%s` with open rate `%d%%` (%d/%d)' \
                                    % (campaign_type, user_specific_date, campaign_blast.campaign.name, open_rate,
                                       campaign_blast.opens, campaign_blast.sends)
             if campaign_type == 'sms':
                 click_rate = self.calculate_percentage(campaign_blast.clicks, campaign_blast.sends)
                 reply_rate = self.calculate_percentage(campaign_blast.replies, campaign_blast.sends)
-                response_message = 'Top performing `%s` campaign from `%s` is `%s` with click rate `%d%%` (%d/%d)' \
+                response_message = 'Top performing `%s` campaign from %s is `%s` with click rate `%d%%` (%d/%d)' \
                                    ' and reply rate `%d%%` (%d/%d)' \
                                    % (campaign_type, user_specific_date, campaign_blast.campaign.name, click_rate,
                                       campaign_blast.clicks, campaign_blast.sends, reply_rate,
                                       campaign_blast.replies, campaign_blast.sends)
             if campaign_type == 'push':
                 click_rate = self.calculate_percentage(campaign_blast.clicks, campaign_blast.sends)
-                response_message = 'Top performing `%s` campaign from `%s` is `%s` with click rate `%d%%` (%d/%d)' \
+                response_message = 'Top performing `%s` campaign from %s is `%s` with click rate `%d%%` (%d/%d)' \
                                    % (campaign_type, user_specific_date, campaign_blast.campaign.name, click_rate,
                                       campaign_blast.clicks, campaign_blast.sends)
         else:
-            response_message = "Oops! looks like you don't have `%s` campaign from `%s`" % \
+            response_message = "Oops! looks like you don't have `%s` campaign from %s" % \
                                     (campaign_type, timespan)
         if not isinstance(user_specific_date, datetime.datetime) and not is_valid_year \
                 and user_specific_date is None and message_tokens[-1].lower() not in ['campaigns']:
@@ -284,6 +290,8 @@ class QuestionHandler(object):
         if last_index:
             if len(message_tokens) > last_index + 1:
                 user_specific_date = self.extract_datetime_from_question(last_index, message_tokens)
+                if isinstance(user_specific_date, basestring):
+                    return user_specific_date
                 count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
                                                                         user_specific_date, user_id)
                 if isinstance(count, basestring):
@@ -336,13 +344,15 @@ class QuestionHandler(object):
         :rtype: str
         """
         talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id)
+        _, domain_name = User.get_users_in_domain(user_id)
         if talent_pools:
             talent_pool_names = [talent_pool.name for talent_pool in talent_pools]
             talent_pool_names = cls.create_ordered_list(talent_pool_names)
-            header = ["There are `%d` talent pools in your domain\n" % len(talent_pools)]
-            response = '%s%s'
-            return response % (header[0], talent_pool_names[::])
-        return "Seems like there is no talent pool in your domain"
+            header = ["There are %d talent pools in your domain `%s`\n" % (len(talent_pools), domain_name)]
+            response = '%s%s' % (header[0], talent_pool_names[::])
+            return response.replace('`None`', '')
+        response = "Seems like there is no talent pool in your domain `%s`" % domain_name
+        return response.replace('`None`', '')
 
     @classmethod
     def question_8_handler(cls, message_tokens, user_id):
@@ -405,7 +415,11 @@ class QuestionHandler(object):
         duration_type = message_tokens[last_index + 1].lower()
         if message_tokens[last_index + 1].isdigit():
             duration = int(message_tokens[last_index + 1])
+            if duration > sys.maxint:
+                return "Number's max range exceeded"
             duration_type = message_tokens[last_index + 2]
+        if message_tokens[last_index + 1][0] == '-':
+            return 'Negative numbers are not acceptable'
         if duration_type.lower() in 'years':
             user_specific_date = datetime.datetime.utcnow() - relativedelta(years=duration)
         if duration_type.lower() in 'months':
