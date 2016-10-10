@@ -21,7 +21,8 @@ def fetch_candidate_edits(candidate_id):
                 'new_value': edit.new_value,
                 'edit_action': CandidateEdit.actions.get(edit.edit_action),
                 'is_custom_field': edit.is_custom_field,
-                'edit_datetime': DatetimeUtils.to_utc_str(edit_datetime) if edit_datetime else None
+                'edit_datetime': DatetimeUtils.to_utc_str(edit_datetime) if edit_datetime else None,
+                'edit_type': edit.edit_type or 0
             }
         )
     return all_edits
