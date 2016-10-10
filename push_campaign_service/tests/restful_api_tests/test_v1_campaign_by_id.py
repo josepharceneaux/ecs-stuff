@@ -240,8 +240,8 @@ class TestUpdateCampaign(object):
         url = URL % campaign_in_db['id']
         data = campaign_data.copy()
         data['smartlist_ids'] = [smartlist_id]
-        # Create a campaign with deleted smarlist. API will raise 400 error.
-        CampaignsTestsHelpers.send_request_with_deleted_smartlist('put', url, token_first, data, smartlist_id)
+        # Create a campaign with deleted smartlist. API will raise 400 error.
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist('put', url, token_first, smartlist_id, data)
 
     def test_campaign_update_with_invalid_name(self, token_first, campaign_data, smartlist_first, campaign_in_db):
         """

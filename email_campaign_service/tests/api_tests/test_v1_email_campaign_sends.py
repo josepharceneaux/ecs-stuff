@@ -21,21 +21,19 @@ class TestEmailCampaignSends(object):
     HTTP_METHOD = 'get'
     ENTITY = 'sends'
 
-    def test_get_with_invalid_token(self, campaign_with_valid_candidate):
+    def test_get_with_invalid_token(self, campaign_with_two_candidates):
         """
          User auth token is invalid. It should result in Unauthorized error.
         """
         CampaignsTestsHelpers.request_with_invalid_token(
-            self.HTTP_METHOD, self.URL % campaign_with_valid_candidate.id, None)
+            self.HTTP_METHOD, self.URL % campaign_with_two_candidates.id, None)
 
-    def test_get_with_no_campaign_sent(self, access_token_first, campaign_with_valid_candidate):
+    def test_get_with_no_campaign_sent(self, headers, campaign_with_two_candidates):
         """
         Here we are assuming that email campaign has not been sent to any candidate. Sends count
         should be 0.
         """
-        response = requests.get(
-            self.URL % campaign_with_valid_candidate.id,
-            headers=dict(Authorization='Bearer %s' % access_token_first))
+        response = requests.get(self.URL % campaign_with_two_candidates.id, headers=headers)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY)
 
     def test_get_by_sending_campaign(self, access_token_first, sent_campaign):
