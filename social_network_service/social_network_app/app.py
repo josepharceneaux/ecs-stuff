@@ -23,7 +23,7 @@ from restful.v1_social_networks import social_network_blueprint
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.social_network_app.restful.v1_importer import rsvp_blueprint
-from social_network_service.social_network_app.graphql.query import schema
+from social_network_service.social_network_app.graphql.schema import schema
 
 # Register Blueprints for different APIs
 

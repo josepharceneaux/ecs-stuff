@@ -672,7 +672,9 @@ class SocialNetwork(db.Model):
         :return: list of social networks
         :rtype: list
         """
+        # Due to circular dependency, importing here
         from user import UserSocialNetworkCredential
+        assert user_id and isinstance(user_id, (int, long)), 'user_id must be a positive number, given: %s' % user_id
         subscribed_data = UserSocialNetworkCredential.get_by_user_id(user_id=user_id)
         return cls.query.filter(cls.id.in_([sn.social_network_id for sn in subscribed_data])).all()
 

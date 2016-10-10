@@ -155,6 +155,53 @@ def to_json(self, include_fields=None, field_parsers=dict()):
     return data
 
 
+@classmethod
+def get_fields(cls, include=None, exclude=None, relationships=None):
+    """
+    This functions receives db Model and return columns/fields name list. One can get specific fields
+    by using `include` kwarg or he can exclude specific field using `exclude` kwarg.
+    :param type(t) cls: SqlAlchemy model class, e.g. Event, User
+    :param list | tuple | None include: while fields to include, None for all
+    :param list | tuple | None exclude: which fields to exclude, None for no exclusion
+    :param list | tuple | None relationships: list of relationships that you want to add in fields like
+    event_organizer for Event fields.
+    :return: list of fields
+    :rtype: list
+
+        ..Example:
+            >>> from app_common.common.models.event import Event
+            >>> model = Event
+            >>> get_fields(Event)
+                ['title', 'currency', 'description', 'endDatetime', 'groupUrlName', 'id', 'maxAttendees', 'organizerId',
+                'registrationInstruction', 'socialNetworkEventId', 'socialNetworkGroupId', 'socialNetworkId',
+                'startDatetime', 'ticketsId', 'timezone', 'title', 'url', 'userId', 'venueId']
+            >>> get_fields(Event, include=('title', 'cost'))
+                ['title, 'cost']
+            >>> get_fields(Event, exclude=('title', 'cost'))
+                ['currency', 'description', 'endDatetime', 'groupUrlName', 'id', 'maxAttendees', 'organizerId',
+                'registrationInstruction', 'socialNetworkEventId', 'socialNetworkGroupId', 'socialNetworkId',
+                'startDatetime', 'ticketsId', 'timezone', 'url', 'userId', 'venueId']
+            >>> get_fields(Event, relationships=('event_organizer',))
+                ['cost', 'currency', 'description', 'endDatetime', 'eventOrganizer',
+                ['about', 'email', 'event', 'id', 'name', 'socialNetworkId', 'socialNetworkOrganizerId', 'user',
+                'userId'], 'groupUrlName', 'id', 'maxAttendees', 'organizerId', 'registrationInstruction',
+                'socialNetwork', 'socialNetworkEventId', 'socialNetworkGroupId', 'socialNetworkId', 'startDatetime',
+                'ticketsId', 'timezone', 'title', 'url', 'user', 'userId', 'venue', 'venueId']
+    """
+    fields = []
+    column_keys = inspect(cls).mapper.column_attrs._data._list
+    relationship_keys = inspect(cls).mapper.relationships._data._list
+    for key in column_keys:
+        if (not include or key in include) and (not exclude or key not in exclude):
+            fields.append(key)
+    for key in relationship_keys:
+        if relationships and key in relationships:
+            fields.append(key)
+            relationship_class = getattr(cls, key).mapper.class_
+            fields.append(relationship_class.get_fields())
+    return fields
+
+
 def save(self):
     """
     This method allows a model instance to save itself in database by calling save
@@ -367,6 +414,10 @@ def add_model_helpers(cls):
     # and on accessing backref attributes casuses DetachedInstanceError. So by calling this method one can refresh the
     # expired objects
     cls.refresh_all = refresh_all
+
+    # Add get_fields() class method to all models by adding it to base class model
+    # this method returns list od Model's columns and relationships
+    cls.get_fields = get_fields
 
 
 def init_talent_app(app_name):

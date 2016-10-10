@@ -5,54 +5,8 @@ This module contains utility functions to handle GraphQL data and queries.
     - Zohaib Ijaz    <mzohaib.qc@gmail.com>
 """
 from contracts import contract
-from sqlalchemy import inspect
 
-
-@contract
-def get_fields(model, include=None, exclude=None, relationships=None):
-    """
-    This functions receives db Model and return columns/fields name list. One can get specific fields
-    by using `include` kwarg or he can exclude specific field using `exclude` kwarg.
-    :param type(t) model: SqlAlchemy model class, e.g. Event, User
-    :param list | tuple | None include: while fields to include, None for all
-    :param list | tuple | None exclude: which fields to exclude, None for no exclusion
-    :param list | tuple | None relationships: list of relationships that you want to add in fields like
-    event_organizer for Event fields.
-    :return: list of fields
-    :rtype: list
-
-        ..Example:
-            >>> from app_common.common.models.event import Event
-            >>> model = Event
-            >>> get_fields(Event)
-                ['title', 'currency', 'description', 'endDatetime', 'groupUrlName', 'id', 'maxAttendees', 'organizerId',
-                'registrationInstruction', 'socialNetworkEventId', 'socialNetworkGroupId', 'socialNetworkId',
-                'startDatetime', 'ticketsId', 'timezone', 'title', 'url', 'userId', 'venueId']
-            >>> get_fields(Event, include=('title', 'cost'))
-                ['title, 'cost']
-            >>> get_fields(Event, exclude=('title', 'cost'))
-                ['currency', 'description', 'endDatetime', 'groupUrlName', 'id', 'maxAttendees', 'organizerId',
-                'registrationInstruction', 'socialNetworkEventId', 'socialNetworkGroupId', 'socialNetworkId',
-                'startDatetime', 'ticketsId', 'timezone', 'url', 'userId', 'venueId']
-            >>> get_fields(Event, relationships=('event_organizer',))
-                ['cost', 'currency', 'description', 'endDatetime', 'eventOrganizer',
-                ['about', 'email', 'event', 'id', 'name', 'socialNetworkId', 'socialNetworkOrganizerId', 'user',
-                'userId'], 'groupUrlName', 'id', 'maxAttendees', 'organizerId', 'registrationInstruction',
-                'socialNetwork', 'socialNetworkEventId', 'socialNetworkGroupId', 'socialNetworkId', 'startDatetime',
-                'ticketsId', 'timezone', 'title', 'url', 'user', 'userId', 'venue', 'venueId']
-    """
-    fields = []
-    column_keys = inspect(model).mapper.column_attrs._data._list
-    relationship_keys = inspect(model).mapper.relationships._data._list
-    for key in column_keys:
-        if (not include or key in include) and (not exclude or key not in exclude):
-            fields.append(key)
-    for key in relationship_keys:
-        if relationships and key in relationships:
-            fields.append(key)
-            relationship_class = getattr(model, key).mapper.class_
-            fields.append(get_fields(relationship_class))
-    return fields
+from ..error_handling import InvalidUsage
 
 
 @contract
@@ -60,6 +14,11 @@ def get_query(key, fields, args=None, return_str=False):
     """
     This function takes response key, list of expected response fields and optional args and returns
     GraphQL compatible query.
+    To create nested queries from list of fields, add a nested list of fields of that object.
+    Look at the examples below.
+    We can get any level of nested query unless the nested query needs args, e.g. if you want only first page of events
+    you can not create below query from list of fields.
+
     :param string key: response key
     :param list | tuple fields: list of fields to be retrieved
     :param dict | None args: optional args
@@ -87,6 +46,13 @@ def get_query(key, fields, args=None, return_str=False):
                     "query" : "{ event (id: 123) { id title cost description } }"
                 }
 
+            >>> key = 'me'
+            >>> fields = ['id', 'last_name', 'events', ['id', 'title']]
+            >>> get_query(key, fields)
+                {
+                    "query": "{ me { id last_name events { id title } } }"
+                }
+
     """
     query = '{ %s %s { %s } }'
     args_list = []
@@ -107,6 +73,7 @@ def get_query(key, fields, args=None, return_str=False):
 def validate_graphql_response(key, response, fields, is_array=False):
     """
     This functions is doing a simple task. It checks required keys in response data.
+    If response contains a list of objects, is_array must be True.
     :param string key: root key in response
     :param dict response: response object
     :param list | tuple fields: list of fields to validate
@@ -115,8 +82,7 @@ def validate_graphql_response(key, response, fields, is_array=False):
     ..Example:
         >>> key = 'events'
         >>> response = {
-        >>>     "data" : {
-        >>>         "events" : [
+        >>>     "events" : [
         >>>             {
         >>>                 "id": "1",
         >>>                 "title": "Test Event",
@@ -124,18 +90,40 @@ def validate_graphql_response(key, response, fields, is_array=False):
         >>>                 "description": "Some description"
         >>>             }
         >>>         ]
-        >>>     }
         >>> }
         >>> fields = ['id', 'title', 'cost', 'description']
         >>> validate_graphql_response(key, response, fields, is_array=True)
     """
     print('validate_graphql_response. Response: %s' % response)
-    data = response['data'][key]
+    try:
+        data = response[key]
+    except KeyError:
+        raise InvalidUsage("response must be a dict with given key. Given key: %s\nResponse: %s" % (key, response))
     if is_array:
         # validate every item in collection
         for obj in data:
-            for field in filter(lambda item: isinstance(item, basestring), fields):
-                assert field in obj, 'field: %s, data: %s' % (field, obj)
+            assert_keys(obj, fields)
     else:
-        for field in fields:
-            assert field in data, 'field: %s, data: %s' % (field, data)
+        assert_keys(data, fields)
+
+
+def assert_keys(response, keys):
+    """
+    This function asserts that all given keys are present in given response.
+    :param dict response: dictionary data
+    :param list keys: list of keys
+    """
+    if response is None:
+        return
+    assert isinstance(response, dict), 'response must be a dict. Given: %s' % response
+    assert isinstance(keys, list), 'keys must be a list. Given: %s' % keys
+    for index, key in enumerate(keys):
+        if isinstance(key, (list, tuple)):
+            fields = key
+            key = keys[index - 1]
+            data = response[key]
+            is_array = isinstance(data, (list, tuple))
+            data = {key: data}
+            validate_graphql_response(key, data, fields, is_array=is_array)
+        else:
+            assert key in response, 'key: %s, response: %s' % (key, response)

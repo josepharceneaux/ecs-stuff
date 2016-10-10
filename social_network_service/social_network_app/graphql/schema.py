@@ -1,10 +1,43 @@
 """
 This module contains GraphQL schema for social network service.
-"""
 
-from social_network_service.common.graphql_types.types import *
+In order to expose our resources through GraphQL endpoint, we need to create a schema.
+
+A GraphQL schema describes your data model, and provides a GraphQL server with an associated
+set of resolve methods that know how to fetch data.
+We are going to create a schema, with a Query with following fields:
+
+    - me (current user object)
+    - user (user specified by id but it must be in same domain as the current user)
+    - event (single event and associated objects)
+    - events (list of user's events and associated objects with each event)
+    - venue (venue object given by id and created by current user)
+    - venues (list of venues created by current user)
+    - organizer (organizer created by current user and specified by id)
+    - organizers (list of organizers created by current users)
+    - social_network (social network given by name)
+    - social_networks (list of all social networks)
+    - subscribed_social_networks (list of social networks that current user has subscribed)
+    - meetup_groups (current user's Meetup groups)
+    - timezones (List of timezones)
+    - sn_token_status (a specific social network authentication token validity status)
+
+Every field has a resolver method which determines, which data will be returned by Graphql endpoint when
+using this query.
+"""
+import graphene
+
+from social_network_service.common.graphql_types.model_types import (ObjectType, UserType, EventType,
+                                                                     EventOrganizerType, VenueType, SocialNetworkType,
+                                                                     MeetupGroupType, TimeZoneType,
+                                                                     SocialNetworkTokenStatusType)
 from social_network_service.modules.social_network.meetup import Meetup
 from social_network_service.common.error_handling import InternalServerError
+from social_network_service.common.models.user import User
+from social_network_service.common.models.event import Event
+from social_network_service.common.models.venue import Venue
+from social_network_service.common.models.candidate import SocialNetwork
+from social_network_service.common.models.event_organizer import EventOrganizer
 from social_network_service.common.utils.api_utils import get_paginated_list, DEFAULT_PAGE, DEFAULT_PAGE_SIZE
 from social_network_service.social_network_app.restful.v1_data import get_timezones
 from social_network_service.social_network_app.restful.v1_social_networks import is_token_valid

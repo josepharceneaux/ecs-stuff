@@ -4,40 +4,8 @@ and are not broken by any change in this code or any other code.
 """
 # importing test_app to use models
 from .app import test_app
-from ..utils.graphql_utils import get_fields, get_query
 from ..models.venue import Venue
-
-
-def test_get_fields():
-    """
-    This test validates `get_fields()` function.
-    """
-    # Simple scenario
-    fields = get_fields(Venue)
-    expected_fields = ['id', 'social_network_id', 'social_network_venue_id', 'user_id', 'address_line_1',
-                       'address_line_2', 'city', 'state', 'zip_code', 'country', 'longitude', 'latitude']
-    assert fields == expected_fields
-
-    # Get specific fields
-    fields = get_fields(Venue, include=('address_line_1', 'city', 'country'))
-    expected_fields = ['address_line_1', 'city', 'country']
-    assert fields == expected_fields
-
-    # Exclude specific fields and get all except those
-    fields = get_fields(Venue, exclude=('address_line_2', 'zip_code', 'user_id'))
-    expected_fields = ['id', 'social_network_id', 'social_network_venue_id', 'address_line_1',
-                       'city', 'state', 'country', 'longitude', 'latitude']
-    assert fields == expected_fields
-
-    # Get specific fields plus a relationship and it's fields. events in this case
-    fields = get_fields(Venue, include=('address_line_1', 'city', 'country'), relationships=('events',))
-    expected_fields = ['address_line_1', 'city', 'country',
-                       'events', ['social_network_event_id', 'social_network_id', 'user_id', 'organizer_id',
-                                  'venue_id', 'social_network_group_id', 'group_url_name', 'start_datetime',
-                                  'end_datetime', 'registration_instruction', 'max_attendees', 'tickets_id', 'id',
-                                  'title', 'description', 'url', 'cost', 'currency', 'timezone']
-                       ]
-    assert fields == expected_fields
+from ..utils.graphql_utils import get_query, validate_graphql_response
 
 
 def test_get_query():
@@ -62,3 +30,52 @@ def test_get_query():
         'query': '{ events ( per_page : 10, page : 1 ) { title cost start_datetime } }'
     }
     assert query == expected_query
+
+
+def test_validate_graphql_response():
+    fields = Venue.get_fields()
+    response = {
+        "venue": {
+            "id": 1,
+            "social_network_id": 26,
+            "social_network_venue_id": "16733267",
+            "user_id": 266,
+            "address_line_1": "New Muslim Town",
+            "address_line_2": "163 A Block",
+            "city": "Lahore",
+            "state": None,
+            "zip_code": "54000",
+            "country": "Pakistan",
+            "longitude": 74.3133,
+            "latitude": 31.5105
+        }
+    }
+
+    # this should validate this data for given fields
+    validate_graphql_response('venue', response, fields, is_array=False)
+
+    # validate ridiculously nested objects
+    response = {
+        "me": {
+          "id": 266,
+          "domain_id": 1,
+          "events": [
+            {
+              "id": 1,
+              "title": "Test Event",
+              "venue": {
+                "id": 1,
+                "address_line_1": "New Muslim Town",
+                "events": [
+                  {
+                    "id": 1
+                  }
+                ]
+              }
+            }
+          ]
+        }
+    }
+    fields = ['id', 'domain_id', 'events', ['id', 'title', 'venue', ['id', 'address_line_1', 'events', ['id']]]]
+    validate_graphql_response('me', response, fields)
+
