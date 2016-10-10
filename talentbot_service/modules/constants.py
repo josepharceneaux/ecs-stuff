@@ -36,7 +36,7 @@ QUESTIONS = ['how many users are in my domain', 'how many candidates are there w
              'what is the top performing campaign from',
              'how many candidates leads did',
              'what is your name', 'hint', 'help', 'what are your features', 'what can you do',
-             'tell me the number of users in my domain', 'how many users exist in my domain',
+             'users in my domain', 'how many users exist in my domain',
              'how many candidates know', 'candidates who know',
              'number of candidates who has grasp on', 'candidates having skills',
              'tell me the number of candidates who has mastered in skills',
@@ -54,7 +54,7 @@ QUESTIONS = ['how many users are in my domain', 'how many candidates are there w
              'which group do i belong to', 'how many candidates did every user added',
              'how many candidate leads did', 'how many users in my domain',
              'how many candidates in my domain', 'how many users are there in my domain', 'candidates from zip',
-             'top campaigns', 'candidates aeiou added', 'talent pools', 'how many candidates in zipcode',
+             'top campaigns', 'candidates aeiou added', 'talent pools in domain', 'how many candidates in zipcode',
              'candidates in zipcode']
 POSITIVE_MESSAGES = ['hmmmm', 'ok', 'fine', 'whatever', 'yeah', 'ahan', 'so so']
 BEST_QUESTION_MATCH_RATIO = 99

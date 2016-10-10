@@ -91,7 +91,7 @@ class TalentPoolCandidate(db.Model):
                         .filter(or_((cls.added_time >= user_specific_date), (cls.updated_time >= user_specific_date))).\
                         filter(
                         and_(TalentPool.user_id == user.id, TalentPool.name.in_(talent_pool_name))).distinct().count()
-                return 'No user exists in your domain with name "%s"' % user_name
+                return 'No user exists in your domain with name `%s`' % user_name
             if user_name and talent_pool_name is None:
                 users = User.get_by_id(user_id)
                 if users:
@@ -129,7 +129,7 @@ class TalentPoolCandidate(db.Model):
                          extract("year", cls.updated_time) == user_specific_date))). \
                         filter(
                         and_(TalentPool.user_id == user.id, TalentPool.name.in_(talent_pool_name))).distinct().count()
-                return 'No user exists in your domain with name "%s"' % user_name
+                return 'No user exists in your domain with name `%s`' % user_name
             if user_name and talent_pool_name is None:
                 users = User.get_by_id(user_id)
                 if users:
@@ -165,7 +165,7 @@ class TalentPoolCandidate(db.Model):
                     return cls.query.filter(cls.talent_pool_id == TalentPool.id). \
                         filter(
                         and_(TalentPool.user_id == user.id, TalentPool.name.in_(talent_pool_name))).distinct().count()
-                return 'No user exists in your domain with name "%s"' % user_name
+                return 'No user exists in your domain with name `%s`' % user_name
             if user_name and talent_pool_name is None:
                 users = User.get_by_name(user_id, user_name)
                 if users:
@@ -173,7 +173,7 @@ class TalentPoolCandidate(db.Model):
                     return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
                         .filter(TalentPool.user_id == user.id). \
                         distinct().count()
-                return 'No user exists in your domain with name "%s"' % user_name
+                return 'No user exists in your domain with name `%s`' % user_name
             if user_name is None and talent_pool_name:
                 users = User.get_by_id(user_id)
                 if users:

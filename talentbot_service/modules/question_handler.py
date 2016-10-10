@@ -164,7 +164,7 @@ class QuestionHandler(object):
                 if isinstance(user_specific_date, basestring):
                     return user_specific_date
         if not campaign_method:
-            if not campaign_type.lower() in ['all', 'every', 'performing', 'tops']:
+            if not campaign_type.lower() in ['all', 'every', 'performing', 'top']:
                 campaign_list = ['No valid campaign type found, all top campaigns are following:\n']
             else:
                 campaign_list = ['Top Campaigns are following:\n']
@@ -239,6 +239,7 @@ class QuestionHandler(object):
         :param message_tokens: User message tokens
         :rtype: str
         """
+        user_specific_date = None
         talent_index = self.find_word_in_message('talent', message_tokens)
         import_index = self.find_word_in_message('import', message_tokens)
         if not import_index:
@@ -260,7 +261,7 @@ class QuestionHandler(object):
                 spaced_talent_pool_name = None
         user_name = message_tokens[import_index - 1]
         is_asking_about_each_user = self.find_word_in_message('user', message_tokens)
-        if is_asking_about_each_user is not None:
+        if is_asking_about_each_user is not None or user_name.lower() in ['all', 'every', 'each']:
             user_name = None
         else:
             is_asking_about_each_user = self.find_word_in_message('everyone', message_tokens)
@@ -281,8 +282,15 @@ class QuestionHandler(object):
                 user_name = "Everyone totally"
             if not spaced_talent_pool_name:
                 spaced_talent_pool_name = "all"
+            spaced_talent_pool_name = spaced_talent_pool_name.lower().replace(' and ', '` and `')
             response_message = "`%s` added `%d` candidates in `%s` talent pool" % \
                                (user_name, count, spaced_talent_pool_name)
+            if spaced_talent_pool_name in ['all']:
+                response_message = response_message.replace('pool', 'pools')
+            if count == 1:
+                response_message = response_message.replace('candidates', 'candidate')
+            if user_name == 'Everyone totally':
+                response_message = response_message.replace('`Everyone totally`', '`Everyone` totally')
             return response_message
         if is_valid_year == -1:
             return "Please enter a valid year greater than 1900 and smaller than current year."
@@ -300,8 +308,15 @@ class QuestionHandler(object):
                     user_name = "Everyone totally"
                 if not spaced_talent_pool_name:
                     spaced_talent_pool_name = "all"
+                spaced_talent_pool_name = spaced_talent_pool_name.lower().replace(' and ', '` and `')
                 response_message = "`%s` added `%d` candidates in `%s` talent pool" % \
                                    (user_name, count, spaced_talent_pool_name)
+                if user_name == 'Everyone totally':
+                    response_message = response_message.replace('`Everyone totally`', '`Everyone` totally')
+                if spaced_talent_pool_name in ['all']:
+                    response_message = response_message.replace('pool', 'pools')
+                if count == 1:
+                    response_message = response_message.replace('candidates', 'candidate')
                 return response_message
         count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
                                                                 None, user_id)
@@ -311,8 +326,18 @@ class QuestionHandler(object):
             user_name = "Everyone totally"
         if not spaced_talent_pool_name:
             spaced_talent_pool_name = "all"
+        spaced_talent_pool_name = spaced_talent_pool_name.lower().replace(' and ', '` and `')
         response_message = "`%s` added `%d` candidates in `%s` talent pool" % (user_name, count,
                                                                                spaced_talent_pool_name)
+        if user_name == 'Everyone totally':
+            response_message = response_message.replace('`Everyone totally`', '`Everyone` totally')
+        if spaced_talent_pool_name in ['all']:
+            response_message = response_message.replace('pool', 'pools')
+        if count == 1:
+            response_message = response_message.replace('candidates', 'candidate')
+        if not isinstance(user_specific_date, datetime.datetime) and not is_valid_year \
+                and user_specific_date is None and message_tokens[-1].lower() not in ['pool']:
+            response_message = 'No valid time duration found, showing result from all the times\n %s' % response_message
         return response_message
 
     @classmethod
