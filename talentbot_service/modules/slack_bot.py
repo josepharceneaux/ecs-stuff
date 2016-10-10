@@ -45,7 +45,7 @@ class SlackBot(TalentBot):
                 slack_client = SlackClient(slack_user_token)
                 try:
                     if talentbot_auth.bot_id:
-                        at_bot = talentbot_auth.bot_id
+                        at_bot = '<@%s>' % talentbot_auth.bot_id
                     else:
                         at_bot = self.get_bot_id(slack_client)
                         self.set_bot_state_active(talentbot_auth.bot_token)
