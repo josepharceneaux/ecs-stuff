@@ -805,7 +805,6 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
     search_service = _cloud_search_domain_connection()
 
     try:
-        logger.debug("CS_REQUEST: %s", params)
         results = search_service.search(**params)
         logger.debug("CS_REQUEST: %s \n\n CS_RESPONSE: %s", params, results)
     except Exception as ex:
