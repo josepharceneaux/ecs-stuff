@@ -104,11 +104,12 @@ def require_all_permissions(*permission_names):
         @wraps(func)
         def authenticate_permission(*args, **kwargs):
             # For server-to-server Auth roles check should be skipped
-            if not request.oauth_token:
-                return func(*args, **kwargs)
 
             if not permission_names:
                 # Permission list is empty so it means func is not permission protected
+                return func(*args, **kwargs)
+
+            if not request.user:
                 return func(*args, **kwargs)
 
             user_permissions = [permission.name for permission in request.user.role.get_all_permissions_of_role()]
@@ -132,11 +133,12 @@ def require_any_permission(*permission_names):
         @wraps(func)
         def authenticate_permission(*args, **kwargs):
             # For server-to-server Auth roles check should be skipped
-            if not request.oauth_token:
-                return func(*args, **kwargs)
-
+            
             if not permission_names:
                 # Permission list is empty so it means func is not permission protected
+                return func(*args, **kwargs)
+
+            if not request.user:
                 return func(*args, **kwargs)
 
             user_permissions = [permission.name for permission in request.user.role.get_all_permissions_of_role()]
