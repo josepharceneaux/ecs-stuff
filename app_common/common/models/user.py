@@ -210,11 +210,11 @@ class User(db.Model):
         return User.query.filter_by(email=email).first()
 
     @staticmethod
-    def get_users_in_domain(user_id):
+    def get_domain_name_and_its_users(user_id):
         """
         This method returns users in a domain and domain name
         :param int user_id: User Id
-        :return: tuple(list, str) : (User list, domain name)
+        :rtype: tuple[(list, str)]
         """
         domain_name, domain_id = User.query.with_entities(Domain.name, Domain.id).filter(User.domain_id == Domain.id).\
             filter(User.id == user_id).first()
@@ -227,7 +227,7 @@ class User(db.Model):
         This method returns user against a name
         :param str name: User's first or last name
         :param int user_id: User Id
-        :rtype: User
+        :rtype: list
         """
         user = cls.get_by_id(user_id)
         if user:

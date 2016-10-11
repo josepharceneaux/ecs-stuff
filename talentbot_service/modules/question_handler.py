@@ -18,6 +18,7 @@ import datetime
 from dateutil.relativedelta import relativedelta
 import sys
 # Common utils
+from app_common.common.error_handling import NotFoundError
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.candidate import Candidate
 from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate
@@ -81,7 +82,7 @@ class QuestionHandler(object):
         :return: Response message
         :rtype: str
         """
-        users, domain_name = User.get_users_in_domain(user_id)
+        users, domain_name = User.get_domain_name_and_its_users(user_id)
         if not users:
             return None
         candidate_index = cls.find_word_in_message('cand', message_tokens)
@@ -274,8 +275,12 @@ class QuestionHandler(object):
         year = message_tokens[-1]
         is_valid_year = self.is_valid_year(year)
         if is_valid_year is True:
-            count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
-                                                                    year, user_id)
+            talent_pool_list = self.create_list_of_talent_pools(spaced_talent_pool_name)
+            try:
+                count = TalentPoolCandidate.candidates_added_last_month(user_name, talent_pool_list,
+                                                                        year, user_id)
+            except NotFoundError:
+                return 'No user exists in your domain with the name `%s`' % user_name
             if isinstance(count, basestring):
                 return count
             if not user_name:
@@ -300,8 +305,12 @@ class QuestionHandler(object):
                 user_specific_date = self.extract_datetime_from_question(last_index, message_tokens)
                 if isinstance(user_specific_date, basestring):
                     return user_specific_date
-                count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
-                                                                        user_specific_date, user_id)
+                talent_pool_list = self.create_list_of_talent_pools(spaced_talent_pool_name)
+                try:
+                    count = TalentPoolCandidate.candidates_added_last_month(user_name, talent_pool_list,
+                                                                            user_specific_date, user_id)
+                except NotFoundError:
+                    return 'No user exists in your domain with the name `%s`' % user_name
                 if isinstance(count, basestring):
                     return count
                 if not user_name:
@@ -318,8 +327,12 @@ class QuestionHandler(object):
                 if count == 1:
                     response_message = response_message.replace('candidates', 'candidate')
                 return response_message
-        count = TalentPoolCandidate.candidates_added_last_month(user_name, spaced_talent_pool_name,
-                                                                None, user_id)
+        talent_pool_list = self.create_list_of_talent_pools(spaced_talent_pool_name)
+        try:
+            count = TalentPoolCandidate.candidates_added_last_month(user_name, talent_pool_list,
+                                                                    None, user_id)
+        except NotFoundError:
+            return 'No user exists in your domain with the name `%s`' % user_name
         if isinstance(count, basestring):
             return count
         if not user_name:
@@ -369,7 +382,7 @@ class QuestionHandler(object):
         :rtype: str
         """
         talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id)
-        _, domain_name = User.get_users_in_domain(user_id)
+        _, domain_name = User.get_domain_name_and_its_users(user_id)
         if talent_pools:
             talent_pool_names = [talent_pool.name for talent_pool in talent_pools]
             talent_pool_names = cls.create_ordered_list(talent_pool_names)
@@ -382,7 +395,7 @@ class QuestionHandler(object):
     @classmethod
     def question_8_handler(cls, message_tokens, user_id):
         """
-        This method handles question What is my group and what group a user belong to
+        This method handles question What is my group and what group a user belongs to
         :param message_tokens:
         :param int user_id: User Id
         :rtype: str
@@ -459,9 +472,25 @@ class QuestionHandler(object):
         """
         This method creates an ordered list
         :param list _list: List of same string elements
-        :rtype str:
+        :rtype: str
         """
         for list_element in _list:
             ordered_talent_pool_name = "%d- %s" % (_list.index(list_element) + 1, list_element)
             _list[_list.index(list_element)] = ordered_talent_pool_name
         return '\n\n'.join(_list)
+
+    @staticmethod
+    def create_list_of_talent_pools(talent_pool_name):
+        """
+        This method checks if there are more than one talent pool names, and makes a list of them and removes spaces.
+        :param str talent_pool_name:
+        :rtype: list|None
+        """
+        if talent_pool_name:
+            if 'and' in talent_pool_name.lower():
+                talent_pool_name_list = talent_pool_name.split('and')
+            else:
+                talent_pool_name_list = [talent_pool_name]
+            talent_pool_name_list = [name.strip(' ') for name in talent_pool_name_list]
+            return talent_pool_name_list
+        return None

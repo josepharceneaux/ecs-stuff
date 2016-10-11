@@ -16,8 +16,7 @@ from talentbot_service.modules.slack_bot import SlackBot
 from talentbot_service.modules.sms_bot import SmsBot
 from talentbot_service.modules.process_scheduler import ProcessScheduler
 from constants import TWILIO_NUMBER, ERROR_MESSAGE, STANDARD_MSG_LENGTH, QUESTIONS, BOT_NAME, \
-    MAILGUN_SENDING_ENDPOINT, BOT_IMAGE, TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID,  SLACK_AUTH_URI,\
-    SLACK_VERIFICATION_TOKEN
+    MAILGUN_SENDING_ENDPOINT, BOT_IMAGE, TWILIO_AUTH_TOKEN, TWILIO_ACCOUNT_SID,  SLACK_AUTH_URI
 from talentbot_service import app, logger
 # 3rd party imports
 from flask import request
@@ -71,7 +70,7 @@ def listen_slack():
             return 'HTTP_200_OK'
     challenge = request.json.get('challenge')
     if challenge:
-        if request.json.get('token') == SLACK_VERIFICATION_TOKEN:
+        if request.json.get('token') == app.config['SLACK_VERIFICATION_TOKEN']:
             return quote(challenge)
     return 'HTTP_200_OK'
 

@@ -65,7 +65,6 @@ SLACK_AUTH_URI = 'https://slack.com/api/oauth.access'
 CAMPAIGN_TYPES = {'sms': SmsCampaignBlast.top_performing_sms_campaign,
                   'email': EmailCampaignBlast.top_performing_email_campaign,
                   'push': PushCampaignBlast.top_performing_push_campaign}
-SLACK_VERIFICATION_TOKEN = 'WmDnMC7mNyQxZB41mosHf4jQ'
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"
