@@ -16,6 +16,8 @@ parser.add_argument('--define-index-fields', nargs=2,
                     help='Defines index fields in the given CloudSearch domain name and region')
 parser.add_argument('--upload-all-candidate-documents', nargs=2,
                     help='Uploads all Candidate documents to the given CloudSearch domain name and region')
+parser.add_argument('--domain-id', nargs=1,
+                    help='Optional: Domain ID for uploading candidate documents')
 args = parser.parse_args()
 
 app = TalentFlask(__name__)
@@ -50,10 +52,14 @@ if args.upload_all_candidate_documents:
     def upload_all_candidate_documents():
         """
         Upload all the candidates present in system to cloudsearch.
-        :return: total number of candidates uploaded
         """
-        adds = 0
-        domains = Domain.query.with_entities(Domain.id).all()
+
+        if args.domain_id:
+            domains = Domain.filter_by(id=int(args.domain_id)).all()
+        else:
+            domains = Domain.query.with_entities(Domain.id).all()
+
+        print("Reindexing domains: %s" % domains)
         for domain in domains:
             print "Uploading all candidates of domain %s" % domain.id
             upload_candidate_documents_in_domain(domain.id)
