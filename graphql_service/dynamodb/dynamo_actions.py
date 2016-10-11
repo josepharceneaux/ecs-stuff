@@ -31,6 +31,17 @@ class DynamoDB(object):
     }
 
     @classmethod
+    def add_candidate(cls, data):
+        """
+        Will insert new candidate record
+
+        Note: data may include only 5 Python data-types: string, int, long, decimal, and boolean
+        :param data: candidate's dict-data
+        :type data: dict
+        """
+        return cls.candidate_table.put_item(Item=data)
+
+    @classmethod
     def get_candidate(cls, candidate_id):
         """
         will retrieve candidate data from dynamodb and replace all Decimal objects with ints & floats
@@ -43,23 +54,25 @@ class DynamoDB(object):
         return None
 
     @classmethod
+    def update_candidate(cls, candidate_id, attribute, data):
+        """
+        will update an existing candidate's records
+        :type candidate_id: int | long
+        """
+        resp = cls.candidate_table.update_item(
+            Key={'id': candidate_id},
+            UpdateExpression='SET {} = :data'.format(attribute),
+            ExpressionAttributeValues={':data': data['addresses']}
+        )
+        return resp
+
+    @classmethod
     def delete_candidate(cls, candidate_id):
         """
         Will delete all of candidate's records from dynamodb
         :type candidate_id: int | long
         """
         return cls.candidate_table.delete_item(Key={'id': candidate_id})
-
-    @classmethod
-    def add_candidate(cls, data):
-        """
-        Will insert new candidate record
-
-        Note: data may include only 5 Python data-types: string, int, long, decimal, and boolean
-        :param data: candidate's dict-data
-        :type data: dict
-        """
-        return cls.candidate_table.put_item(Item=data)
 
     @classmethod
     def add_item(cls, candidate_id, data):
