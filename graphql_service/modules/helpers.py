@@ -19,7 +19,8 @@ from graphql_service.common.geo_services.geo_coordinates import get_coordinates
 from graphql_service.common.utils.datetime_utils import DatetimeUtils
 
 
-def add_or_edit_candidate_from_params(user_id, primary_data, candidate=None, addresses=None, educations=None,
+def add_or_edit_candidate_from_params(user_id, primary_data, is_editing=False,
+                                      retrieved_candidate=None, addresses=None, educations=None,
                                       emails=None, phones=None, areas_of_interest=None,
                                       candidate_custom_fields=None, experiences=None, military_services=None,
                                       preferred_locations=None, references=None, skills=None, social_networks=None,
@@ -40,7 +41,9 @@ def add_or_edit_candidate_from_params(user_id, primary_data, candidate=None, add
     # Addresses
     if addresses:
         # existing_addresses = candidate.get('addresses')
-        validated_addresses_data = _add_or_edit_addresses('', addresses, added_datetime)
+        existing_addresses = retrieved_candidate.get('addresses') if retrieved_candidate else None
+        validated_addresses_data = _add_or_edit_addresses(addresses=addresses,
+                                                          added_datetime=added_datetime)
         candidate_data['addresses'] = validated_addresses_data
 
     # Custom Fields
@@ -140,7 +143,7 @@ def add_or_edit_candidate_from_params(user_id, primary_data, candidate=None, add
 #     # TODO: Prevent duplicate insertions
 
 
-def _add_or_edit_addresses(existing_addresses, addresses, added_datetime):
+def _add_or_edit_addresses(addresses, added_datetime, existing_addresses=None, is_editing=False):
     # Aggregate formatted & validated address data
     validated_addresses_data = []
 
@@ -153,6 +156,8 @@ def _add_or_edit_addresses(existing_addresses, addresses, added_datetime):
         iso3166_subdivision = address.get('iso3166_subdivision')
 
         address_dict = dict(
+            address_line_1=address.get('address_line_1'),
+            address_line_2=address.get('address_line_2'),
             added_datetime=added_datetime,
             zip_code=zip_code,
             city=city,
@@ -162,6 +167,9 @@ def _add_or_edit_addresses(existing_addresses, addresses, added_datetime):
             is_default=i == 0 if not addresses_have_default else address.get('is_default'),
             coordinates=get_coordinates(zipcode=zip_code, city=city, state=iso3166_subdivision)
         )
+
+        # Remove empty data from address dict
+        address_dict = purge_dict(address_dict)
 
         # TODO: Prevent duplicate insertions
 
