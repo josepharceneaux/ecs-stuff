@@ -21,11 +21,11 @@ def test_candidate_added(user_first, talent_pool, candidate_first):
     """
     user_name = User.filter_by_keywords(id=user_first.get("id"))[0].first_name = "test"
     # Tests if number of candidates added by user with the same added time
-    count = TalentPoolCandidate.candidates_added_last_month(user_name, talent_pool["name"],
+    count = TalentPoolCandidate.candidates_added_last_month(user_name, [talent_pool["name"]],
                                                             talent_pool["added_time"], user_first["id"])
     assert count == 1
     # Tests without specifying time
-    count = TalentPoolCandidate.candidates_added_last_month(user_name, talent_pool["name"],
+    count = TalentPoolCandidate.candidates_added_last_month(user_name, [talent_pool["name"]],
                                                             None, user_first["id"])
     assert count == 1
     # Tests with 3 months earlier added ad updated time
@@ -33,10 +33,10 @@ def test_candidate_added(user_first, talent_pool, candidate_first):
     talent_pool["added_time"] = changed_date
     talent_pool["updated_time"] = changed_date
     current_datetime = datetime.datetime.utcnow()
-    count = TalentPoolCandidate.candidates_added_last_month(user_name, talent_pool["name"],
+    count = TalentPoolCandidate.candidates_added_last_month(user_name, [talent_pool["name"]],
                                                             current_datetime, user_first["id"])
     assert count == 0
     # Tests without specifying time
-    count = TalentPoolCandidate.candidates_added_last_month(user_name, talent_pool["name"],
+    count = TalentPoolCandidate.candidates_added_last_month(user_name, [talent_pool["name"]],
                                                             None, user_first["id"])
     assert count == 1

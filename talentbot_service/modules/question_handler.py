@@ -86,7 +86,7 @@ class QuestionHandler(object):
         try:
             users, domain_name = User.get_domain_name_and_its_users(user_id)
         except AssertionError as error:
-            logger.error(error.message)
+            logger.error("Error occurred while getting user domain in 0 handler: %s" % error.message)
             return None
         if not users:
             return None
@@ -287,7 +287,7 @@ class QuestionHandler(object):
             except NotFoundError:
                 return 'No user exists in your domain with the name `%s`' % user_name
             except AssertionError as error:
-                logger.error(error.message)
+                logger.error("Error occurred while getting number of imports : %s" % error.message)
                 return None
             if isinstance(count, basestring):
                 return count
@@ -320,7 +320,7 @@ class QuestionHandler(object):
                 except NotFoundError:
                     return 'No user exists in your domain with the name `%s`' % user_name
                 except AssertionError as error:
-                    logger.error(error.message)
+                    logger.error("Error occurred while getting number of imports: %s" % error.message)
                     return None
                 if isinstance(count, basestring):
                     return count
@@ -345,7 +345,7 @@ class QuestionHandler(object):
         except NotFoundError:
             return 'No user exists in your domain with the name `%s`' % user_name
         except AssertionError as error:
-            logger.error(error.message)
+            logger.error("Error occurred while getting number of imports: %s" % error.message)
             return None
         if isinstance(count, basestring):
             return count
@@ -398,12 +398,12 @@ class QuestionHandler(object):
         try:
             talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id)
         except AssertionError as error:
-            logger.error(error.message)
+            logger.error("Error occurred while talent pools: %s" % error.message)
             return None
         try:
             _, domain_name = User.get_domain_name_and_its_users(user_id)
         except AssertionError as error:
-            logger.error(error.message)
+            logger.error("Error occurred while talent pools: %s" % error.message)
             return None
         if talent_pools:
             talent_pool_names = [talent_pool.name for talent_pool in talent_pools]
@@ -425,8 +425,8 @@ class QuestionHandler(object):
         belong_index = cls.find_word_in_message('belong', message_tokens)
         if belong_index is None:
             belong_index = cls.find_word_in_message('part', message_tokens)
-        is_user_asking_about_himslef = cls.find_exact_word_in_message('i', message_tokens)
-        if belong_index is not None and is_user_asking_about_himslef is None:
+        is_user_asking_about_himself = cls.find_exact_word_in_message('i', message_tokens)
+        if belong_index is not None and is_user_asking_about_himself is None:
             user_name = message_tokens[belong_index - 1]
             users = User.get_by_name(user_id, user_name)
             if users:
