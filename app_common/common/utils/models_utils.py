@@ -161,7 +161,7 @@ def get_fields(cls, include=None, exclude=None, relationships=None):
     This functions receives db Model and return columns/fields name list. One can get specific fields
     by using `include` kwarg or he can exclude specific field using `exclude` kwarg.
     :param type(t) cls: SqlAlchemy model class, e.g. Event, User
-    :param list | tuple | None include: while fields to include, None for all
+    :param list | tuple | None include: which fields to include, None for all fields
     :param list | tuple | None exclude: which fields to exclude, None for no exclusion
     :param list | tuple | None relationships: list of relationships that you want to add in fields like
     event_organizer for Event fields.
