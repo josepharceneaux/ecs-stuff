@@ -60,18 +60,10 @@ EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS = [{'from': fake.safe_email()}, {'from': fake
                                          datetime.datetime.utcnow() + datetime.timedelta(minutes=20)),
                                        'end_datetime': DatetimeUtils.to_utc_str(datetime.datetime.utcnow()
                                                                                 + datetime.timedelta(minutes=40))}]
-
-EMAIL_CAMPAIGN_INVALID_FIELDS = ['?page=%s' % fake.random_int(-99, 0), '?per_page=%s' % fake.random_int(51,),
-                                 '?sort_type=ASER', '?sort_type=DSCEE', '?sort_by=id']
-EMAIL_CAMPAIGN_EXCEPT_SINGLE_FIELD = ['?page=1&sort_type=ASC&?sort_by=name', '?per_page=2&sort_type=ASC&?sort_by=name',
-                                      '?page=1&per_page=2&?sort_by=name']
-CREATE_EMAIL_CAMPAIGN_OPTIONAL_FIELDS = ['from', 'reply_to', 'body_text', 'description', 'start_datetime',
-                                         'end_datetime']
 EMAIL_TEMPLATE_INVALID_DATA_TYPES = [{'name': fake.random_number(), 'is_immutable': 1},
                                      {'name': fake.word(), 'is_immutable': fake.random_int(2,)},
                                      {'name': fake.word(), 'is_immutable': fake.word()}, {'name': fake.word(),
                                      'is_immutable': ON, 'parent_id': fake.word()}]
-UPDATE_WITH_INVALID_DATA = [fake.word(), fake.random_number(2)]
 
 
 class EmailCampaignTypes(object):

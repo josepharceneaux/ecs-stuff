@@ -21,6 +21,9 @@ from random import randint
 from datetime import datetime, timedelta
 
 # Application Specific
+from app_common.common.utils.test_utils import (PAGINATION_INVALID_FIELDS,
+                                                PAGINATION_EXCEPT_SINGLE_FIELD)
+from email_campaign_service.tests.modules.__init__ import CREATE_EMAIL_CAMPAIGN_OPTIONAL_FIELDS
 from email_campaign_service.common.models.db import db
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.tests.conftest import fake, uuid
@@ -41,14 +44,9 @@ from email_campaign_service.tests.modules.handy_functions import (assert_valid_c
                                                                   create_email_campaign_via_api,
                                                                   create_data_for_campaign_creation,
                                                                   create_email_campaign_smartlists,
-
                                                                   create_email_campaign,
                                                                   EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS,
-                                                                  EMAIL_CAMPAIGN_INVALID_FIELDS,
-                                                                  EMAIL_CAMPAIGN_EXCEPT_SINGLE_FIELD,
                                                                   create_data_for_campaign_creation_with_all_parameters,
-                                                                  CREATE_EMAIL_CAMPAIGN_OPTIONAL_FIELDS,
-                                                                  UPDATE_WITH_INVALID_DATA,
                                                                   assert_and_delete_email,
                                                                   send_campaign_with_client_id, get_mail_connection,
                                                                   fetch_emails)
@@ -219,14 +217,14 @@ class TestGetCampaigns(object):
         assert response.status_code == requests.codes.BAD
         assert str(MAX_PAGE_SIZE) in response.json()['error']['message']
 
-    @pytest.mark.qaff
+    @pytest.mark.qa
     def test_get_campaign_with_invalid_field_one_by_one(self, headers):
         """
          This test is make sure that data is not retrieved with invalid fields and also
          assure us of all possible checks are handled for every field. That's why the
          test is executed with one by one invalid field.
         """
-        for param in EMAIL_CAMPAIGN_INVALID_FIELDS:
+        for param in PAGINATION_INVALID_FIELDS:
             response = requests.get(url=EmailCampaignApiUrl.CAMPAIGN % param, headers=headers)
             assert response.status_code == requests.codes.BAD_REQUEST
 
@@ -263,7 +261,9 @@ class TestGetCampaigns(object):
         This test certify that data of campaign is retrieved with url having all fields except single field.
         Should return 200 ok status.
         """
-        for param in EMAIL_CAMPAIGN_EXCEPT_SINGLE_FIELD:
+        for param in PAGINATION_EXCEPT_SINGLE_FIELD:
+            # sort_by name is for email campaign pagination
+            param % 'name'
             response = requests.get(url=EmailCampaignApiUrl.CAMPAIGN % param, headers=headers)
             assert response.status_code == requests.codes.OK
 
@@ -497,7 +497,8 @@ class TestCreateCampaign(object):
          possible, only valid data is acceptable. Should return 400 bad request on invalid data.
         """
         campaign_id = email_campaign_of_user_first.id
-        for param in UPDATE_WITH_INVALID_DATA:
+        update_with_invalid_data = [fake.word(), fake.random_number(2)]
+        for param in update_with_invalid_data:
             data = {'is_hidden': param}
             response = send_request('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id, access_token_first, data)
             CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.BAD_REQUEST)
