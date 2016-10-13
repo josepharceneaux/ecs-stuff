@@ -223,8 +223,8 @@ class TestScheduleCampaignUsingPOST(object):
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         campaign_id = campaign_in_db['id']
         # Schedule a campaign with deleted smarlist. API will raise 400 error.
-        CampaignsTestsHelpers.send_request_with_deleted_smartlist('post', URL % campaign_id, token_first, data,
-                                                                  smartlist_first['id'])
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist('post', URL % campaign_id, token_first,
+                                                                  smartlist_first['id'], data)
 
 
 class TestRescheduleCampaignUsingPUT(object):
@@ -405,8 +405,8 @@ class TestRescheduleCampaignUsingPUT(object):
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         campaign_id = campaign_in_db['id']
         # Reschedule a campaign with deleted smarlist. API will raise 400 error.
-        CampaignsTestsHelpers.send_request_with_deleted_smartlist('put', URL % campaign_id, token_first, data,
-                                                                  smartlist_first['id'])
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist('put', URL % campaign_id, token_first,
+                                                                  smartlist_first['id'], data)
 
 
 class TestUnscheduleCamapignUsingDELETE(object):
