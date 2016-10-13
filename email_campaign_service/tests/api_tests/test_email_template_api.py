@@ -3,11 +3,10 @@
 # Standard Library
 import json
 import datetime
-import pytest
 # Third Party
 import requests
 from requests import codes
-
+import pytest
 # Application Specific
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.email_campaign import UserEmailTemplate
@@ -59,7 +58,7 @@ class TestEmailTemplateFolders(object):
     def test_create_email_template_folder_with_same_name(self, headers, create_email_template_folder):
         """
         This test make sure that email template folder is not created with same
-        name which already exist.Should return 400 bad request.
+        name which already exist. Should return 400 bad request.
         """
         # Get Template Folder Id
         template_folder_id, template_folder_name = create_email_template_folder
@@ -67,7 +66,7 @@ class TestEmailTemplateFolders(object):
                 'is_immutable': 1}
         response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
                                  headers=headers)
-        CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.bad_request)
+        CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.BAD_REQUEST)
 
     @pytest.mark.qa
     def test_create_email_template_folder_with_invalid_data_type(self, headers):
@@ -76,42 +75,37 @@ class TestEmailTemplateFolders(object):
         Should return 400 bad request.
         """
         for param in EMAIL_TEMPLATE_INVALID_DATA_TYPES:
-            data = param
-            response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
+            response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(param),
                                      headers=headers)
-            CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.bad_request)
+            CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.BAD_REQUEST)
 
     @pytest.mark.qa
     def test_create_email_template_folder_with_non_existing_parent_id(self, headers):
         """
         This test is to  certify that email template folder can't be created by using
-        parent_id which doesn't exist.Should return 400 bad request.
+        parent_id which doesn't exist. Should return 400 bad request.
         """
-        parent_id = CampaignsTestsHelpers.get_non_existing_id(EmailTemplateFolder)
-        data = {'name': fake.word(), 'is_immutable': 1, 'parent_id': parent_id}
+        non_existing_parent_id = CampaignsTestsHelpers.get_non_existing_id(EmailTemplateFolder)
+        data = {'name': fake.word(), 'is_immutable': 1, 'parent_id': non_existing_parent_id}
         response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
                                  headers=headers)
-        CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.not_found)
+        CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.NOT_FOUND)
 
     @pytest.mark.qa
     def test_create_email_template_folder_with_deleted_parent_id(self, headers, create_email_template_folder):
         """
         This test is to  assure that email template folder can't be created through
-        parent_id of the folder which is deleted.Should return 400 bad request.
-
-
+        parent_id of the folder which is deleted. Should return 400 bad request.
         """
         template_folder_id, template_folder_name = create_email_template_folder
         assert_and_delete_template_folder(template_folder_id, headers)
 
     @pytest.mark.qa
-    def test_create_email_template_folder_with_parent_id_other_domain(self,create_email_template_folder,
+    def test_create_email_template_folder_with_parent_id_other_domain(self, create_email_template_folder,
                                                                       access_token_other):
         """
         This test is to  assure that email template folder can't be created through
-        parent_id of the other domain folder.Should return 400 bad request.
-
-
+        parent_id of the other domain folder. Should return 400 bad request.
         """
         template_folder_id, template_folder_name = create_email_template_folder
         data = {'name': fake.sentence(), 'is_immutable': 1, 'parent_id': template_folder_id}

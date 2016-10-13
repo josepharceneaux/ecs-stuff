@@ -582,7 +582,6 @@ def assert_valid_template_folder(template_folder_dict, domain_id, expected_name)
     assert 'parent_id' in template_folder_dict
 
 
-
 def create_data_for_campaign_creation_with_all_parameters(access_token, talent_pipeline, subject,
                                                           campaign_name=fake.name(), assert_candidates=True):
     """
@@ -623,9 +622,9 @@ def create_data_for_campaign_creation_with_all_parameters(access_token, talent_p
 def assert_and_delete_template_folder(template_folder_id, headers, data=None):
     """
 
-    :param template_folder_id: folder which you delete
-    :param data:
-    :param headers:
+    :param template_folder_id: Contain id of folder which you want to delete.
+    :param data: Contain multiple folder id's to delete more than one folder.
+    :param headers: Contain access token and authentication.
     :return:
     """
 

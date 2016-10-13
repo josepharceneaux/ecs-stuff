@@ -219,16 +219,15 @@ class TestGetCampaigns(object):
         assert response.status_code == requests.codes.BAD
         assert str(MAX_PAGE_SIZE) in response.json()['error']['message']
 
-    @pytest.mark.qa
-    def test_get_campaign_with_invalid_field_one_by_one(self, access_token_first):
+    @pytest.mark.qaff
+    def test_get_campaign_with_invalid_field_one_by_one(self, headers):
         """
          This test is make sure that data is not retrieved with invalid fields and also
          assure us of all possible checks are handled for every field. That's why the
          test is executed with one by one invalid field.
         """
         for param in EMAIL_CAMPAIGN_INVALID_FIELDS:
-            response = requests.get(url=EmailCampaignApiUrl.CAMPAIGN % param,
-                                    headers={'Authorization': 'Bearer %s' % access_token_first})
+            response = requests.get(url=EmailCampaignApiUrl.CAMPAIGN % param, headers=headers)
             assert response.status_code == requests.codes.BAD_REQUEST
 
     @pytest.mark.qa
@@ -236,7 +235,7 @@ class TestGetCampaigns(object):
 
         """
         This test to is to make sure the GET endpoint get_all_email_campaigns
-        is retrieving all campaigns in descending order'
+        is retrieving all campaigns in descending order according of added_datetime'
         """
         # Test GET api of email campaign
         create_email_campaign(user_first)
@@ -246,12 +245,10 @@ class TestGetCampaigns(object):
         assert email_campaigns[0]['added_datetime'] > email_campaigns[1]['added_datetime']
 
     @pytest.mark.qa
-    def test_get_all_campaigns_in_asc(self, user_first,
-                                      user_same_domain,
-                                      access_token_first):
+    def test_get_all_campaigns_in_asc(self, user_first, user_same_domain, access_token_first):
         """
         This test to is to make sure the GET endpoint get_all_email_campaigns
-        is retrieving all campaigns in descending order'
+        is retrieving all campaigns in ascending order according of added_datetime'
         """
         # Test GET api of email campaign
         create_email_campaign(user_first)
@@ -261,13 +258,13 @@ class TestGetCampaigns(object):
         assert email_campaigns[0]['added_datetime'] < email_campaigns[1]['added_datetime']
 
     @pytest.mark.qa
-    def test_get_campaign_except_single_field(self, access_token_first):
+    def test_get_campaign_except_single_field(self, headers):
         """
-        This test certify that data of campaign is retrieved  except single field.
+        This test certify that data of campaign is retrieved with url having all fields except single field.
+        Should return 200 ok status.
         """
         for param in EMAIL_CAMPAIGN_EXCEPT_SINGLE_FIELD:
-            response = requests.get(url=EmailCampaignApiUrl.CAMPAIGN % param,
-                                    headers={'Authorization': 'Bearer %s' % access_token_first})
+            response = requests.get(url=EmailCampaignApiUrl.CAMPAIGN % param, headers=headers)
             assert response.status_code == requests.codes.OK
 
 
@@ -422,8 +419,7 @@ class TestCreateCampaign(object):
         Here we try to create an email-campaign with invalid email-client-id. It should
         result in invalid usage error.
         """
-        subject = \
-            uuid.uuid4().__str__()[0:8] + '-test_with_invalid_email_client_id'
+        subject = uuid.uuid4().__str__()[0:8] + '-test_with_invalid_email_client_id'
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject, assert_candidates=False)
         campaign_data['email_client_id'] = CampaignsTestsHelpers.get_non_existing_id(EmailClient)
@@ -449,10 +445,10 @@ class TestCreateCampaign(object):
     @pytest.mark.qa
     def test_create_email_campaign_with_optional_parameters(self, access_token_first, talent_pipeline):
         """
-        The test is to examine,the valid data provided to create an email-campaign with optional.
+        The test is to examine that the email-campaign is created with optional parameter or not.
         It should get OK response.
         """
-        subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign'
+        subject = '%s-test_create_email_campaign_with_optional_parameters' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject)
         for param in EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS:
@@ -466,10 +462,10 @@ class TestCreateCampaign(object):
     @pytest.mark.qa
     def test_create_email_campaign_except_single_parameter(self, access_token_first, talent_pipeline):
         """
-                Here we provide valid data to create an email-campaign with optional.
-                It should get OK response.
+        Here we provide valid data to create an email-campaign with all parameter except single parameter.
+        It should get OK response.
         """
-        subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign'
+        subject = '%s-test_create_email_campaign_except_single_parameter' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation_with_all_parameters(access_token_first, talent_pipeline,
                                                                               subject)
         for param in CREATE_EMAIL_CAMPAIGN_OPTIONAL_FIELDS:
@@ -481,42 +477,30 @@ class TestCreateCampaign(object):
             assert resp_object['campaign']['id']
 
     @pytest.mark.qa
-    def test_update_email_campaign_with_allowed_parameter(self, access_token_first,
-                                                          email_campaign_of_user_first):
+    def test_update_email_campaign_with_allowed_parameter(self, access_token_first, email_campaign_of_user_first):
         """
          The test is to make sure that email campaign update functionality with allowed parameters/fields
-         is working properly or not.Should return 200 status ok.
-
-        :param access_token_first:
-        :param email_campaign_of_user_first:
-        :return:
+         is working properly or not. Should return 200 status ok.
         """
-
         campaign_id = email_campaign_of_user_first.id
-        data = {'is_hidden': 1}
-        CampaignsTestsHelpers.request_for_ok_response('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id,
-                                                      access_token_first, data)
-        email_campaign = get_campaign_or_campaigns(
-            access_token_first, campaign_id=campaign_id)
-        assert email_campaign['is_hidden']
+        for param in [True, 1, False, 0]:
+            data = {'is_hidden': param}
+            CampaignsTestsHelpers.request_for_ok_response('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id,
+                                                          access_token_first, data)
+            email_campaign = get_campaign_or_campaigns(access_token_first, campaign_id=campaign_id)
+            assert email_campaign['is_hidden'] == param
 
     @pytest.mark.qa
-    def test_update_email_campaign_with_invalid_data(self, access_token_first,
-                                                     email_campaign_of_user_first):
+    def test_update_email_campaign_with_invalid_data(self, access_token_first, email_campaign_of_user_first):
         """
          This test to make sure that update email campaign with invalid data is not
-         possible, only valid data is acceptable.Should return 400 bad request on invalid data.
-
-        :param access_token_first:
-        :param email_campaign_of_user_first:
-        :return:
+         possible, only valid data is acceptable. Should return 400 bad request on invalid data.
         """
-
         campaign_id = email_campaign_of_user_first.id
         for param in UPDATE_WITH_INVALID_DATA:
             data = {'is_hidden': param}
             response = send_request('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id, access_token_first, data)
-            CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.bad_request)
+            CampaignsTestsHelpers.assert_non_ok_response(response, expected_status_code=requests.codes.BAD_REQUEST)
 
 
 class TestSendCampaign(object):
@@ -769,7 +753,7 @@ class TestSendCampaign(object):
         assert_campaign_send(response, campaign, user_first, expected_count=1)
 
 
-# Test for health check
+# Test for healthcheck
 def test_health_check():
     response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK)
     assert response.status_code == requests.codes.OK
@@ -827,13 +811,10 @@ def test_test_email_with_invalid_fields(access_token_first):
                           ('from', ('', 0, True, None, {}, [])),
                           ('body_html', ('', 0, True, None, {}, [])),
                           ('email_address_list', ('', 0, True, None, {}, [], ['test@gmail.com', 'test@gmail.com'],
-                                      ['test%s@gmail.com' % index for index in xrange(11)]))]
+                                                  ['test%s@gmail.com' % index for index in xrange(11)]))]
     for key, values in invalid_key_values:
         for value in values:
             data = test_mail_data.copy()
             data[key] = value
             response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
             assert response.status_code == requests.codes.BAD_REQUEST
-
-
-
