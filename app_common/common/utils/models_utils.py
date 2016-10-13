@@ -170,18 +170,17 @@ def get_fields(cls, include=None, exclude=None, relationships=None):
 
         ..Example:
             >>> from app_common.common.models.event import Event
-            >>> model = Event
-            >>> get_fields(Event)
+            >>> Event.get_fields()
                 ['title', 'currency', 'description', 'endDatetime', 'groupUrlName', 'id', 'maxAttendees', 'organizerId',
                 'registrationInstruction', 'socialNetworkEventId', 'socialNetworkGroupId', 'socialNetworkId',
                 'startDatetime', 'ticketsId', 'timezone', 'title', 'url', 'userId', 'venueId']
-            >>> get_fields(Event, include=('title', 'cost'))
+            >>> Event.get_fields(include=('title', 'cost'))
                 ['title, 'cost']
-            >>> get_fields(Event, exclude=('title', 'cost'))
+            >>> Event.get_fields(exclude=('title', 'cost'))
                 ['currency', 'description', 'endDatetime', 'groupUrlName', 'id', 'maxAttendees', 'organizerId',
                 'registrationInstruction', 'socialNetworkEventId', 'socialNetworkGroupId', 'socialNetworkId',
                 'startDatetime', 'ticketsId', 'timezone', 'url', 'userId', 'venueId']
-            >>> get_fields(Event, relationships=('event_organizer',))
+            >>> Event.get_fields(relationships=('event_organizer',))
                 ['cost', 'currency', 'description', 'endDatetime', 'eventOrganizer',
                 ['about', 'email', 'event', 'id', 'name', 'socialNetworkId', 'socialNetworkOrganizerId', 'user',
                 'userId'], 'groupUrlName', 'id', 'maxAttendees', 'organizerId', 'registrationInstruction',

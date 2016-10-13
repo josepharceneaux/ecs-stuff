@@ -59,8 +59,7 @@ def get_query(key, fields, args=None, return_str=False):
     if args:
         for k, v in args.iteritems():
             args_list.append('%s : %s' % (k, str(v) if str(v).isdigit() else '\"%s\"' % v))
-    fields = map(lambda field: '{ %s }' % ' '.join(field) if isinstance(field, list) else field,
-                 enumerate(fields))
+    fields = map(lambda field: '{ %s }' % ' '.join(field) if isinstance(field, list) else field, fields)
     query = query % (
         key,
         '( %s )' % ', '.join(args_list) if args_list else '',
