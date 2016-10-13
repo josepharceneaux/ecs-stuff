@@ -69,6 +69,34 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False, allow_candid
     return auth_wrapper
 
 
+def require_jwt_oauth(allow_null_user=False, allow_candidate=False):
+    """
+    This method will verify Authorization header of request using JWT based Authorization and
+    will set request.user, request.oauth_token and request.secret_key_id
+    :param allow_null_user: Is user necessary for Authorization or not ?
+    :param allow_candidate: Allow Candidate Id in JWT payload
+    """
+
+    def auth_wrapper(func):
+        @wraps(func)
+        def authenticate(*args, **kwargs):
+
+            try:
+                secret_key_id = request.headers['X-Talent-Secret-Key-ID']
+                json_web_token = request.headers['Authorization'].replace('Bearer', '').strip()
+            except KeyError:
+                raise UnauthorizedError("`X-Talent-Secret-Key-ID` or `Authorization` Header is missing")
+
+            User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
+            request.oauth_token = json_web_token
+            request.secret_key_id = secret_key_id
+            return func(*args, **kwargs)
+
+        return authenticate
+
+    return auth_wrapper
+
+
 def require_all_permissions(*permission_names):
     """ This method ensures that user should have all permissions given in permission list"""
 
@@ -76,15 +104,15 @@ def require_all_permissions(*permission_names):
         @wraps(func)
         def authenticate_permission(*args, **kwargs):
             # For server-to-server Auth roles check should be skipped
-            if not request.oauth_token:
-                return func(*args, **kwargs)
+
             if not permission_names:
                 # Permission list is empty so it means func is not permission protected
                 return func(*args, **kwargs)
-            if request.user.role:
-                user_permissions = [permission.name for permission in request.user.role.get_all_permissions_of_role()]
-            else:
-                user_permissions = []
+
+            if not request.user:
+                return func(*args, **kwargs)
+
+            user_permissions = [permission.name for permission in request.user.role.get_all_permissions_of_role()]
             for permission_name in permission_names:
                 if permission_name not in user_permissions:
                     raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
@@ -105,15 +133,15 @@ def require_any_permission(*permission_names):
         @wraps(func)
         def authenticate_permission(*args, **kwargs):
             # For server-to-server Auth roles check should be skipped
-            if not request.oauth_token:
-                return func(*args, **kwargs)
+
             if not permission_names:
                 # Permission list is empty so it means func is not permission protected
                 return func(*args, **kwargs)
-            if request.user.role:
-                user_permissions = [permission.name for permission in request.user.role.get_all_permissions_of_role()]
-            else:
-                user_permissions = []
+
+            if not request.user:
+                return func(*args, **kwargs)
+
+            user_permissions = [permission.name for permission in request.user.role.get_all_permissions_of_role()]
 
             authenticated_permissions = []
             for permission_name in permission_names:

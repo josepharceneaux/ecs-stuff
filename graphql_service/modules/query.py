@@ -23,7 +23,7 @@ from graphql_service.dynamodb.dynamo_actions import DynamoDB
 class CandidateQuery(graphene.ObjectType):
     candidate = graphene.Field(
         type=CandidateType,
-        id=graphene.String()
+        id=graphene.Int()
     )
 
     # @require_oauth()
@@ -42,4 +42,4 @@ class CandidateQuery(graphene.ObjectType):
         # get_candidate_if_validated(user=request.user, candidate_id=candidate_id)
 
         # Retrieve candidate from DynamoDB
-        return DynamoDB.get_candidate(int(candidate_id))
+        return DynamoDB.get_candidate(candidate_id)

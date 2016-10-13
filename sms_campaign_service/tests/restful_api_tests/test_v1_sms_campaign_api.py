@@ -288,7 +288,7 @@ class TestSmsCampaignHTTPPost(object):
         """
         smartlist_id = campaign_valid_data['smartlist_ids'][0]
         CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL, access_token_first,
-                                                                  campaign_valid_data, smartlist_id)
+                                                                  smartlist_id, campaign_valid_data)
 
     def test_campaign_creation_with_other_user_of_same_domain(self, user_same_domain, headers_same_domain,
                                                               campaign_valid_data):

@@ -330,7 +330,7 @@ class CandidateType(graphene.ObjectType):
     last_name = graphene.String()
     formatted_name = graphene.String()
     user_id = graphene.Int()
-    filename = graphene.String()
+    resume_url = graphene.String()
     objective = graphene.String()
     summary = graphene.String()
     total_months_experience = graphene.Int()
@@ -356,8 +356,8 @@ class CandidateType(graphene.ObjectType):
     def resolve_user_id(self, args, context, info):
         return self.get('user_id')
 
-    def resolve_filename(self, args, context, info):
-        return self.get('filename')
+    def resolve_resume_url(self, args, context, info):
+        return self.get('resume_url')
 
     def resolve_objective(self, args, context, info):
         return self.get('objective')
