@@ -436,7 +436,7 @@ class EmailTemplateFolder(db.Model):
 class EmailClientCredentials(db.Model):
     __tablename__ = 'email_client_credentials'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('user_id', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
+    user_id = db.Column('user_id', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     host = db.Column('host', db.String(50), nullable=False)
     port = db.Column('port', db.String(5))
     name = db.Column('name', db.String(20), nullable=False)
@@ -507,8 +507,9 @@ class EmailClientCredentials(db.Model):
 class EmailConversations(db.Model):
     __tablename__ = 'email_conversations'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column('user_id', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
-    candidate_id = db.Column('candidate_id', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
+    user_id = db.Column('user_id', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
+    candidate_id = db.Column('candidate_id', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'),
+                             nullable=False)
     mailbox = db.Column('mailbox', db.String(10), nullable=False)
     subject = db.Column('subject', db.String(100), nullable=False)
     body = db.Column('body', db.String(1000), nullable=False)
