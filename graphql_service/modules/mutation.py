@@ -4,11 +4,12 @@ import graphene
 from graphql_service.common.models.db import db
 from graphql_service.common.models.user import Domain
 from graphql_service.common.models.candidate import Candidate
+from graphql_service.common.utils.candidate_utils import get_candidate_if_validated
 from schema import CandidateType
 
 from flask import request
 
-from helpers import add_or_edit_candidate_from_params
+from talent_candidates import add_or_edit_candidate_from_params
 
 from graphql_service.dynamodb.dynamo_actions import DynamoDB, set_empty_strings_to_null
 
@@ -341,8 +342,6 @@ class UpdateCandidate(graphene.Mutation):
             resume_url=args.get('resume_url'),
             objective=args.get('objective'),
             summary=args.get('summary'),
-            added_datetime=args.get('added_datetime'),
-            updated_datetime=args.get('updated_datetime'),
             candidate_status_id=args.get('status_id'),
             source_id=args.get('source_id'),
             culture_id=args.get('culture_id')
@@ -350,9 +349,9 @@ class UpdateCandidate(graphene.Mutation):
         # todo: add validation: does candidate exits? Is candidate hidden?, etc.
         # Retrieve candidate
         candidate_id = args.get('id')
-        candidate = Candidate.get(candidate_id)
-        if candidate:
-            pass
+
+        # TODO: uncomment function once user object is available
+        # get_candidate_if_validated(user, candidate_id)
 
         addresses = args.get('addresses')
         areas_of_interest = args.get('areas_of_interest')
@@ -376,8 +375,8 @@ class UpdateCandidate(graphene.Mutation):
             retrieved_candidate = DynamoDB.get_candidate(candidate_id)
 
             candidates_validated_data = add_or_edit_candidate_from_params(
-                user_id=19,
-                is_editing=True,
+                user_id=19,  # TODO: user ID to be set via request.user once authentication has been set
+                is_updating=True,
                 retrieved_candidate=retrieved_candidate,
                 primary_data=candidate_data,
                 areas_of_interest=areas_of_interest,
@@ -394,6 +393,7 @@ class UpdateCandidate(graphene.Mutation):
                 skills=skills,
                 social_networks=social_networks,
                 tags=tags,
+                updated_datetime=DatetimeUtils.to_utc_str(datetime.datetime.utcnow())
                 # work_preference=work_preference
             )
         except Exception as e:
@@ -405,9 +405,9 @@ class UpdateCandidate(graphene.Mutation):
         # Commit transaction
         db.session.commit()
 
-        DynamoDB.update_candidate(candidate_id=candidate_id,
-                                  attribute='addresses',
-                                  data=set_empty_strings_to_null(candidates_validated_data))
+        DynamoDB.update_candidate(
+            candidate_id=candidate_id,
+            candidate_data=set_empty_strings_to_null(candidates_validated_data))
 
         return UpdateCandidate(candidate=CandidateType(**candidate_data),
                                ok=ok,
