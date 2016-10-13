@@ -426,23 +426,55 @@ def candidate_military_services(candidate_id):
     :rtype              [dict]
     """
     assert isinstance(candidate_id, (int, long))
-    military_experiences = CandidateMilitaryService.query.\
+    military_services = CandidateMilitaryService.query.\
         filter_by(candidate_id=candidate_id).\
         order_by(CandidateMilitaryService.to_date.desc())
-    return [{'id': military_info.id,
-             'branch': military_info.branch,
-             'status': military_info.service_status,
-             'highest_grade': military_info.highest_grade,
-             'highest_rank': military_info.highest_rank,
-             'from_date': str(military_info.from_date.date()) if military_info.from_date else None,
-             'to_date': str(military_info.to_date.date()) if military_info.from_date else None,
-             'start_year': military_info.start_year,
-             'start_month': military_info.start_month,
-             'end_year': military_info.end_year,
-             'end_month': military_info.end_month,
-             'country': get_country_name(military_info.iso3166_country),
-             'comments': military_info.comments
-             } for military_info in military_experiences]
+
+    services = []
+    for service in military_services:
+        # format inputs
+        from_date, to_date = None, None
+        service_from_date = service.from_date
+        service_to_date = service.to_date
+        service_start_year = service.start_year
+        service_start_month = service.start_month
+        service_end_year = service.end_year
+        service_end_month = service.end_month
+
+        from_date_start_year, from_date_start_month = None, None
+        if service_from_date:
+            from_date = str(service_from_date.date())
+            from_date_start_year = service_from_date.year
+            from_date_start_month = service_from_date.month
+
+        to_date_end_year, to_date_end_month = None, None
+        if service_to_date:
+            to_date = str(service_to_date.date())
+            to_date_end_year = service_to_date.year
+            to_date_end_month = service_to_date.month
+
+        start_year = service_start_year or from_date_start_year
+        start_month = service_start_month or from_date_start_month
+        end_year = service_end_year or to_date_end_year
+        end_month = service_end_month or to_date_end_month
+
+        services.append(dict(
+            id=service.id,
+            branch=service.branch,
+            status=service.service_status,
+            highest_grade=service.highest_grade,
+            highest_rank=service.highest_rank,
+            from_date=from_date,
+            to_date=to_date,
+            start_year=start_year,
+            start_month=start_month,
+            end_year=end_year,
+            end_month=end_month,
+            country=get_country_name(service.iso3166_country),
+            comments=service.comments
+        ))
+
+    return services
 
 
 def candidate_custom_fields(candidate):

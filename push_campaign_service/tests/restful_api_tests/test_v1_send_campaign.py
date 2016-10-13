@@ -134,7 +134,7 @@ class TestSendCampaign(object):
         :param smartlist_first: smartlist object
         """
         # 400 case: Campaign will not be sent due to deleted smartlist that is associated with campaign
-        CampaignsTestsHelpers.send_request_with_deleted_smartlist('post', URL % campaign_in_db['id'], token_first, {},
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist('post', URL % campaign_in_db['id'], token_first,
                                                                   smartlist_first['id'])
 
     def test_campaign_send_to_smartlist_with_two_candidates_with_and_without_push_device(self, token_first,

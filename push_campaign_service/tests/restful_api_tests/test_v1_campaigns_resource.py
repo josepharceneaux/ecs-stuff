@@ -121,7 +121,7 @@ class TestCreateCampaign(object):
         data = campaign_data.copy()
         data['smartlist_ids'] = [smartlist_id]
         # Create a campaign with deleted smarlist. API will raise 400 error.
-        CampaignsTestsHelpers.send_request_with_deleted_smartlist('post', URL, token_first, data, smartlist_id)
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist('post', URL, token_first, smartlist_id, data)
 
     def test_campaign_creation_with_invalid_name(self, token_first, campaign_data, smartlist_first):
         """
