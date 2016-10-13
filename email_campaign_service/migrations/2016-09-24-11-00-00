@@ -1,0 +1,32 @@
+"""
+Add EmailClientCredentials table
+"""
+
+from sqlalchemy import text
+
+from email_campaign_service.common.models.db import db
+from email_campaign_service.common.models.email_campaign import EmailClientCredentials
+
+table_name = EmailClientCredentials.__tablename__
+query = "select * from information_schema.tables where table_name = '{}'".format(table_name)
+result = db.session.execute(query)
+tables = list(result)
+if len(tables) == 0:
+    db.session.execute(
+        text("CREATE TABLE `{}` (`id` INT(11) NOT NULL AUTO_INCREMENT,\
+                                 `user_id` BIGINT(20) NOT NULL,\
+                                 `host` VARCHAR(50) NOT NULL,\
+                                 `port` VARCHAR(5) DEFAULT NULL,\
+				                 `name` VARCHAR(20) NOT NULL,\
+                                 `email` VARCHAR(60) NOT NULL,\
+                                 `password` VARCHAR(512) NOT NULL,\
+                                 `updated_datetime` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\
+                                 PRIMARY KEY (`id`), KEY `email_client_credentials_ibfk_1` (`user_id`), CONSTRAINT `email_client_credentials_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`Id`) ON DELETE CASCADE) ENGINE=INNODB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='utf8_general_ci'".format(table_name))
+        )
+
+
+db.session.execute(
+text("ALTER TABLE `email_campaign` ADD COLUMN `EmailClientCredentialsId` INT(11) NULL,\
+  ADD CONSTRAINT `email_campaign_client` FOREIGN KEY (`EmailClientCredentialsId`) REFERENCES `email_client_credentials`(`id`)"))
+
+
