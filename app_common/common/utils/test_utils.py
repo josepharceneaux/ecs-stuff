@@ -2,7 +2,6 @@
 This module contains utility methods will be used in API based tests.
 """
 # Standard imports
-import json
 import uuid
 import operator
 from time import sleep

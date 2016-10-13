@@ -664,6 +664,20 @@ class SocialNetwork(db.Model):
         assert isinstance(ids, list)
         return cls.query.filter(SocialNetwork.id.in_(ids)).all()
 
+    @classmethod
+    def get_subscribed_social_networks(cls, user_id):
+        """
+        This method returns those social networks that a user has subscribed.
+        :param int | long user_id: user id
+        :return: list of social networks
+        :rtype: list
+        """
+        # Due to circular dependency, importing here
+        from user import UserSocialNetworkCredential
+        assert user_id and isinstance(user_id, (int, long)), 'user_id must be a positive number, given: %s' % user_id
+        subscribed_data = UserSocialNetworkCredential.get_by_user_id(user_id=user_id)
+        return cls.query.filter(cls.id.in_([sn.social_network_id for sn in subscribed_data])).all()
+
 
 class CandidateSocialNetwork(db.Model):
     __tablename__ = 'candidate_social_network'

@@ -22,8 +22,6 @@ def test_subscribed_social_network(token_first, user_first, is_subscribed_test_d
     of all social networks and for Now in social_networks API data, these two social networks
     should be according to our expectations.
     'is_subscribed' set to 'true' for SN1 and 'false' for SN2
-    :param user:
-    :return:
     """
 
     response = requests.get(SocialNetworkApiUrl.SOCIAL_NETWORKS,
@@ -46,7 +44,6 @@ def test_subscribed_social_network(token_first, user_first, is_subscribed_test_d
 def test_social_network_no_auth():
     """
     Send request with invalid token and response should be 401 (Unauthorized)
-    :return:
     """
     response = requests.get(SocialNetworkApiUrl.SOCIAL_NETWORKS,
                             headers={'Authorization': 'some random'})
