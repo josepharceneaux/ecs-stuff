@@ -216,6 +216,7 @@ class User(db.Model):
         :param int user_id: User Id
         :rtype: tuple[(list, str)]
         """
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid user Id"
         domain_name, domain_id = User.query.with_entities(Domain.name, Domain.id).filter(User.domain_id == Domain.id).\
             filter(User.id == user_id).first()
         users = User.query.filter(User.domain_id == domain_id).all()
@@ -229,6 +230,8 @@ class User(db.Model):
         :param int user_id: User Id
         :rtype: list
         """
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid user Id %r" % user_id
+        assert isinstance(name, basestring) and name, "Invalid name %r" % name
         user = cls.get_by_id(user_id)
         if user:
             return cls.query.filter(or_(cls.first_name == name, cls.last_name == name)).\

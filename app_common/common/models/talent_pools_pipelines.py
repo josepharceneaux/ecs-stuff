@@ -1,4 +1,3 @@
-
 __author__ = 'ufarooqi'
 
 import json
@@ -6,7 +5,7 @@ from db import db
 from datetime import datetime, timedelta
 from user import Domain, UserGroup, User
 from candidate import Candidate
-from app_common.common.error_handling import NotFoundError
+from ..error_handling import NotFoundError
 # 3rd party imports
 from sqlalchemy import or_, and_, extract
 from sqlalchemy.dialects.mysql import TINYINT
@@ -44,6 +43,7 @@ class TalentPool(db.Model):
         :param int user_id: User Id
         :rtype: list
         """
+        assert isinstance(user_id, (int, long)) and user_id, "User Id is not valid"
         domain_id = User.get_domain_id(user_id)
         return cls.query.filter(cls.domain_id == domain_id).all()
 
@@ -79,105 +79,46 @@ class TalentPoolCandidate(db.Model):
         or added_time
         :rtype: int|str
         """
+        assert isinstance(user_name, basestring) or not user_name, "Invalid user name"
+        assert isinstance(talent_pool_list, list) or not talent_pool_list, "Invalid talent pool list"
+        assert isinstance(user_specific_date, (basestring, datetime)) or not user_specific_date,\
+            "Invalid datetime specified"
+        assert isinstance(user_id, (int, long)) and user_id, "User Id is not valid"
+        user = None
+        if user_name:
+            users = User.get_by_name(user_id, user_name)
+            if users:
+                user = users[0]
+            else:
+                raise NotFoundError
+        if user_name is None:
+            user = User.get_by_id(user_id)
+            if user is None:
+                raise NotFoundError
+        # Joining talent_pool table and talent_pool_candidate table on basis of Id.
+        common_query = cls.query.filter(cls.talent_pool_id == TalentPool.id)
         if isinstance(user_specific_date, datetime):
-            if user_name and talent_pool_list:
-                users = User.get_by_name(user_id, user_name)
-                if users:
-                    user = users[0]
-                    return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
-                        .filter(or_((cls.added_time >= user_specific_date),
-                                    (cls.updated_time >= user_specific_date))).filter(
-                        and_(TalentPool.user_id == user.id, TalentPool.name.in_(talent_pool_list))).distinct().count()
-                raise NotFoundError
-            if user_name and talent_pool_list is None:
-                user = User.get_by_id(user_id)
-                if user:
-                    return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
-                        .filter(or_((cls.added_time >= user_specific_date), (
-                         cls.updated_time >= user_specific_date))). \
-                        filter(User.id == TalentPool.user_id). \
-                        filter(and_(or_(User.first_name == user_name, User.last_name == user_name), TalentPool.domain_id == user.domain_id)). \
-                        distinct().count()
-            if talent_pool_list and user_name is None:
-                user = User.get_by_id(user_id)
-                if user:
-                    return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
-                        .filter(or_((cls.added_time >= user_specific_date), (
-                         cls.updated_time >= user_specific_date))). \
-                        filter(and_(TalentPool.name.in_(talent_pool_list), TalentPool.domain_id == user.domain_id)). \
-                        distinct().count()
-            if talent_pool_list is None and user_name is None:
-                user = User.get_by_id(user_id)
-                if user:
-                    return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
-                        .filter(or_((cls.added_time >= user_specific_date), (
-                         cls.updated_time >= user_specific_date))).filter(TalentPool.domain_id == user.domain_id). \
-                        distinct().count()
+            # User's specified time should be smaller or equal to the time when candidate was added or updated
+            common_query = common_query.filter(or_((cls.added_time >= user_specific_date),
+                                                   (cls.updated_time >= user_specific_date)))
         if isinstance(user_specific_date, basestring):
-            if user_name and talent_pool_list:
-                users = User.get_by_name(user_id, user_name)
-                if users:
-                    user = users[0]
-                    return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
-                        .filter(or_((extract("year", cls.added_time) == user_specific_date), (
-                         extract("year", cls.updated_time) == user_specific_date))). \
-                        filter(
-                        and_(TalentPool.user_id == user.id, TalentPool.name.in_(talent_pool_list))).distinct().count()
-                raise NotFoundError
-            if user_name and talent_pool_list is None:
-                user = User.get_by_id(user_id)
-                if user:
-                    return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
-                        .filter(or_((extract("year", cls.added_time) == user_specific_date), (
-                         extract("year", cls.updated_time) == user_specific_date))). \
-                        filter(User.id == TalentPool.user_id). \
-                        filter(and_(or_(User.first_name == user_name, User.last_name == user_name), TalentPool.domain_id == user.domain_id)). \
-                        distinct().count()
-            if talent_pool_list and user_name is None:
-                user = User.get_by_id(user_id)
-                if user:
-                    return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
-                        .filter(or_((extract("year", cls.added_time) == user_specific_date), (
-                         extract("year", cls.updated_time) == user_specific_date))). \
-                        filter(and_(TalentPool.name.in_(talent_pool_list), TalentPool.domain_id == user.domain_id)). \
-                        distinct().count()
-            if talent_pool_list is None and user_name is None:
-                user = User.get_by_id(user_id)
-                if user:
-                    return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
-                        .filter(or_((extract("year", cls.added_time) == user_specific_date), (
-                         extract("year", cls.updated_time) == user_specific_date))).\
-                        filter(TalentPool.domain_id == user.domain_id). \
-                        distinct().count()
-        if user_specific_date is None:
-            if user_name and talent_pool_list:
-                users = User.get_by_name(user_id, user_name)
-                if users:
-                    user = users[0]
-                    return cls.query.filter(cls.talent_pool_id == TalentPool.id). \
-                        filter(
-                        and_(TalentPool.user_id == user.id, TalentPool.name.in_(talent_pool_list))).distinct().count()
-                raise NotFoundError
-            if user_name and talent_pool_list is None:
-                users = User.get_by_name(user_id, user_name)
-                if users:
-                    user = users[0]
-                    return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
-                        .filter(TalentPool.user_id == user.id). \
-                        distinct().count()
-                raise NotFoundError
-            if user_name is None and talent_pool_list:
-                user = User.get_by_id(user_id)
-                if user:
-                    return cls.query.filter(cls.talent_pool_id == TalentPool.id). \
-                        filter(and_(TalentPool.name.in_(talent_pool_list), TalentPool.domain_id == user.domain_id)). \
-                        distinct().count()
-            if not user_name and not talent_pool_list:
-                user = User.get_by_id(user_id)
-                if user:
-                    return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
-                        .filter(TalentPool.domain_id == user.domain_id).distinct() \
-                        .count()
+            # User's specified year equal to the year when candidate was added or updated
+            common_query = common_query.filter(or_((extract("year", cls.added_time) == user_specific_date),
+                                                   (extract("year", cls.updated_time) == user_specific_date)))
+        if user_name and talent_pool_list:
+            # Querying how many candidates have user added in specified talent pools
+            return common_query.filter(
+                and_(TalentPool.user_id == user.id, TalentPool.name.in_(talent_pool_list))).distinct().count()
+        if user_name and talent_pool_list is None:
+            # Querying how many candidates have user added in his talent pools
+            return common_query.filter(TalentPool.user_id == user.id).distinct().count()
+        if talent_pool_list and user_name is None:
+            # Querying how many candidates user have added in his all talent pools
+            return common_query.filter(and_(TalentPool.name.in_(talent_pool_list),
+                                            TalentPool.domain_id == user.domain_id)).distinct().count()
+        if talent_pool_list is None and user_name is None:
+            # Querying how many candidates have been added in a domain's talent pools by all users
+            return common_query.filter(TalentPool.domain_id == user.domain_id).distinct().count()
         return "Something went wrong cant find any imports"
 
 

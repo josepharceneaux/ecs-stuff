@@ -18,13 +18,14 @@ import datetime
 from dateutil.relativedelta import relativedelta
 import sys
 # Common utils
-from app_common.common.error_handling import NotFoundError
+from talentbot_service.common.error_handling import NotFoundError
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.candidate import Candidate
 from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate
 from talentbot_service.common.models.talent_pools_pipelines import TalentPool
 # App specific imports
 from talentbot_service.modules.constants import HINT, BOT_NAME, CAMPAIGN_TYPES
+from talentbot_service import logger
 
 
 class QuestionHandler(object):
@@ -82,7 +83,11 @@ class QuestionHandler(object):
         :return: Response message
         :rtype: str
         """
-        users, domain_name = User.get_domain_name_and_its_users(user_id)
+        try:
+            users, domain_name = User.get_domain_name_and_its_users(user_id)
+        except AssertionError as error:
+            logger.error(error.message)
+            return None
         if not users:
             return None
         candidate_index = cls.find_word_in_message('cand', message_tokens)
@@ -281,6 +286,9 @@ class QuestionHandler(object):
                                                                         year, user_id)
             except NotFoundError:
                 return 'No user exists in your domain with the name `%s`' % user_name
+            except AssertionError as error:
+                logger.error(error.message)
+                return None
             if isinstance(count, basestring):
                 return count
             if not user_name:
@@ -311,6 +319,9 @@ class QuestionHandler(object):
                                                                             user_specific_date, user_id)
                 except NotFoundError:
                     return 'No user exists in your domain with the name `%s`' % user_name
+                except AssertionError as error:
+                    logger.error(error.message)
+                    return None
                 if isinstance(count, basestring):
                     return count
                 if not user_name:
@@ -333,6 +344,9 @@ class QuestionHandler(object):
                                                                     None, user_id)
         except NotFoundError:
             return 'No user exists in your domain with the name `%s`' % user_name
+        except AssertionError as error:
+            logger.error(error.message)
+            return None
         if isinstance(count, basestring):
             return count
         if not user_name:
@@ -381,8 +395,16 @@ class QuestionHandler(object):
         :param message_tokens: User message tokens
         :rtype: str
         """
-        talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id)
-        _, domain_name = User.get_domain_name_and_its_users(user_id)
+        try:
+            talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id)
+        except AssertionError as error:
+            logger.error(error.message)
+            return None
+        try:
+            _, domain_name = User.get_domain_name_and_its_users(user_id)
+        except AssertionError as error:
+            logger.error(error.message)
+            return None
         if talent_pools:
             talent_pool_names = [talent_pool.name for talent_pool in talent_pools]
             talent_pool_names = cls.create_ordered_list(talent_pool_names)
@@ -409,7 +431,7 @@ class QuestionHandler(object):
             users = User.get_by_name(user_id, user_name)
             if users:
                 user = users[0]
-                response = "`%s's` group is `%s`" % (user_name, user.user_group.name)
+                response = "`%s`'s group is `%s`" % (user_name, user.user_group.name)
                 return response
             response = 'No user with name `%s` exists in your domain' % user_name
             return response

@@ -12,7 +12,7 @@ from talentbot_service.common.models.user import TalentbotAuth
 # App specific imports
 from talentbot_service.modules.constants import MAILGUN_FROM, AUTHENTICATION_FAILURE_MSG
 from talentbot_service.modules.talent_bot import TalentBot
-from talentbot_service  import logger
+from talentbot_service import logger
 # 3rd party import
 import requests
 
