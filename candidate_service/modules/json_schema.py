@@ -537,6 +537,22 @@ candidates_resource_schema_post = {
                                     "type": ["string", "null"],
                                     # "format": "date-time"
                                 },
+                                "start_year": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
+                                },
+                                "start_month": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1, "maximum": 12
+                                },
+                                "end_year": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
+                                },
+                                "end_month": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1, "maximum": 12
+                                },
                                 "comments": {
                                     "type": ["string", "null"],
                                     "maxLength": 5000
@@ -1109,6 +1125,22 @@ candidates_resource_schema_patch = {
                                 },
                                 "to_date": {
                                     "type": ["string", "null"]
+                                },
+                                "start_year": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
+                                },
+                                "start_month": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1, "maximum": 12
+                                },
+                                "end_year": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
+                                },
+                                "end_month": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1, "maximum": 12
                                 },
                                 "comments": {
                                     "type": ["string", "null"],

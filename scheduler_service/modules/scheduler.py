@@ -8,6 +8,7 @@ Scheduler - APScheduler initialization, set jobstore, threadpoolexecutor
 
 # Standard imports
 import datetime
+import uuid
 
 # Third-party imports
 from urllib import urlencode
@@ -23,7 +24,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token
 from scheduler_service import logger, TalentConfigKeys, flask_app, redis_store
-from scheduler_service.apscheduler_config import executors, job_store, jobstores, job_defaults
+from scheduler_service.apscheduler_config import executors, job_store, jobstores, job_defaults, LOCK_KEY
 from scheduler_service.common.models.user import User
 from scheduler_service.common.error_handling import InvalidUsage
 from scheduler_service.common.routes import AuthApiUrl
@@ -161,7 +162,7 @@ def validate_periodic_job(data):
     return valid_data
 
 
-def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=False, request_method="post"):
+def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=False, request_method="post", **kwargs):
     """
     Function callback to run when job time comes, this method is called by APScheduler
     :param user_id:
@@ -170,7 +171,52 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
     :param content_type: format of post data
     :param post_data: post data like campaign name, smartlist ids etc
     :param is_jwt_request: (optional) if true, then use X-Talent-Secret-Id in header
+    :param kwargs: lock_uuid string
     """
+
+    """
+    Problem:
+        On jenkins, staging and prod, uwsgi initializes multiple Flask app instances(5 different processes) and
+    along with each Flask instance, APScheduler instance is initialized. The problem occurs when all 5 APScheduler
+    instances that are watching a job, executes that one job in parallel.
+
+    Solution:
+        One solution can be to run APScheduler in a single separate process and using RPC, Flask apps can communicate
+    with APScheduler process to create/get/execute/delete job(s). But that requires alot of changes in existing
+    service code.
+
+        Other solution can be to restrict scheduler callback method (run_job) to be called by one instance only.
+    To do this, when multiple instances call this method we can lock this method for next few seconds. So, first calling
+    APScheduler instance will set the lock and other 4 instances check that the function already has lock. So, they
+    will ignore job execution and simply return.
+
+    Legend:
+    ---->     time
+
+    Scenario:
+
+                0(ms)           20(ms)              30(ms)
+    Instance 1: --------->                                                            Ignored
+    Instance 2: ----------------->                                                    Ignored
+    Instance 3: ----->                                                                Acquires Lock
+    Instance 4: ------------->                                                        Ignored
+    Instance 5: ----------------------->                                              Ignored
+
+    """
+    lock_uuid = kwargs.get('lock_uuid')
+    if lock_uuid:
+        if not redis_store.get(LOCK_KEY + lock_uuid):
+            res = redis_store.set(LOCK_KEY + lock_uuid, True, nx=True, ex=4)
+            # Multiple executions. No need to execute job if race condition occurs
+            if not res:
+                logger.info('CODE-VERONICA: Race Escaping {}'.format(lock_uuid))
+                return
+            logger.info('CODE-VERONICA: Worked {}'.format(lock_uuid))
+        else:
+            # Multiple executions. No need to execute job
+            logger.info('CODE-VERONICA: Escaping {}'.format(lock_uuid))
+            return
+
     # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
     # created because frequency is set to minimum (1 hour).
     secret_key_id = None
@@ -270,6 +316,10 @@ def schedule_job(data, user_id=None, access_token=None):
 
     callback_method = 'scheduler_service.modules.scheduler:run_job'
 
+    # make a UUID based on the host ID and current time and pass it to add job method to fix race condition.
+    # See run_job method above
+    lock_uuid = str(uuid.uuid1()) + str(uuid.uuid4())
+
     if trigger == SchedulerUtils.PERIODIC:
         valid_data = validate_periodic_job(data)
 
@@ -282,17 +332,20 @@ def schedule_job(data, user_id=None, access_token=None):
                                     end_date=valid_data['end_datetime'],
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
-                                          job_config['post_data'], job_config.get('is_jwt_request'), request_method]
+                                          job_config['post_data'], job_config.get('is_jwt_request'), request_method],
+                                    kwargs=dict(lock_uuid=lock_uuid)
                                     )
             # Due to request timeout delay, there will be a delay in scheduling job sometimes.
             # And if start time is passed due to this request delay, then job should be run
             job_start_time_obj = DatetimeUtils(valid_data['start_datetime'])
             if not job_start_time_obj.is_in_future():
-                run_job(user_id, access_token, job_config['url'], content_type, job_config['post_data'], job_config.get('is_jwt_request'))
+                run_job(user_id, access_token, job_config['url'], content_type, job_config['post_data'], job_config.get('is_jwt_request'),
+                        kwargs=dict(lock_uuid=lock_uuid))
             logger.info('schedule_job: Task has been added and will start at %s ' % valid_data['start_datetime'])
         except Exception as e:
             logger.error(e.message)
             raise JobNotCreatedError("Unable to create the job.")
+        logger.info('CODE-VERONICA: job id: {} schedule {}'.format(job.id, lock_uuid))
         return job.id
     elif trigger == SchedulerUtils.ONE_TIME:
         valid_data = validate_one_time_job(data)
@@ -300,13 +353,16 @@ def schedule_job(data, user_id=None, access_token=None):
             job = scheduler.add_job(callback_method,
                                     name=job_config['task_name'],
                                     trigger='date',
+                                    coalesce=True,
                                     run_date=valid_data['run_datetime'],
                                     misfire_grace_time=SchedulerUtils.MAX_MISFIRE_TIME,
                                     args=[user_id, access_token, job_config['url'], content_type,
                                           job_config['post_data'], job_config.get('is_jwt_request'),
-                                          request_method]
+                                          request_method],
+                                    kwargs=dict(lock_uuid=lock_uuid)
                                     )
             logger.info('schedule_job: Task has been added and will run at %s ' % valid_data['run_datetime'])
+            logger.info('CODE-VERONICA: job id: {} schedule {}'.format(job.id, lock_uuid))
             return job.id
         except Exception as e:
             logger.error(e.message)

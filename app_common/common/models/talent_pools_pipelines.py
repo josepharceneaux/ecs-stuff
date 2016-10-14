@@ -56,23 +56,32 @@ class TalentPoolCandidate(db.Model):
     def get(cls, candidate_id, talent_pool_id):
         return cls.query.filter_by(candidate_id=candidate_id, talent_pool_id=talent_pool_id).first()
 
-    @staticmethod
-    def candidates_added_last_month(user_name, talent_pool_name, previous_month, user_id):
+    @classmethod
+    def candidates_added_last_month(cls, user_name, talent_pool_name, user_specific_date, user_id):
         """
         Returns number of candidate added by a user in a talent pool in a specific month
+        :param str user_name: User name
         :param int user_id: User Id
-        :param user_name: User name
-        :param talent_pool_name: Talent pool name
-        :param previous_month: Month during candidates were added
+        :param str talent_pool_name: Talent pool name
+        :param datetime|None|basestring user_specific_date: Datetime this should be later than or equal to updated_time
+        or added_time
         :rtype: int
         """
-        return TalentPoolCandidate.query.filter(TalentPoolCandidate.talent_pool_id == TalentPool.id) \
-            .filter(or_((and_(extract("year", TalentPoolCandidate.added_time) == previous_month.year,
-                              extract("month", TalentPoolCandidate.added_time) == previous_month.month)), (
-                            and_(extract("year", TalentPoolCandidate.updated_time) == previous_month.year,
-                                 extract("month", TalentPoolCandidate.updated_time) == previous_month.month)))) \
-            .filter(User.first_name == user_name).\
-            filter(User.id == user_id).filter(TalentPool.name == talent_pool_name).distinct().count()
+        if isinstance(user_specific_date, datetime):
+            return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
+                .filter(or_((cls.added_time >= user_specific_date), (
+                 cls.updated_time >= user_specific_date))) \
+                .filter(User.first_name == user_name).\
+                filter(and_(User.id == user_id, TalentPool.name == talent_pool_name)).distinct().count()
+        if isinstance(user_specific_date, basestring):
+            return cls.query.filter(cls.talent_pool_id == TalentPool.id) \
+                .filter(or_((extract("year", cls.added_time) == user_specific_date), (
+                 extract("year", cls.updated_time) == user_specific_date))) \
+                .filter(User.first_name == user_name). \
+                filter(and_(User.id == user_id, TalentPool.name == talent_pool_name)).distinct().count()
+        return cls.query.filter(cls.talent_pool_id == TalentPool.id)\
+            .filter(User.first_name == user_name). \
+            filter(and_(User.id == user_id, TalentPool.name == talent_pool_name)).distinct().count()
 
 
 class TalentPoolGroup(db.Model):

@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship, backref
 import datetime
 from ..error_handling import InternalServerError
 from ..utils.validators import raise_if_not_positive_int_or_long
-from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
+from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT, SMALLINT
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
@@ -664,6 +664,20 @@ class SocialNetwork(db.Model):
         assert isinstance(ids, list)
         return cls.query.filter(SocialNetwork.id.in_(ids)).all()
 
+    @classmethod
+    def get_subscribed_social_networks(cls, user_id):
+        """
+        This method returns those social networks that a user has subscribed.
+        :param int | long user_id: user id
+        :return: list of social networks
+        :rtype: list
+        """
+        # Due to circular dependency, importing here
+        from user import UserSocialNetworkCredential
+        assert user_id and isinstance(user_id, (int, long)), 'user_id must be a positive number, given: %s' % user_id
+        subscribed_data = UserSocialNetworkCredential.get_by_user_id(user_id=user_id)
+        return cls.query.filter(cls.id.in_([sn.social_network_id for sn in subscribed_data])).all()
+
 
 class CandidateSocialNetwork(db.Model):
     __tablename__ = 'candidate_social_network'
@@ -910,6 +924,10 @@ class CandidateMilitaryService(db.Model):
     comments = db.Column('Comments', db.String(5000))
     from_date = db.Column('FromDate', db.DateTime)
     to_date = db.Column('ToDate', db.DateTime)
+    start_year = db.Column(SMALLINT)
+    start_month = db.Column(TINYINT)
+    end_year = db.Column(SMALLINT)
+    end_month = db.Column(SMALLINT)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined

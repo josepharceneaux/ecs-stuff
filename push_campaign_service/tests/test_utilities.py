@@ -36,7 +36,7 @@ def generate_campaign_schedule_data(frequency_id=1):
     :return: data
     :rtype dict
     """
-    start = datetime.utcnow() + timedelta(seconds=20)
+    start = datetime.utcnow() + timedelta(seconds=10)
     end = datetime.utcnow() + timedelta(days=10)
     data = {
         "frequency_id": frequency_id,
@@ -47,16 +47,18 @@ def generate_campaign_schedule_data(frequency_id=1):
 
 
 @contract
-def compare_campaign_data(campaign_first, campaign_second):
+def compare_campaign_data(campaign_first, campaign_second, ignore_keys=None):
     """
     This function compares two push campaign dictionaries
     It raises assertion error if respective keys' values do not match.
     :type campaign_first: dict
     :type campaign_second: dict
+    :type ignore_keys: None | tuple | list
     """
-    assert campaign_first['body_text'] == campaign_second['body_text']
-    assert campaign_first['name'] == campaign_second['name']
-    assert campaign_first['url'] == campaign_second['url']
+    campaign_keys = ['id', 'name', 'body_text', 'url', 'smartlist_ids']
+    for key in set(campaign_keys) - (set(ignore_keys) if ignore_keys else set()):
+        assert campaign_first[key] == campaign_second[key], 'value1 = %s, value2= %s, key = %s' \
+                                                            % (campaign_first[key], campaign_second[key], key)
 
 
 @contract

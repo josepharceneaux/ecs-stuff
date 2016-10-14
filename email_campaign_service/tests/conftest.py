@@ -8,25 +8,24 @@ This file contains fixtures for tests of email-campaign-service
 
 __author__ = 'basit'
 
-# Standard Library
-import re
-
 # Application Specific
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.common.models.misc import Frequency
-from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.models.candidate import CandidateEmail
-from email_campaign_service.common.models.email_campaign import (EmailClient, UserEmailTemplate,
-                                                                 EmailTemplateFolder)
+from email_campaign_service.common.models.email_campaign import (UserEmailTemplate,
+                                                                 EmailTemplateFolder, EmailClient)
+from email_campaign_service.common.routes import (EmailCampaignApiUrl, CandidateApiUrl)
 from email_campaign_service.tests.modules.handy_functions import (create_email_campaign,
                                                                   create_email_campaign_smartlist,
                                                                   send_campaign_helper,
                                                                   create_smartlist_with_given_email_candidate,
                                                                   add_email_template,
                                                                   get_template_folder, assert_valid_template_folder,
-                                                                  EmailCampaignTypes)
+                                                                  EmailCampaignTypes, send_campaign_with_client_id)
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.modules.utils import DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG, \
+    DEFAULT_PREFERENCES_URL_MERGETAG
 
 EMAIL_CAMPAIGN_TYPES = [EmailCampaignTypes.WITHOUT_CLIENT, EmailCampaignTypes.WITH_CLIENT]
 
@@ -71,14 +70,47 @@ def campaign_with_candidate_having_no_email(email_campaign_of_user_first, access
 
 
 @pytest.fixture()
-def campaign_with_valid_candidate(email_campaign_of_user_first,
-                                  access_token_first, talent_pipeline):
+def campaign_with_two_candidates(email_campaign_of_user_first, access_token_first, talent_pipeline):
     """
     This returns a campaign which has two candidates associated having email address.
     """
-    campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline,
-                                               email_campaign_of_user_first, count=2)
+    campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline, email_campaign_of_user_first,
+                                               count=2)
     return campaign
+
+
+@pytest.fixture()
+def email_campaign_with_merge_tags(user_first, access_token_first, headers, talent_pipeline):
+    """
+    This fixture creates an email campaign in which body_text and body_html contains merge tags.
+    """
+    email_campaign = create_email_campaign(user_first)
+    smartlist_id, candidate_id = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
+                                                                                       talent_pipeline,
+                                                                                       emails_list=True,
+                                                                                       assert_candidates=True)
+    create_email_campaign_smartlists(smartlist_ids=[smartlist_id], email_campaign_id=email_campaign.id)
+    # Update email-campaign's body text
+    starting_string = 'Hello %s %s, unsubscribe URL is:%s' % (DEFAULT_FIRST_NAME_MERGETAG,
+                                                              DEFAULT_LAST_NAME_MERGETAG,
+                                                              DEFAULT_PREFERENCES_URL_MERGETAG)
+    email_campaign.update(body_text=starting_string + email_campaign.body_text)
+    email_campaign.update(body_html=starting_string + email_campaign.body_html)
+    candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id[0], headers=headers)
+    return email_campaign, candidate_get_response.json()['candidate']
+
+
+@pytest.fixture(params=EMAIL_CAMPAIGN_TYPES)
+def campaign_with_and_without_client(request, access_token_first, talent_pipeline, email_campaign_of_user_first):
+    """
+    This fixture creates campaign 1) with client_id and 2) without client id.
+    """
+    email_campaign = create_email_campaign_smartlist(access_token_first, talent_pipeline,
+                                                     email_campaign_of_user_first, count=1)
+
+    if request.param == EmailCampaignTypes.WITH_CLIENT:
+        email_campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
+    return email_campaign
 
 
 @pytest.fixture()
@@ -112,16 +144,16 @@ def campaign_to_ten_candidates_not_sent(email_campaign_of_user_first, access_tok
 
 
 @pytest.fixture()
-def campaign_with_candidates_having_same_email_in_diff_domain(campaign_with_valid_candidate,
+def campaign_with_candidates_having_same_email_in_diff_domain(campaign_with_two_candidates,
                                                               candidate_in_other_domain):
     """
     This returns a campaign which has one candidate associated having email address.
     One more candidate exist in some other domain having same email address.
     """
     same_email = fake.email()
-    campaign_with_valid_candidate.user.candidates[0].emails[0].update(address=same_email)
+    campaign_with_two_candidates.user.candidates[0].emails[0].update(address=same_email)
     candidate_in_other_domain.emails[0].update(address=same_email)
-    return campaign_with_valid_candidate
+    return campaign_with_two_candidates
 
 
 @pytest.fixture()
@@ -154,12 +186,12 @@ def candidate_in_other_domain(user_from_diff_domain):
 
 
 @pytest.fixture(params=EMAIL_CAMPAIGN_TYPES)
-def sent_campaign(request, campaign_with_valid_candidate, access_token_first):
+def sent_campaign(request, campaign_with_two_candidates, access_token_first):
     """
     This fixture sends the campaign 1) with client_id and 2) without client id
     via /v1/email-campaigns/:id/send and returns the email-campaign obj.
     """
-    return send_campaign_helper(request, campaign_with_valid_candidate, access_token_first)
+    return send_campaign_helper(request, campaign_with_two_candidates, access_token_first)
 
 
 @pytest.fixture(params=EMAIL_CAMPAIGN_TYPES)
@@ -172,8 +204,7 @@ def sent_campaign_in_other_domain(request, email_campaign_in_other_domain, acces
 
 
 @pytest.fixture(params=EMAIL_CAMPAIGN_TYPES)
-def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_email,
-                                 access_token_first):
+def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_email, access_token_first):
     """
     This fixture sends the campaign via /v1/email-campaigns/:id/send and returns the
     email-campaign obj.
@@ -183,8 +214,7 @@ def sent_campaign_multiple_email(request, campaign_with_multiple_candidates_emai
 
 
 @pytest.fixture(params=EMAIL_CAMPAIGN_TYPES)
-def sent_campaign_to_ten_candidates(request, campaign_to_ten_candidates_not_sent,
-                                    access_token_first):
+def sent_campaign_to_ten_candidates(request, campaign_to_ten_candidates_not_sent, access_token_first):
     """
     This fixture sends the given campaign 1) with client_id and 2) without client id
     via /v1/email-campaigns/:id/send and returns the email-campaign obj.
@@ -193,35 +223,15 @@ def sent_campaign_to_ten_candidates(request, campaign_to_ten_candidates_not_sent
 
 
 @pytest.fixture()
-def send_email_campaign_by_client_id_response(access_token_first, campaign_with_valid_candidate):
+def send_email_campaign_by_client_id_response(access_token_first, campaign_with_two_candidates):
     """
     This fixture is used to get the response of sending campaign emails with client id
     for a particular campaign. It also ensures that response is in proper format. Used in
     multiple tests.
     :param access_token_first: Bearer token for authorization.
-    :param campaign_with_valid_candidate: EmailCampaign object with a valid candidate associated.
+    :param campaign_with_two_candidates: EmailCampaign object with a valid candidate associated.
     """
-    campaign = campaign_with_valid_candidate
-    campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
-    response = CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND,
-                                                   campaign_with_valid_candidate,
-                                                   access_token_first)
-    json_response = response.json()
-    assert 'email_campaign_sends' in json_response
-    email_campaign_sends = json_response['email_campaign_sends'][0]
-    assert 'new_html' in email_campaign_sends
-    new_html = email_campaign_sends['new_html']
-    matched = re.search(r'&\w+;',
-                        new_html)  # check the new_html for escaped HTML characters using regex
-    assert not matched  # Fail if HTML escaped characters found, as they render the URL useless
-    assert 'new_text' in email_campaign_sends  # Check if there is email text which candidate would see in email
-    assert 'email_campaign_id' in email_campaign_sends  # Check if there is email campaign id in response
-    assert campaign.id == email_campaign_sends['email_campaign_id']  # Check if both IDs are same
-    return_value = dict()
-    return_value['response'] = response
-    return_value['campaign'] = campaign
-
-    return return_value
+    return send_campaign_with_client_id(campaign_with_two_candidates, access_token_first)
 
 
 @pytest.fixture()
@@ -238,7 +248,7 @@ def template_id(domain_id):
     return template['id']
 
 
-@pytest.fixture(params=['name', 'subject', 'description', 'body_html', 'frequency_id', 'list_ids'])
+@pytest.fixture(params=['name', 'subject', 'body_html', 'frequency_id', 'list_ids'])
 def invalid_data_for_campaign_creation(request):
     """
     This function returns the data to create an email campaign. It also removes a required

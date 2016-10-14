@@ -2,7 +2,6 @@
 This module contains utility methods will be used in API based tests.
 """
 # Standard imports
-import json
 import uuid
 import operator
 from time import sleep
@@ -694,4 +693,5 @@ def delete_candidate_device(candidate_id, device_id,  token, expected_status=(20
     print('tests : delete_candidate_devices: %s', response.content)
     assert response.status_code in expected_status
     return response.json()
+
 

@@ -21,6 +21,7 @@ This module contains model classes that are related to push campaign service.
 import datetime
 from db import db
 from sqlalchemy.orm import relationship
+from sqlalchemy import desc, extract
 from candidate import Candidate
 from ..error_handling import InvalidUsage
 
@@ -55,7 +56,18 @@ class PushCampaign(db.Model):
                               passive_deletes=True, backref='campaign', lazy='dynamic')
 
     def __repr__(self):
-        return "<PushCampaign ( = %r)>" % self.body_text
+        return "<PushCampaign (body_text = %r)>" % self.body_text
+
+    def to_json(self, include_fields=None):
+        """
+        This returns required fields when an push-campaign object is requested.
+        :param list[str] | None include_fields: List of fields to include, or None for all.
+        :rtype: dict[str, T]
+        """
+        return_dict = super(PushCampaign, self).to_json(include_fields=include_fields)
+        if not include_fields or "smartlist_ids" in include_fields:
+            return_dict["smartlist_ids"] = [campaign_smartlist.smartlist_id for campaign_smartlist in self.smartlists]
+        return return_dict
 
     @classmethod
     def get_by_user_id(cls, user_id):
@@ -102,6 +114,28 @@ class PushCampaignBlast(db.Model):
 
     def __repr__(self):
         return "<PushCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
+
+    @classmethod
+    def top_performing_push_campaign(cls, datetime_value, user_id):
+        """
+        This method returns top performing push campaign from a specific year
+        :param int user_id: User Id
+        :param str datetime_value: Year of campaign started or updated
+        :rtype: PushCampaignBlast
+        """
+        if isinstance(datetime_value, datetime.datetime):
+            return cls.query.filter(cls.updated_datetime >= datetime_value). \
+                filter(PushCampaign.id == cls.campaign_id).\
+                filter(PushCampaign.user_id == user_id). \
+                filter(cls.sends > 0).order_by(desc(cls.clicks)).first()
+        if isinstance(datetime_value, basestring):
+            return cls.query.filter(extract("year", cls.updated_datetime) == datetime_value). \
+                filter(PushCampaign.id == cls.campaign_id).\
+                filter(PushCampaign.user_id == user_id). \
+                filter(cls.sends > 0). \
+                order_by(desc(cls.clicks)).first()
+        return cls.query.filter(PushCampaign.id == cls.campaign_id).\
+            filter(PushCampaign.user_id == user_id).filter(cls.sends > 0).order_by(desc(cls.clicks)).first()
 
 
 class PushCampaignSend(db.Model):
