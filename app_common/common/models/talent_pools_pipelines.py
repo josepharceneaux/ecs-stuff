@@ -69,7 +69,7 @@ class TalentPoolCandidate(db.Model):
         return cls.query.filter_by(candidate_id=candidate_id, talent_pool_id=talent_pool_id).first()
 
     @classmethod
-    def candidates_added_last_month(cls, user_name, talent_pool_list, user_specific_date, user_id):
+    def candidates_added_last_month(cls, user_id, user_name=None, talent_pool_list=None, user_specific_date=None):
         """
         Returns number of candidate added by a user in a talent pool during a specific time interval
         :param str|None user_name: User name

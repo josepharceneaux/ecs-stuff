@@ -14,7 +14,7 @@ response
  - question_8_handler()
 """
 # Builtin imports
-import datetime
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import sys
 # Common utils
@@ -174,7 +174,7 @@ class QuestionHandler(object):
                 campaign_list = ['No valid campaign type found, all top campaigns are following:\n']
             else:
                 campaign_list = ['Top Campaigns are following:\n']
-            if not isinstance(user_specific_date, datetime.datetime) and not is_valid_year \
+            if not isinstance(user_specific_date, datetime) and not is_valid_year \
                and user_specific_date is None and message_tokens[-1].lower() not in ['campaigns']:
                 campaign_list = ['No valid duration found, Top campaigns from all the times:\n']
             campaign_blast = CAMPAIGN_TYPES.get("email")(user_specific_date, user_id)
@@ -209,7 +209,7 @@ class QuestionHandler(object):
         if is_valid_year:
             timespan = user_specific_date
         if campaign_blast:
-            if isinstance(user_specific_date, datetime.datetime):
+            if isinstance(user_specific_date, datetime):
                 user_specific_date = user_specific_date.date()
             if campaign_type == 'email':
                 open_rate = self.calculate_percentage(campaign_blast.opens, campaign_blast.sends)
@@ -232,7 +232,7 @@ class QuestionHandler(object):
         else:
             response_message = "Oops! looks like you don't have `%s` campaign from %s" % \
                                     (campaign_type, timespan)
-        if not isinstance(user_specific_date, datetime.datetime) and not is_valid_year \
+        if not isinstance(user_specific_date, datetime) and not is_valid_year \
                 and user_specific_date is None and message_tokens[-1].lower() not in ['campaigns']:
             response_message = 'No valid time duration found\n %s' % response_message
         return response_message.replace("None", "all the times")
@@ -282,8 +282,8 @@ class QuestionHandler(object):
         if is_valid_year is True:
             talent_pool_list = self.create_list_of_talent_pools(spaced_talent_pool_name)
             try:
-                count = TalentPoolCandidate.candidates_added_last_month(user_name, talent_pool_list,
-                                                                        year, user_id)
+                count = TalentPoolCandidate.candidates_added_last_month(user_id, user_name, talent_pool_list,
+                                                                        year)
             except NotFoundError:
                 return 'No user exists in your domain with the name `%s`' % user_name
             except AssertionError as error:
@@ -315,8 +315,8 @@ class QuestionHandler(object):
                     return user_specific_date
                 talent_pool_list = self.create_list_of_talent_pools(spaced_talent_pool_name)
                 try:
-                    count = TalentPoolCandidate.candidates_added_last_month(user_name, talent_pool_list,
-                                                                            user_specific_date, user_id)
+                    count = TalentPoolCandidate.candidates_added_last_month(user_id, user_name, talent_pool_list,
+                                                                            user_specific_date)
                 except NotFoundError:
                     return 'No user exists in your domain with the name `%s`' % user_name
                 except AssertionError as error:
@@ -340,8 +340,7 @@ class QuestionHandler(object):
                 return response_message
         talent_pool_list = self.create_list_of_talent_pools(spaced_talent_pool_name)
         try:
-            count = TalentPoolCandidate.candidates_added_last_month(user_name, talent_pool_list,
-                                                                    None, user_id)
+            count = TalentPoolCandidate.candidates_added_last_month(user_id, user_name, talent_pool_list)
         except NotFoundError:
             return 'No user exists in your domain with the name `%s`' % user_name
         except AssertionError as error:
@@ -362,7 +361,7 @@ class QuestionHandler(object):
             response_message = response_message.replace('pool', 'pools')
         if count == 1:
             response_message = response_message.replace('candidates', 'candidate')
-        if not isinstance(user_specific_date, datetime.datetime) and not is_valid_year \
+        if not isinstance(user_specific_date, datetime) and not is_valid_year \
                 and user_specific_date is None and message_tokens[-1].lower() not in ['pool']:
             response_message = 'No valid time duration found, showing result from all the times\n %s' % response_message
         return response_message
@@ -451,7 +450,7 @@ class QuestionHandler(object):
         """
         if year.isdigit():
             year_in_number = int(year)
-            current_year = datetime.datetime.utcnow().year
+            current_year = datetime.utcnow().year
             if 1900 < year_in_number <= current_year:
                 return True
             return -1
@@ -480,13 +479,13 @@ class QuestionHandler(object):
         if message_tokens[last_index + 1][0] == '-':
             return 'Negative numbers are not acceptable'
         if duration_type.lower() in 'years':
-            user_specific_date = datetime.datetime.utcnow() - relativedelta(years=duration)
+            user_specific_date = datetime.utcnow() - relativedelta(years=duration)
         if duration_type.lower() in 'months':
-            user_specific_date = datetime.datetime.utcnow() - relativedelta(months=duration)
+            user_specific_date = datetime.utcnow() - relativedelta(months=duration)
         if duration_type.lower() in 'weeks':
-            user_specific_date = datetime.datetime.utcnow() - relativedelta(weeks=duration)
+            user_specific_date = datetime.utcnow() - relativedelta(weeks=duration)
         if duration_type.lower() in 'days':
-            user_specific_date = datetime.datetime.utcnow() - relativedelta(days=duration)
+            user_specific_date = datetime.utcnow() - relativedelta(days=duration)
         return user_specific_date
 
     @staticmethod
