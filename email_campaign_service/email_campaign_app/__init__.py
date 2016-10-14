@@ -12,15 +12,8 @@ app, logger = init_talent_app(__name__)
 # Instantiate Flask-Cache object
 cache = Cache(app, config={'CACHE_TYPE': 'redis', 'CACHE_REDIS_URL': app.config['REDIS_URL']})
 
-try:
-    # Celery app
-    celery_app = init_celery_app(app, CampaignUtils.EMAIL,
-                                 ['email_campaign_service.modules.email_marketing',
-                                  'email_campaign_service.modules.utils',
-                                  'email_campaign_service.modules.email_clients'])
-    db.create_all()
-    db.session.commit()
-
-except Exception as e:
-    logger.exception("Couldn't start email_campaign_service in %s environment because: %s"
-                     % (app.config[TalentConfigKeys.ENV_KEY], e.message))
+# Celery app
+celery_app = init_celery_app(app, CampaignUtils.EMAIL,
+                             ['email_campaign_service.modules.email_marketing',
+                              'email_campaign_service.modules.utils',
+                              'email_campaign_service.modules.email_clients'])

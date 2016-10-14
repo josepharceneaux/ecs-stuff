@@ -180,7 +180,6 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
     :type campaign: EmailCampaign
     :type new_candidates_only: bool
     """
-
     if not isinstance(campaign, EmailCampaign):
         raise InternalServerError(error_message='Must provide valid EmailCampaign object.')
     raise_if_not_instance_of(new_candidates_only, bool)
@@ -262,9 +261,7 @@ def send_campaign_to_candidates(user_id, candidate_ids_and_emails, blast_params,
     if not email_campaign_blast_id:
         raise InternalServerError(error_message='email_campaign_blast_id must be provided.')
     campaign_type = campaign.__tablename__
-    callback = post_processing_campaign_sent.subtask((campaign,
-                                                      new_candidates_only,
-                                                      email_campaign_blast_id,),
+    callback = post_processing_campaign_sent.subtask((campaign, new_candidates_only, email_campaign_blast_id,),
                                                      queue=campaign_type)
 
     # Here we create list of all tasks.
@@ -278,14 +275,11 @@ def send_campaign_to_candidates(user_id, candidate_ids_and_emails, blast_params,
 
 
 @celery_app.task(name='post_processing_campaign_sent')
-def post_processing_campaign_sent(celery_result, campaign,
-                                  new_candidates_only,
-                                  email_campaign_blast_id):
+def post_processing_campaign_sent(celery_result, campaign, new_candidates_only, email_campaign_blast_id):
     """
-    Callback for all celery tasks sending campaign emails to candidates.
-    celery_result would contain the return valuse of all the tasks, we would
-    update the sends count with the number of email sending tasks that were
-    sccessful.
+    Callback for all celery tasks sending campaign emails to candidates. celery_result would contain the return
+    values of all the tasks, we would update the sends count with the number of email sending tasks that were
+    successful.
     :param celery_result: result af all celery tasks
     :param campaign: Valid EmailCampaign object
     :param new_candidates_only: True if emails sent to new candidates only
@@ -417,7 +411,7 @@ def get_email_campaign_candidate_ids_and_emails(campaign, smartlist_ids, new_can
     return get_priority_emails(campaign.user, subscribed_candidate_ids)
 
 
-def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candidate_address,
+def send_campaign_emails_to_candidate(user_id, campaign, candidate_id, candidate_address,
                                       blast_params=None, email_campaign_blast_id=None,
                                       blast_datetime=None):
     """
@@ -425,14 +419,14 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
     email campaigns to candidates' email addresses, otherwise it sends the email campaign to
     'gettalentmailtest@gmail.com' or email id of user.
     :param user_id: user object
-    :param campaign_id: email campaign id
+    :param campaign: email campaign object
     :param candidate_id: candidate id
     :param candidate_address: candidate email address
     :param blast_params: parameters of email campaign blast
     :param email_campaign_blast_id: id of email campaign blast object
     :param blast_datetime: email campaign blast datetime
     :type user_id: int | long
-    :type campaign_id: int | long
+    :type campaign: EmailCampaign
     :type candidate_id: int | long
     :type candidate_address: str
     :type blast_params: dict | None
@@ -440,13 +434,13 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
     :type blast_datetime: datetime | None
     """
     raise_if_not_positive_int_or_long(user_id)
-    raise_if_not_positive_int_or_long(campaign_id)
+    raise_if_not_instance_of(campaign, EmailCampaign)
     raise_if_not_positive_int_or_long(candidate_id)
 
     if email_campaign_blast_id:
         raise_if_not_positive_int_or_long(email_campaign_blast_id)
 
-    raise_if_not_instance_of(candidate_address, (str, unicode))
+    raise_if_not_instance_of(candidate_address, basestring)
 
     if blast_datetime:
         raise_if_not_instance_of(blast_datetime, datetime)
@@ -454,8 +448,8 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
     if blast_params:
         raise_if_not_instance_of(blast_params, dict)
 
-    campaign = EmailCampaign.get_by_id(campaign_id)
     candidate = Candidate.get_by_id(candidate_id)
+
     new_text, new_html, subject, email_campaign_send, blast_params, _ = \
         get_new_text_html_subject_and_campaign_send(campaign.id, candidate_id,
                                                     blast_params=blast_params,
@@ -558,17 +552,18 @@ def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_
     raise_if_not_positive_int_or_long(user_id)
     raise_if_not_instance_of(campaign, EmailCampaign)
     raise_if_not_positive_int_or_long(candidate_id)
-    raise_if_not_instance_of(candidate_address, (str, unicode))
+    raise_if_not_instance_of(candidate_address, basestring)
     raise_if_not_instance_of(blast_params, dict)
     raise_if_not_positive_int_or_long(email_campaign_blast_id)
     raise_if_not_instance_of(blast_datetime, datetime)
 
     with app.app_context():
         logger.info('sending campaign to candidate(id:%s).' % candidate_id)
+        [campaign] = EmailCampaign.refresh_all([campaign])
         try:
             result_sent = send_campaign_emails_to_candidate(
                 user_id=user_id,
-                campaign_id=campaign.id,
+                campaign=campaign,
                 candidate_id=candidate_id,
                 # candidates.find(lambda row: row.id == candidate_id).first(),
                 candidate_address=candidate_address,
@@ -578,8 +573,7 @@ def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_
             )
             return result_sent
         except Exception as error:
-            logger.exception('Error while sending email campaign(id:%s) to '
-                             'candidate(id:%s). Error is: %s'
+            logger.exception('Error while sending email campaign(id:%s) to candidate(id:%s). Error is: %s'
                              % (campaign.id, candidate_id, error.message))
             db.session.rollback()
             return False
@@ -659,8 +653,7 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id,
     [new_html, new_text, subject] = do_mergetag_replacements([new_html, new_text,
                                                               campaign.subject], candidate)
     # Perform URL conversions and add in the custom HTML
-    logger.info('get_new_text_html_subject_and_campaign_send: email_campaign_send_id: %s'
-                % email_campaign_send.id)
+    logger.info('get_new_text_html_subject_and_campaign_send: email_campaign_send_id: %s' % email_campaign_send.id)
     new_text, new_html = \
         create_email_campaign_url_conversions(
             new_html=new_html,
