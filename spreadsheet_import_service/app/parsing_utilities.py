@@ -105,7 +105,7 @@ def convert_csv_to_table(csv_file):
 
 @celery_app.task()
 def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool_ids,
-                            oauth_token, secret_key_id, user_id, is_scheduled=False, source_id=None,
+                            oauth_token, user_id, is_scheduled=False, source_id=None,
                             formatted_candidate_tags=None):
     """
     This function will create new candidates from information of candidates given in a csv file
@@ -115,7 +115,6 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
     :param header_row: An array of headers of candidate's spreadsheet
     :param talent_pool_ids: An array on talent_pool_ids
     :param oauth_token: OAuth token of logged-in user
-    :param secret_key_id: Secret key ID if using v2 auth (JWT)
     :param is_scheduled: Is this method called asynchronously ?
     :param user_id: User id of logged-in user
     :type formatted_candidate_tags: list[dict[str]]
@@ -297,8 +296,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
             candidate_data = {key: value for key, value in candidate_data.items() if value is not None}
 
-            created, response = create_candidates_from_parsed_spreadsheet(candidate_data, oauth_token,
-                                                                          secret_key_id=secret_key_id)
+            created, response = create_candidates_from_parsed_spreadsheet(candidate_data, oauth_token)
 
             if created:
                 response_candidate_ids = [candidate.get('id') for candidate in response.get('candidates', [])]
@@ -306,7 +304,6 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                 # Adding Notes and Tags to Candidate Object
                 if response_candidate_ids:
                     add_extra_fields_to_candidate(response_candidate_ids[0], oauth_token,
-                                                  secret_key_id=secret_key_id,
                                                   tags=candidate_tags,
                                                   notes=candidate_notes)
 
@@ -369,7 +366,7 @@ def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
     return areas
 
 
-def create_candidates_from_parsed_spreadsheet(candidate_dict, oauth_token, secret_key_id=None):
+def create_candidates_from_parsed_spreadsheet(candidate_dict, oauth_token):
     """
     Create a new candidate using candidate_service
     :param candidate_dict: A list of dicts containing information for new candidates
@@ -378,8 +375,6 @@ def create_candidates_from_parsed_spreadsheet(candidate_dict, oauth_token, secre
     :rtype: dict
     """
     headers = {'Authorization': oauth_token, 'content-type': 'application/json'}
-    if secret_key_id:
-        headers['X-Talent-Secret-Key-ID'] = secret_key_id
     r = requests.post(CandidateApiUrl.CANDIDATES,
                       data=json.dumps({'candidates': [candidate_dict]}),
                       headers=headers)
@@ -405,7 +400,7 @@ def create_candidates_from_parsed_spreadsheet(candidate_dict, oauth_token, secre
         return False, {"error": "Couldn't create/update candidate from candidate dict %s" % candidate_dict}
 
 
-def add_extra_fields_to_candidate(candidate_id, oauth_token, secret_key_id=None, tags=None, notes=None):
+def add_extra_fields_to_candidate(candidate_id, oauth_token, tags=None, notes=None):
     """
     This endpoint will add such fields to candidate object that cannot be added through Candidate API
     :param candidate_id: Id of candidate
@@ -416,8 +411,6 @@ def add_extra_fields_to_candidate(candidate_id, oauth_token, secret_key_id=None,
     :return:
     """
     headers = {'Authorization': oauth_token, 'content-type': 'application/json'}
-    if secret_key_id:
-        headers['X-Talent-Secret-Key-ID'] = secret_key_id
     if tags:
         response = requests.post(CandidateApiUrl.TAGS % str(candidate_id), headers=headers,
                                  data=json.dumps({'tags': tags}))
@@ -431,7 +424,7 @@ def add_extra_fields_to_candidate(candidate_id, oauth_token, secret_key_id=None,
             logger.error("Couldn't add Notes to candidate with id: %s. Response:", str(candidate_id), response)
 
 
-def update_candidate_from_parsed_spreadsheet(candidate_dict, oauth_token, secret_key_id=None):
+def update_candidate_from_parsed_spreadsheet(candidate_dict, oauth_token):
     """
     This method will update an already existing candidates from candidate dict
     :param candidate_dict: Dictionaries of candidates to be cretaed
@@ -439,8 +432,6 @@ def update_candidate_from_parsed_spreadsheet(candidate_dict, oauth_token, secret
     :return:
     """
     headers = {'Authorization': oauth_token, 'content-type': 'application/json'}
-    if secret_key_id:
-        headers['X-Talent-Secret-Key-ID'] = secret_key_id
     r = requests.patch(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': [candidate_dict]}),
                        headers=headers)
 
@@ -475,8 +466,7 @@ def schedule_spreadsheet_import(import_args):
         "post_data": import_args
     }
     headers = {'Authorization': request.oauth_token, 'Content-Type': 'application/json'}
-    if request.secret_key_id:
-        headers['X-Talent-Secret-Key-ID'] = request.secret_key_id
+
     try:
         print SchedulerApiUrl.TASKS
         response = requests.post(SchedulerApiUrl.TASKS, headers=headers, data=json.dumps(data))

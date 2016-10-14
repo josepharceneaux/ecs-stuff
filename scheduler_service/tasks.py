@@ -24,7 +24,7 @@ from scheduler_service import celery_app as celery, flask_app as app, TalentConf
 
 
 @celery.task(name="send_request", queue=SchedulerUtils.QUEUE)
-def send_request(access_token, secret_key_id, url, content_type, post_data, is_jwt_request=False, request_method='post'):
+def send_request(access_token, url, content_type, post_data, is_jwt_request=False, request_method='post'):
     """
     This method will be called by run_job asynchronously
     :param access_token: authorization token for user
@@ -45,11 +45,6 @@ def send_request(access_token, secret_key_id, url, content_type, post_data, is_j
         # If content_type is json then it should dump json data
         if content_type == 'application/json':
             post_data = json.dumps(post_data)
-        if secret_key_id:
-            headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
-            # If user doesn't want to send jwt request, then delete 'X-Talent-Secret-Key-ID' key to avoid jwt auth
-            if not is_jwt_request:
-                del headers['X-Talent-Secret-Key-ID']
 
         # Send request to URL with job post data
         logger.info("Sending %s request to %s" % (request_method, url))
