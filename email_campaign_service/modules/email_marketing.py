@@ -208,10 +208,11 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
             # Do not send mail if email_client_id is provided
             # Loop through each candidate and get new_html and new_text
             for candidate_id, candidate_address in candidate_ids_and_emails:
+                candidate = Candidate.get_by_id(candidate_id)
+                [campaign] = EmailCampaign.refresh_all([campaign])
                 new_text, new_html = get_new_text_html_subject_and_campaign_send(
-                    campaign.id, candidate_id, blast_params=blast_params,
-                    email_campaign_blast_id=email_campaign_blast_id,
-                    blast_datetime=blast_datetime)[:2]
+                    campaign, candidate, blast_params=blast_params,
+                    email_campaign_blast_id=email_campaign_blast_id, blast_datetime=blast_datetime)[:2]
                 logger.info("Marketing email added through client %s", campaign.email_client_id)
                 resp_dict = dict()
                 resp_dict['new_html'] = new_html
@@ -448,8 +449,7 @@ def send_campaign_emails_to_candidate(user_id, campaign, candidate, candidate_ad
         raise_if_not_instance_of(blast_params, dict)
 
     new_text, new_html, subject, email_campaign_send, blast_params, _ = \
-        get_new_text_html_subject_and_campaign_send(campaign.id, candidate.id,
-                                                    blast_params=blast_params,
+        get_new_text_html_subject_and_campaign_send(campaign, candidate, blast_params=blast_params,
                                                     email_campaign_blast_id=email_campaign_blast_id,
                                                     blast_datetime=blast_datetime)
     logger.info('send_campaign_emails_to_candidate: Candidate id:%s ' % candidate.id)
@@ -578,27 +578,24 @@ def send_email_campaign_to_candidate(user_id, campaign, candidate, candidate_add
             return False
 
 
-def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id,
-                                                blast_params=None, email_campaign_blast_id=None,
+def get_new_text_html_subject_and_campaign_send(campaign, candidate, blast_params=None, email_campaign_blast_id=None,
                                                 blast_datetime=None):
     """
     This gets new_html and new_text by URL conversion method and returns
     new_html, new_text, subject, email_campaign_send, blast_params, candidate.
-    :param campaign_id: EmailCampaign object id
-    :param candidate_id: id of candidate
+    :param campaign: EmailCampaign object
+    :param candidate: Candidate object
     :param blast_params: email_campaign blast params
     :param email_campaign_blast_id:  email campaign blast id
     :param blast_datetime: email campaign blast datetime
-    :type campaign_id: int | long
-    :type candidate_id: int | long
+    :type campaign: EmailCampaign
+    :type candidate: Candidate
     :type blast_params: dict | None
     :type email_campaign_blast_id: int | long | None
     :type blast_datetime: datetime.datetime | None
-    :return:
     """
-    raise_if_not_positive_int_or_long(campaign_id)
-    raise_if_not_positive_int_or_long(candidate_id)
-
+    raise_if_not_instance_of(campaign, EmailCampaign)
+    raise_if_not_instance_of(candidate, Candidate)
     if blast_params:
         raise_if_not_instance_of(blast_params, dict)
     if email_campaign_blast_id:
@@ -606,9 +603,6 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id,
     if blast_datetime:
         raise_if_not_instance_of(blast_datetime, datetime)
 
-    # TODO: We should solve that detached instance issue more gracefully.
-    candidate = Candidate.get_by_id(candidate_id)
-    campaign = EmailCampaign.get_by_id(campaign_id)
     # Set the email campaign blast fields if they're not defined, like if this just a test
     if not email_campaign_blast_id:
         email_campaign_blast = EmailCampaignBlast.get_latest_blast_by_campaign_id(campaign.id)
@@ -626,11 +620,8 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id,
     if not blast_params:
         email_campaign_blast = EmailCampaignBlast.query.get(email_campaign_blast_id)
         blast_params = dict(sends=email_campaign_blast.sends, bounces=email_campaign_blast.bounces)
-    EmailCampaign.session.commit()
-    email_campaign_send = EmailCampaignSend(campaign_id=campaign_id,
-                                            candidate_id=candidate.id,
-                                            sent_datetime=blast_datetime,
-                                            blast_id=email_campaign_blast_id)
+    email_campaign_send = EmailCampaignSend(campaign_id=campaign.id, candidate_id=candidate.id,
+                                            sent_datetime=blast_datetime, blast_id=email_campaign_blast_id)
     EmailCampaignSend.save(email_campaign_send)
     # If the campaign is a subscription campaign, its body & subject are
     # candidate-specific and will be set here
@@ -645,24 +636,20 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id,
     #             for campaign_field_name, campaign_field_value in campaign_fields.items():
     #                 campaign[campaign_field_name] = campaign_field_value
     new_html, new_text = campaign.body_html or "", campaign.body_text or ""
-    logger.info('get_new_text_html_subject_and_campaign_send: candidate_id: %s'
-                % candidate.id)
+    logger.info('get_new_text_html_subject_and_campaign_send: candidate_id: %s' % candidate.id)
 
     # Perform MERGETAG replacements
-    [new_html, new_text, subject] = do_mergetag_replacements([new_html, new_text,
-                                                              campaign.subject], candidate)
+    [new_html, new_text, subject] = do_mergetag_replacements([new_html, new_text, campaign.subject], candidate)
     # Perform URL conversions and add in the custom HTML
     logger.info('get_new_text_html_subject_and_campaign_send: email_campaign_send_id: %s' % email_campaign_send.id)
-    new_text, new_html = \
-        create_email_campaign_url_conversions(
-            new_html=new_html,
-            new_text=new_text,
-            is_track_text_clicks=campaign.is_track_text_clicks,
-            is_track_html_clicks=campaign.is_track_html_clicks,
-            custom_url_params_json=campaign.custom_url_params_json,
-            is_email_open_tracking=campaign.is_email_open_tracking,
-            custom_html=campaign.custom_html,
-            email_campaign_send_id=email_campaign_send.id)
+    new_text, new_html = create_email_campaign_url_conversions(new_html=new_html,
+                                                               new_text=new_text,
+                                                               is_track_text_clicks=campaign.is_track_text_clicks,
+                                                               is_track_html_clicks=campaign.is_track_html_clicks,
+                                                               custom_url_params_json=campaign.custom_url_params_json,
+                                                               is_email_open_tracking=campaign.is_email_open_tracking,
+                                                               custom_html=campaign.custom_html,
+                                                               email_campaign_send_id=email_campaign_send.id)
     return new_text, new_html, subject, email_campaign_send, blast_params, candidate
 
 
