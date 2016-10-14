@@ -360,9 +360,9 @@ def generate_jwt_headers(content_type=None, user_id=None):
     """
     if user_id:
         raise_if_not_positive_int_or_long(user_id)
-    secret_key_id, jw_token = User.generate_jw_token(
+    jw_token = User.generate_jw_token(
         user_id=request.user.id if hasattr(request, 'user') else user_id)
-    headers = {'Authorization': jw_token, 'X-Talent-Secret-Key-ID': secret_key_id}
+    headers = {'Authorization': jw_token}
     if content_type:
         headers['Content-Type'] = content_type
     return headers

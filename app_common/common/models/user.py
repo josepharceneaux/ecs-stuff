@@ -76,14 +76,14 @@ class User(db.Model):
                              cascade='all, delete-orphan', passive_deletes=True)
 
     @staticmethod
-    def generate_jw_token(expiration=600, user_id=None):
+    def generate_jw_token(expiration=7200, user_id=None):
         secret_key_id = str(uuid.uuid4())[0:10]
         secret_key = os.urandom(24)
         redis_store.setex(secret_key_id, secret_key, expiration)
         s = Serializer(secret_key, expires_in=expiration)
         if current_app:
             current_app.logger.info('Creating jw token. secret_key_id %s, secret_key: %s', secret_key_id, secret_key)
-        return secret_key_id, 'Bearer %s' % s.dumps({'user_id': user_id})
+        return 'Bearer %s.%s' % (s.dumps({'user_id': user_id}), secret_key_id)
 
     @staticmethod
     def verify_jw_token(secret_key_id, token, allow_null_user=False, allow_candidate=False):

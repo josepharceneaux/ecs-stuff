@@ -59,11 +59,9 @@ def generate_jwt_header(oauth_token=None, user_id=None):
     """
 
     if not oauth_token:
-        secret_key, oauth_token = User.generate_jw_token(user_id=user_id)
-        headers = {'Authorization': oauth_token, 'X-Talent-Secret-Key-ID': secret_key,
-                   'Content-Type': 'application/json'}
-    else:
-        headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
+        oauth_token = User.generate_jw_token(user_id=user_id)
+
+    headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
 
     return headers
 
