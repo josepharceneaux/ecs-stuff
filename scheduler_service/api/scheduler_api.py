@@ -108,7 +108,7 @@ class Tasks(Resource):
         if not (str(per_page).isdigit() and int(per_page) >= default_per_page):
             raise InvalidUsage(
                 error_message="'per_page' arg should be a digit and its value should be greater or equal to 10")
-
+ 
         page, per_page = int(page), int(per_page)
 
         # Limit the jobs if user requests jobs greater than 50
