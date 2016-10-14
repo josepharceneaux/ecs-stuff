@@ -32,6 +32,7 @@ def require_oauth(allow_null_user=False, allow_candidate=False):
             except KeyError:
                 raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
 
+            request.secret_key_id = None
             if len(oauth_token.replace('Bearer', '').strip().split('.')) == 3:
                 # JWTs have `dot` separated three parts separated
 
@@ -41,6 +42,7 @@ def require_oauth(allow_null_user=False, allow_candidate=False):
                     json_web_token = oauth_token.replace('Bearer', '').strip()
                     User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
                     request.oauth_token = ''
+                    request.secret_key_id = request.headers['X-Talent-Secret-Key-ID']
                     return func(*args, **kwargs)
 
                 else:
@@ -108,6 +110,7 @@ def require_jwt_oauth(allow_null_user=False, allow_candidate=False):
             except KeyError:
                 raise UnauthorizedError("`X-Talent-Secret-Key-ID` or `Authorization` Header is missing")
 
+            request.secret_key_id = None
             if 'X-Talent-Secret-Key-ID' in request.headers and request.headers['X-Talent-Secret-Key-ID']:
 
                 # Using Dynamic SECRET KEY
