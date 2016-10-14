@@ -16,16 +16,13 @@ from ..routes import AuthApiUrl, AuthApiUrlV2
 from ..models.user import User, Role
 
 
-def require_oauth(allow_jwt_based_auth=True, allow_null_user=False, allow_candidate=False):
+def require_oauth(allow_null_user=False, allow_candidate=False):
     """
     This method will verify Authorization header of request using getTalent AuthService or Basic HTTP secret-key based
     Auth and will set request.user and request.oauth_token
-    :param bool allow_jwt_based_auth: Either JWT based authentication is supported for a particular endpoint or not ?
     :param allow_null_user: Is user necessary for Authorization or not ?
     :param allow_candidate: Allow Candidate Id in JWT payload
     """
-
-    # TODO: Remove allow_jwt_based_auth Variable as we no longer need it
 
     def auth_wrapper(func):
         @wraps(func)
@@ -65,7 +62,7 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False, allow_candid
                     else:
                         valid_user_id = response.json().get('user_id')
                         request.user = User.query.get(valid_user_id)
-                        request.oauth_token = oauth_token
+                        request.oauth_token = ''
                         request.candidate = None
                         return func(*args, **kwargs)
 
