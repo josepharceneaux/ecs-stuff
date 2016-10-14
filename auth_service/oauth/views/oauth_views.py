@@ -33,7 +33,10 @@ def refresh_token_v2():
     """ Refresh an access_token for a user """
 
     secret_key_id, authenticated_user = authenticate_request()
-    redis_store.delete(secret_key_id)
+
+    if secret_key_id:
+        redis_store.delete(secret_key_id)
+
     return save_token_v2(authenticated_user)
 
 
@@ -41,7 +44,8 @@ def refresh_token_v2():
 def revoke_token_v2():
     """ Revoke an access_token """
     secret_key_id, authenticated_user = authenticate_request()
-    redis_store.delete(secret_key_id)
+    if secret_key_id:
+        redis_store.delete(secret_key_id)
     return '', 200
 
 
@@ -62,7 +66,6 @@ def access_token_of_user_v2(user_id):
     """
 
     secret_key_id, authenticated_user = authenticate_request()
-
     user_permission = [permission.name for permission in authenticated_user.role.get_all_permissions_of_role()]
 
     if Permission.PermissionNames.CAN_IMPERSONATE_USERS not in user_permission:
@@ -149,4 +152,3 @@ def access_token_of_user(user_id):
 
     save_token_v1(token, request)
     return jsonify(token), 200
-

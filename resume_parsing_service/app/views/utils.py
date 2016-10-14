@@ -23,7 +23,7 @@ def create_parsed_resume_candidate(candidate_dict, formatted_token_str):
     """
     Sends candidate dict to candidate service POST and returns response.
     :param dict candidate_dict: dict containing candidate info in candidate format.
-    :param unicode formatted_token_str: string in format 'Bearer foo'.
+    :param string formatted_token_str: string in format 'Bearer foo'.
     :return: Tuple stating if candidate was created and the corresponding id.
     :rtype: tuple(bool, int|long)
     """
@@ -159,7 +159,7 @@ def send_candidate_references(candidate_references, candidate_id, oauth_string):
 def get_users_talent_pools(formatted_token_str):
     """
     Uses the candidate pool service to get talent pools of a user's domain via their token.
-    :param unicode formatted_token_str: "bearer foo" formatted string; as it appears in header.
+    :param string formatted_token_str: "bearer foo" formatted string; as it appears in header.
     :return: List of talent pools ids
     :rtype: list(int)
     """
@@ -220,3 +220,15 @@ def resume_file_from_params(parse_params):
         )
 
     return resume_file
+
+
+def extra_skills_parsing(encoded_text):
+    url = current_app.config["JD_URL"]
+    payload = json.dumps({'text': encoded_text})
+    try:
+        skills_response = requests.post(url, data=payload)
+    except requests.exceptions.ConnectionError:
+        logger.exception("Unable to obtain extra skills from lambda call")
+
+    loaded_response = json.loads(skills_response.content)
+    return loaded_response.get('skills')

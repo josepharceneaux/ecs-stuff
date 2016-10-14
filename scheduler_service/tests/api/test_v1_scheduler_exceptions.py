@@ -185,6 +185,7 @@ class TestSchedulerExceptions(object):
         # Invalid usage exception. run_datetime cannot be in past
         assert response.status_code == 400
 
+    # TODO: flaky test: http://jenkins.gettalent.com:8080/job/talent-flask-services/6196/console  - Amir
     # def test_schedule_job_with_wrong_taskname_without_user(self, auth_header_no_user, job_config, job_cleanup):
     #     """
     #     Create a job by hitting the endpoint with secret_key (global tasks) and make sure we get job_id in
@@ -195,7 +196,6 @@ class TestSchedulerExceptions(object):
     #         auth_data: Fixture that contains token.
     #         job_config (dict): Fixture that contains job config to be used as
     #         POST data while hitting the endpoint.
-    #     :return:
     #     """
     #
     #     # Assign task_name in job post data (general task) with not allowed characters

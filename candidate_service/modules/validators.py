@@ -79,10 +79,29 @@ def get_candidate_if_validated(user, candidate_id):
         raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id),
                             error_code=custom_error.CANDIDATE_IS_HIDDEN)
 
-    if user.role.name != 'TALENT_ADMIN' and candidate.user.domain_id != user.domain_id:
+    if user and user.role.name != 'TALENT_ADMIN' and candidate.user.domain_id != user.domain_id:
         raise ForbiddenError("Not authorized", custom_error.CANDIDATE_FORBIDDEN)
 
     return candidate
+
+
+def authenticate_candidate_preference_request(request_object, candidate_id):
+    """
+    This method will check either user or candidate is authorized to access Candidate Preference EndPoint
+    :param request_object: Flask Request Object
+    :param candidate_id: Id of candidate
+    :return:
+    """
+    # Ensure Candidate exists & is not web-hidden
+    candidate_object = get_candidate_if_validated(request_object.user, candidate_id)
+
+    if (request_object.candidate and request_object.candidate.id != candidate_id) or (
+                request_object.user and request_object.user.domain_id != candidate_object.user.domain_id):
+        raise ForbiddenError("You are not authorized to change subscription preference of "
+                             "candidate: %s" % candidate_id)
+
+    return candidate_object
+
 
 
 def does_candidate_belong_to_user_and_its_domain(user_row, candidate_id):
@@ -399,19 +418,36 @@ def is_date_valid(date):
 
 def does_address_exist(candidate, address_dict):
     """
+    Will check if candidate's provided addresses match any of candidate's existing addresses,
+      if so, we assume the address is duplicate, otherwise it's unique
     :type candidate:  Candidate
     :type address_dict:  dict[str]
     :rtype:  bool
     """
     for address in candidate.addresses:
+        # Candidate's existing address information
         address_line_1, address_line_2 = (address.address_line_1 or '').lower(), (address.address_line_2 or '').lower()
+        city, state = (address.city or '').lower(), (address.state or '').lower()
+
+        # Candidate's provided address information
         address_dict_address_line_1 = (address_dict.get('address_line_1') or '').lower()
         address_dict_address_line_2 = (address_dict.get('address_line_2') or '').lower()
+        address_dict_city = (address_dict.get('city') or '').lower()
+        address_dict_state = (address_dict.get('state') or '').lower()
+
+        # If address line 1 is recognized, we assume it's duplicate address
         if address_line_1 and not address_line_2:
             if address_line_1 == address_dict_address_line_1:
                 return True
+
+        # If address line 1 and address line 2 are recognized, we assume it's duplicate address
         elif address_line_1 and address_line_2:
             if address_line_1 == address_dict_address_line_1 and address_line_2 == address_dict_address_line_2:
+                return True
+
+        # If only city & state are provided and they are recognized, we assume it's duplicate address
+        elif (not address_line_1 and not address_line_2) and (city and state):
+            if city == address_dict_city and state == address_dict_state:
                 return True
     return False
 

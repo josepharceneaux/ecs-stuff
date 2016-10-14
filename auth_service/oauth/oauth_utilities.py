@@ -7,6 +7,7 @@ from auth_service.common.models.user import *
 from auth_service.common.redis_cache import redis_store
 from auth_service.oauth import logger, app
 from datetime import datetime, timedelta
+from auth_service.common.talent_config_manager import TalentConfigKeys
 from ..custom_error_codes import AuthServiceCustomErrorCodes as custom_errors
 
 MAXIMUM_NUMBER_OF_INVALID_LOGIN_ATTEMPTS = 5
@@ -76,10 +77,11 @@ def save_token_v2(user):
     expires = current_date_time + timedelta(seconds=app.config['JWT_OAUTH_EXPIRATION'])
     expires_at = expires.strftime("%d/%m/%Y %H:%M:%S")
 
-    secret_key_id = str(uuid.uuid4())[0:10]
-    secret_key = os.urandom(24).encode('hex')
-    redis_store.setex(secret_key_id, secret_key, app.config['JWT_OAUTH_EXPIRATION'])
-    s = Serializer(secret_key, expires_in=app.config['JWT_OAUTH_EXPIRATION'])
+    # secret_key_id = str(uuid.uuid4())[0:10]
+    # secret_key = os.urandom(24).encode('hex')
+    # redis_store.setex(secret_key_id, secret_key, app.config['JWT_OAUTH_EXPIRATION'])
+
+    s = Serializer(app.config[TalentConfigKeys.SECRET_KEY], expires_in=app.config['JWT_OAUTH_EXPIRATION'])
 
     payload = dict(
         user_id=user.id,
@@ -94,18 +96,22 @@ def save_token_v2(user):
         access_token=s.dumps(payload),
         expires_at=expires_at,
         token_type="Bearer",
-        secret_key_id=secret_key_id
+        secret_key_id=''
     ))
 
 
-def verify_jwt(secret_key_id, token):
+def verify_jwt(token, secret_key_id=''):
     """
     This method will authenticate/verify a json web token
     :param secret_key_id: Redis key of SECRET_KEY
     :param token: JSON Web Token (JWT)
     :return:
     """
-    s = Serializer(redis_store.get(secret_key_id) or '')
+    if secret_key_id:
+        s = Serializer(redis_store.get(secret_key_id) or '')
+    else:
+        s = Serializer(app.config[TalentConfigKeys.SECRET_KEY])
+
     try:
         data = s.loads(token)
     except BadSignature:
@@ -133,12 +139,12 @@ def authenticate_request():
     :return: None
     """
     try:
-        secret_key_id = request.headers['X-Talent-Secret-Key-ID']
+        secret_key_id = request.headers.get('X-Talent-Secret-Key-ID', '')
         json_web_token = request.headers['Authorization'].replace('Bearer', '').strip()
     except KeyError:
         raise UnauthorizedError("`X-Talent-Secret-Key-ID` or `Authorization` Header is missing")
 
-    return secret_key_id, verify_jwt(secret_key_id, json_web_token)
+    return secret_key_id, verify_jwt(json_web_token, secret_key_id)
 
 
 def load_client(client_id):

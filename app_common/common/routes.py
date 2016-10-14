@@ -101,6 +101,7 @@ class GTApis(object):
     ATS_SERVICE_PORT = 8015
     MOCK_SERVICE_PORT = 8016
     TALENTBOT_PORT = 8017
+    GRAPHQL_SERVICE_PORT = 8018
 
     # Names of flask micro services
     AUTH_SERVICE_NAME = 'auth-service'
@@ -120,6 +121,7 @@ class GTApis(object):
     ATS_SERVICE_NAME = 'ats-service'
     MOCK_SERVICE_NAME = 'mock-service'
     TALENTBOT_SERVICE_NAME = 'talentbot-service'
+    GRAPHQL_SERVICE = 'graphql-service'
 
     # CORS headers
     CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com$",
@@ -136,7 +138,7 @@ class AuthApi(object):
     TOKEN_CREATE = '/' + VERSION + '/oauth2/token'
     TOKEN_REVOKE = '/' + VERSION + '/oauth2/revoke'
     AUTHORIZE = '/' + VERSION + '/oauth2/authorize'
-    TOKEN_OF_ANY_USER = '/' + VERSION + 'users/<int:user_id>/token'
+    TOKEN_OF_ANY_USER = '/' + VERSION + '/users/<int:user_id>/token'
 
 
 class AuthApiUrl(object):
@@ -149,7 +151,7 @@ class AuthApiUrl(object):
     TOKEN_CREATE = HOST_NAME % ('/' + VERSION + '/oauth2/token')
     TOKEN_REVOKE = HOST_NAME % ('/' + VERSION + '/oauth2/revoke')
     AUTHORIZE = HOST_NAME % ('/' + VERSION + '/oauth2/authorize')
-    TOKEN_OF_ANY_USER_URL = HOST_NAME % ('/' + VERSION + 'users/%s/token')
+    TOKEN_OF_ANY_USER_URL = HOST_NAME % ('/' + VERSION + '/users/%s/token')
 
 
 class AuthApiV2(object):
@@ -161,7 +163,7 @@ class AuthApiV2(object):
     TOKEN_REFRESH = '/' + VERSION + '/oauth2/refresh'
     TOKEN_REVOKE = '/' + VERSION + '/oauth2/revoke'
     AUTHORIZE = '/' + VERSION + '/oauth2/authorize'
-    TOKEN_OF_ANY_USER = '/' + VERSION + 'users/<int:user_id>/token'
+    TOKEN_OF_ANY_USER = '/' + VERSION + '/users/<int:user_id>/token'
 
 
 class AuthApiUrlV2(object):
@@ -175,7 +177,7 @@ class AuthApiUrlV2(object):
     TOKEN_REFRESH = HOST_NAME % ('/' + VERSION + '/oauth2/refresh')
     TOKEN_REVOKE = HOST_NAME % ('/' + VERSION + '/oauth2/revoke')
     AUTHORIZE = HOST_NAME % ('/' + VERSION + '/oauth2/authorize')
-    TOKEN_OF_ANY_USER_URL = HOST_NAME % ('/' + VERSION + 'users/%s/token')
+    TOKEN_OF_ANY_USER_URL = HOST_NAME % ('/' + VERSION + '/users/%s/token')
 
 
 class ActivityApi(object):
@@ -351,6 +353,7 @@ class CandidateApi(object):
 
     SOCIAL_NETWORKS = '/' + VERSION + '/candidates/<int:candidate_id>/social_networks'
     SOCIAL_NETWORK = '/' + VERSION + '/candidates/<int:candidate_id>/social_networks/<int:id>'
+    CHECK_SOCIAL_NETWORK = '/' + VERSION + '/candidates/social_network'
 
     WORK_PREFERENCES = '/' + VERSION + '/candidates/<int:candidate_id>/work_preferences'
     WORK_PREFERENCE = '/' + VERSION + '/candidates/<int:candidate_id>/work_preferences/<int:id>'
@@ -440,6 +443,7 @@ class CandidateApiUrl(object):
 
     SOCIAL_NETWORKS = HOST_NAME % ('/' + VERSION + '/candidates/%s/social_networks')
     SOCIAL_NETWORK = HOST_NAME % ('/' + VERSION + '/candidates/%s/social_networks/%s')
+    CHECK_SOCIAL_NETWORK = HOST_NAME % ('/' + VERSION + '/candidates/social_network')
 
     WORK_PREFERENCES = HOST_NAME % ('/' + VERSION + '/candidates/%s/work_preferences')
     WORK_PREFERENCE_ID = HOST_NAME % ('/' + VERSION + '/candidates/%s/work_preferences/%s')
@@ -656,6 +660,7 @@ class SocialNetworkApi(object):
     # URL for Twitter authentication
     TWITTER_AUTH = '/' + VERSION + '/twitter-auth'
     TWITTER_CALLBACK = '/' + VERSION + '/twitter-callback/<int:user_id>'
+    GRAPHQL = '/graphql'
 
 
 class SocialNetworkApiUrl(object):
@@ -688,6 +693,7 @@ class SocialNetworkApiUrl(object):
     CODE = HOST_NAME % ('/' + VERSION + '/code')
     IMPORTER = HOST_NAME % ('/' + VERSION + '/import/%s/%s')
     TWITTER_CALLBACK = HOST_NAME % ('/' + VERSION + '/twitter-callback/%s')
+    GRAPHQL = HOST_NAME % '/graphql'
 
 
 class SmsCampaignApi(object):
@@ -875,6 +881,7 @@ class ATSServiceApi(object):
     CANDIDATES = '/' + VERSION + '/ats-candidates/<int:account_id>'
     CANDIDATES_REFRESH = '/' + VERSION + '/ats-candidates/refresh/<int:account_id>'
     CANDIDATE_LINK = '/' + VERSION + '/ats-candidates/link/<int:candidate_id>/<int:ats_candidate_id>'
+    MATCH_AND_LINK = '/' + VERSION  + '/ats-candidates/match-link/<int:account_id>/<string:match_method>'
 
 
 class ATSServiceApiUrl(object):
@@ -891,6 +898,7 @@ class ATSServiceApiUrl(object):
     CANDIDATES = HOST_NAME % ('/' + VERSION  + '/ats-candidates/%s')
     CANDIDATE_REFRESH = HOST_NAME % ('/' + VERSION  + '/ats-candidates/refresh/%s')
     CANDIDATE_LINK = HOST_NAME % ('/' + VERSION  + '/ats-candidates/link/%s/%s')
+    MATCH_AND_LINK = HOST_NAME % ('/' + VERSION  + '/ats-candidates/match-link/%s/%s')
 
 
 class MockServiceApi(object):

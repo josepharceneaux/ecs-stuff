@@ -71,6 +71,23 @@ def snake_case_to_pascal_case(name):
     return class_.join('', map(class_.capitalize, splitted_string))
 
 
+def snake_case_to_camel_case(name):
+    """ Convert string or unicode from lower-case underscore to camel-case
+        e.g. appt_type_id --> apptTypeId
+
+            :Example:
+
+                result = snake_case_to_camel_case('social_network_id')
+                assert result == 'socialNetworkId'
+    """
+    if not isinstance(name, basestring):
+        raise InvalidUsage('Include name as str.')
+    splitted_string = name.split('_')
+    # use string's class to work on the string to keep its type
+    class_ = name.__class__
+    return splitted_string[0] + str.join('', map(class_.capitalize, splitted_string[1:]))
+
+
 def url_conversion(long_url):
     """
     We use Google's URL Shortener API to shorten the given URL.

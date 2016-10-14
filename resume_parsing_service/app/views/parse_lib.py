@@ -32,8 +32,8 @@ def parse_resume(file_obj, filename_str, cache_key):
     """Primary resume parsing function.
 
     :param cStringIO file_obj: a StringIO representation of the raw binary.
-    :param unicode filename_str: The file_obj file name.
-    :param str cache_key: A key used to get/store BG data.
+    :param string filename_str: The file_obj file name.
+    :param string cache_key: A key used to get/store BG data.
     :return: Processed candidate data.
     :rtype: dict
     """
@@ -68,13 +68,13 @@ def parse_resume(file_obj, filename_str, cache_key):
     if not doc_content or len(doc_content) < 10: #  If doc content is < 10 not worth parsing.
         bucket = current_app.config['S3_BUCKET_NAME']
         boto3_put(file_obj.getvalue(), bucket, filename_str, 'FailedResumes')
-        logger.exception("Unable to determine the documents contents of: {}".format(filename_str))
+        logger.error("Unable to determine the documents contents of: {}".format(filename_str))
+        file_obj.close()  # Free file from memory after attempted upload caused by failure.
         raise InvalidUsage(
             error_message=error_constants.NO_TEXT_EXTRACTED['message'],
             error_code=error_constants.NO_TEXT_EXTRACTED['code']
         )
 
-    file_obj.close() # Free file from memory after attempted upload caused by failure.
 
     try:
         encoded_resume = base64.b64encode(doc_content)
@@ -89,9 +89,9 @@ def parse_resume(file_obj, filename_str, cache_key):
     optic_response = fetch_optic_response(encoded_resume, filename_str)
 
     if optic_response:
-        redis_store.set(cache_key, optic_response)
+        redis_store.hmset(cache_key, {'bg_data': optic_response, 'doc_content': encoded_resume})
         redis_store.expire(cache_key, RESUME_EXPIRE_TIME)
-        candidate_data = parse_optic_xml(optic_response)
+        candidate_data = parse_optic_xml(optic_response, encoded_resume)
         return {'raw_response': optic_response, 'candidate': candidate_data}
 
     else:

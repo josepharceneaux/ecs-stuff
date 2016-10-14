@@ -2,6 +2,7 @@
 # pylint: disable=wrong-import-position, fixme, import-error
 __author__ = 'erik@getTalent.com'
 # Standard Library
+from base64 import b64encode
 from time import time
 import datetime
 import HTMLParser
@@ -20,7 +21,8 @@ import pycountry
 from flask import current_app
 from resume_parsing_service.app import logger
 from resume_parsing_service.app.constants import error_constants
-from resume_parsing_service.app.views.OauthClient import OAuthClient
+from resume_parsing_service.app.views.oauth_client2 import get_authorization_string
+from resume_parsing_service.app.views.utils import extra_skills_parsing
 from resume_parsing_service.common.error_handling import InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 from resume_parsing_service.common.utils.handy_functions import normalize_value
@@ -34,20 +36,20 @@ def fetch_optic_response(resume, filename_str):
     """
     Takes in an encoded resume file and returns a bs4 'soup-able' format
     (utf-decode and html escape).
-    :param str resume: a base64 encoded resume file.
+    :param string resume: a base64 encoded resume file.
     :return: HTML unquoted, utf-decoded string that represents the Burning Glass XML.
     :rtype: unicode
     """
     start_time = time()
     bg_url = current_app.config['BG_URL']
-    oauth = OAuthClient(url=bg_url,
-                        method='POST', consumerKey='StevePeck',
-                        consumerSecret=current_app.config['CONSUMER_SECRET'],
-                        token='Utility',
-                        tokenSecret=current_app.config['TOKEN_SECRET'],
-                        signatureMethod='HMAC-SHA1',
-                        oauthVersion='1.0')
-    auth = oauth.get_authorizationString()
+
+    auth_params = {
+        'consumer_key': 'StevePeck',
+        'consumer_secret':  current_app.config['CONSUMER_SECRET'],
+        'token_secret': current_app.config['TOKEN_SECRET'],
+        'endpoint_url': bg_url
+    }
+    auth = get_authorization_string(auth_params)
     headers = {
         'accept': 'application/xml',
         'content-type': 'application/json',
@@ -60,7 +62,7 @@ def fetch_optic_response(resume, filename_str):
     }
 
     try:
-        bg_response = requests.post(bg_url, headers=headers, json=data, timeout=20)
+        bg_response = requests.post(bg_url, headers=headers, json=data, timeout=30)
 
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.exception("Could not reach Burning Glass")
@@ -96,14 +98,16 @@ def fetch_optic_response(resume, filename_str):
 
 
 @contract
-def parse_optic_xml(resume_xml_text):
+def parse_optic_xml(resume_xml_text, encoded_resume_text):
     """
     Takes in a Burning Glass XML tree in string format and returns a candidate JSON object.
     :param string resume_xml_text: An XML tree represented in unicode format. It is a slightly
                                    processed response from the Burning Glass API.
+    :param string encoded_resume_text: b64 encoded resume text for skills parsing.
     :return: Results of various parsing functions on the input xml string.
     :rtype: dict
     """
+    encoded_soup_text = b64encode(bs4(resume_xml_text, 'lxml').getText().encode('utf8', 'replace'))
     contact_xml_list = bs4(resume_xml_text, 'lxml').findAll('contact')
     experience_xml_list = bs4(resume_xml_text, 'lxml').findAll('experience')
     educations_xml_list = bs4(resume_xml_text, 'lxml').findAll('education')
@@ -125,7 +129,7 @@ def parse_optic_xml(resume_xml_text):
         phones=parse_candidate_phones(contact_xml_list),
         work_experiences=parse_candidate_experiences(experience_xml_list),
         educations=parse_candidate_educations(educations_xml_list),
-        skills=parse_candidate_skills(skill_xml_list),
+        skills=parse_candidate_skills(skill_xml_list, encoded_soup_text),
         addresses=parse_candidate_addresses(contact_xml_list),
         talent_pool_ids={'add': None},
         references=references,
@@ -142,8 +146,8 @@ def parse_candidate_name(bs_contact_xml_list):
     :rtype: tuple
     """
 
-    givenname = None # Placeholder for a `first_name`.
-    surname = None # Placeholder for a `last_name`.
+    givenname = None  # Placeholder for a `first_name`.
+    surname = None  # Placeholder for a `last_name`.
 
     for contact in bs_contact_xml_list:
         # If a name is already parsed we do not want to reassign it.
@@ -403,14 +407,14 @@ def parse_candidate_educations(bg_educations_xml_list):
 
 
 @contract
-def parse_candidate_skills(bg_skills_xml_list):
+def parse_candidate_skills(bg_skills_xml_list, encoded_resume_text=None):
     """
     Parses a skill list from a list of skill tags found in a BGXML response.
     :param bs4_ResultSet bg_skills_xml_list:
     :return: List of dicts containing skill data.
     :rtype: list(dict)
     """
-    skills_parsed = {}
+    skills_parsed = set()
     output = []
 
     for skill in bg_skills_xml_list:
@@ -424,6 +428,9 @@ def parse_candidate_skills(bg_skills_xml_list):
 
         parsed_name = name or skill_text
         processed_skill = {'name': parsed_name, 'last_used_date': None, 'months_used': None}
+
+        if processed_skill['name'].lower() in skills_parsed:
+            continue # skip further processing if duplicate.
 
         if start_days and end_days:
             """
@@ -444,9 +451,16 @@ def parse_candidate_skills(bg_skills_xml_list):
         if months_used and months_used > 0: # Rarely a skill will have an end before the start.
             processed_skill['months_used'] = int(months_used)
 
-        if processed_skill['name'] not in skills_parsed:
-            output.append(processed_skill)
-            skills_parsed[processed_skill['name']] = True
+        output.append(processed_skill)
+        skills_parsed.add(processed_skill['name'].lower())
+
+    if encoded_resume_text:
+        bonus_skills = extra_skills_parsing(encoded_resume_text)
+
+        for bonus_skill in bonus_skills:
+            if bonus_skill.lower() not in skills_parsed:
+                skills_parsed.add(bonus_skill.lower())
+                output.append({'name': bonus_skill, 'last_used_date': None, 'months_used': None})
 
     return output
 
@@ -579,8 +593,8 @@ def scrub_candidate_name(name_unicode):
     String version located:
     http://stackoverflow.com/questions/265960/
 
-    :param unicode name_unicode:
-    :return unicode:
+    :param string name_unicode:
+    :return string:
     """
 
     translate_table = dict.fromkeys(i for i in xrange(sys.maxunicode)

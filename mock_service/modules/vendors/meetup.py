@@ -183,7 +183,7 @@ def meetup_vendor_api(event_id=None):
                                      },
                                      "members": fake.random_number(),
                                      "name": fake.word(),
-                                     "id": sys.maxint,
+                                     "id": fake.random_int(1, 100000),
                                      "state": fake.state(),
                                      "urlname": fake.word(),
                                      "category": {

@@ -163,27 +163,6 @@ def test_auth_service_v2(app_context):
     status_code, authorized_user_id = app_context.authorize_token_v2()
     assert status_code == 200
 
-    # Refresh Bearer Token
-    access_token, secret_key_id, status_code = app_context.token_handler_v2(action='refresh')
-    assert status_code == 200
-
-    # Authorize Old Bearer Token
-    status_code, authorized_user_id = app_context.authorize_token_v2()
-    assert status_code == 401
-
-    # Authorize new bearer token
-    app_context.access_token = access_token
-    app_context.secret_key_id = secret_key_id
-    status_code, authorized_user_id = app_context.authorize_token_v2()
-    assert status_code == 200
-
-    # Revoke a Bearer Token
-    assert app_context.token_handler_v2(action='revoke') == 200
-
-    # Authorize Revoked bearer token Bearer Token
-    status_code, authorized_user_id = app_context.authorize_token_v2()
-    assert status_code == 401
-
 
 def test_auth_service_v1(app_context):
 
@@ -283,7 +262,6 @@ def test_get_token_of_any_user_endpoint_v2(user_first, user_second):
     secret_key_id = json_response.get('secret_key_id', '') if json_response else ''
 
     assert access_token
-    assert secret_key_id
 
     headers = {'Authorization': 'Bearer %s' % access_token, 'X-Talent-Secret-Key-ID': secret_key_id}
 
@@ -304,7 +282,6 @@ def test_get_token_of_any_user_endpoint_v2(user_first, user_second):
     assert response.status_code == 200
     response = response.json()
     assert response['access_token']
-    assert response['secret_key_id']
 
     # Logged-in user trying to get logged-in as different user
     headers = {'Authorization': 'Bearer %s' % response['access_token'], 'X-Talent-Secret-Key-ID': response['secret_key_id']}

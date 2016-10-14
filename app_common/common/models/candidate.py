@@ -4,7 +4,7 @@ from sqlalchemy.orm import relationship, backref
 import datetime
 from ..error_handling import InternalServerError
 from ..utils.validators import raise_if_not_positive_int_or_long
-from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
+from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT, SMALLINT
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
@@ -32,7 +32,7 @@ class Candidate(db.Model):
     dice_profile_id = db.Column('DiceProfileId', db.String(128))
     source_id = db.Column('SourceId', db.Integer, db.ForeignKey('candidate_source.Id'))
     source_product_id = db.Column('SourceProductId', db.Integer, db.ForeignKey('product.Id'),
-                                  nullable=False, default=2)  # Web = 2
+                                  nullable=True, default=2)  # Web = 2
     filename = db.Column('Filename', db.String(100))
     objective = db.Column('Objective', db.Text)
     summary = db.Column('Summary', db.Text)
@@ -113,24 +113,26 @@ class Candidate(db.Model):
         db.session.commit()
 
     @staticmethod
-    def get_candidate_count_with_skills(skills):
+    def get_candidate_count_with_skills(skills, user_id):
         """
         This method returns number of candidates who have certain skills
+        :param int user_id: User Id
         :param list skills: Candidate skills
         :return: int: Number of candidates with certain skills
         """
         return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
-            .filter(CandidateSkill.description.in_(skills)).distinct().count()
+            .filter(Candidate.user_id == user_id).filter(CandidateSkill.description.in_(skills)).distinct().count()
 
     @staticmethod
-    def get_candidate_count_from_zipcode(zipcode):
+    def get_candidate_count_from_zipcode(zipcode, user_id):
         """
         This method returns number of candidates from a certain zipcode
+        :param int user_id: User Id
         :param str zipcode: Candidate zipcode
         :rtype: int: Number of candidates from zipcode
         """
         return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
-            filter(CandidateAddress.zip_code == zipcode).count()
+            filter(Candidate.user_id == user_id).filter(CandidateAddress.zip_code == zipcode).count()
 
 
 class CandidateStatus(db.Model):
@@ -375,6 +377,16 @@ class CandidateEmail(db.Model):
 
     def __repr__(self):
         return "<CandidateEmail (address = '{}')".format(self.address)
+
+    # labels_mapping = {1: 'Primary', 2: 'Home', 3: 'Work', 4: 'Other'}
+    labels_mapping = {'Primary': 1, 'Home': 2, 'Work': 3, 'Other': 4}
+
+    @classmethod
+    def identify_label_id(cls, label):
+        for k, v in cls.labels_mapping.iteritems():
+            if label.title() == v:
+                return k
+            return cls.labels_mapping['Other']
 
     @classmethod
     def get_by_id(cls, _id):
@@ -626,12 +638,12 @@ class SocialNetwork(db.Model):
     @classmethod
     def get_by_name(cls, name):
         assert name
-        return cls.query.filter(SocialNetwork.name == name.strip()).one()
+        return cls.query.filter(SocialNetwork.name == name.strip()).first()
 
     @classmethod
     def get_by_id(cls, id):
         assert isinstance(id, (int, long))
-        return cls.query.filter(SocialNetwork.id == id).one()
+        return cls.query.filter(SocialNetwork.id == id).first()
 
     @classmethod
     def get_all(cls):
@@ -651,6 +663,20 @@ class SocialNetwork(db.Model):
     def get_by_ids(cls, ids):
         assert isinstance(ids, list)
         return cls.query.filter(SocialNetwork.id.in_(ids)).all()
+
+    @classmethod
+    def get_subscribed_social_networks(cls, user_id):
+        """
+        This method returns those social networks that a user has subscribed.
+        :param int | long user_id: user id
+        :return: list of social networks
+        :rtype: list
+        """
+        # Due to circular dependency, importing here
+        from user import UserSocialNetworkCredential
+        assert user_id and isinstance(user_id, (int, long)), 'user_id must be a positive number, given: %s' % user_id
+        subscribed_data = UserSocialNetworkCredential.get_by_user_id(user_id=user_id)
+        return cls.query.filter(cls.id.in_([sn.social_network_id for sn in subscribed_data])).all()
 
 
 class CandidateSocialNetwork(db.Model):
@@ -898,6 +924,10 @@ class CandidateMilitaryService(db.Model):
     comments = db.Column('Comments', db.String(5000))
     from_date = db.Column('FromDate', db.DateTime)
     to_date = db.Column('ToDate', db.DateTime)
+    start_year = db.Column(SMALLINT)
+    start_month = db.Column(TINYINT)
+    end_year = db.Column(SMALLINT)
+    end_month = db.Column(SMALLINT)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined

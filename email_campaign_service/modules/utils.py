@@ -1,5 +1,8 @@
 # Standard Imports
+import os
 import json
+import uuid
+import urllib
 import HTMLParser
 from urllib import urlencode
 from datetime import datetime
@@ -10,23 +13,24 @@ from bs4 import BeautifulSoup
 from dateutil.relativedelta import relativedelta
 
 # Service Specific
-from email_campaign_service.email_campaign_app import (logger, celery_app)
+from email_campaign_service.email_campaign_app import (logger, celery_app, cache)
 
 # Common Utils
-from email_campaign_service.common.models.user import User
+from email_campaign_service.common.redis_cache import redis_store
 from email_campaign_service.common.models.misc import UrlConversion
+from email_campaign_service.common.error_handling import InvalidUsage
+from email_campaign_service.common.models.user import User, Serializer
 from email_campaign_service.common.models.email_campaign import EmailCampaignSend
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
+from email_campaign_service.common.routes import (EmailCampaignApiUrl, get_web_app_url)
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
 from email_campaign_service.common.utils.validators import (raise_if_not_instance_of,
                                                             raise_if_not_positive_int_or_long)
 from email_campaign_service.common.models.email_campaign import EmailCampaignSendUrlConversion
-from email_campaign_service.common.routes import (CandidateApiUrl,
-                                                  EmailCampaignApiUrl)
-from email_campaign_service.common.campaign_services.validators import \
-    raise_if_dict_values_are_not_int_or_long
+from email_campaign_service.common.campaign_services.validators import raise_if_dict_values_are_not_int_or_long
 from email_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 
+SIX_MONTHS_EXPIRATION_TIME = 15768000
 DEFAULT_FIRST_NAME_MERGETAG = "*|FIRSTNAME|*"
 DEFAULT_LAST_NAME_MERGETAG = "*|LASTNAME|*"
 DEFAULT_PREFERENCES_URL_MERGETAG = "*|PREFERENCES_URL|*"
@@ -54,6 +58,18 @@ def get_candidates_from_smartlist(list_id, candidate_ids_only=False, user_id=Non
     candidates = get_candidates_of_smartlist(list_id=list_id, candidate_ids_only=candidate_ids_only,
                                              access_token=None, user_id=user_id)
     return candidates
+
+
+@cache.cached(timeout=86400, key_prefix="X-TALENT-SERVER-KEY")
+def jwt_security_key():
+    """
+    This function will return secret_key_id against which a secret_key will be stored in redis
+    :return:
+    """
+    secret_key_id = str(uuid.uuid4())[0:10]
+    secret_key = os.urandom(24).encode('hex')
+    redis_store.setex(secret_key_id, secret_key, SIX_MONTHS_EXPIRATION_TIME)
+    return secret_key_id
 
 
 def do_mergetag_replacements(texts, candidate=None):
@@ -86,11 +102,30 @@ def do_mergetag_replacements(texts, candidate=None):
 
 
 def do_prefs_url_replacement(text, candidate_id):
-    unsubscribe_url = CandidateApiUrl.CANDIDATE_PREFERENCE
-    # unsubscribe_url = current.HOST_NAME + URL(scheme=False, host=False, a='web',
-    #                                           c='candidate', f='prefs',
-    #                                           args=[candidate_id],
-    #                                           hmac_key=current.HMAC_KEY)
+    """
+    Here we do the replacement of merge tag "*|PREFERENCES_URL|*". After replacement this will become the
+    URL for the candidate to unsubscribe the email-campaign.
+    :param string text: This maybe subject, body_html or body_text of email-campaign
+    :param int|long candidate_id: Id of candidate to which email-campaign is supposed to be sent
+    :rtype: string
+    """
+    if not (isinstance(text, basestring) and text):
+        raise InvalidUsage('Text should be non-empty string')
+    if not (isinstance(candidate_id, (int, long)) and candidate_id):
+        raise InvalidUsage('candidate_id should be positive int"long')
+    host_name = get_web_app_url()
+    secret_key_id = jwt_security_key()
+    secret_key = redis_store.get(secret_key_id)
+    s = Serializer(secret_key, expires_in=SIX_MONTHS_EXPIRATION_TIME)
+
+    payload = {
+        "candidate_id": candidate_id
+    }
+
+    unsubscribe_url = host_name + ('/candidates/%s/preferences?%s' % (str(candidate_id), urllib.urlencode({
+        'secret_key_id': secret_key_id,
+        'token': s.dumps(payload)
+    })))
 
     # In case the user accidentally wrote http://*|PREFERENCES_URL|* or https://*|PREFERENCES_URL|*
     text = text.replace("http://" + DEFAULT_PREFERENCES_URL_MERGETAG, unsubscribe_url)

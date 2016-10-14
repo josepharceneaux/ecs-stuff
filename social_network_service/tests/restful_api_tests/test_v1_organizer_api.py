@@ -8,6 +8,7 @@ import requests
 from requests import codes
 
 # App specific imports
+from social_network_service.common.utils.test_utils import missing_keys_test, fake
 from social_network_service.social_network_app import logger
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.common.models.event_organizer import EventOrganizer
@@ -57,7 +58,7 @@ class TestOrganizers(object):
         """
         event_organizer = {
             "user_id": user_first['id'],
-            "name": datetime.now().strftime('%Y%m%dT%H%M%S'),
+            "name": "organizer_%s" % fake.uuid4(),
             "email": "testemail@gmail.com",
             "about": "He is a testing engineer"
         }
@@ -72,6 +73,45 @@ class TestOrganizers(object):
         event_organizer = EventOrganizer.get_by_id(response['id'])
         assert event_organizer, 'Event organizer created successfully in db'
         EventOrganizer.delete(event_organizer.id)
+
+    def test_post_with_same_organizer_name(self, token_first, user_first):
+        """
+        Send POST request with valid event organizer data and response should be 201 but when
+        we will try to create organizer with same name again, API will raise InvalidUsage 400 error.
+        """
+        name = "organizer_%s" % fake.uuid4(),
+        event_organizer = {
+            "user_id": user_first['id'],
+            "name": name,
+            "email": "testemail@gmail.com",
+            "about": "He is a testing engineer"
+        }
+        response = requests.post(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(event_organizer),
+                                 headers=get_headers(token_first))
+        logger.info(response.text)
+        assert response.status_code == codes.CREATED, 'Status should be Ok, Resource created (201)'
+        assert 'Location' in response.headers
+        response = response.json()
+        assert response['id'] > 0
+
+        # Now try to create organizer with same name. It will raise 400 (InvalidUsage)
+        response = requests.post(SocialNetworkApiUrl.EVENT_ORGANIZERS, data=json.dumps(event_organizer),
+                                 headers=get_headers(token_first))
+        logger.info(response.text)
+        assert response.status_code == codes.BAD, 'Status should be 400, InvalidUsage'
+
+    def test_post_with_missing_field(self, token_first, user_first):
+        """
+        Send POST request with organizer data with missing fields. API will raise 400
+        """
+        event_organizer = {
+            "user_id": user_first['id'],
+            "name": "organizer_%s" % fake.uuid4(),
+            "email": "testemail@gmail.com",
+            "about": "He is a testing engineer"
+        }
+        required_fields = ['name', 'about']
+        missing_keys_test(SocialNetworkApiUrl.EVENT_ORGANIZERS, event_organizer, required_fields, token_first)
 
     def test_delete_with_invalid_token(self):
         """

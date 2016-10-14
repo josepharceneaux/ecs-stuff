@@ -11,8 +11,8 @@ from copy import deepcopy
 from datetime import datetime
 from flask import request
 from flask_sqlalchemy import Model
-from celery.exceptions import SoftTimeLimitExceeded
 from candidate_service.candidate_app import app, celery_app, logger
+from candidate_service.common.utils.timeout import Timeout, TimeoutException
 from candidate_service.common.utils.validators import is_number
 from candidate_service.common.talent_celery import OneTimeSQLConnection
 from candidate_service.common.models.candidate import Candidate, CandidateSource, CandidateStatus
@@ -283,6 +283,9 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                 candidate_address.coordinates AS `coordinates`,
                 GROUP_CONCAT(DISTINCT candidate_email.address SEPARATOR :sep) AS `email`,
 
+                # Candidat Phone Numbers
+                GROUP_CONCAT(DISTINCT candidate_phone.Value SEPARATOR :sep) AS `phone`,
+
                 # Talent Pools
                 GROUP_CONCAT(DISTINCT talent_pool_candidate.talent_pool_id SEPARATOR :sep) AS `talent_pools`,
 
@@ -338,6 +341,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
     LEFT JOIN   candidate_military_service ON (candidate.id = candidate_military_service.candidateId)
 
     LEFT JOIN   candidate_experience ON (candidate.id = candidate_experience.candidateId)
+    LEFT JOIN   candidate_phone ON (candidate.id = candidate_phone.CandidateId)
     LEFT JOIN   candidate_experience_bullet ON (candidate_experience.id =
     candidate_experience_bullet.candidateExperienceId)
 
@@ -398,6 +402,14 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
             for field_name in field_name_to_sql_value.keys():
                 index_field_options = INDEX_FIELD_NAME_TO_OPTIONS.get(field_name)
 
+                if field_name == 'phone' and field_name_to_sql_value[field_name]:
+                    # Add Phone numbers in Resume Text
+                    phone_numbers = field_name_to_sql_value[field_name].split(group_concat_separator)
+                    phone_numbers = map(lambda phone_number: re.sub('[^0-9]', '', phone_number), phone_numbers)
+                    resume_text += ' ' + ' '.join(phone_numbers)
+                    del field_name_to_sql_value[field_name]
+                    continue
+
                 if not index_field_options:
                     logger.error("Unknown field name, could not build document: %s", field_name)
                     continue
@@ -440,7 +452,7 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
     return action_dicts
 
 
-@celery_app.task(soft_time_limit=120)  # 2 Minutes
+@celery_app.task()
 def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_candidate=10):
     """
     Upload all the candidate documents to cloud search
@@ -449,15 +461,19 @@ def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_cand
     :param max_number_of_candidate: Default value is 10
     :return:
     """
-    try:
-        if isinstance(candidate_ids, (int, long)):
-            candidate_ids = [candidate_ids]
+    if isinstance(candidate_ids, (int, long)):
+        candidate_ids = [candidate_ids]
 
-        for i in xrange(0, len(candidate_ids), max_number_of_candidate):
+    for i in xrange(0, len(candidate_ids), max_number_of_candidate):
+        try:
             logger.info("Uploading %s candidate documents (%s). Generating action dicts...",
                         len(candidate_ids[i:i + max_number_of_candidate]), candidate_ids[i:i + max_number_of_candidate])
             start_time = time.time()
-            action_dicts = _build_candidate_documents(candidate_ids[i:i + max_number_of_candidate], domain_id)
+
+            with Timeout(seconds=120):
+                # If _build_candidate_documents take more than 120 seconds Timeout will raise an exception
+                action_dicts = _build_candidate_documents(candidate_ids[i:i + max_number_of_candidate], domain_id)
+
             logger.info("Action dicts generated (took %ss). Sending %s action dicts", time.time() - start_time,
                         len(action_dicts))
             adds, deletes = _send_batch_request(action_dicts)
@@ -467,9 +483,9 @@ def upload_candidate_documents(candidate_ids, domain_id=None, max_number_of_cand
             if adds:
                 logger.info("%s Candidate documents (%s) have been uploaded",
                             len(candidate_ids[i:i + max_number_of_candidate]), candidate_ids[i:i + max_number_of_candidate])
-
-    except SoftTimeLimitExceeded:
-        logger.exception("Time Limit Exceeded for Candidate Upload for following Candidates: %s" % candidate_ids)
+        except TimeoutException:
+            logger.exception("Time Limit Exceeded for Candidate Upload for following "
+                             "Candidates: %s" % candidate_ids[i:i + max_number_of_candidate])
 
 
 def upload_candidate_documents_in_domain(domain_id):
@@ -495,7 +511,7 @@ def upload_candidate_documents_of_user(user_id):
     candidates = Candidate.query.with_entities(Candidate.id).filter_by(user_id=user_id).all()
     candidate_ids = [candidate.id for candidate in candidates]
     logger.info("Uploading %s candidates of user (user id = %s)", len(candidate_ids), user_id)
-    return upload_candidate_documents.delay(candidate_ids, None, 50)
+    return upload_candidate_documents.delay(candidate_ids, None, 10)
 
 
 def upload_all_candidate_documents():
@@ -790,6 +806,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     try:
         results = search_service.search(**params)
+        logger.debug("CS_REQUEST: %s \n\n CS_RESPONSE: %s", params, results)
     except Exception as ex:
         logger.exception("Exception occurred while searching candidates from cloudsearch. "
                          "Search params: %s. Exception: %s" % (params, ex))

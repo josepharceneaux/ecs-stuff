@@ -22,7 +22,6 @@ from candidate_service.candidate_app import logger
 from candidate_service.common.models.db import db
 
 # Validators
-
 from candidate_service.common.talent_config_manager import TalentConfigKeys
 from candidate_service.common.talent_config_manager import TalentEnvs
 from candidate_service.common.utils.models_utils import to_json
@@ -31,7 +30,8 @@ from candidate_service.modules.validators import (
     does_candidate_belong_to_users_domain, is_custom_field_authorized,
     is_area_of_interest_authorized, do_candidates_belong_to_users_domain,
     is_valid_email_client, get_json_if_exist, is_date_valid,
-    get_json_data_if_validated, get_candidate_if_validated
+    get_json_data_if_validated, get_candidate_if_validated,
+    authenticate_candidate_preference_request
 )
 
 # JSON Schemas
@@ -93,7 +93,7 @@ class CandidatesResource(Resource):
     decorators = [require_oauth()]
 
     @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
-    def post(self):
+    def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates
         Input: {'candidates': [CandidateObject, CandidateObject, ...]}
@@ -542,6 +542,36 @@ class CandidatesResource(Resource):
         logger.info('BENCHMARK - candidate PATCH: {}'.format(time() - start_time))
         return {'candidates': [{'id': updated_candidate_id} for updated_candidate_id in updated_candidate_ids]}
 
+    @require_all_permissions(Permission.PermissionNames.CAN_DELETE_CANDIDATES)
+    def delete(self, **kwargs):
+        body_dict = request.get_json(silent=True)
+        if body_dict:
+            candidate_ids = body_dict.get('_candidate_ids')
+            candidate_emails = body_dict.get('_candidate_emails')
+
+            if candidate_emails:
+                domain_candidates_from_email_addresses = Candidate.query.join(CandidateEmail).join(User).filter(
+                    CandidateEmail.address.in_(candidate_emails)).filter(
+                    User.domain_id == request.user.domain_id
+                ).all()
+
+                candidate_ids = [candidate.id for candidate in domain_candidates_from_email_addresses]
+
+            # Candidate IDs must belong to user's domain
+            if not do_candidates_belong_to_users_domain(request.user, candidate_ids):
+                raise ForbiddenError('Not authorized', custom_error.CANDIDATE_FORBIDDEN)
+
+            # http://docs.sqlalchemy.org/en/rel_1_0/orm/query.html#sqlalchemy.orm.query.Query.delete
+            try:
+                Candidate.query.filter(Candidate.id.in_(candidate_ids)).delete(synchronize_session=False)
+                db.session.commit()
+
+                # Delete candidate from cloud search
+                delete_candidate_documents(candidate_ids)
+                return '', requests.codes.NO_CONTENT
+            except Exception as e:
+                raise InternalServerError(error_message="Oops. Something went wrong: {}".format(e.message))
+
 
 class CandidateResource(Resource):
     decorators = [require_oauth()]
@@ -560,6 +590,7 @@ class CandidateResource(Resource):
         :return:    A dict of candidate info
         """
         start_time = time()
+
         # Get authenticated user
         authed_user = request.user
 
@@ -1180,6 +1211,29 @@ class CandidateSkillResource(Resource):
 class CandidateSocialNetworkResource(Resource):
     decorators = [require_oauth()]
 
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
+    def get(self, **kwargs):
+        """
+        check if social network url exists for user's domain
+        :param args: ?url=xxx
+        :return: candidate id if found, raise 404 else
+        """
+        auth_user = request.user
+        social_network_url = request.args.get('url')
+        if social_network_url:
+            users_in_domain = [user.id for user in User.all_users_of_domain(domain_id=auth_user.domain_id)]
+
+            candidate_query = db.session.query(Candidate).join(CandidateSocialNetwork)\
+                .filter(CandidateSocialNetwork.social_profile_url == social_network_url,
+                        Candidate.user_id.in_(users_in_domain))\
+                .first()
+            if candidate_query:
+                return {"candidate_id": candidate_query.id}
+            else:
+                raise NotFoundError(error_message="Social network url not found for your domain")
+
+        raise InvalidUsage(error_message="Valid social network profile is required")
+
     @require_all_permissions(Permission.PermissionNames.CAN_DELETE_CANDIDATE_SOCIAL_PROFILE)
     def delete(self, **kwargs):
         """
@@ -1470,35 +1524,30 @@ class CandidateViewResource(Resource):
 
 
 class CandidatePreferenceResource(Resource):
-    decorators = [require_oauth()]
+    decorators = [require_oauth(allow_candidate=True)]
 
-    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoint: GET /v1/candidates/:id/preferences
         Function will return requested candidate's preference(s)
         """
-        # Get authenticated user & candidate ID
-        authed_user, candidate_id = request.user, kwargs.get('id')
-
-        # Ensure Candidate exists & is not web-hidden
-        get_candidate_if_validated(authed_user, candidate_id)
+        # Get candidate ID
+        candidate_id = kwargs.get('id')
+        authenticate_candidate_preference_request(request, kwargs.get('id'))
 
         candidate_subs_pref = fetch_candidate_subscription_preference(candidate_id=candidate_id)
         return {'candidate': {'id': candidate_id, 'subscription_preference': candidate_subs_pref}}
 
-    @require_all_permissions(Permission.PermissionNames.CAN_ADD_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoint:  POST /v1/candidates/:id/preferences
         Function will create candidate's preference(s)
         input: {'frequency_id': 1}
         """
-        # Get authenticated user & candidate ID
-        authed_user, candidate_id = request.user, kwargs.get('id')
 
-        # Ensure candidate exists & is not web-hidden
-        get_candidate_if_validated(authed_user, candidate_id)
+        # Get candidate ID
+        candidate_id = kwargs.get('id')
+        authenticate_candidate_preference_request(request, kwargs.get('id'))
 
         body_dict = get_json_if_exist(_request=request)
         try:
@@ -1508,7 +1557,9 @@ class CandidatePreferenceResource(Resource):
 
         # Frequency ID must be recognized
         frequency_id = body_dict.get('frequency_id')
-        if not Frequency.get_by_id(_id=frequency_id):
+        frequency_id = frequency_id if is_number(frequency_id) else None
+
+        if frequency_id and not Frequency.get_by_id(_id=frequency_id):
             raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
 
         # Candidate cannot have more than one subsctiption preference
@@ -1523,18 +1574,15 @@ class CandidatePreferenceResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def put(self, **kwargs):
         """
         Endpoint:  PATCH /v1/candidates/:id/preferences
         Function will update candidate's subscription preference
         Input: {'frequency_id': 1}
         """
-        # Get authenticated user & candidate ID
-        authed_user, candidate_id = request.user, kwargs.get('id')
-
-        # Ensure candidate exists & is not web-hidden
-        get_candidate_if_validated(authed_user, candidate_id)
+        # Get candidate ID
+        candidate_id = kwargs.get('id')
+        authenticate_candidate_preference_request(request, kwargs.get('id'))
 
         body_dict = get_json_if_exist(_request=request)
         try:
@@ -1544,7 +1592,9 @@ class CandidatePreferenceResource(Resource):
 
         # Frequency ID must be recognized
         frequency_id = body_dict.get('frequency_id')
-        if not Frequency.get_by_id(_id=frequency_id):
+        frequency_id = frequency_id if is_number(frequency_id) else None
+        
+        if frequency_id and not Frequency.get_by_id(_id=frequency_id):
             raise NotFoundError('Frequency ID not recognized: {}'.format(frequency_id))
 
         # Candidate must already have a subscription preference
@@ -1560,17 +1610,14 @@ class CandidatePreferenceResource(Resource):
         upload_candidate_documents([candidate_id])
         return '', 204
 
-    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoint:  DELETE /v1/candidates/:id/preferences
         Function will delete candidate's subscription preference
         """
-        # Get authenticated user & candidate ID
-        authed_user, candidate_id = request.user, kwargs.get('id')
-
-        # Ensure candidate exists & is not web-hidden
-        get_candidate_if_validated(authed_user, candidate_id)
+        # Get candidate ID
+        candidate_id = kwargs.get('id')
+        authenticate_candidate_preference_request(request, kwargs.get('id'))
 
         candidate_subs_pref = CandidateSubscriptionPreference.get_by_candidate_id(candidate_id)
         if not candidate_subs_pref:

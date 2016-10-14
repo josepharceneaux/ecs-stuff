@@ -1,8 +1,7 @@
 import datetime
 
-from sqlalchemy import desc
 from sqlalchemy.orm import relationship
-from sqlalchemy import or_
+from sqlalchemy import or_, desc, extract
 
 from db import db
 from ..utils.datetime_utils import DatetimeUtils
@@ -21,6 +20,7 @@ class EmailCampaign(db.Model):
     type = db.Column('Type', db.String(63))
     is_hidden = db.Column('IsHidden', db.Boolean, default=False)
     subject = db.Column('emailSubject', db.String(127))
+    description = db.Column('Description', db.Text(65535))
     _from = db.Column('emailFrom', db.String(127))
     reply_to = db.Column('emailReplyTo', db.String(127))
     is_email_open_tracking = db.Column('isEmailOpenTracking', db.Boolean, default=True)
@@ -67,6 +67,7 @@ class EmailCampaign(db.Model):
                        "name": self.name,
                        "frequency": self.frequency.name if self.frequency else None,
                        "subject": self.subject,
+                       "description": self.description,
                        "from": self._from,
                        "reply_to": self.reply_to,
                        "start_datetime": DatetimeUtils.utc_isoformat(self.start_datetime) if self.start_datetime else None,
@@ -195,17 +196,29 @@ class EmailCampaignBlast(db.Model):
     def __repr__(self):
         return "<EmailCampaignBlast (Sends: %s, Opens: %s)>" % (self.sends, self.opens)
 
-    @staticmethod
-    def top_performing_email_campaign(year):
+    @classmethod
+    def top_performing_email_campaign(cls, datetime_value, user_id):
         """
-        This method returns top performing email campaign from a specific year
-        :param year: Year of campaign started or updated
+        This method returns top performing email campaign from a specific datetime
+        :param int user_id: User Id
+        :param str|datetime datetime_value: date during campaign started or updated
         :rtype: EmailCampaignBlast
         """
-        return EmailCampaignBlast.query.filter(or_(EmailCampaignBlast.updated_datetime.contains(year),
-                                                   EmailCampaignBlast.sent_datetime.contains(year))). \
-            filter(EmailCampaign.id == EmailCampaignBlast.campaign_id). \
-            order_by(desc(EmailCampaignBlast.opens)).first()
+        if isinstance(datetime_value, datetime.datetime):
+            return cls.query.filter(or_(cls.updated_datetime >= datetime_value,
+                                        cls.sent_datetime >= datetime_value)). \
+                filter(EmailCampaign.id == cls.campaign_id). \
+                filter(cls.sends > 0).filter(EmailCampaign.user_id == user_id). \
+                order_by(desc(cls.opens)).first()
+        if isinstance(datetime_value, basestring):
+            return cls.query.filter(or_(extract("year", cls.updated_datetime) == datetime_value,
+                                        extract("year", cls.sent_datetime) == datetime_value)). \
+                filter(EmailCampaign.id == cls.campaign_id). \
+                filter(EmailCampaign.user_id == user_id). \
+                filter(cls.sends > 0). \
+                order_by(desc(cls.opens)).first()
+        return cls.query.filter(EmailCampaign.id == cls.campaign_id).\
+            filter(EmailCampaign.user_id == user_id).filter(cls.sends > 0).order_by(desc(cls.opens)).first()
 
 
 class EmailCampaignSend(db.Model):

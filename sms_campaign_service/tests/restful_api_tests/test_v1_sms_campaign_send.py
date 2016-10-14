@@ -45,6 +45,19 @@ class TestSendSmsCampaign(object):
             sms_campaign_of_user_first, SmsCampaignApiUrl.CAMPAIGN,
             self.URL, self.HTTP_METHOD, access_token_first)
 
+    def test_campaign_send_with_deleted_smartlist(self, access_token_first, sms_campaign_of_user_first, headers):
+        """
+        We will try to send a campaign with deleted smartlist and API will raise 400 error.
+        :param access_token_first: access token for ser first
+        :param sms_campaign_of_user_first: campaign dict
+        :param headers: valid header to POST data
+        """
+        smartlist_id = sms_campaign_of_user_first['smartlist_ids'][0]
+        campaign_id = sms_campaign_of_user_first['id']
+        url = self.URL % campaign_id
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, url, access_token_first,
+                                                                  smartlist_id)
+
     def test_post_with_campaign_in_some_other_domain(self, access_token_first,
                                                      sms_campaign_in_other_domain):
         """

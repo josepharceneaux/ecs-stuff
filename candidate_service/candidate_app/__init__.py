@@ -160,6 +160,8 @@ try:
                      endpoint='candidate_social_networks_1')
     api.add_resource(CandidateSocialNetworkResource, CandidateApi.SOCIAL_NETWORK,
                      endpoint='candidate_social_networks_2')
+    api.add_resource(CandidateSocialNetworkResource, CandidateApi.CHECK_SOCIAL_NETWORK,
+                     endpoint='candidate_check_social_network')
 
     # ****** CandidateWorkPreferenceResource ******
     api.add_resource(CandidateWorkPreferenceResource, CandidateApi.WORK_PREFERENCES,

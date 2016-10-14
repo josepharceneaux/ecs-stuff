@@ -5,12 +5,14 @@ import time
 import uuid
 
 from flask import request, current_app
+from dateutil.parser import parse
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
 
 from db import db
 from ..models.event import Event
+from ..models.candidate import Candidate
 from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
@@ -84,30 +86,40 @@ class User(db.Model):
         return secret_key_id, 'Bearer %s' % s.dumps({'user_id': user_id})
 
     @staticmethod
-    def verify_jw_token(secret_key_id, token, allow_null_user=False):
-        secret_key = redis_store.get(secret_key_id)
-        if not secret_key:
-            raise UnauthorizedError(
-                error_message='Error retrieving secret key from redis. \
-                secret_key_id: {}, token: {}'.format(secret_key_id, token))
-        s = Serializer(secret_key)
+    def verify_jw_token(secret_key_id, token, allow_null_user=False, allow_candidate=False):
+
+        s = Serializer(redis_store.get(secret_key_id) or '')
         try:
             data = s.loads(token)
-        except SignatureExpired:
-            raise UnauthorizedError(error_message="Your JSON web token has been expired")
         except BadSignature:
-            raise UnauthorizedError(error_message="Your JSON web token is not valid")
+            raise UnauthorizedError("Your Token is not found", error_code=11)
+        except SignatureExpired:
+                raise UnauthorizedError("Your Token has expired", error_code=12)
+        except Exception:
+            raise UnauthorizedError("Your Token is not found", error_code=11)
 
-        if data['user_id']:
+        if 'user_id' in data and data['user_id']:
             user = User.query.get(data['user_id'])
             if user:
+                if 'created_at' in data and user.password_reset_time > parse(data['created_at']):
+                    redis_store.delete(secret_key_id)
+                    raise UnauthorizedError("Your token has expired due to password reset", error_code=12)
+
                 request.user = user
+                request.candidate = None
+                return
+        elif allow_candidate and 'candidate_id' in data and data['candidate_id']:
+            candidate = Candidate.query.get(data['candidate_id'])
+            if candidate:
+                request.candidate = candidate
+                request.user = None
                 return
         elif allow_null_user:
             request.user = None
+            request.candidate = None
             return
 
-        raise UnauthorizedError(error_message="User %s doesn't exist in database" % data['user_id'])
+        raise UnauthorizedError("Your Token is invalid", error_code=13)
 
     def to_dict(self):
         """
@@ -199,14 +211,16 @@ class User(db.Model):
         return User.query.filter_by(email=email).first()
 
     @staticmethod
-    def get_user_count_in_domain(domain_name):
+    def get_users_in_domain(user_id):
         """
-        This method returns count of users in a domain
-        :param str domain_name: User domain
-        :return: int : Number of users
+        This method returns users in a domain and domain name
+        :param int user_id: User Id
+        :return: tuple(list, str) : (User list, domain name)
         """
-        return User.query.filter(User.domain_id == Domain.id).\
-            filter(Domain.name == domain_name).count()
+        domain_name = User.query.with_entities(Domain.name).filter(User.domain_id == Domain.id).filter(User.id == user_id).first()
+        users = User.query.filter(User.domain_id == Domain.id).\
+            filter(User.id == user_id).all()
+        return users, domain_name[0]
 
 
 class UserPhone(db.Model):
@@ -570,6 +584,12 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False, unique=True)
 
+    @property
+    def permissions(self):
+        permissions_of_role = PermissionsOfRole.query.filter_by(role_id=self.id).all()
+        return Permission.query.filter(Permission.id.in_(
+            [permission_of_role.permission_id for permission_of_role in permissions_of_role])).all()
+
     def delete(self):
         db.session.delete(self)
         db.session.commit()
@@ -816,3 +836,34 @@ class TalentbotAuth(db.Model):
     slack_team_name = db.Column('SlackTeamName', db.String(50))
     facebook_user_id = db.Column('FacebookUserId', db.String(50), unique=True)
     slack_user_token = db.Column('SlackUsertoken', db.String(70))
+    bot_id = db.Column('BotId', db.String(70), nullable=True)
+    bot_token = db.Column('BotToken', db.String(255), nullable=True)
+
+    @staticmethod
+    def get_user_id(**kwargs):
+        """
+        Returns User Id from TalentbotAuth table against passed key
+        :param dict kwargs: Passed kwargs
+        :return: User id
+        :rtype User.id|None
+        """
+        key = kwargs.keys()
+        if not key:
+            return None
+        user_id = TalentbotAuth.query.with_entities(TalentbotAuth.user_id).\
+            filter(getattr(TalentbotAuth, key[0]) == kwargs.get(key[0])).first()
+        return user_id
+
+    @staticmethod
+    def get_talentbot_auth(**kwargs):
+        """
+        Returns TalentbotAuth object against kwarg
+        :param dict kwargs: Passed kwargs
+        :return: TalentbotAuth matched object
+        :rtype: TalentbotAuth|None
+        """
+        key = kwargs.keys()
+        if not key:
+            return None
+        tb_auth = TalentbotAuth.query.filter(getattr(TalentbotAuth, key[0]) == kwargs.get(key[0])).first()
+        return tb_auth

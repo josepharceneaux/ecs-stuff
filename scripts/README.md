@@ -89,3 +89,10 @@ scan-candidates.py --stage password
 ## **__add-column.py__**
 
 Adds a column to a database table. Deprecated - use the service [migration system](https://github.com/gettalent/talent-flask-services/wiki/Database-Migrations-on-the-Cheap) instead.
+
+## **__candidate-freshup-import.py__**
+requests a job id from freshup server, compare it with getTalent database for a domainId and patch/update gt db again
+```
+python candidate-freshup-import.py --prod PASWD --jobid XXXX --domainId INT --token (valid token that have persmission to domainId)
+```
+

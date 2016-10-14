@@ -142,6 +142,104 @@ class TestDeleteCandidate(object):
         assert resp.json()['error']['code'] == custom_error.CANDIDATE_FORBIDDEN
 
 
+class TestBulkDelete(object):
+    def test_bulk_delete_using_ids(self, user_first, access_token_first, talent_pool):
+        """
+        Test: Delete candidates in bulk
+        """
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
+
+        # Create 50 candidates
+        number_of_candidates = 50
+        candidates_data = generate_single_candidate_data(talent_pool_ids=[talent_pool.id],
+                                                         number_of_candidates=number_of_candidates)
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, candidates_data)
+        assert create_resp.status_code == requests.codes.CREATED
+        print response_info(create_resp)
+        created_candidates = create_resp.json()['candidates']
+        assert len(created_candidates) == number_of_candidates
+
+        # Delete all 50 candidates
+        candidates_for_delete = dict(_candidate_ids=[candidate['id'] for candidate in created_candidates])
+        bulk_del_resp = send_request('delete', CandidateApiUrl.CANDIDATES, access_token_first, candidates_for_delete)
+        print response_info(bulk_del_resp)
+        assert bulk_del_resp.status_code == requests.codes.NO_CONTENT
+
+    def test_bulk_delete_using_email_addresses(self, user_first, access_token_first, talent_pool):
+        """
+        Test: Delete candidates in bulk
+        """
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
+
+        # Create 50 candidates
+        number_of_candidates = 3
+        candidates_data = generate_single_candidate_data(talent_pool_ids=[talent_pool.id],
+                                                         number_of_candidates=number_of_candidates)
+        create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, candidates_data)
+        assert create_resp.status_code == requests.codes.CREATED
+        print response_info(create_resp)
+        created_candidates = create_resp.json()['candidates']
+        assert len(created_candidates) == number_of_candidates
+
+        db.session.commit()
+
+        candidate_ids = {candidate['id'] for candidate in created_candidates}
+        candidate_emails_from_ids = [candidate_email.address for candidate_email in
+                                     CandidateEmail.query.join(Candidate).filter(Candidate.id.in_(candidate_ids)).all()]
+
+        # Delete all 50 candidates
+        candidates_for_delete = dict(_candidate_emails=candidate_emails_from_ids)
+        bulk_del_resp = send_request('delete', CandidateApiUrl.CANDIDATES, access_token_first, candidates_for_delete)
+        print response_info(bulk_del_resp)
+        assert bulk_del_resp.status_code == requests.codes.NO_CONTENT
+
+    def test_delete_candidates_with_same_emails_from_diff_domains(self, user_first, access_token_first, talent_pool,
+                                                                  talent_pool_second, access_token_second):
+        """
+        Test: Create two candidates with identical email addresses in different domains, then delete one them
+        """
+        user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+        db.session.commit()
+
+        identical_email = fake.safe_email()
+
+        def _candidate_data(talent_pool_id):
+            return {
+                'candidates': [
+                    {
+                        'talent_pool_ids': {'add': [talent_pool_id]},
+                        'emails': [{'address': identical_email}]
+                    }
+                ]
+            }
+
+        # Create first candidate in user_first's domain
+        candidate_first_data = _candidate_data(talent_pool.id)
+        create_first = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, candidate_first_data)
+        print response_info(create_first)
+        assert create_first.status_code == requests.codes.CREATED
+
+        # Create second candidate in user_second's domain
+        candidate_second_data = _candidate_data(talent_pool_second.id)
+        create_second = send_request('post', CandidateApiUrl.CANDIDATES, access_token_second, candidate_second_data)
+        print response_info(create_second)
+        assert create_second.status_code == requests.codes.CREATED
+
+        # Delete user_first's candidate using candidate's email address
+        data = {'_candidate_emails': [identical_email]}
+        del_first = send_request('delete', CandidateApiUrl.CANDIDATES, access_token_first, data)
+        print response_info(del_first)
+        assert del_first.status_code == requests.codes.NO_CONTENT
+
+        # Candidate second should not have been deleted
+        candidate_second_id = create_second.json()['candidates'][0]['id']
+        get_candidate_second = send_request('get', CandidateApiUrl.CANDIDATE % candidate_second_id, access_token_second)
+        print response_info(get_candidate_second)
+        assert get_candidate_second.status_code == requests.codes.OK
+
+
 class TestHideCandidate(object):
     """
     Test Cases for hiding candidate(s) via patch v1/candidates

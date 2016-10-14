@@ -104,7 +104,6 @@ A brief overview of all endpoints is as follows:
 """
 
 # Standard Library
-import json
 import types
 
 # Third Party
@@ -130,7 +129,7 @@ from push_campaign_service.common.utils.api_utils import (api_route, ApiResponse
                                                           get_paginated_response,
                                                           get_pagination_params)
 from push_campaign_service.common.models.push_campaign import (PushCampaignSend,
-                                                               PushCampaignBlast)
+                                                               PushCampaignBlast, PushCampaign)
 from push_campaign_service.modules.push_campaign_base import PushCampaignBase
 
 # creating blueprint
@@ -195,7 +194,7 @@ class PushCampaignsResource(Resource):
         """
         page, per_page = get_pagination_params(request)
         query = PushCampaignBase.get_all_campaigns(request.user.domain_id)
-        return get_paginated_response('campaigns', query, page, per_page)
+        return get_paginated_response('campaigns', query, page, per_page, parser=PushCampaign.to_json)
 
     def post(self):
         """

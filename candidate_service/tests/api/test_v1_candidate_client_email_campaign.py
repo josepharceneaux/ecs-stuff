@@ -7,6 +7,7 @@ they hit this endpoint with an email body
 import time
 
 # Third Party
+from redo import retry
 from requests import codes
 
 # this import is not used per se but without it, the test throws an app context error
@@ -53,25 +54,35 @@ class TestClientEmailCampaign(object):
             'email_body_html': '<html><body>Email Body</body></html>',
             'email_body_text': 'Plaintext part of email goes here, if any',
             'email_client_id': EmailClient.get_id_by_name('Browser')
-         }
+        }
 
-        # send the post request to /v1/candidates/client-email-campaign
-        email_campaign = requests.post(
-            url=CandidateApiUrl.CANDIDATE_CLIENT_CAMPAIGN,
-            data=json.dumps(body),
-            headers={'Authorization': 'Bearer %s' % access_token_first,
-                     'content-type': 'application/json'}
-        )
-        print response_info(email_campaign)
-        # assert it is created and contains email campaign sends objects
-        assert email_campaign.status_code == codes.CREATED
+        # Sometimes we face 504 issue as smartlist-candidate not found in candidate-service. So added this in
+        # retry block.
+        retry(_assert_candidate_client_campaign, sleeptime=3, attempts=5, sleepscale=1,
+              retry_exceptions=(AssertionError,), args=(body, access_token_first))
 
-        email_campaign_sends = email_campaign.json()['email_campaign_sends']
 
-        # assert each email campaign send has an ID, an email address to send to and new_html to send to the user
-        for email_campaign_send in email_campaign_sends:
-            assert email_campaign_send['email_campaign_id']
-            assert email_campaign_send['candidate_email_address']
-            assert email_campaign_send['new_html']
-            assert len(str(email_campaign_send['new_html'])) > len('<html><body>Email Body</body></html>')
-            assert email_campaign_send['new_text']
+def _assert_candidate_client_campaign(body, access_token):
+    """
+    Here we create candidate-client-campaign and assert valid response
+    :param dict body: Data to create candidate client campaign
+    :param string access_token: Access token of user
+    """
+    # send the post request to /v1/candidates/client-email-campaign
+    candidate_client_campaign_response = requests.post(
+        url=CandidateApiUrl.CANDIDATE_CLIENT_CAMPAIGN,
+        data=json.dumps(body),
+        headers={'Authorization': 'Bearer %s' % access_token,
+                 'content-type': 'application/json'}
+    )
+    # assert it is created and contains email campaign sends objects
+    assert candidate_client_campaign_response.status_code == codes.CREATED, candidate_client_campaign_response.text
+    email_campaign_sends = candidate_client_campaign_response.json()['email_campaign_sends']
+
+    # assert each email campaign send has an ID, an email address to send to and new_html to send to the user
+    for email_campaign_send in email_campaign_sends:
+        assert email_campaign_send['email_campaign_id']
+        assert email_campaign_send['candidate_email_address']
+        assert email_campaign_send['new_html']
+        assert len(str(email_campaign_send['new_html'])) > len('<html><body>Email Body</body></html>')
+        assert email_campaign_send['new_text']

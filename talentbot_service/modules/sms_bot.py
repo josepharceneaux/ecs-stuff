@@ -31,21 +31,21 @@ class SmsBot(TalentBot):
     def authenticate_user(self, mobile_number):
         """
         Authenticates user
-        :return: True|False
+        :rtype: tuple(bool, int)
         """
-        user_phone_id = UserPhone.query.with_entities(UserPhone.id).\
-            filter_by(value=mobile_number).first()
+        user_phone_id = UserPhone.get_by_phone_value(mobile_number)[0].id
         if user_phone_id:
-            count = TalentbotAuth.query.filter_by(user_phone_id=user_phone_id[0]).count()
-            if count > 0:
-                return True
-        return False
+            talentbot_auth = TalentbotAuth.get_user_id(user_phone_id=user_phone_id)
+            if talentbot_auth:
+                return True, talentbot_auth[0]
+        return False, None
 
     def reply(self, response, recipient):
         """
         Replies to the user through sms
         :param str response: Response message from bot
         :param str recipient: User's mobile number
+        :rtype: None
         """
         # Twilio sms text doesn't seem to support'[' and ']'
         response = response.replace('[', '(')
@@ -71,12 +71,16 @@ class SmsBot(TalentBot):
         Handles communication between user and bot
         :param str message: User's message
         :param str recipient: User's mobile number
+        :rtype: None
         """
-        is_authenticated = self.authenticate_user(recipient)
+        is_authenticated, user_id = self.authenticate_user(recipient)
         if is_authenticated:
             try:
-                response_generated = self.parse_message(message)
-                self.reply(response_generated, recipient)
+                response_generated = self.parse_message(message, user_id)
+                if response_generated:
+                    self.reply(response_generated, recipient)
+                else:
+                    raise IndexError
             except (IndexError, NameError, KeyError):
                 error_response = random.choice(self.error_messages)
                 self.reply(error_response, recipient)
@@ -90,7 +94,7 @@ class SmsBot(TalentBot):
         these segments in a dict with segment numbers as keys
         :param tokens: list of independent string lines
         :return: total number of message segments, dict of message segments
-        :rtype: tuple[int, dict]
+        :rtype: tuple(int, dict)
         """
         split_response_message = ""
         dict_of_segments = {}

@@ -32,6 +32,7 @@ define_custom_contracts()
 DEFAULT_PAGE = 1
 DEFAULT_PAGE_SIZE = 10
 MAX_PAGE_SIZE = 50
+SORT_TYPES = ('ASC', 'DESC')
 
 
 class ApiResponse(Response):
@@ -95,7 +96,7 @@ def get_pagination_params(request, default_page=DEFAULT_PAGE, default_per_page=D
         assert 0 < per_page <= max_per_page, 'Give per_page value %s' % per_page
     except:
         raise InvalidUsage('per_page should be a number with maximum value %s. Given %s'
-                           % (default_per_page, per_page))
+                           % (max_per_page, per_page))
 
     return page, per_page
 
@@ -147,9 +148,7 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
         }
     """
     raise_if_not_instance_of(key, basestring)
-    raise_if_not_instance_of(query, Query)
-    # error_out=false, do nor raise error if these is no object to return but return an empty list
-    results = query.paginate(page, per_page, error_out=False)
+    results = get_paginated_list(query, page, per_page)
     # convert model objects to serializable dictionaries
     items = [parser(item, include_fields) for item in results.items]
     headers = generate_pagination_headers(results.total, per_page, page)
@@ -174,3 +173,18 @@ def generate_pagination_headers(results_count, results_per_page, current_page):
         'X-Page': current_page,
         'Access-Control-Expose-Headers': 'X-Total, X-Per-Page, X-Page'
     }
+
+
+@contract
+def get_paginated_list(query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE):
+    """
+    This function just applies pagination params an query and returns results.
+    :param type(t) query:
+    :param int | long page: page number
+    :param int per_page: number items per page
+    :rtype: type(s)
+    """
+    raise_if_not_instance_of(query, Query)
+    # error_out=false, do nor raise error if these is no object to return but return an empty list
+    results = query.paginate(page, per_page, error_out=False)
+    return results
