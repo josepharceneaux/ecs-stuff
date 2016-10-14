@@ -19,7 +19,7 @@ else:
 
 executors = {
     'default': ThreadPoolExecutor(MAX_THREAD_POOLS),
-    'processpool': ProcessPoolExecutor(max_workers=8)
+    'processpool': ProcessPoolExecutor(max_workers=12)
 }
 
 jobstores = {
