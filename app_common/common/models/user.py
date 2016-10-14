@@ -586,6 +586,12 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False, unique=True)
 
+    @property
+    def permissions(self):
+        permissions_of_role = PermissionsOfRole.query.filter_by(role_id=self.id).all()
+        return Permission.query.filter(Permission.id.in_(
+            [permission_of_role.permission_id for permission_of_role in permissions_of_role])).all()
+
     def delete(self):
         db.session.delete(self)
         db.session.commit()

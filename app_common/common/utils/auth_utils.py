@@ -12,15 +12,14 @@ from ..utils.handy_functions import random_letter_digit_string
 from flask import current_app as app
 from ..models.user import *
 from ..error_handling import *
-from ..routes import AuthApiUrl
+from ..routes import AuthApiUrl, AuthApiUrlV2
 from ..models.user import User, Role
 
 
-def require_oauth(allow_jwt_based_auth=True, allow_null_user=False, allow_candidate=False):
+def require_oauth(allow_null_user=False, allow_candidate=False):
     """
     This method will verify Authorization header of request using getTalent AuthService or Basic HTTP secret-key based
     Auth and will set request.user and request.oauth_token
-    :param bool allow_jwt_based_auth: Either JWT based authentication is supported for a particular endpoint or not ?
     :param allow_null_user: Is user necessary for Authorization or not ?
     :param allow_candidate: Allow Candidate Id in JWT payload
     """
@@ -33,16 +32,40 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False, allow_candid
             except KeyError:
                 raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
 
-            # JWT based Authentication
-            if allow_jwt_based_auth:
-                try:
+            request.secret_key_id = None
+            if len(oauth_token.replace('Bearer', '').strip().split('.')) == 3:
+                # JWTs have `dot` separated three parts separated
+
+                if 'X-Talent-Secret-Key-ID' in request.headers and request.headers['X-Talent-Secret-Key-ID']:
+                    # Using Dynamic SECRET KEY
                     secret_key_id = request.headers['X-Talent-Secret-Key-ID']
                     json_web_token = oauth_token.replace('Bearer', '').strip()
                     User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
                     request.oauth_token = ''
                     return func(*args, **kwargs)
-                except KeyError:
-                    pass
+
+                else:
+                    # Using Static SECRET KEY
+                    try:
+                        response = requests.get(AuthApiUrlV2.AUTHORIZE, headers={'Authorization': oauth_token})
+                    except Exception as e:
+                        raise InternalServerError(error_message=e.message)
+
+                    if response.status_code == 429:
+                        raise UnauthorizedError(error_message='You have exceeded the access limit of this API')
+                    elif not response.ok:
+                        error_body = response.json()
+                        if error_body['error']:
+                            raise UnauthorizedError(error_message=error_body['error'].get('message', ''),
+                                                    error_code=error_body['error'].get('code', ''))
+                        else:
+                            raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
+                    else:
+                        valid_user_id = response.json().get('user_id')
+                        request.user = User.query.get(valid_user_id)
+                        request.oauth_token = oauth_token
+                        request.candidate = None
+                        return func(*args, **kwargs)
 
             try:
                 response = requests.get(AuthApiUrl.AUTHORIZE, headers={'Authorization': oauth_token})
@@ -53,8 +76,8 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False, allow_candid
             elif not response.ok:
                 error_body = response.json()
                 if error_body['error']:
-                    raise UnauthorizedError(error_message=error_body['error'].get('message'),
-                                            error_code=error_body['error'].get('code'))
+                    raise UnauthorizedError(error_message=error_body['error'].get('message', ''),
+                                            error_code=error_body['error'].get('code', ''))
                 else:
                     raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
             else:
@@ -82,15 +105,44 @@ def require_jwt_oauth(allow_null_user=False, allow_candidate=False):
         def authenticate(*args, **kwargs):
 
             try:
-                secret_key_id = request.headers['X-Talent-Secret-Key-ID']
-                json_web_token = request.headers['Authorization'].replace('Bearer', '').strip()
+                json_web_token = request.headers['Authorization']
             except KeyError:
                 raise UnauthorizedError("`X-Talent-Secret-Key-ID` or `Authorization` Header is missing")
 
-            User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
-            request.oauth_token = json_web_token
-            request.secret_key_id = secret_key_id
-            return func(*args, **kwargs)
+            request.secret_key_id = None
+            if 'X-Talent-Secret-Key-ID' in request.headers and request.headers['X-Talent-Secret-Key-ID']:
+
+                # Using Dynamic SECRET KEY
+                secret_key_id = request.headers['X-Talent-Secret-Key-ID']
+                token = json_web_token.replace('Bearer', '').strip()
+                User.verify_jw_token(secret_key_id, token, allow_null_user, allow_candidate)
+                request.oauth_token = json_web_token
+                request.secret_key_id = secret_key_id
+                return func(*args, **kwargs)
+
+            else:
+                # Using Static SECRET KEY
+                try:
+                    response = requests.get(AuthApiUrlV2.AUTHORIZE, headers={'Authorization': json_web_token})
+                except Exception as e:
+                    raise InternalServerError(error_message=e.message)
+
+                if response.status_code == 429:
+                    raise UnauthorizedError(error_message='You have exceeded the access limit of this API')
+                elif not response.ok:
+                    error_body = response.json()
+                    if error_body['error']:
+                        raise UnauthorizedError(error_message=error_body['error'].get('message', ''),
+                                                error_code=error_body['error'].get('code', ''))
+                    else:
+                        raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
+                else:
+                    valid_user_id = response.json().get('user_id')
+                    request.user = User.query.get(valid_user_id)
+                    request.oauth_token = json_web_token
+                    request.secret_key_id = ''
+                    request.candidate = None
+                    return func(*args, **kwargs)
 
         return authenticate
 
