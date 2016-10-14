@@ -265,7 +265,8 @@ def send_campaign_to_candidates(user_id, candidate_ids_and_emails, blast_params,
                                                      queue=campaign_type)
 
     # Here we create list of all tasks.
-    tasks = [send_email_campaign_to_candidate.subtask((user_id, campaign, candidate_id, candidate_address,
+    tasks = [send_email_campaign_to_candidate.subtask((user_id, campaign, Candidate.get_by_id(candidate_id),
+                                                       candidate_address,
              blast_params, email_campaign_blast_id, blast_datetime), link_error=celery_error_handler(
              campaign_type), queue=campaign_type) for candidate_id, candidate_address in candidate_ids_and_emails]
     # This runs all tasks asynchronously and sets callback function to be hit once all
@@ -411,23 +412,22 @@ def get_email_campaign_candidate_ids_and_emails(campaign, smartlist_ids, new_can
     return get_priority_emails(campaign.user, subscribed_candidate_ids)
 
 
-def send_campaign_emails_to_candidate(user_id, campaign, candidate_id, candidate_address,
-                                      blast_params=None, email_campaign_blast_id=None,
-                                      blast_datetime=None):
+def send_campaign_emails_to_candidate(user_id, campaign, candidate, candidate_address, blast_params=None,
+                                      email_campaign_blast_id=None, blast_datetime=None):
     """
     This function sends the email to candidate. If working environment is prod, it sends the
     email campaigns to candidates' email addresses, otherwise it sends the email campaign to
     'gettalentmailtest@gmail.com' or email id of user.
     :param user_id: user object
     :param campaign: email campaign object
-    :param candidate_id: candidate id
+    :param candidate: candidate object
     :param candidate_address: candidate email address
     :param blast_params: parameters of email campaign blast
     :param email_campaign_blast_id: id of email campaign blast object
     :param blast_datetime: email campaign blast datetime
     :type user_id: int | long
     :type campaign: EmailCampaign
-    :type candidate_id: int | long
+    :type candidate: Candidate
     :type candidate_address: str
     :type blast_params: dict | None
     :type email_campaign_blast_id: int | long | None
@@ -435,12 +435,11 @@ def send_campaign_emails_to_candidate(user_id, campaign, candidate_id, candidate
     """
     raise_if_not_positive_int_or_long(user_id)
     raise_if_not_instance_of(campaign, EmailCampaign)
-    raise_if_not_positive_int_or_long(candidate_id)
+    raise_if_not_instance_of(candidate, Candidate)
+    raise_if_not_instance_of(candidate_address, basestring)
 
     if email_campaign_blast_id:
         raise_if_not_positive_int_or_long(email_campaign_blast_id)
-
-    raise_if_not_instance_of(candidate_address, basestring)
 
     if blast_datetime:
         raise_if_not_instance_of(blast_datetime, datetime)
@@ -448,14 +447,12 @@ def send_campaign_emails_to_candidate(user_id, campaign, candidate_id, candidate
     if blast_params:
         raise_if_not_instance_of(blast_params, dict)
 
-    candidate = Candidate.get_by_id(candidate_id)
-
     new_text, new_html, subject, email_campaign_send, blast_params, _ = \
-        get_new_text_html_subject_and_campaign_send(campaign.id, candidate_id,
+        get_new_text_html_subject_and_campaign_send(campaign.id, candidate.id,
                                                     blast_params=blast_params,
                                                     email_campaign_blast_id=email_campaign_blast_id,
                                                     blast_datetime=blast_datetime)
-    logger.info('send_campaign_emails_to_candidate: Candidate id:%s ' % candidate_id)
+    logger.info('send_campaign_emails_to_candidate: Candidate id:%s ' % candidate.id)
     # Only in case of production we should send mails to candidate address else mails will
     # go to test account. To avoid spamming actual email addresses, while testing.
     if not CampaignUtils.IS_DEV:
@@ -501,7 +498,7 @@ def send_campaign_emails_to_candidate(user_id, campaign, candidate_id, candidate
                                         email_format='html' if campaign.body_html else 'text')
         except Exception as e:
             # Mark email as bounced
-            _handle_email_sending_error(email_campaign_send, candidate_id, to_addresses, blast_params,
+            _handle_email_sending_error(email_campaign_send, candidate.id, to_addresses, blast_params,
                                         email_campaign_blast_id, e)
             return False
 
@@ -530,19 +527,19 @@ def send_campaign_emails_to_candidate(user_id, campaign, candidate_id, candidate
 
 
 @celery_app.task(name='send_email_campaign_to_candidate')
-def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_address,
+def send_email_campaign_to_candidate(user_id, campaign, candidate, candidate_address,
                                      blast_params, email_campaign_blast_id, blast_datetime):
     """
     For each candidate, this function is called to send email campaign to candidate.
     :param user_id: Id of user
     :param campaign: EmailCampaign object
-    :param candidate_id: candidate id
+    :param candidate: candidate object
     :param candidate_address: candidate email address
     :param blast_params: parameters of email campaign blast
     :param email_campaign_blast_id: email campaign blast object id.
     :param blast_datetime: email campaign blast datetime
     :type campaign: EmailCampaign
-    :type candidate_id: int | long
+    :type candidate: Candidate
     :type candidate_address: str
     :type blast_params: dict
     :type email_campaign_blast_id: int|long
@@ -551,20 +548,22 @@ def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_
     """
     raise_if_not_positive_int_or_long(user_id)
     raise_if_not_instance_of(campaign, EmailCampaign)
-    raise_if_not_positive_int_or_long(candidate_id)
+    raise_if_not_instance_of(candidate, Candidate)
     raise_if_not_instance_of(candidate_address, basestring)
     raise_if_not_instance_of(blast_params, dict)
     raise_if_not_positive_int_or_long(email_campaign_blast_id)
     raise_if_not_instance_of(blast_datetime, datetime)
 
     with app.app_context():
-        logger.info('sending campaign to candidate(id:%s).' % candidate_id)
         [campaign] = EmailCampaign.refresh_all([campaign])
+        [candidate] = Candidate.refresh_all([candidate])
+        logger.info('sending campaign to candidate(id:%s).' % candidate.id)
+
         try:
             result_sent = send_campaign_emails_to_candidate(
                 user_id=user_id,
                 campaign=campaign,
-                candidate_id=candidate_id,
+                candidate=candidate,
                 # candidates.find(lambda row: row.id == candidate_id).first(),
                 candidate_address=candidate_address,
                 blast_params=blast_params,
@@ -574,7 +573,7 @@ def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_
             return result_sent
         except Exception as error:
             logger.exception('Error while sending email campaign(id:%s) to candidate(id:%s). Error is: %s'
-                             % (campaign.id, candidate_id, error.message))
+                             % (campaign.id, candidate.id, error.message))
             db.session.rollback()
             return False
 
