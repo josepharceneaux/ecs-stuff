@@ -329,14 +329,14 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
             return jsonify(dict(count=len(candidate_ids), status='complete')), 201
 
     except Exception as e:
-
         email_error_to_admins("Error importing from CSV. User ID: %s, S3_URL: %s, Error: %s" % (
             user_id, get_s3_url('CSVResumes', spreadsheet_filename), e), subject="import_from_csv")
 
         message = "Error importing from CSV. User ID: %s, S3 filename: %s. Reason: %s" % (
             user_id, spreadsheet_filename, e)
 
-        logger.error(message)
+        logger.exception("Error importing from CSV (outer loop), user ID: %s, S3 filename: %s", user_id,
+                         spreadsheet_filename)
         if not is_scheduled:
             raise InternalServerError(message)
 
