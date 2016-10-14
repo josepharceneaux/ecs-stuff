@@ -2,34 +2,49 @@
 # Standard library
 import re
 from datetime import datetime
-from copy import deepcopy
 from decimal import Decimal
 
 import phonenumbers
-import pycountry
-from nameparser import HumanName
 
 # SQLAlchemy Models
 from graphql_service.common.models.db import db
 from graphql_service.common.models.candidate import CandidateEmail, PhoneLabel
-from graphql_service.common.models.misc import AreaOfInterest
+from graphql_service.common.models.misc import AreaOfInterest, CustomField
 
 # Helpers
 from graphql_service.common.utils.handy_functions import purge_dict
 from graphql_service.common.utils.validators import is_valid_email, sanitize_zip_code, parse_phone_number
 from graphql_service.common.geo_services.geo_coordinates import get_coordinates
+from helpers import track_updates
 
 from helpers import remove_duplicates
 
 from graphql_service.common.utils.datetime_utils import DatetimeUtils
 
 
-def add_or_edit_candidate_from_params(user_id, primary_data, is_updating=False,
-                                      retrieved_candidate=None, addresses=None, educations=None,
-                                      emails=None, phones=None, areas_of_interest=None,
-                                      candidate_custom_fields=None, experiences=None, military_services=None,
-                                      preferred_locations=None, references=None, skills=None, social_networks=None,
-                                      tags=None, notes=None, work_preference=None, photos=None, updated_datetime=None):
+def add_or_edit_candidate_from_params(
+        user_id,
+        primary_data,
+        is_updating=False,
+        existing_candidate_data=None,
+        addresses=None,
+        educations=None,
+        emails=None,
+        phones=None,
+        areas_of_interest=None,
+        candidate_custom_fields=None,
+        experiences=None,
+        military_services=None,
+        preferred_locations=None,
+        references=None,
+        skills=None,
+        social_networks=None,
+        tags=None,
+        notes=None,
+        work_preference=None,
+        photos=None,
+        added_datetime=None,
+        updated_datetime=None):
     # TODO: Add/improve docstrings & comments
     # TODO: Include error handling
     # TODO: Complete all checks and validations
@@ -38,22 +53,23 @@ def add_or_edit_candidate_from_params(user_id, primary_data, is_updating=False,
     assert isinstance(primary_data, dict), "Candidate's primary data must be of type dict"
 
     candidate_data = primary_data.copy()
-    added_datetime = candidate_data.get('added_datetime')
 
-    if primary_data and is_updating:
-        validated_primary_data = _update_candidates_primary_data(candidate_data, updated_datetime)
+    # Candidate's primary data such as first_name, last_name, objective, summary, etc.
+    if primary_data:
+        validated_primary_data = _primary_data(primary_data=candidate_data,
+                                               added_datetime=added_datetime,
+                                               is_updating=is_updating,
+                                               updated_datetime=updated_datetime)
         candidate_data = validated_primary_data
 
     # Areas of Interest
-    # if areas_of_interest:
-    #     validated_areas_of_interest = _add_or_edit_areas_of_interest(areas_of_interest, added_datetime)
-    #     candidate_data['areas_of_interest'] = validated_areas_of_interest
+    if areas_of_interest:
+        validated_areas_of_interest = _add_or_edit_areas_of_interest(areas_of_interest, added_datetime)
+        candidate_data['areas_of_interest'] = validated_areas_of_interest
 
     # Addresses
     if addresses:
-        validated_addresses_data = _add_or_update_addresses(addresses=addresses,
-                                                            added_datetime=added_datetime,
-                                                            is_updating=is_updating)
+        validated_addresses_data = _add_or_update_addresses(addresses, user_id, existing_candidate_data)
         candidate_data['addresses'] = validated_addresses_data
 
     # Custom Fields
@@ -132,10 +148,12 @@ def add_or_edit_candidate_from_params(user_id, primary_data, is_updating=False,
     return candidate_data
 
 
-def _update_candidates_primary_data(primary_data, updated_datetime):
+def _primary_data(primary_data, added_datetime=None, is_updating=False, updated_datetime=None):
     """
+    Function will return candidate's validated primary data
+    :rtype: dict
     """
-    update_dict = dict(
+    dict_data = dict(
         first_name=primary_data.get('first_name'),
         middle_name=primary_data.get('middle_name'),
         last_name=primary_data.get('last_name'),
@@ -143,44 +161,42 @@ def _update_candidates_primary_data(primary_data, updated_datetime):
         status_id=primary_data.get('status_id'),
         objective=primary_data.get('objective'),
         summary=primary_data.get('summary'),
-        resume_url=primary_data.get('resume_url'),
-        updated_datetime=updated_datetime
+        resume_url=primary_data.get('resume_url')
     )
 
-    # Remove empty data
-    update_dict = purge_dict(update_dict)
+    # Add updated_datetime if candidate is being updated
+    if is_updating:
+        assert updated_datetime is not None, 'updated_datetime is required when updating candidate'
+        dict_data['updated_datetime'] = updated_datetime
 
-    # Candidate will not be updated if update_dict is empty
-    if not update_dict:
+    # Remove empty data
+    dict_data = purge_dict(dict_data)
+
+    # Candidate will not be added/updated if dict_data is empty
+    if not dict_data:
         return
 
-    return update_dict
+    # added_datetime must be included if candidate is not being updated and dict_data is not empty at this point
+    if not is_updating:
+        assert added_datetime is not None, 'added_datetime is required when adding candidate'
+        dict_data['added_datetime'] = added_datetime
+
+    return dict_data
 
 
-# TODO: complete function
-# def _add_or_edit_areas_of_interest(areas_of_interest, user, added_datetime):
-#     # Aggregate formatted & validated areas of interest
-#     validated_areas_of_interest = []
-#
-#     aoi_ids = set()
-#     for area_of_interest in areas_of_interest:
-#         aoi_id = area_of_interest.get('area_of_interest_id')
-#         if aoi_id:
-#             if not AreaOfInterest.get(aoi_id):
-#                 raise Exception
-#         aoi_ids.add(aoi_id)
-#
-#     # TODO: Add this validation earlier in the code
-#     if aoi_ids:
-#         exists = AreaOfInterest.query.filter(AreaOfInterest.id.in_(aoi_ids),
-#                                              AreaOfInterest.domain_id != user.domain_id).count() == 0
-#         if not exists:
-#             raise Exception
-#
-#     # TODO: Prevent duplicate insertions
+def _add_or_edit_areas_of_interest(areas_of_interest, user):
+    # Remove duplicate data
+    areas_of_interest = remove_duplicates(areas_of_interest)
+
+    # Area of interest IDs must belong to candidate's domain
+    if not AreaOfInterest.query.filter(AreaOfInterest.id.in_([aoi['id'] for aoi in areas_of_interest]),
+                                       AreaOfInterest.domain_id != user.domain_id).count() == 0:
+        raise Exception  # TODO: update with new method of error handling or raise InvalidUsage error
+
+    return areas_of_interest
 
 
-def _add_or_update_addresses(addresses, added_datetime, is_updating=False):
+def _add_or_update_addresses(addresses, user_id=None, existing_candidate_data=None):
     # Aggregate formatted & validated address data
     validated_addresses_data = []
 
@@ -195,7 +211,6 @@ def _add_or_update_addresses(addresses, added_datetime, is_updating=False):
         address_dict = dict(
             address_line_1=address.get('address_line_1'),
             address_line_2=address.get('address_line_2'),
-            added_datetime=added_datetime,
             zip_code=zip_code,
             city=city,
             iso3166_subdivision=iso3166_subdivision,
@@ -210,12 +225,27 @@ def _add_or_update_addresses(addresses, added_datetime, is_updating=False):
 
         validated_addresses_data.append(address_dict)
 
-    return remove_duplicates(validated_addresses_data)
+    unique_validated_addresses = remove_duplicates(validated_addresses_data)
+
+    # Track updates
+    track_updates(user_id=user_id,
+                  new_data=unique_validated_addresses,
+                  attribute='addresses',
+                  existing_candidate_data=existing_candidate_data)
+
+    return unique_validated_addresses
 
 
-# TODO: complete function's operation/logic
-# def _add_or_edit_custom_fields(custom_fields, added_datetime):
-#     pass
+def _add_or_edit_custom_fields(custom_fields, user):
+    # Remove duplicate data
+    custom_fields = remove_duplicates(custom_fields)
+
+    # Custom field IDs must belong to candidate's domain
+    if not CustomField.query.filter(CustomField.id.in_([custom_field['id'] for custom_field in custom_fields]),
+                                    CustomField.domain_id != user.domain_id).count() == 0:
+        raise Exception  # TODO: update with new method of error handling or raise InvalidUsage error
+
+    return custom_fields
 
 
 def _add_or_edit_educations(educations, added_datetime):
@@ -548,7 +578,7 @@ def _add_or_edit_skills(skills, added_datetime):
     return checked_skills_data
 
 
-def _add_or_edit_social_networks(social_networks, added_datetime):
+def _add_or_edit_social_networks(social_networks):
     # Aggregate formatted & validated social networks' data
     checked_social_networks_data = []
 
@@ -556,7 +586,6 @@ def _add_or_edit_social_networks(social_networks, added_datetime):
         social_network_dict = dict(
             name=social_network.get('name'),
             profile_url=social_network.get('profile_url'),
-            added_datetime=added_datetime
         )
 
         # todo: prevent duplicate insertions
@@ -578,7 +607,7 @@ def _add_or_edit_tags(tags, added_datetime):
     return checked_tags_data
 
 
-def _add_or_edit_work_preference(work_preference, added_datetime):
+def _add_or_edit_work_preference(work_preference):
     # todo: candidate should have only one work preference
     return work_preference
 
