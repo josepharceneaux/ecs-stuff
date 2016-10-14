@@ -120,6 +120,8 @@ class Candidate(db.Model):
         :param list skills: Candidate skills
         :return: int: Number of candidates with certain skills
         """
+        assert isinstance(skills, list) and skills, "Invalid skills"
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid user_id"
         return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
             .filter(Candidate.user_id == user_id).filter(CandidateSkill.description.in_(skills)).distinct().count()
 

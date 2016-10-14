@@ -119,7 +119,11 @@ class QuestionHandler(object):
         if len(message_tokens) <= skill_index+1:
             return 'Please mention skills'
         extracted_skills = message_tokens[skill_index + 1::]
-        count = Candidate.get_candidate_count_with_skills(extracted_skills, user_id)
+        try:
+            count = Candidate.get_candidate_count_with_skills(extracted_skills, user_id)
+        except AssertionError as error:
+            logger.error("Error occurred during getting candidates count with skills %s" % error.message)
+            return None
         response_message = "There are `%d` candidates with skills %s"
         response_message = response_message % (count, ' '.join(extracted_skills))
         if count == 1:
