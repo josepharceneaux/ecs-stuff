@@ -41,7 +41,7 @@ def require_oauth(allow_null_user=False, allow_candidate=False):
                     secret_key_id = request.headers['X-Talent-Secret-Key-ID']
                     json_web_token = oauth_token.replace('Bearer', '').strip()
                     User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
-                    request.oauth_token = json_web_token
+                    request.oauth_token = oauth_token
                     request.secret_key_id = request.headers['X-Talent-Secret-Key-ID']
                     return func(*args, **kwargs)
 
@@ -64,7 +64,7 @@ def require_oauth(allow_null_user=False, allow_candidate=False):
                     else:
                         valid_user_id = response.json().get('user_id')
                         request.user = User.query.get(valid_user_id)
-                        request.oauth_token = ''
+                        request.oauth_token = oauth_token
                         request.candidate = None
                         return func(*args, **kwargs)
 
