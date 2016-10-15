@@ -13,12 +13,14 @@ import chardet
 import json
 import requests
 from flask import request, jsonify
+from sqlalchemy.sql import func
+from sqlalchemy.sql.expression import literal
 from spreadsheet_import_service.app import logger, app, celery_app
 from spreadsheet_import_service.common.utils.talent_s3 import *
 from spreadsheet_import_service.common.utils.validators import is_valid_email, is_number
 from spreadsheet_import_service.common.models.user import User, db
 from spreadsheet_import_service.common.models.misc import AreaOfInterest
-from spreadsheet_import_service.common.models.candidate import CandidateSource
+from spreadsheet_import_service.common.models.candidate import CandidateSource, SocialNetwork
 from spreadsheet_import_service.common.utils.talent_reporting import email_error_to_admins
 from spreadsheet_import_service.common.error_handling import InvalidUsage
 from spreadsheet_import_service.common.error_handling import InternalServerError
@@ -158,7 +160,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                 if column_name == 'candidate.formattedName':
                     formatted_name = column
                 elif column_name == 'candidate.statusId':
-                    status_id = column
+                    status_id = int(column) if is_number(column) else column
                 elif column_name == 'candidate.firstName':
                     first_name = column
                 elif column_name == 'candidate.middleName':
@@ -257,7 +259,13 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                 elif column_name == 'candidate.notes':
                     prepare_candidate_data(candidate_notes, 'comment', column)
                 elif column_name == 'candidate.social_profile_url':
-                    prepare_candidate_data(social_networks, 'profile_url', column)
+                    social_network_object = SocialNetwork.query.filter(literal(column.lower()).contains(
+                            func.lower(SocialNetwork.name))).first()
+                    if social_network_object:
+                        prepare_candidate_data(social_networks, 'profile_url', column)
+                        prepare_candidate_data(social_networks, 'name', social_network_object.name)
+                    else:
+                        logger.warning("Couldn't add social profile url: (%s) of candidate ", column)
 
                 elif 'custom_field.' in column_name:
                     custom_fields_dict = {}
