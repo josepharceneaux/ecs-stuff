@@ -279,9 +279,9 @@ def schedule_job_for_email_conversations():
     # Schedule for next 100 years
     end_datetime = datetime.utcnow() + timedelta(weeks=52 * 100)
     frequency = 3600
-
     access_token = User.generate_jw_token()
-    headers = {'Authorization': access_token}
+    headers = {'Content-Type': 'application/json',
+               'Authorization': access_token}
     data = {
         'start_datetime': start_datetime.strftime(DatetimeUtils.ISO8601_FORMAT),
         'end_datetime': end_datetime.strftime(DatetimeUtils.ISO8601_FORMAT),
@@ -292,18 +292,19 @@ def schedule_job_for_email_conversations():
     logger.info('Checking if `{}` task already running...'.format(task_name))
     response = requests.get(SchedulerApiUrl.TASK_NAME % task_name, headers=headers)
     # If job is not scheduled then schedule it
-    if response.status_code == requests.codes.not_found:
-        logger.info('Task {} not scheduled. Scheduling {} task.'.format(task_name, task_name))
+    if response.status_code == requests.codes.NOT_FOUND:
+        logger.info('Task `{}` not scheduled. Scheduling `{}` task.'.format(task_name, task_name))
         data.update({'url': url})
         data.update({'task_name': task_name, 'task_type': 'periodic'})
-
         response = requests.post(SchedulerApiUrl.TASKS, headers=headers, data=json.dumps(data))
-        is_already_created = response.status_code == requests.codes.created \
-                             or response.json()['error']['code'] == TASK_ALREADY_SCHEDULED
-        if not is_already_created:
+        if response.status_code == codes.CREATED:
+            logger.info('Task `{}` has been scheduled.'.format(task_name))
+        elif response.json()['error']['code'] == TASK_ALREADY_SCHEDULED:
+            logger.info('Job already scheduled. `{}`'.format(task_name))
+        else:
             logger.error(response.text)
             raise InternalServerError(error_message='Unable to schedule job for getting email-conversations')
     elif response.status_code == requests.codes.ok:
-        logger.info('Job already scheduled. {}'.format(response.text))
+        logger.info('Job already scheduled. `{}`'.format(response.text))
     else:
         logger.error(response.text)

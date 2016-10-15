@@ -345,6 +345,8 @@ def import_email_conversations(queue_name):
     It then calls "import_email_conversations_per_account" to imports email-conversations for selected email-client.
     """
     email_clients = EmailClientCredentials.get_by_client_type(EmailClientCredentials.CLIENT_TYPES['incoming'])
+    if not email_clients:
+        logger.info('No IMAP/POP email-client found in database')
     for email_client in email_clients:
         logger.info('Importing email-conversations from host:%s, account:%s, user_id:%s' % (email_client.host,
                                                                                             email_client.email,
