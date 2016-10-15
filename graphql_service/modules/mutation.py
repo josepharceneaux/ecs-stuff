@@ -271,6 +271,7 @@ class CreateCandidate(graphene.Mutation):
                 skills=skills,
                 social_networks=social_networks,
                 tags=tags,
+                added_datetime=candidate_data['added_datetime']
                 # work_preference=work_preference
             )
         except Exception as e:
@@ -372,13 +373,15 @@ class UpdateCandidate(graphene.Mutation):
         # Save candidate's primary data
         # ValidateAndSave.candidate_data = candidate_data
         try:
-            retrieved_candidate = DynamoDB.get_candidate(candidate_id)
+            existing_candidate_data = DynamoDB.get_candidate(candidate_id)
+            if not existing_candidate_data:
+                raise Exception  # TODO: update with new method of error handling or raise InvalidUsage error
 
             candidates_validated_data = add_or_edit_candidate_from_params(
                 user_id=19,  # TODO: user ID to be set via request.user once authentication has been set
-                is_updating=True,
-                retrieved_candidate=retrieved_candidate,
                 primary_data=candidate_data,
+                is_updating=True,
+                existing_candidate_data=existing_candidate_data,
                 areas_of_interest=areas_of_interest,
                 addresses=addresses,
                 educations=educations,

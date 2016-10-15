@@ -132,8 +132,7 @@ def do_prefs_url_replacement(text, candidate_id):
     }
 
     unsubscribe_url = host_name + ('/candidates/%s/preferences?%s' % (str(candidate_id), urllib.urlencode({
-        'secret_key_id': secret_key_id,
-        'token': s.dumps(payload)
+        'token': '%s.%s' % (s.dumps(payload), secret_key_id)
     })))
 
     # In case the user accidentally wrote http://*|PREFERENCES_URL|* or https://*|PREFERENCES_URL|*
