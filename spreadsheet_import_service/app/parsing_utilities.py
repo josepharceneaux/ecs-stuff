@@ -247,7 +247,13 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                 elif column_name == 'candidate.tags':
                     prepare_candidate_data(candidate_tags, 'name', column)
                 elif column_name == 'candidate.skills':
-                    prepare_candidate_data(skills, 'name', column)
+                    if ',' in column:
+                        # Comma Separated Skills
+                        column = [skill.strip() for skill in column.split(',') if skill.strip()]
+                        for skill in column:
+                            prepare_candidate_data(skills, 'name', skill)
+                    else:
+                        prepare_candidate_data(skills, 'name', column)
                 elif column_name == 'candidate.notes':
                     prepare_candidate_data(candidate_notes, 'comment', column)
                 elif column_name == 'candidate.social_profile_url':
