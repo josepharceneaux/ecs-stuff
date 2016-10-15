@@ -31,8 +31,8 @@ class TestEmailConversations(object):
         This tests we import email-conversation with a specific subject and body successfully.
         """
         subject, body = data_for_email_conversation_importer
-        secret_key_id, access_token = User.generate_jw_token()
-        headers_for_importer = {'X-Talent-Secret-Key-ID': secret_key_id, 'Authorization': access_token}
+        access_token = User.generate_jw_token()
+        headers_for_importer = {'Authorization': access_token}
         # This will run the importer for email-conversations
         response_post = requests.post(self.URL, headers=headers_for_importer)
         assert response_post.status_code == codes.OK

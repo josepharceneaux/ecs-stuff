@@ -280,11 +280,8 @@ def schedule_job_for_email_conversations():
     end_datetime = datetime.utcnow() + timedelta(weeks=52 * 100)
     frequency = 3600
 
-    secret_key_id, access_token = User.generate_jw_token()
-    headers = {
-        'X-Talent-Secret-Key-ID': secret_key_id,
-        'Authorization': access_token
-    }
+    access_token = User.generate_jw_token()
+    headers = {'Authorization': access_token}
     data = {
         'start_datetime': start_datetime.strftime(DatetimeUtils.ISO8601_FORMAT),
         'end_datetime': end_datetime.strftime(DatetimeUtils.ISO8601_FORMAT),
