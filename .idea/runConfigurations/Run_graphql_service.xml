@@ -3,8 +3,8 @@
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
-      <env name="PATH" value="/usr/local/bin:$PATH" />
       <env name="PYTHONUNBUFFERED" value="1" />
+      <env name="PATH" value="/usr/local/bin:$PATH" />
     </envs>
     <option name="SDK_HOME" value="$USER_HOME$/.pyenv/versions/2.7.9/bin/python" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/graphql_service" />
