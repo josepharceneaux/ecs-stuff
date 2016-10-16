@@ -8,33 +8,39 @@ import datetime
 
 # Third party imports
 import requests
+import pytest
+from faker import Faker
+fake = Faker()
+
 
 # Application imports
 from scheduler_service.common.routes import SchedulerApiUrl
-
+from scheduler_service.modules.CONSTANTS import (SCHEDULER_REQUIRED_PARAMETERS,
+                                                  SCHEDULER_ONE_TIME_REQUIRED_PARAMETERS)
 __author__ = 'saad'
 
 
 class TestSchedulerExceptions(object):
 
+    @pytest.mark.qa
     def test_incomplete_post_data_exception(self, auth_header, job_config):
         """
-            Create a job by missing data and check if exception occur then invalid usage exception should be thrown
+        Create a job by missing data and check if exception occur then invalid usage exception should be thrown
 
-            Args:re
-                auth_data: Fixture that contains token.
-                job_config (dict): Fixture that contains job config to be used as
-                POST data while hitting the endpoint.
-            :return:
-            """
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
         # Delete frequency from post data and try to create job, should get 500 response
         invalid_job_config = job_config.copy()
-        del invalid_job_config['frequency']
-
-        # Create job with invalid string
-        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(invalid_job_config),
-                                 headers=auth_header)
-        assert response.status_code == 400
+        for param in SCHEDULER_REQUIRED_PARAMETERS:
+            del invalid_job_config[param]
+            # Create job with invalid string
+            response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(invalid_job_config),
+                                     headers=auth_header)
+            assert response.status_code == requests.codes.BAD_REQUEST
 
     def test_incorrect_post_data_exception(self, auth_header):
         """
@@ -307,3 +313,65 @@ class TestSchedulerExceptions(object):
 
         # Frequency is greater than end_datetime. Invalid Usage exception
         assert response.status_code == 400
+
+    @pytest.mark.qa
+    def test_start_time_greater_than_end_time_exception(self, auth_header, job_config):
+        """
+        The test is to validate that, if start_datetime is greater than end_datetime.
+        Then scheduler service should throw invalid usage exception.
+
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        job_config = job_config.copy()
+        start_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=50)
+        end_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=40)
+        job_config['start_datetime'] = start_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        job_config['end_datetime'] = end_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+                                 headers=auth_header)
+        # start_date is greater than end_datetime. Invalid Usage exception
+        assert response.status_code == requests.codes.BAD_REQUEST
+
+    @pytest.mark.qa
+    def test_one_time_job_with_multiple_frequency(self, auth_header, job_config_one_time_task):
+        """
+        The test is to validate that, if the job is one time frequency parameter should not be part of post data is g.
+        Then scheduler service should throw invalid usage exception.
+
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        job_config_one_time_task = job_config_one_time_task.copy()
+        job_config_one_time_task['frequency'] = fake.random_number(1,)
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task),
+                                 headers=auth_header)
+
+        # Additional properties are not allowed (u'frequency')
+        assert response.status_code == requests.codes.BAD_REQUEST
+
+    @pytest.mark.qa
+    def test_incomplete_post_data_for_one_time_task(self, auth_header, job_config_one_time_task):
+        """
+        Create a job by missing data for one time job and check if exception occur then invalid usage exception
+        should be thrown.
+
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+        :return:
+        """
+        # Delete some post data and try to create job, should get 400 response
+        invalid_job_config_one_time_task = job_config_one_time_task.copy()
+        for param in SCHEDULER_ONE_TIME_REQUIRED_PARAMETERS:
+            del invalid_job_config_one_time_task[param]
+            response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(invalid_job_config_one_time_task),
+                                     headers=auth_header)
+            assert response.status_code == requests.codes.BAD_REQUEST

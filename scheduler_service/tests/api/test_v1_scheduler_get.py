@@ -9,12 +9,15 @@ import uuid
 
 # Third party imports
 import requests
+import pytest
 
 # Application imports
 from scheduler_service.common.models.user import Token
 from scheduler_service.common.routes import SchedulerApiUrl
-from scheduler_service.common.tests.conftest import user_same_domain, access_token_same
+from scheduler_service.common.tests.conftest import user_same_domain, access_token_same, access_token_other
 from scheduler_service.common.utils.handy_functions import random_word
+from scheduler_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+
 
 __author__ = 'saad'
 
@@ -395,3 +398,41 @@ class TestSchedulerGet(object):
         response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
+
+    # Depend on jira GET-1699
+    # @pytest.mark.qa
+    # def test_get_scheduled_task_by_other_domain(self, auth_header, job_config):
+    #     """
+    #     Schedule a job from a user and then get the same task from a different user in different domain
+    #     Args:
+    #         auth_data: Fixture that contains token.
+    #         job_config (dict): Fixture that contains job config to be used as
+    #         POST data while hitting the endpoint.
+    #         access_token_other : user of different domain
+    #     :return:
+    #     """
+    #     response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+    #                              headers=auth_header)
+    #     assert response.status_code == requests.codes.CREATED
+    #     data = response.json()
+    #     auth_header['Authorization'] = 'Bearer %s' % access_token_other
+    #     # Now get the job from other user in different domain
+    #     response_get = requests.get(SchedulerApiUrl.TASK % data['id'],
+    #                                 headers=auth_header)
+    #     assert response_get.status_code == requests.codes.FORBIDDEN
+
+    @pytest.mark.qa
+    def test_get_scheduled_task_by_invalid_id(self, auth_header):
+        """
+        Try to get the task with invalid id. Should return 404 not found.
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+            access_token_other : user of different domain
+        :return:
+        """
+        invalid_id = CampaignsTestsHelpers.INVALID_STRING
+        response_get = requests.get(SchedulerApiUrl.TASK % invalid_id,
+                                    headers=auth_header)
+        assert response_get.status_code == requests.codes.NOT_FOUND

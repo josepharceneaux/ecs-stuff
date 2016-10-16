@@ -6,10 +6,13 @@ Also try to resume the jobs without using token and it should give 401 status co
 # Third party imports
 import json
 import requests
+import pytest
 
 # Application imports
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.custom_exceptions import SchedulerServiceApiException
+from scheduler_service.common.tests.conftest import access_token_other
+from scheduler_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 __author__ = 'saad'
 
@@ -213,3 +216,59 @@ class TestSchedulerResume(object):
         # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
+
+    # Depend on jira GET-1748
+    # @pytest.mark.qa
+    # def test_resume_job_with_invalid_id(self, auth_header):
+    #     """
+    #     Try to resume job with invalid id. Should return 404 not found.
+    #     Args:
+    #         auth_data: Fixture that contains token.
+    #         job_config (dict): Fixture that contains job config to be used as
+    #         POST data while hitting the endpoint.
+    #     :return:
+    #     """
+    #     for param in CampaignsTestsHelpers.INVALID_ID[:3]:
+    #         invalid_job_id = param
+    #         response_resume = requests.post(SchedulerApiUrl.RESUME_TASK % invalid_job_id,
+    #                                         headers=auth_header)
+    #         assert response_resume.status_code == requests.codes.NOT_FOUND
+
+    # Depend on GET-1699
+    # @pytest.mark.qa
+    # def test_resume_scheduled_task_by_other_domain_user(self, auth_header, job_config):
+    #     """
+    #     Schedule a job from a user and then try to resume same task from a different user in different domain
+    #     Args:
+    #         auth_data: Fixture that contains token.
+    #         job_config (dict): Fixture that contains job config to be used as
+    #         POST data while hitting the endpoint.
+    #         access_token_other : user of different domain
+    #     :return:
+    #     """
+    #     response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+    #                              headers=auth_header)
+    #     assert response.status_code == requests.codes.CREATED
+    #     data = response.json()
+    #     auth_header['Authorization'] = 'Bearer %s' % access_token_other
+    #     # Now get the job from other user in different domain
+    #     response_resume = requests.post(SchedulerApiUrl.RESUME_TASK % data['id'],
+    #                                     headers=auth_header)
+    #     assert response_resume.status_code == requests.codes.FORBIDDEN
+
+    @pytest.mark.qa
+    def test_resume_multiple_jobs_with_invalid_data(self, auth_header):
+        """
+        Try to resume multiple tasks with invalid id's. Should return 400 bad request.
+        Args:
+             auth_data: Fixture that contains token.
+             job_config (dict): Fixture that contains job config to be used as
+             POST data while hitting the endpoint.
+             access_token_other : user of different domain
+        :return:
+        """
+        invalid_job_ids = CampaignsTestsHelpers.INVALID_ID
+        response_stop = requests.post(SchedulerApiUrl.RESUME_TASK, data=json.dumps(dict(ids=invalid_job_ids)),
+                                      headers=auth_header)
+        assert response_stop.status_code == requests.codes.BAD_REQUEST
+
