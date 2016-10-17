@@ -472,10 +472,7 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
     email_client_credentials_id = campaign.email_client_credentials_id
     if email_client_credentials_id:  # In case user wants to send email-campaign via added SMTP server.
         try:
-            email_client_credentials = EmailClientCredentials.get_by_id(campaign.email_client_credentials_id)
-            if not email_client_credentials:
-                raise ResourceNotFound("EmailClientCredentials(id:%s) not found for user(id:%s)."
-                                       % (email_client_credentials_id, user_id))
+            email_client_credentials = campaign.email_client_credentials
             decrypted_password = decrypt_password(email_client_credentials.password)
             client = SMTP(email_client_credentials.host, email_client_credentials.port,
                           email_client_credentials.email, decrypted_password)
