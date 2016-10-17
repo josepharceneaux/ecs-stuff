@@ -13,6 +13,15 @@ from common_resolvers import (
 )
 
 
+class AreaOfInterestType(graphene.ObjectType):
+    name = 'AreaOfInterestType'
+
+    area_of_interest_id = graphene.Int()
+
+    def resolve_area_of_interest_id(self, args, context, info):
+        return self.get('area_of_interest_id')
+
+
 class CandidateAddressType(graphene.ObjectType):
     name = 'CandidateAddress'
 
@@ -39,6 +48,19 @@ class CandidateAddressType(graphene.ObjectType):
 
     def resolve_coordinates(self, args, context, info):
         return self.get('coordinates')
+
+
+class CustomFieldType(graphene.ObjectType):
+    name = 'CustomFieldType'
+
+    custom_field_id = graphene.Int()
+    value = graphene.String()
+
+    def resolve_custom_field_id(self, args, context, info):
+        return self.get('custom_field_id')
+
+    def resolve_value(self, args, context, info):
+        return self.get('value')
 
 
 class EducationDegreeType(graphene.ObjectType):
@@ -378,13 +400,12 @@ class CandidateType(graphene.ObjectType):
         return self.get('culture_id')
 
     # ***** Secondary attributes *****
-    # areas_of_interest = graphene.List(AreaOfInterestType)
+    areas_of_interest = graphene.List(AreaOfInterestType)
     addresses = graphene.List(CandidateAddressType)
-    # custom_fields = graphene.List(CustomFieldType)
+    custom_fields = graphene.List(CustomFieldType)
     educations = graphene.List(EducationType)
     emails = graphene.List(CandidateEmailType)
     experiences = graphene.List(ExperienceType)
-
     military_service = graphene.List(MilitaryServiceType)
     notes = graphene.List(NoteType)
     phones = graphene.List(PhoneType)
@@ -395,9 +416,6 @@ class CandidateType(graphene.ObjectType):
     social_networks = graphene.List(SocialNetworkType)
     tags = graphene.List(TagType)
     work_preference = graphene.Field(WorkPreferenceType)
-
-    def resolve_edits(self, args, context, info):
-        return self.get('edits')
 
     # Resolvers for candidate's secondary attributes
     def resolve_areas_of_interest(self, args, context, info):
@@ -447,9 +465,6 @@ class CandidateType(graphene.ObjectType):
 
     def resolve_work_preference(self, args, context, info):
         return self.get('work_preference')
-
-    def resolve_edits(self, args, context, info):
-        return self.get('edits')
 
 
 try:

@@ -1,21 +1,25 @@
 """
 
 """
+from graphql_service.common.models.user import User
+from graphql_service.common.models.candidate import Candidate
+from graphql_service.common.utils.auth_utils import has_role
 
 
-def does_address_exist(candidate, address_dict):
+def is_candidate_validated(user, candidate_id, user_role='TALENT_ADMIN'):
     """
-    :type address_dict:  dict[str]
-    :rtype:  bool
+    Function will return true if candidate is 1. found & 2. validated per user's permission(s)
+    :type user: User
+    :type candidate_id: int | long
+    :type user_role: str
+    :rtype: bool
     """
-    for address in candidate.addresses:
-        address_line_1, address_line_2 = (address.address_line_1 or '').lower(), (address.address_line_2 or '').lower()
-        address_dict_address_line_1 = (address_dict.get('address_line_1') or '').lower()
-        address_dict_address_line_2 = (address_dict.get('address_line_2') or '').lower()
-        if address_line_1 and not address_line_2:
-            if address_line_1 == address_dict_address_line_1:
-                return True
-        elif address_line_1 and address_line_2:
-            if address_line_1 == address_dict_address_line_1 and address_line_2 == address_dict_address_line_2:
-                return True
-    return False
+    candidate = Candidate.get(candidate_id)
+    if not candidate:
+        return False
+
+    # Return False if user is not authorized to get candidate
+    if has_role(user=user, role=user_role) and candidate.user.domain_id != user.domain_id:
+        return False
+
+    return True
