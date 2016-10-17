@@ -137,6 +137,9 @@ class QuestionHandler(object):
         zip_index = cls.find_word_in_message('zip', message_tokens)
         if not zip_index:
             raise IndexError
+        code_index = cls.find_exact_word_in_message('code', message_tokens)
+        if code_index is not None:
+            message_tokens.pop(code_index)
         zipcode = message_tokens[zip_index + 1]
         count = Candidate.get_candidate_count_from_zipcode(zipcode, user_id)
         response_message = "Number of candidates from zipcode `%s` : `%d`" % \
@@ -419,8 +422,10 @@ class QuestionHandler(object):
             users = User.get_by_name(user_id, user_name)
             if users:
                 user = users[0]
-                response = "`%s`'s group is `%s`" % (user_name, user.user_group.name)
-                return response
+                if user.user_group:
+                    response = "`%s`'s group is `%s`" % (user_name, user.user_group.name)
+                    return response
+                return "`%s` doesn't belong to any group" % user_name
             response = 'No user with name `%s` exists in your domain' % user_name
             return response
         user = User.get_by_id(user_id)

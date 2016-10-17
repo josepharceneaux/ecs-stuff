@@ -146,6 +146,10 @@ class TalentBot(object):
         """
         cleaned_message = message.rstrip('?. ')
         cleaned_message = cleaned_message.lstrip(': ')
+        split_message = cleaned_message.split()
+        for idx, item in enumerate(split_message):
+            split_message[idx] = item.strip()
+        cleaned_message = ' '.join(split_message)
         return cleaned_message
 
     def parse_message(self, message, user_id=None):
@@ -254,6 +258,6 @@ class TalentBot(object):
         :rtype: str
         """
         response_message = response_message.replace('*', '')
-        response_message = response_message.replace('`', '')
+        response_message = response_message.replace('`', '"')
         response_message = response_message.replace('>>>', '')
         return response_message
