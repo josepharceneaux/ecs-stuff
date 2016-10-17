@@ -100,12 +100,11 @@ def fetch_optic_response(resume, filename_str):
 
 
 @contract
-def parse_optic_xml(resume_xml_text, encoded_resume_text):
+def parse_optic_xml(resume_xml_text):
     """
     Takes in a Burning Glass XML tree in string format and returns a candidate JSON object.
     :param string resume_xml_text: An XML tree represented in unicode format. It is a slightly
                                    processed response from the Burning Glass API.
-    :param string encoded_resume_text: b64 encoded resume text for skills parsing.
     :return: Results of various parsing functions on the input xml string.
     :rtype: dict
     """
