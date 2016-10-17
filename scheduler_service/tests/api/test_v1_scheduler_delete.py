@@ -181,24 +181,23 @@ class TestSchedulerDelete(object):
                                               headers=auth_header)
             assert response_remove.status_code == requests.codes.NOT_FOUND
 
-    # Depend on GET-1699
-    # @pytest.mark.qaff
-    # def test_delete_scheduled_task_by_other_domain_user(self, auth_header, job_config, access_token_other):
-    #     """
-    #     Schedule a job from a user and then try to remove same task from a different user in different domain.
-    #     Args:
-    #         auth_data: Fixture that contains token.
-    #         job_config (dict): Fixture that contains job config to be used as
-    #         POST data while hitting the endpoint.
-    #         access_token_other : user of different domain
-    #     :return:
-    #     """
-    #     response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
-    #                              headers=auth_header)
-    #     assert response.status_code == requests.codes.CREATED
-    #     data = response.json()
-    #     auth_header['Authorization'] = 'Bearer %s' % access_token_other
-    #     # Now get the job from other user in different domain
-    #     response_remove = requests.get(SchedulerApiUrl.TASK % data['id'],
-    #                                    headers=auth_header)
-    #     assert response_remove.status_code == requests.codes.FORBIDDEN
+    @pytest.mark.qa
+    def test_delete_scheduled_task_by_other_domain_user(self, auth_header, job_config, access_token_other):
+        """
+        Schedule a job from a user and then try to remove same task from a different user in different domain.
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+            access_token_other : user of different domain
+        :return:
+        """
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+                                 headers=auth_header)
+        assert response.status_code == requests.codes.CREATED
+        data = response.json()
+        auth_header['Authorization'] = 'Bearer %s' % access_token_other
+        # Now get the job from other user in different domain
+        response_remove = requests.get(SchedulerApiUrl.TASK % data['id'],
+                                       headers=auth_header)
+        assert response_remove.status_code == requests.codes.NOT_FOUND

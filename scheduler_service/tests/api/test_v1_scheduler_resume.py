@@ -233,27 +233,30 @@ class TestSchedulerResume(object):
     #                                         headers=auth_header)
     #         assert response_resume.status_code == requests.codes.NOT_FOUND
 
-    # Depend on GET-1699
-    # @pytest.mark.qaff
-    # def test_resume_scheduled_task_by_other_domain_user(self, auth_header, job_config, access_token_other):
-    #     """
-    #     Schedule a job from a user and then try to resume same task from a different user in different domain
-    #     Args:
-    #         auth_data: Fixture that contains token.
-    #         job_config (dict): Fixture that contains job config to be used as
-    #         POST data while hitting the endpoint.
-    #         access_token_other : user of different domain
-    #     :return:
-    #     """
-    #     response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
-    #                              headers=auth_header)
-    #     assert response.status_code == requests.codes.CREATED
-    #     data = response.json()
-    #     auth_header['Authorization'] = 'Bearer %s' % access_token_other
-    #     # Now get the job from other user in different domain
-    #     response_resume = requests.post(SchedulerApiUrl.RESUME_TASK % data['id'],
-    #                                     headers=auth_header)
-    #     assert response_resume.status_code == requests.codes.FORBIDDEN
+    @pytest.mark.qaff
+    def test_resume_scheduled_task_by_other_domain_user(self, auth_header, job_config, access_token_other):
+        """
+        Schedule a job from a user then pause a task and then try to resume same task from a different user in
+        different domain. Should return 404 Not Found.
+        Args:
+            auth_data: Fixture that contains token.
+            job_config (dict): Fixture that contains job config to be used as
+            POST data while hitting the endpoint.
+            access_token_other : user of different domain
+        :return:
+        """
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+                                 headers=auth_header)
+        assert response.status_code == requests.codes.CREATED
+        data = response.json()
+        response_pause = requests.post(SchedulerApiUrl.PAUSE_TASK % data['id'],
+                                       headers=auth_header)
+        assert response_pause.status_code == requests.codes.OK
+        auth_header['Authorization'] = 'Bearer %s' % access_token_other
+        # Now get the job from other user in different domain
+        response_resume = requests.post(SchedulerApiUrl.RESUME_TASK % data['id'],
+                                        headers=auth_header)
+        assert response_resume.status_code == requests.codes.NOT_FOUND
 
     @pytest.mark.qa
     def test_resume_multiple_jobs_with_invalid_data(self, auth_header):
