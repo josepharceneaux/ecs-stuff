@@ -11,7 +11,6 @@ import pytest
 # Application imports
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.custom_exceptions import SchedulerServiceApiException
-from scheduler_service.common.tests.conftest import access_token_other
 from scheduler_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 __author__ = 'saad'
@@ -235,8 +234,8 @@ class TestSchedulerResume(object):
     #         assert response_resume.status_code == requests.codes.NOT_FOUND
 
     # Depend on GET-1699
-    # @pytest.mark.qa
-    # def test_resume_scheduled_task_by_other_domain_user(self, auth_header, job_config):
+    # @pytest.mark.qaff
+    # def test_resume_scheduled_task_by_other_domain_user(self, auth_header, job_config, access_token_other):
     #     """
     #     Schedule a job from a user and then try to resume same task from a different user in different domain
     #     Args:

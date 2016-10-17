@@ -12,7 +12,7 @@ import pytest
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.custom_exceptions import SchedulerServiceApiException
 from scheduler_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from scheduler_service.common.tests.conftest import access_token_other
+
 
 __author__ = 'saad'
 
@@ -209,8 +209,8 @@ class TestSchedulerPause(object):
     #         assert response_pause.status_code == requests.codes.NOT_FOUND
 
     # Depend on jira GET-1699
-    # @pytest.mark.qa
-    # def test_pause_scheduled_task_by_other_domain_user(self, auth_header, job_config):
+    # @pytest.mark.qaff
+    # def test_pause_scheduled_task_by_other_domain_user(self, auth_header, job_config, access_token_other):
     #     """
     #     Schedule a job from a user and then try to pause same task from a different user in different domain
     #     Args:

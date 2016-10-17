@@ -12,7 +12,6 @@ import pytest
 # Application imports
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from scheduler_service.common.tests.conftest import access_token_other
 
 
 __author__ = 'saad'
@@ -182,11 +181,11 @@ class TestSchedulerDelete(object):
                                               headers=auth_header)
             assert response_remove.status_code == requests.codes.NOT_FOUND
 
-    # Depend on GET-16
-    # @pytest.mark.qa
-    # def test_delete_scheduled_task_by_other_domain_user(self, auth_header, job_config):
+    # Depend on GET-1699
+    # @pytest.mark.qaff
+    # def test_delete_scheduled_task_by_other_domain_user(self, auth_header, job_config, access_token_other):
     #     """
-    #     Schedule a job from a user and then try to remove same task from a different user in different domain
+    #     Schedule a job from a user and then try to remove same task from a different user in different domain.
     #     Args:
     #         auth_data: Fixture that contains token.
     #         job_config (dict): Fixture that contains job config to be used as

@@ -14,7 +14,7 @@ import pytest
 # Application imports
 from scheduler_service.common.models.user import Token
 from scheduler_service.common.routes import SchedulerApiUrl
-from scheduler_service.common.tests.conftest import user_same_domain, access_token_same, access_token_other
+from scheduler_service.common.tests.conftest import user_same_domain, access_token_same
 from scheduler_service.common.utils.handy_functions import random_word
 from scheduler_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
@@ -401,7 +401,7 @@ class TestSchedulerGet(object):
 
     # Depend on jira GET-1699
     # @pytest.mark.qa
-    # def test_get_scheduled_task_by_other_domain(self, auth_header, job_config):
+    # def test_get_scheduled_task_by_other_domain(self, auth_header, job_config, access_token_other):
     #     """
     #     Schedule a job from a user and then get the same task from a different user in different domain
     #     Args:

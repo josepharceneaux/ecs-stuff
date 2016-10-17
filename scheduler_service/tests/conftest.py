@@ -17,7 +17,8 @@ from scheduler_service import db
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.auth_utilities import get_access_token
 from scheduler_service.common.tests.conftest import pytest, datetime, User, user_auth, sample_user, test_domain, \
-    test_org, test_culture, first_group, domain_first, PASSWORD, sample_client
+    test_org, test_culture, first_group, domain_first, PASSWORD, sample_client, access_token_other, \
+    user_from_diff_domain, test_domain_2, second_group, domain_second
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
