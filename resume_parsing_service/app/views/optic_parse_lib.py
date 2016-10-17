@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Parsing functions for extracting specific information from Burning Glass API responses."""
 # pylint: disable=wrong-import-position, fixme, import-error
 __author__ = 'erik@getTalent.com'
@@ -29,6 +30,7 @@ from resume_parsing_service.common.utils.handy_functions import normalize_value
 
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
+SPLIT_DESCRIPTION_REGEXP = re.compile(ur"•≅_|≅_| \* |•|➢|→|\n\n\n")
 
 
 @contract
@@ -262,13 +264,14 @@ def parse_candidate_experiences(bg_experience_xml_list):
             # Get experience bullets
             candidate_experience_bullets = []
             description_text = _tag_text(employment, 'description', remove_questions=True) or ''
-            for bullet_description in description_text.split('|'):
+            # for bullet_description in description_text.split('|'):
+            for bullet_description in SPLIT_DESCRIPTION_REGEXP.split(description_text):
                 # If experience already exists then append the current bullet-descriptions to
                 # already existed bullet-descriptions
                 if existing_experience_list_order:
                     output[existing_experience_list_order]['bullets'][0]['description'] += '\n' + bullet_description
                 else:
-                    candidate_experience_bullets.append(bullet_description)
+                    candidate_experience_bullets.append(bullet_description.strip())
 
             if not existing_experience_list_order:
                 is_current_job = False
