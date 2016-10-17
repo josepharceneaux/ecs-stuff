@@ -21,7 +21,7 @@ This module contains model classes that are related to push campaign service.
 import datetime
 from db import db
 from sqlalchemy.orm import relationship
-from sqlalchemy import desc, extract
+from sqlalchemy import desc, extract, and_
 from candidate import Candidate
 from ..error_handling import InvalidUsage
 
@@ -123,19 +123,25 @@ class PushCampaignBlast(db.Model):
         :param str datetime_value: Year of campaign started or updated
         :rtype: PushCampaignBlast
         """
+        assert isinstance(datetime_value, (datetime.datetime, basestring)) or datetime_value is None, \
+            "Invalid datetime value"
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
+        from .user import User
+        domain_id = User.get_domain_id(user_id)
         if isinstance(datetime_value, datetime.datetime):
             return cls.query.filter(cls.updated_datetime >= datetime_value). \
                 filter(PushCampaign.id == cls.campaign_id).\
-                filter(PushCampaign.user_id == user_id). \
+                filter(and_(PushCampaign.user_id == User.id, User.domain_id == domain_id)). \
                 filter(cls.sends > 0).order_by(desc(cls.clicks)).first()
         if isinstance(datetime_value, basestring):
             return cls.query.filter(extract("year", cls.updated_datetime) == datetime_value). \
                 filter(PushCampaign.id == cls.campaign_id).\
-                filter(PushCampaign.user_id == user_id). \
+                filter(and_(PushCampaign.user_id == User.id, User.domain_id == domain_id)). \
                 filter(cls.sends > 0). \
                 order_by(desc(cls.clicks)).first()
         return cls.query.filter(PushCampaign.id == cls.campaign_id).\
-            filter(PushCampaign.user_id == user_id).filter(cls.sends > 0).order_by(desc(cls.clicks)).first()
+            filter(and_(PushCampaign.user_id == User.id, User.domain_id == domain_id)).filter(cls.sends > 0).\
+            order_by(desc(cls.clicks)).first()
 
 
 class PushCampaignSend(db.Model):

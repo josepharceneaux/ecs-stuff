@@ -218,7 +218,11 @@ class QuestionHandler(object):
             if len(campaign_list) < 2:
                 campaign_list[0] = "Looks like you don't have any campaigns since that time"
             return '%s%s' % (campaign_list[0], self.create_ordered_list(campaign_list[1::]))
-        campaign_blast = campaign_method(user_specific_date, user_id)
+        try:
+            campaign_blast = campaign_method(user_specific_date, user_id)
+        except AssertionError as error:
+            logger.error(error.message)
+            return None
         timespan = self.append_list_with_spaces(message_tokens[last_index::])
         if is_valid_year:
             timespan = user_specific_date
