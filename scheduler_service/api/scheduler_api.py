@@ -326,7 +326,7 @@ class PauseTasks(Resource):
                 'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
             }
             headers = {'Authorization': 'Bearer <access_token>', 'Content-Type' : 'application/json'}
-            response = requests.post(API_URL + '/v1/tasks/resume/', headers=headers, data=json.dumps(task_ids))
+            response = requests.post(API_URL + '/v1/tasks/pause/', headers=headers, data=json.dumps(task_ids))
 
         .. Response::
             {
@@ -657,7 +657,7 @@ class PauseTaskById(Resource):
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.post(API_URL + '/v1/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
+            response = requests.post(API_URL + '/v1/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/pause/', headers=headers)
 
         .. Response::
             {
