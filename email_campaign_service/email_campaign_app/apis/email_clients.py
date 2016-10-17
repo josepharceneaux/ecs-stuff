@@ -118,7 +118,8 @@ class EmailClientsEndpoint(Resource):
 
         .. Response::
 
-            { 'email_client_credentials:
+            {
+                "email_client_credentials":
                     [
                             {
                                 "id": 1,
@@ -143,11 +144,12 @@ class EmailClientsEndpoint(Resource):
                     ]
             }
 
-        .. Status:: 200 (Resource created)
+        .. Status:: 200 (OK Response)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     500 (Internal server error)
         """
+        # TODO: Return all in user's domain
         server_type = request.args.get('type', 'outgoing')
         email_client_credentials = [email_client_credential.to_json() for email_client_credential in
                                     EmailClientCredentials.get_by_user_id_and_filter_by_name(request.user.id,
