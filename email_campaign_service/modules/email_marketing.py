@@ -477,7 +477,7 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
                 raise ResourceNotFound("EmailClientCredentials(id:%s) not found for user(id:%s)."
                                        % (email_client_credentials_id, user_id))
             decrypted_password = decrypt_password(email_client_credentials.password)
-            client = SMTP(email_client_credentials.host,email_client_credentials.port,
+            client = SMTP(email_client_credentials.host, email_client_credentials.port,
                           email_client_credentials.email, decrypted_password)
             client.send_email(to_addresses, subject, new_text)
         except Exception as error:

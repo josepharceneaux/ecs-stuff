@@ -244,6 +244,10 @@ class EmailConversations(Resource):
                               "updated_datetime": "2016-09-30 10:50:05",
                               "email_received_datetime": "2016-09-27 08:01:48",
                               "mailbox": "inbox",
+                              "email_client_credentials": {
+                                                            "id": 2,
+                                                            "name": "Gmail"
+                                                            },
                               "candidate_id": 4,
                               "id": 2,
                               "subject": "37e0bd0b It is a test campaign"
@@ -254,6 +258,10 @@ class EmailConversations(Resource):
                               "updated_datetime": "2016-09-30 10:50:05",
                               "email_received_datetime": "2016-09-27 08:01:49",
                               "mailbox": "inbox",
+                              "email_client_credentials": {
+                                                            "id": 2,
+                                                            "name": "Gmail"
+                                                            },
                               "candidate_id": 4,
                               "id": 3,
                               "subject": "d5957c8e It is a test campaign"
@@ -265,7 +273,7 @@ class EmailConversations(Resource):
                     500 (Internal server error)
         """
         user = request.user
-        email_conversations = [email_conversation.to_json() for email_conversation in user.email_conversations]
+        email_conversations = [email_conversation.to_dict() for email_conversation in user.email_conversations]
         return {'email_conversations': email_conversations}, codes.OK
 
 

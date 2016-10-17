@@ -401,7 +401,7 @@ def data_for_email_conversation_importer(email_clients, headers, candidate_first
                                      address=app.config[TalentConfigKeys.GT_GMAIL_ID],
                                      email_label_id=CandidateEmail.labels_mapping['Primary'])
     CandidateEmail.save(candidate_email)
-    # GET email-client-id
+    # GET SMTP email-client-id
     response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENT_WITH_ID % email_clients[0], headers=headers)
     assert response.ok
     assert response.json()
@@ -409,7 +409,14 @@ def data_for_email_conversation_importer(email_clients, headers, candidate_first
     subject = '%s-email-conversations-importer' % fake.uuid4()[0:8]
     body = fake.sentence()
     # Send email
+    print 'Sending email with SMTP server'
     client = SMTP(email_client_response['host'], email_client_response['port'],
                   email_client_response['email'], app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
     client.send_email(app.config[TalentConfigKeys.GT_GMAIL_ID], subject, body)
-    return subject, body
+
+    # GET IMAP email-client-id
+    response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENT_WITH_ID % email_clients[1], headers=headers)
+    assert response.ok
+    assert response.json()
+    imap_email_client_response = response.json()['email_client_credentials']
+    return subject, body, imap_email_client_response
