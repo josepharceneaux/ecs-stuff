@@ -236,6 +236,11 @@ class EmailConversations(Resource):
                               "updated_datetime": "2016-09-30 10:50:03",
                               "email_received_datetime": "2016-09-27 08:02:03",
                               "mailbox": "inbox",
+                              "email_client_credentials": {
+                                                            "id": 2,
+                                                            "name": "Gmail"
+                                                            },
+
                               "candidate_id": 4,
                               "id": 1,
                               "subject": "55b04894 It is a test campaign"

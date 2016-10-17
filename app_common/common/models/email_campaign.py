@@ -80,7 +80,8 @@ class EmailCampaign(db.Model):
                        "body_text": self.body_text if (include_fields and 'body_text' in include_fields) else None,
                        "is_hidden": self.is_hidden,
                        "talent_pipelines": talent_pipelines,
-                       "list_ids": [smart_list.id for smart_list in smart_lists]}
+                       "list_ids": [smart_list.id for smart_list in smart_lists],
+                       "email_client_credentials_id": self.email_client_credentials_id}
 
         # Only include the fields that are supposed to be included
         if include_fields:
@@ -445,6 +446,9 @@ class EmailClientCredentials(db.Model):
     updated_datetime = db.Column('updated_datetime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
 
     # Relationship
+    email_campaign = relationship('EmailCampaign', cascade='all, delete-orphan',
+                                  passive_deletes=True, backref='email_client_credentials')
+
     email_conversations = relationship('EmailConversations', lazy='dynamic', cascade='all, delete-orphan',
                                        passive_deletes=True, backref='email_client_credentials')
 

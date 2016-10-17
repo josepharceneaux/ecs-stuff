@@ -382,7 +382,7 @@ def email_campaign_with_outgoing_email_client(access_token_first, talent_pipelin
     response = create_email_campaign_via_api(access_token_first, campaign_data)
     assert response.status_code == requests.codes.CREATED
     resp_object = response.json()
-    assert 'campaign' in resp_object
+    assert 'campaign' in resp_object and resp_object['campaign']
     db.session.commit()
     email_campaign = EmailCampaign.get_by_id(resp_object['campaign']['id'])
     assert email_campaign
