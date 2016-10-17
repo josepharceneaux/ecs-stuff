@@ -396,6 +396,9 @@ class CandidateType(graphene.ObjectType):
     tags = graphene.List(TagType)
     work_preference = graphene.Field(WorkPreferenceType)
 
+    def resolve_edits(self, args, context, info):
+        return self.get('edits')
+
     # Resolvers for candidate's secondary attributes
     def resolve_areas_of_interest(self, args, context, info):
         return self.get('areas_of_interest')
@@ -444,6 +447,9 @@ class CandidateType(graphene.ObjectType):
 
     def resolve_work_preference(self, args, context, info):
         return self.get('work_preference')
+
+    def resolve_edits(self, args, context, info):
+        return self.get('edits')
 
 
 try:

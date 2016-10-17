@@ -5,10 +5,10 @@ from werkzeug.security import gen_salt
 from auth_service.oauth import app, logger
 from auth_service.oauth import gt_oauth
 from auth_service.common.error_handling import *
-from auth_service.common.utils.auth_utils import require_jwt_oauth
 from auth_service.common.routes import AuthApi, AuthApiV2
 from auth_service.common.models.user import Permission
 from auth_service.common.models.user import User
+from auth_service.common.utils.auth_utils import require_jwt_oauth
 from auth_service.oauth.oauth_utilities import (authenticate_user, save_token_v2,
                                                 redis_store, authenticate_request, load_client, save_token_v1)
 
@@ -35,6 +35,7 @@ def refresh_token_v2():
 
     secret_key_id, authenticated_user = authenticate_request()
     redis_store.delete(secret_key_id)
+
     return save_token_v2(authenticated_user)
 
 
@@ -43,6 +44,7 @@ def revoke_token_v2():
     """ Revoke an access_token """
     secret_key_id, authenticated_user = authenticate_request()
     redis_store.delete(secret_key_id)
+
     return '', 200
 
 

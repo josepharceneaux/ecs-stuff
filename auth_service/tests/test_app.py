@@ -66,7 +66,7 @@ class AuthServiceTestsContext:
             return response.status_code, ''
 
     def authorize_token_v2(self):
-        headers = {'Authorization': 'Bearer %s' % self.access_token, 'X-Talent-Secret-Key-ID': self.secret_key_id}
+        headers = {'Authorization': 'Bearer %s' % self.access_token}
         response = requests.get(AuthApiUrlV2.AUTHORIZE, headers=headers)
         if response.status_code == 200:
             response_data = json.loads(response.text)
@@ -112,17 +112,16 @@ class AuthServiceTestsContext:
             response = requests.post(AuthApiUrlV2.TOKEN_CREATE, data=urlencode(params), headers=headers)
             json_response = json.loads(response.text)
             access_token = json_response.get('access_token', '') if json_response else ''
-            secret_key_id = json_response.get('secret_key_id', '') if json_response else ''
-            return access_token, secret_key_id, response.status_code
+            return access_token, response.status_code
+
         elif action == 'refresh':
             headers = {'Authorization': 'Bearer %s' % self.access_token, 'X-Talent-Secret-Key-ID': self.secret_key_id}
             response = requests.post(AuthApiUrlV2.TOKEN_REFRESH, headers=headers)
             json_response = json.loads(response.text)
-            access_token = json_response.get('access_token', '') if response else ''
-            secret_key_id = json_response.get('secret_key_id', '') if response else ''
-            return access_token, secret_key_id, response.status_code
+            access_token = json_response.get('access_token', '') if json_response else ''
+            return access_token, response.status_code
         else:
-            headers = {'Authorization': 'Bearer %s' % self.access_token, 'X-Talent-Secret-Key-ID': self.secret_key_id}
+            headers = {'Authorization': 'Bearer %s' % self.access_token}
             response = requests.post(AuthApiUrlV2.TOKEN_REVOKE, headers=headers)
             return response.status_code
 
@@ -156,7 +155,7 @@ def test_auth_service_v2(app_context):
     sleep(10)
 
     # Fetch Bearer Token
-    app_context.access_token, app_context.secret_key_id, status_code = app_context.token_handler_v2()
+    app_context.access_token, status_code = app_context.token_handler_v2()
     assert status_code == 200
 
     # Authorize Bearer Token
@@ -164,7 +163,7 @@ def test_auth_service_v2(app_context):
     assert status_code == 200
 
     # Refresh Bearer Token
-    access_token, secret_key_id, status_code = app_context.token_handler_v2(action='refresh')
+    access_token, status_code = app_context.token_handler_v2(action='refresh')
     assert status_code == 200
 
     # Authorize Old Bearer Token
@@ -173,7 +172,7 @@ def test_auth_service_v2(app_context):
 
     # Authorize new bearer token
     app_context.access_token = access_token
-    app_context.secret_key_id = secret_key_id
+
     status_code, authorized_user_id = app_context.authorize_token_v2()
     assert status_code == 200
 
@@ -279,13 +278,11 @@ def test_get_token_of_any_user_endpoint_v2(user_first, user_second):
     params = {'username': user_first.email, 'password': 'temp123'}
     response = requests.post(AuthApiUrlV2.TOKEN_CREATE, data=urlencode(params), headers=headers)
     json_response = json.loads(response.text)
+
     access_token = json_response.get('access_token', '') if json_response else ''
-    secret_key_id = json_response.get('secret_key_id', '') if json_response else ''
-
     assert access_token
-    assert secret_key_id
 
-    headers = {'Authorization': 'Bearer %s' % access_token, 'X-Talent-Secret-Key-ID': secret_key_id}
+    headers = {'Authorization': 'Bearer %s' % access_token}
 
     # Logged-in user trying to get access_token of a different user
     response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER_URL % user_second.id, headers=headers)
@@ -303,14 +300,11 @@ def test_get_token_of_any_user_endpoint_v2(user_first, user_second):
     response = requests.get(AuthApiUrlV2.TOKEN_OF_ANY_USER_URL % user_second.id, headers=headers)
     assert response.status_code == 200
     response = response.json()
+
     assert response['access_token']
-    assert response['secret_key_id']
 
     # Logged-in user trying to get logged-in as different user
-    headers = {'Authorization': 'Bearer %s' % response['access_token'], 'X-Talent-Secret-Key-ID': response['secret_key_id']}
+    headers = {'Authorization': 'Bearer %s' % response['access_token']}
     response = requests.get(AuthApiUrlV2.AUTHORIZE, headers=headers)
     assert response.status_code == 200
     assert response.json().get('user_id') == user_second.id
-
-
-

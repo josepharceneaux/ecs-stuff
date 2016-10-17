@@ -25,8 +25,8 @@ from app_common.common.utils.test_utils import (PAGINATION_INVALID_FIELDS,
                                                 PAGINATION_EXCEPT_SINGLE_FIELD)
 from email_campaign_service.tests.modules.__init__ import CREATE_EMAIL_CAMPAIGN_OPTIONAL_FIELDS
 from email_campaign_service.common.models.db import db
+from email_campaign_service.tests.conftest import fake
 from email_campaign_service.email_campaign_app import app
-from email_campaign_service.tests.conftest import fake, uuid
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.models.misc import (UrlConversion, Frequency)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
@@ -278,7 +278,7 @@ class TestCreateCampaign(object):
         Here we provide valid data to create an email-campaign without email_client_id.
         It should get OK response.
         """
-        subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign'
+        subject =  '%s-test_create_email_campaign' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
@@ -289,10 +289,10 @@ class TestCreateCampaign(object):
 
     def test_create_email_campaign_with_client_id(self, access_token_first, talent_pipeline):
         """
-        Here we provide valid data to create an email-campaign without email_client_id.
+        Here we provide valid data to create an email-campaign with email_client_id.
         It should get OK response.
         """
-        subject = uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign_with_client_id'
+        subject = '%s-test_create_email_campaign_with_client_id' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject, assert_candidates=False)
         campaign_data['email_client_id'] = EmailClient.get_id_by_name('Browser')
@@ -300,6 +300,45 @@ class TestCreateCampaign(object):
         assert response.status_code == requests.codes.CREATED
         resp_object = response.json()
         assert 'campaign' in resp_object
+
+    def test_create_email_campaign_with_outgoing_email_client(self, access_token_first, talent_pipeline,
+                                                              email_clients, headers):
+        """
+        Here we provide valid data to create an email-campaign with email_client_credentials_id.
+        It should get OK response.
+        """
+        subject = '%s-test_email_campaign_with_outgoing_email_client' % fake.uuid4()
+        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
+                                                          subject, assert_candidates=False)
+        # GET email-client-id
+        response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=outgoing', headers=headers)
+        assert response.ok
+        assert response.json()
+        email_client_response = response.json()['email_client_credentials']
+        assert len(email_client_response) == 1
+        campaign_data['email_client_credentials_id'] = email_client_response[0]['id']
+        response = create_email_campaign_via_api(access_token_first, campaign_data)
+        assert response.status_code == requests.codes.CREATED
+        resp_object = response.json()
+        assert 'campaign' in resp_object
+
+    def test_create_email_campaign_with_incoming_email_client(self, access_token_first, talent_pipeline,
+                                                              email_clients, headers):
+        """
+        Here we provide email-client of type "incoming". email-campaign should not be created.
+        """
+        subject = '%s-test_create_email_campaign_with_incoming_email_client' % fake.uuid4()
+        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
+                                                          subject, assert_candidates=False)
+        # GET email-client-id
+        response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENTS + '?type=incoming', headers=headers)
+        assert response.ok
+        assert response.json()
+        email_client_response = response.json()['email_client_credentials']
+        assert len(email_client_response) == 2
+        campaign_data['email_client_credentials_id'] = email_client_response[0]['id']
+        response = create_email_campaign_via_api(access_token_first, campaign_data)
+        assert response.status_code == requests.codes.BAD
 
     def test_create_campaign_with_non_json_data(self, access_token_first):
         """
@@ -316,8 +355,7 @@ class TestCreateCampaign(object):
         It should result in invalid usage error as campaign_name is required field.
         """
         name = '       '
-        subject = \
-            uuid.uuid4().__str__()[0:8] + '-test_create_email_campaign_whitespace_campaign_name'
+        subject = '%s-test_create_email_campaign_whitespace_campaign_name' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject, name, assert_candidates=False)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
@@ -345,8 +383,7 @@ class TestCreateCampaign(object):
         Here we try to create an email-campaign with list_ids not in list format. It should
         result in invalid usage error.
         """
-        subject = \
-            uuid.uuid4().__str__()[0:8] + '-test_with_non_list_smartlist_ids'
+        subject = '%s-test_with_non_list_smartlist_ids' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject, assert_candidates=False)
         campaign_data['list_ids'] = fake.random_number()  # 'list_ids' must be a list
@@ -381,7 +418,7 @@ class TestCreateCampaign(object):
         a required field. But we are not giving start_datetime. It should result in
         UnprocessableEntity error.
         """
-        subject = fake.uuid4() + '-test_with_no_start_datetime'
+        subject = '%s-test_with_no_start_datetime' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject, assert_candidates=False)
         campaign_data['frequency_id'] = Frequency.DAILY
@@ -394,8 +431,7 @@ class TestCreateCampaign(object):
         Here we try to create an email-campaign with frequency DAILY. Here we provide start_datetime
         to be ahead of end_datetime. It should result in UnprocessableEntity error.
         """
-        subject = \
-            uuid.uuid4().__str__()[0:8] + '-test_with_invalid_start_and_end_datetime'
+        subject = '%s-test_with_invalid_start_and_end_datetime' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject, assert_candidates=False)
         campaign_data['frequency_id'] = Frequency.DAILY
@@ -411,7 +447,7 @@ class TestCreateCampaign(object):
         Here we try to create an email-campaign with invalid email-client-id. It should
         result in invalid usage error.
         """
-        subject = uuid.uuid4().__str__()[0:8] + '-test_with_invalid_email_client_id'
+        subject = '%s-test_with_invalid_email_client_id' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject, assert_candidates=False)
         campaign_data['email_client_id'] = CampaignsTestsHelpers.get_non_existing_id(EmailClient)
@@ -428,7 +464,7 @@ class TestCreateCampaign(object):
         Here we try to create an email-campaign with smartlist_ids belonging to some other domain.
         It should result in ForbiddenError.
         """
-        subject = uuid.uuid4().__str__()[0:8] + '-test_email_campaign_with_list_id_of_other_domain'
+        subject = '%s-test_email_campaign_with_list_id_of_other_domain' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(access_token_other, talent_pipeline_other,
                                                           subject, assert_candidates=False)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
@@ -615,6 +651,15 @@ class TestSendCampaign(object):
         campaign = campaign_with_candidates_having_same_email_in_diff_domain
         response = requests.post(self.URL % campaign.id, headers=headers)
         assert_campaign_send(response, campaign, user_first, 2)
+
+    def test_campaign_send_with_outgoing_email_client(self, email_campaign_with_outgoing_email_client, headers,
+                                                      user_first):
+        """
+        This sends email-campaign with SMTP server added by user. It should not get any error.
+        """
+        campaign = email_campaign_with_outgoing_email_client
+        response = requests.post(self.URL % campaign.id, headers=headers)
+        assert_campaign_send(response, campaign, user_first, via_amazon_ses=False)
 
     def test_campaign_send_with_merge_tags(self, headers, user_first, email_campaign_with_merge_tags):
         """
