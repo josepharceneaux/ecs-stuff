@@ -118,7 +118,7 @@ class Candidate(db.Model):
         This method returns number of candidates who have certain skills
         :param int|long user_id: User Id
         :param list skills: Candidate skills
-        :return: int: Number of candidates with certain skills
+        :rtype: int: Number of candidates with certain skills
         """
         assert isinstance(skills, list) and skills, "Invalid skills"
         assert isinstance(user_id, (int, long)) and user_id, "Invalid user_id"
@@ -128,7 +128,7 @@ class Candidate(db.Model):
             return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
                 .filter(and_(User.id == user_id, User.domain_id == domain_id)).filter(CandidateSkill.description.
                                                                                       in_(skills)).distinct().count()
-        raise NotFoundError
+        raise NotFoundError('No domain found')
 
     @staticmethod
     def get_candidate_count_from_zipcode(zipcode, user_id):
@@ -146,7 +146,7 @@ class Candidate(db.Model):
             return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
                 filter(and_(Candidate.user_id == User.id, User.domain_id == domain_id)).\
                 filter(CandidateAddress.zip_code == zipcode).distinct().count()
-        raise NotFoundError
+        raise NotFoundError('No domain found')
 
     @classmethod
     def get_all_in_user_domain(cls, domain_id):

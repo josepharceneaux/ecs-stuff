@@ -107,32 +107,32 @@ class TalentBot(object):
                                      'handler': self.handler.question_2_handler},
                               # What talent pools in my domain
                               '31': {'question': self.list_of_questions[31], 'threshold': 97,
-                                     'handler': self.handler.question_7_handler},
+                                     'handler': self.handler.question_6_handler},
                               '32': {'question': self.list_of_questions[32], 'threshold': 97,
-                                     'handler': self.handler.question_7_handler},
+                                     'handler': self.handler.question_6_handler},
                               '33': {'question': self.list_of_questions[33], 'threshold': 97,
-                                     'handler': self.handler.question_7_handler},
+                                     'handler': self.handler.question_6_handler},
                               '34': {'question': self.list_of_questions[34], 'threshold': 97,
-                                     'handler': self.handler.question_7_handler},
+                                     'handler': self.handler.question_6_handler},
                               '35': {'question': self.list_of_questions[35], 'threshold': 97,
-                                     'handler': self.handler.question_7_handler},
+                                     'handler': self.handler.question_6_handler},
                               '36': {'question': self.list_of_questions[36], 'threshold': 97,
-                                     'handler': self.handler.question_7_handler},
+                                     'handler': self.handler.question_6_handler},
                               '51': {'question': self.list_of_questions[51], 'threshold': 97,
-                                     'handler': self.handler.question_7_handler},
+                                     'handler': self.handler.question_6_handler},
                               # What is my group
                               '37': {'question': self.list_of_questions[37], 'threshold': 95,
-                                     'handler': self.handler.question_8_handler},
+                                     'handler': self.handler.question_7_handler},
                               '38': {'question': self.list_of_questions[38], 'threshold': 95,
-                                     'handler': self.handler.question_8_handler},
+                                     'handler': self.handler.question_7_handler},
                               '39': {'question': self.list_of_questions[39], 'threshold': 95,
-                                     'handler': self.handler.question_8_handler},
+                                     'handler': self.handler.question_7_handler},
                               '40': {'question': self.list_of_questions[40], 'threshold': 95,
-                                     'handler': self.handler.question_8_handler},
+                                     'handler': self.handler.question_7_handler},
                               '41': {'question': self.list_of_questions[41], 'threshold': 95,
-                                     'handler': self.handler.question_8_handler},
+                                     'handler': self.handler.question_7_handler},
                               '42': {'question': self.list_of_questions[42], 'threshold': 95,
-                                     'handler': self.handler.question_8_handler},
+                                     'handler': self.handler.question_7_handler},
                               }
         self.bot_name = bot_name
         self.error_messages = error_messages
@@ -147,9 +147,7 @@ class TalentBot(object):
         cleaned_message = message.rstrip('?. ')
         cleaned_message = cleaned_message.lstrip(': ')
         split_message = cleaned_message.split()
-        for idx, item in enumerate(split_message):
-            split_message[idx] = item.strip()
-        cleaned_message = ' '.join(split_message)
+        cleaned_message = ' '.join([message.strip() for message in split_message])
         return cleaned_message
 
     def parse_message(self, message, user_id=None):
@@ -242,7 +240,7 @@ class TalentBot(object):
         """
         Checks i user is asking for hint
         :param str message: User's message
-        :rtype str|None:
+        :rtype: str|None
         """
         hint_questions = self.list_of_questions[6:10]
         for question in hint_questions:
