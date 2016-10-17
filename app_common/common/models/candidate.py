@@ -2,7 +2,7 @@ from sqlalchemy import and_, desc
 from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
-from ..error_handling import InternalServerError
+from ..error_handling import InternalServerError,  NotFoundError
 from ..utils.validators import raise_if_not_positive_int_or_long
 from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT, SMALLINT
 from associations import ReferenceEmail
@@ -116,23 +116,37 @@ class Candidate(db.Model):
     def get_candidate_count_with_skills(skills, user_id):
         """
         This method returns number of candidates who have certain skills
-        :param int user_id: User Id
+        :param int|long user_id: User Id
         :param list skills: Candidate skills
         :return: int: Number of candidates with certain skills
         """
-        return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
-            .filter(Candidate.user_id == user_id).filter(CandidateSkill.description.in_(skills)).distinct().count()
+        assert isinstance(skills, list) and skills, "Invalid skills"
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid user_id"
+        from .user import User # This has to be here to avoid circular import
+        domain_id = User.get_domain_id(user_id)
+        if domain_id:
+            return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
+                .filter(and_(User.id == user_id, User.domain_id == domain_id)).filter(CandidateSkill.description.
+                                                                                      in_(skills)).distinct().count()
+        raise NotFoundError
 
     @staticmethod
     def get_candidate_count_from_zipcode(zipcode, user_id):
         """
         This method returns number of candidates from a certain zipcode
-        :param int user_id: User Id
+        :param int|long user_id: User Id
         :param str zipcode: Candidate zipcode
         :rtype: int: Number of candidates from zipcode
         """
-        return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
-            filter(Candidate.user_id == user_id).filter(CandidateAddress.zip_code == zipcode).count()
+        assert isinstance(zipcode, basestring) and zipcode, "Invalid zipcode"
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
+        from .user import User # This has to be here to avoid circular import
+        domain_id = User.get_domain_id(user_id)
+        if domain_id:
+            return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
+                filter(and_(Candidate.user_id == User.id, User.domain_id == domain_id)).\
+                filter(CandidateAddress.zip_code == zipcode).distinct().count()
+        raise NotFoundError
 
     @classmethod
     def get_all_in_user_domain(cls, domain_id):

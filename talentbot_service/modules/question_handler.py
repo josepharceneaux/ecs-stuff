@@ -23,7 +23,7 @@ from talentbot_service.common.models.candidate import Candidate
 from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate
 from talentbot_service.common.models.talent_pools_pipelines import TalentPool
 # App specific imports
-from talentbot_service.modules.constants import HINT, BOT_NAME, CAMPAIGN_TYPES
+from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES
 from talentbot_service import logger
 
 
@@ -118,7 +118,13 @@ class QuestionHandler(object):
         if len(message_tokens) <= skill_index+1:
             return 'Please mention skills'
         extracted_skills = message_tokens[skill_index + 1::]
-        count = Candidate.get_candidate_count_with_skills(extracted_skills, user_id)
+        try:
+            count = Candidate.get_candidate_count_with_skills(extracted_skills, user_id)
+        except AssertionError as error:
+            logger.error("Error occurred while getting candidates against skills : %s" % error.message)
+            return None
+        except NotFoundError:
+            return "You don't belong to a domain"
         response_message = "There are `%d` candidates with skills %s"
         response_message = response_message % (count, ' '.join(extracted_skills))
         if count == 1:
@@ -141,7 +147,13 @@ class QuestionHandler(object):
         if code_index is not None:
             message_tokens.pop(code_index)
         zipcode = message_tokens[zip_index + 1]
-        count = Candidate.get_candidate_count_from_zipcode(zipcode, user_id)
+        try:
+            count = Candidate.get_candidate_count_from_zipcode(zipcode, user_id)
+        except AssertionError as error:
+            logger.error("Error occurred while getting candidates against zipcode : %s" % error.message)
+            return None
+        except NotFoundError:
+            return "You don't belong to a domain"
         response_message = "Number of candidates from zipcode `%s` : `%d`" % \
                            (message_tokens[zip_index + 1], count)
         return response_message
