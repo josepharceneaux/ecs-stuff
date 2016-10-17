@@ -32,8 +32,8 @@ def parse_resume(file_obj, filename_str, cache_key):
     """Primary resume parsing function.
 
     :param cStringIO file_obj: a StringIO representation of the raw binary.
-    :param unicode filename_str: The file_obj file name.
-    :param str cache_key: A key used to get/store BG data.
+    :param string filename_str: The file_obj file name.
+    :param string cache_key: A key used to get/store BG data.
     :return: Processed candidate data.
     :rtype: dict
     """

@@ -90,9 +90,8 @@ class TestSchedulerCreate(object):
         test_user = User.query.filter_by(email=sample_user.email).first()
         user_id = test_user.id
 
-        secret_key_id, access_token = User.generate_jw_token(user_id=user_id)
-        auth_header['X-Talent-Secret-Key-ID'] = secret_key_id
-        auth_header['Authorization'] = 'Bearer %s' % access_token
+        access_token = User.generate_jw_token(user_id=user_id)
+        auth_header['Authorization'] = access_token
 
         job_config_one_time_task['is_jwt_request'] = True
 

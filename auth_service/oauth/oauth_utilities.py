@@ -1,13 +1,18 @@
 __author__ = 'ufarooqi'
 
+import uuid
+import os
+from flask import request, jsonify
 from dateutil.parser import parse
+from datetime import datetime, timedelta
 from flask_oauthlib.provider import OAuth2RequestValidator
 from werkzeug.security import check_password_hash
-from auth_service.common.models.user import *
+from auth_service.common.models.user import User, Client, Token, db
 from auth_service.common.redis_cache import redis_store
 from auth_service.oauth import logger, app
-from datetime import datetime, timedelta
+from auth_service.common.error_handling import UnauthorizedError
 from ..custom_error_codes import AuthServiceCustomErrorCodes as custom_errors
+from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
 
 MAXIMUM_NUMBER_OF_INVALID_LOGIN_ATTEMPTS = 5
 
@@ -79,6 +84,7 @@ def save_token_v2(user):
     secret_key_id = str(uuid.uuid4())[0:10]
     secret_key = os.urandom(24).encode('hex')
     redis_store.setex(secret_key_id, secret_key, app.config['JWT_OAUTH_EXPIRATION'])
+
     s = Serializer(secret_key, expires_in=app.config['JWT_OAUTH_EXPIRATION'])
 
     payload = dict(
@@ -91,21 +97,22 @@ def save_token_v2(user):
 
     return jsonify(dict(
         user_id=user.id,
-        access_token=s.dumps(payload),
+        access_token='%s.%s' % (s.dumps(payload), secret_key_id),
         expires_at=expires_at,
-        token_type="Bearer",
-        secret_key_id=secret_key_id
+        token_type="Bearer"
     ))
 
 
-def verify_jwt(secret_key_id, token):
+def verify_jwt(token, secret_key_id):
     """
     This method will authenticate/verify a json web token
-    :param secret_key_id: Redis key of SECRET_KEY
+    :param secret_key_id: Redis Key for SECRET-KEY
     :param token: JSON Web Token (JWT)
     :return:
     """
+
     s = Serializer(redis_store.get(secret_key_id) or '')
+
     try:
         data = s.loads(token)
     except BadSignature:
@@ -133,12 +140,17 @@ def authenticate_request():
     :return: None
     """
     try:
-        secret_key_id = request.headers['X-Talent-Secret-Key-ID']
         json_web_token = request.headers['Authorization'].replace('Bearer', '').strip()
-    except KeyError:
-        raise UnauthorizedError("`X-Talent-Secret-Key-ID` or `Authorization` Header is missing")
+        json_web_token = json_web_token.split('.')
+        assert json_web_token.__len__() == 4
 
-    return secret_key_id, verify_jwt(secret_key_id, json_web_token)
+        secret_key_id = json_web_token.pop()
+        json_web_token = '.'.join(json_web_token)
+
+    except Exception as e:
+        raise UnauthorizedError("`Authorization` Header is missing or poorly formatted. Because: %s" % e.message)
+
+    return secret_key_id, verify_jwt(json_web_token, secret_key_id)
 
 
 def load_client(client_id):

@@ -433,25 +433,30 @@ def candidate_military_services(candidate_id):
     services = []
     for service in military_services:
         # format inputs
+        from_date, to_date = None, None
         service_from_date = service.from_date
         service_to_date = service.to_date
+        service_start_year = service.start_year
+        service_start_month = service.start_month
+        service_end_year = service.end_year
+        service_end_month = service.end_month
 
+        from_date_start_year, from_date_start_month = None, None
         if service_from_date:
             from_date = str(service_from_date.date())
-            start_year = service_from_date.year
-            start_month = service_from_date.month
-        else:
-            from_date = None
-            start_year = service.start_year
-            start_month = service.start_month
+            from_date_start_year = service_from_date.year
+            from_date_start_month = service_from_date.month
+
+        to_date_end_year, to_date_end_month = None, None
         if service_to_date:
             to_date = str(service_to_date.date())
-            end_year = service_to_date.year
-            end_month = service_to_date.month
-        else:
-            to_date = None
-            end_year = service.end_year
-            end_month = service.end_month
+            to_date_end_year = service_to_date.year
+            to_date_end_month = service_to_date.month
+
+        start_year = service_start_year or from_date_start_year
+        start_month = service_start_month or from_date_start_month
+        end_year = service_end_year or to_date_end_year
+        end_month = service_end_month or to_date_end_month
 
         services.append(dict(
             id=service.id,

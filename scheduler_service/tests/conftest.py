@@ -87,10 +87,8 @@ def auth_header_no_user(request):
     :param auth_data: fixture to get access token
     :return: header dict object
     """
-    secret_key_id, token = User.generate_jw_token()
-    header = {'Authorization': token,
-              'X-Talent-Secret-Key-ID': secret_key_id,
-              'Content-Type': 'application/json'}
+    token = User.generate_jw_token()
+    header = {'Authorization': token, 'Content-Type': 'application/json'}
     return header
 
 
@@ -229,9 +227,8 @@ def schedule_ten_general_jobs(request, job_config_one_time_task):
     general_job_ids_list = []
     header = {'Content-Type': 'application/json'}
     for _ in range(10):
-        secret_key_id, access_token = User.generate_jw_token()
-        header['Authorization'] = 'Bearer ' + access_token
-        header['X-Talent-Secret-Key-ID'] = secret_key_id
+        access_token = User.generate_jw_token()
+        header['Authorization'] = access_token
         job_config_one_time_task['task_name'] = ''\
             .join(random.SystemRandom()
                   .choice(string.ascii_uppercase + string.digits) for _ in range(8))
@@ -241,10 +238,9 @@ def schedule_ten_general_jobs(request, job_config_one_time_task):
         general_job_ids_list.append(response.json()['id'])
 
     def teardown():
-        _secret_key_id, _access_token = User.generate_jw_token()
+        _access_token = User.generate_jw_token()
         # Delete general jobs
-        header['Authorization'] = 'Bearer ' + _access_token
-        header['X-Talent-Secret-Key-ID'] = _secret_key_id
+        header['Authorization'] = _access_token
         for index in range(len(general_job_ids_list)):
             response_remove_job = requests.delete(SchedulerApiUrl.TASK % general_job_ids_list[index],
                                                   headers=header)

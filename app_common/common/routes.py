@@ -138,7 +138,7 @@ class AuthApi(object):
     TOKEN_CREATE = '/' + VERSION + '/oauth2/token'
     TOKEN_REVOKE = '/' + VERSION + '/oauth2/revoke'
     AUTHORIZE = '/' + VERSION + '/oauth2/authorize'
-    TOKEN_OF_ANY_USER = '/' + VERSION + 'users/<int:user_id>/token'
+    TOKEN_OF_ANY_USER = '/' + VERSION + '/users/<int:user_id>/token'
 
 
 class AuthApiUrl(object):
@@ -151,7 +151,7 @@ class AuthApiUrl(object):
     TOKEN_CREATE = HOST_NAME % ('/' + VERSION + '/oauth2/token')
     TOKEN_REVOKE = HOST_NAME % ('/' + VERSION + '/oauth2/revoke')
     AUTHORIZE = HOST_NAME % ('/' + VERSION + '/oauth2/authorize')
-    TOKEN_OF_ANY_USER_URL = HOST_NAME % ('/' + VERSION + 'users/%s/token')
+    TOKEN_OF_ANY_USER_URL = HOST_NAME % ('/' + VERSION + '/users/%s/token')
 
 
 class AuthApiV2(object):
@@ -163,7 +163,7 @@ class AuthApiV2(object):
     TOKEN_REFRESH = '/' + VERSION + '/oauth2/refresh'
     TOKEN_REVOKE = '/' + VERSION + '/oauth2/revoke'
     AUTHORIZE = '/' + VERSION + '/oauth2/authorize'
-    TOKEN_OF_ANY_USER = '/' + VERSION + 'users/<int:user_id>/token'
+    TOKEN_OF_ANY_USER = '/' + VERSION + '/users/<int:user_id>/token'
 
 
 class AuthApiUrlV2(object):
@@ -177,7 +177,7 @@ class AuthApiUrlV2(object):
     TOKEN_REFRESH = HOST_NAME % ('/' + VERSION + '/oauth2/refresh')
     TOKEN_REVOKE = HOST_NAME % ('/' + VERSION + '/oauth2/revoke')
     AUTHORIZE = HOST_NAME % ('/' + VERSION + '/oauth2/authorize')
-    TOKEN_OF_ANY_USER_URL = HOST_NAME % ('/' + VERSION + 'users/%s/token')
+    TOKEN_OF_ANY_USER_URL = HOST_NAME % ('/' + VERSION + '/users/%s/token')
 
 
 class ActivityApi(object):
@@ -660,6 +660,7 @@ class SocialNetworkApi(object):
     # URL for Twitter authentication
     TWITTER_AUTH = '/' + VERSION + '/twitter-auth'
     TWITTER_CALLBACK = '/' + VERSION + '/twitter-callback/<int:user_id>'
+    GRAPHQL = '/graphql'
 
 
 class SocialNetworkApiUrl(object):
@@ -692,6 +693,7 @@ class SocialNetworkApiUrl(object):
     CODE = HOST_NAME % ('/' + VERSION + '/code')
     IMPORTER = HOST_NAME % ('/' + VERSION + '/import/%s/%s')
     TWITTER_CALLBACK = HOST_NAME % ('/' + VERSION + '/twitter-callback/%s')
+    GRAPHQL = HOST_NAME % '/graphql'
 
 
 class SmsCampaignApi(object):
@@ -843,6 +845,11 @@ class EmailCampaignApi(object):
     TEMPLATE_FOLDERS = '/' + VERSION + '/email-template-folders'
     TEMPLATE_FOLDER = '/' + VERSION + '/email-template-folders/<int:folder_id>'
 
+    """ URLs for email-clients """
+    EMAIL_CLIENTS = '/' + VERSION + '/email-clients'
+    EMAIL_CLIENT_WITH_ID = '/' + VERSION + '/email-clients/<int:email_client_id>'
+    EMAIL_CONVERSATIONS = '/' + VERSION + '/email-conversations'
+
 
 class EmailCampaignApiUrl(object):
     """
@@ -865,6 +872,11 @@ class EmailCampaignApiUrl(object):
     TEMPLATE = HOST_NAME % ('/' + VERSION + '/email-templates/%s')
     TEMPLATE_FOLDERS = HOST_NAME % ('/' + VERSION + '/email-template-folders')
     TEMPLATE_FOLDER = HOST_NAME % ('/' + VERSION + '/email-template-folders/%s')
+
+    """ URLs for email-clients """
+    EMAIL_CLIENTS = HOST_NAME % ('/' + VERSION + '/email-clients')
+    EMAIL_CLIENT_WITH_ID = HOST_NAME % ('/' + VERSION + '/email-clients/%s')
+    EMAIL_CONVERSATIONS = HOST_NAME % ('/' + VERSION + '/email-conversations')
 
 
 class ATSServiceApi(object):

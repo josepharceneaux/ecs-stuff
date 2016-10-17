@@ -36,7 +36,7 @@ def fetch_optic_response(resume, filename_str):
     """
     Takes in an encoded resume file and returns a bs4 'soup-able' format
     (utf-decode and html escape).
-    :param str resume: a base64 encoded resume file.
+    :param string resume: a base64 encoded resume file.
     :return: HTML unquoted, utf-decoded string that represents the Burning Glass XML.
     :rtype: unicode
     """
@@ -62,7 +62,7 @@ def fetch_optic_response(resume, filename_str):
     }
 
     try:
-        bg_response = requests.post(bg_url, headers=headers, json=data, timeout=20)
+        bg_response = requests.post(bg_url, headers=headers, json=data, timeout=30)
 
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.exception("Could not reach Burning Glass")
@@ -593,8 +593,8 @@ def scrub_candidate_name(name_unicode):
     String version located:
     http://stackoverflow.com/questions/265960/
 
-    :param unicode name_unicode:
-    :return unicode:
+    :param string name_unicode:
+    :return string:
     """
 
     translate_table = dict.fromkeys(i for i in xrange(sys.maxunicode)

@@ -330,7 +330,7 @@ class CandidateType(graphene.ObjectType):
     last_name = graphene.String()
     formatted_name = graphene.String()
     user_id = graphene.Int()
-    filename = graphene.String()
+    resume_url = graphene.String()
     objective = graphene.String()
     summary = graphene.String()
     total_months_experience = graphene.Int()
@@ -356,8 +356,8 @@ class CandidateType(graphene.ObjectType):
     def resolve_user_id(self, args, context, info):
         return self.get('user_id')
 
-    def resolve_filename(self, args, context, info):
-        return self.get('filename')
+    def resolve_resume_url(self, args, context, info):
+        return self.get('resume_url')
 
     def resolve_objective(self, args, context, info):
         return self.get('objective')
@@ -395,6 +395,9 @@ class CandidateType(graphene.ObjectType):
     social_networks = graphene.List(SocialNetworkType)
     tags = graphene.List(TagType)
     work_preference = graphene.Field(WorkPreferenceType)
+
+    def resolve_edits(self, args, context, info):
+        return self.get('edits')
 
     # Resolvers for candidate's secondary attributes
     def resolve_areas_of_interest(self, args, context, info):
@@ -444,6 +447,9 @@ class CandidateType(graphene.ObjectType):
 
     def resolve_work_preference(self, args, context, info):
         return self.get('work_preference')
+
+    def resolve_edits(self, args, context, info):
+        return self.get('edits')
 
 
 try:

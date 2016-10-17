@@ -13,12 +13,11 @@ from collections import Counter
 # Application Specific
 from email_campaign_service.common.models.user import User
 from email_campaign_service.common.models.misc import Frequency
-from email_campaign_service.common.models.email_campaign import EmailClient
+from email_campaign_service.modules.email_clients import EmailClientBase
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity)
 from email_campaign_service.common.campaign_services.validators import validate_smartlist_ids
-
-__author__ = 'jitesh'
+from email_campaign_service.common.models.email_campaign import (EmailClientCredentials, EmailClient)
 
 
 def validate_datetime(datetime_text, field_name=None):
@@ -59,6 +58,7 @@ def validate_and_format_request_data(data, current_user):
     end_datetime = data.get('end_datetime')
     frequency_id = data.get('frequency_id')         # required
     template_id = data.get('template_id')
+    email_client_credentials_id = data.get('email_client_credentials_id')
 
     # Raise errors if invalid input
     if name is None or name.strip() == '':
@@ -97,6 +97,11 @@ def validate_and_format_request_data(data, current_user):
         # If email_client_id is there then set template_id to None. Why??
         template_id = None
 
+    # In case user wants to send email-campaign with its own account
+    if email_client_credentials_id:
+        email_client_credentials = EmailClientCredentials.get_by_id(email_client_credentials_id)
+        if not EmailClientBase.is_outgoing(email_client_credentials.host):
+            raise InvalidUsage("Selected email-client must be of type `outgoing`")
     # Validation for duplicate `list_ids`
     if [item for item, count in Counter(list_ids).items() if count > 1]:
         raise InvalidUsage('Duplicate `list_ids` found in data.')
@@ -118,7 +123,8 @@ def validate_and_format_request_data(data, current_user):
         'start_datetime': start_datetime,
         'end_datetime': end_datetime,
         'frequency_id': frequency_id,
-        'template_id': template_id
+        'template_id': template_id,
+        'email_client_credentials_id': email_client_credentials_id
     }
 
 

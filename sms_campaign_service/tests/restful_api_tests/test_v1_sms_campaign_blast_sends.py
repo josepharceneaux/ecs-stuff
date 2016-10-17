@@ -127,7 +127,7 @@ class TestSmsCampaignBlastSends(object):
                                                  blast_url=SmsCampaignApiUrl.BLAST
                                                            % (sent_campaign['id'], blast_ids[0]),
                                                  access_token=access_token_first,
-                                                 abort_time_for_sends=60)
+                                                 abort_time_for_sends=100)
         response_blasts = requests.get(SmsCampaignApiUrl.BLASTS % sent_campaign['id'],
                                        headers=headers)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response_blasts, count=1,

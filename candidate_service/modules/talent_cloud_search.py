@@ -806,6 +806,7 @@ def search_candidates(domain_id, request_vars, search_limit=15, count_only=False
 
     try:
         results = search_service.search(**params)
+        logger.debug("CS_REQUEST: %s \n\n CS_RESPONSE: %s", params, results)
     except Exception as ex:
         logger.exception("Exception occurred while searching candidates from cloudsearch. "
                          "Search params: %s. Exception: %s" % (params, ex))
