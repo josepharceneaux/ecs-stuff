@@ -9,7 +9,6 @@ response
  - question_3_handler()
  - question_4_handler()
  - question_5_handler()
- - question_6_handler()
  - question_7_handler()
  - question_8_handler()
 """
@@ -375,16 +374,6 @@ class QuestionHandler(object):
         """
         if args:
             return "My name is `%s`" % BOT_NAME
-
-    @classmethod
-    def question_6_handler(cls, *args):
-        """
-        Handles if user types 'hint'
-        :param list args: List of args
-        :rtype: str|None
-        """
-        if args:
-            return HINT
 
     @classmethod
     def question_7_handler(cls, message_tokens, user_id):
