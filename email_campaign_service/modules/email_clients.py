@@ -237,7 +237,7 @@ class SMTP(EmailClientBase):
         self.connect()
         self.authenticate(connection_quit=False)
         msg = "From: %s\r\nTo: %s\r\nSubject: %s\n%s\n" % (self.email, to_address, subject, body)
-        self.connection.sendmail(self.email, [to_address], msg)
+        self.connection.sendmail(self.email, to_address, msg)
         logger.info('Email has been sent from:%s, to:%s via SMTP server.' % (self.email, to_address))
         self.connection.quit()
 
