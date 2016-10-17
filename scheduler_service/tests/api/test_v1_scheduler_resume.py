@@ -268,7 +268,7 @@ class TestSchedulerResume(object):
         :return:
         """
         invalid_job_ids = CampaignsTestsHelpers.INVALID_ID
-        response_stop = requests.post(SchedulerApiUrl.RESUME_TASK, data=json.dumps(dict(ids=invalid_job_ids)),
+        response_stop = requests.post(SchedulerApiUrl.RESUME_TASKS, data=json.dumps(dict(ids=invalid_job_ids)),
                                       headers=auth_header)
         assert response_stop.status_code == requests.codes.BAD_REQUEST
 

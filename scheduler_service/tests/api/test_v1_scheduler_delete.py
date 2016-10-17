@@ -166,7 +166,7 @@ class TestSchedulerDelete(object):
                                           headers=auth_header)
         assert response_remove.status_code == 200
 
-    @pytest.mark.qaff
+    @pytest.mark.qa
     def test_delete_job_with_invalid_id(self, auth_header):
         """
          Try to delete job with invalid id. Should return 404 not found.
