@@ -23,9 +23,8 @@ def search_candidates_from_params(search_params, access_token, url_args=None, us
     :return: search result based on search criteria.
     """
     if not access_token:
-        secret_key_id, jw_token = User.generate_jw_token(user_id=user_id)
+        jw_token = User.generate_jw_token(user_id=user_id)
         headers = {'Authorization': jw_token,
-                   'X-Talent-Secret-Key-ID': secret_key_id,
                    'Content-Type': 'application/json'}
     else:
         access_token = access_token if 'Bearer' in access_token else 'Bearer %s' % access_token
@@ -80,8 +79,7 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
 
     headers = dict()
     if not oauth_token and user_id:
-        secret_key_id, oauth_token = User.generate_jw_token(user_id=user_id)
-        headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
+        oauth_token = User.generate_jw_token(user_id=user_id)
         headers.update({'Authorization': oauth_token})
     else:
         headers.update({'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token})

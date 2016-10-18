@@ -12,15 +12,14 @@ from ..utils.handy_functions import random_letter_digit_string
 from flask import current_app as app
 from ..models.user import *
 from ..error_handling import *
-from ..routes import AuthApiUrl
+from ..routes import AuthApiUrl, AuthApiUrlV2
 from ..models.user import User, Role
 
 
-def require_oauth(allow_jwt_based_auth=True, allow_null_user=False, allow_candidate=False):
+def require_oauth(allow_null_user=False, allow_candidate=False):
     """
     This method will verify Authorization header of request using getTalent AuthService or Basic HTTP secret-key based
     Auth and will set request.user and request.oauth_token
-    :param bool allow_jwt_based_auth: Either JWT based authentication is supported for a particular endpoint or not ?
     :param allow_null_user: Is user necessary for Authorization or not ?
     :param allow_candidate: Allow Candidate Id in JWT payload
     """
@@ -31,19 +30,19 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False, allow_candid
             try:
                 oauth_token = request.headers['Authorization']
             except KeyError:
-                raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
+                raise UnauthorizedError('You are not authorized to access this endpoint')
 
-            # JWT based Authentication
-            if allow_jwt_based_auth:
-                try:
-                    secret_key_id = request.headers['X-Talent-Secret-Key-ID']
-                    json_web_token = oauth_token.replace('Bearer', '').strip()
-                    User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
-                    request.oauth_token = ''
-                    return func(*args, **kwargs)
-                except KeyError:
-                    pass
+            if len(oauth_token.replace('Bearer', '').strip().split('.')) == 4:
 
+                json_web_token = oauth_token.replace('Bearer', '').strip()
+                json_web_token = json_web_token.split('.')
+                secret_key_id = json_web_token.pop()
+                json_web_token = '.'.join(json_web_token)
+                User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
+                request.oauth_token = oauth_token
+                return func(*args, **kwargs)
+
+            # Olf OAuth2.0 based Authentication
             try:
                 response = requests.get(AuthApiUrl.AUTHORIZE, headers={'Authorization': oauth_token})
             except Exception as e:
@@ -53,8 +52,8 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False, allow_candid
             elif not response.ok:
                 error_body = response.json()
                 if error_body['error']:
-                    raise UnauthorizedError(error_message=error_body['error'].get('message'),
-                                            error_code=error_body['error'].get('code'))
+                    raise UnauthorizedError(error_message=error_body['error'].get('message', ''),
+                                            error_code=error_body['error'].get('code', ''))
                 else:
                     raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
             else:
@@ -72,7 +71,7 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False, allow_candid
 def require_jwt_oauth(allow_null_user=False, allow_candidate=False):
     """
     This method will verify Authorization header of request using JWT based Authorization and
-    will set request.user, request.oauth_token and request.secret_key_id
+    will set request.user, request.oauth_token
     :param allow_null_user: Is user necessary for Authorization or not ?
     :param allow_candidate: Allow Candidate Id in JWT payload
     """
@@ -82,14 +81,16 @@ def require_jwt_oauth(allow_null_user=False, allow_candidate=False):
         def authenticate(*args, **kwargs):
 
             try:
-                secret_key_id = request.headers['X-Talent-Secret-Key-ID']
-                json_web_token = request.headers['Authorization'].replace('Bearer', '').strip()
+                oauth_token = request.headers['Authorization']
             except KeyError:
-                raise UnauthorizedError("`X-Talent-Secret-Key-ID` or `Authorization` Header is missing")
+                raise UnauthorizedError('You are not authorized to access this endpoint')
 
+            json_web_token = oauth_token.replace('Bearer', '').strip()
+            json_web_token = json_web_token.split('.')
+            secret_key_id = json_web_token.pop()
+            json_web_token = '.'.join(json_web_token)
             User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
-            request.oauth_token = json_web_token
-            request.secret_key_id = secret_key_id
+            request.oauth_token = oauth_token
             return func(*args, **kwargs)
 
         return authenticate

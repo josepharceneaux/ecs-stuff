@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Parsing functions for extracting specific information from Burning Glass API responses."""
 # pylint: disable=wrong-import-position, fixme, import-error
 __author__ = 'erik@getTalent.com'
@@ -29,6 +30,7 @@ from resume_parsing_service.common.utils.handy_functions import normalize_value
 
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
+SPLIT_DESCRIPTION_REGEXP = re.compile(ur"•≅_|≅_| \* |•|➢|→|\n\n\n")
 
 
 @contract
@@ -36,7 +38,7 @@ def fetch_optic_response(resume, filename_str):
     """
     Takes in an encoded resume file and returns a bs4 'soup-able' format
     (utf-decode and html escape).
-    :param str resume: a base64 encoded resume file.
+    :param string resume: a base64 encoded resume file.
     :return: HTML unquoted, utf-decoded string that represents the Burning Glass XML.
     :rtype: unicode
     """
@@ -62,7 +64,7 @@ def fetch_optic_response(resume, filename_str):
     }
 
     try:
-        bg_response = requests.post(bg_url, headers=headers, json=data, timeout=20)
+        bg_response = requests.post(bg_url, headers=headers, json=data, timeout=30)
 
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.exception("Could not reach Burning Glass")
@@ -98,12 +100,11 @@ def fetch_optic_response(resume, filename_str):
 
 
 @contract
-def parse_optic_xml(resume_xml_text, encoded_resume_text):
+def parse_optic_xml(resume_xml_text):
     """
     Takes in a Burning Glass XML tree in string format and returns a candidate JSON object.
     :param string resume_xml_text: An XML tree represented in unicode format. It is a slightly
                                    processed response from the Burning Glass API.
-    :param string encoded_resume_text: b64 encoded resume text for skills parsing.
     :return: Results of various parsing functions on the input xml string.
     :rtype: dict
     """
@@ -262,13 +263,14 @@ def parse_candidate_experiences(bg_experience_xml_list):
             # Get experience bullets
             candidate_experience_bullets = []
             description_text = _tag_text(employment, 'description', remove_questions=True) or ''
-            for bullet_description in description_text.split('|'):
+            # for bullet_description in description_text.split('|'):
+            for bullet_description in SPLIT_DESCRIPTION_REGEXP.split(description_text):
                 # If experience already exists then append the current bullet-descriptions to
                 # already existed bullet-descriptions
                 if existing_experience_list_order:
                     output[existing_experience_list_order]['bullets'][0]['description'] += '\n' + bullet_description
                 else:
-                    candidate_experience_bullets.append(bullet_description)
+                    candidate_experience_bullets.append(bullet_description.strip())
 
             if not existing_experience_list_order:
                 is_current_job = False
@@ -593,8 +595,8 @@ def scrub_candidate_name(name_unicode):
     String version located:
     http://stackoverflow.com/questions/265960/
 
-    :param unicode name_unicode:
-    :return unicode:
+    :param string name_unicode:
+    :return string:
     """
 
     translate_table = dict.fromkeys(i for i in xrange(sys.maxunicode)

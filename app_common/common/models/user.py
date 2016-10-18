@@ -17,7 +17,7 @@ from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
-from email_campaign import EmailCampaign
+from email_campaign import EmailCampaign, EmailClientCredentials, EmailConversations
 from ..error_handling import *
 from ..redis_cache import redis_store
 from ..utils.validators import is_number
@@ -66,6 +66,8 @@ class User(db.Model):
                                backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
     email_templates = relationship('UserEmailTemplate', backref='user', cascade='all, delete-orphan')
+    email_client_credentials = relationship('EmailClientCredentials', backref='user')
+    email_conversations = relationship('EmailConversations', backref='user')
     push_campaigns = relationship('PushCampaign', backref='user', cascade='all,delete-orphan', passive_deletes=True, )
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship(Event, backref='user', lazy='dynamic',
@@ -76,14 +78,14 @@ class User(db.Model):
                              cascade='all, delete-orphan', passive_deletes=True)
 
     @staticmethod
-    def generate_jw_token(expiration=600, user_id=None):
+    def generate_jw_token(expiration=7200, user_id=None):
         secret_key_id = str(uuid.uuid4())[0:10]
         secret_key = os.urandom(24)
         redis_store.setex(secret_key_id, secret_key, expiration)
         s = Serializer(secret_key, expires_in=expiration)
         if current_app:
             current_app.logger.info('Creating jw token. secret_key_id %s, secret_key: %s', secret_key_id, secret_key)
-        return secret_key_id, 'Bearer %s' % s.dumps({'user_id': user_id})
+        return 'Bearer %s.%s' % (s.dumps({'user_id': user_id}), secret_key_id)
 
     @staticmethod
     def verify_jw_token(secret_key_id, token, allow_null_user=False, allow_candidate=False):
@@ -583,6 +585,12 @@ class Role(db.Model):
     __tablename__ = 'role'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False, unique=True)
+
+    @property
+    def permissions(self):
+        permissions_of_role = PermissionsOfRole.query.filter_by(role_id=self.id).all()
+        return Permission.query.filter(Permission.id.in_(
+            [permission_of_role.permission_id for permission_of_role in permissions_of_role])).all()
 
     def delete(self):
         db.session.delete(self)

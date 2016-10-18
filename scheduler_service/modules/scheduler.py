@@ -219,9 +219,8 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
 
     # In case of global tasks there is no access_token and token expires in 600 seconds. So, a new token should be
     # created because frequency is set to minimum (1 hour).
-    secret_key_id = None
     if not user_id:
-        secret_key_id, access_token = User.generate_jw_token()
+        access_token = User.generate_jw_token()
     # If is_jwt_request parameter is false then send an auth service token request
     elif not is_jwt_request:
         headers = {'content-type': 'application/x-www-form-urlencoded'}
@@ -254,11 +253,11 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
 
     # If is_jwt_request parameter is true then send jwt token request
     elif is_jwt_request:
-        secret_key_id, access_token = User.generate_jw_token(user_id=user_id)
+        access_token = User.generate_jw_token(user_id=user_id)
 
     logger.info('Queueing data send. User ID: %s, URL: %s, Content-Type: %s', user_id, url, content_type)
     # Call celery task to send post_data to URL
-    send_request.apply_async([access_token, secret_key_id, url, content_type, post_data, is_jwt_request, request_method],
+    send_request.apply_async([access_token, url, content_type, post_data, is_jwt_request, request_method],
                              serializer='json',
                              queue=SchedulerUtils.QUEUE,
                              routing_key=SchedulerUtils.CELERY_ROUTING_KEY)
