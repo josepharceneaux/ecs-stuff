@@ -83,12 +83,12 @@ def jwt_security_key():
 
 def do_mergetag_replacements(texts, requested_object=None):
     """
-    Here we do the replacements of merge tags with required values. This servers for candidate and user.
+    Here we do the replacements of merge tags with required values. This serves for candidate and user.
     If no candidate or user is provided, name is set to "John Doe".
     It replaces MergeTags with candidate's or user's first name, last name.
     It also replaces preferences URL only for candidate.
     """
-    if not isinstance(requested_object, (Candidate, User)):
+    if requested_object and not isinstance(requested_object, (Candidate, User)):
         raise InvalidUsage('Invalid object passed')
 
     first_name = "John"

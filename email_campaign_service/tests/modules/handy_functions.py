@@ -97,9 +97,9 @@ def create_email_campaign_with_merge_tags(user, add_preference_url=True):
     starting_string = 'Hello %s %s, ' % (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG)
     if add_preference_url:
         starting_string += 'Unsubscribe URL is:%s' % DEFAULT_PREFERENCES_URL_MERGETAG
-    email_campaign.update(subject=starting_string + email_campaign.subject)
-    email_campaign.update(body_text=starting_string + email_campaign.body_text)
-    email_campaign.update(body_html=starting_string + email_campaign.body_html)
+    email_campaign.update(subject=starting_string + email_campaign.subject,
+                          body_text=starting_string + email_campaign.body_text,
+                          body_html=starting_string + email_campaign.body_html)
     return email_campaign
 
 
@@ -282,7 +282,7 @@ def delete_emails(mail_connection, msg_ids, subject):
     This deletes email(s) with given message ids and subject
     """
     try:
-        msg_ids = ','.join(msg_ids.split(' '))
+        msg_ids = msg_ids.replace(' ', ',')
         # Change the Deleted flag to delete the email from Inbox
         mail_connection.store(msg_ids, '+FLAGS', r'(\Deleted)')
         status, response = mail_connection.expunge()
@@ -292,7 +292,6 @@ def delete_emails(mail_connection, msg_ids, subject):
         mail_connection.logout()
     except imaplib.IMAP4_SSL.error as error:
         logger.exception(error.message)
-
 
 
 def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False, expected_status=codes.OK,
