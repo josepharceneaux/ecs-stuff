@@ -338,7 +338,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
             len(candidate_ids), user.id))
 
         if erroneous_data:
-            erroneous_data_str = '\n'.join(erroneous_data)
+            erroneous_data_str = '\n'.join(map(str, erroneous_data))
             msg_body = """
             import_from_spreadsheet: Some candidates not imported.
             User ID: %s
