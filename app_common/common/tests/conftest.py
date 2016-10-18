@@ -511,6 +511,16 @@ def user_second_candidate(user_second):
     db.session.commit()
     return candidate
 
+@pytest.fixture()
+def user_same_domain_candidate(user_same_domain):
+    """
+    Fixture adds candidate for user_same_domain
+    """
+    candidate = Candidate(last_name=gen_salt(20), first_name=gen_salt(20), user_id=user_same_domain.id)
+    db.session.add(candidate)
+    db.session.commit()
+    return candidate
+
 
 def randomword(length):
     return ''.join(random.choice(string.lowercase) for i in xrange(length))

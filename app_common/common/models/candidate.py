@@ -126,8 +126,8 @@ class Candidate(db.Model):
         domain_id = User.get_domain_id(user_id)
         if domain_id:
             return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
-                .filter(and_(User.id == user_id, User.domain_id == domain_id)).filter(CandidateSkill.description.
-                                                                                      in_(skills)).distinct().count()
+                .filter(and_(User.id == Candidate.user_id, User.domain_id == domain_id)).\
+                filter(CandidateSkill.description.in_(skills)).distinct().count()
         raise NotFoundError('No domain found')
 
     @staticmethod
