@@ -29,7 +29,7 @@ def test_candidate_added(user_first, talent_pool, candidate_first):
     # Tests without specifying time
     count = TalentPoolCandidate.candidates_added_last_month(user_first.id, user_name, [talent_pool.name])
     assert count == 1
-    # Tests with 3 months earlier added ad updated time
+    # Tests with 3 months earlier added and updated time
     changed_date = datetime.datetime.utcnow() - relativedelta(months=3)
     talent_pool.added_time = changed_date
     talent_pool.updated_time = changed_date
@@ -74,31 +74,31 @@ def test_get_candidates_with_skills(user_first, candidate_first, candidate_secon
     """
     This method checks number of candidates against skills in user's domain.
     """
-    candidate_skill = CandidateSkill(candidate_id=candidate_first.id, description='java')
+    candidate_skill = CandidateSkill(candidate_id=candidate_first.id, description='java', resume_id=0)
     candidate_skill.save()
     count = Candidate.get_candidate_count_with_skills(['java'], user_first.id)
     assert count == 1
     count = Candidate.get_candidate_count_with_skills(['c++'], user_first.id)
     assert count == 0
     # Adding another candidate skill
-    candidate_skill = CandidateSkill(candidate_id=candidate_second.id, description='java')
+    candidate_skill = CandidateSkill(candidate_id=candidate_second.id, description='java', resume_id=0)
     candidate_skill.save()
     count = Candidate.get_candidate_count_with_skills(['java'], user_first.id)
     assert count == 2
     # Adding second skill for first candidate
-    candidate_skill = CandidateSkill(candidate_id=candidate_first.id, description='python')
+    candidate_skill = CandidateSkill(candidate_id=candidate_first.id, description='python', resume_id=0)
     candidate_skill.save()
     count = Candidate.get_candidate_count_with_skills(['c++', 'python'], user_first.id)
     assert count == 1
     # Adding skill for second_user's candidate
-    candidate_skill = CandidateSkill(candidate_id=user_second_candidate.id, description='Hadoop')
+    candidate_skill = CandidateSkill(candidate_id=user_second_candidate.id, description='Hadoop', resume_id=0)
     candidate_skill.save()
     count = Candidate.get_candidate_count_with_skills(['hadoop'], user_same_domain.id)
     assert count == 0
     count = Candidate.get_candidate_count_with_skills(['hadoop'], user_second.id)
     assert count == 1
     # Adding skill for user_same_domain's candidate
-    candidate_skill = CandidateSkill(candidate_id=user_same_domain_candidate.id, description='java')
+    candidate_skill = CandidateSkill(candidate_id=user_same_domain_candidate.id, description='java', resume_id=0)
     candidate_skill.save()
     count = Candidate.get_candidate_count_with_skills(['java'], user_same_domain.id)
     assert count == 3
