@@ -13,12 +13,14 @@ import chardet
 import json
 import requests
 from flask import request, jsonify
+from sqlalchemy.sql import func
+from sqlalchemy.sql.expression import literal
 from spreadsheet_import_service.app import logger, app, celery_app
 from spreadsheet_import_service.common.utils.talent_s3 import *
 from spreadsheet_import_service.common.utils.validators import is_valid_email, is_number
 from spreadsheet_import_service.common.models.user import User, db
 from spreadsheet_import_service.common.models.misc import AreaOfInterest
-from spreadsheet_import_service.common.models.candidate import CandidateSource
+from spreadsheet_import_service.common.models.candidate import CandidateSource, SocialNetwork
 from spreadsheet_import_service.common.utils.talent_reporting import email_error_to_admins
 from spreadsheet_import_service.common.error_handling import InvalidUsage
 from spreadsheet_import_service.common.error_handling import InternalServerError
@@ -105,7 +107,7 @@ def convert_csv_to_table(csv_file):
 
 @celery_app.task()
 def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool_ids,
-                            oauth_token, secret_key_id, user_id, is_scheduled=False, source_id=None,
+                            oauth_token, user_id, is_scheduled=False, source_id=None,
                             formatted_candidate_tags=None):
     """
     This function will create new candidates from information of candidates given in a csv file
@@ -115,7 +117,6 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
     :param header_row: An array of headers of candidate's spreadsheet
     :param talent_pool_ids: An array on talent_pool_ids
     :param oauth_token: OAuth token of logged-in user
-    :param secret_key_id: Secret key ID if using v2 auth (JWT)
     :param is_scheduled: Is this method called asynchronously ?
     :param user_id: User id of logged-in user
     :type formatted_candidate_tags: list[dict[str]]
@@ -159,7 +160,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                 if column_name == 'candidate.formattedName':
                     formatted_name = column
                 elif column_name == 'candidate.statusId':
-                    status_id = column
+                    status_id = int(column) if is_number(column) else column
                 elif column_name == 'candidate.firstName':
                     first_name = column
                 elif column_name == 'candidate.middleName':
@@ -244,15 +245,27 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                 elif column_name == 'candidate_address.zipCode':
                     prepare_candidate_data(addresses, 'zip_code', column)
                 elif column_name == 'candidate_address.country_code':
-                    prepare_candidate_data(addresses, 'country_code', column)
+                    prepare_candidate_data(addresses, 'country', column)
                 elif column_name == 'candidate.tags':
                     prepare_candidate_data(candidate_tags, 'name', column)
                 elif column_name == 'candidate.skills':
-                    prepare_candidate_data(skills, 'name', column)
+                    if ',' in column:
+                        # Comma Separated Skills
+                        column = [skill.strip() for skill in column.split(',') if skill.strip()]
+                        for skill in column:
+                            prepare_candidate_data(skills, 'name', skill)
+                    else:
+                        prepare_candidate_data(skills, 'name', column)
                 elif column_name == 'candidate.notes':
                     prepare_candidate_data(candidate_notes, 'comment', column)
                 elif column_name == 'candidate.social_profile_url':
-                    prepare_candidate_data(social_networks, 'profile_url', column)
+                    social_network_object = SocialNetwork.query.filter(literal(column.lower()).contains(
+                            func.lower(SocialNetwork.name))).first()
+                    if social_network_object:
+                        prepare_candidate_data(social_networks, 'profile_url', column)
+                        prepare_candidate_data(social_networks, 'name', social_network_object.name)
+                    else:
+                        logger.warning("Couldn't add social profile url: (%s) of candidate ", column)
 
                 elif 'custom_field.' in column_name:
                     custom_fields_dict = {}
@@ -297,8 +310,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
 
             candidate_data = {key: value for key, value in candidate_data.items() if value is not None}
 
-            created, response = create_candidates_from_parsed_spreadsheet(candidate_data, oauth_token,
-                                                                          secret_key_id=secret_key_id)
+            created, response = create_candidates_from_parsed_spreadsheet(candidate_data, oauth_token)
 
             if created:
                 response_candidate_ids = [candidate.get('id') for candidate in response.get('candidates', [])]
@@ -306,7 +318,6 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                 # Adding Notes and Tags to Candidate Object
                 if response_candidate_ids:
                     add_extra_fields_to_candidate(response_candidate_ids[0], oauth_token,
-                                                  secret_key_id=secret_key_id,
                                                   tags=candidate_tags,
                                                   notes=candidate_notes)
 
@@ -369,7 +380,7 @@ def get_or_create_areas_of_interest(domain_id, include_child_aois=False):
     return areas
 
 
-def create_candidates_from_parsed_spreadsheet(candidate_dict, oauth_token, secret_key_id=None):
+def create_candidates_from_parsed_spreadsheet(candidate_dict, oauth_token):
     """
     Create a new candidate using candidate_service
     :param candidate_dict: A list of dicts containing information for new candidates
@@ -378,8 +389,6 @@ def create_candidates_from_parsed_spreadsheet(candidate_dict, oauth_token, secre
     :rtype: dict
     """
     headers = {'Authorization': oauth_token, 'content-type': 'application/json'}
-    if secret_key_id:
-        headers['X-Talent-Secret-Key-ID'] = secret_key_id
     r = requests.post(CandidateApiUrl.CANDIDATES,
                       data=json.dumps({'candidates': [candidate_dict]}),
                       headers=headers)
@@ -405,7 +414,7 @@ def create_candidates_from_parsed_spreadsheet(candidate_dict, oauth_token, secre
         return False, {"error": "Couldn't create/update candidate from candidate dict %s" % candidate_dict}
 
 
-def add_extra_fields_to_candidate(candidate_id, oauth_token, secret_key_id=None, tags=None, notes=None):
+def add_extra_fields_to_candidate(candidate_id, oauth_token, tags=None, notes=None):
     """
     This endpoint will add such fields to candidate object that cannot be added through Candidate API
     :param candidate_id: Id of candidate
@@ -416,8 +425,6 @@ def add_extra_fields_to_candidate(candidate_id, oauth_token, secret_key_id=None,
     :return:
     """
     headers = {'Authorization': oauth_token, 'content-type': 'application/json'}
-    if secret_key_id:
-        headers['X-Talent-Secret-Key-ID'] = secret_key_id
     if tags:
         response = requests.post(CandidateApiUrl.TAGS % str(candidate_id), headers=headers,
                                  data=json.dumps({'tags': tags}))
@@ -431,7 +438,7 @@ def add_extra_fields_to_candidate(candidate_id, oauth_token, secret_key_id=None,
             logger.error("Couldn't add Notes to candidate with id: %s. Response:", str(candidate_id), response)
 
 
-def update_candidate_from_parsed_spreadsheet(candidate_dict, oauth_token, secret_key_id=None):
+def update_candidate_from_parsed_spreadsheet(candidate_dict, oauth_token):
     """
     This method will update an already existing candidates from candidate dict
     :param candidate_dict: Dictionaries of candidates to be cretaed
@@ -439,8 +446,6 @@ def update_candidate_from_parsed_spreadsheet(candidate_dict, oauth_token, secret
     :return:
     """
     headers = {'Authorization': oauth_token, 'content-type': 'application/json'}
-    if secret_key_id:
-        headers['X-Talent-Secret-Key-ID'] = secret_key_id
     r = requests.patch(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': [candidate_dict]}),
                        headers=headers)
 
@@ -475,8 +480,7 @@ def schedule_spreadsheet_import(import_args):
         "post_data": import_args
     }
     headers = {'Authorization': request.oauth_token, 'Content-Type': 'application/json'}
-    if request.secret_key_id:
-        headers['X-Talent-Secret-Key-ID'] = request.secret_key_id
+
     try:
         print SchedulerApiUrl.TASKS
         response = requests.post(SchedulerApiUrl.TASKS, headers=headers, data=json.dumps(data))

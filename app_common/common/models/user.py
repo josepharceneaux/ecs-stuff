@@ -9,6 +9,7 @@ from dateutil.parser import parse
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
+from sqlalchemy import or_
 
 from db import db
 from ..models.event import Event
@@ -17,7 +18,7 @@ from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
-from email_campaign import EmailCampaign
+from email_campaign import EmailCampaign, EmailClientCredentials, EmailConversations
 from ..error_handling import *
 from ..redis_cache import redis_store
 from ..utils.validators import is_number
@@ -66,6 +67,8 @@ class User(db.Model):
                                backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
     email_templates = relationship('UserEmailTemplate', backref='user', cascade='all, delete-orphan')
+    email_client_credentials = relationship('EmailClientCredentials', backref='user')
+    email_conversations = relationship('EmailConversations', backref='user')
     push_campaigns = relationship('PushCampaign', backref='user', cascade='all,delete-orphan', passive_deletes=True, )
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship(Event, backref='user', lazy='dynamic',
@@ -76,14 +79,14 @@ class User(db.Model):
                              cascade='all, delete-orphan', passive_deletes=True)
 
     @staticmethod
-    def generate_jw_token(expiration=600, user_id=None):
+    def generate_jw_token(expiration=7200, user_id=None):
         secret_key_id = str(uuid.uuid4())[0:10]
         secret_key = os.urandom(24)
         redis_store.setex(secret_key_id, secret_key, expiration)
         s = Serializer(secret_key, expires_in=expiration)
         if current_app:
             current_app.logger.info('Creating jw token. secret_key_id %s, secret_key: %s', secret_key_id, secret_key)
-        return secret_key_id, 'Bearer %s' % s.dumps({'user_id': user_id})
+        return 'Bearer %s.%s' % (s.dumps({'user_id': user_id}), secret_key_id)
 
     @staticmethod
     def verify_jw_token(secret_key_id, token, allow_null_user=False, allow_candidate=False):
@@ -211,16 +214,32 @@ class User(db.Model):
         return User.query.filter_by(email=email).first()
 
     @staticmethod
-    def get_users_in_domain(user_id):
+    def get_domain_name_and_its_users(user_id):
         """
         This method returns users in a domain and domain name
         :param int user_id: User Id
-        :return: tuple(list, str) : (User list, domain name)
+        :rtype: tuple[(list, str)]
         """
-        domain_name = User.query.with_entities(Domain.name).filter(User.domain_id == Domain.id).filter(User.id == user_id).first()
-        users = User.query.filter(User.domain_id == Domain.id).\
-            filter(User.id == user_id).all()
-        return users, domain_name[0]
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid user Id"
+        domain_name, domain_id = User.query.with_entities(Domain.name, Domain.id).filter(User.domain_id == Domain.id).\
+            filter(User.id == user_id).first()
+        users = User.query.filter(User.domain_id == domain_id).all()
+        return users, domain_name
+
+    @classmethod
+    def get_by_name(cls, user_id, name):
+        """
+        This method returns user against a name
+        :param str name: User's first or last name
+        :param int user_id: User Id
+        :rtype: list
+        """
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid user Id %r" % user_id
+        assert isinstance(name, basestring) and name, "Invalid name %r" % name
+        user = cls.get_by_id(user_id)
+        if user:
+            return cls.query.filter(or_(cls.first_name == name, cls.last_name == name)).\
+                filter(cls.domain_id == user.domain_id).all()
 
 
 class UserPhone(db.Model):

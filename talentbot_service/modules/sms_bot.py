@@ -78,6 +78,7 @@ class SmsBot(TalentBot):
             try:
                 response_generated = self.parse_message(message, user_id)
                 if response_generated:
+                    response_generated = self.clean_response_message(response_generated)
                     self.reply(response_generated, recipient)
                 else:
                     raise IndexError

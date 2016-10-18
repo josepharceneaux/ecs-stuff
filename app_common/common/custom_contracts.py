@@ -5,6 +5,7 @@ docstring with the help of PyContracts.
 """
 # Standard Lib
 import cStringIO
+from datetime import datetime
 
 # Third Party
 from requests import Response
@@ -32,6 +33,7 @@ def define_custom_contracts():
         #  Request is used with the app.test_request_context contest manager.
         new_contract('flask_request', lambda x: isinstance(x, (LocalProxy, Request)))
         new_contract('Response', lambda x: isinstance(x, Response))
+        new_contract('datetime', lambda x: isinstance(x, datetime))
 
     except ValueError:
         # ignore in case of ValueError which means it is already defined
