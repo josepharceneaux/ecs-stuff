@@ -110,22 +110,22 @@ def test_candidates_from_zipcode(user_first, candidate_first, candidate_second, 
     This method checks number of candidates against a zipcode in a user's domain
     """
     # Adding address for user_first's candidate
-    candidate_address = CandidateAddress(candidate_id=candidate_first.id, zip_code='54000')
+    candidate_address = CandidateAddress(candidate_id=candidate_first.id, zip_code='54000', resume_id=0)
     candidate_address.save()
     count = Candidate.get_candidate_count_from_zipcode('54000', user_first.id)
     assert count == 1
     # Adding address for user_first's second candidate
-    candidate_address = CandidateAddress(candidate_id=candidate_second.id, zip_code='54000')
+    candidate_address = CandidateAddress(candidate_id=candidate_second.id, zip_code='54000', resume_id=0)
     candidate_address.save()
     count = Candidate.get_candidate_count_from_zipcode('54000', user_first.id)
     assert count == 2
     # Adding address for user_same_domain's candidate
-    candidate_address = CandidateAddress(candidate_id=user_same_domain_candidate.id, zip_code='54000')
+    candidate_address = CandidateAddress(candidate_id=user_same_domain_candidate.id, zip_code='54000', resume_id=0)
     candidate_address.save()
     count = Candidate.get_candidate_count_from_zipcode('54000', user_first.id)
     assert count == 3
     # Adding address for second_user candidate
-    candidate_address = CandidateAddress(candidate_id=user_second_candidate.id, zip_code='54000')
+    candidate_address = CandidateAddress(candidate_id=user_second_candidate.id, zip_code='54000', resume_id=0)
     candidate_address.save()
     count = Candidate.get_candidate_count_from_zipcode('54000', user_first.id)
     assert count == 3
@@ -134,3 +134,7 @@ def test_candidates_from_zipcode(user_first, candidate_first, candidate_second, 
     # Checking with user_same_domain
     count = Candidate.get_candidate_count_from_zipcode('54000', user_same_domain.id)
     assert count == 3
+
+
+def test_top_performing_campaigns():
+    pass
