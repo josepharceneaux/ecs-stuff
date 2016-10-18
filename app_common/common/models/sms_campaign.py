@@ -3,7 +3,7 @@ __author__ = 'basit'
 import datetime
 
 from sqlalchemy.orm import relationship
-from sqlalchemy import or_, desc, extract
+from sqlalchemy import or_, desc, extract, and_
 
 from db import db
 from ..error_handling import InternalServerError
@@ -106,30 +106,31 @@ class SmsCampaignBlast(db.Model):
         :param datetime|str datetime_value: Year of campaign started or updated
         :rtype SmsCampaignBlast|None
         """
-        from user import UserPhone
-        user_phones = UserPhone.get_by_user_id(user_id)
-        if user_phones and isinstance(datetime_value, datetime.datetime):
-            user_phone_ids = [user_phone.id for user_phone in user_phones]
+        assert isinstance(datetime_value, (datetime.datetime, basestring)) or datetime_value is None, \
+            "Invalid datetime value"
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
+        from user import UserPhone, User
+        users_ids_in_domain = User.query.with_entities(User.id).filter(User.domain_id == 1).all()
+        users_ids_in_domain = [_id[0] for _id in users_ids_in_domain]
+        user_phone_ids = UserPhone.query.with_entities(UserPhone.id).filter(UserPhone.user_id.in_(users_ids_in_domain)).all()
+        user_phone_ids = [_id[0] for _id in user_phone_ids]
+        domain_id = User.get_domain_id(user_id)
+        if domain_id and isinstance(datetime_value, datetime.datetime):
             return cls.query.filter(or_(cls.updated_time >= datetime_value,
                                         cls.sent_datetime >= datetime_value)).\
                 filter(cls.sends > 0).\
-                filter(SmsCampaign.id == cls.campaign_id).\
-                filter(SmsCampaign.user_phone_id.in_(user_phone_ids)). \
-                order_by(desc(cls.replies)).first()
-        if user_phones and isinstance(datetime_value, basestring):
-            user_phone_ids = [user_phone.id for user_phone in user_phones]
+                filter(SmsCampaign.id == cls.campaign_id, SmsCampaign.user_phone_id.in_(user_phone_ids)).\
+                order_by(desc(cls.replies/cls.sends)).first()
+        if domain_id and isinstance(datetime_value, basestring):
             return cls.query.filter(or_(extract("year", cls.updated_time) == datetime_value,
                                         extract("year", cls.sent_datetime) == datetime_value)). \
-                filter(SmsCampaign.id == cls.campaign_id). \
-                filter(cls.sends > 0). \
+                filter(SmsCampaign.id == cls.campaign_id, cls.sends > 0). \
                 filter(SmsCampaign.user_phone_id.in_(user_phone_ids)). \
-                order_by(desc(cls.replies)).first()
-        if user_phones and not datetime_value:
-            user_phone_ids = [user_phone.id for user_phone in user_phones]
+                order_by(desc(cls.replies/cls.sends)).first()
+        if domain_id and not datetime_value:
             return cls.query.filter(SmsCampaign.id == cls.campaign_id). \
-                filter(SmsCampaign.user_phone_id.in_(user_phone_ids)). \
-                filter(cls.sends > 0). \
-                order_by(desc(cls.replies)).first()
+                filter(SmsCampaign.user_phone_id.in_(user_phone_ids), cls.sends > 0). \
+                order_by(desc(cls.replies/cls.sends)).first()
         return None
 
 
