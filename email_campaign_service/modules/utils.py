@@ -28,7 +28,7 @@ from email_campaign_service.common.error_handling import InvalidUsage
 from email_campaign_service.common.models.user import User, Serializer
 from email_campaign_service.common.error_handling import InternalServerError
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.common.models.candidate import CandidateEmail, EmailLabel
+from email_campaign_service.common.models.candidate import CandidateEmail, EmailLabel, Candidate
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, get_web_app_url)
 from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
@@ -81,17 +81,22 @@ def jwt_security_key():
     return secret_key_id
 
 
-def do_mergetag_replacements(texts, candidate=None):
+def do_mergetag_replacements(texts, requested_object=None):
     """
-    If no candidate, name is "John Doe"
-    Replace MergeTags with candidate's first name, last name
-    Replace preferences url
+    Here we do the replacements of merge tags with required values. This servers for candidate and user.
+    If no candidate or user is provided, name is set to "John Doe".
+    It replaces MergeTags with candidate's or user's first name, last name.
+    It also replaces preferences URL only for candidate.
     """
+    if not isinstance(requested_object, (Candidate, User)):
+        raise InvalidUsage('Invalid object passed')
+
     first_name = "John"
     last_name = "Doe"
-    if candidate:
-        first_name = candidate.first_name if candidate.first_name else "John"
-        last_name = candidate.last_name if candidate.last_name else "Doe"
+
+    if requested_object:
+        first_name = requested_object.first_name if requested_object.first_name else first_name
+        last_name = requested_object.last_name if requested_object.last_name else last_name
 
     new_texts = []
     for text in texts:
@@ -102,9 +107,8 @@ def do_mergetag_replacements(texts, candidate=None):
             DEFAULT_LAST_NAME_MERGETAG in text) else text
 
         # Do 'Unsubscribe' link replacements
-        if candidate and text and (DEFAULT_PREFERENCES_URL_MERGETAG in text):
-            text = do_prefs_url_replacement(text, candidate.id)
-
+        if isinstance(requested_object, Candidate) and text and (DEFAULT_PREFERENCES_URL_MERGETAG in text):
+            text = do_prefs_url_replacement(text, requested_object.id)
         new_texts.append(text)
 
     return new_texts
