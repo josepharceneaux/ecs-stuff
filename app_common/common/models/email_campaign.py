@@ -1,7 +1,7 @@
 import datetime
 
 from sqlalchemy.orm import relationship
-from sqlalchemy import or_, desc, extract
+from sqlalchemy import or_, desc, extract, and_
 
 from db import db
 from ..utils.datetime_utils import DatetimeUtils
@@ -204,24 +204,30 @@ class EmailCampaignBlast(db.Model):
         """
         This method returns top performing email campaign from a specific datetime
         :param int user_id: User Id
-        :param str|datetime datetime_value: date during campaign started or updated
+        :param str|datetime|None datetime_value: date during campaign started or updated
         :rtype: EmailCampaignBlast
         """
+        assert isinstance(datetime_value, (datetime.datetime, basestring)) or datetime_value is None,\
+            "Invalid datetime value"
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
+        from .user import User
+        domain_id = User.get_domain_id(user_id)
         if isinstance(datetime_value, datetime.datetime):
             return cls.query.filter(or_(cls.updated_datetime >= datetime_value,
                                         cls.sent_datetime >= datetime_value)). \
                 filter(EmailCampaign.id == cls.campaign_id). \
-                filter(cls.sends > 0).filter(EmailCampaign.user_id == user_id). \
-                order_by(desc(cls.opens)).first()
+                filter(cls.sends > 0).filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)). \
+                order_by(desc(cls.opens/cls.sends)).first()
         if isinstance(datetime_value, basestring):
             return cls.query.filter(or_(extract("year", cls.updated_datetime) == datetime_value,
                                         extract("year", cls.sent_datetime) == datetime_value)). \
                 filter(EmailCampaign.id == cls.campaign_id). \
-                filter(EmailCampaign.user_id == user_id). \
+                filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)). \
                 filter(cls.sends > 0). \
-                order_by(desc(cls.opens)).first()
+                order_by(desc(cls.opens/cls.sends)).first()
         return cls.query.filter(EmailCampaign.id == cls.campaign_id).\
-            filter(EmailCampaign.user_id == user_id).filter(cls.sends > 0).order_by(desc(cls.opens)).first()
+            filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)).filter(cls.sends > 0).\
+            order_by(desc(cls.opens/cls.sends)).first()
 
 
 class EmailCampaignSend(db.Model):

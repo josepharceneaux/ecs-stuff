@@ -12,7 +12,7 @@ from talentbot_service.common.models.user import TalentbotAuth
 # App specific imports
 from talentbot_service.modules.constants import MAILGUN_FROM, AUTHENTICATION_FAILURE_MSG
 from talentbot_service.modules.talent_bot import TalentBot
-from talentbot_service  import logger
+from talentbot_service import logger
 # 3rd party import
 import requests
 
@@ -77,6 +77,7 @@ class EmailBot(TalentBot):
                 response_generated = self.parse_message(message, user_id)
                 if not response_generated:
                     raise IndexError
+                response_generated = self.clean_response_message(response_generated)
                 self.reply(recipient, subject, "<br />".join(response_generated.split("\n")), MAILGUN_FROM)
             except (IndexError, NameError, KeyError):
                 error_response = random.choice(self.error_messages)

@@ -1074,17 +1074,21 @@ def send_test_email(user, request):
     """
     # Get and validate request data
     data = get_json_data_if_validated(request, TEST_EMAIL_SCHEMA)
+    [new_html, new_text, subject] = do_mergetag_replacements([data['body_html'], data['body_text'], data['subject']],
+                                                             request.user)
     try:
         default_email = get_default_email_info()['email']
         send_email(source='"%s" <%s>' % (data['from'], default_email),
-                   subject=data['subject'],
-                   html_body=data['body_html'] or None,
+                   subject=subject,
+                   html_body=new_html or None,
                    # Can't be '', otherwise, text_body will not show in email
-                   text_body=data['body_html'],
+                   text_body=new_text,
                    to_addresses=data['email_address_list'],
                    reply_address=user.email,
                    body=None,
                    email_format='html')
+        logger.info('Test email has been sent to %s addresses. User(id:%s)'
+                    % (data['email_address_list'], request.user.id))
     except Exception as e:
         logger.error('Error occurred while sending test email. Error: %s', e)
         raise InternalServerError('Unable to send emails to test email addresses:%s.' % data['email_address_list'])
