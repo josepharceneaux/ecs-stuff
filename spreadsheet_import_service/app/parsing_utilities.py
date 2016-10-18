@@ -13,12 +13,14 @@ import chardet
 import json
 import requests
 from flask import request, jsonify
+from sqlalchemy.sql import func
+from sqlalchemy.sql.expression import literal
 from spreadsheet_import_service.app import logger, app, celery_app
 from spreadsheet_import_service.common.utils.talent_s3 import *
 from spreadsheet_import_service.common.utils.validators import is_valid_email, is_number
 from spreadsheet_import_service.common.models.user import User, db
 from spreadsheet_import_service.common.models.misc import AreaOfInterest
-from spreadsheet_import_service.common.models.candidate import CandidateSource
+from spreadsheet_import_service.common.models.candidate import CandidateSource, SocialNetwork
 from spreadsheet_import_service.common.utils.talent_reporting import email_error_to_admins
 from spreadsheet_import_service.common.error_handling import InvalidUsage
 from spreadsheet_import_service.common.error_handling import InternalServerError
@@ -158,7 +160,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                 if column_name == 'candidate.formattedName':
                     formatted_name = column
                 elif column_name == 'candidate.statusId':
-                    status_id = column
+                    status_id = int(column) if is_number(column) else column
                 elif column_name == 'candidate.firstName':
                     first_name = column
                 elif column_name == 'candidate.middleName':
@@ -243,15 +245,27 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                 elif column_name == 'candidate_address.zipCode':
                     prepare_candidate_data(addresses, 'zip_code', column)
                 elif column_name == 'candidate_address.country_code':
-                    prepare_candidate_data(addresses, 'country_code', column)
+                    prepare_candidate_data(addresses, 'country', column)
                 elif column_name == 'candidate.tags':
                     prepare_candidate_data(candidate_tags, 'name', column)
                 elif column_name == 'candidate.skills':
-                    prepare_candidate_data(skills, 'name', column)
+                    if ',' in column:
+                        # Comma Separated Skills
+                        column = [skill.strip() for skill in column.split(',') if skill.strip()]
+                        for skill in column:
+                            prepare_candidate_data(skills, 'name', skill)
+                    else:
+                        prepare_candidate_data(skills, 'name', column)
                 elif column_name == 'candidate.notes':
                     prepare_candidate_data(candidate_notes, 'comment', column)
                 elif column_name == 'candidate.social_profile_url':
-                    prepare_candidate_data(social_networks, 'profile_url', column)
+                    social_network_object = SocialNetwork.query.filter(literal(column.lower()).contains(
+                            func.lower(SocialNetwork.name))).first()
+                    if social_network_object:
+                        prepare_candidate_data(social_networks, 'profile_url', column)
+                        prepare_candidate_data(social_networks, 'name', social_network_object.name)
+                    else:
+                        logger.warning("Couldn't add social profile url: (%s) of candidate ", column)
 
                 elif 'custom_field.' in column_name:
                     custom_fields_dict = {}
@@ -294,6 +308,8 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                                   custom_fields=custom_fields,
                                   skills=skills)
 
+            candidate_data = {key: value for key, value in candidate_data.items() if value is not None}
+
             created, response = create_candidates_from_parsed_spreadsheet(candidate_data, oauth_token)
 
             if created:
@@ -301,7 +317,9 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                 candidate_ids += response_candidate_ids
                 # Adding Notes and Tags to Candidate Object
                 if response_candidate_ids:
-                    add_extra_fields_to_candidate(response_candidate_ids[0], oauth_token, candidate_tags, candidate_notes)
+                    add_extra_fields_to_candidate(response_candidate_ids[0], oauth_token,
+                                                  tags=candidate_tags,
+                                                  notes=candidate_notes)
 
                 logger.info("Successfully imported %s candidates with ids: (%s)",
                             len(response_candidate_ids), response_candidate_ids)
@@ -322,14 +340,14 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
             return jsonify(dict(count=len(candidate_ids), status='complete')), 201
 
     except Exception as e:
-
         email_error_to_admins("Error importing from CSV. User ID: %s, S3_URL: %s, Error: %s" % (
             user_id, get_s3_url('CSVResumes', spreadsheet_filename), e), subject="import_from_csv")
 
         message = "Error importing from CSV. User ID: %s, S3 filename: %s. Reason: %s" % (
             user_id, spreadsheet_filename, e)
 
-        logger.error(message)
+        logger.exception("Error importing from CSV (outer loop), user ID: %s, S3 filename: %s", user_id,
+                         spreadsheet_filename)
         if not is_scheduled:
             raise InternalServerError(message)
 
@@ -401,6 +419,7 @@ def add_extra_fields_to_candidate(candidate_id, oauth_token, tags=None, notes=No
     This endpoint will add such fields to candidate object that cannot be added through Candidate API
     :param candidate_id: Id of candidate
     :param oauth_token: OAuth token
+    :param secret_key_id: Secret key ID if V2 (JWT) auth
     :param tags: Candidate Tags
     :param notes: Candidate Notes
     :return:
@@ -426,11 +445,12 @@ def update_candidate_from_parsed_spreadsheet(candidate_dict, oauth_token):
     :param oauth_token:
     :return:
     """
+    headers = {'Authorization': oauth_token, 'content-type': 'application/json'}
     r = requests.patch(CandidateApiUrl.CANDIDATES, data=json.dumps({'candidates': [candidate_dict]}),
-                       headers={'Authorization': oauth_token, 'content-type': 'application/json'})
+                       headers=headers)
 
     if r.status_code == 200:
-        return True, {}
+        return True, r.json()
     else:
         return False, r.json()
 
@@ -460,6 +480,7 @@ def schedule_spreadsheet_import(import_args):
         "post_data": import_args
     }
     headers = {'Authorization': request.oauth_token, 'Content-Type': 'application/json'}
+
     try:
         print SchedulerApiUrl.TASKS
         response = requests.post(SchedulerApiUrl.TASKS, headers=headers, data=json.dumps(data))

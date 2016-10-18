@@ -1,10 +1,10 @@
-from sqlalchemy import and_
+from sqlalchemy import and_, desc
 from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
-from ..error_handling import InternalServerError
+from ..error_handling import InternalServerError,  NotFoundError
 from ..utils.validators import raise_if_not_positive_int_or_long
-from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
+from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT, SMALLINT
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
@@ -116,23 +116,47 @@ class Candidate(db.Model):
     def get_candidate_count_with_skills(skills, user_id):
         """
         This method returns number of candidates who have certain skills
-        :param int user_id: User Id
+        :param int|long user_id: User Id
         :param list skills: Candidate skills
-        :return: int: Number of candidates with certain skills
+        :rtype: int: Number of candidates with certain skills
         """
-        return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
-            .filter(Candidate.user_id == user_id).filter(CandidateSkill.description.in_(skills)).distinct().count()
+        assert isinstance(skills, list) and skills, "Invalid skills"
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid user_id"
+        from .user import User # This has to be here to avoid circular import
+        domain_id = User.get_domain_id(user_id)
+        if domain_id:
+            return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
+                .filter(and_(User.id == user_id, User.domain_id == domain_id)).filter(CandidateSkill.description.
+                                                                                      in_(skills)).distinct().count()
+        raise NotFoundError('No domain found')
 
     @staticmethod
     def get_candidate_count_from_zipcode(zipcode, user_id):
         """
         This method returns number of candidates from a certain zipcode
-        :param int user_id: User Id
+        :param int|long user_id: User Id
         :param str zipcode: Candidate zipcode
         :rtype: int: Number of candidates from zipcode
         """
-        return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
-            filter(Candidate.user_id == user_id).filter(CandidateAddress.zip_code == zipcode).count()
+        assert isinstance(zipcode, basestring) and zipcode, "Invalid zipcode"
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
+        from .user import User # This has to be here to avoid circular import
+        domain_id = User.get_domain_id(user_id)
+        if domain_id:
+            return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
+                filter(and_(Candidate.user_id == User.id, User.domain_id == domain_id)).\
+                filter(CandidateAddress.zip_code == zipcode).distinct().count()
+        raise NotFoundError('No domain found')
+
+    @classmethod
+    def get_all_in_user_domain(cls, domain_id):
+        """
+        This method returns number of candidates from a certain zipcode
+        :param int|long domain_id: Domain Id
+        """
+        assert domain_id, 'domain_id not provided'
+        from user import User  # This has to be here to avoid circular import
+        return cls.query.join(User, User.domain_id == domain_id).filter(Candidate.user_id == User.id).all()
 
 
 class CandidateStatus(db.Model):
@@ -486,6 +510,27 @@ class CandidateEmail(db.Model):
             filter(User.domain_id == domain_id). \
             filter(cls.address.in_(email_addresses)).all()
 
+    @classmethod
+    def get_emails_by_updated_time_candidate_id_desc(cls, candidate_ids):
+        """
+        Get candidate emails sorted by updated time and then by candidate_id
+        :param list candidate_ids: List of candidate Ids
+        :rtype: list
+        """
+        assert isinstance(candidate_ids, list) and candidate_ids, 'list of candidate_ids cannot be empty'
+        candidate_email_rows = cls.query.with_entities(cls.candidate_id,
+                                                       cls.address, cls.updated_time, cls.email_label_id) \
+            .filter(CandidateEmail.candidate_id.in_(candidate_ids)).order_by(desc(CandidateEmail.updated_time),
+                                                                             CandidateEmail.candidate_id)
+        """
+            candidate_email_rows data will be
+            1   candidate0_ryk@gmail.com    2016-02-20T11:22:00Z    1
+            1   candidate0_lhr@gmail.com    2016-03-20T11:22:00Z    2
+            2   candidate1_isb@gmail.com    2016-02-20T11:22:00Z    4
+            2   candidate1_lhr@gmail.com    2016-03-20T11:22:00Z    3
+        """
+        return candidate_email_rows
+
 
 class CandidatePhoto(db.Model):
     __tablename__ = 'candidate_photo'
@@ -663,6 +708,20 @@ class SocialNetwork(db.Model):
     def get_by_ids(cls, ids):
         assert isinstance(ids, list)
         return cls.query.filter(SocialNetwork.id.in_(ids)).all()
+
+    @classmethod
+    def get_subscribed_social_networks(cls, user_id):
+        """
+        This method returns those social networks that a user has subscribed.
+        :param int | long user_id: user id
+        :return: list of social networks
+        :rtype: list
+        """
+        # Due to circular dependency, importing here
+        from user import UserSocialNetworkCredential
+        assert user_id and isinstance(user_id, (int, long)), 'user_id must be a positive number, given: %s' % user_id
+        subscribed_data = UserSocialNetworkCredential.get_by_user_id(user_id=user_id)
+        return cls.query.filter(cls.id.in_([sn.social_network_id for sn in subscribed_data])).all()
 
 
 class CandidateSocialNetwork(db.Model):
@@ -910,6 +969,10 @@ class CandidateMilitaryService(db.Model):
     comments = db.Column('Comments', db.String(5000))
     from_date = db.Column('FromDate', db.DateTime)
     to_date = db.Column('ToDate', db.DateTime)
+    start_year = db.Column(SMALLINT)
+    start_month = db.Column(TINYINT)
+    end_year = db.Column(SMALLINT)
+    end_month = db.Column(SMALLINT)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined

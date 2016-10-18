@@ -142,14 +142,13 @@ class EmailCampaigns(Resource):
             body_html: email body
             list_ids: smartlist ids to which emails will be sent
         """
-        user_id = request.user.id
         # Get and validate request data
         data = request.get_json(silent=True)
         if not data:
             raise InvalidUsage("Received empty request body")
-        data = validate_and_format_request_data(data, user_id)
+        data = validate_and_format_request_data(data, request.user)
 
-        campaign = create_email_campaign(user_id=user_id,
+        campaign = create_email_campaign(user_id=request.user.id,
                                          oauth_token=request.oauth_token,
                                          name=data['name'],
                                          subject=data['subject'],
@@ -163,7 +162,8 @@ class EmailCampaigns(Resource):
                                          template_id=data['template_id'],
                                          start_datetime=data['start_datetime'],
                                          end_datetime=data['end_datetime'],
-                                         frequency_id=data['frequency_id'])
+                                         frequency_id=data['frequency_id'],
+                                         email_client_credentials_id=data['email_client_credentials_id'])
 
         return {'campaign': campaign}, requests.codes.CREATED
 
@@ -239,7 +239,7 @@ class EmailCampaignSendApi(Resource):
 
         if not campaign.user.domain_id == request.user.domain_id:
             raise ForbiddenError("Email campaign doesn't belongs to user's domain")
-        results_send = send_email_campaign(request.user.id, campaign, new_candidates_only=False)
+        results_send = send_email_campaign(request.user, campaign, new_candidates_only=False)
         if email_client_id:
             if not isinstance(results_send, list):
                 raise InvalidUsage(error_message="Something went wrong, response is not list")

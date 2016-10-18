@@ -57,10 +57,8 @@ for i in range(0, DATA_NUM):
     }
 
     if 1 == random.randrange(1, 20):
-        secret_key_id, token = User.generate_jw_token()
-        headers = {'Authorization': token,
-                  'X-Talent-Secret-Key-ID': secret_key_id,
-                  'Content-Type': 'application/json'}
+        token = User.generate_jw_token()
+        headers = {'Authorization': token, 'Content-Type': 'application/json'}
         data['task_name'] = fake.last_name()
 
     res = requests.post('http://localhost:8011/v1/tasks', data=json.dumps(data),

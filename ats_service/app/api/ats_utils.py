@@ -6,11 +6,15 @@ __author__ = 'Joseph Arceneaux'
 
 import datetime
 
+from enum import Enum
+
+
 if __name__ == 'ats_service.app.api.ats_utils':
     # Imports for the web app.
     from ats_service.common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
     from ats_service.common.models.candidate import Candidate
     from ats_service.common.models.user import User
+    from ats_service.common.utils.validators import format_phone_number
     from ats_service.common.error_handling import *
     from ats_service.ats.workday import Workday
 else:
@@ -18,6 +22,7 @@ else:
     from common.models.ats import db, ATS, ATSAccount, ATSCredential, ATSCandidate, ATSCandidateProfile
     from common.models.candidate import Candidate
     from common.models.user import User
+    from common.utils.validators import format_phone_number
     from common.error_handling import *
     from ats.workday import Workday
 
@@ -370,3 +375,199 @@ def create_ats_object(logger, ats_name, url, user_id, credentials):
         raise UnprocessableEntity("Invalid data", additional_error_info=dict(unsupported_ats=data['ats_name']))
 
     return ATS_CONSTRUCTORS[ats_name](logger, ats_name, url, user_id, credentials)
+
+
+def emails_match(gt_candidate, ats_candidate):
+    """
+    Determine if there are matching email addresses between a GT candidate and a Workday individual.
+    Workday indidviduals have only one, but this returns a list so that all ATS may have the same method signature.
+    :param Candidate gt_candidate: getTalent candidate.
+    :param ATSCandidate ats_candidate: Workday individual.
+    :rtype boolean:
+    """
+    if gt_candidate.is_web_hidden:
+        return False
+
+    # Get the ATS candidate email address with an ATS-specific static method
+    ats_email_list = ATS_CONSTRUCTORS[ATSAccount.get(ats_candidate.ats_id).name].get_individual_contact_email_addresses(ats_candidate)
+    if not ats_email_list:
+        return False
+
+    # Compare to GT candidate email address(es)
+    if not gt_candidate.emails:
+        return False
+
+    # Compare. This makes a 4-deep for loop, but we expect the lists to be very small. For Workday, there'll be only one email address.
+    for gt_email in candidate.emails:
+        for ats_email in ats_email_list:
+            if gt_email == ats_email:
+                return True
+
+    return False
+
+
+def normalized_phones_match(gt_phone_list, ats_phone_list):
+    """
+    """
+    # Compare. This makes a 4-deep for loop, but we expect the lists to be very small. For Workday, there'll be only one email address.
+    for gt_phone in gt_phone_list:
+        try:
+            normalized_gt_phone = format_phone_number(gt_phone)
+        except:
+            continue
+
+        for ats_phone in ats_phone_list:
+            try:
+                normalized_ats_phone = format_phone_number(ats_phone)
+            except:
+                continue
+
+            if normalized_gt_phone == normalized_ats_phone:
+                return True
+
+    return False
+
+
+def phones_match(gt_candidate, ats_candidate):
+    """
+    Determine if there are matching phone numbers between a GT candidate and a Workday individual.
+    Workday indidviduals have only one, but this returns a list so that all ATS may have the same method signature.
+    :param Candidate gt_candidate: getTalent candidate.
+    :param ATSCandidate ats_candidate: Workday individual.
+    :rtype boolean:
+    """
+    if gt_candidate.is_web_hidden:
+        return False
+
+    # Get the ATS candidate email address with an ATS-specific static method
+    ats_phone_list = ATS_CONSTRUCTORS[ATSAccount.get(ats_candidate.ats_id).name].get_individual_contact_phone_numbers(ats_candidate)
+    if not ats_phone_list:
+        return False
+
+    # Compare to GT candidate email address(es)
+    if not gt_candidate.phones:
+        return False
+
+    return normalized_phones_match(candidate.phones, ats_phone_list)
+
+
+def emails_and_phones_match(gt_candidate, ats_candidate):
+    """
+    Determine if there are matching email addresses and phone numbers between a GT candidate and a Workday individual.
+    Workday indidviduals have only one, but this returns a list so that all ATS may have the same method signature.
+    :param Candidate gt_candidate: getTalent candidate.
+    :param ATSCandidate ats_candidate: Workday individual.
+    :rtype boolean:
+    """
+    if gt_candidate.is_web_hidden:
+        return False
+
+    # Get the ATS candidate email address with an ATS-specific static method
+    ats_phone_list = ATS_CONSTRUCTORS[ATSAccount.get(ats_candidate.ats_id).name].get_individual_contact_phone_numbers(ats_candidate)
+    if not ats_phone_list:
+        return False
+
+    # Compare to GT candidate email address(es)
+    if not gt_candidate.phones:
+        return False
+
+    # Get the ATS candidate email address with an ATS-specific static method
+    ats_email_list = ATS_CONSTRUCTORS[ATSAccount.get(ats_candidate.ats_id).name].get_individual_contact_email_addresses(ats_candidate)
+    if not ats_email_list:
+        return False
+
+    # Compare to GT candidate email address(es)
+    if not gt_candidate.emails:
+        return False
+
+    # Compare emails.
+    for gt_email in candidate.emails:
+        for ats_email in ats_email_list:
+            if gt_email == ats_email:
+                email_match = True
+
+    # Compare phones.
+    phone_match = normalized_phones_match(candidate.phones, ats_phone_list)
+
+    return email_match and phone_match
+
+
+def emails_or_phones_match(gt_candidate, ats_candidate):
+    """
+    Determine if there are matching email addresses or phone numbers between a GT candidate and a Workday individual.
+    Workday indidviduals have only one, but this returns a list so that all ATS may have the same method signature.
+    :param Candidate gt_candidate: getTalent candidate.
+    :param ATSCandidate ats_candidate: Workday individual.
+    :rtype boolean:
+    """
+    if gt_candidate.is_web_hidden:
+        return False
+
+    # Get the ATS candidate email address with an ATS-specific static method
+    ats_phone_list = ATS_CONSTRUCTORS[ATSAccount.get(ats_candidate.ats_id).name].get_individual_contact_phone_numbers(ats_candidate)
+    if not ats_phone_list:
+        return False
+
+    # Compare to GT candidate email address(es)
+    if not gt_candidate.phones:
+        return False
+
+    # Get the ATS candidate email address with an ATS-specific static method
+    ats_email_list = ATS_CONSTRUCTORS[ATSAccount.get(ats_candidate.ats_id).name].get_individual_contact_email_addresses(ats_candidate)
+    if not ats_email_list:
+        return False
+
+    # Compare to GT candidate email address(es)
+    if not gt_candidate.emails:
+        return False
+
+    # Compare emails.
+    for gt_email in candidate.emails:
+        for ats_email in ats_email_list:
+            if gt_email == ats_email:
+                return True
+
+    # Compare phones.
+    return normalized_phones_match(candidate.phones, ats_phone_list)
+
+
+MATCH_DICT = { u'email' : emails_match, u'phone' : phones_match,
+               u'email-and-phone' : emails_and_phones_match,
+               u'email-or-phone' : emails_or_phones_match }
+
+
+def match_ats_and_gt_candidates(logger, account_id, method, link=False):
+    """
+    Search for getTalent condidates which appear to match ATS candidates using a particular method.
+
+    :param object logger: object to use for logging.
+    :param int account_id: ATS account to search within.
+    :param string method: matching technique to use.
+    :param boolean link: Whether to link the candidates matched or not.
+    :rtype int: Number of matches found.
+    """
+    if method not in MATCH_DICT:
+        raise UnprocessableEntity("match_ats_and_gt_candidates: Invalid match method", additional_error_info=dict(unsupported_method=method))
+
+    match_method = MATCH_DICT[method]
+
+    account = ATSAccount.get(account_id)
+    if not account:
+        raise NotFoundError('ATS Account id not found', additional_error_info=dict(account_id=account_id))
+
+    # Now get the user that owns this account
+    user = User.get(account.user_id)
+    # Get all candidates from user's domain
+    gt_candidate_list = db.session.query(Candidate).join(User).filter(User.domain_id == user.domain_id).all()
+    # Get a list of our ATS candidates
+    ats_candidate_list = ATSCandidate.get_all(account_id)
+
+    matches = 0
+    for gt_candidate in gt_candidate_list:
+        for ats_candidate in ats_candidate_list:
+            if match_method(gt_candidate, ats_candidate):
+                matches += 1
+                if link:
+                    link_ats_candidate(gt_candidate.id, ats_candidate.id)
+
+    return matches

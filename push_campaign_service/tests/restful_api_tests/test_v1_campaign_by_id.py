@@ -58,18 +58,16 @@ class TestCampaignById(object):
         """
         get_campaign(campaign_in_db['id'], 'invalid_token', expected_status=(401,))
 
-    def test_get_by_id(self, token_first, campaign_in_db):
+    def test_get_by_valid_id(self, token_first, campaign_in_db, smartlist_first):
         """
         We will try to get campaign with a valid token and we are expecting OK (200) response
         :param token_first: auth token
         :param campaign_in_db: campaign object
+        :param smartlist_first: smartlist dict object
         """
         json_response = get_campaign(campaign_in_db['id'], token_first)
         campaign = json_response['campaign']
-        assert campaign_in_db['id'] == campaign['id']
-        assert campaign_in_db['body_text'] == campaign['body_text']
-        assert campaign_in_db['name'] == campaign['name']
-        assert campaign_in_db['url'] == campaign['url']
+        compare_campaign_data(campaign_in_db, campaign)
 
     def test_get_campaign_with_invalid_id(self, token_first):
         """
@@ -90,20 +88,18 @@ class TestCampaignById(object):
         delete_campaign(campaign_id, token_first)
         get_campaign(campaign_id, token_first, expected_status=(404,))
 
-    def test_get_campaign_from_same_domain(self, token_same_domain, campaign_in_db):
+    def test_get_campaign_from_same_domain(self, token_same_domain, campaign_in_db, smartlist_first):
         """
         We will try to get campaign with a valid token. User is not owner of campaign
          and he is from same domain as the owner of the campaign. We are expecting OK (200) response.
         :param token_same_domain: auth token
         :param campaign_in_db: campaign object
+        :param smartlist_first: smartlist dict object
         """
         campaign_id = campaign_in_db['id']
         json_response = get_campaign(campaign_id, token_same_domain, expected_status=(200,))
         campaign = json_response['campaign']
-        assert campaign_in_db['id'] == campaign['id']
-        assert campaign_in_db['body_text'] == campaign['body_text']
-        assert campaign_in_db['name'] == campaign['name']
-        assert campaign_in_db['url'] == campaign['url']
+        compare_campaign_data(campaign_in_db, campaign)
 
     def test_get_campaign_from_diff_domain(self, token_second, campaign_in_db):
         """
@@ -233,6 +229,20 @@ class TestUpdateCampaign(object):
         url = URL % campaign_in_db['id']
         invalid_value_test(url, campaign_data, 'smartlist_ids', invalid_ids, token_first, method='put')
 
+    def test_campaign_update_with_deleted_or_hidden_smartlist_id(self, token_first, campaign_data, smartlist_first,
+                                                                 campaign_in_db):
+        """
+        Update campaign with deleted smartlist , API should raise InvalidUsage 400
+        :param string token_first: auth token
+        :param dict campaign_data: data to create campaign
+        """
+        smartlist_id = smartlist_first['id']
+        url = URL % campaign_in_db['id']
+        data = campaign_data.copy()
+        data['smartlist_ids'] = [smartlist_id]
+        # Create a campaign with deleted smartlist. API will raise 400 error.
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist('put', url, token_first, smartlist_id, data)
+
     def test_campaign_update_with_invalid_name(self, token_first, campaign_data, smartlist_first, campaign_in_db):
         """
         Create a campaign with invalid name field, API should raise InvalidUsage 400
@@ -259,7 +269,7 @@ class TestUpdateCampaign(object):
         url = URL % campaign_in_db['id']
         invalid_value_test(url, campaign_data, 'url', invalid_names, token_first, method='put')
 
-    def test_put_by_id(self, token_first, campaign_in_db, smartlist_first):
+    def test_put_by_id_with_valid_data(self, token_first, campaign_in_db, smartlist_first):
         """
         Try to update a campaign with valid data, we are expecting that API will
         update the campaign successfully (200)
@@ -277,7 +287,7 @@ class TestUpdateCampaign(object):
         json_response = get_campaign(campaign_id, token_first)
         campaign = json_response['campaign']
         # Compare sent campaign dict and campaign dict returned by API.
-        compare_campaign_data(data, campaign)
+        compare_campaign_data(data, campaign, ignore_keys=['id'])
 
 
 class TestCampaignDeleteById(object):

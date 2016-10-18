@@ -3,6 +3,7 @@ __author__ = 'basit'
 import datetime
 
 from sqlalchemy.orm import relationship
+from sqlalchemy import or_, desc, extract, and_
 
 from db import db
 from ..error_handling import InternalServerError
@@ -46,7 +47,7 @@ class SmsCampaign(db.Model):
                        "end_datetime": DatetimeUtils.utc_isoformat(self.end_datetime) if self.end_datetime else None,
                        "added_datetime": DatetimeUtils.utc_isoformat(self.added_datetime) if self.added_datetime else None,
                        "body_text": self.body_text,
-                       "list_ids": [campaign_smartlist.smartlist_id for campaign_smartlist in self.smartlists],
+                       "smartlist_ids": [campaign_smartlist.smartlist_id for campaign_smartlist in self.smartlists],
                        "scheduler_task_id": self.scheduler_task_id}
         return return_dict
 
@@ -96,6 +97,41 @@ class SmsCampaignBlast(db.Model):
 
     def __repr__(self):
         return "<SMSCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
+
+    @classmethod
+    def top_performing_sms_campaign(cls, datetime_value, user_id):
+        """
+        This method returns top performing SMS campaign from a specific year
+        :param int user_id: User Id
+        :param datetime|str datetime_value: Year of campaign started or updated
+        :rtype SmsCampaignBlast|None
+        """
+        assert isinstance(datetime_value, (datetime.datetime, basestring)) or datetime_value is None, \
+            "Invalid datetime value"
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
+        from user import UserPhone, User
+        users_ids_in_domain = User.query.with_entities(User.id).filter(User.domain_id == 1).all()
+        users_ids_in_domain = [_id[0] for _id in users_ids_in_domain]
+        user_phone_ids = UserPhone.query.with_entities(UserPhone.id).filter(UserPhone.user_id.in_(users_ids_in_domain)).all()
+        user_phone_ids = [_id[0] for _id in user_phone_ids]
+        domain_id = User.get_domain_id(user_id)
+        if domain_id and isinstance(datetime_value, datetime.datetime):
+            return cls.query.filter(or_(cls.updated_time >= datetime_value,
+                                        cls.sent_datetime >= datetime_value)).\
+                filter(cls.sends > 0).\
+                filter(SmsCampaign.id == cls.campaign_id, SmsCampaign.user_phone_id.in_(user_phone_ids)).\
+                order_by(desc(cls.replies/cls.sends)).first()
+        if domain_id and isinstance(datetime_value, basestring):
+            return cls.query.filter(or_(extract("year", cls.updated_time) == datetime_value,
+                                        extract("year", cls.sent_datetime) == datetime_value)). \
+                filter(SmsCampaign.id == cls.campaign_id, cls.sends > 0). \
+                filter(SmsCampaign.user_phone_id.in_(user_phone_ids)). \
+                order_by(desc(cls.replies/cls.sends)).first()
+        if domain_id and not datetime_value:
+            return cls.query.filter(SmsCampaign.id == cls.campaign_id). \
+                filter(SmsCampaign.user_phone_id.in_(user_phone_ids), cls.sends > 0). \
+                order_by(desc(cls.replies/cls.sends)).first()
+        return None
 
 
 class SmsCampaignSend(db.Model):

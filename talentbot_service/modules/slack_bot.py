@@ -35,19 +35,21 @@ class SlackBot(TalentBot):
         :param str slack_user_id: User's slack Id
         :param str message: User's message
         :param str channel_id: Slack channel Id
-        :return: tuple (True|False, None|message, None|slack_client, user_id|None)
+        :rtype: tuple (True|False, None|str, None|Slack_client, TalentbotAuth.slack_user_id|None)
         """
-        talentbot_auth = TalentbotAuth.query.\
-            with_entities(TalentbotAuth.slack_user_token, TalentbotAuth.user_id).\
-            filter_by(slack_user_id=slack_user_id).first()
+        talentbot_auth = TalentbotAuth.get_talentbot_auth(slack_user_id=slack_user_id)
         if talentbot_auth:
-            slack_user_token = talentbot_auth[0]
-            user_id = talentbot_auth[1]
+            slack_user_token = talentbot_auth.slack_user_token
+            user_id = talentbot_auth.user_id
             if slack_user_token and user_id:
                 slack_client = SlackClient(slack_user_token)
                 try:
-                    at_bot = self.get_bot_id(slack_client)
-                    self.set_bot_state_active(slack_client)
+                    if talentbot_auth.bot_id:
+                        at_bot = '<@%s>' % talentbot_auth.bot_id
+                        self.set_bot_state_active(talentbot_auth.bot_token)
+                    else:
+                        at_bot = self.get_bot_id(slack_client)
+                        self.set_bot_state_active(talentbot_auth.bot_token)
                 except NotFoundError as error:
                     logger.error(error.message)
                     return False, None, None, None
@@ -66,7 +68,7 @@ class SlackBot(TalentBot):
         """
         Gets bot Id
         :param SlackClient slack_client: SlackClient object
-        :return str|None
+        :rtype: str|None
         """
         api_call = slack_client.api_call("users.list")
         if api_call.get('ok'):
@@ -79,13 +81,16 @@ class SlackBot(TalentBot):
                     return temp_at_bot
         raise NotFoundError("could not find bot user with the name %s" % self.bot_name)
 
-    def set_bot_state_active(self, slack_client):
+    def set_bot_state_active(self, bot_token):
         """
         Sets Slack bot state active
+        :param str bot_token: bot token
+        :rtype: None
         """
-        slack_client.rtm_connect()
-        api_call_response = slack_client.api_call("users.setActive")
-        logger.info('bot state is active: %r' % str(api_call_response.get('ok')))
+        if bot_token:
+            slack_client = SlackClient(bot_token)
+            slack_client.rtm_connect()
+            logger.info('bot state is active')
 
     def reply(self, chanel_id, msg, slack_client):
         """
@@ -93,10 +98,11 @@ class SlackBot(TalentBot):
         :param SlackClient slack_client: Slack Client RTM object
         :param str chanel_id: Slack channel id
         :param str msg: Message received to bot
+        :rtype: None
         """
         logger.info('slack reply: %s' % msg)
         slack_client.api_call("chat.postMessage", channel=chanel_id,
-                              text=msg)
+                              text=msg, set_active=True)
 
     def handle_communication(self, channel_id, message, slack_user_id, timestamp):
         """
@@ -105,6 +111,7 @@ class SlackBot(TalentBot):
         :param str channel_id: Slack channel Id from which message is received
         :param str message: User's message
         :param str timestamp: Current message timestamp
+        :rtype: None
         """
         is_authenticated, message, slack_client, user_id = self.authenticate_user(slack_user_id, message, channel_id)
         if is_authenticated:
@@ -113,7 +120,10 @@ class SlackBot(TalentBot):
             self.recent_user_id = slack_user_id
             try:
                 response_generated = self.parse_message(message, user_id)
-                self.reply(channel_id, response_generated, slack_client)
+                if response_generated:
+                    self.reply(channel_id, response_generated, slack_client)
+                else:
+                    raise IndexError
             except (IndexError, NameError, KeyError):
                 error_response = random.choice(self.error_messages)
                 self.reply(channel_id, error_response, slack_client)

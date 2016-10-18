@@ -1,35 +1,36 @@
 # Standard library
-import requests
 
 # Flask specific
-from flask import request
+# from flask import request
 
 # Graphene related
 import graphene
+
 from graphql_service.modules.schema import CandidateType
 
 # Models
-from graphql_service.common.models.candidate import Candidate
-
-# Validators
-from graphql_service.common.utils.candidate_utils import get_candidate_if_validated
+from graphql_service.common.models.user import User
 
 # Authentication & Permissions
 from graphql_service.common.utils.auth_utils import require_oauth, require_all_permissions
-from graphql_service.common.models.user import Permission
 
-from ..dynamodb.dynamo_actions import DynamoDB
+# Utilities
+from graphql_service.dynamodb.dynamo_actions import DynamoDB
+
+# Validations
+from validators import is_candidate_validated
 
 
 class CandidateQuery(graphene.ObjectType):
     candidate = graphene.Field(
         type=CandidateType,
-        id=graphene.String()
+        id=graphene.Int()
     )
 
+    # TODO: authentication should be built using graphene mutation
     # @require_oauth()
     # @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
-    def resolve_candidate(self, args, info):
+    def resolve_candidate(self, args, context, info):
         """
         Function will check if candidate exists or hidden using MySQL database;
         if found, it is assumed that candidate also exists in DynamoDB and will
@@ -38,9 +39,10 @@ class CandidateQuery(graphene.ObjectType):
         :param args: arguments provided by the client
         """
         candidate_id = args.get('id')
+        user = User.get(1) # TODO: once authentication is setup, user must be retrieved via flask.request
 
-        # Check if candidate exists and is not hidden
-        # get_candidate_if_validated(user=request.user, candidate_id=candidate_id)
+        # Return None if candidate is not found or if user is not permitted to retrieve the candidate
+        if not is_candidate_validated(user, candidate_id):
+            return None
 
-        # Retrieve candidate from DynamoDB
-        return DynamoDB.get_candidate(int(candidate_id))
+        return DynamoDB.get_candidate(candidate_id)

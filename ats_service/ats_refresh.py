@@ -11,7 +11,7 @@ from common.models.ats import ATS, ATSAccount, ATSCandidate, ATSCredential, db
 from common.talent_flask import TalentFlask
 from common.talent_config_manager import load_gettalent_config
 from common.utils.models_utils import add_model_helpers
-from app.api.ats_utils import new_ats_candidate, update_ats_candidate
+from app.api.ats_utils import new_ats_candidate, update_ats_candidate, create_ats_object
 from ats.workday import Workday
 
 
@@ -30,17 +30,14 @@ account_list = ATSAccount.query.all()
 for account in account_list:
     if account.active:
         account_id = account.id
-        ats = ATS.get_by_id(account.ats_id)
-        # Here we'll eventually refactor to use dependency injection
-        if ats:
-            login_url = ats.login_url
-            ats_name = ats.name
-            user_id = account.user_id
-            credentials = ATSCredential.get_by_id(account.ats_credential_id)
-            ats_object = Workday(logger, ats_name, login_url, user_id, credentials)
+
+        ats_name, login_url, user_id, credentials = fetch_auth_data(account_id)
+        if login_url:
+            ats_object = create_ats_object(logger, ats_name, login_url, user_id, credentials)
             ats_object.authenticate()
 
             # Get all candidate ids (references)
+            # TODO: Refactor with code in class ATSCandidateRefreshService
             individual_references = ats_object.fetch_individual_references()
             for ref in individual_references:
                 individual = ats_object.fetch_individual(ref)

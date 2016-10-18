@@ -1,7 +1,9 @@
+# -*- coding: utf-8 -*-
 """Parsing functions for extracting specific information from Burning Glass API responses."""
 # pylint: disable=wrong-import-position, fixme, import-error
 __author__ = 'erik@getTalent.com'
 # Standard Library
+from base64 import b64encode
 from time import time
 import datetime
 import HTMLParser
@@ -20,15 +22,15 @@ import pycountry
 from flask import current_app
 from resume_parsing_service.app import logger
 from resume_parsing_service.app.constants import error_constants
-# from resume_parsing_service.app.views.OauthClient import OAuthClient
 from resume_parsing_service.app.views.oauth_client2 import get_authorization_string
-# from resume_parsing_service.app.views.oauth1_utils import gen_auth, gen_key, gen_string
+from resume_parsing_service.app.views.utils import extra_skills_parsing
 from resume_parsing_service.common.error_handling import InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 from resume_parsing_service.common.utils.handy_functions import normalize_value
 
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
+SPLIT_DESCRIPTION_REGEXP = re.compile(ur"•≅_|≅_| \* |•|➢|→|\n\n\n")
 
 
 @contract
@@ -36,7 +38,7 @@ def fetch_optic_response(resume, filename_str):
     """
     Takes in an encoded resume file and returns a bs4 'soup-able' format
     (utf-decode and html escape).
-    :param str resume: a base64 encoded resume file.
+    :param string resume: a base64 encoded resume file.
     :return: HTML unquoted, utf-decoded string that represents the Burning Glass XML.
     :rtype: unicode
     """
@@ -62,7 +64,7 @@ def fetch_optic_response(resume, filename_str):
     }
 
     try:
-        bg_response = requests.post(bg_url, headers=headers, json=data, timeout=20)
+        bg_response = requests.post(bg_url, headers=headers, json=data, timeout=30)
 
     except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
         logger.exception("Could not reach Burning Glass")
@@ -106,6 +108,7 @@ def parse_optic_xml(resume_xml_text):
     :return: Results of various parsing functions on the input xml string.
     :rtype: dict
     """
+    encoded_soup_text = b64encode(bs4(resume_xml_text, 'lxml').getText().encode('utf8', 'replace'))
     contact_xml_list = bs4(resume_xml_text, 'lxml').findAll('contact')
     experience_xml_list = bs4(resume_xml_text, 'lxml').findAll('experience')
     educations_xml_list = bs4(resume_xml_text, 'lxml').findAll('education')
@@ -127,7 +130,7 @@ def parse_optic_xml(resume_xml_text):
         phones=parse_candidate_phones(contact_xml_list),
         work_experiences=parse_candidate_experiences(experience_xml_list),
         educations=parse_candidate_educations(educations_xml_list),
-        skills=parse_candidate_skills(skill_xml_list),
+        skills=parse_candidate_skills(skill_xml_list, encoded_soup_text),
         addresses=parse_candidate_addresses(contact_xml_list),
         talent_pool_ids={'add': None},
         references=references,
@@ -260,13 +263,14 @@ def parse_candidate_experiences(bg_experience_xml_list):
             # Get experience bullets
             candidate_experience_bullets = []
             description_text = _tag_text(employment, 'description', remove_questions=True) or ''
-            for bullet_description in description_text.split('|'):
+            # for bullet_description in description_text.split('|'):
+            for bullet_description in SPLIT_DESCRIPTION_REGEXP.split(description_text):
                 # If experience already exists then append the current bullet-descriptions to
                 # already existed bullet-descriptions
                 if existing_experience_list_order:
                     output[existing_experience_list_order]['bullets'][0]['description'] += '\n' + bullet_description
                 else:
-                    candidate_experience_bullets.append(bullet_description)
+                    candidate_experience_bullets.append(bullet_description.strip())
 
             if not existing_experience_list_order:
                 is_current_job = False
@@ -405,14 +409,14 @@ def parse_candidate_educations(bg_educations_xml_list):
 
 
 @contract
-def parse_candidate_skills(bg_skills_xml_list):
+def parse_candidate_skills(bg_skills_xml_list, encoded_resume_text=None):
     """
     Parses a skill list from a list of skill tags found in a BGXML response.
     :param bs4_ResultSet bg_skills_xml_list:
     :return: List of dicts containing skill data.
     :rtype: list(dict)
     """
-    skills_parsed = {}
+    skills_parsed = set()
     output = []
 
     for skill in bg_skills_xml_list:
@@ -426,6 +430,9 @@ def parse_candidate_skills(bg_skills_xml_list):
 
         parsed_name = name or skill_text
         processed_skill = {'name': parsed_name, 'last_used_date': None, 'months_used': None}
+
+        if processed_skill['name'].lower() in skills_parsed:
+            continue # skip further processing if duplicate.
 
         if start_days and end_days:
             """
@@ -446,9 +453,16 @@ def parse_candidate_skills(bg_skills_xml_list):
         if months_used and months_used > 0: # Rarely a skill will have an end before the start.
             processed_skill['months_used'] = int(months_used)
 
-        if processed_skill['name'] not in skills_parsed:
-            output.append(processed_skill)
-            skills_parsed[processed_skill['name']] = True
+        output.append(processed_skill)
+        skills_parsed.add(processed_skill['name'].lower())
+
+    if encoded_resume_text:
+        bonus_skills = extra_skills_parsing(encoded_resume_text)
+
+        for bonus_skill in bonus_skills:
+            if bonus_skill.lower() not in skills_parsed:
+                skills_parsed.add(bonus_skill.lower())
+                output.append({'name': bonus_skill, 'last_used_date': None, 'months_used': None})
 
     return output
 
@@ -581,8 +595,8 @@ def scrub_candidate_name(name_unicode):
     String version located:
     http://stackoverflow.com/questions/265960/
 
-    :param unicode name_unicode:
-    :return unicode:
+    :param string name_unicode:
+    :return string:
     """
 
     translate_table = dict.fromkeys(i for i in xrange(sys.maxunicode)

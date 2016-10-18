@@ -5,9 +5,11 @@ import time
 import uuid
 
 from flask import request, current_app
+from dateutil.parser import parse
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
+from sqlalchemy import or_
 
 from db import db
 from ..models.event import Event
@@ -16,7 +18,7 @@ from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
-from email_campaign import EmailCampaign
+from email_campaign import EmailCampaign, EmailClientCredentials, EmailConversations
 from ..error_handling import *
 from ..redis_cache import redis_store
 from ..utils.validators import is_number
@@ -65,6 +67,8 @@ class User(db.Model):
                                backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
     email_templates = relationship('UserEmailTemplate', backref='user', cascade='all, delete-orphan')
+    email_client_credentials = relationship('EmailClientCredentials', backref='user')
+    email_conversations = relationship('EmailConversations', backref='user')
     push_campaigns = relationship('PushCampaign', backref='user', cascade='all,delete-orphan', passive_deletes=True, )
     user_credentials = db.relationship('UserSocialNetworkCredential', backref='user')
     events = db.relationship(Event, backref='user', lazy='dynamic',
@@ -75,49 +79,50 @@ class User(db.Model):
                              cascade='all, delete-orphan', passive_deletes=True)
 
     @staticmethod
-    def generate_jw_token(expiration=600, user_id=None):
+    def generate_jw_token(expiration=7200, user_id=None):
         secret_key_id = str(uuid.uuid4())[0:10]
         secret_key = os.urandom(24)
         redis_store.setex(secret_key_id, secret_key, expiration)
         s = Serializer(secret_key, expires_in=expiration)
         if current_app:
             current_app.logger.info('Creating jw token. secret_key_id %s, secret_key: %s', secret_key_id, secret_key)
-        return secret_key_id, 'Bearer %s' % s.dumps({'user_id': user_id})
+        return 'Bearer %s.%s' % (s.dumps({'user_id': user_id}), secret_key_id)
 
     @staticmethod
     def verify_jw_token(secret_key_id, token, allow_null_user=False, allow_candidate=False):
-        secret_key = redis_store.get(secret_key_id)
-        if not secret_key:
-            raise UnauthorizedError(
-                error_message='Error retrieving secret key from redis. \
-                secret_key_id: {}, token: {}'.format(secret_key_id, token))
-        s = Serializer(secret_key)
+
+        s = Serializer(redis_store.get(secret_key_id) or '')
         try:
             data = s.loads(token)
-        except SignatureExpired:
-            raise UnauthorizedError(error_message="Your JSON web token has been expired")
         except BadSignature:
-            raise UnauthorizedError(error_message="Your JSON web token is not valid")
+            raise UnauthorizedError("Your Token is not found", error_code=11)
+        except SignatureExpired:
+                raise UnauthorizedError("Your Token has expired", error_code=12)
+        except Exception:
+            raise UnauthorizedError("Your Token is not found", error_code=11)
 
         if 'user_id' in data and data['user_id']:
             user = User.query.get(data['user_id'])
             if user:
+                if 'created_at' in data and user.password_reset_time > parse(data['created_at']):
+                    redis_store.delete(secret_key_id)
+                    raise UnauthorizedError("Your token has expired due to password reset", error_code=12)
+
                 request.user = user
                 request.candidate = None
                 return
-        elif allow_candidate:
-            if 'candidate_id' in data:
-                candidate = Candidate.query.get(data['candidate_id'])
-                if candidate:
-                    request.candidate = candidate
-                    request.user = None
-                    return
+        elif allow_candidate and 'candidate_id' in data and data['candidate_id']:
+            candidate = Candidate.query.get(data['candidate_id'])
+            if candidate:
+                request.candidate = candidate
+                request.user = None
+                return
         elif allow_null_user:
             request.user = None
             request.candidate = None
             return
 
-        raise UnauthorizedError(error_message="User %s doesn't exist in database" % data['user_id'])
+        raise UnauthorizedError("Your Token is invalid", error_code=13)
 
     def to_dict(self):
         """
@@ -209,16 +214,32 @@ class User(db.Model):
         return User.query.filter_by(email=email).first()
 
     @staticmethod
-    def get_user_count_in_domain(user_id):
+    def get_domain_name_and_its_users(user_id):
         """
-        This method returns count of users in a domain
+        This method returns users in a domain and domain name
         :param int user_id: User Id
-        :return: tuple(int, str) : (Number of users, domain name)
+        :rtype: tuple[(list, str)]
         """
-        domain_name = User.query.with_entities(Domain.name).filter(User.domain_id == Domain.id).filter(User.id == user_id).first()
-        count = User.query.filter(User.domain_id == Domain.id).\
-            filter(User.id == user_id).count()
-        return count, domain_name[0]
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid user Id"
+        domain_name, domain_id = User.query.with_entities(Domain.name, Domain.id).filter(User.domain_id == Domain.id).\
+            filter(User.id == user_id).first()
+        users = User.query.filter(User.domain_id == domain_id).all()
+        return users, domain_name
+
+    @classmethod
+    def get_by_name(cls, user_id, name):
+        """
+        This method returns user against a name
+        :param str name: User's first or last name
+        :param int user_id: User Id
+        :rtype: list
+        """
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid user Id %r" % user_id
+        assert isinstance(name, basestring) and name, "Invalid name %r" % name
+        user = cls.get_by_id(user_id)
+        if user:
+            return cls.query.filter(or_(cls.first_name == name, cls.last_name == name)).\
+                filter(cls.domain_id == user.domain_id).all()
 
 
 class UserPhone(db.Model):
@@ -582,6 +603,12 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(255), nullable=False, unique=True)
 
+    @property
+    def permissions(self):
+        permissions_of_role = PermissionsOfRole.query.filter_by(role_id=self.id).all()
+        return Permission.query.filter(Permission.id.in_(
+            [permission_of_role.permission_id for permission_of_role in permissions_of_role])).all()
+
     def delete(self):
         db.session.delete(self)
         db.session.commit()
@@ -828,3 +855,34 @@ class TalentbotAuth(db.Model):
     slack_team_name = db.Column('SlackTeamName', db.String(50))
     facebook_user_id = db.Column('FacebookUserId', db.String(50), unique=True)
     slack_user_token = db.Column('SlackUsertoken', db.String(70))
+    bot_id = db.Column('BotId', db.String(70), nullable=True)
+    bot_token = db.Column('BotToken', db.String(255), nullable=True)
+
+    @staticmethod
+    def get_user_id(**kwargs):
+        """
+        Returns User Id from TalentbotAuth table against passed key
+        :param dict kwargs: Passed kwargs
+        :return: User id
+        :rtype User.id|None
+        """
+        key = kwargs.keys()
+        if not key:
+            return None
+        user_id = TalentbotAuth.query.with_entities(TalentbotAuth.user_id).\
+            filter(getattr(TalentbotAuth, key[0]) == kwargs.get(key[0])).first()
+        return user_id
+
+    @staticmethod
+    def get_talentbot_auth(**kwargs):
+        """
+        Returns TalentbotAuth object against kwarg
+        :param dict kwargs: Passed kwargs
+        :return: TalentbotAuth matched object
+        :rtype: TalentbotAuth|None
+        """
+        key = kwargs.keys()
+        if not key:
+            return None
+        tb_auth = TalentbotAuth.query.filter(getattr(TalentbotAuth, key[0]) == kwargs.get(key[0])).first()
+        return tb_auth

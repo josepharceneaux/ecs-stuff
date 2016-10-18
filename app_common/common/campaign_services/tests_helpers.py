@@ -28,7 +28,7 @@ from campaign_utils import get_model, CampaignUtils
 from ..utils.validators import raise_if_not_instance_of
 from ..models.talent_pools_pipelines import TalentPipeline
 from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
-from ..utils.test_utils import get_fake_dict, get_and_assert_zero
+from ..utils.test_utils import get_fake_dict, get_and_assert_zero, delete_smartlist
 from ..tests.fake_testing_data_generator import FakeCandidatesData
 from ..routes import (CandidatePoolApiUrl, PushCampaignApiUrl, SmsCampaignApiUrl)
 from ..error_handling import (ForbiddenError, InvalidUsage, UnauthorizedError,
@@ -43,14 +43,13 @@ class CampaignsTestsHelpers(object):
     This class contains common helper methods for tests of sms_campaign_service and push_campaign_service etc.
     """
     # This list is used to update/delete a campaign, e.g. sms-campaign with invalid id
-    INVALID_ID = [fake.word(), 0, None, dict(), list(), '', '      ']
+    INVALID_ID = [fake.word(), 0, None, dict(), list(), '', '        ']
     # This list is used to create/update a campaign, e.g. sms-campaign with invalid name and body_text.
     INVALID_STRING = INVALID_ID[1:]
     # This list is used to schedule/reschedule a campaign e.g. sms-campaign with invalid frequency Id.
     INVALID_FREQUENCY_IDS = copy.copy(INVALID_ID)
     # Remove 0 from list as it is valid frequency_id and replace it with sys.maxint
     INVALID_FREQUENCY_IDS[1] = sys.maxint
-
     # Invalid values for required text field
     INVALID_TEXT_VALUES = ['', '  ', 0,  {}, [], None, True]
 
@@ -379,14 +378,15 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def assert_for_activity(user_id, _type, source_id):
+    def assert_for_activity(user_id, _type, source_id, timeout=80):
         """
         This verifies that activity has been created for given action
         :param positive user_id: Id of user
         :param positive _type: Type number of activity
         :param positive source_id: Id of activity source
         """
-        retry(_assert_activity, args=(user_id, _type, source_id), sleeptime=3, attempts=20, sleepscale=1,
+        attempts = timeout / 3 + 1
+        retry(_assert_activity, args=(user_id, _type, source_id), sleeptime=3, attempts=attempts, sleepscale=1,
               retry_exceptions=(AssertionError,))
 
     @staticmethod
@@ -632,17 +632,21 @@ class CampaignsTestsHelpers(object):
     @staticmethod
     @contract(talent_pipeline=TalentPipeline)
     def get_two_smartlists_with_same_candidate(talent_pipeline, access_token, count=1, create_phone=False,
-                                               email_list=False):
+                                               email_list=False, smartlist_and_candidate_ids=None):
         """
         Create two smartlists with same candidate in both of them and returns smartlist ids in list format.
         :param string access_token: Access token of user
         :param int count: Number of candidates in first smartlist
         :param bool create_phone: True if need to create candidate's phone
         :param bool email_list: True if need to create candidate's email
+        :param tuple|None smartlist_and_candidate_ids: Tuple contianing smartlist id and associated candidate ids
         :rtype: list
         """
-        smartlist_1_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
-            access_token, talent_pipeline, count=count, create_phone=create_phone, emails_list=email_list)
+        if smartlist_and_candidate_ids:
+            smartlist_1_id, candidate_ids = smartlist_and_candidate_ids
+        else:
+            smartlist_1_id, candidate_ids = CampaignsTestsHelpers.create_smartlist_with_candidate(
+                access_token, talent_pipeline, count=count, create_phone=create_phone, emails_list=email_list)
         # Going to assign candidate belonging to smartlist_1 to smartlist_2 so both will have same candidate
         candidate_ids_for_smartlist_2 = [candidate_ids[0]]
         smartlist_2_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
@@ -703,7 +707,8 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def campaign_create_or_update_with_invalid_smartlist(method, url, access_token, campaign_data):
+    def campaign_create_or_update_with_invalid_smartlist(method, url, access_token, campaign_data,
+                                                         key='smartlist_ids'):
         """
         This creates or updates a campaign with invalid lists and asserts that we get invalid usage error from
         respective API. Data passed should be a dictionary.
@@ -716,10 +721,10 @@ class CampaignsTestsHelpers(object):
         # This list is used to create/update a campaign, e.g. sms-campaign with invalid smartlist ids.
         invalid_lists = [[item] for item in CampaignsTestsHelpers.INVALID_ID]
         non_existing_smartlist_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
-        invalid_lists.extend([non_existing_smartlist_id, non_existing_smartlist_id])  # Test for unique items
+        invalid_lists.extend([[non_existing_smartlist_id, non_existing_smartlist_id]])  # Test for unique items
         for invalid_list in invalid_lists:
             print "Iterating %s" % invalid_list
-            campaign_data['smartlist_ids'] = invalid_list
+            campaign_data[key] = invalid_list
             response = send_request(method, url, access_token, data=campaign_data)
             CampaignsTestsHelpers.assert_non_ok_response(response)
 
@@ -759,6 +764,22 @@ class CampaignsTestsHelpers(object):
             print "Iterating %s." % invalid_item
             response = send_request('delete', url, access_token, data={'ids': invalid_item})
             CampaignsTestsHelpers.assert_non_ok_response(response)
+
+    @staticmethod
+    @contract
+    def send_request_with_deleted_smartlist(method, url, token, smartlist_id, data=None):
+        """
+        This helper method sends HTTP request to given url and verifies that API raised InvalidUsage 400 error.
+        :param http_method method: POST or PUT
+        :param string url: target api url
+        :param string token: access token
+        :param int | long smartlist_id: smartlist id
+        :param dict|None data: request body
+        """
+        delete_smartlist(smartlist_id, token)
+        resp = send_request(method, url, token, data=data)
+        assert resp.status_code == requests.codes.BAD
+        assert 'deleted' in resp.json()['error']['message']
 
 
 class FixtureHelpers(object):

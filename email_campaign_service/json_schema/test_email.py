@@ -19,15 +19,19 @@ TEST_EMAIL_SCHEMA = {
         },
         "subject": {
             "type": "string",
-            "pattern": "\w",
+            "pattern": "\S",
         },
         "body_html": {
             "type": "string",
-            "pattern": "\w",
+            "pattern": "\S",
+        },
+        "body_text": {
+            "type": "string",
+            "pattern": "\S",
         },
         "from": {
             "type": "string",
-            "pattern": "\w",
+            "format": "email"
         }
     },
     "required": [

@@ -247,7 +247,8 @@ class TestSmsCampaignHTTPPost(object):
         This is a test to create SMS campaign with invalid campaign name. Status code should be 400 and
         campaign should not be created.
         """
-        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.HTTP_METHOD, self.URL, access_token_first,
+        CampaignsTestsHelpers.campaign_create_or_update_with_invalid_string(self.HTTP_METHOD, self.URL,
+                                                                            access_token_first,
                                                                             campaign_valid_data.copy(), 'name')
 
     def test_campaign_create_with_invalid_body_text(self, access_token_first, campaign_valid_data):
@@ -280,6 +281,15 @@ class TestSmsCampaignHTTPPost(object):
         """
         response = requests.post(self.URL, headers=headers, data=json.dumps(campaign_valid_data))
         assert_campaign_creation(response, user_first.id, requests.codes.CREATED)
+
+    def test_campaign_creation_with_one_deleted_smartlist(self, access_token_first, headers,
+                                                          campaign_valid_data, user_phone_1):
+        """
+        We will try to create a campaign with deleted smartlist and API will raise 400 error.
+        """
+        smartlist_id = campaign_valid_data['smartlist_ids'][0]
+        CampaignsTestsHelpers.send_request_with_deleted_smartlist(self.HTTP_METHOD, self.URL, access_token_first,
+                                                                  smartlist_id, campaign_valid_data)
 
     def test_campaign_creation_with_other_user_of_same_domain(self, user_same_domain, headers_same_domain,
                                                               campaign_valid_data):
