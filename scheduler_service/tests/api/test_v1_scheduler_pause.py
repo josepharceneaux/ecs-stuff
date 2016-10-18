@@ -230,7 +230,7 @@ class TestSchedulerPause(object):
         assert response_pause.status_code == requests.codes.NOT_FOUND
 
     @pytest.mark.qa
-    def test_pause_multiple_jobs_with_invalid_data(self, auth_header):
+    def test_pause_multiple_jobs_with_invalid_ids(self, auth_header):
         """
         Try to pause multiple tasks with invalid id's. Should return 400 bad request.
         Args:

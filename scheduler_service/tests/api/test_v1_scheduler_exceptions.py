@@ -16,7 +16,7 @@ fake = Faker()
 # Application imports
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.modules.CONSTANTS import (SCHEDULER_REQUIRED_PARAMETERS,
-                                                  SCHEDULER_ONE_TIME_REQUIRED_PARAMETERS)
+                                                 SCHEDULER_ONE_TIME_REQUIRED_PARAMETERS)
 __author__ = 'saad'
 
 
@@ -317,9 +317,8 @@ class TestSchedulerExceptions(object):
     @pytest.mark.qa
     def test_start_time_greater_than_end_time_exception(self, auth_header, job_config):
         """
-        The test is to validate that, if start_datetime is greater than end_datetime.
-        Then scheduler service should throw invalid usage exception.
-
+        The test is to validate that, if start_datetime is greater than end_datetime then
+        scheduler service should throw invalid usage exception.
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -339,9 +338,8 @@ class TestSchedulerExceptions(object):
     @pytest.mark.qa
     def test_one_time_job_with_multiple_frequency(self, auth_header, job_config_one_time_task):
         """
-        The test is to validate that, if the job is one time frequency parameter should not be part of post data is g.
-        Then scheduler service should throw invalid usage exception.
-
+        The test is to validate that, if the task_type is one_time and also have frequency parameter(value more than 1)
+        then scheduler service should throw invalid usage exception.
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
@@ -352,7 +350,6 @@ class TestSchedulerExceptions(object):
         job_config_one_time_task['frequency'] = fake.random_number(1,)
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task),
                                  headers=auth_header)
-
         # Additional properties are not allowed (u'frequency')
         assert response.status_code == requests.codes.BAD_REQUEST
 
@@ -361,7 +358,6 @@ class TestSchedulerExceptions(object):
         """
         Create a job by missing data for one time job and check if exception occur then invalid usage exception
         should be thrown.
-
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as

@@ -233,7 +233,7 @@ class TestSchedulerResume(object):
     #                                         headers=auth_header)
     #         assert response_resume.status_code == requests.codes.NOT_FOUND
 
-    @pytest.mark.qaff
+    @pytest.mark.qa
     def test_resume_scheduled_task_by_other_domain_user(self, auth_header, job_config, access_token_other):
         """
         Schedule a job from a user then pause a task and then try to resume same task from a different user in
@@ -259,9 +259,9 @@ class TestSchedulerResume(object):
         assert response_resume.status_code == requests.codes.NOT_FOUND
 
     @pytest.mark.qa
-    def test_resume_multiple_jobs_with_invalid_data(self, auth_header):
+    def test_resume_multiple_jobs_with_invalid_ids(self, auth_header):
         """
-        Try to resume multiple tasks with invalid id's. Should return 400 bad request.
+        Try to resume multiple tasks with invalid id's list. Should return 400 bad request.
         Args:
              auth_data: Fixture that contains token.
              job_config (dict): Fixture that contains job config to be used as

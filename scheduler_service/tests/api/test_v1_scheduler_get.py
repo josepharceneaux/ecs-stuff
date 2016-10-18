@@ -423,7 +423,7 @@ class TestSchedulerGet(object):
     @pytest.mark.qa
     def test_get_scheduled_task_by_invalid_id(self, auth_header):
         """
-        Try to get the task with invalid id. Should return 404 not found.
+        Try to get scheduled task with invalid id. Should return 404 not found.
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
