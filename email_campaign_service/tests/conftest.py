@@ -34,9 +34,8 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   EmailCampaignTypes, data_for_creating_email_clients,
                                                                   create_data_for_campaign_creation,
                                                                   create_email_campaign_via_api,
-                                                                  send_campaign_with_client_id)
-from email_campaign_service.modules.utils import (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG,
-                                                  DEFAULT_PREFERENCES_URL_MERGETAG)
+                                                                  send_campaign_with_client_id,
+                                                                  create_email_campaign_with_merge_tags)
 
 EMAIL_CAMPAIGN_TYPES = [EmailCampaignTypes.WITHOUT_CLIENT, EmailCampaignTypes.WITH_CLIENT]
 
@@ -91,22 +90,18 @@ def campaign_with_two_candidates(email_campaign_of_user_first, access_token_firs
 
 
 @pytest.fixture()
-def email_campaign_with_merge_tags(user_first, access_token_first, headers, talent_pipeline):
+def email_campaign_with_merge_tags(user_first, access_token_first, headers, talent_pipeline, outgoing_email_client):
     """
     This fixture creates an email campaign in which body_text and body_html contains merge tags.
     """
-    email_campaign = create_email_campaign(user_first)
+    email_campaign = create_email_campaign_with_merge_tags(user_first)
+    # We want that campaign is sent via SMTP server
+    email_campaign.update(email_client_credentials_id=outgoing_email_client)
     smartlist_id, candidate_id = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token_first,
                                                                                        talent_pipeline,
                                                                                        emails_list=True,
                                                                                        assert_candidates=True)
     create_email_campaign_smartlists(smartlist_ids=[smartlist_id], email_campaign_id=email_campaign.id)
-    # Update email-campaign's body text
-    starting_string = 'Hello %s %s, unsubscribe URL is:%s' % (DEFAULT_FIRST_NAME_MERGETAG,
-                                                              DEFAULT_LAST_NAME_MERGETAG,
-                                                              DEFAULT_PREFERENCES_URL_MERGETAG)
-    email_campaign.update(body_text=starting_string + email_campaign.body_text)
-    email_campaign.update(body_html=starting_string + email_campaign.body_html)
     candidate_get_response = requests.get(CandidateApiUrl.CANDIDATE % candidate_id[0], headers=headers)
     return email_campaign, candidate_get_response.json()['candidate']
 
