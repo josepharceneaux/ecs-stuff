@@ -103,15 +103,15 @@ def get_or_store_bgxml(resume_file, filename_str):
     """
     Tries to retrieve processed resume data from redis or parses it and stores it.
     :param cStringIO resume_file:
-    :param str filename_str:
+    :param string filename_str:
     :rtype: dict
     """
     cache_key_from_file = 'parsedResume_{}'.format(gen_hash_from_file(resume_file))
-    cached_bg_xml, cached_doc_content = redis_store.hmget(cache_key_from_file, 'bg_data', 'doc_content')
+    cached_bg_xml = redis_store.get(cache_key_from_file)
 
     if cached_bg_xml:
         parsed_resume = {
-            'candidate': parse_optic_xml(cached_bg_xml, cached_doc_content),
+            'candidate': parse_optic_xml(cached_bg_xml),
             'raw_response': cached_bg_xml
         }
         logger.info('BG data for {} loaded with key {}'.format(

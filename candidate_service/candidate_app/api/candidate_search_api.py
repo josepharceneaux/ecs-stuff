@@ -26,7 +26,7 @@ from candidate_service.common.models.user import Permission
 
 
 class CandidateSearch(Resource):
-    decorators = [require_oauth(allow_jwt_based_auth=True)]
+    decorators = [require_oauth()]
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self):

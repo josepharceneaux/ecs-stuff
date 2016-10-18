@@ -137,10 +137,9 @@ def schedule_job(url, task_name):
     end_datetime = datetime.datetime.utcnow() + datetime.timedelta(weeks=52 * 100)
     frequency = 3600
 
-    secret_key_id, access_token = User.generate_jw_token()
+    access_token = User.generate_jw_token()
     headers = {
         'Content-Type': 'application/json',
-        'X-Talent-Secret-Key-ID': secret_key_id,
         'Authorization': access_token
     }
     data = {

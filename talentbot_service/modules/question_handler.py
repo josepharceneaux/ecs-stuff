@@ -9,7 +9,6 @@ response
  - question_3_handler()
  - question_4_handler()
  - question_5_handler()
- - question_6_handler()
  - question_7_handler()
  - question_8_handler()
 """
@@ -24,7 +23,7 @@ from talentbot_service.common.models.candidate import Candidate
 from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate
 from talentbot_service.common.models.talent_pools_pipelines import TalentPool
 # App specific imports
-from talentbot_service.modules.constants import HINT, BOT_NAME, CAMPAIGN_TYPES
+from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES
 from talentbot_service import logger
 
 
@@ -92,8 +91,9 @@ class QuestionHandler(object):
             return None
         candidate_index = cls.find_word_in_message('cand', message_tokens)
         if candidate_index is not None:
-            user = [user for user in users if user.id == user_id]
-            number_of_candidates = len(user[0].candidates)
+            number_of_candidates = 0
+            for user in users:
+                number_of_candidates += len(user.candidates)
             return "Candidates in domain `%s` : %d" % (domain_name, number_of_candidates)
         return "Users in domain `%s` : %d" % (domain_name, len(users))
 
@@ -106,11 +106,11 @@ class QuestionHandler(object):
         :rtype: str
         """
         skill_index = cls.find_word_in_message('skill', message_tokens)
-        if not skill_index:
+        if skill_index is None:
             skill_index = cls.find_word_in_message('know', message_tokens)
-            if not skill_index:
+            if skill_index is None:
                 skill_index = cls.find_word_in_message('grasp', message_tokens)
-                if skill_index:
+                if skill_index is not None:
                     if len(message_tokens) > skill_index:
                         if message_tokens[skill_index+1].lower() == 'on':
                             skill_index += 1
@@ -122,8 +122,10 @@ class QuestionHandler(object):
         try:
             count = Candidate.get_candidate_count_with_skills(extracted_skills, user_id)
         except AssertionError as error:
-            logger.error("Error occurred during getting candidates count with skills %s" % error.message)
+            logger.error("Error occurred while getting candidates against skills : %s" % error.message)
             return None
+        except NotFoundError:
+            return "You don't belong to a domain"
         response_message = "There are `%d` candidates with skills %s"
         response_message = response_message % (count, ' '.join(extracted_skills))
         if count == 1:
@@ -140,10 +142,19 @@ class QuestionHandler(object):
         :rtype: str
         """
         zip_index = cls.find_word_in_message('zip', message_tokens)
-        if not zip_index:
+        if zip_index is None:
             raise IndexError
+        code_index = cls.find_exact_word_in_message('code', message_tokens)
+        if code_index is not None:
+            message_tokens.pop(code_index)
         zipcode = message_tokens[zip_index + 1]
-        count = Candidate.get_candidate_count_from_zipcode(zipcode, user_id)
+        try:
+            count = Candidate.get_candidate_count_from_zipcode(zipcode, user_id)
+        except AssertionError as error:
+            logger.error("Error occurred while getting candidates against zipcode : %s" % error.message)
+            return None
+        except NotFoundError:
+            return "You don't belong to a domain"
         response_message = "Number of candidates from zipcode `%s` : `%d`" % \
                            (message_tokens[zip_index + 1], count)
         return response_message
@@ -156,7 +167,7 @@ class QuestionHandler(object):
         :rtype: str
         """
         campaign_index = self.find_word_in_message('camp', message_tokens)
-        if not campaign_index:
+        if campaign_index is None:
             raise IndexError
         campaign_type = message_tokens[campaign_index-1].lower()
         user_specific_date = message_tokens[-1]
@@ -168,7 +179,7 @@ class QuestionHandler(object):
         if is_valid_year is False:
             user_specific_date = None
         last_index = self.find_word_in_message('last', message_tokens)
-        if last_index and not is_valid_year:
+        if last_index is not None and not is_valid_year:
             if len(message_tokens) > last_index + 1:
                 user_specific_date = self.extract_datetime_from_question(last_index, message_tokens)
                 if isinstance(user_specific_date, basestring):
@@ -208,7 +219,11 @@ class QuestionHandler(object):
             if len(campaign_list) < 2:
                 campaign_list[0] = "Looks like you don't have any campaigns since that time"
             return '%s%s' % (campaign_list[0], self.create_ordered_list(campaign_list[1::]))
-        campaign_blast = campaign_method(user_specific_date, user_id)
+        try:
+            campaign_blast = campaign_method(user_specific_date, user_id)
+        except AssertionError as error:
+            logger.error(error.message)
+            return None
         timespan = self.append_list_with_spaces(message_tokens[last_index::])
         if is_valid_year:
             timespan = user_specific_date
@@ -252,9 +267,9 @@ class QuestionHandler(object):
         user_specific_date = None
         talent_index = self.find_word_in_message('talent', message_tokens)
         import_index = self.find_word_in_message('import', message_tokens)
-        if not import_index:
+        if import_index is None:
             import_index = self.find_word_in_message('add', message_tokens)
-        if not import_index:
+        if import_index is None:
             return "Your question is vague"
         # Extracting talent pool name from user's message
         if talent_index is not None:
@@ -312,7 +327,7 @@ class QuestionHandler(object):
         if is_valid_year == -1:
             return "Please enter a valid year greater than 1900 and smaller than current year."
         last_index = self.find_word_in_message('last', message_tokens)
-        if last_index:
+        if last_index is not None:
             if len(message_tokens) > last_index + 1:
                 user_specific_date = self.extract_datetime_from_question(last_index, message_tokens)
                 if isinstance(user_specific_date, basestring):
@@ -381,17 +396,7 @@ class QuestionHandler(object):
             return "My name is `%s`" % BOT_NAME
 
     @classmethod
-    def question_6_handler(cls, *args):
-        """
-        Handles if user types 'hint'
-        :param list args: List of args
-        :rtype: str|None
-        """
-        if args:
-            return HINT
-
-    @classmethod
-    def question_7_handler(cls, message_tokens, user_id):
+    def question_6_handler(cls, message_tokens, user_id):
         """
         This method handles question what talent are pools in my domain
         :param int user_id: User Id
@@ -418,7 +423,7 @@ class QuestionHandler(object):
         return response.replace('`None`', '')
 
     @classmethod
-    def question_8_handler(cls, message_tokens, user_id):
+    def question_7_handler(cls, message_tokens, user_id):
         """
         This method handles question What is my group and what group a user belongs to
         :param message_tokens:
@@ -434,8 +439,10 @@ class QuestionHandler(object):
             users = User.get_by_name(user_id, user_name)
             if users:
                 user = users[0]
-                response = "`%s`'s group is `%s`" % (user_name, user.user_group.name)
-                return response
+                if user.user_group:
+                    response = "`%s`'s group is `%s`" % (user_name, user.user_group.name)
+                    return response
+                return "`%s` doesn't belong to any group" % user_name
             response = 'No user with name `%s` exists in your domain' % user_name
             return response
         user = User.get_by_id(user_id)

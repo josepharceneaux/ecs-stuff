@@ -90,8 +90,7 @@ class SlackBot(TalentBot):
         if bot_token:
             slack_client = SlackClient(bot_token)
             slack_client.rtm_connect()
-            api_call_response = slack_client.api_call("users.setActive")
-            logger.info('bot state is active: %s' % str(api_call_response.get('ok')))
+            logger.info('bot state is active')
 
     def reply(self, chanel_id, msg, slack_client):
         """
