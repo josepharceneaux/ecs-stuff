@@ -132,16 +132,16 @@ class PushCampaignBlast(db.Model):
             return cls.query.filter(cls.updated_datetime >= datetime_value). \
                 filter(PushCampaign.id == cls.campaign_id).\
                 filter(and_(PushCampaign.user_id == User.id, User.domain_id == domain_id)). \
-                filter(cls.sends > 0).order_by(desc(cls.clicks)).first()
+                filter(cls.sends > 0).order_by(desc(cls.clicks/cls.sends)).first()
         if isinstance(datetime_value, basestring):
             return cls.query.filter(extract("year", cls.updated_datetime) == datetime_value). \
                 filter(PushCampaign.id == cls.campaign_id).\
                 filter(and_(PushCampaign.user_id == User.id, User.domain_id == domain_id)). \
                 filter(cls.sends > 0). \
-                order_by(desc(cls.clicks)).first()
+                order_by(desc(cls.clicks/cls.sends)).first()
         return cls.query.filter(PushCampaign.id == cls.campaign_id).\
             filter(and_(PushCampaign.user_id == User.id, User.domain_id == domain_id)).filter(cls.sends > 0).\
-            order_by(desc(cls.clicks)).first()
+            order_by(desc(cls.clicks/cls.sends)).first()
 
 
 class PushCampaignSend(db.Model):
