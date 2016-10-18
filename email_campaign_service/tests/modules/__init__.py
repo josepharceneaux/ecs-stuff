@@ -15,4 +15,5 @@ ALL_EMAIL_CAMPAIGN_FIELDS = ["id",
                              "body_text",
                              "is_hidden",
                              "talent_pipelines",
-                             "list_ids"]
+                             "list_ids",
+                             "email_client_credentials_id"]

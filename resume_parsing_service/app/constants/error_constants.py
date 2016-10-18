@@ -72,6 +72,26 @@ GOOGLE_OCR_ERROR = {
     'message': GENERIC_ERROR_MSG
 }
 
+ABBYY_UNABLE_TO_QUEUE = {
+    'code': 3102,
+    'message': GENERIC_ERROR_MSG
+}
+
+ABBYY_CREDITS = {
+    'code': 3103,
+    'message': GENERIC_ERROR_MSG
+}
+
+ABBYY_MAX_ATTEMPTS = {
+    'code': 3104,
+    'message': GENERIC_ERROR_MSG
+}
+
+ABBYY_UNAVAILABLE = {
+    'code': 3105,
+    'message': GENERIC_ERROR_MSG
+}
+
 BG_UNAVAILABLE = {
     'code': 3106,
     'message': GENERIC_ERROR_MSG

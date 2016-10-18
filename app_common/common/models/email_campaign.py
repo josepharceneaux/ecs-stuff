@@ -80,7 +80,8 @@ class EmailCampaign(db.Model):
                        "body_text": self.body_text if (include_fields and 'body_text' in include_fields) else None,
                        "is_hidden": self.is_hidden,
                        "talent_pipelines": talent_pipelines,
-                       "list_ids": [smart_list.id for smart_list in smart_lists]}
+                       "list_ids": [smart_list.id for smart_list in smart_lists],
+                       "email_client_credentials_id": self.email_client_credentials_id}
 
         # Only include the fields that are supposed to be included
         if include_fields:
@@ -450,6 +451,13 @@ class EmailClientCredentials(db.Model):
     password = db.Column('password', db.String(512), nullable=False)
     updated_datetime = db.Column('updated_datetime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
 
+    # Relationship
+    email_campaign = relationship('EmailCampaign', cascade='all, delete-orphan',
+                                  passive_deletes=True, backref='email_client_credentials')
+
+    email_conversations = relationship('EmailConversations', lazy='dynamic', cascade='all, delete-orphan',
+                                       passive_deletes=True, backref='email_client_credentials')
+
     CLIENT_TYPES = {'incoming': 'incoming',
                     'outgoing': 'outgoing'}
     OUTGOING = ('smtp',)
@@ -515,6 +523,8 @@ class EmailConversations(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column('user_id', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
     candidate_id = db.Column('candidate_id', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
+    email_client_credentials_id = db.Column('email_client_credentials_id', db.Integer,
+                                            db.ForeignKey('email_client_credentials.id', ondelete='CASCADE'))
     mailbox = db.Column('mailbox', db.String(10), nullable=False)
     subject = db.Column('subject', db.String(100), nullable=False)
     body = db.Column('body', db.String(1000), nullable=False)
@@ -523,3 +533,36 @@ class EmailConversations(db.Model):
 
     def __repr__(self):
         return "<EmailConversations (id:%s)>" % self.id
+
+    def to_dict(self):
+        """
+        This creates response to return when an EmailConversation's object is requested.
+        Response looks like
+            {
+                  "email_conversations":
+                        [
+                            {
+                              "body": "Qui in non amet maiores alias excepturi id.",
+                              "user_id": 1,
+                              "updated_datetime": "2016-10-15 13:05:44",
+                              "email_received_datetime": "2016-10-03 05:41:09",
+                              "mailbox": "inbox",
+                              "email_client_credentials": {
+                                "id": 1,
+                                "name": "Gmail"
+                              },
+                              "candidate_id": 362350,
+                              "id": 1,
+                              "subject": "377cc739-8e73-4a42-9d1b-114a75328280-test_email_campaign"
+                            }
+                        ]
+            }
+        :rtype: dict
+        """
+        email_conversation = self.get_by_id(self.id)
+        return_dict = email_conversation.to_json()
+        del return_dict['email_client_credentials_id']
+        email_client_credentials = {"id": self.email_client_credentials.id,
+                                    "name": self.email_client_credentials.name}
+        return_dict.update({'email_client_credentials': email_client_credentials})
+        return return_dict

@@ -11,16 +11,18 @@ class TestQueryCandidate(object):
             primary=('first_name',),
             secondary={'emails': ('address', 'label')}
         )
-        client = GraphQLClient(candidate_id=568132, desired_data=desired_data)
+        # candidate_id = 1  # 568132
+        candidate_id = 568132
+        client = GraphQLClient(candidate_id=candidate_id, desired_data=desired_data)
         response = requests.post(url=client.base_url,
                                  headers={'content-type': 'application/json'},
                                  data=client.generated_query_string)
         assert response.status_code == requests.codes.ok
-        print "\ncandidate_data: {}".format(response.json())
+        print "\ndata = {}".format(response.json())
 
 
 class TestAddCandidate(object):
-    def test_add_candidate(self):
+    def test_candidate(self):
         candidate_data = dict(
             first_name=fake.first_name(),
             last_name=fake.last_name(),
@@ -28,9 +30,19 @@ class TestAddCandidate(object):
         )
         client = GraphQLClient(is_creating=True, **candidate_data)
         response = requests.post(url=client.base_url, headers=headers, data=json.dumps(client.generated_query_string))
-        assert response.status_code == requests.codes.OK
         print '\ndata: {}'.format(response.json())
         assert response.json()['data']['create_candidate']['id'] is not None
+
+    def test_invalid_email(self):
+        candidate_data = dict(
+            first_name=fake.first_name(),
+            last_name=fake.last_name(),
+            emails=[dict(address='invalid_email.address.com')]
+        )
+        client = GraphQLClient(is_creating=True, **candidate_data)
+        response = requests.post(url=client.base_url, headers=headers, data=json.dumps(client.generated_query_string))
+        print '\ndata: {}'.format(response.json())
+        assert response.json()['data']['create_candidate']['error_message']  # Todo: include error codes for better testing & client side error handling
 
 
 class TestUpdateCandidate(object):

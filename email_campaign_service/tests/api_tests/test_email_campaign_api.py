@@ -111,6 +111,16 @@ class TestGetCampaigns(object):
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
 
+    def test_get_campaign_with_email_client(self, email_campaign_with_outgoing_email_client, access_token_first):
+        """
+        Here we try to GET a campaign which is created by email-client. It should not get any error.
+        """
+        fields = ['email_client_credentials_id']
+        email_campaign = get_campaign_or_campaigns(access_token_first,
+                                                   campaign_id=email_campaign_with_outgoing_email_client.id,
+                                                   fields=fields)
+        assert_valid_campaign_get(email_campaign, [email_campaign_with_outgoing_email_client], fields=fields)
+
     def test_get_campaigns_with_paginated_response(self, email_campaign_of_user_first,
                                                    email_campaign_of_user_second, email_campaign_in_other_domain,
                                                    access_token_first, talent_pipeline):
@@ -244,7 +254,7 @@ class TestCreateCampaign(object):
         assert 'campaign' in resp_object
 
     def test_create_email_campaign_with_outgoing_email_client(self, access_token_first, talent_pipeline,
-                                                              email_clients, headers):
+                                                              outgoing_email_client, headers):
         """
         Here we provide valid data to create an email-campaign with email_client_credentials_id.
         It should get OK response.
@@ -262,7 +272,7 @@ class TestCreateCampaign(object):
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == requests.codes.CREATED
         resp_object = response.json()
-        assert 'campaign' in resp_object
+        assert 'campaign' in resp_object and resp_object['campaign']
 
     def test_create_email_campaign_with_incoming_email_client(self, access_token_first, talent_pipeline,
                                                               email_clients, headers):
