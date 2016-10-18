@@ -43,7 +43,8 @@ from email_campaign_service.tests.modules.handy_functions import (assert_valid_c
                                                                   create_data_for_campaign_creation,
                                                                   create_email_campaign_smartlists,
                                                                   send_campaign_with_client_id, get_mail_connection,
-                                                                  fetch_emails, delete_emails)
+                                                                  fetch_emails, delete_emails,
+                                                                  create_email_campaign_with_merge_tags)
 
 
 class TestGetCampaigns(object):
@@ -697,3 +698,34 @@ def test_health_check():
     # Testing Health Check URL with trailing slash
     response = requests.get(EmailCampaignApiUrl.HOST_NAME % HEALTH_CHECK + '/')
     assert response.status_code == requests.codes.OK
+
+
+def test_mergetag_replacements(user_first, candidate_first):
+    """
+    Here we test the functionality of function do_mergetag_replacement()
+    """
+    # Merge tags for user
+    campaign = create_email_campaign_with_merge_tags(user_first, add_preference_url=False)
+    user_first.update(first_name=fake.name())
+    user_first.update(last_name=fake.name())
+    [subject, body_text, body_html] = do_mergetag_replacements([campaign.subject, campaign.body_text,
+                                                                campaign.body_html], user_first)
+    for item in [subject, body_text, body_html]:
+        assert user_first.first_name in item
+        assert user_first.last_name in item
+
+    # Merge tags for candidate
+    campaign = create_email_campaign_with_merge_tags(user_first)
+    [subject, body_text, body_html] = do_mergetag_replacements([campaign.subject, campaign.body_text,
+                                                                campaign.body_html], candidate_first)
+    for item in [subject, body_text, body_html]:
+        assert candidate_first.first_name in item
+        assert candidate_first.last_name in item
+        assert candidate_first.id
+
+    # Test with invalid object(i.e. other than user or candidate)
+    try:
+        do_mergetag_replacements([campaign.subject], campaign)
+        assert None, 'It should raise Invalid usage error'
+    except InvalidUsage as error:
+        assert 'Invalid' in error.message
