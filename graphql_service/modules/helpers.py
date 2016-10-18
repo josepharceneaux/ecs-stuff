@@ -6,6 +6,14 @@ from deepdiff import DeepDiff
 from graphql_service.common.utils.datetime_utils import DatetimeUtils
 
 
+def clean(value):
+    """
+    :rtype: str
+    """
+    return (value or '').strip()
+
+
+# todo: unit test this
 def remove_duplicates(collection):
     """
     Function will remove duplicate dict_data from collection
@@ -20,7 +28,6 @@ def remove_duplicates(collection):
             seen.add(t)
             unique_addresses.append(dict_data)
     return unique_addresses
-
 
 # TODO: complete function logic
 # def track_updates(user_id, new_data, attribute, existing_candidate_data):
