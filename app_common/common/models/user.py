@@ -10,7 +10,7 @@ from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
 
-from db import db
+from ..models.db import db
 from ..models.event import Event
 from ..models.candidate import Candidate
 from candidate import CandidateSource

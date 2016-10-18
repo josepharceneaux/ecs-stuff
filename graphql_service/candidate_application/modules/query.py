@@ -1,23 +1,19 @@
 # Standard library
 
 # Flask specific
-from flask import request
 
 # Graphene related
 import graphene
 
-from graphql_service.modules.schema import CandidateType
-
+from graphql_service.candidate_application.modules.schema import CandidateType
 # Models
-from graphql_service.common.models.user import Permission
 
 # Validators
 
 # Authentication & Permissions
-from graphql_service.common.utils.auth_utils import require_oauth, require_all_permissions
 
 # Utilities
-from graphql_service.dynamodb.dynamo_actions import DynamoDB
+from graphql_service.candidate_application.dynamodb import DynamoDB
 
 
 class CandidateQuery(graphene.ObjectType):

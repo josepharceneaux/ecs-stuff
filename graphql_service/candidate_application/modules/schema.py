@@ -450,13 +450,3 @@ class CandidateType(graphene.ObjectType):
 
     def resolve_edits(self, args, context, info):
         return self.get('edits')
-
-
-try:
-    from graphql_service.modules.query import CandidateQuery
-    from mutation import Mutation
-
-    schema = graphene.Schema(query=CandidateQuery, mutation=Mutation, auto_camelcase=False)
-except Exception as e:
-    print "Error: {}".format(e.message)
-    raise InternalServerError('Unable to create schema because: {}'.format(e.message))
