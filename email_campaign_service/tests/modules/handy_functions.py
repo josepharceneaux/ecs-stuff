@@ -70,14 +70,14 @@ class EmailCampaignTypes(object):
     WITHOUT_CLIENT = 'without_client'
 
 
-def create_email_campaign(user):
+def create_email_campaign(user, add_subject=True):
     """
     This creates an email campaign for given user
     """
     email_campaign = EmailCampaign(name=fake.name(),
                                    user_id=user.id,
                                    is_hidden=0,
-                                   subject=fake.uuid4() + ' It is a test campaign',
+                                   subject=fake.uuid4()[0:8] + 'It is a test campaign' if add_subject else '',
                                    description=fake.paragraph(),
                                    _from=TEST_EMAIL_ID,
                                    reply_to=TEST_EMAIL_ID,
@@ -90,16 +90,17 @@ def create_email_campaign(user):
 
 def create_email_campaign_with_merge_tags(user, add_preference_url=True):
     """
-    This function creates an email-campaign contianing merge tags.
+    This function creates an email-campaign containing merge tags.
     """
-    email_campaign = create_email_campaign(user)
+    email_campaign = create_email_campaign(user, add_subject=False)
     # Update email-campaign's body text
-    starting_string = 'Hello %s %s, ' % (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG)
+    starting_string = 'Hello %s %s' % (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG)
+    email_campaign.update(subject=starting_string + email_campaign.subject)
     if add_preference_url:
-        starting_string += 'Unsubscribe URL is:%s' % DEFAULT_PREFERENCES_URL_MERGETAG
-    email_campaign.update(subject=starting_string + email_campaign.subject,
-                          body_text=starting_string + email_campaign.body_text,
+        starting_string += ', Unsubscribe URL is:%s' % DEFAULT_PREFERENCES_URL_MERGETAG
+    email_campaign.update(body_text=starting_string + email_campaign.body_text,
                           body_html=starting_string + email_campaign.body_html)
+
     return email_campaign
 
 
