@@ -44,8 +44,12 @@ class SlackBot(TalentBot):
             if slack_user_token and user_id:
                 slack_client = SlackClient(slack_user_token)
                 try:
-                    at_bot = self.get_bot_id(slack_client)
-                    self.set_bot_state_active(talentbot_auth.bot_token)
+                    if talentbot_auth.bot_id:
+                        at_bot = '<@%s>' % talentbot_auth.bot_id
+                        self.set_bot_state_active(talentbot_auth.bot_token)
+                    else:
+                        at_bot = self.get_bot_id(slack_client)
+                        self.set_bot_state_active(talentbot_auth.bot_token)
                 except NotFoundError as error:
                     logger.error(error.message)
                     return False, None, None, None
@@ -86,8 +90,7 @@ class SlackBot(TalentBot):
         if bot_token:
             slack_client = SlackClient(bot_token)
             slack_client.rtm_connect()
-            api_call_response = slack_client.api_call("users.setActive")
-            logger.info('bot state is active: %s' % str(api_call_response.get('ok')))
+            logger.info('bot state is active')
 
     def reply(self, chanel_id, msg, slack_client):
         """

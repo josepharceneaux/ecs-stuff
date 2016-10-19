@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Parsing functions for extracting specific information from Burning Glass API responses."""
 # pylint: disable=wrong-import-position, fixme, import-error
 __author__ = 'erik@getTalent.com'
@@ -29,6 +30,7 @@ from resume_parsing_service.common.utils.handy_functions import normalize_value
 
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"
+SPLIT_DESCRIPTION_REGEXP = re.compile(ur"•≅_|≅_| \* |•|➢|→|\n\n\n")
 
 
 @contract
@@ -98,12 +100,11 @@ def fetch_optic_response(resume, filename_str):
 
 
 @contract
-def parse_optic_xml(resume_xml_text, encoded_resume_text):
+def parse_optic_xml(resume_xml_text):
     """
     Takes in a Burning Glass XML tree in string format and returns a candidate JSON object.
     :param string resume_xml_text: An XML tree represented in unicode format. It is a slightly
                                    processed response from the Burning Glass API.
-    :param string encoded_resume_text: b64 encoded resume text for skills parsing.
     :return: Results of various parsing functions on the input xml string.
     :rtype: dict
     """
@@ -262,13 +263,14 @@ def parse_candidate_experiences(bg_experience_xml_list):
             # Get experience bullets
             candidate_experience_bullets = []
             description_text = _tag_text(employment, 'description', remove_questions=True) or ''
-            for bullet_description in description_text.split('|'):
+            # for bullet_description in description_text.split('|'):
+            for bullet_description in SPLIT_DESCRIPTION_REGEXP.split(description_text):
                 # If experience already exists then append the current bullet-descriptions to
                 # already existed bullet-descriptions
                 if existing_experience_list_order:
                     output[existing_experience_list_order]['bullets'][0]['description'] += '\n' + bullet_description
                 else:
-                    candidate_experience_bullets.append(bullet_description)
+                    candidate_experience_bullets.append(bullet_description.strip())
 
             if not existing_experience_list_order:
                 is_current_job = False

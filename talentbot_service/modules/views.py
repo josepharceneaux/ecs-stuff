@@ -4,7 +4,6 @@ Facebook, Email, SMS and Slack
 """
 # Builtin imports
 from multiprocessing import Process
-import json
 # Common utils
 from talentbot_service.common.talent_config_manager import TalentConfigKeys
 from talentbot_service.common.models.user import TalentbotAuth
@@ -48,7 +47,10 @@ def index():
 @app.route(TalentBotApiUrl.SLACK_LISTEN, methods=['POST'])
 def listen_slack():
     """
-    Listens to the slack web hook
+    Listens to the slack callback and if it is a Slack event then processes it and extracts chanel_id,
+    slack_user_id, timestamp, message and calls desired method in a thread.
+    If it's not a Slack event then method considers the callback as a Slack callback authentication and returns
+    the quoted challenge code if exists.
     :rtype: str
     """
     event = request.json.get('event')
@@ -56,11 +58,6 @@ def listen_slack():
         current_timestamp = event.get('ts')
         channel_id = request.json.get('event').get('channel')
         slack_user_id = request.json.get('event').get('user')
-        '''if slack_bot.timestamp:
-            if current_timestamp == slack_bot.timestamp and channel_id == slack_bot.recent_channel_id\
-                    and slack_user_id == slack_bot.recent_user_id:
-                logger.info("Same callback again, response wasn't in 3 seconds")
-                return "OK" '''
         message = request.json.get('event').get('text')
         if message and channel_id and slack_user_id:
             logger.info("Message slack:%s, Current_timestamp: %s, Previous timestamp: %s"
@@ -71,7 +68,8 @@ def listen_slack():
             return 'HTTP_200_OK'
     challenge = request.json.get('challenge')
     if challenge:
-        return quote(challenge)
+        if request.json.get('token') == app.config['SLACK_VERIFICATION_TOKEN']:
+            return quote(challenge)
     return 'HTTP_200_OK'
 
 

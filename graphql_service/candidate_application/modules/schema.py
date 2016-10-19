@@ -4,13 +4,18 @@ import graphene
 from graphql_service.common.error_handling import InternalServerError
 
 # Common resolvers
-from common_resolvers import (
-    resolve_added_datetime, resolve_is_current, resolve_city,
-    resolve_end_month, resolve_end_year, resolve_iso3166_country,
-    resolve_iso3166_subdivision, resolve_start_month, resolve_start_year,
-    resolve_updated_datetime, resolve_is_default, resolve_zip_code,
-    resolve_state, resolve_comments
-)
+from common_resolvers import *
+
+from schema_edits import EditType
+
+
+class AreaOfInterestType(graphene.ObjectType):
+    name = 'AreaOfInterestType'
+
+    area_of_interest_id = graphene.Int()
+
+    def resolve_area_of_interest_id(self, args, context, info):
+        return self.get('area_of_interest_id')
 
 
 class CandidateAddressType(graphene.ObjectType):
@@ -39,6 +44,19 @@ class CandidateAddressType(graphene.ObjectType):
 
     def resolve_coordinates(self, args, context, info):
         return self.get('coordinates')
+
+
+class CustomFieldType(graphene.ObjectType):
+    name = 'CustomFieldType'
+
+    custom_field_id = graphene.Int()
+    value = graphene.String()
+
+    def resolve_custom_field_id(self, args, context, info):
+        return self.get('custom_field_id')
+
+    def resolve_value(self, args, context, info):
+        return self.get('value')
 
 
 class EducationDegreeType(graphene.ObjectType):
@@ -325,66 +343,28 @@ class CandidateType(graphene.ObjectType):
 
     # ***** Primary attributes *****
     id = graphene.Int()
-    first_name = graphene.String()
-    middle_name = graphene.String()
-    last_name = graphene.String()
-    formatted_name = graphene.String()
-    user_id = graphene.Int()
-    resume_url = graphene.String()
-    objective = graphene.String()
-    summary = graphene.String()
-    total_months_experience = graphene.Int()
+    first_name = graphene.String(resolver=resolve_first_name)
+    middle_name = graphene.String(resolver=resolve_middle_name)
+    last_name = graphene.String(resolver=resolve_last_name)
+    formatted_name = graphene.String(resolver=resolve_formatted_name)
+    user_id = graphene.Int(resolver=resolve_user_id)
+    resume_url = graphene.String(resolver=resolve_resume_url)
+    objective = graphene.String(resolver=resolve_objective)
+    summary = graphene.String(resolver=resolve_summary)
+    total_months_experience = graphene.Int(resolver=resolve_total_months_experience)
     added_datetime = graphene.String(resolver=resolve_added_datetime)
     updated_datetime = graphene.String(resolver=resolve_updated_datetime)
-    candidate_status_id = graphene.Int()
-    source_id = graphene.Int()
-    culture_id = graphene.Int()
-
-    # Resolvers for candidate's primary attributes
-    def resolve_first_name(self, args, context, info):
-        return self.get('first_name')
-
-    def resolve_middle_name(self, args, context, info):
-        return self.get('middle_name')
-
-    def resolve_last_name(self, args, context, info):
-        return self.get('last_name')
-
-    def resolve_formatted_name(self, args, context, info):
-        return self.get('formatted_name')
-
-    def resolve_user_id(self, args, context, info):
-        return self.get('user_id')
-
-    def resolve_resume_url(self, args, context, info):
-        return self.get('resume_url')
-
-    def resolve_objective(self, args, context, info):
-        return self.get('objective')
-
-    def resolve_summary(self, args, context, info):
-        return self.get('summary')
-
-    def resolve_total_months_experience(self, args, context, info):
-        return self.get('total_months_experience')
-
-    def resolve_candidate_status_id(self, args, context, info):
-        return self.get('candidate_status_id')
-
-    def resolve_source_id(self, args, context, info):
-        return self.get('source_id')
-
-    def resolve_culture_id(self, args, context, info):
-        return self.get('culture_id')
+    candidate_status_id = graphene.Int(resolver=resolve_candidate_status_id)
+    source_id = graphene.Int(resolver=resolve_source_id)
+    culture_id = graphene.Int(resolver=resolve_culture_id)
 
     # ***** Secondary attributes *****
-    # areas_of_interest = graphene.List(AreaOfInterestType)
+    areas_of_interest = graphene.List(AreaOfInterestType)
     addresses = graphene.List(CandidateAddressType)
-    # custom_fields = graphene.List(CustomFieldType)
+    custom_fields = graphene.List(CustomFieldType)
     educations = graphene.List(EducationType)
     emails = graphene.List(CandidateEmailType)
     experiences = graphene.List(ExperienceType)
-
     military_service = graphene.List(MilitaryServiceType)
     notes = graphene.List(NoteType)
     phones = graphene.List(PhoneType)
@@ -394,10 +374,8 @@ class CandidateType(graphene.ObjectType):
     skills = graphene.List(SkillType)
     social_networks = graphene.List(SocialNetworkType)
     tags = graphene.List(TagType)
-    work_preference = graphene.Field(WorkPreferenceType)
-
-    def resolve_edits(self, args, context, info):
-        return self.get('edits')
+    work_preferences = graphene.List(WorkPreferenceType)
+    edits = graphene.List(EditType)
 
     # Resolvers for candidate's secondary attributes
     def resolve_areas_of_interest(self, args, context, info):
@@ -445,8 +423,8 @@ class CandidateType(graphene.ObjectType):
     def resolve_tags(self, args, context, info):
         return self.get('tags')
 
-    def resolve_work_preference(self, args, context, info):
-        return self.get('work_preference')
+    def resolve_work_preferences(self, args, context, info):
+        return self.get('work_preferences')
 
     def resolve_edits(self, args, context, info):
         return self.get('edits')

@@ -14,9 +14,8 @@ from resume_parsing_service.app import logger, redis_store
 from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.optic_parse_lib import fetch_optic_response
 from resume_parsing_service.app.views.optic_parse_lib import parse_optic_xml
-from resume_parsing_service.app.views.ocr_lib import google_vision_ocr
-from resume_parsing_service.app.views.pdf_utils import (convert_pdf_to_text, convert_pdf_to_png,
-                                                        decrypt_pdf)
+from resume_parsing_service.app.views.ocr_lib import abbyy_ocr_image
+from resume_parsing_service.app.views.pdf_utils import (convert_pdf_to_text, decrypt_pdf)
 from resume_parsing_service.common.error_handling import InvalidUsage
 from resume_parsing_service.common.utils.talent_s3 import boto3_put
 
@@ -49,16 +48,10 @@ def parse_resume(file_obj, filename_str, cache_key):
 
     # If file is an image, OCR it
     if is_image:
-        files = [file_obj]
-        if file_ext == '.pdf':
-            # If its a PDF replace file obj with a png representation of it.
-            # convert_pdf_to_png will close the old StringIO instance.
-            files = convert_pdf_to_png(file_obj)
-
         start_time = time()
-        doc_content = google_vision_ocr(files)
+        doc_content = abbyy_ocr_image(file_obj)
         logger.info(
-            "Benchmark: google_vision_ocr for {}: took {}s to process".format(
+            "Benchmark: Abby OCR for {}: took {}s to process".format(
                 filename_str, time() - start_time)
         )
 
@@ -89,9 +82,16 @@ def parse_resume(file_obj, filename_str, cache_key):
     optic_response = fetch_optic_response(encoded_resume, filename_str)
 
     if optic_response:
-        redis_store.hmset(cache_key, {'bg_data': optic_response, 'doc_content': encoded_resume})
+
+        if all(fail_word in optic_response for fail_word in ('error', 'text', 'not', 'generated')):
+            raise InvalidUsage(
+                error_message=error_constants.NO_TEXT_EXTRACTED['message'],
+                error_code=error_constants.NO_TEXT_EXTRACTED['code']
+            )
+
+        redis_store.set(cache_key, optic_response)
         redis_store.expire(cache_key, RESUME_EXPIRE_TIME)
-        candidate_data = parse_optic_xml(optic_response, encoded_resume)
+        candidate_data = parse_optic_xml(optic_response)
         return {'raw_response': optic_response, 'candidate': candidate_data}
 
     else:

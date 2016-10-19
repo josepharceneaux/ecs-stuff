@@ -55,7 +55,7 @@ if args.upload_all_candidate_documents:
         """
 
         if args.domain_id:
-            domains = Domain.filter_by(id=int(args.domain_id[0])).all()
+            domains = Domain.query.filter_by(id=int(args.domain_id[0])).all()
         else:
             domains = Domain.query.with_entities(Domain.id).all()
 

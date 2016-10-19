@@ -75,7 +75,7 @@ class GraphQLClient(object):
         """
         function will create a graphql document out of class' constructor arguments
         """
-        query_string = "mutation NewCandidate {create_candidate (%s) {ok, id}}"
+        query_string = "mutation NewCandidate {create_candidate (%s) {ok, id, error_message}}"
         build = ''
         collection = {
             'areas_of_interest', 'addresses', 'custom_fields', 'educations',

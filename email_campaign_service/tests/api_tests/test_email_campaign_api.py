@@ -13,23 +13,26 @@ In this module, we have tests for following endpoints
 """
 # Packages
 import re
-import requests
-from redo import retry
 from random import randint
 from datetime import datetime, timedelta
 
+# Third Party
+import requests
+
 # Application Specific
+from email_campaign_service.common.models.candidate import Candidate
 from email_campaign_service.common.models.db import db
+from email_campaign_service.common.talent_config_manager import TalentConfigKeys
+from email_campaign_service.modules.utils import do_mergetag_replacements
 from email_campaign_service.tests.conftest import fake
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.models.misc import (UrlConversion, Frequency)
-from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.common.utils.api_utils import MAX_PAGE_SIZE, SORT_TYPES
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity,
                                                           ForbiddenError)
 from email_campaign_service.common.routes import (EmailCampaignApiUrl, HEALTH_CHECK)
-from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers, send_request
+from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from email_campaign_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast,
                                                                  EmailClient, EmailCampaignSmartlist)
 from email_campaign_service.tests.modules.handy_functions import (assert_valid_campaign_get,
@@ -39,9 +42,9 @@ from email_campaign_service.tests.modules.handy_functions import (assert_valid_c
                                                                   create_email_campaign_via_api,
                                                                   create_data_for_campaign_creation,
                                                                   create_email_campaign_smartlists,
-                                                                  assert_and_delete_email,
                                                                   send_campaign_with_client_id, get_mail_connection,
-                                                                  fetch_emails)
+                                                                  fetch_emails, delete_emails,
+                                                                  create_email_campaign_with_merge_tags)
 
 
 class TestGetCampaigns(object):
@@ -110,6 +113,16 @@ class TestGetCampaigns(object):
 
         # Test GET api of talent-pipelines/:id/campaigns
         assert_talent_pipeline_response(talent_pipeline, access_token_first)
+
+    def test_get_campaign_with_email_client(self, email_campaign_with_outgoing_email_client, access_token_first):
+        """
+        Here we try to GET a campaign which is created by email-client. It should not get any error.
+        """
+        fields = ['email_client_credentials_id']
+        email_campaign = get_campaign_or_campaigns(access_token_first,
+                                                   campaign_id=email_campaign_with_outgoing_email_client.id,
+                                                   fields=fields)
+        assert_valid_campaign_get(email_campaign, [email_campaign_with_outgoing_email_client], fields=fields)
 
     def test_get_campaigns_with_paginated_response(self, email_campaign_of_user_first,
                                                    email_campaign_of_user_second, email_campaign_in_other_domain,
@@ -244,7 +257,7 @@ class TestCreateCampaign(object):
         assert 'campaign' in resp_object
 
     def test_create_email_campaign_with_outgoing_email_client(self, access_token_first, talent_pipeline,
-                                                              email_clients, headers):
+                                                              outgoing_email_client, headers):
         """
         Here we provide valid data to create an email-campaign with email_client_credentials_id.
         It should get OK response.
@@ -262,7 +275,7 @@ class TestCreateCampaign(object):
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == requests.codes.CREATED
         resp_object = response.json()
-        assert 'campaign' in resp_object
+        assert 'campaign' in resp_object and resp_object['campaign']
 
     def test_create_email_campaign_with_incoming_email_client(self, access_token_first, talent_pipeline,
                                                               email_clients, headers):
@@ -550,14 +563,18 @@ class TestSendCampaign(object):
         """
         campaign, candidate = email_campaign_with_merge_tags
         response = requests.post(self.URL % campaign.id, headers=headers)
-        msg_ids = assert_campaign_send(response, campaign, user_first, 1, delete_email=False)
-        mail_connection = get_mail_connection(app.config[TalentConfigKeys.GT_GMAIL_ID],
-                                              app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
-        email_bodies = fetch_emails(mail_connection, msg_ids)
-        assert len(email_bodies) == 1
-        assert candidate['first_name'] in email_bodies[0]
-        assert candidate['last_name'] in email_bodies[0]
-        assert str(candidate['id']) in email_bodies[0]  # This will be in unsubscribe URL.
+        [modified_subject] = do_mergetag_replacements([campaign.subject], Candidate.get_by_id(candidate['id']))
+        campaign.update(subject=modified_subject)
+        msg_ids = assert_campaign_send(response, campaign, user_first, 1, delete_email=False, via_amazon_ses=False)
+        # TODO: Emails are being delayed, commenting for now
+        # mail_connection = get_mail_connection(app.config[TalentConfigKeys.GT_GMAIL_ID],
+        #                                       app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
+        # email_bodies = fetch_emails(mail_connection, msg_ids)
+        # assert len(email_bodies) == 1
+        # assert candidate['first_name'] in email_bodies[0]
+        # assert candidate['last_name'] in email_bodies[0]
+        # assert str(candidate['id']) in email_bodies[0]  # This will be in unsubscribe URL.
+        # delete_emails(mail_connection, msg_ids, modified_subject)
 
     def test_campaign_send_with_email_client_id(self, send_email_campaign_by_client_id_response, user_first):
         """
@@ -684,58 +701,32 @@ def test_health_check():
     assert response.status_code == requests.codes.OK
 
 
-test_mail_data = {
-    "subject": "Test Email",
-    "from": "no-reply@gettalent.com",
-    "body_html": "<html><body><h1>Welcome to email campaign service "
-                 "<a href=https://www.github.com>Github</a></h1></body></html>",
-    "email_address_list": [app.config[TalentConfigKeys.GT_GMAIL_ID]]
-}
-
-
-def test_test_email_with_valid_data(access_token_first):
+def test_mergetag_replacements(user_first, candidate_first):
     """
-    In this test, we will send a test email to out test email account and then we will confirm by getting that email
-    from inbox with that specific subject.
-    :param access_token_first: access token
+    Here we test the functionality of function do_mergetag_replacement()
     """
-    subject = "Test Email %s" % fake.uuid4()
-    data = test_mail_data.copy()
-    data['subject'] = subject
-    response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
-    assert response.status_code == requests.codes.OK
-    assert retry(assert_and_delete_email, sleeptime=5, attempts=10, sleepscale=1, args=(subject,),
-                 retry_exceptions=(AssertionError,))
+    # Merge tags for user
+    campaign = create_email_campaign_with_merge_tags(user_first, add_preference_url=False)
+    user_first.update(first_name=fake.name())
+    user_first.update(last_name=fake.name())
+    [subject, body_text, body_html] = do_mergetag_replacements([campaign.subject, campaign.body_text,
+                                                                campaign.body_html], user_first)
+    for item in [subject, body_text, body_html]:
+        assert user_first.first_name in item
+        assert user_first.last_name in item
 
+    # Merge tags for candidate
+    campaign = create_email_campaign_with_merge_tags(user_first)
+    [subject, body_text, body_html] = do_mergetag_replacements([campaign.subject, campaign.body_text,
+                                                                campaign.body_html], candidate_first)
+    for item in [subject, body_text, body_html]:
+        assert candidate_first.first_name in item
+        assert candidate_first.last_name in item
+        assert candidate_first.id
 
-def test_test_email_with_invalid_email_address(access_token_first):
-    """
-    In this test we will send a test email to an invalid email address which will cause failure while sending email
-    via SES (500 Error).
-    :param access_token_first: access token
-    """
-    subject = "Test Email %s" % fake.uuid4()
-    data = test_mail_data.copy()
-    data['subject'] = subject
-    data['email_address_list'] = ['some_invalid_email_%s' % fake.uuid4()]
-    response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
-    assert response.status_code == requests.codes.INTERNAL_SERVER_ERROR
-
-
-def test_test_email_with_invalid_fields(access_token_first):
-    """
-    In this test, we will send a test email with invalid values of required fields which will cause 400 error.
-    :param access_token_first: access token for user_first
-    """
-
-    invalid_key_values = [('subject', ('', 0, True, None, {}, [])),
-                          ('from', ('', 0, True, None, {}, [])),
-                          ('body_html', ('', 0, True, None, {}, [])),
-                          ('email_address_list', ('', 0, True, None, {}, [], ['test@gmail.com', 'test@gmail.com'],
-                                      ['test%s@gmail.com' % index for index in xrange(11)]))]
-    for key, values in invalid_key_values:
-        for value in values:
-            data = test_mail_data.copy()
-            data[key] = value
-            response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
-            assert response.status_code == requests.codes.BAD_REQUEST
+    # Test with invalid object(i.e. other than user or candidate)
+    try:
+        do_mergetag_replacements([campaign.subject], campaign)
+        assert None, 'It should raise Invalid usage error'
+    except InvalidUsage as error:
+        assert 'Invalid' in error.message
