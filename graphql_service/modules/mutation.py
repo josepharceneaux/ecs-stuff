@@ -5,8 +5,9 @@ from graphql_service.common.models.db import db
 from graphql_service.common.models.user import Domain
 from graphql_service.common.models.candidate import Candidate
 from graphql_service.common.models.user import User
-from graphql_service.common.utils.candidate_utils import get_candidate_if_validated
+from validators import is_candidate_validated
 from schema import CandidateType
+from graphql_service.common.utils.candidate_utils import get_candidate_if_validated
 
 
 # from flask import request
@@ -206,7 +207,7 @@ class CreateCandidate(graphene.Mutation):
         skills = graphene.List(SkillInput)
         social_networks = graphene.List(SocialNetworkInput)
         tags = graphene.List(TagInput)
-        # work_preference = graphene.ObjectType(WorkPreferenceInput)
+        work_preferences = graphene.List(WorkPreferenceInput)
 
     def mutate(self, args, context, info):
 
@@ -260,14 +261,15 @@ class CreateCandidate(graphene.Mutation):
         skills = args.get('skills')
         social_networks = args.get('social_networks')
         tags = args.get('tags')
-        work_preference = args.get('work_preference')
+        work_preferences = args.get('work_preferences')
 
         try:
             candidates_validated_data = add_or_edit_candidate_from_params(
                 user=authenticated_user,
                 primary_data=candidate_data,
-                areas_of_interest=areas_of_interest,
+                existing_candidate_data=None,  # don't need existing data when creating candidate
                 addresses=addresses,
+                areas_of_interest=areas_of_interest,
                 educations=educations,
                 emails=emails,
                 experiences=experiences,
@@ -281,7 +283,7 @@ class CreateCandidate(graphene.Mutation):
                 social_networks=social_networks,
                 tags=tags,
                 added_datetime=candidate_data['added_datetime'],
-                work_preference=work_preference
+                work_preferences=work_preferences
             )
         except (InvalidUsage, ForbiddenError, NotFoundError) as client_error:
             return CreateCandidate(candidate=None,
@@ -314,7 +316,7 @@ class UpdateCandidate(graphene.Mutation):
         Class contains optional input fields for creating candidate
         """
         # Primary data
-        id = graphene.Int()
+        id = graphene.Int(required=True)
         first_name = graphene.String()
         middle_name = graphene.String()
         last_name = graphene.String()
@@ -345,10 +347,9 @@ class UpdateCandidate(graphene.Mutation):
         skills = graphene.List(SkillInput)
         social_networks = graphene.List(SocialNetworkInput)
         tags = graphene.List(TagInput)
-        # work_preference = graphene.ObjectType(WorkPreferenceInput)
+        work_preferences = graphene.List(WorkPreferenceInput)
 
     def mutate(self, args, context, info):
-
         # Get authenticated user
         authenticated_user = request.user
 
@@ -367,7 +368,12 @@ class UpdateCandidate(graphene.Mutation):
         )
         # Retrieve candidate
         candidate_id = args.get('id')
-        get_candidate_if_validated(request.user, candidate_id)
+        try:
+            get_candidate_if_validated(user=request.user, candidate_id=candidate_id)
+        except (NotFoundError, ForbiddenError) as client_error:
+            return UpdateCandidate(candidate=None,
+                                   ok=False,
+                                   error_message=client_error.message)
 
         addresses = args.get('addresses')
         areas_of_interest = args.get('areas_of_interest')
@@ -383,17 +389,19 @@ class UpdateCandidate(graphene.Mutation):
         skills = args.get('skills')
         social_networks = args.get('social_networks')
         tags = args.get('tags')
-        work_preference = args.get('work_preference')
+        work_preferences = args.get('work_preferences')
 
         try:
             existing_candidate_data = DynamoDB.get_candidate(candidate_id)
-            if not existing_candidate_data:
-                raise Exception  # TODO: update with new method of error handling or raise InvalidUsage error
+
+            if not existing_candidate_data.get('edits'):
+                existing_candidate_data['edits'] = []
 
             candidates_validated_data = add_or_edit_candidate_from_params(
                 user=authenticated_user,
                 primary_data=candidate_data,
                 is_updating=True,
+                edits=existing_candidate_data['edits'],
                 existing_candidate_data=existing_candidate_data,
                 areas_of_interest=areas_of_interest,
                 addresses=addresses,
@@ -410,15 +418,15 @@ class UpdateCandidate(graphene.Mutation):
                 social_networks=social_networks,
                 tags=tags,
                 updated_datetime=DatetimeUtils.to_utc_str(datetime.datetime.utcnow()),
-                work_preference=work_preference
+                work_preferences=work_preferences
             )
         except (InvalidUsage, ForbiddenError, NotFoundError) as client_error:
-            return CreateCandidate(candidate=None,
+            return UpdateCandidate(candidate=None,
                                    ok=False,
                                    error_message=client_error.message)
 
         except InternalServerError as server_error:
-            return CreateCandidate(candidate=None,
+            return UpdateCandidate(candidate=None,
                                    ok=False,
                                    error_message=server_error.message)
         # Commit transaction
@@ -443,25 +451,28 @@ class DeleteCandidate(graphene.Mutation):
 
     def mutate(self, args, context, info):
         candidate_id = args.get('id')
-        candidate = get_candidate_if_validated(request.user, candidate_id)
-        if candidate:
-            try:
-                # Delete from MySQL
-                db.session.delete(candidate)
 
-                # Delete from DynamoDB
-                DynamoDB.delete_candidate(candidate_id)
-            except (InvalidUsage, ForbiddenError, NotFoundError) as client_error:
-                return CreateCandidate(candidate=None,
-                                       ok=False,
-                                       error_message=client_error.message)
+        try:
+            candidate = get_candidate_if_validated(user=request.user, candidate_id=candidate_id)
 
-            except InternalServerError as server_error:
-                return CreateCandidate(candidate=None,
-                                       ok=False,
-                                       error_message=server_error.message)
+            # Delete from MySQL
+            db.session.delete(candidate)
+            db.session.commit()
 
-            return DeleteCandidate(ok=True, id=candidate_id)
+            # Delete from DynamoDB
+            DynamoDB.delete_candidate(candidate_id)
+
+        except (InvalidUsage, NotFoundError, ForbiddenError) as client_error:
+            return DeleteCandidate(candidate=None,
+                                   ok=False,
+                                   error_message=client_error.message)
+
+        except InternalServerError as server_error:
+            return CreateCandidate(candidate=None,
+                                   ok=False,
+                                   error_message=server_error.message)
+
+        return DeleteCandidate(ok=True, id=candidate_id)
 
 
 class Mutation(graphene.ObjectType):

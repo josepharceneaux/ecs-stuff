@@ -29,30 +29,60 @@ def remove_duplicates(collection):
             unique_addresses.append(dict_data)
     return unique_addresses
 
-# TODO: complete function logic
-# def track_updates(user_id, new_data, attribute, existing_candidate_data):
-#     # Create edit collection for candidate's attribute if it doesn't already exist
-#     candidate_edits = existing_candidate_data.get('edits')
-#     if candidate_edits:
-#         if not candidate_edits.get(attribute):
-#             candidate_edits[attribute] = []
-#     else:
-#         existing_candidate_data['edits'] = {}
-#         existing_candidate_data['edits'][attribute] = []
-#
-#     edits = []
-#     old_data = existing_candidate_data.get(attribute)
-#
-#     all_changes = DeepDiff(old_data, new_data)
-#
-#     for field, dict_data in all_changes:
-#         edits.append(dict(
-#             attribute=attribute,  # email
-#             field=field,  # address
-#             old_value=dict_data['old_value'],  # old@gmail.com
-#             new_value=dict_data['new_value'],  # new@gmail.com
-#             user_id=user_id,
-#             edit_datetime=DatetimeUtils.to_utc_str(datetime.datetime.utcnow())
-#         ))
-#
-#     return existing_candidate_data['edits'] + edits
+
+class Diff(object):
+    def __init__(self, attribute, existing_data, new_data, user_id, updated_datetime):
+        self.attribute = attribute
+        self.existing_data = existing_data
+        self.new_data = new_data
+        self.user_id = user_id
+        self.updated_datetime = updated_datetime
+        self.changed = dict()
+
+    def find_diffs(self):
+        if self.attribute.lower() == 'primary_data':
+            err_msg = "{} must be of type dict".format(self.attribute)
+            assert isinstance(self.existing_data, dict) and isinstance(self.new_data, dict), err_msg
+
+            # self.changed[self.attribute] = {}
+
+            for k, v in self.existing_data.iteritems():
+                if self.new_data.get(k) and self.new_data[k] != v:
+                    self.changed[k] = {}
+                    self.changed[k]['old_value'] = v
+                    self.changed[k]['new_value'] = self.new_data[k]
+                    self.changed[k]['user_id'] = self.user_id
+                    self.changed[k]['updated_datetime'] = self.updated_datetime
+                else:
+                    continue
+            return self.changed
+        else:
+            err_msg = "{} must be of type list".format(self.attribute)
+            assert isinstance(self.existing_data, list) and isinstance(self.new_data, list), err_msg
+
+            self.changed[self.attribute] = []
+
+            for index, item in enumerate(self.existing_data):
+                for k, v in item.iteritems():
+                    if self.new_data[index][k] != v:
+                        self.changed[self.attribute].append({k: {}})
+                        self.changed[self.attribute][index][k]['old_value'] = v
+                        self.changed[self.attribute][index][k]['new_value'] = self.new_data[index][k]
+            return self.changed
+
+
+def track_updates(user_id, attribute, existing_data, new_data, updated_datetime):
+
+    changed_data = Diff(
+        attribute=attribute, existing_data=existing_data,
+        new_data=new_data, user_id=user_id, updated_datetime=updated_datetime
+    ).find_diffs()
+
+    if isinstance(changed_data, dict):
+        pass
+        # changed_data.update(dict(user_id=user_id, updated_datetime=updated_datetime))
+
+    elif isinstance(changed_data[attribute], list):
+        for index, item in enumerate(changed_data[attribute]):
+            changed_data[attribute][index].update(dict(user_id=user_id, updated_datetime=updated_datetime))
+    return changed_data
