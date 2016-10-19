@@ -51,13 +51,13 @@ EMAIL_TEMPLATE_BODY = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional
                       '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through ' \
                       'script</p>\r\n</body>\r\n</html>\r\n'
 
-
+SPECIAL_CHARACTERS = '!@#$%^&*()_+'
 TEST_MAIL_DATA = {
-    "subject": "Test Email",
-    "from": "no-reply@gettalent.com",
+    "subject": "Test Email-%s-%s" % (fake.uuid4(), SPECIAL_CHARACTERS),
+    "from": fake.name(),
     "body_html": "<html><body><h1>Welcome to email campaign service "
                  "<a href=https://www.github.com>Github</a></h1></body></html>",
-    "body_text": fake.sentence(),
+    "body_text": fake.sentence() + fake.uuid4() + SPECIAL_CHARACTERS,
     "email_address_list": [app.config[TalentConfigKeys.GT_GMAIL_ID]]
 }
 
@@ -77,12 +77,12 @@ def create_email_campaign(user):
     email_campaign = EmailCampaign(name=fake.name(),
                                    user_id=user.id,
                                    is_hidden=0,
-                                   subject=uuid.uuid4().__str__()[0:8] + ' It is a test campaign',
+                                   subject=fake.uuid4() + ' It is a test campaign',
                                    description=fake.paragraph(),
                                    _from=TEST_EMAIL_ID,
                                    reply_to=TEST_EMAIL_ID,
                                    body_html="<html><body>Email campaign test</body></html>",
-                                   body_text="Email campaign test"
+                                   body_text=fake.sentence()
                                    )
     EmailCampaign.save(email_campaign)
     return email_campaign
