@@ -12,8 +12,8 @@ from talentbot_service.common.tests.conftest import domain_first, first_group, d
     email_campaign_second_domain_blast, sms_campaign_first, sms_campaign_first_blast, user_phone_first, \
     sms_campaign_second, sms_campaign_second_blast, user_phone_second,push_campaign_first, push_campaign_first_blast,\
     user_phone_same_domain, sms_campaign_same_domain, sms_campaign_same_domain_blast, push_campaign_same_domain,\
-    push_campaign_same_domain_blast, push_campaign_second, push_campaign_second_blast
-from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate
+    push_campaign_same_domain_blast, push_campaign_second, push_campaign_second_blast, talent_pool_second
+from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.email_campaign import EmailCampaignBlast
 from talentbot_service.common.models.sms_campaign import SmsCampaignBlast
@@ -288,3 +288,21 @@ def test_top_performing_push_campaign(user_first, push_campaign_first, push_camp
     # Checking in user_second's domain
     push_campaign = PushCampaignBlast.top_performing_push_campaign(None, user_second.id)
     assert push_campaign.campaign.name == push_campaign_second.name
+
+
+def test_get_talent_pools_in_my_domain(talent_pool, user_second, user_first, user_same_domain,
+                                       talent_pool_second):
+    """
+    This method verifies talent pools in a user's domain
+    """
+    talent_pools = TalentPool.get_talent_pools_in_user_domain(user_first.id)
+    assert talent_pools[0].id == talent_pool.id
+    # Testing with user_same_domain' Id
+    talent_pools = TalentPool.get_talent_pools_in_user_domain(user_same_domain.id)
+    assert talent_pools[0].id == talent_pool.id
+    # Checking that talent_pool in second_domain is not visible to user_first
+    talent_pools = TalentPool.get_talent_pools_in_user_domain(user_first.id)
+    assert len(talent_pools) == 1 and talent_pools[0].id == talent_pool.id
+    # Talent pool in second domain should be visible to user from second domain
+    talent_pools = TalentPool.get_talent_pools_in_user_domain(user_second.id)
+    assert talent_pools[0].id == talent_pool_second.id
