@@ -245,7 +245,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                 elif column_name == 'candidate_address.zipCode':
                     prepare_candidate_data(addresses, 'zip_code', column)
                 elif column_name == 'candidate_address.country_code':
-                    prepare_candidate_data(addresses, 'country', column)
+                    prepare_candidate_data(addresses, 'country_code', column)
                 elif column_name == 'candidate.tags':
                     prepare_candidate_data(candidate_tags, 'name', column)
                 elif column_name == 'candidate.skills':

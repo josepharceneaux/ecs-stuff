@@ -19,8 +19,7 @@ def get_candidate_if_validated(user, candidate_id, user_role='TALENT_ADMIN'):
     """
     candidate = Candidate.get(candidate_id)
     if not candidate:
-        return dict(error='candidate not found')
-        # raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id))
+        raise NotFoundError(error_message='Candidate not found: {}'.format(candidate_id))
         # TODO: error_code=custom_error.CANDIDATE_NOT_FOUND
 
     if candidate.is_web_hidden:

@@ -8,14 +8,15 @@ import phonenumbers
 
 # SQLAlchemy Models
 from graphql_service.common.models.db import db
-from graphql_service.common.models.candidate import CandidateEmail, PhoneLabel
+from graphql_service.common.models.candidate import Candidate, CandidateEmail, PhoneLabel
+from graphql_service.common.models.user import User
 from graphql_service.common.models.misc import AreaOfInterest, CustomField
 
 # Helpers
 from graphql_service.common.utils.handy_functions import purge_dict
 from graphql_service.common.utils.validators import is_valid_email, sanitize_zip_code, parse_phone_number
 from graphql_service.common.geo_services.geo_coordinates import get_coordinates
-# from helpers import track_updates
+from helpers import track_updates
 from helpers import remove_duplicates, clean
 from graphql_service.common.utils.datetime_utils import DatetimeUtils
 
@@ -42,12 +43,58 @@ def add_or_edit_candidate_from_params(
         social_networks=None,
         tags=None,
         notes=None,
-        work_preference=None,
+        work_preferences=None,
         photos=None,
         added_datetime=None,
-        updated_datetime=None):
+        updated_datetime=None,
+        edits=None):
+    """
+    Function will add or update candidate.
+    :param user: authorized user
+    :type  user: User
+    :param primary_data: candidate's top level data that is stored in Candidate-table
+    :type  primary_data: dict
+    :type is_updating:  bool
+    :param existing_candidate_data:
+    :param addresses: candidate's address collection
+    :type  addresses: list
+    :param educations: candidate's education collection
+    :type  educations: list
+    :param emails: candidate's email collection
+    :type  emails: list
+    :param phones: candidate's phone collection
+    :type  phones: list
+    :param areas_of_interest: candidate's area of interest collection
+    :type  areas_of_interest: list
+    :param candidate_custom_fields: candidate's custom field collection
+    :type  candidate_custom_fields: list
+    :param experiences: candidate's work experience collection
+    :type  experiences: list
+    :param military_services: candidate's military service collection
+    :type  military_services: list
+    :param preferred_locations: candidate's job preferred location collection
+    :type  preferred_locations: list
+    :param references: candidate's reference collection
+    :type  references: list
+    :param skills: candidate's skill set
+    :type  skills: list
+    :param social_networks: candidate's social network collection
+    :type  social_networks: list
+    :param tags: candidate's tag collection
+    :type  tags: list
+    :param notes: notes about the candidate
+    :type  notes: list
+    :param work_preferences: candidate's work preferences
+    :type  work_preferences: list
+    :param photos: candidate's photos collection
+    :type  photos: list
+    :param added_datetime: timestamp of creation
+    :type  added_datetime: str
+    :param updated_datetime: timestamp of profile update
+    :type  updated_datetime: str
+    :rtype: dict
+    """
     # TODO: Add/improve docstrings & comments
-    # TODO: Include error handling
     # TODO: Complete all checks and validations
     # TODO: Track all edits (including deletes)
 
@@ -58,9 +105,12 @@ def add_or_edit_candidate_from_params(
     # Candidate's primary data such as first_name, last_name, objective, summary, etc.
     if primary_data:
         validated_primary_data = _primary_data(primary_data=candidate_data,
+                                               user_id=user.id,
+                                               existing_data=existing_candidate_data,
                                                added_datetime=added_datetime,
                                                is_updating=is_updating,
-                                               updated_datetime=updated_datetime)
+                                               updated_datetime=updated_datetime,
+                                               edits=edits)
         candidate_data = validated_primary_data
 
     # Areas of Interest
@@ -77,8 +127,6 @@ def add_or_edit_candidate_from_params(
     if candidate_custom_fields:
         validated_custom_fields_data = _add_or_update_custom_fields(candidate_custom_fields, user)
         candidate_data['candidate_custom_fields'] = validated_custom_fields_data
-
-    # Edits
 
     # Educations
     if educations:
@@ -145,14 +193,15 @@ def add_or_edit_candidate_from_params(
     # Views
 
     # Work Preference
-    if work_preference:
-        validated_work_preference_data = _add_or_update_work_preference(work_preference, existing_candidate_data)
-        candidate_data['work_preference'] = validated_work_preference_data
+    if work_preferences:
+        validated_work_preference_data = _add_or_update_work_preferences(work_preferences)
+        candidate_data['work_preferences'] = validated_work_preference_data
 
     return candidate_data
 
 
-def _primary_data(primary_data, added_datetime=None, is_updating=False, updated_datetime=None):
+def _primary_data(primary_data, user_id=None, existing_data=None, added_datetime=None,
+                  is_updating=False, updated_datetime=None, edits=None):
     """
     Function will return candidate's validated primary data
     :rtype: dict
@@ -186,7 +235,15 @@ def _primary_data(primary_data, added_datetime=None, is_updating=False, updated_
         candidate_dict_data['id'] = primary_data['id']
         candidate_dict_data['added_datetime'] = added_datetime
 
-    # TODO: track updates
+    # track updates
+    if is_updating:
+        changes = track_updates(user_id=user_id,
+                                attribute='primary_data',
+                                existing_data=existing_data,
+                                new_data=candidate_dict_data,
+                                updated_datetime=updated_datetime)
+        edits.append(changes)
+        candidate_dict_data['edits'] = edits
 
     return candidate_dict_data
 
@@ -720,17 +777,28 @@ def _add_or_update_tags(tags):
     return validated_tags_data
 
 
-def _add_or_update_work_preference(work_preference, existing_candidate_data):
-    # Remove empty data
-    work_preference = purge_dict(work_preference)
+def _add_or_update_work_preferences(work_preferences):
+    # Remove duplicates
+    work_preferences = remove_duplicates(work_preferences)
 
-    # If candidate already has work preference, it must be replaced by the new data since we
-    # only allow one work preference data per candidate
-    existing_work_preference = existing_candidate_data.get('work_preference')
-    if existing_work_preference:
-        existing_work_preference = work_preference
-        return existing_work_preference
+    # Aggregated formatted & validated work preferences' data
+    validated_work_preferences = []
+
+    for preference in work_preferences:
+        preference_dict = dict(
+            relocate=preference.get('relocate'),
+            authorization=preference.get('authorization'),
+            telecommute=preference.get('telecommute'),
+            travel_percentage=preference.get('travel_percentage'),
+            hourly_rate=preference.get('hourly_rate'),
+            salary=preference.get('salary'),
+            tax_terms=preference.get('tax_terms')
+        )
+        # Remove empty data
+        preference_dict = purge_dict(preference_dict)
+
+        validated_work_preferences.append(preference_dict)
 
     # TODO: track updates
 
-    return work_preference
+    return work_preferences
