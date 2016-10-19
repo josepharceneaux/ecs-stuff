@@ -109,39 +109,41 @@ def get_s3_url(folder_path, name):
     )
 
 
-def get_signed_url(url):
+def sign_url_for_filepicker_bucket(url):
     """
-    This method will extract region, bucket and key from a S3 URL and will return a signed one
-    :param url: S3 URL
+    This method will extract region, bucket and key from a S3 URL and will return a signed one for gettalent-filepicker
+    bucket
+    :param basestring url: S3 URL
     :return: Signed URL
+    :rtype: basestring
     """
 
     try:
         parsed_url = urlparse(url)
-        if 'us-west-1' in parsed_url.netloc:
-            region_name = "us-west-1"
-        else:
-            region_name = "us-east-1"
+
+        if 'gettalent-filepicker' not in url:
+            return url
 
         file_path = parsed_url.path
         file_path = file_path.split('/')
-        file_path = [name for name in file_path if name]
-        bucket_name = file_path.pop(0)
+        file_path = filter(None, file_path)
+
+        if 'gettalent-filepicker' in file_path:
+            file_path.pop(0)
+
         key_name = '/'.join(file_path)
 
-        if bucket_name == "gettalent-filepicker":
-            connection = get_s3_conn(region_name)
-            return connection.generate_url(
-                    expires_in=3600 * 24 * 365,
-                    method='GET',
-                    bucket=bucket_name,
-                    key=key_name,
-                    query_auth=True
-            )
-        else:
-            return url
+        connection = get_s3_conn("us-west-1")
+        return connection.generate_url(
+                expires_in=3600 * 24 * 365,
+                method='GET',
+                bucket="gettalent-filepicker",
+                key=key_name,
+                query_auth=True
+        )
     except Exception as e:
-        print e.message
+        app.config[TalentConfigKeys.LOGGER].exception("Couldn't signed gettalent-filepicker URL: "
+                                                      "(%s) because (%s)", url, e.message)
         return url
 
 
