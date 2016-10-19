@@ -18,4 +18,5 @@ class UserMutation(graphene.relay.ClientIDMutation):
 
     @classmethod
     def mutate_and_get_payload(cls, input, context, info):
+        pass
 
