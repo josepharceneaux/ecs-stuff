@@ -168,29 +168,17 @@ class TestSchedulerDelete(object):
     @pytest.mark.qa
     def test_delete_job_with_invalid_id(self, auth_header):
         """
-         Try to delete job with invalid id. Should return 404 not found.
-         Args:
-            auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
-            POST data while hitting the endpoint.
-        :return:
+        Try to delete job with invalid id. Should return 404 (not found).
         """
-        for param in CampaignsTestsHelpers.INVALID_ID:
-            invalid_job_id = param
-            response_remove = requests.delete(SchedulerApiUrl.TASK % invalid_job_id,
-                                              headers=auth_header)
-            assert response_remove.status_code == requests.codes.NOT_FOUND
+        for invalid_job_id in CampaignsTestsHelpers.INVALID_ID:
+            response = requests.delete(SchedulerApiUrl.TASK % invalid_job_id,
+                                       headers=auth_header)
+            assert response.status_code == requests.codes.NOT_FOUND
 
     @pytest.mark.qa
     def test_delete_scheduled_task_by_other_domain_user(self, auth_header, job_config, access_token_other):
         """
         Schedule a job from a user and then try to remove same task from a different user in different domain.
-        Args:
-            auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
-            POST data while hitting the endpoint.
-            access_token_other : user of different domain
-        :return:
         """
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header)
@@ -198,6 +186,6 @@ class TestSchedulerDelete(object):
         data = response.json()
         auth_header['Authorization'] = 'Bearer %s' % access_token_other
         # Now get the job from other user in different domain
-        response_remove = requests.get(SchedulerApiUrl.TASK % data['id'],
-                                       headers=auth_header)
-        assert response_remove.status_code == requests.codes.NOT_FOUND
+        response = requests.get(SchedulerApiUrl.TASK % data['id'],
+                                headers=auth_header)
+        assert response.status_code == requests.codes.NOT_FOUND
