@@ -7,9 +7,17 @@ from dateutil.relativedelta import relativedelta
 # Common utils
 from talentbot_service.common.tests.conftest import domain_first, first_group, domain_second, second_group,\
     access_token_first, user_first, candidate_first, talent_pool, user_same_domain, user_second, candidate_second,\
-    user_second_candidate, user_same_domain_candidate
+    user_second_candidate, user_same_domain_candidate, email_campaign_first, email_campaign_first_blast,\
+    email_campaign_same_domain, email_campaign_same_domain_blast, email_campaign_second_domain,\
+    email_campaign_second_domain_blast, sms_campaign_first, sms_campaign_first_blast, user_phone_first, \
+    sms_campaign_second, sms_campaign_second_blast, user_phone_second,push_campaign_first, push_campaign_first_blast,\
+    user_phone_same_domain, sms_campaign_same_domain, sms_campaign_same_domain_blast, push_campaign_same_domain,\
+    push_campaign_same_domain_blast, push_campaign_second, push_campaign_second_blast
 from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate
 from talentbot_service.common.models.user import User
+from talentbot_service.common.models.email_campaign import EmailCampaignBlast
+from talentbot_service.common.models.sms_campaign import SmsCampaignBlast
+from talentbot_service.common.models.push_campaign import PushCampaignBlast
 from talentbot_service.common.models.candidate import Candidate, CandidateSkill, CandidateAddress
 
 
@@ -136,5 +144,147 @@ def test_candidates_from_zipcode(user_first, candidate_first, candidate_second, 
     assert count == 3
 
 
-def test_top_performing_campaigns():
-    pass
+def test_top_performing_email_campaign(user_first, user_second, email_campaign_first, email_campaign_first_blast,
+                                       email_campaign_same_domain, email_campaign_same_domain_blast,
+                                       email_campaign_second_domain, email_campaign_second_domain_blast):
+    """
+    This method tests top performing email campaigns are being fetched correctly within a domain
+    """
+    # With 3 months earlier datetime
+    datetime_3_months_earlier = datetime.datetime.utcnow() - relativedelta(months=3)
+    email_campaign = EmailCampaignBlast.top_performing_email_campaign(datetime_3_months_earlier, user_first.id)
+    assert email_campaign.campaign.name == email_campaign_same_domain.name
+    email_campaign_first_blast.opens = 20
+    email_campaign = EmailCampaignBlast.top_performing_email_campaign(datetime_3_months_earlier, user_first.id)
+    assert email_campaign.campaign.name == email_campaign_first.name
+    # With 0 sends and opens greater than 0
+    email_campaign_first_blast.sends = 0
+    email_campaign = EmailCampaignBlast.top_performing_email_campaign(datetime_3_months_earlier, user_first.id)
+    assert email_campaign.campaign.name == email_campaign_same_domain.name
+    # Now top campaign with user_second's Id
+    email_campaign_first_blast.sends = 20
+    email_campaign_first_blast.opens = 20
+    email_campaign = EmailCampaignBlast.top_performing_email_campaign(datetime_3_months_earlier, user_second.id)
+    assert email_campaign.campaign.name == email_campaign_second_domain.name
+    # With year
+    year = str(datetime.datetime.utcnow().year)
+    email_campaign = EmailCampaignBlast.top_performing_email_campaign(year, user_first.id)
+    assert email_campaign.campaign.name == email_campaign_first.name
+    email_campaign_first_blast.opens = 10
+    email_campaign = EmailCampaignBlast.top_performing_email_campaign(year, user_first.id)
+    assert email_campaign.campaign.name == email_campaign_same_domain.name
+    email_campaign_first_blast.opens = 20
+    email_campaign = EmailCampaignBlast.top_performing_email_campaign(year, user_first.id)
+    assert email_campaign.campaign.name == email_campaign_first.name
+    # With 0 sends and opens greater than 0
+    email_campaign_first_blast.sends = 0
+    email_campaign = EmailCampaignBlast.top_performing_email_campaign(year, user_first.id)
+    assert email_campaign.campaign.name == email_campaign_same_domain.name
+    # With Datetime_value None
+    email_campaign_first_blast.sends = 20
+    email_campaign = EmailCampaignBlast.top_performing_email_campaign(None, user_first.id)
+    assert email_campaign.campaign.name == email_campaign_first.name
+    email_campaign = EmailCampaignBlast.top_performing_email_campaign(None, user_second.id)
+    assert email_campaign.campaign.name == email_campaign_second_domain.name
+    #####
+    email_campaign_first_blast.opens = 20
+    email_campaign = EmailCampaignBlast.top_performing_email_campaign(None, user_first.id)
+    assert email_campaign.campaign.name == email_campaign_first.name
+    email_campaign = EmailCampaignBlast.top_performing_email_campaign(None, user_first.id)
+    assert email_campaign.campaign.name == email_campaign_first.name
+    # With 0 sends and opens greater than 0
+    email_campaign_first_blast.sends = 0
+    email_campaign = EmailCampaignBlast.top_performing_email_campaign(None, user_first.id)
+    assert email_campaign.campaign.name == email_campaign_same_domain.name
+    # Now top campaign with user_second's Id
+    email_campaign_first_blast.sends = 20
+    email_campaign_first_blast.opens = 20
+    email_campaign = EmailCampaignBlast.top_performing_email_campaign(None, user_second.id)
+    assert email_campaign.campaign.name == email_campaign_second_domain.name
+
+
+def test_top_performing_sms_campaign(user_first, user_second, sms_campaign_first, sms_campaign_first_blast,
+                                     sms_campaign_second, sms_campaign_second_blast, user_phone_second,
+                                     user_same_domain, sms_campaign_same_domain, sms_campaign_same_domain_blast):
+    # With 3 months earlier datetime
+    datetime_3_months_earlier = datetime.datetime.utcnow() - relativedelta(months=3)
+    sms_campaign = SmsCampaignBlast.top_performing_sms_campaign(datetime_3_months_earlier, user_first.id)
+    assert sms_campaign.campaign.name == sms_campaign_first.name
+    # Checking with user_second's Id
+    sms_campaign = SmsCampaignBlast.top_performing_sms_campaign(datetime_3_months_earlier, user_second.id)
+    assert sms_campaign.campaign.name == sms_campaign_second.name
+    # Checking with user_same_domain's Id
+    sms_campaign = SmsCampaignBlast.top_performing_sms_campaign(datetime_3_months_earlier, user_same_domain.id)
+    assert sms_campaign.campaign.name == sms_campaign_first.name
+    # Increasing sms_campaign_same_domain_blast's number of replies
+    sms_campaign_same_domain_blast.replies = 10
+    sms_campaign = SmsCampaignBlast.top_performing_sms_campaign(datetime_3_months_earlier, user_same_domain.id)
+    assert sms_campaign.campaign.name == sms_campaign_same_domain.name
+    # Testing with year
+    sms_campaign_same_domain_blast.replies = 8
+    year = str(datetime.datetime.utcnow().year)
+    sms_campaign = SmsCampaignBlast.top_performing_sms_campaign(year, user_first.id)
+    assert sms_campaign.campaign.name == sms_campaign_first.name
+    # Checking with user_second's Id
+    sms_campaign = SmsCampaignBlast.top_performing_sms_campaign(year, user_second.id)
+    assert sms_campaign.campaign.name == sms_campaign_second.name
+    # Checking with user_same_domain's Id
+    sms_campaign = SmsCampaignBlast.top_performing_sms_campaign(year, user_same_domain.id)
+    assert sms_campaign.campaign.name == sms_campaign_first.name
+    # Increasing sms_campaign_same_domain_blast's number of replies
+    sms_campaign_same_domain_blast.replies = 10
+    sms_campaign = SmsCampaignBlast.top_performing_sms_campaign(year, user_same_domain.id)
+    assert sms_campaign.campaign.name == sms_campaign_same_domain.name
+    # Testing with datetime_value as None
+    sms_campaign_same_domain_blast.replies = 8
+    sms_campaign = SmsCampaignBlast.top_performing_sms_campaign(None, user_first.id)
+    assert sms_campaign.campaign.name == sms_campaign_first.name
+    # Checking with user_second's Id
+    sms_campaign = SmsCampaignBlast.top_performing_sms_campaign(None, user_second.id)
+    assert sms_campaign.campaign.name == sms_campaign_second.name
+    # Checking with user_same_domain's Id
+    sms_campaign = SmsCampaignBlast.top_performing_sms_campaign(None, user_same_domain.id)
+    assert sms_campaign.campaign.name == sms_campaign_first.name
+    # Increasing sms_campaign_same_domain_blast's number of replies
+    sms_campaign_same_domain_blast.replies = 10
+    sms_campaign = SmsCampaignBlast.top_performing_sms_campaign(None, user_same_domain.id)
+    assert sms_campaign.campaign.name == sms_campaign_same_domain.name
+
+
+def test_top_performing_push_campaign(user_first, push_campaign_first, push_campaign_first_blast, user_same_domain,
+                                      user_second, push_campaign_same_domain, push_campaign_same_domain_blast,
+                                      push_campaign_second, push_campaign_second_blast):
+    # With 3 months earlier datetime
+    datetime_3_months_earlier = datetime.datetime.utcnow() - relativedelta(months=3)
+    push_campaign = PushCampaignBlast.top_performing_push_campaign(datetime_3_months_earlier, user_first.id)
+    assert push_campaign.campaign.name == push_campaign_first.name
+    # Increasing number of clicks for push_campaign_same_domain
+    push_campaign_same_domain_blast.clicks = 10
+    push_campaign = PushCampaignBlast.top_performing_push_campaign(datetime_3_months_earlier, user_first.id)
+    assert push_campaign.campaign.name == push_campaign_same_domain.name
+    # Checking in user_second's domain
+    push_campaign = PushCampaignBlast.top_performing_push_campaign(datetime_3_months_earlier, user_second.id)
+    assert push_campaign.campaign.name == push_campaign_second.name
+    # With year
+    push_campaign_same_domain_blast.clicks = 5
+    year = str(datetime.datetime.utcnow().year)
+    push_campaign = PushCampaignBlast.top_performing_push_campaign(year, user_first.id)
+    assert push_campaign.campaign.name == push_campaign_first.name
+    # Increasing number of clicks for push_campaign_same_domain
+    push_campaign_same_domain_blast.clicks = 10
+    push_campaign = PushCampaignBlast.top_performing_push_campaign(year, user_first.id)
+    assert push_campaign.campaign.name == push_campaign_same_domain.name
+    # Checking in user_second's domain
+    push_campaign = PushCampaignBlast.top_performing_push_campaign(year, user_second.id)
+    assert push_campaign.campaign.name == push_campaign_second.name
+    # With datetime_value as None
+    push_campaign_same_domain_blast.clicks = 5
+    push_campaign = PushCampaignBlast.top_performing_push_campaign(None, user_first.id)
+    assert push_campaign.campaign.name == push_campaign_first.name
+    # Increasing number of clicks for push_campaign_same_domain
+    push_campaign_same_domain_blast.clicks = 10
+    push_campaign = PushCampaignBlast.top_performing_push_campaign(None, user_first.id)
+    assert push_campaign.campaign.name == push_campaign_same_domain.name
+    # Checking in user_second's domain
+    push_campaign = PushCampaignBlast.top_performing_push_campaign(None, user_second.id)
+    assert push_campaign.campaign.name == push_campaign_second.name

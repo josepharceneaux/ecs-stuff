@@ -118,9 +118,9 @@ class PushCampaignBlast(db.Model):
     @classmethod
     def top_performing_push_campaign(cls, datetime_value, user_id):
         """
-        This method returns top performing push campaign from a specific year
-        :param int user_id: User Id
-        :param str datetime_value: Year of campaign started or updated
+        This method returns top performing push campaign
+        :param int|long user_id: User Id
+        :param str|datetime.datetime|None datetime_value: Year of campaign started or updated
         :rtype: PushCampaignBlast
         """
         assert isinstance(datetime_value, (datetime.datetime, basestring)) or datetime_value is None, \

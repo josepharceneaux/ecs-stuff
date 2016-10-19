@@ -18,7 +18,10 @@ from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 
 # Application Specific
 from ..models.db import db
-from ..models.user import (Client, Domain, User, Token, Role)
+from ..models.user import (Client, Domain, User, UserPhone, Token, Role)
+from ..models.email_campaign import (EmailCampaign, EmailCampaignBlast)
+from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
+from ..models.push_campaign import (PushCampaignBlast, PushCampaign)
 from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline)
 from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField, CustomFieldCategory)
 from ..utils.handy_functions import send_request
@@ -511,6 +514,7 @@ def user_second_candidate(user_second):
     db.session.commit()
     return candidate
 
+
 @pytest.fixture()
 def user_same_domain_candidate(user_same_domain):
     """
@@ -520,6 +524,237 @@ def user_same_domain_candidate(user_same_domain):
     db.session.add(candidate)
     db.session.commit()
     return candidate
+
+
+@pytest.fixture()
+def email_campaign_first_blast(email_campaign_first):
+    """
+    Fixture creates email_campaign_blast for email_campaign_first with opens and sends
+    """
+    email_campaign_blast = EmailCampaignBlast(campaign_id=email_campaign_first.id, sends=20, opens=10)
+    db.session.add(email_campaign_blast)
+    db.session.commit()
+    return email_campaign_blast
+
+
+@pytest.fixture()
+def email_campaign_first(user_first):
+    """
+    Fixture creates an email campaign for user_first
+    """
+    email_campaign = EmailCampaign(user_id=user_first.id, name=gen_salt(20))
+    db.session.add(email_campaign)
+    db.session.commit()
+    return email_campaign
+
+
+@pytest.fixture()
+def email_campaign_same_domain_blast(email_campaign_same_domain):
+    """
+    Fixture creates email_campaign_blast for email_campaign_same_domain with opens and sends
+    """
+    email_campaign_blast = EmailCampaignBlast(campaign_id=email_campaign_same_domain.id, sends=10, opens=9)
+    db.session.add(email_campaign_blast)
+    db.session.commit()
+    return email_campaign_blast
+
+
+@pytest.fixture()
+def email_campaign_same_domain(user_same_domain):
+    """
+    Fixture creates an email campaign for user_same_domain
+    """
+    email_campaign = EmailCampaign(user_id=user_same_domain.id, name=gen_salt(20))
+    db.session.add(email_campaign)
+    db.session.commit()
+    return email_campaign
+
+
+@pytest.fixture()
+def email_campaign_second_domain_blast(email_campaign_second_domain):
+    """
+    Fixture creates email_campaign_blast for email_campaign_second_domain with opens and sends
+    """
+    email_campaign_blast = EmailCampaignBlast(campaign_id=email_campaign_second_domain.id, sends=10, opens=10)
+    db.session.add(email_campaign_blast)
+    db.session.commit()
+    return email_campaign_blast
+
+
+@pytest.fixture()
+def email_campaign_second_domain(user_second):
+    """
+    Fixture creates an email campaign for user_second
+    """
+    email_campaign = EmailCampaign(user_id=user_second.id, name=gen_salt(20))
+    db.session.add(email_campaign)
+    db.session.commit()
+    return email_campaign
+
+
+@pytest.fixture()
+def user_phone_first(user_first):
+    """
+    Fixture creates user_phone for user_first
+    """
+    user_phone = UserPhone(user_id=user_first.id, value=gen_salt(10))
+    db.session.add(user_phone)
+    db.session.commit()
+    return user_phone
+
+
+@pytest.fixture()
+def sms_campaign_first_blast(sms_campaign_first):
+    """
+    Fixture creates sms_campaign_blast for sms_campaign_first with replies and sends
+    """
+    sms_campaign_blast = SmsCampaignBlast(campaign_id=sms_campaign_first.id, replies=9, sends=10)
+    db.session.add(sms_campaign_blast)
+    db.session.commit()
+    return sms_campaign_blast
+
+
+@pytest.fixture()
+def sms_campaign_first(user_phone_first):
+    """
+    Fixture creates an sms campaign for user_phone_first
+    """
+    sms_campaign = SmsCampaign(user_phone_id=user_phone_first.id, name=gen_salt(20))
+    db.session.add(sms_campaign)
+    db.session.commit()
+    return sms_campaign
+
+
+@pytest.fixture()
+def user_phone_second(user_second):
+    """
+    Fixture creates user_phone for user_second
+    """
+    user_phone = UserPhone(user_id=user_second.id, value=gen_salt(10))
+    db.session.add(user_phone)
+    db.session.commit()
+    return user_phone
+
+
+@pytest.fixture()
+def sms_campaign_second_blast(sms_campaign_second):
+    """
+    Fixture creates sms_campaign_blast for sms_campaign_second with replies and sends
+    """
+    sms_campaign_blast = SmsCampaignBlast(campaign_id=sms_campaign_second.id, replies=10, sends=10)
+    db.session.add(sms_campaign_blast)
+    db.session.commit()
+    return sms_campaign_blast
+
+
+@pytest.fixture()
+def sms_campaign_second(user_phone_second):
+    """
+    Fixture creates an sms campaign for user_phone_second
+    """
+    sms_campaign = SmsCampaign(user_phone_id=user_phone_second.id, name=gen_salt(20))
+    db.session.add(sms_campaign)
+    db.session.commit()
+    return sms_campaign
+
+
+@pytest.fixture()
+def user_phone_same_domain(user_same_domain):
+    """
+    Fixture creates user_phone for user_same_domain
+    """
+    user_phone = UserPhone(user_id=user_same_domain.id, value=gen_salt(10))
+    db.session.add(user_phone)
+    db.session.commit()
+    return user_phone
+
+
+@pytest.fixture()
+def sms_campaign_same_domain_blast(sms_campaign_same_domain):
+    """
+    Fixture creates sms_campaign_blast for sms_campaign_same_domain with replies and sends
+    """
+    sms_campaign_blast = SmsCampaignBlast(campaign_id=sms_campaign_same_domain.id, replies=8, sends=10)
+    db.session.add(sms_campaign_blast)
+    db.session.commit()
+    return sms_campaign_blast
+
+
+@pytest.fixture()
+def sms_campaign_same_domain(user_phone_same_domain):
+    """
+    Fixture creates an sms campaign for user_phone_same_domain
+    """
+    sms_campaign = SmsCampaign(user_phone_id=user_phone_same_domain.id, name=gen_salt(20))
+    db.session.add(sms_campaign)
+    db.session.commit()
+    return sms_campaign
+
+
+@pytest.fixture()
+def push_campaign_first(user_first):
+    """
+    Fixture creates push_campaign for user_first
+    """
+    push_campaign = PushCampaign(user_id=user_first.id, name=gen_salt(20))
+    db.session.add(push_campaign)
+    db.session.commit()
+    return push_campaign
+
+
+@pytest.fixture()
+def push_campaign_first_blast(push_campaign_first):
+    """
+    Fixture creates push_campaign_blast for push_campaign_first
+    """
+    push_campaign_blast = PushCampaignBlast(campaign_id=push_campaign_first.id, sends=10, clicks=8)
+    db.session.add(push_campaign_blast)
+    db.session.commit()
+    return push_campaign_blast
+
+
+@pytest.fixture()
+def push_campaign_same_domain(user_same_domain):
+    """
+    Fixture creates push_campaign for user_same_domain
+    """
+    push_campaign = PushCampaign(user_id=user_same_domain.id, name=gen_salt(20))
+    db.session.add(push_campaign)
+    db.session.commit()
+    return push_campaign
+
+
+@pytest.fixture()
+def push_campaign_same_domain_blast(push_campaign_same_domain):
+    """
+    Fixture creates push_campaign_blast for push_campaign_same_domain
+    """
+    push_campaign_blast = PushCampaignBlast(campaign_id=push_campaign_same_domain.id, sends=10, clicks=5)
+    db.session.add(push_campaign_blast)
+    db.session.commit()
+    return push_campaign_blast
+
+
+@pytest.fixture()
+def push_campaign_second(user_second):
+    """
+    Fixture creates push_campaign for user_second
+    """
+    push_campaign = PushCampaign(user_id=user_second.id, name=gen_salt(20))
+    db.session.add(push_campaign)
+    db.session.commit()
+    return push_campaign
+
+
+@pytest.fixture()
+def push_campaign_second_blast(push_campaign_second):
+    """
+    Fixture creates push_campaign_blast for push_campaign_second
+    """
+    push_campaign_blast = PushCampaignBlast(campaign_id=push_campaign_second.id, sends=10, clicks=5)
+    db.session.add(push_campaign_blast)
+    db.session.commit()
+    return push_campaign_blast
 
 
 def randomword(length):

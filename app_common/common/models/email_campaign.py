@@ -204,7 +204,7 @@ class EmailCampaignBlast(db.Model):
         """
         This method returns top performing email campaign from a specific datetime
         :param int user_id: User Id
-        :param str|datetime|None datetime_value: date during campaign started or updated
+        :param str|datetime.datetime|None datetime_value: date during campaign started or updated
         :rtype: EmailCampaignBlast
         """
         assert isinstance(datetime_value, (datetime.datetime, basestring)) or datetime_value is None,\
