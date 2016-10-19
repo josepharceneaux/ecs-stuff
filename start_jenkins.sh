@@ -68,7 +68,7 @@ sleep 10
 
 echo "Beginning tests."
 
-py.test -n 48 push_campaign_service/tests scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests resume_parsing_service/tests email_campaign_service/tests social_network_service/tests sms_campaign_service/tests app_common/common/tests
+py.test -n 48 social_network_service/tests
 
 
 
