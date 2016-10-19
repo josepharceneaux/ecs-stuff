@@ -1,6 +1,7 @@
 __author__ = 'ufarooqi'
-from cStringIO import StringIO
 import boto
+from urlparse import urlparse
+from cStringIO import StringIO
 from flask import current_app as app
 import boto.exception
 from boto.s3.bucket import Bucket
@@ -14,9 +15,11 @@ import boto3
 
 def get_s3_bucket_and_conn():
     """
-
-    :rtype: (Bucket, S3Connection)
+    :param region: Name of Region
+    :param bucket: Name of Bucket
+    :return: (Bucket, S3Connection)
     """
+
     c = get_s3_conn()
     try:
         b = c.get_bucket(app.config[TalentConfigKeys.S3_BUCKET_KEY], validate=False)
@@ -104,6 +107,42 @@ def get_s3_url(folder_path, name):
         key="%s/%s" % (folder_path, os.path.basename(name)),
         query_auth=True
     )
+
+
+def get_signed_url(url):
+    """
+    This method will extract region, bucket and key from a S3 URL and will return a signed one
+    :param url: S3 URL
+    :return: Signed URL
+    """
+
+    try:
+        parsed_url = urlparse(url)
+        if 'us-west-1' in parsed_url.netloc:
+            region_name = "us-west-1"
+        else:
+            region_name = "us-east-1"
+
+        file_path = parsed_url.path
+        file_path = file_path.split('/')
+        file_path = [name for name in file_path if name]
+        bucket_name = file_path.pop(0)
+        key_name = '/'.join(file_path)
+
+        if bucket_name == "gettalent-filepicker":
+            connection = get_s3_conn(region_name)
+            return connection.generate_url(
+                    expires_in=3600 * 24 * 365,
+                    method='GET',
+                    bucket=bucket_name,
+                    key=key_name,
+                    query_auth=True
+            )
+        else:
+            return url
+    except Exception as e:
+        print e.message
+        return url
 
 
 def is_file_existing(folder_path, name):
