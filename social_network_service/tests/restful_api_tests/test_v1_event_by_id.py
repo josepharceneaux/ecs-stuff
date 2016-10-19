@@ -128,7 +128,7 @@ class TestEventById(object):
         event['end_datetime'] = (datetime_now + datetime.timedelta(days=60)).strftime(DatetimeUtils.ISO8601_FORMAT)
         response = send_request('put', SocialNetworkApiUrl.EVENT % event['id'], token_first, data=event)
         logger.info(response.text)
-        assert response.status_code == codes.OK, response.text
+        assert response.status_code == codes.OK, '{} {} {}'.format(response.text, event)
         db.db.session.commit()
         event_occurrence_in_db = Event.get_by_id(event['id'])
         Event.session.commit()  # needed to refresh session otherwise it will show old objects
