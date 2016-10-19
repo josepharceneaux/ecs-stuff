@@ -323,6 +323,10 @@ class QuestionHandler(object):
                 response_message = response_message.replace('candidates', 'candidate')
             if user_name == 'Everyone totally':
                 response_message = response_message.replace('`Everyone totally`', '`Everyone` totally')
+            if isinstance(talent_pool_list, list) and len(talent_pool_list) > 1 and user_name is not None \
+                    and user_name != 'Everyone totally':
+                response_message = self.append_count_with_mesage(response_message, talent_pool_list, 4, user_id,
+                                                                 user_name, user_specific_date)
             return response_message
         if is_valid_year == -1:
             return "Please enter a valid year greater than 1900 and smaller than current year."
@@ -356,6 +360,10 @@ class QuestionHandler(object):
                     response_message = response_message.replace('pool', 'pools')
                 if count == 1:
                     response_message = response_message.replace('candidates', 'candidate')
+                if isinstance(talent_pool_list, list) and len(talent_pool_list) > 1 and user_name is not None \
+                        and user_name != 'Everyone totally':
+                    response_message = self.append_count_with_mesage(response_message, talent_pool_list, 4, user_id,
+                                                                     user_name, user_specific_date)
                 return response_message
         talent_pool_list = self.create_list_of_talent_pools(spaced_talent_pool_name)
         try:
@@ -383,6 +391,10 @@ class QuestionHandler(object):
         if not isinstance(user_specific_date, datetime) and not is_valid_year \
                 and user_specific_date is None and message_tokens[-1].lower() not in ['pool']:
             response_message = 'No valid time duration found, showing result from all the times\n %s' % response_message
+        if isinstance(talent_pool_list, list) and len(talent_pool_list) > 1 and user_name is not None \
+                and user_name != 'Everyone totally':
+            response_message = self.append_count_with_mesage(response_message, talent_pool_list, 4, user_id,
+                                                             user_name, user_specific_date)
         return response_message
 
     @classmethod
@@ -406,12 +418,12 @@ class QuestionHandler(object):
         try:
             talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id)
         except AssertionError as error:
-            logger.error("Error occurred while talent pools: %s" % error.message)
+            logger.error("Error occurred while retrieving talent pools: %s" % error.message)
             return None
         try:
             _, domain_name = User.get_domain_name_and_its_users(user_id)
         except AssertionError as error:
-            logger.error("Error occurred while talent pools: %s" % error.message)
+            logger.error("Error occurred while retrieving talent pools: %s" % error.message)
             return None
         if talent_pools:
             talent_pool_names = [talent_pool.name for talent_pool in talent_pools]
@@ -526,3 +538,29 @@ class QuestionHandler(object):
             talent_pool_name_list = [name.strip(' ') for name in talent_pool_name_list]
             return talent_pool_name_list
         return None
+
+    @classmethod
+    def append_count_with_mesage(cls, message, _list,  handler_number, user_id, user_name=None,
+                                 user_specific_date=None):
+        """
+        This method appends number of imports or number of candidates with skills with the given message
+        :param str message: Response message
+        :param list _list: List of skills or list of talent pools
+        :param int handler_number: Question handler number
+        :param int|long user_id: User Id
+        :param str|None user_name: User name
+        :param datetime|str|None user_specific_date: User specified datetime
+        :rtype: str
+        """
+        count_dict = {}
+        if handler_number == 4:
+            for talent_pool in _list:
+                _count = TalentPoolCandidate.candidates_added_last_month(user_id, user_name, [talent_pool],
+                                                                         user_specific_date)
+                if isinstance(_count, (int, long)):
+                    count_dict.update({talent_pool: _count})
+        if len(count_dict) > 0:
+            message = '%s\n%s' % (message, '\n'.join(['`%s`: %d' % (key,
+                                  count_dict[key]) for key in count_dict]))
+            message = message.replace('pool', 'pools')
+        return message
