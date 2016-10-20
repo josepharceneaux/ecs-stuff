@@ -6,7 +6,7 @@ Here we have endpoint which is treated as Mock-Service for different social-netw
 from flask import Blueprint, request
 
 # Application Specific
-from mock_service.common.constants import MEETUP
+from mock_service.common.constants import MEETUP, HttpMethods
 from mock_service.common.routes import MockServiceApi
 from mock_service.common.utils.api_utils import ApiResponse
 from mock_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
@@ -74,6 +74,8 @@ def mock_endpoint(url_type, social_network, relative_url):
     if len(split_data) > 1 and split_data[1].isdigit():
         relative_url = split_data[0]
         resource_id = split_data[1]
+        if request_method == HttpMethods.POST:
+            request_method = HttpMethods.PUT
     else:
         resource_id = None
     try:
