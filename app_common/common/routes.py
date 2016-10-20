@@ -918,7 +918,7 @@ class MockServiceApi(object):
     VERSION = 'v1'
     HOST_NAME = _get_host_name(GTApis.MOCK_SERVICE_NAME, GTApis.MOCK_SERVICE_PORT)
     # Endpoint for mock server
-    MOCK_SERVICE = '/' + VERSION + '/<string:url_type>/<string:social_network>/<path:path>'
+    MOCK_SERVICE = '/' + VERSION + '/<string:url_type>/<string:social_network>/<path:relative_url>'
 
 
 class MockServiceApiUrl(object):
