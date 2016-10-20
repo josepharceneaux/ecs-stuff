@@ -477,12 +477,13 @@ def parse_candidate_addresses(bg_xml_list):
     """
     output = []
     for address in bg_xml_list:
+        scrubbed_zipcode = re.sub("[^0-9|-| ' ']", "", _tag_text(address, 'postalcode'))
         output.append({
             'address_line_1': _tag_text(address, 'street'),
             'city': address.get('inferred-city', '').title() or _tag_text(address, 'city'),
             'state': address.get('inferred-state', '').title() or _tag_text(address, 'state'),
             'country_code': get_country_code_from_address_tag(address),
-            'zip_code': sanitize_zip_code(_tag_text(address, 'postalcode'))
+            'zip_code': sanitize_zip_code(scrubbed_zipcode)
         })
     return output
 
