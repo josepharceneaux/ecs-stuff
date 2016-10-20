@@ -27,4 +27,4 @@ app.add_url_rule(
 )
 
 if __name__ == '__main__':
-    app.run(port=GTApis.GRAPHQL_SERVICE_PORT, use_reloader=True, debug=True, threaded=True)
+    app.run(port=GTApis.GRAPHQL_SERVICE_PORT, use_reloader=True, debug=False, threaded=True)
