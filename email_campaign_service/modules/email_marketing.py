@@ -39,11 +39,10 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailCampaignSmartlist,
                                                                  EmailCampaignBlast,
                                                                  EmailCampaignSend,
-                                                                 EmailCampaignSendUrlConversion,
-                                                                 EmailClientCredentials)
+                                                                 EmailCampaignSendUrlConversion)
 from email_campaign_service.common.models.candidate import (Candidate, CandidateEmail,
                                                             CandidateSubscriptionPreference)
-from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError, ResourceNotFound)
+from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
 from email_campaign_service.common.campaign_services.validators import validate_smartlist_ids
 from email_campaign_service.common.utils.amazon_ses import (send_email, get_default_email_info)
