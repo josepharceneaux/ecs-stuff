@@ -14,6 +14,7 @@ from graphql_service.common.utils.candidate_utils import get_candidate_if_valida
 class request(object):
     user = User.get(1)
 
+
 from talent_candidates import add_or_edit_candidate_from_params
 
 # Utilities
@@ -60,8 +61,6 @@ class EducationDegreeInput(graphene.InputObjectType):
     end_year = graphene.Int()
     end_month = graphene.Int()
     gpa = graphene.Float()
-    added_datetime = graphene.String()
-    updated_datetime = graphene.String()
     concentration = graphene.String()
     comments = graphene.String()
 
@@ -391,14 +390,11 @@ class UpdateCandidate(graphene.Mutation):
         try:
             existing_candidate_data = DynamoDB.get_candidate(candidate_id)
 
-            if not existing_candidate_data.get('edits'):
-                existing_candidate_data['edits'] = []
-
             candidates_validated_data = add_or_edit_candidate_from_params(
                 user=authenticated_user,
+                candidate_id=candidate_id,
                 primary_data=candidate_data,
                 is_updating=True,
-                edits=existing_candidate_data['edits'],
                 existing_candidate_data=existing_candidate_data,
                 areas_of_interest=areas_of_interest,
                 addresses=addresses,
@@ -429,9 +425,8 @@ class UpdateCandidate(graphene.Mutation):
         # Commit transaction
         db.session.commit()
 
-        DynamoDB.update_candidate(
-            candidate_id=candidate_id,
-            candidate_data=set_empty_strings_to_null(candidates_validated_data))
+        DynamoDB.update_candidate(candidate_id=candidate_id,
+                                  candidate_data=set_empty_strings_to_null(candidates_validated_data))
 
         return UpdateCandidate(candidate=CandidateType(**candidate_data),
                                ok=True,
@@ -465,14 +460,8 @@ class DeleteCandidate(graphene.Mutation):
                                    error_message=client_error.message)
 
         except InternalServerError as server_error:
-            return CreateCandidate(candidate=None,
+            return DeleteCandidate(candidate=None,
                                    ok=False,
                                    error_message=server_error.message)
 
         return DeleteCandidate(ok=True, id=candidate_id)
-
-
-class CandidateMutation(graphene.ObjectType):
-    create_candidate = CreateCandidate.Field()
-    update_candidate = UpdateCandidate.Field()
-    delete_candidate = DeleteCandidate.Field()

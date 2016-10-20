@@ -1,7 +1,9 @@
+from datetime import datetime
 import boto3
 from decimal import Decimal
 from graphql_service.application import app
 from graphql_service.common.talent_config_manager import TalentEnvs
+from graphql_service.common.utils.datetime_utils import DatetimeUtils
 
 
 class DynamoDB(object):
@@ -21,15 +23,7 @@ class DynamoDB(object):
     else:
         connection = boto3.resource('dynamodb')
 
-    candidate_table = connection.Table('candidates')
-
-    # Candidate attributes eligible for updating/adding
-    candidate_attributes = {
-        'addresses', 'emails', 'educations',
-        'work_experiences', 'phones', 'skills',
-        'military_services', 'social_networks',
-        'edits'
-    }
+    candidate_table = connection.Table('candidate')
 
     @classmethod
     def add_candidate(cls, data):
@@ -78,8 +72,7 @@ class DynamoDB(object):
             ":objective": candidate_data.get('objective'),
             ":summary": candidate_data.get('summary'),
             ":resume_url": candidate_data.get('resume_url'),
-            ":edits": candidate_data.get('edits'),
-            ":updated_datetime": candidate_data['updated_datetime']  # required for updating
+            ":updated_datetime": candidate_data.get('updated_datetime') or DatetimeUtils.to_utc_str(datetime.utcnow())
         }
 
         # ***** Update expression will only be updated if candidate's attributes have been provided
