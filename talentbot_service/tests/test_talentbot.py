@@ -7,7 +7,7 @@ from dateutil.relativedelta import relativedelta
 # Common utils
 from talentbot_service.common.tests.conftest import domain_first, first_group, domain_second, second_group,\
     access_token_first, user_first, candidate_first, talent_pool, user_same_domain, user_second, candidate_second,\
-    user_second_candidate, user_same_domain_candidate, email_campaign_first, email_campaign_first_blast,\
+    user_second_candidate, candidate_same_domain, email_campaign_first, email_campaign_first_blast,\
     email_campaign_same_domain, email_campaign_same_domain_blast, email_campaign_second_domain,\
     email_campaign_second_domain_blast, sms_campaign_first, sms_campaign_first_blast, user_phone_first, \
     sms_campaign_second, sms_campaign_second_blast, user_phone_second,push_campaign_first, push_campaign_first_blast,\
@@ -31,22 +31,22 @@ def test_candidate_added(user_first, talent_pool, candidate_first):
                                                 added_time=user_first.added_time)
     talent_pool_candidate.save()
     # Tests if number of candidates added by user with the same added time
-    count = TalentPoolCandidate.candidates_added_last_month(user_first.id, user_name, [talent_pool.name],
-                                                            None)
+    count = TalentPoolCandidate.candidate_imports(user_first.id, user_name, [talent_pool.name],
+                                                  None)
     assert count == 1
     # Tests without specifying time
-    count = TalentPoolCandidate.candidates_added_last_month(user_first.id, user_name, [talent_pool.name])
+    count = TalentPoolCandidate.candidate_imports(user_first.id, user_name, [talent_pool.name])
     assert count == 1
     # Tests with 3 months earlier added and updated time
     changed_date = datetime.datetime.utcnow() - relativedelta(years=3)
     talent_pool.added_time = changed_date
     talent_pool.updated_time = changed_date
     current_datetime = datetime.datetime.utcnow()
-    count = TalentPoolCandidate.candidates_added_last_month(user_first.id, user_name, [talent_pool.name],
-                                                            current_datetime)
+    count = TalentPoolCandidate.candidate_imports(user_first.id, user_name, [talent_pool.name],
+                                                  current_datetime)
     assert count == 0
     # Tests without specifying time
-    count = TalentPoolCandidate.candidates_added_last_month(user_first.id, user_name, [talent_pool.name])
+    count = TalentPoolCandidate.candidate_imports(user_first.id, user_name, [talent_pool.name])
     assert count == 1
 
 
@@ -68,14 +68,11 @@ def test_get_domain_name_and_its_users(user_first, user_second, user_same_domain
 
 
 def test_get_candidates_with_skills(user_first, candidate_first, candidate_second, user_same_domain,
-                                    user_second_candidate, user_second, user_same_domain_candidate):
+                                    user_second_candidate, user_second, candidate_same_domain):
     """
     This method checks number of candidates against skills in user's domain.
     """
-    skill_1 = fake.word()
-    skill_2 = fake.word()
-    skill_3 = fake.word()
-    skill_4 = fake.word()
+    (skill_1, skill_2, skill_3, skill_4) = (fake.word() for _ in range(4))
     candidate_skill = CandidateSkill(candidate_id=candidate_first.id, description=skill_1, resume_id=0)
     candidate_skill.save()
     count = Candidate.get_candidate_count_with_skills([skill_1], user_first.id)
@@ -100,41 +97,42 @@ def test_get_candidates_with_skills(user_first, candidate_first, candidate_secon
     count = Candidate.get_candidate_count_with_skills([skill_3], user_second.id)
     assert count == 1
     # Adding skill for user_same_domain's candidate
-    candidate_skill = CandidateSkill(candidate_id=user_same_domain_candidate.id, description=skill_1, resume_id=0)
+    candidate_skill = CandidateSkill(candidate_id=candidate_same_domain.id, description=skill_1, resume_id=0)
     candidate_skill.save()
     count = Candidate.get_candidate_count_with_skills([skill_1], user_same_domain.id)
     assert count == 3
 
 
 def test_candidates_from_zipcode(user_first, candidate_first, candidate_second, user_same_domain,
-                                 user_same_domain_candidate, user_second, user_second_candidate):
+                                 candidate_same_domain, user_second, user_second_candidate):
     """
     This method checks number of candidates against a zipcode in a user's domain
     """
     # Adding address for user_first's candidate
-    candidate_address = CandidateAddress(candidate_id=candidate_first.id, zip_code='54000', resume_id=0)
+    zipcode = str(fake.random_int())
+    candidate_address = CandidateAddress(candidate_id=candidate_first.id, zip_code=zipcode, resume_id=0)
     candidate_address.save()
-    count = Candidate.get_candidate_count_from_zipcode('54000', user_first.id)
+    count = Candidate.get_candidate_count_from_zipcode(zipcode, user_first.id)
     assert count == 1
     # Adding address for user_first's second candidate
-    candidate_address = CandidateAddress(candidate_id=candidate_second.id, zip_code='54000', resume_id=0)
+    candidate_address = CandidateAddress(candidate_id=candidate_second.id, zip_code=zipcode, resume_id=0)
     candidate_address.save()
-    count = Candidate.get_candidate_count_from_zipcode('54000', user_first.id)
+    count = Candidate.get_candidate_count_from_zipcode(zipcode, user_first.id)
     assert count == 2
     # Adding address for user_same_domain's candidate
-    candidate_address = CandidateAddress(candidate_id=user_same_domain_candidate.id, zip_code='54000', resume_id=0)
+    candidate_address = CandidateAddress(candidate_id=candidate_same_domain.id, zip_code=zipcode, resume_id=0)
     candidate_address.save()
-    count = Candidate.get_candidate_count_from_zipcode('54000', user_first.id)
+    count = Candidate.get_candidate_count_from_zipcode(zipcode, user_first.id)
     assert count == 3
     # Adding address for second_user candidate
-    candidate_address = CandidateAddress(candidate_id=user_second_candidate.id, zip_code='54000', resume_id=0)
+    candidate_address = CandidateAddress(candidate_id=user_second_candidate.id, zip_code=zipcode, resume_id=0)
     candidate_address.save()
-    count = Candidate.get_candidate_count_from_zipcode('54000', user_first.id)
+    count = Candidate.get_candidate_count_from_zipcode(zipcode, user_first.id)
     assert count == 3
-    count = Candidate.get_candidate_count_from_zipcode('54000', user_second.id)
+    count = Candidate.get_candidate_count_from_zipcode(zipcode, user_second.id)
     assert count == 1
     # Checking with user_same_domain
-    count = Candidate.get_candidate_count_from_zipcode('54000', user_same_domain.id)
+    count = Candidate.get_candidate_count_from_zipcode(zipcode, user_same_domain.id)
     assert count == 3
     # Checking against a random fake zipcode
     count = Candidate.get_candidate_count_from_zipcode(str(fake.random_int()), user_same_domain.id)

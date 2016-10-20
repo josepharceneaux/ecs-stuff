@@ -109,7 +109,7 @@ class SmsCampaignBlast(db.Model):
         """
         This method returns top performing SMS campaign from a specific year
         :param int|long user_id: User Id
-        :param datetime|str|None datetime_value: Year of campaign started or updated
+        :param datetime|string|None datetime_value: Year of campaign started or updated
         :rtype type(z)|None
         """
         from user import UserPhone, User

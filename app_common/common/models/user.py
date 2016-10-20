@@ -220,7 +220,7 @@ class User(db.Model):
         """
         This method returns users in a domain and domain name
         :param int|long user_id: User Id
-        :rtype: tuple(list, basestring)
+        :rtype: tuple(list, string)
         """
         domain_name, domain_id = User.query.with_entities(Domain.name, Domain.id).filter(User.domain_id == Domain.id).\
             filter(User.id == user_id).first()

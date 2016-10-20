@@ -515,7 +515,7 @@ def user_second_candidate(user_second):
 
 
 @pytest.fixture()
-def user_same_domain_candidate(user_same_domain):
+def candidate_same_domain(user_same_domain):
     """
     Fixture adds candidate for user_same_domain
     """
@@ -662,8 +662,7 @@ def sms_campaign_same_domain_blast(sms_campaign_same_domain):
     Fixture creates sms_campaign_blast for sms_campaign_same_domain with replies and sends
     """
     sms_campaign_blast = SmsCampaignBlast(campaign_id=sms_campaign_same_domain.id, replies=8, sends=10)
-    db.session.add(sms_campaign_blast)
-    db.session.commit()
+    SmsCampaignBlast.save(sms_campaign_blast)
     return sms_campaign_blast
 
 

@@ -13,6 +13,7 @@ response
  - question_8_handler()
 """
 # Builtin imports
+import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import sys
@@ -43,8 +44,10 @@ class QuestionHandler(object):
         :rtype: int|None
         """
         try:
-            word_index = [message_tokens.index(temp_word) for temp_word
-                          in message_tokens if word in temp_word.lower()][0]
+            word_index = None
+            for idx, token in enumerate(message_tokens):
+                if word in token.lower():
+                    word_index = idx
             return word_index
         except IndexError:
             return None
@@ -290,13 +293,10 @@ class QuestionHandler(object):
         if is_valid_year is True:
             talent_pool_list = self.create_list_of_talent_pools(spaced_talent_pool_name)
             try:
-                count = TalentPoolCandidate.candidates_added_last_month(user_id, user_name, talent_pool_list,
-                                                                        year)
+                count = TalentPoolCandidate.candidate_imports(user_id, user_name, talent_pool_list,
+                                                              year)
             except NotFoundError:
                 return 'No user exists in your domain with the name `%s`' % user_name
-            except AssertionError as error:
-                logger.error("Error occurred while getting number of imports : %s" % error.message)
-                return None
             if isinstance(count, basestring):
                 return count
             if not user_name:
@@ -316,7 +316,7 @@ class QuestionHandler(object):
                     and user_name != 'Everyone totally':
                 response_message = self.append_count_with_mesage(response_message, talent_pool_list, 4, user_id,
                                                                  user_name, user_specific_date)
-            return response_message
+            return re.sub(r'`i`|`I`', '`You`', response_message)
         if is_valid_year == -1:
             return "Please enter a valid year greater than 1900 and smaller than current year."
         last_index = self.find_word_in_message('last', message_tokens)
@@ -327,13 +327,10 @@ class QuestionHandler(object):
                     return user_specific_date
                 talent_pool_list = self.create_list_of_talent_pools(spaced_talent_pool_name)
                 try:
-                    count = TalentPoolCandidate.candidates_added_last_month(user_id, user_name, talent_pool_list,
-                                                                            user_specific_date)
+                    count = TalentPoolCandidate.candidate_imports(user_id, user_name, talent_pool_list,
+                                                                  user_specific_date)
                 except NotFoundError:
                     return 'No user exists in your domain with the name `%s`' % user_name
-                except AssertionError as error:
-                    logger.error("Error occurred while getting number of imports: %s" % error.message)
-                    return None
                 if isinstance(count, basestring):
                     return count
                 if not user_name:
@@ -353,15 +350,12 @@ class QuestionHandler(object):
                         and user_name != 'Everyone totally':
                     response_message = self.append_count_with_mesage(response_message, talent_pool_list, 4, user_id,
                                                                      user_name, user_specific_date)
-                return response_message
+                return re.sub(r'`i`|`I`', '`You`', response_message)
         talent_pool_list = self.create_list_of_talent_pools(spaced_talent_pool_name)
         try:
-            count = TalentPoolCandidate.candidates_added_last_month(user_id, user_name, talent_pool_list)
+            count = TalentPoolCandidate.candidate_imports(user_id, user_name, talent_pool_list)
         except NotFoundError:
             return 'No user exists in your domain with the name `%s`' % user_name
-        except AssertionError as error:
-            logger.error("Error occurred while getting number of imports: %s" % error.message)
-            return None
         if isinstance(count, basestring):
             return count
         if not user_name:
@@ -384,7 +378,7 @@ class QuestionHandler(object):
                 and user_name != 'Everyone totally':
             response_message = self.append_count_with_mesage(response_message, talent_pool_list, 4, user_id,
                                                              user_name, user_specific_date)
-        return response_message
+        return re.sub(r'`i`|`I`', '`You`', response_message)
 
     @classmethod
     def question_5_handler(cls, *args):
@@ -536,8 +530,8 @@ class QuestionHandler(object):
         count_dict = {}
         if handler_number == 4:
             for talent_pool in _list:
-                _count = TalentPoolCandidate.candidates_added_last_month(user_id, user_name, [talent_pool],
-                                                                         user_specific_date)
+                _count = TalentPoolCandidate.candidate_imports(user_id, user_name, [talent_pool],
+                                                               user_specific_date)
                 if isinstance(_count, (int, long)):
                     count_dict.update({talent_pool: _count})
         if len(count_dict) > 0:
