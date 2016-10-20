@@ -603,7 +603,7 @@ def data_for_creating_email_clients(key=None):
     data = {
         EmailClientCredentials.CLIENT_TYPES['outgoing']: [{
             "host": "smtp.gmail.com",
-            "port": "587",
+            "port": "465",
             "name": "Gmail",
             "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
             "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],

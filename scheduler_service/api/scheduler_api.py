@@ -93,27 +93,7 @@ class Tasks(Resource):
         # In case of higher number of scheduled task running for a particular user and user want to get only
         # a limited number of jobs by specifying page and per_page parameter, then return only specified jobs
 
-        # Limit the jobs to 50 if user requests for more than 50
-        max_per_page = 50
-
-        # Default per_page size
-        default_per_page = 10
-
-        # If user didn't specify page or per_page, then it should be set to default 1 and 10 respectively.
-        page, per_page = request.args.get('page', 1), request.args.get('per_page', default_per_page)
-
-        if not (str(page).isdigit() and int(page) > 0):
-            raise InvalidUsage(error_message="'page' arg should be a digit (greater than or equal to 1)")
-
-        if not (str(per_page).isdigit() and int(per_page) >= default_per_page):
-            raise InvalidUsage(
-                error_message="'per_page' arg should be a digit and its value should be greater or equal to 10")
-
-        page, per_page = int(page), int(per_page)
-
-        # Limit the jobs if user requests jobs greater than 50
-        if per_page > max_per_page:
-            per_page = max_per_page
+        page, per_page = get_pagination_params(request)
 
         user_id = request.user.id if request.user else None
 
@@ -346,7 +326,7 @@ class PauseTasks(Resource):
                 'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
             }
             headers = {'Authorization': 'Bearer <access_token>', 'Content-Type' : 'application/json'}
-            response = requests.post(API_URL + '/v1/tasks/resume/', headers=headers, data=json.dumps(task_ids))
+            response = requests.post(API_URL + '/v1/tasks/pause/', headers=headers, data=json.dumps(task_ids))
 
         .. Response::
             {
@@ -677,7 +657,7 @@ class PauseTaskById(Resource):
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.post(API_URL + '/v1/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
+            response = requests.post(API_URL + '/v1/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/pause/', headers=headers)
 
         .. Response::
             {

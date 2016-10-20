@@ -101,8 +101,10 @@ class EmailClientsEndpoint(Resource):
 
         client = EmailClientBase.get_client(data['host'])
         client = client(data['host'], data['port'], data['email'], data['password'])
+        logger.info('Connecting with given email-client')
         client.connect()
         client.authenticate()
+        logger.info('Successfully connected and authenticated with given email-client')
         # Encrypt password
         ciphered_password = encrypt(app.config[TalentConfigKeys.ENCRYPTION_KEY], data['password'])
         b64_password = b64encode(ciphered_password)
