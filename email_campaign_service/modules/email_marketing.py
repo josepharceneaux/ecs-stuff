@@ -1074,7 +1074,7 @@ def send_test_email(user, request):
     """
     # Get and validate request data
     data = get_json_data_if_validated(request, TEST_EMAIL_SCHEMA)
-    body_text = data.get('body_text') if 'body_text' in data else ''
+    body_text = data.get('body_text', '')
     [new_html, new_text, subject] = do_mergetag_replacements([data['body_html'], body_text, data['subject']],
                                                              request.user)
     try:
