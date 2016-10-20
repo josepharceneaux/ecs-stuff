@@ -1,5 +1,6 @@
 __author__ = 'ufarooqi'
 
+from contracts import contract
 import json
 from db import db
 from datetime import datetime, timedelta
@@ -37,13 +38,13 @@ class TalentPool(db.Model):
         db.session.commit()
 
     @classmethod
+    @contract
     def get_talent_pools_in_user_domain(cls, user_id):
         """
         This method returns talent pools in a user's domain
-        :param int user_id: User Id
+        :param int|long user_id: User Id
         :rtype: list
         """
-        assert isinstance(user_id, (int, long)) and user_id, "User Id is not valid"
         domain_id = User.get_domain_id(user_id)
         return cls.query.filter(cls.domain_id == domain_id).all()
 

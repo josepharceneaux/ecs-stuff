@@ -1,3 +1,4 @@
+from contracts import contract
 from sqlalchemy import and_, desc
 from db import db
 from sqlalchemy.orm import relationship, backref
@@ -131,12 +132,13 @@ class Candidate(db.Model):
         raise NotFoundError('No domain found')
 
     @staticmethod
+    @contract
     def get_candidate_count_from_zipcode(zipcode, user_id):
         """
         This method returns number of candidates from a certain zipcode
         :param int|long user_id: User Id
         :param str zipcode: Candidate zipcode
-        :rtype: int: Number of candidates from zipcode
+        :rtype: int|long
         """
         assert isinstance(zipcode, basestring) and zipcode, "Invalid zipcode"
         assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"

@@ -4,6 +4,7 @@ import os
 import time
 import uuid
 
+from contracts import contract
 from flask import request, current_app
 from dateutil.parser import parse
 from sqlalchemy.dialects.mysql import TINYINT
@@ -214,13 +215,13 @@ class User(db.Model):
         return User.query.filter_by(email=email).first()
 
     @staticmethod
+    @contract
     def get_domain_name_and_its_users(user_id):
         """
         This method returns users in a domain and domain name
-        :param int user_id: User Id
-        :rtype: tuple[(list, str)]
+        :param int|long user_id: User Id
+        :rtype: tuple(list, basestring)
         """
-        assert isinstance(user_id, (int, long)) and user_id, "Invalid user Id"
         domain_name, domain_id = User.query.with_entities(Domain.name, Domain.id).filter(User.domain_id == Domain.id).\
             filter(User.id == user_id).first()
         users = User.query.filter(User.domain_id == domain_id).all()

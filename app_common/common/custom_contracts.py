@@ -34,6 +34,7 @@ def define_custom_contracts():
         new_contract('flask_request', lambda x: isinstance(x, (LocalProxy, Request)))
         new_contract('Response', lambda x: isinstance(x, Response))
         new_contract('datetime', lambda x: isinstance(x, datetime))
+        new_contract('basestring', lambda x: isinstance(x, basestring))
 
     except ValueError:
         # ignore in case of ValueError which means it is already defined

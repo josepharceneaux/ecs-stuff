@@ -82,11 +82,7 @@ class QuestionHandler(object):
         :return: Response message
         :rtype: str
         """
-        try:
-            users, domain_name = User.get_domain_name_and_its_users(user_id)
-        except AssertionError as error:
-            logger.error("Error occurred while getting user domain in 0 handler: %s" % error.message)
-            return None
+        users, domain_name = User.get_domain_name_and_its_users(user_id)
         if not users:
             return None
         candidate_index = cls.find_word_in_message('cand', message_tokens)
@@ -150,9 +146,6 @@ class QuestionHandler(object):
         zipcode = message_tokens[zip_index + 1]
         try:
             count = Candidate.get_candidate_count_from_zipcode(zipcode, user_id)
-        except AssertionError as error:
-            logger.error("Error occurred while getting candidates against zipcode : %s" % error.message)
-            return None
         except NotFoundError:
             return "You don't belong to a domain"
         response_message = "Number of candidates from zipcode `%s` : `%d`" % \
@@ -219,11 +212,7 @@ class QuestionHandler(object):
             if len(campaign_list) < 2:
                 campaign_list[0] = "Looks like you don't have any campaigns since that time"
             return '%s%s' % (campaign_list[0], self.create_ordered_list(campaign_list[1::]))
-        try:
-            campaign_blast = campaign_method(user_specific_date, user_id)
-        except AssertionError as error:
-            logger.error(error.message)
-            return None
+        campaign_blast = campaign_method(user_specific_date, user_id)
         timespan = self.append_list_with_spaces(message_tokens[last_index::])
         if is_valid_year:
             timespan = user_specific_date
@@ -415,16 +404,8 @@ class QuestionHandler(object):
         :param message_tokens: User message tokens
         :rtype: str
         """
-        try:
-            talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id)
-        except AssertionError as error:
-            logger.error("Error occurred while retrieving talent pools: %s" % error.message)
-            return None
-        try:
-            _, domain_name = User.get_domain_name_and_its_users(user_id)
-        except AssertionError as error:
-            logger.error("Error occurred while retrieving talent pools: %s" % error.message)
-            return None
+        talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id)
+        _, domain_name = User.get_domain_name_and_its_users(user_id)
         if talent_pools:
             talent_pool_names = [talent_pool.name for talent_pool in talent_pools]
             talent_pool_names = cls.create_ordered_list(talent_pool_names)

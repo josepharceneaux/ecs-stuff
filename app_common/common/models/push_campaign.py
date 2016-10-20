@@ -19,6 +19,8 @@ This module contains model classes that are related to push campaign service.
 
 """
 import datetime
+from contracts import contract
+
 from db import db
 from sqlalchemy.orm import relationship
 from sqlalchemy import desc, extract, and_
@@ -116,12 +118,13 @@ class PushCampaignBlast(db.Model):
         return "<PushCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
 
     @classmethod
+    @contract
     def top_performing_push_campaign(cls, datetime_value, user_id):
         """
         This method returns top performing push campaign
         :param int|long user_id: User Id
-        :param str|datetime.datetime|None datetime_value: Year of campaign started or updated
-        :rtype: PushCampaignBlast
+        :param str|type(x)|None datetime_value: Year of campaign started or updated
+        :rtype: type(z)
         """
         assert isinstance(datetime_value, (datetime.datetime, basestring)) or datetime_value is None, \
             "Invalid datetime value"

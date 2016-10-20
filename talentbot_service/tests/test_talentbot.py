@@ -12,7 +12,7 @@ from talentbot_service.common.tests.conftest import domain_first, first_group, d
     email_campaign_second_domain_blast, sms_campaign_first, sms_campaign_first_blast, user_phone_first, \
     sms_campaign_second, sms_campaign_second_blast, user_phone_second,push_campaign_first, push_campaign_first_blast,\
     user_phone_same_domain, sms_campaign_same_domain, sms_campaign_same_domain_blast, push_campaign_same_domain,\
-    push_campaign_same_domain_blast, push_campaign_second, push_campaign_second_blast, talent_pool_second
+    push_campaign_same_domain_blast, push_campaign_second, push_campaign_second_blast, talent_pool_second, fake
 from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.email_campaign import EmailCampaignBlast
@@ -38,7 +38,7 @@ def test_candidate_added(user_first, talent_pool, candidate_first):
     count = TalentPoolCandidate.candidates_added_last_month(user_first.id, user_name, [talent_pool.name])
     assert count == 1
     # Tests with 3 months earlier added and updated time
-    changed_date = datetime.datetime.utcnow() - relativedelta(months=3)
+    changed_date = datetime.datetime.utcnow() - relativedelta(years=3)
     talent_pool.added_time = changed_date
     talent_pool.updated_time = changed_date
     current_datetime = datetime.datetime.utcnow()
@@ -54,27 +54,17 @@ def test_get_domain_name_and_its_users(user_first, user_second, user_same_domain
     """
     This method tests that users in a user's domain and domain name of a user is valid.
     """
-    users, domain_name = User.get_domain_name_and_its_users(user_first.id)
-    # Testing if number of users in user_first's domain are equal to 2
-    assert isinstance(users, list) and len(users) == 2
-    # Testing that domain name exists and is instance of basestring
-    assert isinstance(domain_name, basestring) and domain_name
+    user_ids = [user_first.id, user_same_domain.id]
+    for i in range(2):
+        users, domain_name = User.get_domain_name_and_its_users(user_ids[i])
+        # Testing if number of users in user_first's domain are equal to 2
+        assert isinstance(users, list) and len(users) == 2
+        # Testing that domain name exists and is instance of basestring
+        assert isinstance(domain_name, basestring) and domain_name
     # Testing with user_id as None
-    try:
-        users, domain_name = User.get_domain_name_and_its_users(None)
-    except AssertionError as error:
-        assert error.message.lower() == 'invalid user id'
-    # Testing if user_id is not an int or long
-    try:
-        users, domain_name = User.get_domain_name_and_its_users('1')
-    except AssertionError as error:
-        assert error.message.lower() == 'invalid user id'
     users, domain_name = User.get_domain_name_and_its_users(user_second.id)
     # Testing if number of users in user_second's domain are equal to 1
     assert isinstance(users, list) and len(users) == 1
-    users, domain_name = User.get_domain_name_and_its_users(user_same_domain.id)
-    # Testing if number of users in user_same_domain's domain are equal to 2
-    assert isinstance(users, list) and len(users) == 2
 
 
 def test_get_candidates_with_skills(user_first, candidate_first, candidate_second, user_same_domain,
@@ -82,33 +72,37 @@ def test_get_candidates_with_skills(user_first, candidate_first, candidate_secon
     """
     This method checks number of candidates against skills in user's domain.
     """
-    candidate_skill = CandidateSkill(candidate_id=candidate_first.id, description='java', resume_id=0)
+    skill_1 = fake.word()
+    skill_2 = fake.word()
+    skill_3 = fake.word()
+    skill_4 = fake.word()
+    candidate_skill = CandidateSkill(candidate_id=candidate_first.id, description=skill_1, resume_id=0)
     candidate_skill.save()
-    count = Candidate.get_candidate_count_with_skills(['java'], user_first.id)
+    count = Candidate.get_candidate_count_with_skills([skill_1], user_first.id)
     assert count == 1
-    count = Candidate.get_candidate_count_with_skills(['c++'], user_first.id)
+    count = Candidate.get_candidate_count_with_skills([skill_4], user_first.id)
     assert count == 0
     # Adding another candidate skill
-    candidate_skill = CandidateSkill(candidate_id=candidate_second.id, description='java', resume_id=0)
+    candidate_skill = CandidateSkill(candidate_id=candidate_second.id, description=skill_1, resume_id=0)
     candidate_skill.save()
-    count = Candidate.get_candidate_count_with_skills(['java'], user_first.id)
+    count = Candidate.get_candidate_count_with_skills([skill_1], user_first.id)
     assert count == 2
     # Adding second skill for first candidate
-    candidate_skill = CandidateSkill(candidate_id=candidate_first.id, description='python', resume_id=0)
+    candidate_skill = CandidateSkill(candidate_id=candidate_first.id, description=skill_2, resume_id=0)
     candidate_skill.save()
-    count = Candidate.get_candidate_count_with_skills(['c++', 'python'], user_first.id)
+    count = Candidate.get_candidate_count_with_skills([skill_4, skill_2], user_first.id)
     assert count == 1
     # Adding skill for second_user's candidate
-    candidate_skill = CandidateSkill(candidate_id=user_second_candidate.id, description='Hadoop', resume_id=0)
+    candidate_skill = CandidateSkill(candidate_id=user_second_candidate.id, description=skill_3, resume_id=0)
     candidate_skill.save()
-    count = Candidate.get_candidate_count_with_skills(['hadoop'], user_same_domain.id)
+    count = Candidate.get_candidate_count_with_skills([skill_3], user_same_domain.id)
     assert count == 0
-    count = Candidate.get_candidate_count_with_skills(['hadoop'], user_second.id)
+    count = Candidate.get_candidate_count_with_skills([skill_3], user_second.id)
     assert count == 1
     # Adding skill for user_same_domain's candidate
-    candidate_skill = CandidateSkill(candidate_id=user_same_domain_candidate.id, description='java', resume_id=0)
+    candidate_skill = CandidateSkill(candidate_id=user_same_domain_candidate.id, description=skill_1, resume_id=0)
     candidate_skill.save()
-    count = Candidate.get_candidate_count_with_skills(['java'], user_same_domain.id)
+    count = Candidate.get_candidate_count_with_skills([skill_1], user_same_domain.id)
     assert count == 3
 
 
@@ -142,6 +136,9 @@ def test_candidates_from_zipcode(user_first, candidate_first, candidate_second, 
     # Checking with user_same_domain
     count = Candidate.get_candidate_count_from_zipcode('54000', user_same_domain.id)
     assert count == 3
+    # Checking against a random fake zipcode
+    count = Candidate.get_candidate_count_from_zipcode(str(fake.random_int()), user_same_domain.id)
+    assert count == 0
 
 
 def test_top_performing_email_campaign(user_first, user_second, email_campaign_first, email_campaign_first_blast,
