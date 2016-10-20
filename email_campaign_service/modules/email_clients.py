@@ -291,7 +291,8 @@ class IMAP(EmailClientBase):
             self.connection.login(self.email, self.password)
         except imaplib.IMAP4_SSL.error as error:
             logger.exception(error.message)
-            raise InvalidUsage('Invalid credentials provided. Could not authenticate with IMAP server')
+            raise InvalidUsage('Could not authenticate with IMAP server.',
+                               additional_error_info=dict(imap_error=error.message))
 
     def email_conversation_importer(self):
         """
@@ -365,7 +366,8 @@ class POP(EmailClientBase):
             self.connection.pass_(self.password)
         except poplib.error_proto as error:
             logger.exception(error.message)
-            raise InvalidUsage('Invalid credentials provided. Could not authenticate with POP server')
+            raise InvalidUsage('Invalid credentials provided. Could not authenticate with POP server',
+                               additional_error_info=dict(pop_error=error.message))
 
     def email_conversation_importer(self):
         """
