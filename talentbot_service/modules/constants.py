@@ -19,8 +19,9 @@ HINT = '''>>>I am `%s` @osman is teaching me new things, right now I can answer 
 3- How many candidates from zipcode `[zipcode]`?
 4- What is the top performing `[x]` campaign from `[year]`?
 5- How many candidate leads did `[user name]` import into the `[talent pool name]` talent pool in last `[n]` months?
-6- What is my group or Which group a `[user name]` belongs to?
-7- What are the talent pools in my domain?
+6- What is my group
+7- Which group does `[user name]` belong to?
+8- What are the talent pools in my domain?
 *GOOD LUCK*''' % BOT_NAME
 OK_RESPONSE = ['hmm', '**nodes**']
 TWILIO_NUMBER = "+12015617985"
