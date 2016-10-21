@@ -1,7 +1,7 @@
 import datetime
 
 from sqlalchemy.orm import relationship
-from sqlalchemy import or_, desc, extract
+from sqlalchemy import or_, desc, extract, and_
 
 from db import db
 from ..utils.datetime_utils import DatetimeUtils
@@ -80,7 +80,8 @@ class EmailCampaign(db.Model):
                        "body_text": self.body_text if (include_fields and 'body_text' in include_fields) else None,
                        "is_hidden": self.is_hidden,
                        "talent_pipelines": talent_pipelines,
-                       "list_ids": [smart_list.id for smart_list in smart_lists]}
+                       "list_ids": [smart_list.id for smart_list in smart_lists],
+                       "email_client_credentials_id": self.email_client_credentials_id}
 
         # Only include the fields that are supposed to be included
         if include_fields:
@@ -203,24 +204,30 @@ class EmailCampaignBlast(db.Model):
         """
         This method returns top performing email campaign from a specific datetime
         :param int user_id: User Id
-        :param str|datetime datetime_value: date during campaign started or updated
+        :param str|datetime|None datetime_value: date during campaign started or updated
         :rtype: EmailCampaignBlast
         """
+        assert isinstance(datetime_value, (datetime.datetime, basestring)) or datetime_value is None,\
+            "Invalid datetime value"
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
+        from .user import User
+        domain_id = User.get_domain_id(user_id)
         if isinstance(datetime_value, datetime.datetime):
             return cls.query.filter(or_(cls.updated_datetime >= datetime_value,
                                         cls.sent_datetime >= datetime_value)). \
                 filter(EmailCampaign.id == cls.campaign_id). \
-                filter(cls.sends > 0).filter(EmailCampaign.user_id == user_id). \
-                order_by(desc(cls.opens)).first()
+                filter(cls.sends > 0).filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)). \
+                order_by(desc(cls.opens/cls.sends)).first()
         if isinstance(datetime_value, basestring):
             return cls.query.filter(or_(extract("year", cls.updated_datetime) == datetime_value,
                                         extract("year", cls.sent_datetime) == datetime_value)). \
                 filter(EmailCampaign.id == cls.campaign_id). \
-                filter(EmailCampaign.user_id == user_id). \
+                filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)). \
                 filter(cls.sends > 0). \
-                order_by(desc(cls.opens)).first()
+                order_by(desc(cls.opens/cls.sends)).first()
         return cls.query.filter(EmailCampaign.id == cls.campaign_id).\
-            filter(EmailCampaign.user_id == user_id).filter(cls.sends > 0).order_by(desc(cls.opens)).first()
+            filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)).filter(cls.sends > 0).\
+            order_by(desc(cls.opens/cls.sends)).first()
 
 
 class EmailCampaignSend(db.Model):
@@ -444,6 +451,13 @@ class EmailClientCredentials(db.Model):
     password = db.Column('password', db.String(512), nullable=False)
     updated_datetime = db.Column('updated_datetime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
 
+    # Relationship
+    email_campaign = relationship('EmailCampaign', cascade='all, delete-orphan',
+                                  passive_deletes=True, backref='email_client_credentials')
+
+    email_conversations = relationship('EmailConversations', lazy='dynamic', cascade='all, delete-orphan',
+                                       passive_deletes=True, backref='email_client_credentials')
+
     CLIENT_TYPES = {'incoming': 'incoming',
                     'outgoing': 'outgoing'}
     OUTGOING = ('smtp',)
@@ -509,6 +523,8 @@ class EmailConversations(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column('user_id', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
     candidate_id = db.Column('candidate_id', db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
+    email_client_credentials_id = db.Column('email_client_credentials_id', db.Integer,
+                                            db.ForeignKey('email_client_credentials.id', ondelete='CASCADE'))
     mailbox = db.Column('mailbox', db.String(10), nullable=False)
     subject = db.Column('subject', db.String(100), nullable=False)
     body = db.Column('body', db.String(1000), nullable=False)
@@ -517,3 +533,36 @@ class EmailConversations(db.Model):
 
     def __repr__(self):
         return "<EmailConversations (id:%s)>" % self.id
+
+    def to_dict(self):
+        """
+        This creates response to return when an EmailConversation's object is requested.
+        Response looks like
+            {
+                  "email_conversations":
+                        [
+                            {
+                              "body": "Qui in non amet maiores alias excepturi id.",
+                              "user_id": 1,
+                              "updated_datetime": "2016-10-15 13:05:44",
+                              "email_received_datetime": "2016-10-03 05:41:09",
+                              "mailbox": "inbox",
+                              "email_client_credentials": {
+                                "id": 1,
+                                "name": "Gmail"
+                              },
+                              "candidate_id": 362350,
+                              "id": 1,
+                              "subject": "377cc739-8e73-4a42-9d1b-114a75328280-test_email_campaign"
+                            }
+                        ]
+            }
+        :rtype: dict
+        """
+        email_conversation = self.get_by_id(self.id)
+        return_dict = email_conversation.to_json()
+        del return_dict['email_client_credentials_id']
+        email_client_credentials = {"id": self.email_client_credentials.id,
+                                    "name": self.email_client_credentials.name}
+        return_dict.update({'email_client_credentials': email_client_credentials})
+        return return_dict

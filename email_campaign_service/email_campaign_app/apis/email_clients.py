@@ -101,8 +101,10 @@ class EmailClientsEndpoint(Resource):
 
         client = EmailClientBase.get_client(data['host'])
         client = client(data['host'], data['port'], data['email'], data['password'])
+        logger.info('Connecting with given email-client')
         client.connect()
         client.authenticate()
+        logger.info('Successfully connected and authenticated with given email-client')
         # Encrypt password
         ciphered_password = encrypt(app.config[TalentConfigKeys.ENCRYPTION_KEY], data['password'])
         b64_password = b64encode(ciphered_password)
@@ -118,7 +120,8 @@ class EmailClientsEndpoint(Resource):
 
         .. Response::
 
-            { 'email_client_credentials:
+            {
+                "email_client_credentials":
                     [
                             {
                                 "id": 1,
@@ -143,11 +146,12 @@ class EmailClientsEndpoint(Resource):
                     ]
             }
 
-        .. Status:: 200 (Resource created)
+        .. Status:: 200 (OK Response)
                     400 (Bad request)
                     401 (Unauthorized to access getTalent)
                     500 (Internal server error)
         """
+        # TODO: Return all in user's domain
         server_type = request.args.get('type', 'outgoing')
         email_client_credentials = [email_client_credential.to_json() for email_client_credential in
                                     EmailClientCredentials.get_by_user_id_and_filter_by_name(request.user.id,
@@ -234,6 +238,11 @@ class EmailConversations(Resource):
                               "updated_datetime": "2016-09-30 10:50:03",
                               "email_received_datetime": "2016-09-27 08:02:03",
                               "mailbox": "inbox",
+                              "email_client_credentials": {
+                                                            "id": 2,
+                                                            "name": "Gmail"
+                                                            },
+
                               "candidate_id": 4,
                               "id": 1,
                               "subject": "55b04894 It is a test campaign"
@@ -244,6 +253,10 @@ class EmailConversations(Resource):
                               "updated_datetime": "2016-09-30 10:50:05",
                               "email_received_datetime": "2016-09-27 08:01:48",
                               "mailbox": "inbox",
+                              "email_client_credentials": {
+                                                            "id": 2,
+                                                            "name": "Gmail"
+                                                            },
                               "candidate_id": 4,
                               "id": 2,
                               "subject": "37e0bd0b It is a test campaign"
@@ -254,6 +267,10 @@ class EmailConversations(Resource):
                               "updated_datetime": "2016-09-30 10:50:05",
                               "email_received_datetime": "2016-09-27 08:01:49",
                               "mailbox": "inbox",
+                              "email_client_credentials": {
+                                                            "id": 2,
+                                                            "name": "Gmail"
+                                                            },
                               "candidate_id": 4,
                               "id": 3,
                               "subject": "d5957c8e It is a test campaign"
@@ -265,7 +282,7 @@ class EmailConversations(Resource):
                     500 (Internal server error)
         """
         user = request.user
-        email_conversations = [email_conversation.to_json() for email_conversation in user.email_conversations]
+        email_conversations = [email_conversation.to_dict() for email_conversation in user.email_conversations]
         return {'email_conversations': email_conversations}, codes.OK
 
 

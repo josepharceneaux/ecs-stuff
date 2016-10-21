@@ -39,11 +39,10 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailCampaignSmartlist,
                                                                  EmailCampaignBlast,
                                                                  EmailCampaignSend,
-                                                                 EmailCampaignSendUrlConversion,
-                                                                 EmailClientCredentials)
+                                                                 EmailCampaignSendUrlConversion)
 from email_campaign_service.common.models.candidate import (Candidate, CandidateEmail,
                                                             CandidateSubscriptionPreference)
-from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError, ResourceNotFound)
+from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
 from email_campaign_service.common.campaign_services.validators import validate_smartlist_ids
 from email_campaign_service.common.utils.amazon_ses import (send_email, get_default_email_info)
@@ -458,28 +457,25 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
     # Only in case of production we should send mails to candidate address else mails will
     # go to test account. To avoid spamming actual email addresses, while testing.
     if not CampaignUtils.IS_DEV:
-        to_addresses = candidate_address
+        to_address = candidate_address
     else:
         # In dev/staging, only send emails to getTalent users, in case we're
         #  impersonating a customer.
         domain = Domain.get_by_id(campaign.user.domain_id)
         domain_name = domain.name.lower()
         if 'gettalent' in domain_name or 'bluth' in domain_name or 'dice' in domain_name:
-            to_addresses = campaign.user.email
+            to_address = campaign.user.email
         else:
-            to_addresses = [app.config[TalentConfigKeys.GT_GMAIL_ID]]
+            to_address = app.config[TalentConfigKeys.GT_GMAIL_ID]
 
     email_client_credentials_id = campaign.email_client_credentials_id
     if email_client_credentials_id:  # In case user wants to send email-campaign via added SMTP server.
         try:
-            email_client_credentials = EmailClientCredentials.get_by_id(campaign.email_client_credentials_id)
-            if not email_client_credentials:
-                raise ResourceNotFound("EmailClientCredentials(id:%s) not found for user(id:%s)."
-                                       % (email_client_credentials_id, user_id))
+            email_client_credentials = campaign.email_client_credentials
             decrypted_password = decrypt_password(email_client_credentials.password)
-            client = SMTP(email_client_credentials.host,email_client_credentials.port,
+            client = SMTP(email_client_credentials.host, email_client_credentials.port,
                           email_client_credentials.email, decrypted_password)
-            client.send_email(to_addresses, subject, new_text)
+            client.send_email(to_address, subject, new_text)
         except Exception as error:
             logger.exception('Error occurred while sending campaign via SMTP server. Error:%s' % error.message)
             return False
@@ -493,14 +489,14 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
                                         html_body=new_html or None,
                                         # Can't be '', otherwise, text_body will not show in email
                                         text_body=new_text,
-                                        to_addresses=to_addresses,
+                                        to_addresses=to_address,
                                         reply_address=campaign.reply_to.strip(),
                                         # BOTO doesn't seem to work with an array as to_addresses
                                         body=None,
                                         email_format='html' if campaign.body_html else 'text')
         except Exception as e:
             # Mark email as bounced
-            _handle_email_sending_error(email_campaign_send, candidate.id, to_addresses, blast_params,
+            _handle_email_sending_error(email_campaign_send, candidate.id, to_address, blast_params,
                                         email_campaign_blast_id, e)
             return False
 
@@ -512,7 +508,7 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
                        System User Name: %s,
                        Environment   : %s,
                        Email Response: %s
-                    ''', to_addresses, user_id, username, app.config[TalentConfigKeys.ENV_KEY], email_response)
+                    ''', to_address, user_id, username, app.config[TalentConfigKeys.ENV_KEY], email_response)
         request_id = email_response[u"SendEmailResponse"][u"ResponseMetadata"][u"RequestId"]
         message_id = email_response[u"SendEmailResponse"][u"SendEmailResult"][u"MessageId"]
         email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
@@ -1077,17 +1073,22 @@ def send_test_email(user, request):
     """
     # Get and validate request data
     data = get_json_data_if_validated(request, TEST_EMAIL_SCHEMA)
+    body_text = data.get('body_text', '')
+    [new_html, new_text, subject] = do_mergetag_replacements([data['body_html'], body_text, data['subject']],
+                                                             request.user)
     try:
         default_email = get_default_email_info()['email']
         send_email(source='"%s" <%s>' % (data['from'], default_email),
-                   subject=data['subject'],
-                   html_body=data['body_html'] or None,
+                   subject=subject,
+                   html_body=new_html or None,
                    # Can't be '', otherwise, text_body will not show in email
-                   text_body=data['body_html'],
+                   text_body=new_text,
                    to_addresses=data['email_address_list'],
                    reply_address=user.email,
                    body=None,
                    email_format='html')
+        logger.info('Test email has been sent to %s addresses. User(id:%s)'
+                    % (data['email_address_list'], request.user.id))
     except Exception as e:
         logger.error('Error occurred while sending test email. Error: %s', e)
         raise InternalServerError('Unable to send emails to test email addresses:%s.' % data['email_address_list'])

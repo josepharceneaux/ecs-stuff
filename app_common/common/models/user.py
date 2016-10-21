@@ -9,8 +9,9 @@ from dateutil.parser import parse
 from sqlalchemy.dialects.mysql import TINYINT
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
+from sqlalchemy import or_
 
-from db import db
+from ..models.db import db
 from ..models.event import Event
 from ..models.candidate import Candidate
 from candidate import CandidateSource
@@ -22,6 +23,7 @@ from ..error_handling import *
 from ..redis_cache import redis_store
 from ..utils.validators import is_number
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
+from ..utils.talent_s3 import sign_url_for_filepicker_bucket
 from ..error_codes import ErrorCodes
 
 
@@ -146,7 +148,7 @@ class User(db.Model):
                     tzinfo=pytz.UTC).isoformat() if self.last_read_datetime else None,
             'last_login_datetime': self.last_login_datetime.replace(
                     tzinfo=pytz.UTC).isoformat() if self.last_login_datetime else None,
-            'thumbnail_url': self.thumbnail_url,
+            'thumbnail_url': sign_url_for_filepicker_bucket(self.thumbnail_url) if self.thumbnail_url else '',
             'locale': self.locale,
             'is_disabled': True if self.is_disabled == 1 else False
         }
@@ -213,16 +215,32 @@ class User(db.Model):
         return User.query.filter_by(email=email).first()
 
     @staticmethod
-    def get_users_in_domain(user_id):
+    def get_domain_name_and_its_users(user_id):
         """
         This method returns users in a domain and domain name
         :param int user_id: User Id
-        :return: tuple(list, str) : (User list, domain name)
+        :rtype: tuple[(list, str)]
         """
-        domain_name = User.query.with_entities(Domain.name).filter(User.domain_id == Domain.id).filter(User.id == user_id).first()
-        users = User.query.filter(User.domain_id == Domain.id).\
-            filter(User.id == user_id).all()
-        return users, domain_name[0]
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid user Id"
+        domain_name, domain_id = User.query.with_entities(Domain.name, Domain.id).filter(User.domain_id == Domain.id).\
+            filter(User.id == user_id).first()
+        users = User.query.filter(User.domain_id == domain_id).all()
+        return users, domain_name
+
+    @classmethod
+    def get_by_name(cls, user_id, name):
+        """
+        This method returns user against a name
+        :param str name: User's first or last name
+        :param int user_id: User Id
+        :rtype: list
+        """
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid user Id %r" % user_id
+        assert isinstance(name, basestring) and name, "Invalid name %r" % name
+        user = cls.get_by_id(user_id)
+        if user:
+            return cls.query.filter(or_(cls.first_name == name, cls.last_name == name)).\
+                filter(cls.domain_id == user.domain_id).all()
 
 
 class UserPhone(db.Model):

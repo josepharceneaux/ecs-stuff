@@ -19,11 +19,13 @@ import email
 import imaplib
 import poplib
 import smtplib
+from _ssl import SSLError
 from _socket import gaierror
 from abc import abstractmethod
 
 # Third Party
 from dateutil import parser
+from contracts import contract
 
 # Service Specific
 from email_campaign_service.common.models.user import User
@@ -67,24 +69,29 @@ class EmailClientBase(object):
         saving unique records in database.
     """
 
-    def __init__(self, host, port, login_email, password, user_id=None):
+    @contract
+    def __init__(self, host, port, login_email, password, user_id=None, email_client_credentials_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of server
         :param string port: Port number
         :param string login_email: Email address
         :param string password: Password
+        :param int|long|None user_id: Id of user
+        :param int|long|None email_client_credentials_id: Id of email_client_credentials object
         """
         self.host = host
         self.port = str(port).strip() if port else ''
         self.email = login_email
         self.password = password
+        self.user_id = user_id
+        self.email_client_credentials_id = email_client_credentials_id
         self.client = None
         self.connection = None
-        self.user_id = user_id
         self.mailbox = None
 
     @staticmethod
+    @contract
     def get_client(host):
         """
         This gets the required client for given host.
@@ -102,6 +109,7 @@ class EmailClientBase(object):
         return client
 
     @staticmethod
+    @contract
     def is_outgoing(host):
         """
         This returns True/False that given host is "outgoing" or not.
@@ -119,9 +127,10 @@ class EmailClientBase(object):
         except gaierror as error:
             logger.exception(error.message)
             raise InternalServerError('Error occurred while connecting with given server')
-        except smtplib.SMTPServerDisconnected as error:
-            logger.exception(error.message)
-            raise InternalServerError('Unexpectedly Connection closed with given server')
+        except SSLError as error:
+            logger.exception(error.strerror)
+            raise InternalServerError('Error occurred while connecting with given server',
+                                      additional_error_info=dict(email_client_error=error.strerror))
 
     @abstractmethod
     def authenticate(self, connection_quit=True):
@@ -132,7 +141,6 @@ class EmailClientBase(object):
 
     @abstractmethod
     def import_emails(self, candidate_id, candidate_email):
-
         """
         This will import emails of user's account to getTalent database table email-conversations.
         Child classes will implement this.
@@ -158,24 +166,31 @@ class EmailClientBase(object):
         self.authenticate()
         return candidate_ids_and_emails
 
+    @contract
     def save_email_conversation(self, candidate_id, subject, body, email_received_datetime):
         """
         This saves email-conversation in database table 'email_conversations'
-        :param int|long candidate_id: Id of candidate
+        :param positive candidate_id: Id of candidate
         :param string subject: Subject of email
         :param string body: Body of email
         :param datetime email_received_datetime: Datetime object for the received datetime of email
         """
+        assert self.user_id, 'user_id is required for saving email-conversations'
+        assert self.email_client_credentials_id, \
+            'email_client_credentials_id is required for saving email-conversations'
         email_conversation_in_db = EmailConversations.filter_by_keywords(user_id=self.user_id,
                                                                          candidate_id=candidate_id,
                                                                          subject=subject,
-                                                                         body=body)
+                                                                         body=body,
+                                                                         email_client_credentials_id=
+                                                                         self.email_client_credentials_id)
         if not email_conversation_in_db:
             email_conversation_data = {'user_id': self.user_id,
                                        'candidate_id': candidate_id,
                                        'mailbox': self.mailbox,
                                        'subject': subject,
                                        'body': body,
+                                       'email_client_credentials_id': self.email_client_credentials_id,
                                        'email_received_datetime': email_received_datetime}
             email_conversation = EmailConversations(**email_conversation_data)
             EmailConversations.save(email_conversation)
@@ -185,31 +200,46 @@ class SMTP(EmailClientBase):
     """
     Class for connecting and sending emails with SMTP server
     """
-
-    def __init__(self, host, port, login_email, password, user_id=None):
+    @contract
+    def __init__(self, host, port, login_email, password, user_id=None, email_client_credentials_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of SMTP server
         :param string port: Port number
         :param string login_email: Email address
         :param string password: Password
+        :param int|long|None user_id: Id of user
+        :param int|long|None email_client_credentials_id: Id of email_client_credentials object
         """
-        super(SMTP, self).__init__(host, port, login_email, password, user_id=user_id)
-        self.client = smtplib.SMTP
+        super(SMTP, self).__init__(host, port, login_email, password, user_id=user_id,
+                                   email_client_credentials_id=email_client_credentials_id)
+        self.client = smtplib.SMTP_SSL
+
+    def connect(self):
+        try:
+            super(SMTP, self).connect()
+        except smtplib.SMTPServerDisconnected as error:
+            logger.exception(error.message)
+            raise InternalServerError('Unexpectedly Connection closed with given server')
 
     def authenticate(self, connection_quit=True):
         """
         This first connects with SMTP server. It then tries to login to server.
         """
-        self.connection.starttls()
         try:
             self.connection.login(self.email, self.password)
         except smtplib.SMTPAuthenticationError as error:
             logger.exception(error.smtp_error)
-            raise InvalidUsage('Invalid credentials provided. Could not authenticate with SMTP server')
+            raise InvalidUsage('Invalid credentials provided. Could not authenticate with SMTP server',
+                               additional_error_info=dict(smtp_error=error.smtp_error))
+        except smtplib.SMTPException as error:
+            logger.exception(error.message)
+            raise InternalServerError('Could not authenticate with SMTP server',
+                                      additional_error_info=dict(smtp_error=error.message))
         if connection_quit:
             self.connection.quit()
 
+    @contract
     def send_email(self, to_address, subject, body):
         """
         This connects and authenticate with SMTP server and sends email to given email-address
@@ -220,7 +250,7 @@ class SMTP(EmailClientBase):
         self.connect()
         self.authenticate(connection_quit=False)
         msg = "From: %s\r\nTo: %s\r\nSubject: %s\n%s\n" % (self.email, to_address, subject, body)
-        self.connection.sendmail(self.email, [to_address], msg)
+        self.connection.sendmail(self.email, to_address, msg)
         logger.info('Email has been sent from:%s, to:%s via SMTP server.' % (self.email, to_address))
         self.connection.quit()
 
@@ -236,26 +266,33 @@ class IMAP(EmailClientBase):
     Class for connecting and importing email-conversations with IMAP server
     """
 
-    def __init__(self, host, port, login_email, password, user_id=None):
+    @contract
+    def __init__(self, host, port, login_email, password, user_id=None, email_client_credentials_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of SMTP server
         :param string port: Port number
         :param string login_email: Email address
         :param string password: Password
+        :param int|long|None user_id: Id of user
+        :param int|long|None email_client_credentials_id: Id of email_client_credentials object
         """
-        super(IMAP, self).__init__(host, port, login_email, password, user_id=user_id)
+        super(IMAP, self).__init__(host, port, login_email, password, user_id=user_id,
+                                   email_client_credentials_id=email_client_credentials_id)
         self.client = imaplib.IMAP4_SSL
 
+    @contract
     def authenticate(self, connection_quit=True):
         """
         This first connects with IMAP server. It then tries to login to server.
+        :type connection_quit: bool
         """
         try:
             self.connection.login(self.email, self.password)
         except imaplib.IMAP4_SSL.error as error:
             logger.exception(error.message)
-            raise InvalidUsage('Invalid credentials provided. Could not authenticate with IMAP server')
+            raise InvalidUsage('Could not authenticate with IMAP server.',
+                               additional_error_info=dict(imap_error=error.message))
 
     def email_conversation_importer(self):
         """
@@ -270,9 +307,12 @@ class IMAP(EmailClientBase):
             self.connection.close()
             self.connection.logout()
 
+    @contract
     def import_emails(self, candidate_id, candidate_email):
         """
         This will import emails of user's account to getTalent database table email-conversations.
+        :param positive candidate_id: Id of candidate
+        :param string candidate_email: Email of candidate
         """
         search_criteria = '(FROM "%s")' % candidate_email
         typ, [searched_data] = self.connection.search(None, search_criteria)
@@ -303,15 +343,18 @@ class POP(EmailClientBase):
     Class for connecting and importing email-conversations with POP server
     """
 
-    def __init__(self, host, port, login_email, password, user_id=None):
+    def __init__(self, host, port, login_email, password, user_id=None, email_client_credentials_id=None):
         """
         This sets values of attributes host, port, email and password.
         :param string host: Hostname of POP server
         :param string port: Port number
         :param string login_email: Email address
         :param string password: Password
+        :param int|long|None user_id: Id of user
+        :param int|long|None email_client_credentials_id: Id of email_client_credentials object
         """
-        super(POP, self).__init__(host, port, login_email, password, user_id=user_id)
+        super(POP, self).__init__(host, port, login_email, password, user_id=user_id,
+                                  email_client_credentials_id=email_client_credentials_id)
         self.client = poplib.POP3_SSL
 
     def authenticate(self, connection_quit=True):
@@ -323,7 +366,8 @@ class POP(EmailClientBase):
             self.connection.pass_(self.password)
         except poplib.error_proto as error:
             logger.exception(error.message)
-            raise InvalidUsage('Invalid credentials provided. Could not authenticate with POP server')
+            raise InvalidUsage('Invalid credentials provided. Could not authenticate with POP server',
+                               additional_error_info=dict(pop_error=error.message))
 
     def email_conversation_importer(self):
         """
@@ -339,25 +383,30 @@ class POP(EmailClientBase):
 
 
 @celery_app.task(name='import_email_conversations')
+@contract
 def import_email_conversations(queue_name):
     """
     This gets all the records for incoming clients from database table email_client_credentials.
     It then calls "import_email_conversations_per_account" to imports email-conversations for selected email-client.
+    :type queue_name: string
     """
-    email_clients = EmailClientCredentials.get_by_client_type(EmailClientCredentials.CLIENT_TYPES['incoming'])
-    if not email_clients:
+    email_client_credentials = \
+        EmailClientCredentials.get_by_client_type(EmailClientCredentials.CLIENT_TYPES['incoming'])
+    if not email_client_credentials:
         logger.info('No IMAP/POP email-client found in database')
-    for email_client in email_clients:
-        logger.info('Importing email-conversations from host:%s, account:%s, user_id:%s' % (email_client.host,
-                                                                                            email_client.email,
-                                                                                            email_client.user.id))
-        import_email_conversations_per_client.apply_async([email_client.host, email_client.port, email_client.email,
-                                                           email_client.password, email_client.user.id],
-                                                          queue_name=queue_name)
+    for email_client_credential in email_client_credentials:
+        logger.info('Importing email-conversations from host:%s, account:%s, user_id:%s'
+                    % (email_client_credential.host, email_client_credential.email, email_client_credential.user.id))
+        import_email_conversations_per_client.apply_async([email_client_credential.host, email_client_credential.port,
+                                                           email_client_credential.email,
+                                                           email_client_credential.password,
+                                                           email_client_credential.user.id,
+                                                           email_client_credential.id], queue_name=queue_name)
 
 
 @celery_app.task(name='import_email_conversations_per_client')
-def import_email_conversations_per_client(host, port, login_email, password, user_id):
+@contract
+def import_email_conversations_per_client(host, port, login_email, password, user_id, email_client_credentials_id):
     """
     It imports email-conversations for given client credentials.
     :param string host: Host name
@@ -365,7 +414,8 @@ def import_email_conversations_per_client(host, port, login_email, password, use
     :param string login_email: Email for login
     :param string password: Encrypted login password
     :param int|long user_id: Id of user
+    :param int|long email_client_credentials_id: Id of email_client_credentials object
     """
     client_class = EmailClientBase.get_client(host)
-    client = client_class(host, port, login_email, decrypt_password(password), user_id)
+    client = client_class(host, port, login_email, decrypt_password(password), user_id, email_client_credentials_id)
     client.email_conversation_importer()

@@ -16,7 +16,6 @@ Any service can inherit from this class to implement/override functionality acco
 
 # Standard Library
 import json
-import time
 import itertools
 from abc import ABCMeta
 from datetime import datetime, timedelta
