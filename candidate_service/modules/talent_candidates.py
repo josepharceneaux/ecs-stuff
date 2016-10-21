@@ -54,7 +54,7 @@ from candidate_service.modules.validators import (
 
 # Common utilities
 from candidate_service.common.utils.talent_s3 import get_s3_url
-from candidate_service.common.utils.iso_standards import get_country_name, get_subdivision_name
+from candidate_service.common.utils.iso_standards import get_country_name, get_subdivision_name, get_country_code_from_name
 from candidate_service.common.utils.datetime_utils import DatetimeUtils
 from candidate_service.common.geo_services.geo_coordinates import get_coordinates
 
@@ -1255,7 +1255,10 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
 
         zip_code = sanitize_zip_code(address['zip_code']) if address.get('zip_code') else None
         city = address['city'].strip() if address.get('city') else None
-        country_code = address['country_code'].upper() if address.get('country_code') else None
+        country_code = address['country_code'].capitalize() if address.get('country_code') else None
+        if country_code:
+            country_code = get_country_code_from_name(country_code).upper()
+
         subdivision_code = address['subdivision_code'].upper() if address.get('subdivision_code') else None
         address_dict = dict(
             address_line_1=address['address_line_1'].strip() if address.get('address_line_1') else None,
