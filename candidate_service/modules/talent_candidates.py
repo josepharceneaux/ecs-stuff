@@ -1255,9 +1255,13 @@ def _add_or_update_candidate_addresses(candidate, addresses, user_id, is_updatin
 
         zip_code = sanitize_zip_code(address['zip_code']) if address.get('zip_code') else None
         city = address['city'].strip() if address.get('city') else None
-        country_code = address['country_code'].capitalize() if address.get('country_code') else None
+        country_code = address.get('country_code')
         if country_code:
-            country_code = get_country_code_from_name(country_code).upper()
+            country_code = get_country_code_from_name(country_code)
+            if country_code:
+                country_code = country_code.upper()
+            else:
+                logger.info("Country code was not found ... %s" % country_code)
 
         subdivision_code = address['subdivision_code'].upper() if address.get('subdivision_code') else None
         address_dict = dict(
