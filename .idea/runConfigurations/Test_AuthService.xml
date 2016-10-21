@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Test AuthService" type="tests" factoryName="py.test" singleton="true">
+  <configuration default="false" name="Test AuthService" type="tests" factoryName="py.test">
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs />

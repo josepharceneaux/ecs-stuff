@@ -9,13 +9,14 @@ import datetime
 # Third party imports
 import requests
 import pytest
+from copy import deepcopy
 from faker import Faker
 fake = Faker()
 
 
 # Application imports
 from scheduler_service.common.routes import SchedulerApiUrl
-from scheduler_service.modules.CONSTANTS import (SCHEDULER_REQUIRED_PARAMETERS,
+from scheduler_service.modules.CONSTANTS import (SCHEDULER_PERIODIC_REQUIRED_PARAMETERS,
                                                  SCHEDULER_ONE_TIME_REQUIRED_PARAMETERS)
 __author__ = 'saad'
 
@@ -26,15 +27,13 @@ class TestSchedulerExceptions(object):
     def test_incomplete_post_data_exception(self, auth_header, job_config):
         """
         Create a job by missing data and check if exception occur then invalid usage exception should be thrown
-
         Args:
             auth_data: Fixture that contains token.
             job_config (dict): Fixture that contains job config to be used as
         :return:
         """
-        # Delete frequency from post data and try to create job, should get 500 response
-        invalid_job_config = job_config.copy()
-        for param in SCHEDULER_REQUIRED_PARAMETERS:
+        for param in SCHEDULER_PERIODIC_REQUIRED_PARAMETERS:
+            invalid_job_config = deepcopy(job_config)
             del invalid_job_config[param]
             # Create job with invalid string
             response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(invalid_job_config),
@@ -347,8 +346,8 @@ class TestSchedulerExceptions(object):
         Try to Schedule a one_time task with some missing required data. Should return 400 (bad request).
         """
         # Delete some post data and try to create job, should get 400 response
-        invalid_job_config_one_time_task = job_config_one_time_task.copy()
         for param in SCHEDULER_ONE_TIME_REQUIRED_PARAMETERS:
+            invalid_job_config_one_time_task = deepcopy(job_config_one_time_task)
             del invalid_job_config_one_time_task[param]
             response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(invalid_job_config_one_time_task),
                                      headers=auth_header)
