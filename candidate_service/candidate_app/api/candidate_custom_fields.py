@@ -97,7 +97,7 @@ class CandidateCustomFieldResource(Resource):
                     created_candidate_custom_field_ids.append(candidate_custom_field.id)
 
         db.session.commit()
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return {
                    'candidate_custom_fields': [
                        {'id': custom_field_id} for custom_field_id in created_candidate_custom_field_ids]
