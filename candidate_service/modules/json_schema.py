@@ -259,7 +259,7 @@ candidates_resource_schema_post = {
                                 },
                                 "country_code": {
                                     "type": ["string", "null"],
-                                    "maxLength": 2
+                                    "maxLength": 100
                                 },
                                 "po_box": {
                                     "type": ["string", "null"],
