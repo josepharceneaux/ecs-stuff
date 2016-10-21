@@ -35,7 +35,7 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailClient, EmailCampaignSend,
                                                                  EmailClientCredentials)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.common.utils.handy_functions import define_and_send_request, send_request
+from email_campaign_service.common.utils.handy_functions import define_and_send_request
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
@@ -733,4 +733,3 @@ def send_campaign_with_client_id(email_campaign, access_token):
     return_value['response'] = response
     return_value['campaign'] = email_campaign
     return return_value
-
