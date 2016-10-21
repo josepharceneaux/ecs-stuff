@@ -39,11 +39,10 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaign,
                                                                  EmailCampaignSmartlist,
                                                                  EmailCampaignBlast,
                                                                  EmailCampaignSend,
-                                                                 EmailCampaignSendUrlConversion,
-                                                                 EmailClientCredentials)
+                                                                 EmailCampaignSendUrlConversion)
 from email_campaign_service.common.models.candidate import (Candidate, CandidateEmail,
                                                             CandidateSubscriptionPreference)
-from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError, ResourceNotFound)
+from email_campaign_service.common.error_handling import (InvalidUsage, InternalServerError)
 from email_campaign_service.common.utils.talent_reporting import email_notification_to_admins
 from email_campaign_service.common.campaign_services.validators import validate_smartlist_ids
 from email_campaign_service.common.utils.amazon_ses import (send_email, get_default_email_info)
@@ -1074,7 +1073,8 @@ def send_test_email(user, request):
     """
     # Get and validate request data
     data = get_json_data_if_validated(request, TEST_EMAIL_SCHEMA)
-    [new_html, new_text, subject] = do_mergetag_replacements([data['body_html'], data['body_text'], data['subject']],
+    body_text = data.get('body_text', '')
+    [new_html, new_text, subject] = do_mergetag_replacements([data['body_html'], body_text, data['subject']],
                                                              request.user)
     try:
         default_email = get_default_email_info()['email']

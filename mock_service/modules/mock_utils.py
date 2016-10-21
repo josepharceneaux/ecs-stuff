@@ -84,4 +84,3 @@ def get_mock_response(mocked_json, payload=None, headers=None):
 
     response = mocked_json[codes.OK]
     return response.get('response', {}), response['status_code']
-
