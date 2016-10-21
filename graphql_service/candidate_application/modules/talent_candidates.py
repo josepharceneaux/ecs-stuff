@@ -18,7 +18,6 @@ from graphql_service.common.utils.validators import is_valid_email, sanitize_zip
 from graphql_service.common.geo_services.geo_coordinates import get_coordinates
 from helpers import track_updates
 from helpers import remove_duplicates, clean
-from graphql_service.common.utils.datetime_utils import DatetimeUtils
 
 # Error handling
 from graphql_service.common.error_handling import InvalidUsage, ForbiddenError
@@ -28,6 +27,7 @@ def add_or_edit_candidate_from_params(
         user,
         primary_data,
         is_updating=False,
+        candidate_id=None,
         existing_candidate_data=None,
         addresses=None,
         educations=None,
@@ -46,8 +46,7 @@ def add_or_edit_candidate_from_params(
         work_preferences=None,
         photos=None,
         added_datetime=None,
-        updated_datetime=None,
-        edits=None):
+        updated_datetime=None):
     """
     Function will add or update candidate.
     :param user: authorized user
@@ -110,7 +109,7 @@ def add_or_edit_candidate_from_params(
                                                added_datetime=added_datetime,
                                                is_updating=is_updating,
                                                updated_datetime=updated_datetime,
-                                               edits=edits)
+                                               candidate_id=candidate_id)
         candidate_data = validated_primary_data
 
     # Areas of Interest
@@ -120,7 +119,11 @@ def add_or_edit_candidate_from_params(
 
     # Addresses
     if addresses:
-        validated_addresses_data = _add_or_update_addresses(addresses, user.id, existing_candidate_data)
+        validated_addresses_data = _add_or_update_addresses(addresses=addresses,
+                                                            user_id=user.id,
+                                                            is_updating=is_updating,
+                                                            existing_data=existing_candidate_data,
+                                                            candidate_id=candidate_id)
         candidate_data['addresses'] = validated_addresses_data
 
     # Custom Fields
@@ -135,7 +138,11 @@ def add_or_edit_candidate_from_params(
 
     # Emails
     if emails:
-        validated_emails_data = _add_or_update_emails(emails)
+        validated_emails_data = _add_or_update_emails(emails=emails,
+                                                      is_updating=is_updating,
+                                                      user_id=user.id,
+                                                      existing_data=existing_candidate_data,
+                                                      candidate_id=candidate_id)
         candidate_data['emails'] = validated_emails_data
 
     # Experiences
@@ -201,12 +208,12 @@ def add_or_edit_candidate_from_params(
 
 
 def _primary_data(primary_data, user_id=None, existing_data=None, added_datetime=None,
-                  is_updating=False, updated_datetime=None, edits=None):
+                  is_updating=False, updated_datetime=None, candidate_id=None):
     """
     Function will return candidate's validated primary data
     :rtype: dict
     """
-    candidate_dict_data = dict(
+    primary_dict_data = dict(
         first_name=primary_data.get('first_name'),
         middle_name=primary_data.get('middle_name'),
         last_name=primary_data.get('last_name'),
@@ -217,35 +224,30 @@ def _primary_data(primary_data, user_id=None, existing_data=None, added_datetime
         resume_url=primary_data.get('resume_url')
     )
 
+    # Remove empty data
+    primary_dict_data = purge_dict(primary_dict_data)
+
+    # added_datetime must be included if candidate is not being updated & primary_dict_data is not empty at this point
+    if not is_updating:
+        assert added_datetime is not None, 'added_datetime is required when creating candidate'
+        primary_dict_data['id'] = primary_data['id']
+        primary_dict_data['added_datetime'] = added_datetime
+
     # Add updated_datetime if candidate is being updated
     if is_updating:
         assert updated_datetime is not None, 'updated_datetime is required when updating candidate'
-        candidate_dict_data['updated_datetime'] = updated_datetime
+        assert candidate_id is not None, 'candidate ID is required for tracking updates'
 
-    # Remove empty data
-    candidate_dict_data = purge_dict(candidate_dict_data)
+        # Track all changes made to candidate's primary information
+        track_updates(user_id=user_id,
+                      candidate_id=candidate_id,
+                      existing_data=existing_data,
+                      new_data=primary_dict_data)
 
-    # Candidate will not be added/updated if candidate_dict_data is empty
-    if not candidate_dict_data:
-        return
+        # Add stringified datetime into primary_dict_data
+        primary_dict_data['updated_datetime'] = updated_datetime
 
-    # added_datetime must be included if candidate is not being updated & candidate_dict_data is not empty at this point
-    if not is_updating:
-        assert added_datetime is not None, 'added_datetime is required when creating candidate'
-        candidate_dict_data['id'] = primary_data['id']
-        candidate_dict_data['added_datetime'] = added_datetime
-
-    # track updates
-    if is_updating:
-        changes = track_updates(user_id=user_id,
-                                attribute='primary_data',
-                                existing_data=existing_data,
-                                new_data=candidate_dict_data,
-                                updated_datetime=updated_datetime)
-        edits.append(changes)
-        candidate_dict_data['edits'] = edits
-
-    return candidate_dict_data
+    return primary_dict_data
 
 
 def _add_or_update_areas_of_interest(areas_of_interest, user):
@@ -263,7 +265,7 @@ def _add_or_update_areas_of_interest(areas_of_interest, user):
     return areas_of_interest
 
 
-def _add_or_update_addresses(addresses, user_id=None, existing_candidate_data=None):
+def _add_or_update_addresses(addresses, user_id=None, is_updating=None, existing_data=None, candidate_id=None):
     # Remove duplicates
     addresses = remove_duplicates(addresses)
 
@@ -273,7 +275,7 @@ def _add_or_update_addresses(addresses, user_id=None, existing_candidate_data=No
     # Check if any of the addresses is set as the default address
     addresses_have_default = [isinstance(address.get('is_default'), bool) for address in addresses]
 
-    for i, address in enumerate(addresses):
+    for index, address in enumerate(addresses):
         zip_code = sanitize_zip_code(address['zip_code']) if address.get('zip_code') else None
         city = clean(address.get('city'))
         iso3166_subdivision = address.get('iso3166_subdivision')
@@ -286,24 +288,26 @@ def _add_or_update_addresses(addresses, user_id=None, existing_candidate_data=No
             iso3166_subdivision=iso3166_subdivision,
             iso3166_country=address.get('iso3166_country'),
             po_box=clean(address.get('po_box')),
-            is_default=i == 0 if not addresses_have_default else address.get('is_default'),
+            is_default=index == 0 if not addresses_have_default else address.get('is_default'),
             coordinates=get_coordinates(zipcode=zip_code, city=city, state=iso3166_subdivision)
         )
 
         # Remove empty data from address dict
         address_dict = purge_dict(address_dict)
 
+        # track updates
+        if is_updating:
+            track_updates(user_id=user_id,
+                          candidate_id=candidate_id,
+                          existing_data=existing_data.get('addresses')[index],
+                          new_data=address_dict,
+                          attribute='address')
+
         # Prevent adding empty records
         if not address_dict:
             continue
 
         validated_addresses_data.append(address_dict)
-
-    # Todo: Track updates
-    # track_updates(user_id=user_id,
-    #               new_data=unique_validated_addresses,
-    #               attribute='addresses',
-    #               existing_candidate_data=existing_candidate_data)
 
     return validated_addresses_data
 
@@ -323,14 +327,14 @@ def _add_or_update_custom_fields(custom_fields, user):
     return map(purge_dict, custom_fields)
 
 
-def _add_or_update_educations(educations):
+def _add_or_update_educations(educations, is_updating=False, user_id=None, candidate_id=None, existing_data=None):
     # Remove duplicates
     educations = remove_duplicates(educations)
 
     # Aggregate formatted & validated education data
     validated_education_data = []
 
-    for i, education in enumerate(educations):
+    for index, education in enumerate(educations):
         education_dict = dict(
             school_name=education.get('school_name'),
             school_type=education.get('school_type'),
@@ -342,6 +346,15 @@ def _add_or_update_educations(educations):
 
         # Remove empty data
         education_dict = purge_dict(education_dict)
+
+        # track updates
+        if is_updating:
+            existing_education = existing_data.get('educations')[index]
+            track_updates(user_id=user_id,
+                          candidate_id=candidate_id,
+                          existing_data=existing_education,
+                          new_data=education_dict,
+                          attribute='education')
 
         # Prevent adding empty records
         if not education_dict:
@@ -357,7 +370,7 @@ def _add_or_update_educations(educations):
             # Aggregate formatted & validated degree data
             checked_degree_data = []
 
-            for degree in degrees:
+            for i, degree in enumerate(degrees):
                 # Because DynamoDB is too cool for floats
                 gpa = Decimal(degree['gpa']) if degree.get('gpa') else None
 
@@ -376,6 +389,15 @@ def _add_or_update_educations(educations):
                 # Remove empty data
                 degree_dict = purge_dict(degree_dict)
 
+                # track updates
+                if is_updating:
+                    existing_degrees = existing_education
+                    track_updates(user_id=user_id,
+                                  candidate_id=candidate_id,
+                                  existing_data=existing_degrees[i],
+                                  new_data=degree_dict,
+                                  attribute='education_degree')
+
                 # Prevent adding empty records
                 if not degree_dict:
                     continue
@@ -383,19 +405,17 @@ def _add_or_update_educations(educations):
                 checked_degree_data.append(degree_dict)
 
             # Aggregate degree data to the corresponding education data
-            validated_education_data[i]['degrees'] = checked_degree_data
-
-    # TODO: track updates
+            validated_education_data[index]['degrees'] = checked_degree_data
 
     return validated_education_data
 
 
-def _add_or_update_emails(emails):
+def _add_or_update_emails(emails, is_updating, user_id=None, existing_data=None, candidate_id=None):
     # Remove duplicates
     emails = remove_duplicates(emails)
 
     # Aggregate formatted & validated email data
-    validated_email_data = []
+    validated_emails_data = []
 
     # Check if any of the emails is set as the default email
     emails_have_default = [isinstance(email.get('is_default'), bool) for email in emails]
@@ -419,18 +439,24 @@ def _add_or_update_emails(emails):
         # Remove empty data
         email_dict = purge_dict(email_dict, strip=False)
 
+        # track updates
+        if is_updating:
+            track_updates(user_id=user_id,
+                          candidate_id=candidate_id,
+                          existing_data=existing_data.get('emails')[i],
+                          new_data=email_dict,
+                          attribute='email')
+
         # Prevent adding empty records
         if not email_dict:
             continue
 
-        validated_email_data.append(email_dict)
+        validated_emails_data.append(email_dict)
 
-    # TODO: track updates
-
-    return validated_email_data
+    return validated_emails_data
 
 
-def _add_or_update_experiences(experiences):
+def _add_or_update_experiences(experiences, is_updating=False, user_id=None, candidate_id=None, existing_data=None):
     # Remove duplicates
     experiences = remove_duplicates(experiences)
 
@@ -440,7 +466,7 @@ def _add_or_update_experiences(experiences):
     # Identify experiences' maximum start year
     latest_start_year = max(experience.get('start_year') for experience in experiences)
 
-    for experience in experiences:
+    for index, experience in enumerate(experiences):
         start_year, end_year = experience.get('start_year'), experience.get('end_year')
         is_current = experience.get('is_current')
 
@@ -480,6 +506,14 @@ def _add_or_update_experiences(experiences):
         # Remove empty data
         experience_dict = purge_dict(experience_dict)
 
+        # track updates
+        if is_updating:
+            track_updates(user_id=user_id,
+                          candidate_id=candidate_id,
+                          existing_data=existing_data.get('experiences')[index],
+                          new_data=experience_dict,
+                          attribute='email')
+
         # Prevent adding empty records
         if not experience_dict:
             continue
@@ -488,19 +522,18 @@ def _add_or_update_experiences(experiences):
 
         validated_experiences_data.append(experience_dict)
 
-    # TODO: track updates
-
     return validated_experiences_data
 
 
-def _add_or_update_military_services(military_services):
+def _add_or_update_military_services(military_services, is_updating=False, user_id=None,
+                                     candidate_id=None, existing_data=None):
     # Remove duplicates
     military_services = remove_duplicates(military_services)
 
     # Aggregate formatted & validated military services' data
     validated_military_services_data = []
 
-    for service in military_services:
+    for index, service in enumerate(military_services):
         service_dict = dict(
             iso3166_country=service.get('iso3166_country').upper(),
             service_status=service.get('status'),
@@ -517,25 +550,31 @@ def _add_or_update_military_services(military_services):
         # Remove empty data
         service_dict = purge_dict(service_dict)
 
+        # track updates
+        if is_updating:
+            track_updates(user_id=user_id,
+                          candidate_id=candidate_id,
+                          existing_data=existing_data.get('military_services')[index],
+                          new_data=service_dict,
+                          attribute='military_service')
+
         # Prevent adding empty records
         if not service_dict:
             continue
 
         validated_military_services_data.append(service_dict)
 
-    # TODO: track updates
-
     return validated_military_services_data
 
 
-def _add_or_update_notes(notes, user_id):
+def _add_or_update_notes(notes, user_id, is_updating=False, candidate_id=None, existing_data=None):
     # Remove duplicates
     notes = remove_duplicates(notes)
 
     # Aggregate formatted & validated notes' data
     validated_notes_data = []
 
-    for note in notes:
+    for index, note in enumerate(notes):
         note_dict = dict(
             owner_user_id=user_id,
             title=note.get('title'),
@@ -545,18 +584,24 @@ def _add_or_update_notes(notes, user_id):
         # Remove empty data
         note_dict = purge_dict(note_dict)
 
+        # track updates
+        if is_updating:
+            track_updates(user_id=user_id,
+                          candidate_id=candidate_id,
+                          existing_data=existing_data.get('notes')[index],
+                          new_data=note_dict,
+                          attribute='note')
+
         # Prevent adding empty records
         if not note_dict:
             continue
 
         validated_notes_data.append(note_dict)
 
-    # TODO: track updates
-
     return validated_notes_data
 
 
-def _add_or_update_phones(phones):
+def _add_or_update_phones(phones, is_updating=False, user_id=None, candidate_id=None, existing_data=None):
     # Remove duplicates
     phones = remove_duplicates(phones)
 
@@ -614,6 +659,14 @@ def _add_or_update_phones(phones):
         # Remove empty data
         phone_dict = purge_dict(phone_dict)
 
+        # track updates
+        if is_updating:
+            track_updates(user_id=user_id,
+                          candidate_id=candidate_id,
+                          existing_data=existing_data.get('phones')[index],
+                          new_data=phone_dict,
+                          attribute='phone')
+
         # Prevent adding empty records
         if not phone_dict:
             continue
@@ -621,12 +674,10 @@ def _add_or_update_phones(phones):
         # Save data
         validated_phones_data.append(phone_dict)
 
-    # TODO: track updates
-
     return validated_phones_data
 
 
-def _add_or_update_photos(photos, is_updating):
+def _add_or_update_photos(photos, is_updating=False, user_id=None, candidate_id=None, existing_data=None):
     # Remove duplicates
     photos = remove_duplicates(photos)
 
@@ -652,21 +703,28 @@ def _add_or_update_photos(photos, is_updating):
         if not is_updating and not photo_dict.get('image_url'):
             raise InvalidUsage('Image url is required when adding candidate')
 
-        validated_photos_data.append(photo_dict)
+        # track updates
+        if is_updating:
+            track_updates(user_id=user_id,
+                          candidate_id=candidate_id,
+                          existing_data=existing_data.get('photos')[index],
+                          new_data=photo_dict,
+                          attribute='photo')
 
-    # TODO: track updates
+        validated_photos_data.append(photo_dict)
 
     return validated_photos_data
 
 
-def _add_or_update_preferred_locations(preferred_locations):
+def _add_or_update_preferred_locations(preferred_locations, is_updating=False, user_id=None,
+                                       candidate_id=None, existing_data=None):
     # Remove duplicates
     preferred_locations = remove_duplicates(preferred_locations)
 
     # Aggregate formatted & validated preferred locations' data
     validated_preferred_locations_data = []
 
-    for preferred_location in preferred_locations:
+    for index, preferred_location in enumerate(preferred_locations):
         preferred_location_dict = dict(
             iso3166_country=clean(preferred_location.get('iso3166_country')).upper(),
             iso3166_subdivision=clean(preferred_location.get('iso3166_subdivision')).upper(),
@@ -677,25 +735,31 @@ def _add_or_update_preferred_locations(preferred_locations):
         # Remove empty data
         preferred_location_dict = purge_dict(preferred_location_dict, strip=False)
 
+        # track updates
+        if is_updating:
+            track_updates(user_id=user_id,
+                          candidate_id=candidate_id,
+                          existing_data=existing_data.get('preferred_location')[index],
+                          new_data=preferred_location_dict,
+                          attribute='preferred_location')
+
         # Prevent adding empty records
         if not preferred_location_dict:
             continue
 
         validated_preferred_locations_data.append(preferred_location_dict)
 
-    # TODO: track updates
-
     return validated_preferred_locations_data
 
 
-def _add_or_update_references(references):
+def _add_or_update_references(references, is_updating=False, user_id=None, candidate_id=None, existing_data=None):
     # Remove duplicate data
     references = remove_duplicates(references)
 
     # Aggregate formatted & validated references' data
     validated_references_data = []
 
-    for reference in references:
+    for index, reference in enumerate(references):
         reference_dict = dict(
             reference_name=reference.get('reference_name'),
             reference_email=reference.get('reference_email'),
@@ -708,25 +772,31 @@ def _add_or_update_references(references):
         # Remove empty data
         reference_dict = purge_dict(reference_dict)
 
+        # track updates
+        if is_updating:
+            track_updates(user_id=user_id,
+                          candidate_id=candidate_id,
+                          existing_data=existing_data.get('references')[index],
+                          new_data=reference_dict,
+                          attribute='reference')
+
         # Prevent adding empty records
         if not reference_dict:
             continue
 
         validated_references_data.append(reference_dict)
 
-    # TODO: track updates
-
     return validated_references_data
 
 
-def _add_or_update_skills(skills):
+def _add_or_update_skills(skills, is_updating=False, user_id=None, candidate_id=None, existing_data=None):
     # Remove duplicate data
     skills = remove_duplicates(skills)
 
     # Aggregate formatted & validated skills' data
     validated_skills_data = []
 
-    for skill in skills:
+    for index, skill in enumerate(skills):
         skill_dict = dict(
             name=skill.get('name'),
             months_used=skill.get('months_used'),
@@ -737,25 +807,32 @@ def _add_or_update_skills(skills):
         # Remove empty data
         skill_dict = purge_dict(skill_dict)
 
+        # track updates
+        if is_updating:
+            track_updates(user_id=user_id,
+                          candidate_id=candidate_id,
+                          existing_data=existing_data.get('skills')[index],
+                          new_data=skill_dict,
+                          attribute='skill')
+
         # Prevent adding empty records
         if not skill_dict:
             continue
 
         validated_skills_data.append(skill_dict)
 
-    # TODO: track updates
-
     return validated_skills_data
 
 
-def _add_or_update_social_networks(social_networks):
+def _add_or_update_social_networks(social_networks, is_updating=False, user_id=None,
+                                   candidate_id=None, existing_data=None):
     # Remove duplicate data
     social_networks = remove_duplicates(social_networks)
 
     # Aggregate formatted & validated social networks' data
     checked_social_networks_data = []
 
-    for social_network in social_networks:
+    for index, social_network in enumerate(social_networks):
         social_network_dict = dict(
             name=social_network['name'].strip(),
             profile_url=social_network['profile_url'].strip(),
@@ -763,28 +840,47 @@ def _add_or_update_social_networks(social_networks):
 
         checked_social_networks_data.append(social_network_dict)
 
-    # TODO: track updates
+        # track updates
+        if is_updating:
+            track_updates(user_id=user_id,
+                          candidate_id=candidate_id,
+                          existing_data=existing_data.get('social_networks')[index],
+                          new_data=social_network_dict,
+                          attribute='social_network')
 
     return checked_social_networks_data
 
 
-def _add_or_update_tags(tags):
-    # Aggregate formatted & validated tags' data
-    validated_tags_data = [dict(name=tag['name'].strip()) for tag in remove_duplicates(tags)]
+def _add_or_update_tags(tags, is_updating=False, user_id=None, candidate_id=None, existing_data=None):
+    # Remove duplicate data
+    tags = remove_duplicates(tags)
 
-    # TODO: track updates
+    # Aggregate formatted & validated tags' data
+    validated_tags_data = []
+
+    for index, tag in enumerate(tags):
+        tag_dict = dict(name=tag['name'].strip())
+
+        # track updates
+        if is_updating:
+            track_updates(user_id=user_id,
+                          candidate_id=candidate_id,
+                          existing_data=existing_data.get('tags')[index],
+                          new_data=tag_dict,
+                          attribute='tag')
 
     return validated_tags_data
 
 
-def _add_or_update_work_preferences(work_preferences):
+def _add_or_update_work_preferences(work_preferences, is_updating=False, user_id=None,
+                                    candidate_id=None, existing_data=None):
     # Remove duplicates
     work_preferences = remove_duplicates(work_preferences)
 
     # Aggregated formatted & validated work preferences' data
     validated_work_preferences = []
 
-    for preference in work_preferences:
+    for index, preference in enumerate(work_preferences):
         preference_dict = dict(
             relocate=preference.get('relocate'),
             authorization=preference.get('authorization'),
@@ -799,6 +895,12 @@ def _add_or_update_work_preferences(work_preferences):
 
         validated_work_preferences.append(preference_dict)
 
-    # TODO: track updates
+        # track updates
+        if is_updating:
+            track_updates(user_id=user_id,
+                          candidate_id=candidate_id,
+                          existing_data=existing_data.get('work_preference')[index],
+                          new_data=preference_dict,
+                          attribute='work_preference')
 
     return work_preferences

@@ -6,8 +6,6 @@ from graphql_service.common.error_handling import InternalServerError
 # Common resolvers
 from common_resolvers import *
 
-from schema_edits import EditType
-
 
 class AreaOfInterestType(graphene.ObjectType):
     name = 'AreaOfInterestType'
@@ -375,7 +373,6 @@ class CandidateType(graphene.ObjectType):
     social_networks = graphene.List(SocialNetworkType)
     tags = graphene.List(TagType)
     work_preferences = graphene.List(WorkPreferenceType)
-    edits = graphene.List(EditType)
 
     # Resolvers for candidate's secondary attributes
     def resolve_areas_of_interest(self, args, context, info):
@@ -425,6 +422,3 @@ class CandidateType(graphene.ObjectType):
 
     def resolve_work_preferences(self, args, context, info):
         return self.get('work_preferences')
-
-    def resolve_edits(self, args, context, info):
-        return self.get('edits')
