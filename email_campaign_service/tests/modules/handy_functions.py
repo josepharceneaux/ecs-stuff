@@ -615,9 +615,7 @@ def assert_and_delete_template_folder(template_folder_id, headers, data=None):
     :param template_folder_id: Contain id of folder which you want to delete.
     :param data: Contain multiple folder id's to delete more than one folder.
     :param headers: Contain access token and authentication.
-    :return:
     """
-
     response = requests.delete(url=EmailCampaignApiUrl.TEMPLATE_FOLDER % template_folder_id,
                                data=json.dumps(data), headers=headers)
     assert response.status_code == requests.codes.NO_CONTENT

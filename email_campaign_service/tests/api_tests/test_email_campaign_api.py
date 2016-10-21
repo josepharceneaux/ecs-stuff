@@ -21,9 +21,9 @@ from random import randint
 from datetime import datetime, timedelta
 
 # Application Specific
-from app_common.common.utils.test_utils import (PAGINATION_INVALID_FIELDS,
-                                                PAGINATION_EXCEPT_SINGLE_FIELD)
-from email_campaign_service.tests.modules.__init__ import CREATE_EMAIL_CAMPAIGN_OPTIONAL_FIELDS
+from email_campaign_service.common.utils.test_utils import (PAGINATION_INVALID_FIELDS,
+                                                            PAGINATION_EXCEPT_SINGLE_FIELD)
+from email_campaign_service.tests.modules.__init__ import CAMPAIGN_OPTIONAL_FIELDS
 from email_campaign_service.common.models.db import db
 from email_campaign_service.tests.conftest import fake
 from email_campaign_service.email_campaign_app import app
@@ -56,6 +56,7 @@ class TestGetCampaigns(object):
     """
     Here are the tests of /v1/email-campaigns
     """
+    URL = EmailCampaignApiUrl.CAMPAIGNS
 
     def test_get_with_invalid_token(self):
         """
@@ -212,19 +213,19 @@ class TestGetCampaigns(object):
     @pytest.mark.qa
     def test_get_campaign_with_invalid_field_one_by_one(self, headers):
         """
-         This test is make sure that data is not retrieved with invalid fields and also
+         This test make sure that data is not retrieved with invalid fields and also
          assure us of all possible checks are handled for every field. That's why the
          test is executed with one by one invalid field.
         """
         for param in PAGINATION_INVALID_FIELDS:
-            response = requests.get(url=EmailCampaignApiUrl.CAMPAIGN % param, headers=headers)
+            response = requests.get(url=self.URL + param, headers=headers)
             assert response.status_code == requests.codes.BAD_REQUEST
 
     @pytest.mark.qa
     def test_get_all_campaigns_in_desc(self, user_first, user_same_domain, access_token_first):
 
         """
-        This test to is to make sure the GET endpoint get_all_email_campaigns
+        This test is to make sure the GET endpoint get_all_email_campaigns
         is retrieving all campaigns in descending order according of added_datetime'
         """
         # Test GET api of email campaign
@@ -237,7 +238,7 @@ class TestGetCampaigns(object):
     @pytest.mark.qa
     def test_get_all_campaigns_in_asc(self, user_first, user_same_domain, access_token_first):
         """
-        This test to is to make sure the GET endpoint get_all_email_campaigns
+        This test is to make sure the GET endpoint get_all_email_campaigns
         is retrieving all campaigns in ascending order according of added_datetime'
         """
         # Test GET api of email campaign
@@ -256,7 +257,7 @@ class TestGetCampaigns(object):
         for param in PAGINATION_EXCEPT_SINGLE_FIELD:
             # sort_by name is for email campaign pagination
             param % 'name'
-            response = requests.get(url=EmailCampaignApiUrl.CAMPAIGN % param, headers=headers)
+            response = requests.get(url=EmailCampaignApiUrl.CAMPAIGNS + param, headers=headers)
             assert response.status_code == requests.codes.OK
 
 
@@ -496,7 +497,7 @@ class TestCreateCampaign(object):
         subject = '%s-test_create_email_campaign_except_single_parameter' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation_with_all_parameters(access_token_first, talent_pipeline,
                                                                               subject)
-        for param in CREATE_EMAIL_CAMPAIGN_OPTIONAL_FIELDS:
+        for param in CAMPAIGN_OPTIONAL_FIELDS:
             del campaign_data[param]
             response = create_email_campaign_via_api(access_token_first, campaign_data)
             assert response.status_code == requests.codes.CREATED
@@ -603,7 +604,7 @@ class TestSendCampaign(object):
     def test_campaign_send_with_one_smartlist_one_candidate_with_no_email(self, headers,
                                                                           campaign_with_candidate_having_no_email):
         """
-        User auth token is valid, campaign has one smart list associated. Smart list has one
+        User auth token is valid, campaign has one smartlist associated. Smartlist has one
         candidate having no email associated. So, sending email campaign should fail.
         """
         response = requests.post(self.URL % campaign_with_candidate_having_no_email.id, headers=headers)
@@ -628,7 +629,7 @@ class TestSendCampaign(object):
     def test_campaign_send_to_two_candidates_with_same_email_address_in_same_domain(self, headers, user_first,
                                                                                     campaign_with_two_candidates):
         """
-        User auth token is valid, campaign has one smart list associated. Smartlist has two
+        User auth token is valid, campaign has one smartlist associated. Smartlist has two
         candidates associated (with same email addresses). Email Campaign should be sent to only
         one candidate.
         """

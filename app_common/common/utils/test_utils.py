@@ -28,10 +28,10 @@ from handy_functions import send_request
 define_custom_contracts()
 fake = Faker()
 
-PAGINATION_INVALID_FIELDS = ['?page=%s' % fake.random_int(-99, 0), '?per_page=%s' % fake.random_int(51,),
-                             '?sort_type=ASER', '?sort_type=DSCEE', '?sort_by=id']
-PAGINATION_EXCEPT_SINGLE_FIELD = ['?page=1&sort_type=ASC&?sort_by=%s', '?per_page=2&sort_type=ASC&?sort_by=%s',
-                                  '?page=1&per_page=2&?sort_by=%s']
+PAGINATION_INVALID_FIELDS = ['/?page=%s' % fake.random_int(-99, 0), '/?per_page=%s' % fake.random_int(51,),
+                             '/?sort_type=ASER', '/?sort_type=DSCEE', '/?sort_by=id']
+PAGINATION_EXCEPT_SINGLE_FIELD = ['/?page=1&sort_type=ASC&?sort_by=%s', '/?per_page=2&sort_type=ASC&?sort_by=%s',
+                                  '/?page=1&per_page=2&?sort_by=%s']
 
 
 @contract

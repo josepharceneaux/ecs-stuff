@@ -22,9 +22,6 @@ from email_campaign_service.tests.modules.handy_functions import (request_to_ema
                                                                   assert_and_delete_template_folder)
 
 
-# TODO: Need to add tests for negative inputs where missing
-
-
 class TestEmailTemplateFolders(object):
     """
     Here are the tests of /v1/email-template-folders
@@ -57,7 +54,7 @@ class TestEmailTemplateFolders(object):
     @pytest.mark.qa
     def test_create_email_template_folder_with_same_name(self, headers, create_email_template_folder):
         """
-        This test make sure that email template folder is not created with same
+        This test makes sure that email template folder is not created with same
         name which already exist. Should return 400 bad request.
         """
         # Get Template Folder Id
@@ -94,7 +91,7 @@ class TestEmailTemplateFolders(object):
     @pytest.mark.qa
     def test_create_email_template_folder_with_deleted_parent_id(self, headers, create_email_template_folder):
         """
-        This test is to  assure that email template folder can't be created through
+        This test is to assure that email template folder can't be created through
         parent_id of the folder which is deleted. Should return 400 bad request.
         """
         template_folder_id, template_folder_name = create_email_template_folder
@@ -104,7 +101,7 @@ class TestEmailTemplateFolders(object):
     def test_create_email_template_folder_with_parent_id_other_domain(self, create_email_template_folder,
                                                                       access_token_other):
         """
-        This test is to  assure that email template folder can't be created through
+        This test is to assure that email template folder can't be created through
         parent_id of the other domain folder. Should return 400 bad request.
         """
         template_folder_id, template_folder_name = create_email_template_folder
