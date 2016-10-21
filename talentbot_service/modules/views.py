@@ -7,7 +7,8 @@ from multiprocessing import Process
 # Common utils
 from talentbot_service.common.talent_config_manager import TalentConfigKeys
 from talentbot_service.common.models.user import TalentbotAuth
-from talentbot_service.common.routes import TalentBotApiUrl
+from talentbot_service.common.routes import TalentBotApi
+from talentbot_service.common.utils.api_utils import ApiResponse
 from talentbot_service.common.utils.handy_functions import send_request
 # Service specific
 from talentbot_service.modules.email_bot import EmailBot
@@ -21,6 +22,7 @@ from talentbot_service import app, logger
 # 3rd party imports
 from flask import request
 from urllib import quote
+from slackclient import SlackClient
 
 mailgun_api_key = app.config[TalentConfigKeys.MAILGUN_API_KEY]
 slack_bot = SlackBot(QUESTIONS, BOT_NAME, ERROR_MESSAGE)
@@ -32,7 +34,7 @@ email_bot = EmailBot(mailgun_api_key, MAILGUN_SENDING_ENDPOINT, QUESTIONS, BOT_N
 facebook_bot = FacebookBot(QUESTIONS, BOT_NAME, ERROR_MESSAGE)
 
 
-@app.route(TalentBotApiUrl.INDEX)
+@app.route(TalentBotApi.INDEX)
 def index():
     """
     Just returns Add to Slack button for testing purpose
@@ -44,7 +46,7 @@ def index():
            //platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>'''
 
 
-@app.route(TalentBotApiUrl.SLACK_LISTEN, methods=['POST'])
+@app.route(TalentBotApi.SLACK_LISTEN, methods=['POST'])
 def listen_slack():
     """
     Listens to the slack callback and if it is a Slack event then processes it and extracts chanel_id,
@@ -73,7 +75,7 @@ def listen_slack():
     return 'HTTP_200_OK'
 
 
-@app.route(TalentBotApiUrl.SMS_LISTEN, methods=['GET', 'POST'])
+@app.route(TalentBotApi.SMS_LISTEN, methods=['GET', 'POST'])
 def handle_twilio_webhook():
     """
     Listens to the twilio callbacks
@@ -86,7 +88,7 @@ def handle_twilio_webhook():
     return 'HTTP_200_OK'
 
 
-@app.route(TalentBotApiUrl.EMAIL_LISTEN, methods=['POST'])
+@app.route(TalentBotApi.EMAIL_LISTEN, methods=['POST'])
 def receive_mail():
     """
     End point which listens mail gun callbacks
@@ -101,7 +103,7 @@ def receive_mail():
     return 'HTTP_200_OK'
 
 
-@app.route(TalentBotApiUrl.FACEBOOK_LISTEN, methods=['GET'])
+@app.route(TalentBotApi.FACEBOOK_LISTEN, methods=['GET'])
 def handle_verification():
     """
     End point which handles facebook challenge code
@@ -111,7 +113,7 @@ def handle_verification():
     return quote(challenge)
 
 
-@app.route(TalentBotApiUrl.FACEBOOK_LISTEN, methods=['POST'])
+@app.route(TalentBotApi.FACEBOOK_LISTEN, methods=['POST'])
 def handle_incoming_messages():
     """
     End point to listen facebook web hooks
@@ -128,7 +130,7 @@ def handle_incoming_messages():
     return 'HTTP_200_OK'
 
 
-@app.route(TalentBotApiUrl.SLACK_AUTH, methods=['GET', 'POST'])
+@app.route(TalentBotApi.SLACK_AUTH, methods=['GET', 'POST'])
 def get_new_user_credentials():
     """
     Receives user data when he installs talentbot on slack and saves in db
@@ -162,3 +164,14 @@ def get_new_user_credentials():
         TalentbotAuth.save(auth_entry)
         return "Your slack token has been updated"
     return "Your slack id already exists"
+
+
+@app.route(TalentBotApi.SLACK_BOT_STATUS, methods=['POST'])
+def set_bot_state_active():
+    bot_token = request.json.get('bot_token')
+    if bot_token:
+        print bot_token
+        slack_client = SlackClient(bot_token)
+        slack_client.rtm_connect()
+        logger.info('Slack bot status online for token %s' % bot_token)
+    return ApiResponse({"response": "OK"})

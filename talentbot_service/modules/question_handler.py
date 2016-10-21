@@ -61,8 +61,10 @@ class QuestionHandler(object):
         :rtype: int|None
         """
         try:
-            word_index = [message_tokens.index(temp_word) for temp_word
-                          in message_tokens if word == temp_word.lower()][0]
+            word_index = None
+            for idx, token in enumerate(message_tokens):
+                if word == token.lower():
+                    word_index = idx
             return word_index
         except IndexError:
             return None
@@ -147,6 +149,8 @@ class QuestionHandler(object):
         if code_index is not None:
             message_tokens.pop(code_index)
         zipcode = message_tokens[zip_index + 1]
+        if not zipcode.isdigit():
+            return 'Invalid zipcode specified'
         try:
             count = Candidate.get_candidate_count_from_zipcode(zipcode, user_id)
         except NotFoundError:
@@ -257,7 +261,7 @@ class QuestionHandler(object):
         :rtype: str
         """
         user_specific_date = None
-        talent_index = self.find_word_in_message('talent', message_tokens)
+        talent_index = self.find_exact_word_in_message('talent', message_tokens)
         import_index = self.find_word_in_message('import', message_tokens)
         if import_index is None:
             import_index = self.find_word_in_message('add', message_tokens)

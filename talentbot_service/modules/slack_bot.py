@@ -9,10 +9,16 @@ with Slack.
 """
 # Builtin imports
 import random
+from datetime import datetime
 # Common utils
+from dateutil.relativedelta import relativedelta
+from flask import json
+from talentbot_service.common.utils.handy_functions import http_request
+from talentbot_service.common.routes import SchedulerApiUrl, TalentBotApiUrl
 from talentbot_service.common.models.user import TalentbotAuth
-# App specific import
+from talentbot_service.common.models.user import User
 from talentbot_service.common.error_handling import NotFoundError
+# App specific import
 from talentbot_service.modules.talent_bot import TalentBot
 from talentbot_service import logger
 # 3rd party imports
@@ -28,6 +34,7 @@ class SlackBot(TalentBot):
         self.recent_channel_id = None
         self.timestamp = None
         self.recent_user_id = None
+        self.is_active = None
 
     def authenticate_user(self, slack_user_id, message, channel_id):
         """
@@ -39,17 +46,18 @@ class SlackBot(TalentBot):
         """
         talentbot_auth = TalentbotAuth.get_talentbot_auth(slack_user_id=slack_user_id)
         if talentbot_auth:
-            slack_user_token = talentbot_auth.slack_user_token
+            slack_user_token = talentbot_auth.bot_token
             user_id = talentbot_auth.user_id
             if slack_user_token and user_id:
                 slack_client = SlackClient(slack_user_token)
                 try:
                     if talentbot_auth.bot_id:
                         at_bot = '<@%s>' % talentbot_auth.bot_id
-                        self.set_bot_state_active(talentbot_auth.bot_token)
+                        presence = slack_client.api_call('users.getPresence')
+                        if not presence.get('online'):
+                            self.set_bot_state_active(talentbot_auth.bot_token)
                     else:
                         at_bot = self.get_bot_id(slack_client)
-                        self.set_bot_state_active(talentbot_auth.bot_token)
                 except NotFoundError as error:
                     logger.error(error.message)
                     return False, None, None, None
@@ -87,10 +95,30 @@ class SlackBot(TalentBot):
         :param str bot_token: bot token
         :rtype: None
         """
-        if bot_token:
-            slack_client = SlackClient(bot_token)
-            slack_client.rtm_connect()
-            logger.info('bot state is active')
+        token = User.generate_jw_token()
+        header = {'Authorization': token, 'Content-Type': 'application/json'}
+        job_config = {"frequency": 149,
+                      "task_type": "periodic",
+                      "start_datetime": datetime.utcnow(),
+                      "end_datetime": datetime.utcnow() + relativedelta(days=1),
+                      "url": TalentBotApiUrl.SLACK_BOT_STATUS,
+                      "task_name": bot_token,
+                      "post_data": {
+                          "bot_token": bot_token}
+                      }
+        # Getting task by name
+        try:
+            task = http_request('get', SchedulerApiUrl.TASK_NAME % bot_token,
+                                headers=header)
+            if task.status_code == 200:
+                task_json = json.loads(task.text)
+                http_request('delete', SchedulerApiUrl.TASK % task_json['task']['id'],
+                             headers=header)
+        except Exception as e:
+            logger.info("No Scheduler task exists with name %s creating new one" %
+                        bot_token)
+        response = http_request('POST', SchedulerApiUrl.TASKS, headers=header,
+                                data=json.dumps(job_config))
 
     def reply(self, chanel_id, msg, slack_client):
         """

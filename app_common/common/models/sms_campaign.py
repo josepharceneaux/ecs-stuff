@@ -123,17 +123,18 @@ class SmsCampaignBlast(db.Model):
             return cls.query.filter(or_(cls.updated_time >= datetime_value,
                                         cls.sent_datetime >= datetime_value)).\
                 filter(cls.sends > 0).\
-                filter(SmsCampaign.id == cls.campaign_id, SmsCampaign.user_phone_id.in_(user_phone_ids)).\
+                filter(SmsCampaign.id == cls.campaign_id, SmsCampaign.user_phone_id.in_(user_phone_ids),
+                       cls.replies <= cls.sends).\
                 order_by(desc(cls.replies/cls.sends)).first()
         if domain_id and isinstance(datetime_value, basestring):
             return cls.query.filter(or_(extract("year", cls.updated_time) == datetime_value,
                                         extract("year", cls.sent_datetime) == datetime_value)). \
                 filter(SmsCampaign.id == cls.campaign_id, cls.sends > 0). \
-                filter(SmsCampaign.user_phone_id.in_(user_phone_ids)). \
+                filter(SmsCampaign.user_phone_id.in_(user_phone_ids), cls.replies <= cls.sends). \
                 order_by(desc(cls.replies/cls.sends)).first()
         if domain_id and not datetime_value:
             return cls.query.filter(SmsCampaign.id == cls.campaign_id). \
-                filter(SmsCampaign.user_phone_id.in_(user_phone_ids), cls.sends > 0). \
+                filter(SmsCampaign.user_phone_id.in_(user_phone_ids), cls.sends > 0, cls.replies <= cls.sends). \
                 order_by(desc(cls.replies/cls.sends)).first()
         return None
 

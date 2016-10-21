@@ -932,7 +932,7 @@ class MockServiceApiUrl(object):
     MOCK_SERVICE = HOST_NAME % ('/' + VERSION + '/%s/%s')
 
 
-class TalentBotApiUrl(object):
+class TalentBotApi(object):
     """
     URLs for Talentbot service
     """
@@ -942,4 +942,20 @@ class TalentBotApiUrl(object):
     FACEBOOK_LISTEN = '/' + VERSION + '/facebook-callback'
     SLACK_LISTEN = '/' + VERSION + '/slack-callback'
     SLACK_AUTH = '/' + VERSION + '/slack-auth'
+    SLACK_BOT_STATUS = '/' + VERSION + '/slackbot-status'
     INDEX = '/' + VERSION + '/index'
+
+
+class TalentBotApiUrl(object):
+    """
+    URLs for Talentbot service
+    """
+    HOST_NAME = _get_host_name(GTApis.TALENTBOT_SERVICE_NAME, GTApis.TALENTBOT_PORT)
+    VERSION = 'v1'
+    SMS_LISTEN = HOST_NAME % ('/' + VERSION + '/sms-callback')
+    EMAIL_LISTEN = HOST_NAME % ('/' + VERSION + '/email-callback')
+    FACEBOOK_LISTEN = HOST_NAME % ('/' + VERSION + '/facebook-callback')
+    SLACK_LISTEN = HOST_NAME % ('/' + VERSION + '/slack-callback')
+    SLACK_AUTH = HOST_NAME % ('/' + VERSION + '/slack-auth')
+    SLACK_BOT_STATUS = HOST_NAME % ('/' + VERSION + '/slackbot-status')
+    INDEX = HOST_NAME % ('/' + VERSION + '/index')

@@ -137,12 +137,12 @@ class Candidate(db.Model):
         """
         This method returns number of candidates from a certain zipcode
         :param int|long user_id: User Id
-        :param str zipcode: Candidate zipcode
+        :param string zipcode: Candidate zipcode
         :rtype: int|long
         """
         assert isinstance(zipcode, basestring) and zipcode, "Invalid zipcode"
         assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
-        from .user import User # This has to be here to avoid circular import
+        from .user import User  # This has to be here to avoid circular import
         domain_id = User.get_domain_id(user_id)
         if domain_id:
             return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
