@@ -1,11 +1,11 @@
 import datetime
+
 import graphene
 
-from graphql_service.common.models.db import db
-from graphql_service.common.models.user import Domain
+from graphql_service.candidate_application.dynamodb import DynamoDB, set_empty_strings_to_null
 from graphql_service.common.models.candidate import Candidate
+from graphql_service.common.models.db import db
 from graphql_service.common.models.user import User
-from validators import is_candidate_validated
 from schema import CandidateType
 from graphql_service.common.utils.candidate_utils import get_candidate_if_validated
 
@@ -14,10 +14,7 @@ from graphql_service.common.utils.candidate_utils import get_candidate_if_valida
 class request(object):
     user = User.get(1)
 
-
 from talent_candidates import add_or_edit_candidate_from_params
-
-from graphql_service.dynamodb.dynamo_actions import DynamoDB, set_empty_strings_to_null
 
 # Utilities
 from graphql_service.common.utils.datetime_utils import DatetimeUtils
@@ -475,7 +472,7 @@ class DeleteCandidate(graphene.Mutation):
         return DeleteCandidate(ok=True, id=candidate_id)
 
 
-class Mutation(graphene.ObjectType):
+class CandidateMutation(graphene.ObjectType):
     create_candidate = CreateCandidate.Field()
     update_candidate = UpdateCandidate.Field()
     delete_candidate = DeleteCandidate.Field()

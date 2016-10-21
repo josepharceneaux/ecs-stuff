@@ -34,9 +34,7 @@ def test_test_email_with_valid_data(access_token_first):
     from inbox with that specific subject.
     :param access_token_first: access token
     """
-    subject = "Test Email %s" % fake.uuid4()
     data = TEST_MAIL_DATA.copy()
-    data['subject'] = subject
     response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
     assert response.status_code == requests.codes.OK
     # TODO: Emails are being delayed, commenting for now
@@ -44,13 +42,26 @@ def test_test_email_with_valid_data(access_token_first):
     #              retry_exceptions=(AssertionError,))
 
 
+def test_send_test_mail_without_optional_parameter(access_token_first):
+    """
+    In this test, we will send a test email without optional parameter to test email account and assert we get OK
+    response.
+    """
+    subject = "Test Email %s" % fake.uuid4()
+    data = TEST_MAIL_DATA.copy()
+    del data['body_text']  # This parameter is optional
+    data['subject'] = subject
+    response = send_request('post', EmailCampaignApiUrl.TEST_EMAIL, access_token_first, data)
+    assert response.status_code == requests.codes.OK
+
+
 def test_send_test_email_with_merge_tags(user_first, access_token_first):
     """
     In this test, we will send a test email containing merge tags. Those merge tags should be replaced with
     user's info.
     """
-    user_first.update(first_name=fake.name())
-    user_first.update(last_name=fake.name())
+    user_first.update(first_name=fake.first_name())
+    user_first.update(last_name=fake.last_name())
     email_campaign = create_email_campaign_with_merge_tags(user_first, add_preference_url=False)
     data = TEST_MAIL_DATA.copy()
     data.update({'subject': email_campaign.subject,

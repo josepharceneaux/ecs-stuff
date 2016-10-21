@@ -5,6 +5,7 @@
 
 This file contains fixtures for tests of email-campaign-service
 """
+from email_campaign_service.modules.utils import do_mergetag_replacements
 
 __author__ = 'basit'
 
@@ -385,11 +386,12 @@ def email_campaign_with_outgoing_email_client(access_token_first, talent_pipelin
 
 
 @pytest.fixture()
-def data_for_email_conversation_importer(email_clients, headers, candidate_first):
+def data_for_email_conversation_importer(email_clients, headers, user_first, candidate_first):
     """
     We need to
     - Send an email to 'gettalentmailtest@gmail.com'. For this we will add an SMTP client for the user.
     - Add an IMAP client for user to retrieve email-conversations (email_clients will server this purpose).
+    We send email such that subject and body contains merge tags in it.
     """
     # Add candidate's email with value of test account "gettalentmailtest@gmail.com"
     candidate_email = CandidateEmail(candidate_id=candidate_first.id,
@@ -401,17 +403,17 @@ def data_for_email_conversation_importer(email_clients, headers, candidate_first
     assert response.ok
     assert response.json()
     email_client_response = response.json()['email_client_credentials']
-    subject = '%s-email-conversations-importer' % fake.uuid4()[0:8]
-    body = fake.sentence()
+    email_campaign = create_email_campaign_with_merge_tags(user_first, add_preference_url=False)
+    [subject, body_text] = do_mergetag_replacements([email_campaign.subject, email_campaign.body_text],
+                                                    candidate_first)
     # Send email
     print 'Sending email with SMTP server'
     client = SMTP(email_client_response['host'], email_client_response['port'],
                   email_client_response['email'], app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
-    client.send_email(app.config[TalentConfigKeys.GT_GMAIL_ID], subject, body)
-
+    client.send_email(app.config[TalentConfigKeys.GT_GMAIL_ID], subject, body_text)
     # GET IMAP email-client-id
     response = requests.get(EmailCampaignApiUrl.EMAIL_CLIENT_WITH_ID % email_clients[1], headers=headers)
     assert response.ok
     assert response.json()
     imap_email_client_response = response.json()['email_client_credentials']
-    return subject, body, imap_email_client_response
+    return subject, body_text, imap_email_client_response

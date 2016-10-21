@@ -51,13 +51,13 @@ EMAIL_TEMPLATE_BODY = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional
                       '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through ' \
                       'script</p>\r\n</body>\r\n</html>\r\n'
 
-
+SPECIAL_CHARACTERS = '!@#$%^&*()_+'
 TEST_MAIL_DATA = {
-    "subject": "Test Email",
-    "from": "no-reply@gettalent.com",
+    "subject": "Test Email-%s-%s" % (fake.uuid4(), SPECIAL_CHARACTERS),
+    "from": fake.name(),
     "body_html": "<html><body><h1>Welcome to email campaign service "
                  "<a href=https://www.github.com>Github</a></h1></body></html>",
-    "body_text": fake.sentence(),
+    "body_text": fake.sentence() + fake.uuid4() + SPECIAL_CHARACTERS,
     "email_address_list": [app.config[TalentConfigKeys.GT_GMAIL_ID]]
 }
 
@@ -70,19 +70,19 @@ class EmailCampaignTypes(object):
     WITHOUT_CLIENT = 'without_client'
 
 
-def create_email_campaign(user):
+def create_email_campaign(user, add_subject=True):
     """
     This creates an email campaign for given user
     """
     email_campaign = EmailCampaign(name=fake.name(),
                                    user_id=user.id,
                                    is_hidden=0,
-                                   subject=uuid.uuid4().__str__()[0:8] + ' It is a test campaign',
+                                   subject=fake.uuid4()[0:8] + 'It is a test campaign' if add_subject else '',
                                    description=fake.paragraph(),
                                    _from=TEST_EMAIL_ID,
                                    reply_to=TEST_EMAIL_ID,
                                    body_html="<html><body>Email campaign test</body></html>",
-                                   body_text="Email campaign test"
+                                   body_text=fake.sentence()
                                    )
     EmailCampaign.save(email_campaign)
     return email_campaign
@@ -90,16 +90,17 @@ def create_email_campaign(user):
 
 def create_email_campaign_with_merge_tags(user, add_preference_url=True):
     """
-    This function creates an email-campaign contianing merge tags.
+    This function creates an email-campaign containing merge tags.
     """
-    email_campaign = create_email_campaign(user)
+    email_campaign = create_email_campaign(user, add_subject=False)
     # Update email-campaign's body text
-    starting_string = 'Hello %s %s, ' % (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG)
+    starting_string = 'Hello %s %s' % (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG)
+    email_campaign.update(subject=starting_string + email_campaign.subject)
     if add_preference_url:
-        starting_string += 'Unsubscribe URL is:%s' % DEFAULT_PREFERENCES_URL_MERGETAG
-    email_campaign.update(subject=starting_string + email_campaign.subject,
-                          body_text=starting_string + email_campaign.body_text,
+        starting_string += ', Unsubscribe URL is:%s' % DEFAULT_PREFERENCES_URL_MERGETAG
+    email_campaign.update(body_text=starting_string + email_campaign.body_text,
                           body_html=starting_string + email_campaign.body_html)
+
     return email_campaign
 
 
@@ -603,7 +604,7 @@ def data_for_creating_email_clients(key=None):
     data = {
         EmailClientCredentials.CLIENT_TYPES['outgoing']: [{
             "host": "smtp.gmail.com",
-            "port": "587",
+            "port": "465",
             "name": "Gmail",
             "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
             "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],

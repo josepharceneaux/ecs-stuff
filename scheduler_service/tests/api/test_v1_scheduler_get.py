@@ -295,10 +295,7 @@ class TestSchedulerGet(object):
         response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 1, 105),
                                     headers=auth_header)
 
-        get_jobs_id = set(map(lambda job_: job_['id'], response_get.json()['tasks']))
-
-        # Max per_page limit is 50, so we get 50 tasks instead of 105
-        assert len(set_jobs_ids.difference(get_jobs_id)) == 50
+        assert response_get.status_code == 400
 
         # If we request job 90-99, it will return 10 jobs instead
         response_get = requests.get('{0}?page={1}&per_page={2}'.format(SchedulerApiUrl.TASKS, 10, 10),
