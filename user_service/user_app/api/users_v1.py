@@ -12,7 +12,8 @@ from user_service.common.models.user import User, db, Permission, Token
 from user_service.common.utils.validators import is_valid_email, is_number
 from user_service.common.utils.auth_utils import gettalent_generate_password_hash
 from user_service.common.utils.auth_utils import require_oauth, require_all_permissions
-from user_service.user_app.user_service_utilties import check_if_user_exists, create_user_for_company, send_new_account_email
+from user_service.user_app.user_service_utilties import (check_if_user_exists, create_user_for_company,
+                                                         send_new_account_email, validate_role)
 
 
 class UserInviteApi(Resource):
@@ -126,6 +127,15 @@ class UserApi(Resource):
                 else:
                     raise InvalidUsage("User with email=%s already exists in Database" % email)
 
+            if request.user.role.name == 'TALENT_ADMIN':
+                domain_id = user_dict.get('domain_id', request.user.domain_id)
+            else:
+                domain_id = request.user.domain_id
+            user_dict['domain_id'] = domain_id
+
+            role = user_dict.get('role', '')
+            user_dict['role_id'] = validate_role(role, domain_id, request.user) if role else ''
+
         user_ids = []  # Newly created user object's id(s) are appended to this list
         for user_dict in users:
             first_name = user_dict.get('first_name', "").strip()
@@ -136,10 +146,8 @@ class UserApi(Resource):
             thumbnail_url = user_dict.get('thumbnail_url', '').strip()
             user_group_id = user_dict.get('user_group_id')
             locale = user_dict.get('locale', 'en-US')
-            if request.user.role.name == 'TALENT_ADMIN':
-                domain_id = user_dict.get('domain_id', request.user.domain_id)
-            else:
-                domain_id = request.user.domain_id
+            domain_id = user_dict.get('domain_id')
+            role_id = user_dict.get('role_id', '')
 
             try:
                 Locale.parse(locale, sep='-')
@@ -148,7 +156,7 @@ class UserApi(Resource):
 
             user_id = create_user_for_company(first_name=first_name, last_name=last_name, email=email, phone=phone,
                                               domain_id=domain_id, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url,
-                                              user_group_id=user_group_id, locale=locale)
+                                              user_group_id=user_group_id, locale=locale, role_id=role_id)
             user_ids.append(user_id)
 
         return {'users': user_ids}
