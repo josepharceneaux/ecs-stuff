@@ -108,7 +108,7 @@ class TestCreateCampaign(object):
         :param string token_first: auth token
         :param dict campaign_data: data to create campaign
         """
-        invalid_ids = CampaignsTestsHelpers.INVALID_ID
+        invalid_ids = CampaignsTestsHelpers.INVALID_IDS
         invalid_value_test(URL, campaign_data, 'smartlist_ids', invalid_ids, token_first)
 
     def test_campaign_creation_with_deleted_or_hidden_smartlist_id(self, token_first, campaign_data, smartlist_first):

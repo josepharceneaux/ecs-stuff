@@ -216,16 +216,15 @@ class TestSchedulerResume(object):
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
 
-    # TODO: Depend on jira GET-1748
-    # @pytest.mark.qa
-    # def test_resume_job_with_invalid_id(self, auth_header):
-    #     """
-    #     Try to resume job with invalid id. Should return 404 (not found).
-    #     """
-    #     for invalid_job_id in CampaignsTestsHelpers.INVALID_ID[:3]:
-    #         response = requests.post(SchedulerApiUrl.RESUME_TASK % invalid_job_id,
-    #                                         headers=auth_header)
-    #         assert response.status_code == requests.codes.NOT_FOUND
+    @pytest.mark.qa
+    def test_resume_job_with_invalid_id(self, auth_header):
+        """
+        Try to resume job with invalid ids. Should return 404 (not found).
+        """
+        for invalid_job_id in CampaignsTestsHelpers.INVALID_IDS[:3]:
+            response = requests.post(SchedulerApiUrl.RESUME_TASK % invalid_job_id,
+                                     headers=auth_header)
+            assert response.status_code == requests.codes.NOT_FOUND
 
     @pytest.mark.qa
     def test_resume_scheduled_task_by_other_domain_user(self, auth_header, job_config, access_token_other):
@@ -251,7 +250,7 @@ class TestSchedulerResume(object):
         """
         Try to resume multiple tasks with invalid id's list. Should return 400 (bad request).
         """
-        invalid_job_ids = CampaignsTestsHelpers.INVALID_ID
+        invalid_job_ids = CampaignsTestsHelpers.INVALID_IDS
         response = requests.post(SchedulerApiUrl.RESUME_TASKS, data=json.dumps(dict(ids=invalid_job_ids)),
                                  headers=auth_header)
         assert response.status_code == requests.codes.BAD_REQUEST

@@ -170,7 +170,7 @@ class TestSchedulerDelete(object):
         """
         Try to delete job with invalid id. Should return 404 (not found).
         """
-        for invalid_job_id in CampaignsTestsHelpers.INVALID_ID:
+        for invalid_job_id in CampaignsTestsHelpers.INVALID_IDS:
             response = requests.delete(SchedulerApiUrl.TASK % invalid_job_id,
                                        headers=auth_header)
             assert response.status_code == requests.codes.NOT_FOUND
