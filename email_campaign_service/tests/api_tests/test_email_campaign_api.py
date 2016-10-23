@@ -510,8 +510,9 @@ class TestCreateCampaign(object):
         campaign_data = create_data_for_campaign_creation_with_all_parameters(access_token_first, talent_pipeline,
                                                                               subject)
         for param in CAMPAIGN_OPTIONAL_FIELDS:
-            del campaign_data[param]
-            response = create_email_campaign_via_api(access_token_first, campaign_data)
+            campaign_test_data = campaign_data.copy()
+            del campaign_test_data[param]
+            response = create_email_campaign_via_api(access_token_first, campaign_test_data)
             assert response.status_code == requests.codes.CREATED
             resp_object = response.json()
             assert 'campaign' in resp_object
