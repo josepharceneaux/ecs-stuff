@@ -15,16 +15,15 @@ except Exception as e:
     print "Error: {}".format(e.message)
     raise InternalServerError('Unable to create schema because: {}'.format(e.message))
 
-
-# Adding URL Rule
-app.add_url_rule(
-    rule='/graphql',
-    view_func=GraphQLView.as_view(
-        'graphql',
-        schema=schema,
-        graphiql=app.config['GT_ENVIRONMENT'] == TalentEnvs.DEV  # graphiql should only run for testing
-    )
-)
-
 if __name__ == '__main__':
+    # Adding URL Rule
+    app.add_url_rule(
+        rule='/graphql',
+        view_func=GraphQLView.as_view(
+            'graphql',
+            schema=schema,
+            graphiql=app.config['GT_ENVIRONMENT'] == TalentEnvs.DEV  # graphiql should only run for testing
+        )
+    )
+
     app.run(port=GTApis.GRAPHQL_SERVICE_PORT, use_reloader=True, debug=False, threaded=True)
