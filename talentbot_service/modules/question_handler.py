@@ -13,6 +13,7 @@ response
  - question_8_handler()
 """
 # Builtin imports
+import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import sys
@@ -43,8 +44,10 @@ class QuestionHandler(object):
         :rtype: int|None
         """
         try:
-            word_index = [message_tokens.index(temp_word) for temp_word
-                          in message_tokens if word in temp_word.lower()][0]
+            word_index = None
+            for idx, token in enumerate(message_tokens):
+                if word in token.lower():
+                    word_index = idx
             return word_index
         except IndexError:
             return None
@@ -58,8 +61,10 @@ class QuestionHandler(object):
         :rtype: int|None
         """
         try:
-            word_index = [message_tokens.index(temp_word) for temp_word
-                          in message_tokens if word == temp_word.lower()][0]
+            word_index = None
+            for idx, token in enumerate(message_tokens):
+                if word == token.lower():
+                    word_index = idx
             return word_index
         except IndexError:
             return None
@@ -67,7 +72,7 @@ class QuestionHandler(object):
     @staticmethod
     def append_list_with_spaces(_list):
         """
-        Append a list elements with spaces between then
+        Append a list elements with spaces
         :param _list: list
         :rtype: str
         """
@@ -82,11 +87,7 @@ class QuestionHandler(object):
         :return: Response message
         :rtype: str
         """
-        try:
-            users, domain_name = User.get_domain_name_and_its_users(user_id)
-        except AssertionError as error:
-            logger.error("Error occurred while getting user domain in 0 handler: %s" % error.message)
-            return None
+        users, domain_name = User.get_domain_name_and_its_users(user_id)
         if not users:
             return None
         candidate_index = cls.find_word_in_message('cand', message_tokens)
@@ -118,7 +119,7 @@ class QuestionHandler(object):
             raise IndexError
         if len(message_tokens) <= skill_index+1:
             return 'Please mention skills'
-        extracted_skills = message_tokens[skill_index + 1::]
+        extracted_skills = map(unicode.strip, [skill for skill in message_tokens[skill_index + 1::] if skill])
         try:
             count = Candidate.get_candidate_count_with_skills(extracted_skills, user_id)
         except AssertionError as error:
@@ -127,11 +128,11 @@ class QuestionHandler(object):
         except NotFoundError:
             return "You don't belong to a domain"
         response_message = "There are `%d` candidates with skills %s"
-        response_message = response_message % (count, ' '.join(extracted_skills))
+        response_message = response_message % (count, ', '.join(extracted_skills))
         if count == 1:
             response_message = response_message.replace('are', 'is'). \
                 replace('candidates', 'candidate')
-        return response_message
+        return response_message.replace(', and,', ' and').replace('and,', 'and')
 
     @classmethod
     def question_2_handler(cls, message_tokens, user_id):
@@ -148,11 +149,10 @@ class QuestionHandler(object):
         if code_index is not None:
             message_tokens.pop(code_index)
         zipcode = message_tokens[zip_index + 1]
+        if not zipcode.isdigit():
+            return 'Invalid zipcode specified'
         try:
             count = Candidate.get_candidate_count_from_zipcode(zipcode, user_id)
-        except AssertionError as error:
-            logger.error("Error occurred while getting candidates against zipcode : %s" % error.message)
-            return None
         except NotFoundError:
             return "You don't belong to a domain"
         response_message = "Number of candidates from zipcode `%s` : `%d`" % \
@@ -219,11 +219,7 @@ class QuestionHandler(object):
             if len(campaign_list) < 2:
                 campaign_list[0] = "Looks like you don't have any campaigns since that time"
             return '%s%s' % (campaign_list[0], self.create_ordered_list(campaign_list[1::]))
-        try:
-            campaign_blast = campaign_method(user_specific_date, user_id)
-        except AssertionError as error:
-            logger.error(error.message)
-            return None
+        campaign_blast = campaign_method(user_specific_date, user_id)
         timespan = self.append_list_with_spaces(message_tokens[last_index::])
         if is_valid_year:
             timespan = user_specific_date
@@ -265,7 +261,7 @@ class QuestionHandler(object):
         :rtype: str
         """
         user_specific_date = None
-        talent_index = self.find_word_in_message('talent', message_tokens)
+        talent_index = self.find_exact_word_in_message('talent', message_tokens)
         import_index = self.find_word_in_message('import', message_tokens)
         if import_index is None:
             import_index = self.find_word_in_message('add', message_tokens)
@@ -301,13 +297,10 @@ class QuestionHandler(object):
         if is_valid_year is True:
             talent_pool_list = self.create_list_of_talent_pools(spaced_talent_pool_name)
             try:
-                count = TalentPoolCandidate.candidates_added_last_month(user_id, user_name, talent_pool_list,
-                                                                        year)
+                count = TalentPoolCandidate.candidate_imports(user_id, user_name, talent_pool_list,
+                                                              year)
             except NotFoundError:
                 return 'No user exists in your domain with the name `%s`' % user_name
-            except AssertionError as error:
-                logger.error("Error occurred while getting number of imports : %s" % error.message)
-                return None
             if isinstance(count, basestring):
                 return count
             if not user_name:
@@ -323,7 +316,11 @@ class QuestionHandler(object):
                 response_message = response_message.replace('candidates', 'candidate')
             if user_name == 'Everyone totally':
                 response_message = response_message.replace('`Everyone totally`', '`Everyone` totally')
-            return response_message
+            if isinstance(talent_pool_list, list) and len(talent_pool_list) > 1 and user_name is not None \
+                    and user_name != 'Everyone totally':
+                response_message = self.append_count_with_mesage(response_message, talent_pool_list, 4, user_id,
+                                                                 user_name, user_specific_date)
+            return re.sub(r'`i`|`I`', '`You`', response_message)
         if is_valid_year == -1:
             return "Please enter a valid year greater than 1900 and smaller than current year."
         last_index = self.find_word_in_message('last', message_tokens)
@@ -334,13 +331,10 @@ class QuestionHandler(object):
                     return user_specific_date
                 talent_pool_list = self.create_list_of_talent_pools(spaced_talent_pool_name)
                 try:
-                    count = TalentPoolCandidate.candidates_added_last_month(user_id, user_name, talent_pool_list,
-                                                                            user_specific_date)
+                    count = TalentPoolCandidate.candidate_imports(user_id, user_name, talent_pool_list,
+                                                                  user_specific_date)
                 except NotFoundError:
                     return 'No user exists in your domain with the name `%s`' % user_name
-                except AssertionError as error:
-                    logger.error("Error occurred while getting number of imports: %s" % error.message)
-                    return None
                 if isinstance(count, basestring):
                     return count
                 if not user_name:
@@ -356,15 +350,16 @@ class QuestionHandler(object):
                     response_message = response_message.replace('pool', 'pools')
                 if count == 1:
                     response_message = response_message.replace('candidates', 'candidate')
-                return response_message
+                if isinstance(talent_pool_list, list) and len(talent_pool_list) > 1 and user_name is not None \
+                        and user_name != 'Everyone totally':
+                    response_message = self.append_count_with_mesage(response_message, talent_pool_list, 4, user_id,
+                                                                     user_name, user_specific_date)
+                return re.sub(r'`i`|`I`', '`You`', response_message)
         talent_pool_list = self.create_list_of_talent_pools(spaced_talent_pool_name)
         try:
-            count = TalentPoolCandidate.candidates_added_last_month(user_id, user_name, talent_pool_list)
+            count = TalentPoolCandidate.candidate_imports(user_id, user_name, talent_pool_list)
         except NotFoundError:
             return 'No user exists in your domain with the name `%s`' % user_name
-        except AssertionError as error:
-            logger.error("Error occurred while getting number of imports: %s" % error.message)
-            return None
         if isinstance(count, basestring):
             return count
         if not user_name:
@@ -383,7 +378,11 @@ class QuestionHandler(object):
         if not isinstance(user_specific_date, datetime) and not is_valid_year \
                 and user_specific_date is None and message_tokens[-1].lower() not in ['pool']:
             response_message = 'No valid time duration found, showing result from all the times\n %s' % response_message
-        return response_message
+        if isinstance(talent_pool_list, list) and len(talent_pool_list) > 1 and user_name is not None \
+                and user_name != 'Everyone totally':
+            response_message = self.append_count_with_mesage(response_message, talent_pool_list, 4, user_id,
+                                                             user_name, user_specific_date)
+        return re.sub(r'`i`|`I`', '`You`', response_message)
 
     @classmethod
     def question_5_handler(cls, *args):
@@ -403,16 +402,8 @@ class QuestionHandler(object):
         :param message_tokens: User message tokens
         :rtype: str
         """
-        try:
-            talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id)
-        except AssertionError as error:
-            logger.error("Error occurred while talent pools: %s" % error.message)
-            return None
-        try:
-            _, domain_name = User.get_domain_name_and_its_users(user_id)
-        except AssertionError as error:
-            logger.error("Error occurred while talent pools: %s" % error.message)
-            return None
+        talent_pools = TalentPool.get_talent_pools_in_user_domain(user_id)
+        _, domain_name = User.get_domain_name_and_its_users(user_id)
         if talent_pools:
             talent_pool_names = [talent_pool.name for talent_pool in talent_pools]
             talent_pool_names = cls.create_ordered_list(talent_pool_names)
@@ -526,3 +517,29 @@ class QuestionHandler(object):
             talent_pool_name_list = [name.strip(' ') for name in talent_pool_name_list]
             return talent_pool_name_list
         return None
+
+    @classmethod
+    def append_count_with_mesage(cls, message, _list,  handler_number, user_id, user_name=None,
+                                 user_specific_date=None):
+        """
+        This method appends number of imports or number of candidates with skills with the given message
+        :param str message: Response message
+        :param list _list: List of skills or list of talent pools
+        :param int handler_number: Question handler number
+        :param int|long user_id: User Id
+        :param str|None user_name: User name
+        :param datetime|str|None user_specific_date: User specified datetime
+        :rtype: str
+        """
+        count_dict = {}
+        if handler_number == 4:
+            for talent_pool in _list:
+                _count = TalentPoolCandidate.candidate_imports(user_id, user_name, [talent_pool],
+                                                               user_specific_date)
+                if isinstance(_count, (int, long)):
+                    count_dict.update({talent_pool: _count})
+        if len(count_dict) > 0:
+            message = '%s\n%s' % (message, '\n'.join(['`%s`: %d' % (key,
+                                  count_dict[key]) for key in count_dict]))
+            message = message.replace('pool', 'pools')
+        return message
