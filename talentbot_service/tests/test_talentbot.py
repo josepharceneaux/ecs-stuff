@@ -37,13 +37,10 @@ def test_candidate_added(user_first, talent_pool, candidate_first):
     # Tests without specifying time
     count = TalentPoolCandidate.candidate_imports(user_first.id, user_name, [talent_pool.name])
     assert count == 1
-    # Tests with 3 months earlier added and updated time
-    changed_date = datetime.datetime.utcnow() - relativedelta(years=3)
-    talent_pool.added_time = changed_date
-    talent_pool.updated_time = changed_date
-    current_datetime = datetime.datetime.utcnow()
+    # Tests with future date
+    changed_date = datetime.datetime.utcnow() + relativedelta(years=3)
     count = TalentPoolCandidate.candidate_imports(user_first.id, user_name, [talent_pool.name],
-                                                  current_datetime)
+                                                  changed_date)
     assert count == 0
     # Tests without specifying time
     count = TalentPoolCandidate.candidate_imports(user_first.id, user_name, [talent_pool.name])
