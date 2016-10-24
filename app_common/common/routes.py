@@ -943,7 +943,7 @@ class TalentBotApi(object):
     SLACK_LISTEN = '/' + VERSION + '/slack-callback'
     SLACK_AUTH = '/' + VERSION + '/slack-auth'
     SLACK_BOT_STATUS = '/' + VERSION + '/slackbot-status'
-    INDEX = '/' + VERSION + '/index'
+    HOME = '/' + VERSION + '/index'
 
 
 class TalentBotApiUrl(object):
@@ -958,4 +958,4 @@ class TalentBotApiUrl(object):
     SLACK_LISTEN = HOST_NAME % ('/' + VERSION + '/slack-callback')
     SLACK_AUTH = HOST_NAME % ('/' + VERSION + '/slack-auth')
     SLACK_BOT_STATUS = HOST_NAME % ('/' + VERSION + '/slackbot-status')
-    INDEX = HOST_NAME % ('/' + VERSION + '/index')
+    HOME = HOST_NAME % ('/' + VERSION + '/index')

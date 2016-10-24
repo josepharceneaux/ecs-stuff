@@ -13,16 +13,16 @@ ERROR_MESSAGE = ['Hmm, I do not know this', 'I will have to ask @osman about tha
 BOT_IMAGE = 'https://d13yacurqjgara.cloudfront.net/users' \
             '/15084/screenshots/702565/attachments/64916/Space_Ghost-iPad---1024x1024.jpg'
 GREETINGS = ['hello', 'hey', 'howdy', 'greetings', 'hi']
-HINT = '''>>>I am `%s` @osman is teaching me new things, right now I can answer following questions for you:_
+HINT = '''>>>I am `%s`. @osman is teaching me new things, right now I can answer following questions for you:
 1- How many users are there in my domain?
 2- How many candidates are there with skills `[skills separated with space or comma]`?
 3- How many candidates from zipcode `[zipcode]`?
 4- What is the top performing `[x]` campaign from `[year]`?
 5- How many candidate leads did `[user name]` import into the `[talent pool name]` talent pool in last `[n]` months?
-6- What is my group
+6- What is my group?
 7- Which group does `[user name]` belong to?
 8- What are the talent pools in my domain?
-*GOOD LUCK*''' % BOT_NAME
+GOOD LUCK!''' % BOT_NAME
 OK_RESPONSE = ['hmm', '**nodes**']
 TWILIO_NUMBER = "+12015617985"
 FACEBOOK_MESSAGE_LIMIT = 319

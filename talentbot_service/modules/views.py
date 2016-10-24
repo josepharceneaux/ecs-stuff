@@ -5,6 +5,7 @@ Facebook, Email, SMS and Slack
 # Builtin imports
 from multiprocessing import Process
 # Common utils
+from talentbot_service.common.error_handling import InvalidUsage
 from talentbot_service.common.talent_config_manager import TalentConfigKeys
 from talentbot_service.common.models.user import TalentbotAuth
 from talentbot_service.common.routes import TalentBotApi
@@ -34,7 +35,7 @@ email_bot = EmailBot(mailgun_api_key, MAILGUN_SENDING_ENDPOINT, QUESTIONS, BOT_N
 facebook_bot = FacebookBot(QUESTIONS, BOT_NAME, ERROR_MESSAGE)
 
 
-@app.route(TalentBotApi.INDEX)
+@app.route(TalentBotApi.HOME)
 def index():
     """
     Just returns Add to Slack button for testing purpose
@@ -179,4 +180,5 @@ def set_bot_state_active():
         slack_client = SlackClient(bot_token)
         slack_client.rtm_connect()
         logger.info('Slack bot status online for token %s' % bot_token)
-    return ApiResponse({"response": "OK"})
+        return ApiResponse({"response": "OK"})
+    raise InvalidUsage("No token found")

@@ -218,19 +218,18 @@ class EmailCampaignBlast(db.Model):
             return cls.query.filter(or_(cls.updated_datetime >= datetime_value,
                                         cls.sent_datetime >= datetime_value)). \
                 filter(EmailCampaign.id == cls.campaign_id). \
-                filter(cls.sends > 0).filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id),
-                                             cls.opens <= cls.sends). \
+                filter(cls.sends > 0).filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)). \
                 order_by(desc(cls.opens/cls.sends)).first()
         if isinstance(datetime_value, basestring):
             return cls.query.filter(or_(extract("year", cls.updated_datetime) == datetime_value,
                                         extract("year", cls.sent_datetime) == datetime_value)). \
                 filter(EmailCampaign.id == cls.campaign_id). \
                 filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)). \
-                filter(cls.sends > 0, cls.opens <= cls.sends). \
+                filter(cls.sends > 0). \
                 order_by(desc(cls.opens/cls.sends)).first()
         return cls.query.filter(EmailCampaign.id == cls.campaign_id).\
             filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)).\
-            filter(cls.sends > 0, cls.opens <= cls.sends).order_by(desc(cls.opens/cls.sends)).first()
+            filter(cls.sends > 0).order_by(desc(cls.opens/cls.sends)).first()
 
 
 class EmailCampaignSend(db.Model):

@@ -11,8 +11,6 @@ with Slack.
 import random
 from datetime import datetime
 # Common utils
-from dateutil.relativedelta import relativedelta
-from flask import json
 from talentbot_service.common.utils.handy_functions import http_request
 from talentbot_service.common.routes import SchedulerApiUrl, TalentBotApiUrl
 from talentbot_service.common.models.user import TalentbotAuth
@@ -23,6 +21,8 @@ from talentbot_service.modules.talent_bot import TalentBot
 from talentbot_service import logger
 # 3rd party imports
 from slackclient import SlackClient
+from flask import json
+from dateutil.relativedelta import relativedelta
 
 
 class SlackBot(TalentBot):
