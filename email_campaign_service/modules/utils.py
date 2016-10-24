@@ -15,6 +15,7 @@ from urlparse import (parse_qs, urlsplit, urlunsplit)
 
 # Third Party
 from bs4 import BeautifulSoup
+from contracts import contract
 from simplecrypt import decrypt
 from dateutil.relativedelta import relativedelta
 
@@ -73,7 +74,6 @@ def get_candidates_from_smartlist(list_id, candidate_ids_only=False, user_id=Non
 def jwt_security_key():
     """
     This function will return secret_key_id against which a secret_key will be stored in redis
-    :return:
     """
     secret_key_id = str(uuid.uuid4())[0:10]
     secret_key = os.urandom(24).encode('hex')
@@ -81,12 +81,15 @@ def jwt_security_key():
     return secret_key_id
 
 
+@contract
 def do_mergetag_replacements(texts, requested_object=None):
     """
     Here we do the replacements of merge tags with required values. This serves for candidate and user.
     If no candidate or user is provided, name is set to "John Doe".
     It replaces MergeTags with candidate's or user's first name, last name.
     It also replaces preferences URL only for candidate.
+    :param list[> 0](string) texts: List of e.g. subject, body_text and body_html
+    :rtype: list[> 0](string)
     """
     if requested_object and not isinstance(requested_object, (Candidate, User)):
         raise InvalidUsage('Invalid object passed')

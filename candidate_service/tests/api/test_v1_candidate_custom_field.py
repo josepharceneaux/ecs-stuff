@@ -16,7 +16,7 @@ from candidate_service.common.utils.test_utils import send_request, response_inf
 # Custom errors
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
 
-VALUE = fake.word()
+VALUE = fake.text()
 MAX_INT = sys.maxint
 URL = CandidateApiUrl.CUSTOM_FIELDS
 

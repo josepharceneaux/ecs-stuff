@@ -19,6 +19,7 @@ import email
 import imaplib
 import poplib
 import smtplib
+from _ssl import SSLError
 from _socket import gaierror
 from abc import abstractmethod
 
@@ -126,9 +127,10 @@ class EmailClientBase(object):
         except gaierror as error:
             logger.exception(error.message)
             raise InternalServerError('Error occurred while connecting with given server')
-        except smtplib.SMTPServerDisconnected as error:
-            logger.exception(error.message)
-            raise InternalServerError('Unexpectedly Connection closed with given server')
+        except SSLError as error:
+            logger.exception(error.strerror)
+            raise InternalServerError('Error occurred while connecting with given server',
+                                      additional_error_info=dict(email_client_error=error.strerror))
 
     @abstractmethod
     def authenticate(self, connection_quit=True):
@@ -211,18 +213,29 @@ class SMTP(EmailClientBase):
         """
         super(SMTP, self).__init__(host, port, login_email, password, user_id=user_id,
                                    email_client_credentials_id=email_client_credentials_id)
-        self.client = smtplib.SMTP
+        self.client = smtplib.SMTP_SSL
+
+    def connect(self):
+        try:
+            super(SMTP, self).connect()
+        except smtplib.SMTPServerDisconnected as error:
+            logger.exception(error.message)
+            raise InternalServerError('Unexpectedly Connection closed with given server')
 
     def authenticate(self, connection_quit=True):
         """
         This first connects with SMTP server. It then tries to login to server.
         """
-        self.connection.starttls()
         try:
             self.connection.login(self.email, self.password)
         except smtplib.SMTPAuthenticationError as error:
             logger.exception(error.smtp_error)
-            raise InvalidUsage('Invalid credentials provided. Could not authenticate with SMTP server')
+            raise InvalidUsage('Invalid credentials provided. Could not authenticate with SMTP server',
+                               additional_error_info=dict(smtp_error=error.smtp_error))
+        except smtplib.SMTPException as error:
+            logger.exception(error.message)
+            raise InternalServerError('Could not authenticate with SMTP server',
+                                      additional_error_info=dict(smtp_error=error.message))
         if connection_quit:
             self.connection.quit()
 
@@ -278,7 +291,8 @@ class IMAP(EmailClientBase):
             self.connection.login(self.email, self.password)
         except imaplib.IMAP4_SSL.error as error:
             logger.exception(error.message)
-            raise InvalidUsage('Invalid credentials provided. Could not authenticate with IMAP server')
+            raise InvalidUsage('Could not authenticate with IMAP server.',
+                               additional_error_info=dict(imap_error=error.message))
 
     def email_conversation_importer(self):
         """
@@ -352,7 +366,8 @@ class POP(EmailClientBase):
             self.connection.pass_(self.password)
         except poplib.error_proto as error:
             logger.exception(error.message)
-            raise InvalidUsage('Invalid credentials provided. Could not authenticate with POP server')
+            raise InvalidUsage('Invalid credentials provided. Could not authenticate with POP server',
+                               additional_error_info=dict(pop_error=error.message))
 
     def email_conversation_importer(self):
         """

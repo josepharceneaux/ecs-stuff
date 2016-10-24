@@ -6,10 +6,11 @@ from flask import render_template
 from user_service.user_app import app
 from werkzeug.security import gen_salt
 
-from user_service.common.error_handling import InvalidUsage
+from user_service.common.error_handling import InvalidUsage, NotFoundError, UnauthorizedError
+from user_service.common.utils.validators import is_number
 from user_service.common.talent_config_manager import TalentConfigKeys
 from user_service.common.models.email_campaign import EmailTemplateFolder, UserEmailTemplate
-from user_service.common.models.user import db, Domain, User, UserGroup
+from user_service.common.models.user import db, Domain, User, UserGroup, Role
 from user_service.common.utils.amazon_ses import send_email
 from user_service.common.utils.auth_utils import gettalent_generate_password_hash
 
@@ -61,7 +62,7 @@ def check_if_user_exists(email):
 
 
 def create_user_for_company(first_name, last_name, email, domain_id, expiration_date=None, phone="",
-                            dice_user_id=None, thumbnail_url='', user_group_id=None, locale=None):
+                            dice_user_id=None, thumbnail_url='', user_group_id=None, locale=None, role_id=None):
 
     from dateutil import parser
     expiration = None
@@ -74,9 +75,42 @@ def create_user_for_company(first_name, last_name, email, domain_id, expiration_
     # create user for existing domain
     user = create_user(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, phone=phone,
                        expiration=expiration, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url,
-                       user_group_id=user_group_id, locale=locale)
+                       user_group_id=user_group_id, locale=locale, role_id=role_id)
 
     return user.id
+
+
+def validate_role(role, request_domain_id, request_user):
+    """
+    This method will validate given role and permissions of the requesting user.
+    :param int|basestring role: Role Name or ID
+    :param request_domain_id: Id of the domain in which new user is going to be created
+    :param request_user: User object of Logged-in user
+    :return: Role Id
+    :rtype: int
+    """
+
+    if is_number(role):
+        role_object = Role.query.get(int(role))
+        if role_object:
+            role_id = role
+            role_name = role_object.name
+        else:
+            raise NotFoundError("Role with id:%s doesn't exist in database" % role)
+    else:
+        role_object = Role.get_by_name(role)
+        if role_object:
+            role_id = role_object.id
+            role_name = role_object.name
+        else:
+            raise NotFoundError("Role with name:%s doesn't exist in database" % role)
+
+    if request_user.role.name != 'TALENT_ADMIN' and (
+                    request_domain_id != request_user.domain_id or role_name == 'TALENT_ADMIN'):
+        raise UnauthorizedError("User %s doesn't have appropriate permissions to assign "
+                                "given role: (%s)" % role_name )
+
+    return role_id
 
 
 def get_or_create_default_email_templates(domain_id, admin_user_id):
@@ -126,7 +160,7 @@ def generate_temporary_password():
 
 
 def create_user(email, domain_id, first_name, last_name, expiration, phone="", dice_user_id=None,
-                thumbnail_url='', user_group_id=None, locale=None):
+                thumbnail_url='', user_group_id=None, locale=None, role_id=None):
 
     temp_password = gen_salt(8)
     hashed_password = gettalent_generate_password_hash(temp_password)
@@ -147,10 +181,15 @@ def create_user(email, domain_id, first_name, last_name, expiration, phone="", d
     if user_group.domain_id != domain_id:
         raise InvalidUsage("User Group %s belongs to different domain" % user_group.id)
 
+    user_data_dict = dict(
+            email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, expiration=expiration,
+            dice_user_id=dice_user_id, password=hashed_password, phone=phone, thumbnail_url=thumbnail_url,
+            user_group_id=user_group.id, locale=locale, is_disabled=True, role_id=role_id)
+
+    user_data_dict = {k: v for k, v in user_data_dict.items() if v}
+
     # Make new entry in user table
-    user = User(email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, expiration=expiration,
-                dice_user_id=dice_user_id, password=hashed_password, phone=phone, thumbnail_url=thumbnail_url,
-                user_group_id=user_group.id, locale=locale, is_disabled=True)
+    user = User(**user_data_dict)
     db.session.add(user)
     db.session.commit()
 

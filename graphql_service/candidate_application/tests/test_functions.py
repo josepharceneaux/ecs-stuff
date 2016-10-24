@@ -4,7 +4,8 @@ File contains unittests for testing functions used by the graphql-service
 import random
 import string
 from decimal import Decimal
-from graphql_service.dynamodb.dynamo_actions import replace_decimal, set_empty_strings_to_null
+
+from graphql_service.candidate_application.dynamodb import replace_decimal, set_empty_strings_to_null
 
 
 class TestReplaceDecimal(object):

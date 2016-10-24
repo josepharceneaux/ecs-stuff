@@ -11,7 +11,7 @@ from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash
 from sqlalchemy import or_
 
-from db import db
+from ..models.db import db
 from ..models.event import Event
 from ..models.candidate import Candidate
 from candidate import CandidateSource
@@ -23,6 +23,7 @@ from ..error_handling import *
 from ..redis_cache import redis_store
 from ..utils.validators import is_number
 from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer, BadSignature, SignatureExpired)
+from ..utils.talent_s3 import sign_url_for_filepicker_bucket
 from ..error_codes import ErrorCodes
 
 
@@ -147,7 +148,7 @@ class User(db.Model):
                     tzinfo=pytz.UTC).isoformat() if self.last_read_datetime else None,
             'last_login_datetime': self.last_login_datetime.replace(
                     tzinfo=pytz.UTC).isoformat() if self.last_login_datetime else None,
-            'thumbnail_url': self.thumbnail_url,
+            'thumbnail_url': sign_url_for_filepicker_bucket(self.thumbnail_url) if self.thumbnail_url else '',
             'locale': self.locale,
             'is_disabled': True if self.is_disabled == 1 else False
         }

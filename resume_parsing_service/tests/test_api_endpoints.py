@@ -367,6 +367,11 @@ def test_no_name_defaults_to_email_or_none(token_fixture, user_fixture):
     assert content['candidate']['first_name'] is None
     assert content['candidate']['last_name'] is None
 
+
+def test_troublesome_zip_code(token_fixture, user_fixture):
+    content, status = fetch_resume_post_response(token_fixture, 'zips.pdf')
+    assert_non_create_content_and_status(content, status)
+
 ####################################################################################################
 # Test Candidate Creation
 ####################################################################################################

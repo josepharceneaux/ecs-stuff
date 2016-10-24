@@ -1,7 +1,9 @@
+from datetime import datetime
 import boto3
 from decimal import Decimal
 from graphql_service.application import app
 from graphql_service.common.talent_config_manager import TalentEnvs
+from graphql_service.common.utils.datetime_utils import DatetimeUtils
 
 
 class DynamoDB(object):
@@ -21,14 +23,7 @@ class DynamoDB(object):
     else:
         connection = boto3.resource('dynamodb')
 
-    candidate_table = connection.Table('candidates')
-
-    # Candidate attributes eligible for updating/adding
-    candidate_attributes = {
-        'addresses', 'emails', 'educations',
-        'work_experiences', 'phones', 'skills',
-        'military_services', 'social_networks'
-    }
+    candidate_table = connection.Table('candidate')
 
     @classmethod
     def add_candidate(cls, data):
@@ -77,7 +72,7 @@ class DynamoDB(object):
             ":objective": candidate_data.get('objective'),
             ":summary": candidate_data.get('summary'),
             ":resume_url": candidate_data.get('resume_url'),
-            ":updated_datetime": candidate_data['updated_datetime']  # required for updating
+            ":updated_datetime": candidate_data.get('updated_datetime') or DatetimeUtils.to_utc_str(datetime.utcnow())
         }
 
         # ***** Update expression will only be updated if candidate's attributes have been provided
@@ -156,10 +151,15 @@ class DynamoDB(object):
             update_expression += 'tags = :tags,'
             expression_attribute_values[':tags'] = tags
 
-        work_preference = candidate_data.get('work_preference')
-        if work_preference is not None:
-            update_expression += 'work_preference = :work_preference,'
-            expression_attribute_values[':work_preference'] = work_preference
+        work_preferences = candidate_data.get('work_preferences')
+        if work_preferences is not None:
+            update_expression += 'work_preferences = :work_preferences,'
+            expression_attribute_values[':work_preferences '] = work_preferences
+
+        edits = candidate_data.get('edits')
+        if edits is not None:
+            update_expression += 'edits = :edits,'
+            expression_attribute_values[':edits'] = edits
 
         return cls.candidate_table.update_item(
             Key={'id': candidate_id},
@@ -174,22 +174,6 @@ class DynamoDB(object):
         :type candidate_id: int | long
         """
         return cls.candidate_table.delete_item(Key={'id': candidate_id})
-
-    @classmethod
-    def add_item(cls, candidate_id, data):
-        """
-        Will add an item to candidate's records
-        """
-        # TODO: Add comment explaining the field check
-        field = data.keys().pop()
-        assert field in cls.candidate_attributes, "field: '{}' not recognized".format(field)
-
-        for record in data[field]:
-            cls.candidate_table.update_item(
-                Key={'id': candidate_id},
-                UpdateExpression='ADD {} = :value'.format(field),
-                ExpressionAttributeValues={':value': record}
-            )
 
     @classmethod
     def delete_attribute(cls, candidate_id, attribute):

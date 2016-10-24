@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from werkzeug.exceptions import BadRequest
 
 from scheduler_service import flask_app, TalentConfigKeys, redis_store, logger
-from scheduler_service.common.error_handling import ForbiddenError, InvalidUsage
+from scheduler_service.common.error_handling import ForbiddenError, InvalidUsage, NotFoundError
 from scheduler_service.common.models import db
 from scheduler_service.common.models.user import Token, User
 from scheduler_service.common.talent_config_manager import TalentEnvs
@@ -86,6 +86,9 @@ def check_job_state(job_id, job_state_to_check):
     """
     # get job from scheduler by job_id
     job = scheduler.get_job(job_id=job_id)
+
+    if not job:
+        raise NotFoundError("Task with id '%s' not found." % job_id)
 
     # if job is pending then throw pending state exception
     if job.pending:

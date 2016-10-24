@@ -31,7 +31,7 @@ TEST_EMAIL_SCHEMA = {
         },
         "from": {
             "type": "string",
-            "format": "email"
+            "pattern": "\S",
         }
     },
     "required": [
