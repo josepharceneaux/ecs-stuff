@@ -6,10 +6,12 @@ Also try to resume the jobs without using token and it should give 401 status co
 # Third party imports
 import json
 import requests
+import pytest
 
 # Application imports
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.custom_exceptions import SchedulerServiceApiException
+from scheduler_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 
 __author__ = 'saad'
 
@@ -213,3 +215,43 @@ class TestSchedulerResume(object):
         # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
+
+    @pytest.mark.qa
+    def test_resume_job_with_invalid_id(self, auth_header):
+        """
+        Try to resume job with invalid ids. Should return 404 (not found).
+        """
+        for invalid_job_id in CampaignsTestsHelpers.INVALID_IDS[:3]:
+            response = requests.post(SchedulerApiUrl.RESUME_TASK % invalid_job_id,
+                                     headers=auth_header)
+            assert response.status_code == requests.codes.NOT_FOUND
+
+    @pytest.mark.qa
+    def test_resume_scheduled_task_by_other_domain_user(self, auth_header, job_config, access_token_other):
+        """
+        Schedule a job from a user then pause a task and then try to resume same task from a different user in
+        different domain. Should return 404 (not found).
+        """
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+                                 headers=auth_header)
+        assert response.status_code == requests.codes.CREATED
+        data = response.json()
+        response = requests.post(SchedulerApiUrl.PAUSE_TASK % data['id'],
+                                 headers=auth_header)
+        assert response.status_code == requests.codes.OK
+        auth_header['Authorization'] = 'Bearer %s' % access_token_other
+        # Now resume the job from other user in different domain
+        response = requests.post(SchedulerApiUrl.RESUME_TASK % data['id'],
+                                 headers=auth_header)
+        assert response.status_code == requests.codes.NOT_FOUND
+
+    @pytest.mark.qa
+    def test_resume_multiple_jobs_with_invalid_ids(self, auth_header):
+        """
+        Try to resume multiple tasks with invalid id's list. Should return 400 (bad request).
+        """
+        invalid_job_ids = CampaignsTestsHelpers.INVALID_IDS
+        response = requests.post(SchedulerApiUrl.RESUME_TASKS, data=json.dumps(dict(ids=invalid_job_ids)),
+                                 headers=auth_header)
+        assert response.status_code == requests.codes.BAD_REQUEST
+
