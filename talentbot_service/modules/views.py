@@ -181,4 +181,4 @@ def set_bot_state_active():
         slack_client.rtm_connect()
         logger.info('Slack bot status online for token %s' % bot_token)
         return ApiResponse({"response": "OK"})
-    raise InvalidUsage("No token found")
+    raise InvalidUsage("No token found in request body")
