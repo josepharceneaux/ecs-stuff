@@ -134,7 +134,7 @@ def handle_incoming_messages():
 def get_new_user_credentials():
     """
     Receives user data when he installs talentbot on slack and saves in db
-    :rtype str
+    :rtype: str
     """
     code = request.args.get('code')
     client_id = app.config['SLACK_APP_CLIENT_ID']
@@ -168,6 +168,11 @@ def get_new_user_credentials():
 
 @app.route(TalentBotApi.SLACK_BOT_STATUS, methods=['POST'])
 def set_bot_state_active():
+    """
+    Receives bot_token and perform an activity using that token to let Slack servers know
+    that bot is online
+    :rtype: json
+    """
     bot_token = request.json.get('bot_token')
     if bot_token:
         print bot_token
