@@ -6,7 +6,7 @@ import graphene
 from graphene_sqlalchemy import SQLAlchemyObjectType
 
 # Application Specific
-from graphql_service.common.models.email_campaign import (EmailCampaign as EmailCampaignModel)
+from graphql_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast)
 
 
 class SortBy(graphene.Enum):
@@ -22,5 +22,10 @@ class SortTypes(graphene.Enum):
 class EmailCampaignType(SQLAlchemyObjectType):
 
     class Meta:
-        model = EmailCampaignModel
+        model = EmailCampaign
 
+
+class EmailCampaignBlastsType(SQLAlchemyObjectType):
+
+    class Meta:
+        model = EmailCampaignBlast

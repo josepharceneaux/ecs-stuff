@@ -122,7 +122,8 @@ def test_user_service_post(access_token_first, access_token_second, user_first, 
         'last_name': gen_salt(6),
         'phone': '+1 226-581-1027',
         'domain_id': user_first.domain_id,
-        'locale': 'es-PS'
+        'locale': 'es-PS',
+        'role': 'ADMIN',
     }
     second_user = {
         'first_name': gen_salt(6),

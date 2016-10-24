@@ -17,6 +17,7 @@ class EmailCampaignQuery(graphene.ObjectType):
                                     sort_type=SortTypes(), search=graphene.String(),
                                     sort_by=SortBy(), is_hidden=graphene.Int())
     email_campaign = graphene.Field(type=EmailCampaignType, id=graphene.Int())
+    email_campaign_blasts = graphene.Field(type=EmailCampaignType, id=graphene.Int())
 
     def resolve_email_campaigns(self, args, request, info):
         page = args.get('page', DEFAULT_PAGE)

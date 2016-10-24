@@ -17,3 +17,9 @@ ALL_EMAIL_CAMPAIGN_FIELDS = ["id",
                              "talent_pipelines",
                              "list_ids",
                              "email_client_credentials_id"]
+CAMPAIGN_OPTIONAL_FIELDS = ['from',
+                            'reply_to',
+                            'body_text',
+                            'description',
+                            'start_datetime',
+                            'end_datetime']

@@ -158,14 +158,12 @@ candidates_resource_schema_post = {
                                     "type": ["integer", "null"]
                                 },
                                 "value": {
-                                    "type": ["string", "null"],
-                                    "maxLength": 255
+                                    "type": ["string", "null"]
                                 },
                                 "values": {
                                     "type": "array",
                                     "items": {
-                                        "type": "string",
-                                        "maxLength": 255
+                                        "type": "string"
                                     }
                                 }
                             }
@@ -259,7 +257,7 @@ candidates_resource_schema_post = {
                                 },
                                 "country_code": {
                                     "type": ["string", "null"],
-                                    "maxLength": 2
+                                    "maxLength": 100
                                 },
                                 "po_box": {
                                     "type": ["string", "null"],
@@ -746,8 +744,7 @@ candidates_resource_schema_patch = {
                                     "type": ["integer", "null"]
                                 },
                                 "value": {
-                                    "type": ["string", "null"],
-                                    "maxLength": 255
+                                    "type": ["string", "null"]
                                 }
                             }
                         }

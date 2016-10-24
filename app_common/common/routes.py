@@ -236,6 +236,7 @@ class UserServiceApi(object):
     DOMAINS = "domains"
     DOMAIN = "domains/<int:id>"
     USER_ROLES = "users/<int:user_id>/roles"
+    ALL_ROLES = "users/roles"
     DOMAIN_ROLES = "domain/<int:domain_id>/roles"
     DOMAIN_GROUPS = "domain/<int:domain_id>/groups"
     DOMAIN_GROUPS_UPDATE = "domain/groups/<int:group_id>"
@@ -272,6 +273,7 @@ class UserServiceApiUrl(object):
     DOMAINS = HOST_NAME % ('/' + VERSION + '/domains')
     DOMAIN = HOST_NAME % ('/' + VERSION + '/domains/%s')
     USER_ROLES_API = HOST_NAME % ('/' + VERSION + '/users/%s/roles')
+    ALL_ROLES_API = HOST_NAME % ('/' + VERSION + '/users/roles')
     DOMAIN_ROLES_API = HOST_NAME % ('/' + VERSION + '/domain/%s/roles')
     DOMAIN_GROUPS_API = HOST_NAME % ('/' + VERSION + '/domain/%s/groups')
     DOMAIN_GROUPS_UPDATE_API = HOST_NAME % ('/' + VERSION + '/domain/groups/%s')

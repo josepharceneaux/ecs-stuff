@@ -48,3 +48,18 @@ def get_subdivision_name(subdivision_code):
         return None
 
     return subdivision_name
+
+
+def get_country_code_from_name(country_name):
+    try:
+        return pc.countries.get(name=country_name.capitalize()).alpha2
+    except KeyError:
+        pass
+    try:
+        return pc.countries.get(alpha3=country_name.upper()).alpha2
+    except KeyError:
+        pass
+    try:
+        return pc.countries.get(alpha2=country_name.upper()).alpha2
+    except KeyError:
+        return

@@ -9,6 +9,21 @@ from user_service.common.models.user import User, Domain, UserGroup, db, Role, P
 from user_service.common.utils.auth_utils import require_oauth, require_any_permission, require_all_permissions
 
 
+class GetAllRolesApi(Resource):
+
+    decorators = [require_oauth()]
+    # Access token decorator
+
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_USER_ROLE)
+    def get(self, **kwargs):
+        """
+        GET /users/roles Fetch all roles in the system which can be assigned to a user (except TALENT-ADMIN)
+        :param kwargs:
+        :return:
+        """
+        return {"roles": [{'id': role_object.id, 'name': role_object.name} for role_object in Role.query.all()]}
+
+
 class UserRolesApi(Resource):
 
     # Access token decorator
@@ -277,5 +292,6 @@ class DomainGroupsApi(Resource):
 groups_and_roles_blueprint = Blueprint('groups_and_roles_api', __name__)
 api = TalentApi(groups_and_roles_blueprint)
 api.add_resource(UserRolesApi, UserServiceApi.USER_ROLES)
+api.add_resource(GetAllRolesApi, UserServiceApi.ALL_ROLES)
 api.add_resource(UserGroupsApi, UserServiceApi.USER_GROUPS)
 api.add_resource(DomainGroupsApi, UserServiceApi.DOMAIN_GROUPS, UserServiceApi.DOMAIN_GROUPS_UPDATE)

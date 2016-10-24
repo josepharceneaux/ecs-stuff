@@ -39,8 +39,10 @@ from email_campaign_service.common.utils.handy_functions import define_and_send_
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.modules.utils import (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_PREFERENCES_URL_MERGETAG,
                                                   DEFAULT_LAST_NAME_MERGETAG)
+
 
 __author__ = 'basit'
 
@@ -50,6 +52,22 @@ EMAIL_TEMPLATE_BODY = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional
                       '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
                       '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through ' \
                       'script</p>\r\n</body>\r\n</html>\r\n'
+EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS = [{'from': fake.safe_email()}, {'from': fake.safe_email(),
+                                      'reply_to': fake.safe_email()}, {'from': fake.safe_email(),
+                                      'reply_to': fake.safe_email(), 'body_text': fake.sentence()},
+                                      {'from': fake.safe_email(), 'reply_to': fake.safe_email(),
+                                       'description': fake.sentence(), 'body_text': fake.sentence(),
+                                       'start_datetime': DatetimeUtils.to_utc_str(datetime.datetime.utcnow()
+                                                                                  + datetime.timedelta(minutes=20))},
+                                      {'from': fake.safe_email(), 'reply_to': fake.safe_email(),
+                                       'body_text': fake.sentence(), 'start_datetime': DatetimeUtils.to_utc_str(
+                                         datetime.datetime.utcnow() + datetime.timedelta(minutes=20)),
+                                       'end_datetime': DatetimeUtils.to_utc_str(datetime.datetime.utcnow()
+                                                                                + datetime.timedelta(minutes=40))}]
+EMAIL_TEMPLATE_INVALID_DATA_TYPES = [{'name': fake.random_number(), 'is_immutable': 1},
+                                     {'name': fake.word(), 'is_immutable': fake.random_int(2,)},
+                                     {'name': fake.word(), 'is_immutable': fake.word()}, {'name': fake.word(),
+                                     'is_immutable': ON, 'parent_id': fake.word()}]
 
 SPECIAL_CHARACTERS = '!@#$%^&*()_+'
 TEST_MAIL_DATA = {
@@ -496,11 +514,7 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
                                                                                 assert_candidates=assert_candidates)
     return {'name': campaign_name,
             'subject': subject,
-            'description': description,
-            'from': email_from,
-            'reply_to': reply_to,
             'body_html': body_html,
-            'body_text': body_text,
             'frequency_id': Frequency.ONCE,
             'list_ids': [smartlist_id] if smartlist_id else []
             }
@@ -594,6 +608,55 @@ def assert_valid_template_folder(template_folder_dict, domain_id, expected_name)
     assert template_folder_dict['is_immutable'] == ON
     # Following fields may have empty values
     assert 'parent_id' in template_folder_dict
+
+
+def create_data_for_campaign_creation_with_all_parameters(access_token, talent_pipeline, subject,
+                                                          campaign_name=fake.name(), assert_candidates=True):
+    """
+    This function returns the all data to create an email campaign
+    :param access_token: access token of user
+    :param talent_pipeline: talent_pipeline of user
+    :param subject: Subject of campaign
+    :param campaign_name: Name of campaign
+    :param assert_candidates: allow to assert candidate
+    """
+    email_from = 'no-reply@gettalent.com'
+    reply_to = fake.safe_email()
+    body_text = fake.sentence()
+    description = fake.paragraph()
+    body_html = "<html><body><h1>%s</h1></body></html>" % body_text
+    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
+                                                                            talent_pipeline,
+                                                                            emails_list=True,
+                                                                            assert_candidates=assert_candidates,
+                                                                            )
+    start_datetime = DatetimeUtils.to_utc_str(datetime.datetime.utcnow() + datetime.timedelta(minutes=20))
+    end_datetime = DatetimeUtils.to_utc_str(datetime.datetime.utcnow() + datetime.timedelta(minutes=40))
+
+    return {'name': campaign_name,
+            'from': email_from,
+            'reply_to': reply_to,
+            'description': description,
+            'body_text': body_text,
+            'subject': subject,
+            'body_html': body_html,
+            'frequency_id': Frequency.ONCE,
+            'list_ids': [smartlist_id],
+            'start_datetime': start_datetime,
+            'end_datetime': end_datetime
+            }
+
+
+def assert_and_delete_template_folder(template_folder_id, headers, data=None):
+    """
+    Here we are asserting the  response code that folder is deleted not.
+    :param template_folder_id: Contain id of folder which you want to delete.
+    :param data: Contain multiple folder id's to delete more than one folder.
+    :param headers: Contain access token and authentication.
+    """
+    response = requests.delete(url=EmailCampaignApiUrl.TEMPLATE_FOLDER % template_folder_id,
+                               data=json.dumps(data), headers=headers)
+    assert response.status_code == requests.codes.NO_CONTENT
 
 
 def data_for_creating_email_clients(key=None):
