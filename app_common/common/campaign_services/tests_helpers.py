@@ -43,11 +43,11 @@ class CampaignsTestsHelpers(object):
     This class contains common helper methods for tests of sms_campaign_service and push_campaign_service etc.
     """
     # This list is used to update/delete a campaign, e.g. sms-campaign with invalid id
-    INVALID_ID = [fake.word(), 0, None, dict(), list(), '', '        ']
+    INVALID_IDS = [fake.word(), 0, None, dict(), list(), '', '        ']
     # This list is used to create/update a campaign, e.g. sms-campaign with invalid name and body_text.
-    INVALID_STRING = INVALID_ID[1:]
+    INVALID_STRING = INVALID_IDS[1:]
     # This list is used to schedule/reschedule a campaign e.g. sms-campaign with invalid frequency Id.
-    INVALID_FREQUENCY_IDS = copy.copy(INVALID_ID)
+    INVALID_FREQUENCY_IDS = copy.copy(INVALID_IDS)
     # Remove 0 from list as it is valid frequency_id and replace it with sys.maxint
     INVALID_FREQUENCY_IDS[1] = sys.maxint
     # Invalid values for required text field
@@ -719,7 +719,7 @@ class CampaignsTestsHelpers(object):
         :param dict campaign_data: Data to be passed in HTTP request
         """
         # This list is used to create/update a campaign, e.g. sms-campaign with invalid smartlist ids.
-        invalid_lists = [[item] for item in CampaignsTestsHelpers.INVALID_ID]
+        invalid_lists = [[item] for item in CampaignsTestsHelpers.INVALID_IDS]
         non_existing_smartlist_id = CampaignsTestsHelpers.get_non_existing_id(Smartlist)
         invalid_lists.extend([[non_existing_smartlist_id, non_existing_smartlist_id]])  # Test for unique items
         for invalid_list in invalid_lists:
@@ -757,7 +757,7 @@ class CampaignsTestsHelpers(object):
         :param type(t) campaign_model: Campaign object
         """
         assert db.Model in campaign_model.__mro__
-        invalid_data = [[item] for item in CampaignsTestsHelpers.INVALID_ID]
+        invalid_data = [[item] for item in CampaignsTestsHelpers.INVALID_IDS]
         non_existing_campaign_id = CampaignsTestsHelpers.get_non_existing_id(campaign_model)
         invalid_data.extend([[non_existing_campaign_id, non_existing_campaign_id]])  # Test for unique items
         for invalid_item in invalid_data:
