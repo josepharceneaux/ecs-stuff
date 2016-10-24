@@ -141,6 +141,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
         for i, row in enumerate(table):
             # Candidate state variables: These can be populated for each candidate
             first_name, middle_name, last_name, formatted_name, status_id = None, None, None, None, None
+            summary = None
             emails, phones, areas_of_interest, addresses, degrees, candidate_notes = [], [], [], [], [], []
             school_names, work_experiences, educations, custom_fields, social_networks = [], [], [], [], []
             skills = []
@@ -167,6 +168,8 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                     middle_name = column
                 elif column_name == 'candidate.lastName':
                     last_name = column
+                elif column_name == 'candidate.summary':
+                    summary = column
                 elif column_name == 'candidate_email.address':
                     emails.append({'address': column})
                 elif column_name == 'candidate_phone.value':
@@ -297,6 +300,7 @@ def import_from_spreadsheet(table, spreadsheet_filename, header_row, talent_pool
                                   first_name=first_name,
                                   middle_name=middle_name,
                                   last_name=last_name,
+                                  summary=summary,
                                   emails=emails,
                                   phones=phones,
                                   work_experiences=work_experiences,
