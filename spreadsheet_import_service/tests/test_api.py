@@ -119,22 +119,6 @@ def test_create_candidate_from_excel_file(access_token_first, talent_pool, domai
     assert response.get('status') == 'complete'
 
 
-def test_create_candidate_with_summary(access_token_first, talent_pool, domain_custom_fields):
-    """
-    Test: Create a candidate with summary fields
-    """
-    # Logged-in user trying to import 11 candidates from an excel file
-    response, status_code = import_spreadsheet_candidates(
-        talent_pool_id=talent_pool.id, access_token=access_token_first,
-        spreadsheet_file_name="get_1803.xlsx", is_csv=False, import_candidates=True,
-        domain_custom_field=domain_custom_fields[0]
-    )
-    print "\nresponse_content: {}".format(response)
-    assert status_code == 201
-    assert response.get('status') == 'complete'
-    assert response.get('count') == 11
-
-
 class TestCreateCandidateFromExcelFile(object):
     """
     Class contains functional tests that attempt to create candidate(s) via an excel file
