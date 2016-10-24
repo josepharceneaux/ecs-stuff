@@ -5,7 +5,6 @@
 
 This file contains fixtures for tests of email-campaign-service
 """
-from email_campaign_service.modules.utils import do_mergetag_replacements
 
 __author__ = 'basit'
 
@@ -17,7 +16,9 @@ from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.modules.email_clients import SMTP
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.models.misc import Frequency
+from email_campaign_service.common.routes import GraphqlServiceApiUrl
 from email_campaign_service.common.models.candidate import CandidateEmail
+from email_campaign_service.modules.utils import do_mergetag_replacements
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
@@ -37,6 +38,8 @@ from email_campaign_service.tests.modules.handy_functions import (create_email_c
                                                                   create_email_campaign_via_api,
                                                                   send_campaign_with_client_id,
                                                                   create_email_campaign_with_merge_tags)
+
+GRAPHQL_BASE_URL = GraphqlServiceApiUrl.GRAPHQL
 
 EMAIL_CAMPAIGN_TYPES = [EmailCampaignTypes.WITHOUT_CLIENT, EmailCampaignTypes.WITH_CLIENT]
 

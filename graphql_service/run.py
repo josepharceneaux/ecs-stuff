@@ -6,8 +6,6 @@ from graphql_service.common.talent_config_manager import TalentEnvs
 from graphql_service.common.error_handling import InternalServerError
 
 # Creating Schema
-from graphql_service.common.utils.auth_utils import require_oauth
-
 try:
     from graphql_service.application.query import Query
     from graphql_service.application.mutation import Mutation
@@ -21,11 +19,11 @@ except Exception as e:
 # Adding URL Rule
 app.add_url_rule(
     rule='/graphql',
-    view_func=require_oauth()(GraphQLView.as_view(
+    view_func=GraphQLView.as_view(
         'graphql',
         schema=schema,
         graphiql=app.config['GT_ENVIRONMENT'] == TalentEnvs.DEV  # graphiql should only run for testing
-    ))
+    )
 )
 
 if __name__ == '__main__':

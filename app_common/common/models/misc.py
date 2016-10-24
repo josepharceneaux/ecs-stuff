@@ -7,6 +7,7 @@ from sqlalchemy.dialects.mysql import DOUBLE
 from ..error_handling import InvalidUsage
 from candidate import CandidateMilitaryService
 from sms_campaign import SmsCampaign
+from email_campaign import EmailCampaign
 from push_campaign import (PushCampaign, PushCampaignBlast,
                            PushCampaignSend, PushCampaignSendUrlConversion)
 from ..utils.scheduler_utils import SchedulerUtils
@@ -337,6 +338,7 @@ class Frequency(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # Relationships
+    email_campaigns = relationship('EmailCampaign', backref='frequency')
     sms_campaigns = relationship('SmsCampaign', backref='frequency')
     push_campaigns = relationship('PushCampaign', backref='frequency')
 

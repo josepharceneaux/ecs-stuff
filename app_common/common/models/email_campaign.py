@@ -43,7 +43,6 @@ class EmailCampaign(db.Model):
                                             db.ForeignKey('email_client_credentials.id'))
 
     # Relationships
-    frequency = relationship("Frequency", backref="frequency")
     blasts = relationship('EmailCampaignBlast', lazy='dynamic', cascade='all, delete-orphan',
                           passive_deletes=True, backref='campaign')
     sends = relationship('EmailCampaignSend', cascade='all, delete-orphan',
@@ -400,7 +399,7 @@ class EmailTemplateFolder(db.Model):
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
     updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
 
-    domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
+    # Relationships
     parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                       cascade="all, delete-orphan"))
 

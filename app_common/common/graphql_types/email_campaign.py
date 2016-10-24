@@ -1,12 +1,16 @@
 """
-Here we have Types defined for models of email-campaign=service
+Here we have Types defined for models of email-campaign-service
 """
+
+__author__ = 'basit'
+
 # Third Party
 import graphene
+from graphene import relay
 from graphene_sqlalchemy import SQLAlchemyObjectType
 
 # Application Specific
-from graphql_service.common.models.email_campaign import (EmailCampaign, EmailCampaignBlast)
+from ..models.email_campaign import (EmailCampaign, EmailCampaignBlast)
 
 
 class SortBy(graphene.Enum):
@@ -23,9 +27,11 @@ class EmailCampaignType(SQLAlchemyObjectType):
 
     class Meta:
         model = EmailCampaign
+        interfaces = (relay.Node,)
 
 
 class EmailCampaignBlastsType(SQLAlchemyObjectType):
 
     class Meta:
         model = EmailCampaignBlast
+        interfaces = (relay.Node,)

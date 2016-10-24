@@ -945,3 +945,11 @@ class TalentBotApiUrl(object):
     SLACK_LISTEN = '/' + VERSION + '/slack-callback'
     SLACK_AUTH = '/' + VERSION + '/slack-auth'
     INDEX = '/' + VERSION + '/index'
+
+
+class GraphqlServiceApiUrl(object):
+    """
+    API URL for Graphql service
+    """
+    HOST_NAME = _get_host_name(GTApis.GRAPHQL_SERVICE, GTApis.GRAPHQL_SERVICE_PORT)
+    GRAPHQL = HOST_NAME % '/graphql'
