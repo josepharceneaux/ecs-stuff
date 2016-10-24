@@ -72,7 +72,7 @@ class QuestionHandler(object):
     @staticmethod
     def append_list_with_spaces(_list):
         """
-        Append a list elements with spaces between then
+        Append a list elements with spaces
         :param _list: list
         :rtype: str
         """
@@ -119,7 +119,7 @@ class QuestionHandler(object):
             raise IndexError
         if len(message_tokens) <= skill_index+1:
             return 'Please mention skills'
-        extracted_skills = message_tokens[skill_index + 1::]
+        extracted_skills = map(unicode.strip, [skill for skill in message_tokens[skill_index + 1::] if skill])
         try:
             count = Candidate.get_candidate_count_with_skills(extracted_skills, user_id)
         except AssertionError as error:
@@ -128,11 +128,11 @@ class QuestionHandler(object):
         except NotFoundError:
             return "You don't belong to a domain"
         response_message = "There are `%d` candidates with skills %s"
-        response_message = response_message % (count, ' '.join(extracted_skills))
+        response_message = response_message % (count, ', '.join(extracted_skills))
         if count == 1:
             response_message = response_message.replace('are', 'is'). \
                 replace('candidates', 'candidate')
-        return response_message
+        return response_message.replace(', and,', ' and').replace('and,', 'and')
 
     @classmethod
     def question_2_handler(cls, message_tokens, user_id):
