@@ -372,6 +372,11 @@ def test_troublesome_zip_code(token_fixture, user_fixture):
     content, status = fetch_resume_post_response(token_fixture, 'zips.pdf')
     assert_non_create_content_and_status(content, status)
 
+
+def test_get_1799(token_fixture, user_fixture):
+    content, status = fetch_resume_post_response(token_fixture, 'get-1799.pdf')
+    assert_non_create_content_and_status(content, status)
+
 ####################################################################################################
 # Test Candidate Creation
 ####################################################################################################
