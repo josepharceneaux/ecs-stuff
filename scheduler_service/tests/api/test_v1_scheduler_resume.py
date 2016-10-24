@@ -240,7 +240,7 @@ class TestSchedulerResume(object):
                                  headers=auth_header)
         assert response.status_code == requests.codes.OK
         auth_header['Authorization'] = 'Bearer %s' % access_token_other
-        # Now get the job from other user in different domain
+        # Now resume the job from other user in different domain
         response = requests.post(SchedulerApiUrl.RESUME_TASK % data['id'],
                                  headers=auth_header)
         assert response.status_code == requests.codes.NOT_FOUND

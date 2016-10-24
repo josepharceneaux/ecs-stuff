@@ -178,14 +178,14 @@ class TestSchedulerDelete(object):
     @pytest.mark.qa
     def test_delete_scheduled_task_by_other_domain_user(self, auth_header, job_config, access_token_other):
         """
-        Schedule a job from a user and then try to remove same task from a different user in different domain.
+        Schedule a job from a user and then try to remove same task through  different user from different domain.
         """
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header)
         assert response.status_code == requests.codes.CREATED
         data = response.json()
         auth_header['Authorization'] = 'Bearer %s' % access_token_other
-        # Now get the job from other user in different domain
-        response = requests.get(SchedulerApiUrl.TASK % data['id'],
-                                headers=auth_header)
+        # Now delete the job from other user in different domain
+        response = requests.delete(SchedulerApiUrl.TASK % data['id'],
+                                   headers=auth_header)
         assert response.status_code == requests.codes.NOT_FOUND

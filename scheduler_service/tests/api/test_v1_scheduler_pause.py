@@ -211,7 +211,7 @@ class TestSchedulerPause(object):
         assert response.status_code == requests.codes.CREATED
         data = response.json()
         auth_header['Authorization'] = 'Bearer %s' % access_token_other
-        # Now get the job from other user in different domain
+        # Now pause the job from other user in different domain
         response = requests.post(SchedulerApiUrl.PAUSE_TASK % data['id'],
                                  headers=auth_header)
         assert response.status_code == requests.codes.NOT_FOUND

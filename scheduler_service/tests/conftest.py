@@ -21,8 +21,6 @@ from scheduler_service.common.tests.conftest import pytest, datetime, User, user
     user_from_diff_domain, test_domain_2, second_group, domain_second
 from scheduler_service.common.utils.scheduler_utils import SchedulerUtils
 
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-
 
 @pytest.fixture(scope='session')
 def job_config_periodic(request):

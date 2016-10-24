@@ -416,7 +416,7 @@ class TestSchedulerGet(object):
         """
         Try to get scheduled task with invalid id. Should return 404 (not found).
         """
-        invalid_id = CampaignsTestsHelpers.INVALID_STRING
-        response = requests.get(SchedulerApiUrl.TASK % invalid_id,
-                                headers=auth_header)
-        assert response.status_code == requests.codes.NOT_FOUND
+        for invalid_id in CampaignsTestsHelpers.INVALID_IDS:
+            response = requests.get(SchedulerApiUrl.TASK % invalid_id,
+                                    headers=auth_header)
+            assert response.status_code == requests.codes.NOT_FOUND

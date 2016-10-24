@@ -10,14 +10,14 @@ import datetime
 import requests
 import pytest
 from copy import deepcopy
-from faker import Faker
-fake = Faker()
 
 
 # Application imports
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.modules.CONSTANTS import (SCHEDULER_PERIODIC_REQUIRED_PARAMETERS,
                                                  SCHEDULER_ONE_TIME_REQUIRED_PARAMETERS)
+from scheduler_service.common.utils.test_utils import fake
+from scheduler_service.common.utils.datetime_utils import DatetimeUtils
 __author__ = 'saad'
 
 
@@ -26,11 +26,7 @@ class TestSchedulerExceptions(object):
     @pytest.mark.qa
     def test_incomplete_post_data_exception(self, auth_header, job_config):
         """
-        Create a job by missing data and check if exception occur then invalid usage exception should be thrown
-        Args:
-            auth_data: Fixture that contains token.
-            job_config (dict): Fixture that contains job config to be used as
-        :return:
+        Create a job by missing data and check if exception occur then invalid usage exception should be thrown.
         """
         for param in SCHEDULER_PERIODIC_REQUIRED_PARAMETERS:
             invalid_job_config = deepcopy(job_config)
@@ -321,8 +317,8 @@ class TestSchedulerExceptions(object):
         job_config = job_config.copy()
         start_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=50)
         end_datetime = datetime.datetime.utcnow() + datetime.timedelta(minutes=40)
-        job_config['start_datetime'] = start_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
-        job_config['end_datetime'] = end_datetime.strftime('%Y-%m-%dT%H:%M:%SZ')
+        job_config['start_datetime'] = DatetimeUtils.to_utc_str(start_datetime)
+        job_config['end_datetime'] = DatetimeUtils.to_utc_str(end_datetime)
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
                                  headers=auth_header)
         assert response.status_code == requests.codes.BAD_REQUEST
