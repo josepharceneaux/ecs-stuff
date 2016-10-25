@@ -212,6 +212,9 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict, authed
                                      end_month=end_month,
                                      is_current=i == 0,  # Assume the very first element is the current one
                                      bullets=candidate_experience_bullets))
+
+        start_year, start_month, end_year, end_month = None, None, None, None
+        
     employment_history_list = dice_profile_dict.get('employmentHistoryList') or []
     for i, employment_dict in enumerate(employment_history_list):
         # Parse out candidate_experience_bullets.
