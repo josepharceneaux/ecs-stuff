@@ -16,7 +16,7 @@ class SchedulerUtils(object):
     # Set the minimum frequency in seconds
     env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
     # For QA and production minimum frequency would be one hour
-    MIN_ALLOWED_FREQUENCY = 4 if env in [TalentEnvs.DEV, TalentEnvs.JENKINS] else 3600
+    MIN_ALLOWED_FREQUENCY = 4 if env in [TalentEnvs.DEV, TalentEnvs.JENKINS] else 60
     MAX_MISFIRE_TIME = 60   # Max misfire of job time => 60 seconds
 
     # Redis job ids prefix for user and general job

@@ -18,7 +18,6 @@ def test_convert_spreadsheet_to_table(access_token_first, user_first, domain_cus
     domain_custom_field = domain_custom_fields[0]
     candidate_data = candidate_test_data()
 
-
     # Logged-in user trying to convert a csv spreadsheet to table
     # from candidate_service.tests.api.helpers import response_info
     response, status_code = import_spreadsheet_candidates(talent_pool,
@@ -32,8 +31,9 @@ def test_convert_spreadsheet_to_table(access_token_first, user_first, domain_cus
 
     # Logged-in user trying to convert a excel spreadsheet to table
     response, status_code = import_spreadsheet_candidates(talent_pool,
-            access_token_first, spreadsheet_file_name='test_spreadsheet_2.xls', is_csv=False,
-            domain_custom_field=domain_custom_field)
+                                                          access_token_first,
+                                                          spreadsheet_file_name='test_spreadsheet_2.xls', is_csv=False,
+                                                          domain_custom_field=domain_custom_field)
 
     assert status_code == 200
     assert len(response.get('table')) == 10
@@ -75,7 +75,6 @@ def test_health_check():
 
 
 def test_import_candidates_from_file(access_token_first, talent_pool, domain_custom_fields):
-
     # Logged-in user trying to import 15 candidates from a csv spreadsheet
     # Candidates with erroneous data will not be added, so the count will reflect only successfully added candidates
     response, status_code = import_spreadsheet_candidates(
