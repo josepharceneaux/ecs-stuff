@@ -1,6 +1,8 @@
+
 __author__ = 'basit'
 
-import datetime
+from datetime import datetime
+from contracts import contract
 
 from sqlalchemy.orm import relationship
 from sqlalchemy import or_, desc, extract, and_
@@ -8,6 +10,9 @@ from sqlalchemy import or_, desc, extract, and_
 from db import db
 from ..error_handling import InternalServerError
 from ..utils.datetime_utils import DatetimeUtils
+from ..custom_contracts import define_custom_contracts
+
+define_custom_contracts()
 
 
 class SmsCampaign(db.Model):
@@ -20,8 +25,8 @@ class SmsCampaign(db.Model):
     start_datetime = db.Column(db.DateTime)
     end_datetime = db.Column(db.DateTime)
     scheduler_task_id = db.Column(db.String(255))
-    added_datetime = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    added_datetime = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
     # Relationships
     blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',
@@ -86,8 +91,8 @@ class SmsCampaignBlast(db.Model):
     sends = db.Column(db.Integer, default=0)
     clicks = db.Column(db.Integer, default=0)
     replies = db.Column(db.Integer, default=0)
-    sent_datetime = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    sent_datetime = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
     # Relationships
     blast_sends = relationship('SmsCampaignSend', cascade='all,delete-orphan',
@@ -99,23 +104,22 @@ class SmsCampaignBlast(db.Model):
         return "<SMSCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
 
     @classmethod
+    @contract
     def top_performing_sms_campaign(cls, datetime_value, user_id):
         """
         This method returns top performing SMS campaign from a specific year
-        :param int user_id: User Id
-        :param datetime|str datetime_value: Year of campaign started or updated
-        :rtype SmsCampaignBlast|None
+        :param int|long user_id: User Id
+        :param datetime|string|None datetime_value: Year of campaign started or updated
+        :rtype type(z)|None
         """
-        assert isinstance(datetime_value, (datetime.datetime, basestring)) or datetime_value is None, \
-            "Invalid datetime value"
-        assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
         from user import UserPhone, User
-        users_ids_in_domain = User.query.with_entities(User.id).filter(User.domain_id == 1).all()
-        users_ids_in_domain = [_id[0] for _id in users_ids_in_domain]
-        user_phone_ids = UserPhone.query.with_entities(UserPhone.id).filter(UserPhone.user_id.in_(users_ids_in_domain)).all()
-        user_phone_ids = [_id[0] for _id in user_phone_ids]
         domain_id = User.get_domain_id(user_id)
-        if domain_id and isinstance(datetime_value, datetime.datetime):
+        user_ids_in_domain = User.query.with_entities(User.id).filter(User.domain_id == domain_id).all()
+        user_ids_in_domain = [_id[0] for _id in user_ids_in_domain]
+        user_phone_ids = UserPhone.query.with_entities(UserPhone.id).\
+            filter(UserPhone.user_id.in_(user_ids_in_domain)).all()
+        user_phone_ids = [_id[0] for _id in user_phone_ids]
+        if domain_id and isinstance(datetime_value, datetime):
             return cls.query.filter(or_(cls.updated_time >= datetime_value,
                                         cls.sent_datetime >= datetime_value)).\
                 filter(cls.sends > 0).\
@@ -140,7 +144,7 @@ class SmsCampaignSend(db.Model):
     blast_id = db.Column(db.Integer,  db.ForeignKey('sms_campaign_blast.id', ondelete='CASCADE'))
     candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id'))
     sent_datetime = db.Column(db.DateTime)
-    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
     # Relationships
     url_conversions = relationship('SmsCampaignSendUrlConversion',
@@ -179,7 +183,7 @@ class SmsCampaignReply(db.Model):
     body_text = db.Column(db.Text)
     candidate_phone_id = db.Column(db.BIGINT,
                                    db.ForeignKey('candidate_phone.Id', ondelete='CASCADE'))
-    added_datetime = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    added_datetime = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return "<SmsCampaignReply(id = %r)>" % self.id
@@ -209,7 +213,7 @@ class SmsCampaignSmartlist(db.Model):
                              nullable=False)
     campaign_id = db.Column(db.Integer, db.ForeignKey("sms_campaign.id", ondelete='CASCADE'),
                             nullable=False)
-    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
     def __repr__(self):
         return '<SmsCampaignSmartlist(id = %r)>' % self.id

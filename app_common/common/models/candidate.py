@@ -1,3 +1,4 @@
+from contracts import contract
 from sqlalchemy import and_, desc
 from db import db
 from sqlalchemy.orm import relationship, backref
@@ -122,25 +123,26 @@ class Candidate(db.Model):
         """
         assert isinstance(skills, list) and skills, "Invalid skills"
         assert isinstance(user_id, (int, long)) and user_id, "Invalid user_id"
-        from .user import User # This has to be here to avoid circular import
+        from .user import User  # This has to be here to avoid circular import
         domain_id = User.get_domain_id(user_id)
         if domain_id:
             return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
-                .filter(and_(User.id == user_id, User.domain_id == domain_id)).filter(CandidateSkill.description.
-                                                                                      in_(skills)).distinct().count()
+                .filter(and_(User.id == Candidate.user_id, User.domain_id == domain_id)).\
+                filter(CandidateSkill.description.in_(skills)).distinct().count()
         raise NotFoundError('No domain found')
 
     @staticmethod
+    @contract
     def get_candidate_count_from_zipcode(zipcode, user_id):
         """
         This method returns number of candidates from a certain zipcode
         :param int|long user_id: User Id
-        :param str zipcode: Candidate zipcode
-        :rtype: int: Number of candidates from zipcode
+        :param string zipcode: Candidate zipcode
+        :rtype: int|long
         """
         assert isinstance(zipcode, basestring) and zipcode, "Invalid zipcode"
         assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
-        from .user import User # This has to be here to avoid circular import
+        from .user import User  # This has to be here to avoid circular import
         domain_id = User.get_domain_id(user_id)
         if domain_id:
             return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \

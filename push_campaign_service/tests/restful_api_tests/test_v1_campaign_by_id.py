@@ -225,7 +225,7 @@ class TestUpdateCampaign(object):
         :param campaign_data: data to update push campaign
         :param campaign_in_db: already created push campaign data
         """
-        invalid_ids = CampaignsTestsHelpers.INVALID_ID
+        invalid_ids = CampaignsTestsHelpers.INVALID_IDS
         url = URL % campaign_in_db['id']
         invalid_value_test(url, campaign_data, 'smartlist_ids', invalid_ids, token_first, method='put')
 
