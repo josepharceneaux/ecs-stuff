@@ -32,6 +32,7 @@ import sys
 
 # 3rd party imports
 from requests import codes
+import pytest
 
 # Application specific imports
 from push_campaign_service.common.models.misc import Activity
@@ -152,6 +153,16 @@ class TestCreateCampaign(object):
         # To delete this in finalizer, add id and token
         campaign_data['id'] = _id
         campaign_data['token'] = token_first
+
+    @pytest.mark.qa
+    def test_campaign_creation_with_smartlist_of_other_domain(self, token_first, campaign_data, smartlist_second):
+        """
+        Try to create campaign with smartlist of other domain, API should raise 403 (forbidden).
+        """
+        smartlist_id = smartlist_second['id']
+        data = campaign_data.copy()
+        data['smartlist_ids'] = [smartlist_id]
+        response = create_campaign(data, token_first, expected_status=(codes.FORBIDDEN,))
 
 
 class TestGetListOfCampaigns(object):
