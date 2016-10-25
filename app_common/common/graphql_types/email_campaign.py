@@ -10,7 +10,7 @@ from graphene import relay
 from graphene_sqlalchemy import SQLAlchemyObjectType
 
 # Application Specific
-from ..models.email_campaign import (EmailCampaign, EmailCampaignBlast)
+from ..models.email_campaign import (EmailCampaign, EmailCampaignBlast, EmailCampaignSend)
 
 
 class SortBy(graphene.Enum):
@@ -30,8 +30,15 @@ class EmailCampaignType(SQLAlchemyObjectType):
         interfaces = (relay.Node,)
 
 
-class EmailCampaignBlastsType(SQLAlchemyObjectType):
+class EmailCampaignBlastType(SQLAlchemyObjectType):
 
     class Meta:
         model = EmailCampaignBlast
+        interfaces = (relay.Node,)
+
+
+class EmailCampaignSendType(SQLAlchemyObjectType):
+
+    class Meta:
+        model = EmailCampaignSend
         interfaces = (relay.Node,)

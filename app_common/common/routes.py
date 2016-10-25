@@ -944,17 +944,6 @@ class TalentBotApi(object):
     FACEBOOK_LISTEN = '/' + VERSION + '/facebook-callback'
     SLACK_LISTEN = '/' + VERSION + '/slack-callback'
     SLACK_AUTH = '/' + VERSION + '/slack-auth'
-<<<<<<< HEAD
-    INDEX = '/' + VERSION + '/index'
-
-
-class GraphqlServiceApiUrl(object):
-    """
-    API URL for Graphql service
-    """
-    HOST_NAME = _get_host_name(GTApis.GRAPHQL_SERVICE, GTApis.GRAPHQL_SERVICE_PORT)
-    GRAPHQL = HOST_NAME % '/graphql'
-=======
     SLACK_BOT_STATUS = '/' + VERSION + '/slackbot-status'
     HOME = '/' + VERSION + '/index'
 
@@ -972,4 +961,11 @@ class TalentBotApiUrl(object):
     SLACK_AUTH = HOST_NAME % ('/' + VERSION + '/slack-auth')
     SLACK_BOT_STATUS = HOST_NAME % ('/' + VERSION + '/slackbot-status')
     HOME = HOST_NAME % ('/' + VERSION + '/index')
->>>>>>> 80da622615894fbbec89eb7014f408ecc0f803bb
+
+
+class GraphqlServiceApiUrl(object):
+    """
+    API URL for Graphql service
+    """
+    HOST_NAME = _get_host_name(GTApis.GRAPHQL_SERVICE, GTApis.GRAPHQL_SERVICE_PORT)
+    GRAPHQL = HOST_NAME % '/graphql'

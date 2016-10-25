@@ -23,18 +23,18 @@ class TestQueryBlast(object):
                    % ('%d', '%d', ' '.join(expected_fields_list))
     query = {"query": query_string}
 
-    def test_get_blasts_without_auth_header(self):
+    def test_get_blast_without_auth_header(self):
         """
-        Test to get campaign blasts without auth header. It should get 'error' in JSON response.
+        Test to get campaign blast without auth header. It should get 'error' in JSON response.
         """
         query = {'query': self.query['query'] % (fake.random_int(), fake.random_int())}
         response = requests.get(GRAPHQL_BASE_URL, data=query)
         assert response.status_code == requests.codes.ok
         assert response.json()['errors']
 
-    def test_get_blasts_with_auth_header(self, access_token_first, sent_campaign):
+    def test_get_blast_with_auth_header(self, access_token_first, sent_campaign):
         """
-        Test to get blasts of an email-campaign created by logged-in user with auth header. It should not get any
+        Test to get blast of an email-campaign created by logged-in user with auth header. It should not get any
         error.
         """
         blast_id = sent_campaign.blasts[0].id
@@ -46,9 +46,9 @@ class TestQueryBlast(object):
         for expected_field in self.expected_fields_list:
             assert expected_field in blast, '%s not present in response' % expected_field
 
-    def test_get_blasts_in_same_domain(self, access_token_same, sent_campaign):
+    def test_get_blast_in_same_domain(self, access_token_same, sent_campaign):
         """
-        Test to get blasts of a campaign created by some other user of same domain. It should not get any error.
+        Test to get blast of a campaign created by some other user of same domain. It should not get any error.
         """
         blast_id = sent_campaign.blasts[0].id
         query = {'query': self.query['query'] % (sent_campaign.id, blast_id)}
@@ -59,9 +59,9 @@ class TestQueryBlast(object):
         for expected_field in self.expected_fields_list:
             assert expected_field in blast, '%s not present in response' % expected_field
 
-    def test_get_blasts_from_other_domain(self, access_token_other, sent_campaign):
+    def test_get_blast_from_other_domain(self, access_token_other, sent_campaign):
         """
-        Test to get campaign by user of some other domain. It should not get any blasts.
+        Test to get campaign by user of some other domain. It should not get any blast.
         """
         blast_id = sent_campaign.blasts[0].id
         query = {'query': self.query['query'] % (sent_campaign.id, blast_id)}
@@ -72,7 +72,7 @@ class TestQueryBlast(object):
 
     def test_get_non_existing_campaign(self, access_token_first):
         """
-        Test to get blasts of non-existing email-campaign. It should not get any blast object.
+        Test to get blast of non-existing email-campaign. It should not get any blast object.
         """
         query = {'query': self.query['query'] % (CampaignsTestsHelpers.get_non_existing_id(EmailCampaign),
                                                  fake.random_int())}
@@ -83,7 +83,7 @@ class TestQueryBlast(object):
 
     def test_get_non_existing_blast(self, access_token_first, email_campaign_of_user_first):
         """
-        Test to get blasts of non-existing blast. It should not get any blast.
+        Test to get blast of non-existing blast. It should not get any blast.
         """
         query = {'query': self.query['query'] % (email_campaign_of_user_first.id,
                                                  CampaignsTestsHelpers.get_non_existing_id(EmailCampaignBlast),

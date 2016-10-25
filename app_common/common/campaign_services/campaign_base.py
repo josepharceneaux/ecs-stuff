@@ -545,16 +545,13 @@ class CampaignBase(object):
         raise_if_not_instance_of(campaign_id, (int, long))
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         raise_if_not_instance_of(current_user, User)
-        campaign_obj = CampaignUtils.get_campaign(campaign_id, current_user.domain_id,
-                                                  campaign_type)
-        domain_id_of_campaign = cls.get_domain_id_of_campaign(campaign_obj,
-                                                              current_user.domain_id)
+        campaign_obj = CampaignUtils.get_campaign(campaign_id, current_user.domain_id, campaign_type)
+        domain_id_of_campaign = cls.get_domain_id_of_campaign(campaign_obj, current_user.domain_id)
         if domain_id_of_campaign == current_user.domain_id:
             return campaign_obj
         else:
             raise ForbiddenError('%s(id:%s) does not belong to user(id:%s)`s domain.'
-                                 % (campaign_obj.__tablename__, campaign_obj.id,
-                                    current_user.id))
+                                 % (campaign_obj.__tablename__, campaign_obj.id, current_user.id))
 
     @classmethod
     def get_valid_blast_obj(cls, requested_campaign_id, blast_id, current_user, campaign_type):
