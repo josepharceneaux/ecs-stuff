@@ -140,6 +140,7 @@ class User(db.Model):
             'registration_id': self.registration_id,
             'dice_user_id': self.dice_user_id,
             'user_group_id': self.user_group_id,
+            'role': self.role.name,
             'added_time': self.added_time.replace(
                     tzinfo=pytz.UTC).isoformat() if self.added_time else None,
             'updated_time': self.updated_time.replace(
