@@ -106,32 +106,23 @@ class QuestionHandler(object):
         :param message_tokens: User message tokens
         :rtype: str
         """
-        skill_index = cls.find_word_in_message('skill', message_tokens)
+        skill_index = cls.find_optional_word(message_tokens, ['skill', 'know', 'grasp'])
+        if len(message_tokens) > skill_index + 1:
+            if message_tokens[skill_index + 1].lower() == 'on':
+                skill_index += 1
         if skill_index is None:
-            skill_index = cls.find_word_in_message('know', message_tokens)
-            if skill_index is None:
-                skill_index = cls.find_word_in_message('grasp', message_tokens)
-                if skill_index is not None:
-                    if len(message_tokens) > skill_index:
-                        if message_tokens[skill_index+1].lower() == 'on':
-                            skill_index += 1
-        if not skill_index:
             raise IndexError
         if len(message_tokens) <= skill_index+1:
-            return 'Please mention skills'
+            return 'Please mention skills properly'
         extracted_skills = map(unicode.strip, [skill for skill in message_tokens[skill_index + 1::] if skill])
         try:
             count = Candidate.get_candidate_count_with_skills(extracted_skills, user_id)
-        except AssertionError as error:
-            logger.error("Error occurred while getting candidates against skills : %s" % error.message)
-            return None
         except NotFoundError:
             return "You don't belong to a domain"
         response_message = "There are `%d` candidates with skills %s"
         response_message = response_message % (count, ', '.join(extracted_skills))
         if count == 1:
-            response_message = response_message.replace('are', 'is'). \
-                replace('candidates', 'candidate')
+            response_message = response_message.replace('are', 'is').replace('candidates', 'candidate')
         if len(extracted_skills) > 1:
             response_message = cls.append_count_with_mesage(response_message, extracted_skills, 1, user_id)
         return response_message.replace(', and,', ' and').replace('and,', 'and')
@@ -157,8 +148,7 @@ class QuestionHandler(object):
             count = Candidate.get_candidate_count_from_zipcode(zipcode, user_id)
         except NotFoundError:
             return "You don't belong to a domain"
-        response_message = "Number of candidates from zipcode `%s` : `%d`" % \
-                           (message_tokens[zip_index + 1], count)
+        response_message = "Number of candidates from zipcode `%s` : `%d`" % (message_tokens[zip_index + 1], count)
         return response_message
 
     def question_3_handler(self, message_tokens, user_id):
@@ -264,9 +254,7 @@ class QuestionHandler(object):
         """
         user_specific_date = None
         talent_index = self.find_exact_word_in_message('talent', message_tokens)
-        import_index = self.find_word_in_message('import', message_tokens)
-        if import_index is None:
-            import_index = self.find_word_in_message('add', message_tokens)
+        import_index = self.find_optional_word(message_tokens, ['import', 'add'])
         if import_index is None:
             return "Your question is vague"
         # Extracting talent pool name from user's message
@@ -287,13 +275,9 @@ class QuestionHandler(object):
         if is_asking_about_each_user is not None or user_name.lower() in ['all', 'every', 'each']:
             user_name = None
         else:
-            is_asking_about_each_user = self.find_word_in_message('everyone', message_tokens)
+            is_asking_about_each_user = self.find_optional_word(message_tokens, ['everyone', 'everybody'])
             if is_asking_about_each_user is not None:
                 user_name = None
-            else:
-                is_asking_about_each_user = self.find_word_in_message('everybody', message_tokens)
-                if is_asking_about_each_user is not None:
-                    user_name = None
         year = message_tokens[-1]
         is_valid_year = self.is_valid_year(year)
         if is_valid_year is True:
@@ -423,9 +407,7 @@ class QuestionHandler(object):
         :param int user_id: User Id
         :rtype: str
         """
-        belong_index = cls.find_word_in_message('belong', message_tokens)
-        if belong_index is None:
-            belong_index = cls.find_word_in_message('part', message_tokens)
+        belong_index = cls.find_optional_word(message_tokens, ['belong', 'part'])
         is_user_asking_about_himself = cls.find_exact_word_in_message('i', message_tokens)
         if belong_index is not None and is_user_asking_about_himself is None:
             user_name = message_tokens[belong_index - 1]
@@ -551,3 +533,19 @@ class QuestionHandler(object):
                                   count_dict[key]) for key in count_dict]))
             message = message.replace('pool', 'pools')
         return message
+
+    @classmethod
+    def find_optional_word(cls, message_tokens, optional_words, exact_word=False):
+        """
+        This method returns the first matched word's index
+        :param bool exact_word: If user wants to find exact word or partial word
+        :param list message_tokens: User message tokens
+        :param optional_words: list of optional words to be found
+        :rtype: int|None
+        """
+        word_finding_method = cls.find_exact_word_in_message if exact_word else cls.find_word_in_message
+        for word in optional_words:
+            index = word_finding_method(word, message_tokens)
+            if index is not None:
+                return index
+        return None
