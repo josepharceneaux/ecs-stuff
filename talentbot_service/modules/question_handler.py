@@ -132,6 +132,8 @@ class QuestionHandler(object):
         if count == 1:
             response_message = response_message.replace('are', 'is'). \
                 replace('candidates', 'candidate')
+        if len(extracted_skills) > 1:
+            response_message = cls.append_count_with_mesage(response_message, extracted_skills, 1, user_id)
         return response_message.replace(', and,', ' and').replace('and,', 'and')
 
     @classmethod
@@ -397,7 +399,7 @@ class QuestionHandler(object):
     @classmethod
     def question_6_handler(cls, message_tokens, user_id):
         """
-        This method handles question what talent are pools in my domain
+        This method handles question what are the talent pools in my domain
         :param int user_id: User Id
         :param message_tokens: User message tokens
         :rtype: str
@@ -538,7 +540,13 @@ class QuestionHandler(object):
                                                                user_specific_date)
                 if isinstance(_count, (int, long)):
                     count_dict.update({talent_pool: _count})
-        if len(count_dict) > 0:
+        if handler_number == 1:
+            for skill in _list:
+                if skill.lower() != 'and':
+                    _count = Candidate.get_candidate_count_with_skills([skill], user_id)
+                    if isinstance(_count, (int, long)):
+                        count_dict.update({skill: _count})
+        if len(count_dict) > 1:
             message = '%s\n%s' % (message, '\n'.join(['`%s`: %d' % (key,
                                   count_dict[key]) for key in count_dict]))
             message = message.replace('pool', 'pools')
