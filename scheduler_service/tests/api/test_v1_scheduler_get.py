@@ -9,12 +9,15 @@ import uuid
 
 # Third party imports
 import requests
+import pytest
 
 # Application imports
 from scheduler_service.common.models.user import Token
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.common.tests.conftest import user_same_domain, access_token_same
 from scheduler_service.common.utils.handy_functions import random_word
+from scheduler_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+
 
 __author__ = 'saad'
 
@@ -392,3 +395,28 @@ class TestSchedulerGet(object):
         response_remove = requests.delete(SchedulerApiUrl.TASK % data['id'],
                                           headers=auth_header)
         assert response_remove.status_code == 200
+
+    @pytest.mark.qa
+    def test_get_scheduled_task_by_other_domain(self, auth_header, job_config, access_token_other):
+        """
+        Schedule a job from a user and then get the same task from a different user in different domain
+        """
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+                                 headers=auth_header)
+        assert response.status_code == requests.codes.CREATED
+        data = response.json()
+        auth_header['Authorization'] = 'Bearer %s' % access_token_other
+        # Now get the job from other user in different domain
+        response = requests.get(SchedulerApiUrl.TASK % data['id'],
+                                headers=auth_header)
+        assert response.status_code == requests.codes.NOT_FOUND
+
+    @pytest.mark.qa
+    def test_get_scheduled_task_by_invalid_id(self, auth_header):
+        """
+        Try to get scheduled task with invalid id. Should return 404 (not found).
+        """
+        for invalid_id in CampaignsTestsHelpers.INVALID_IDS:
+            response = requests.get(SchedulerApiUrl.TASK % invalid_id,
+                                    headers=auth_header)
+            assert response.status_code == requests.codes.NOT_FOUND

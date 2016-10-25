@@ -1,5 +1,6 @@
 __author__ = 'ufarooqi'
 
+from contracts import contract
 import json
 from db import db
 from datetime import datetime, timedelta
@@ -37,13 +38,13 @@ class TalentPool(db.Model):
         db.session.commit()
 
     @classmethod
+    @contract
     def get_talent_pools_in_user_domain(cls, user_id):
         """
         This method returns talent pools in a user's domain
-        :param int user_id: User Id
+        :param int|long user_id: User Id
         :rtype: list
         """
-        assert isinstance(user_id, (int, long)) and user_id, "User Id is not valid"
         domain_id = User.get_domain_id(user_id)
         return cls.query.filter(cls.domain_id == domain_id).all()
 
@@ -69,23 +70,21 @@ class TalentPoolCandidate(db.Model):
         return cls.query.filter_by(candidate_id=candidate_id, talent_pool_id=talent_pool_id).first()
 
     @classmethod
-    def candidates_added_last_month(cls, user_id, user_name=None, talent_pool_list=None, user_specific_date=None):
+    @contract
+    def candidate_imports(cls, user_id, user_name=None, talent_pool_list=None, user_specific_date=None):
         """
         Returns number of candidate added by a user in a talent pool during a specific time interval
-        :param str|None user_name: User name
-        :param int user_id: User Id
+        :param string|None user_name: User name
+        :param int|long user_id: User Id
         :param list|None talent_pool_list: Talent pool name
-        :param datetime|None|basestring user_specific_date: Datetime this should be later than or equal to updated_time
+        :param datetime|None|string user_specific_date: Datetime this should be later than or equal to updated_time
         or added_time
-        :rtype: int|str
+        :rtype: int|long|string
         """
-        assert isinstance(user_name, basestring) or not user_name, "Invalid user name"
-        assert isinstance(talent_pool_list, list) or not talent_pool_list, "Invalid talent pool list"
-        assert isinstance(user_specific_date, (basestring, datetime)) or not user_specific_date,\
-            "Invalid datetime specified"
-        assert isinstance(user_id, (int, long)) and user_id, "User Id is not valid"
         user = None
         if user_name:
+            if user_name.lower() == 'i':
+                user_name = User.filter_by_keywords(id=user_id)[0].first_name
             users = User.get_by_name(user_id, user_name)
             if users:
                 user = users[0]
@@ -108,10 +107,12 @@ class TalentPoolCandidate(db.Model):
         if user_name and talent_pool_list:
             # Querying how many candidates have user added in specified talent pools
             return common_query.filter(
-                and_(TalentPool.user_id == user.id, TalentPool.name.in_(talent_pool_list))).distinct().count()
+                and_(TalentPool.user_id == User.id, TalentPool.name.in_(talent_pool_list)),
+                Candidate.id == TalentPoolCandidate.candidate_id, Candidate.user_id == user.id).distinct().count()
         if user_name and talent_pool_list is None:
             # Querying how many candidates have user added in his talent pools
-            return common_query.filter(TalentPool.user_id == user.id).distinct().count()
+            return common_query.filter(TalentPool.user_id == User.id, Candidate.id == TalentPoolCandidate.candidate_id,
+                                       Candidate.user_id == user.id).distinct().count()
         if talent_pool_list and user_name is None:
             # Querying how many candidates user have added in his all talent pools
             return common_query.filter(and_(TalentPool.name.in_(talent_pool_list),
