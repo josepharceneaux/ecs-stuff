@@ -28,7 +28,8 @@ if __name__ == '__main__':
         view_func=GraphQLView.as_view(
             'graphql',
             schema=schema,
-            graphiql=app.config['GT_ENVIRONMENT'] == TalentEnvs.DEV  # graphiql should only run for testing
+            # graphiql should only run for testing
+            graphiql=app.config['GT_ENVIRONMENT'] in [TalentEnvs.DEV, TalentEnvs.JENKINS]
         )
     )
 
