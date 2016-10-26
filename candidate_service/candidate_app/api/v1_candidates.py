@@ -87,6 +87,7 @@ from onesignalsdk.one_signal_sdk import OneSignalSdk
 from candidate_service.common.utils.handy_functions import normalize_value
 
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
+from candidate_service.common.utils.talent_s3 import sign_url_for_filepicker_bucket
 
 
 class CandidatesResource(Resource):
@@ -1833,14 +1834,20 @@ class CandidatePhotosResource(Resource):
             if photo.candidate_id != candidate_id:
                 raise ForbiddenError('Not authorized', error_code=custom_error.PHOTO_FORBIDDEN)
 
-            return {'candidate_photo': {'id': photo_id, 'image_url': photo.image_url,
-                                        'is_default': photo.is_default}}
+            return {'candidate_photo': {
+                'id': photo_id,
+                'image_url': sign_url_for_filepicker_bucket(photo.image_url) if photo.image_url else None,
+                'is_default': photo.is_default}
+            }
 
-        else: # Get all of candidate's photos
+        else:  # Get all of candidate's photos
             photos = CandidatePhoto.get_by_candidate_id(candidate_id=candidate_id)
             return {'candidate_photos': [
-                {'id': photo.id, 'image_url': photo.image_url, 'is_default': photo.is_default}
-                for photo in photos]}
+                {
+                    'id': photo.id,
+                    'image_url': sign_url_for_filepicker_bucket(photo.image_url) if photo.image_url else None,
+                    'is_default': photo.is_default
+                } for photo in photos]}
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
