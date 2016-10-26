@@ -29,7 +29,8 @@ if __name__ == '__main__':
             'graphql',
             schema=schema,
             # graphiql should only run for testing
-            graphiql=app.config['GT_ENVIRONMENT'] in [TalentEnvs.DEV, TalentEnvs.JENKINS]
+            # graphiql=app.config['GT_ENVIRONMENT'] in [TalentEnvs.DEV, TalentEnvs.JENKINS]
+            graphiql=True
         )
     )
 
