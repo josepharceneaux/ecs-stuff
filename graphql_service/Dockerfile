@@ -1,6 +1,6 @@
 FROM gettalent/base-service-container:latest
 
-# Add candidate service stuff
+# Add graphql service stuff
 WORKDIR /root/base_service_container
 ADD . graphql_service
 WORKDIR /root/base_service_container/graphql_service
@@ -12,8 +12,6 @@ EXPOSE 80
 
 # Set PYTHON PATH
 ENV PYTHONPATH ../
-
-ENV C_FORCE_ROOT true
 
 CMD\
     eval "$(pyenv init -)" && \
