@@ -28,7 +28,7 @@ app.add_url_rule(
         'graphql',
         schema=schema,
         # graphiql should only run for testing
-        graphiql=app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV, TalentEnvs.JENKINS]
+        graphiql=app.config[TalentConfigKeys.ENV_KEY] in [TalentEnvs.DEV]
     )
 )
 
