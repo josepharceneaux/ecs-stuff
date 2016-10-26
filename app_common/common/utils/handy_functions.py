@@ -510,4 +510,6 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
     if is_json:
         headers['Content-Type'] = 'application/json'
         data = json.dumps(data)
-    return request_method(url, data=data, params=params, headers=headers, verify=verify)
+    response = request_method(url, data=data, params=params, headers=headers, verify=verify)
+    print response
+    return response
