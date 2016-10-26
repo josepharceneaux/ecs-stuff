@@ -13,7 +13,7 @@ from candidate_sample_data import generate_single_candidate_data
 
 
 class TestCandidatePhoto(object):
-    def test_create_candidate_photo(self, access_token_first, user_first, talent_pool):
+    def test_create_candidate_photo(self, access_token_first, talent_pool):
         """
         Test: Create candidate photo
         Expect: 201
@@ -22,7 +22,7 @@ class TestCandidatePhoto(object):
         data = generate_single_candidate_data([talent_pool.id])
         create_resp = send_request('post', CandidateApiUrl.CANDIDATES, access_token_first, data)
         print response_info(create_resp)
-        assert create_resp.status_code == 201
+        assert create_resp.status_code == requests.codes.created
 
         # Add Photo to candidate
         candidate_id = create_resp.json()['candidates'][0]['id']
@@ -32,12 +32,12 @@ class TestCandidatePhoto(object):
         ]}
         create_photo = send_request('post', CandidateApiUrl.PHOTOS % candidate_id, access_token_first, data)
         print response_info(create_photo)
-        assert create_photo.status_code == 204
+        assert create_photo.status_code == requests.codes.no_content
 
         # Retrieve candidate's photo
         get_resp = send_request('get', CandidateApiUrl.PHOTOS % candidate_id, access_token_first)
         print response_info(get_resp)
-        assert get_resp.status_code == 200
+        assert get_resp.status_code == requests.codes.ok
         assert len(get_resp.json()['candidate_photos']) == 2
 
     def test_create_duplicate_photos(self, access_token_first, user_first, talent_pool):
