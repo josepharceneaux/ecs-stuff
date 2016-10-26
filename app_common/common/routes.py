@@ -121,7 +121,7 @@ class GTApis(object):
     ATS_SERVICE_NAME = 'ats-service'
     MOCK_SERVICE_NAME = 'mock-service'
     TALENTBOT_SERVICE_NAME = 'talentbot-service'
-    GRAPHQL_SERVICE = 'graphql-service'
+    GRAPHQL_SERVICE_NAME = 'graphql-service'
 
     # CORS headers
     CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com$",
