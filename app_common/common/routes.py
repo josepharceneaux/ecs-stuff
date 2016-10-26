@@ -967,5 +967,5 @@ class GraphqlServiceApiUrl(object):
     """
     API URL for Graphql service
     """
-    HOST_NAME = _get_host_name(GTApis.GRAPHQL_SERVICE, GTApis.GRAPHQL_SERVICE_PORT)
+    HOST_NAME = _get_host_name(GTApis.GRAPHQL_SERVICE_NAME, GTApis.GRAPHQL_SERVICE_PORT)
     GRAPHQL = HOST_NAME % '/graphql'
