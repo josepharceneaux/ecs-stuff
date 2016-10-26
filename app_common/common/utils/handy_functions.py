@@ -511,5 +511,5 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
         headers['Content-Type'] = 'application/json'
         data = json.dumps(data)
     response = request_method(url, data=data, params=params, headers=headers, verify=verify)
-    print response
+    print response.text
     return response
