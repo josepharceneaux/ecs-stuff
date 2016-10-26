@@ -511,5 +511,14 @@ def send_request(method, url, access_token, data=None, params=None, is_json=True
         headers['Content-Type'] = 'application/json'
         data = json.dumps(data)
     response = request_method(url, data=data, params=params, headers=headers, verify=verify)
-    print response.text
+    status_code = response.status_code if hasattr(response, 'status_code') else None
+    url = response.url if hasattr(response, 'url') else None
+    request = response.request if hasattr(response, 'request') else None
+    try:
+        jsoned = response.json()
+    except Exception:
+        jsoned = None
+
+    content = "\nUrl: {}\nRequest: {}\nStatus code: {}\nResponse JSON: {}"
+    print content.format(url, request, status_code, jsoned)
     return response
