@@ -192,9 +192,9 @@ class TestSmsCampaignScheduleHTTPPOST(object):
         The test is to validate that, if start_datetime is greater than end_datetime then
         scheduler endpoint should throw invalid usage exception.
         """
-        CampaignsTestsHelpers.start_time_greater_than_end_time(self.HTTP_METHOD,
-                                                               self.URL % sms_campaign_of_user_first['id'],
-                                                               access_token_first)
+        CampaignsTestsHelpers.start_datetime_greater_than_end_datetime(self.HTTP_METHOD,
+                                                                       self.URL % sms_campaign_of_user_first['id'],
+                                                                       access_token_first)
 
 
 class TestSmsCampaignScheduleHTTPPUT(object):
@@ -346,9 +346,10 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         Reschedule a campaign with start_time greater than end_time.
         Api should raise InvalidUsage error 400
         """
-        CampaignsTestsHelpers.start_time_greater_than_end_time(self.HTTP_METHOD,
-                                                               self.URL % scheduled_sms_campaign_of_user_first['id'],
-                                                               access_token_first)
+        CampaignsTestsHelpers.start_datetime_greater_than_end_datetime(self.HTTP_METHOD,
+                                                                       self.URL %
+                                                                       scheduled_sms_campaign_of_user_first['id'],
+                                                                       access_token_first)
 
 
 class TestSmsCampaignScheduleHTTPDELETE(object):
