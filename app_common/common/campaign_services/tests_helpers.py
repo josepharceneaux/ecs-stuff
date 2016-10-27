@@ -786,7 +786,7 @@ class CampaignsTestsHelpers(object):
     def start_datetime_greater_than_end_datetime(method, url, access_token):
         """
         Here we pass start_datetime greater than end_datetime to schedule a campaign. API raised InvalidUsage 400 error.
-        :param method: Name of HTTP method. e.g. 'get', 'post' etc
+        :param http_method method: Name of HTTP method: GET or POST
         :param string url: URL to to make HTTP request
         :param string access_token: access access_token of user
         """
