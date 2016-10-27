@@ -21,13 +21,12 @@ class TestQuerySend(object):
     expected_fields_list = EmailCampaignSend.get_fields()
     query_string = "query{email_campaign_query{send(campaign_id:%s id:%s){%s}}}" \
                    % ('%d', '%d', ' '.join(expected_fields_list))
-    query = {"query": query_string}
 
     def test_get_send_without_auth_header(self):
         """
         Test to get campaign send without auth header. It should get 'error' in JSON response.
         """
-        query = {'query': self.query['query'] % (fake.random_int(), fake.random_int())}
+        query = {'query': self.query_string % (fake.random_int(), fake.random_int())}
         response = requests.get(GRAPHQL_BASE_URL, data=query)
         assert response.status_code == requests.codes.ok
         assert response.json()['errors']
@@ -39,7 +38,7 @@ class TestQuerySend(object):
         """
         for campaign_send in sent_campaign.sends:
             for access_token in (access_token_first, access_token_same):
-                query = {'query': self.query['query'] % (sent_campaign.id, campaign_send.id)}
+                query = {'query': self.query_string % (sent_campaign.id, campaign_send.id)}
                 response = send_request('get', GRAPHQL_BASE_URL, access_token, data=query)
                 assert response.status_code == requests.codes.ok
                 assert 'errors' not in response.json()
@@ -53,7 +52,7 @@ class TestQuerySend(object):
         Test to get campaign by user of some other domain. It should not get any send.
         """
         for send in sent_campaign.sends:
-            query = {'query': self.query['query'] % (sent_campaign.id, send.id)}
+            query = {'query': self.query_string % (sent_campaign.id, send.id)}
             response = send_request('get', GRAPHQL_BASE_URL, access_token_other, data=query)
             assert response.status_code == requests.codes.ok
             assert 'errors' in response.json()
@@ -63,8 +62,8 @@ class TestQuerySend(object):
         """
         Test to get send of non-existing email-campaign. It should not get any send object.
         """
-        query = {'query': self.query['query'] % (CampaignsTestsHelpers.get_non_existing_id(EmailCampaign),
-                                                 fake.random_int())}
+        query = {'query': self.query_string % (CampaignsTestsHelpers.get_non_existing_id(EmailCampaign),
+                                               fake.random_int())}
         response = send_request('get', GRAPHQL_BASE_URL, access_token_first, data=query)
         assert response.status_code == requests.codes.ok
         assert 'errors' in response.json()
@@ -74,9 +73,9 @@ class TestQuerySend(object):
         """
         Test to get send of non-existing send. It should not get any send.
         """
-        query = {'query': self.query['query'] % (email_campaign_of_user_first.id,
-                                                 CampaignsTestsHelpers.get_non_existing_id(EmailCampaignSend),
-                                                 )}
+        query = {'query': self.query_string % (email_campaign_of_user_first.id,
+                                               CampaignsTestsHelpers.get_non_existing_id(EmailCampaignSend),
+                                               )}
         response = send_request('get', GRAPHQL_BASE_URL, access_token_first, data=query)
         assert response.status_code == requests.codes.ok
         assert 'errors' in response.json()

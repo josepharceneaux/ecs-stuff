@@ -21,13 +21,12 @@ class TestQueryBlast(object):
     expected_fields_list = EmailCampaignBlast.get_fields()
     query_string = "query{email_campaign_query{blast(campaign_id:%s id:%s){%s}}}" \
                    % ('%d', '%d', ' '.join(expected_fields_list))
-    query = {"query": query_string}
 
     def test_get_blast_without_auth_header(self):
         """
         Test to get campaign blast without auth header. It should get 'error' in JSON response.
         """
-        query = {'query': self.query['query'] % (fake.random_int(), fake.random_int())}
+        query = {'query': self.query_string % (fake.random_int(), fake.random_int())}
         response = requests.get(GRAPHQL_BASE_URL, data=query)
         assert response.status_code == requests.codes.ok
         assert response.json()['errors']
@@ -38,7 +37,7 @@ class TestQueryBlast(object):
         error.
         """
         blast_id = sent_campaign.blasts[0].id
-        query = {'query': self.query['query'] % (sent_campaign.id, blast_id)}
+        query = {'query': self.query_string % (sent_campaign.id, blast_id)}
         response = send_request('get', GRAPHQL_BASE_URL, access_token_first, data=query)
         assert response.status_code == requests.codes.ok
         assert 'errors' not in response.json()
@@ -51,7 +50,7 @@ class TestQueryBlast(object):
         Test to get blast of a campaign created by some other user of same domain. It should not get any error.
         """
         blast_id = sent_campaign.blasts[0].id
-        query = {'query': self.query['query'] % (sent_campaign.id, blast_id)}
+        query = {'query': self.query_string % (sent_campaign.id, blast_id)}
         response = send_request('get', GRAPHQL_BASE_URL, access_token_same, data=query)
         assert response.status_code == requests.codes.ok
         assert 'errors' not in response.json()
@@ -64,7 +63,7 @@ class TestQueryBlast(object):
         Test to get campaign by user of some other domain. It should not get any blast.
         """
         blast_id = sent_campaign.blasts[0].id
-        query = {'query': self.query['query'] % (sent_campaign.id, blast_id)}
+        query = {'query': self.query_string % (sent_campaign.id, blast_id)}
         response = send_request('get', GRAPHQL_BASE_URL, access_token_other, data=query)
         assert response.status_code == requests.codes.ok
         assert 'errors' in response.json()
@@ -74,8 +73,8 @@ class TestQueryBlast(object):
         """
         Test to get blast of non-existing email-campaign. It should not get any blast object.
         """
-        query = {'query': self.query['query'] % (CampaignsTestsHelpers.get_non_existing_id(EmailCampaign),
-                                                 fake.random_int())}
+        query = {'query': self.query_string % (CampaignsTestsHelpers.get_non_existing_id(EmailCampaign),
+                                               fake.random_int())}
         response = send_request('get', GRAPHQL_BASE_URL, access_token_first, data=query)
         assert response.status_code == requests.codes.ok
         assert 'errors' in response.json()
@@ -85,9 +84,9 @@ class TestQueryBlast(object):
         """
         Test to get blast of non-existing blast. It should not get any blast.
         """
-        query = {'query': self.query['query'] % (email_campaign_of_user_first.id,
-                                                 CampaignsTestsHelpers.get_non_existing_id(EmailCampaignBlast),
-                                                 )}
+        query = {'query': self.query_string % (email_campaign_of_user_first.id,
+                                               CampaignsTestsHelpers.get_non_existing_id(EmailCampaignBlast),
+                                               )}
         response = send_request('get', GRAPHQL_BASE_URL, access_token_first, data=query)
         assert response.status_code == requests.codes.ok
         assert 'errors' in response.json()
