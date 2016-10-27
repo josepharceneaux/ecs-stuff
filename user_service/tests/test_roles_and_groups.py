@@ -79,7 +79,6 @@ def test_user_scoped_roles_put(access_token_first, user_first, user_second):
 #     # Logged-in user trying to get all given roles in DB
 #     response = requests.get(UserServiceApiUrl.ALL_ROLES_API, headers=headers)
 #     assert response.status_code == 401
-s
 
 def test_user_groups_get(access_token_first, user_first, user_second, first_group, second_group):
 
