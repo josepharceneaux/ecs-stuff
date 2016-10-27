@@ -23,7 +23,7 @@ from flask import current_app
 from resume_parsing_service.app import logger
 from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.oauth_client2 import get_authorization_string
-from resume_parsing_service.app.views.utils import extra_skills_parsing, string_scrubber
+from resume_parsing_service.app.views.utils import extra_skills_parsing, string_scrubber, parse_email_from_string
 from resume_parsing_service.common.error_handling import InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 from resume_parsing_service.common.utils.handy_functions import normalize_value
@@ -126,7 +126,7 @@ def parse_optic_xml(resume_xml_text):
     return dict(
         first_name=first_name,
         last_name=last_name,
-        emails=emails,
+        emails=emails or parse_email_from_string(encoded_soup_text),
         phones=parse_candidate_phones(contact_xml_list),
         work_experiences=parse_candidate_experiences(experience_xml_list),
         educations=parse_candidate_educations(educations_xml_list),
@@ -175,17 +175,16 @@ def parse_candidate_emails(bs_contact_xml_list):
     :return: List of dicts containing email data.
     :rtype: list(dict)
     """
-    output = []
+    output = set()
     for contact in bs_contact_xml_list:
         emails = contact.findAll('email')
         for email in emails:
-            email_addr = normalize_value(email.text)
-            output.append(email_addr)
+            email_addr = parse_email_from_string(email.text)
+            output.add(email_addr)
 
-    unique_emails = set(output)
     unique_output = []
 
-    for email in unique_emails:
+    for email in output:
         unique_output.append({'address': email})
 
     return unique_output
