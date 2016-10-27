@@ -16,7 +16,6 @@ response
 import re
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import sys
 # Common utils
 from talentbot_service.common.error_handling import NotFoundError
 from talentbot_service.common.models.user import User
@@ -24,8 +23,8 @@ from talentbot_service.common.models.candidate import Candidate
 from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate
 from talentbot_service.common.models.talent_pools_pipelines import TalentPool
 # App specific imports
-from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES
-from talentbot_service import logger
+from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
+    QUESTION_HANDLER_NUMBERS
 
 
 class QuestionHandler(object):
@@ -106,6 +105,8 @@ class QuestionHandler(object):
         :param message_tokens: User message tokens
         :rtype: str
         """
+        # Finding word 'skill,know or grasp' in user's message so that we can extract actual skills from question
+        # I assume that after word 'skill' in user message there are actual skills
         skill_index = cls.find_optional_word(message_tokens, ['skill', 'know', 'grasp'])
         if len(message_tokens) > skill_index + 1:
             if message_tokens[skill_index + 1].lower() == 'on':
@@ -125,6 +126,8 @@ class QuestionHandler(object):
             response_message = response_message.replace('are', 'is').replace('candidates', 'candidate')
         if len(extracted_skills) > 1:
             response_message = cls.append_count_with_mesage(response_message, extracted_skills, 1, user_id)
+        # Not removing 'and' in actual skills for better response generation, just replacing 'and' with commas
+        #  around it with simple 'and'.
         return response_message.replace(', and,', ' and').replace('and,', 'and')
 
     @classmethod
@@ -459,7 +462,7 @@ class QuestionHandler(object):
         duration_type = message_tokens[last_index + 1].lower()
         if message_tokens[last_index + 1].isdigit():
             duration = int(message_tokens[last_index + 1])
-            if duration > sys.maxint:
+            if duration > MAX_NUMBER_FOR_DATE_GENERATION:
                 return "Number's max range exceeded"
             duration_type = message_tokens[last_index + 2]
         if message_tokens[last_index + 1][0] == '-':
@@ -516,18 +519,21 @@ class QuestionHandler(object):
         :rtype: str
         """
         count_dict = {}
-        if handler_number == 4:
+        if handler_number == QUESTION_HANDLER_NUMBERS.get('question_handler_4'):
+            # Getting count against each talent pool and then adding it to count_dict
             for talent_pool in _list:
                 _count = TalentPoolCandidate.candidate_imports(user_id, user_name, [talent_pool],
                                                                user_specific_date)
                 if isinstance(_count, (int, long)):
                     count_dict.update({talent_pool: _count})
-        if handler_number == 1:
+        if handler_number == QUESTION_HANDLER_NUMBERS.get('question_handler_1'):
+            # Getting count against each skill and then adding it to count_dict
             for skill in _list:
                 if skill.lower() != 'and':
                     _count = Candidate.get_candidate_count_with_skills([skill], user_id)
                     if isinstance(_count, (int, long)):
                         count_dict.update({skill: _count})
+        # Now appending these counts with the response_message and returning it
         if len(count_dict) > 1:
             message = '%s\n%s' % (message, '\n'.join(['`%s`: %d' % (key,
                                   count_dict[key]) for key in count_dict]))
