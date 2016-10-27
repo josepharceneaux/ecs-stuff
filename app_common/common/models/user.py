@@ -291,7 +291,7 @@ class Domain(db.Model):
     default_culture_id = db.Column('DefaultCultureId', db.Integer, default=1)
     settings_json = db.Column('SettingsJson', db.Text)
     expiration = db.Column('Expiration', db.TIMESTAMP)
-    added_time = db.Column('AddedTime', db.DateTime)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
     default_from_name = db.Column('DefaultFromName', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
     dice_company_id = db.Column('DiceCompanyId', db.Integer, index=True)
@@ -513,6 +513,12 @@ class Permission(db.Model):
         CAN_ADD_DOMAINS = "CAN_ADD_DOMAINS"
         CAN_DELETE_DOMAINS = "CAN_DELETE_DOMAINS"
         CAN_EDIT_DOMAINS = "CAN_EDIT_DOMAINS"
+
+        # Domain Custom Fields
+        CAN_GET_DOMAIN_CUSTOM_FIELDS = "CAN_GET_DOMAIN_CUSTOM_FIELDS"
+        CAN_ADD_DOMAIN_CUSTOM_FIELDS = "CAN_ADD_DOMAIN_CUSTOM_FIELDS"
+        CAN_DELETE_DOMAIN_CUSTOM_FIELDS = "CAN_DELETE_DOMAIN_CUSTOM_FIELDS"
+        CAN_EDIT_DOMAIN_CUSTOM_FIELDS = "CAN_EDIT_DOMAIN_CUSTOM_FIELDS"
 
         # Domain Groups
         CAN_GET_DOMAIN_GROUPS = "CAN_GET_DOMAIN_GROUPS"

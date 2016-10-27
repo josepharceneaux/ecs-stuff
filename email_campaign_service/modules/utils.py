@@ -82,7 +82,7 @@ def jwt_security_key():
 
 
 @contract
-def do_mergetag_replacements(texts, requested_object=None):
+def do_mergetag_replacements(texts, requested_object=None, candidate_address=None):
     """
     Here we do the replacements of merge tags with required values. This serves for candidate and user.
     If no candidate or user is provided, name is set to "John Doe".
@@ -111,20 +111,23 @@ def do_mergetag_replacements(texts, requested_object=None):
 
         # Do 'Unsubscribe' link replacements
         if isinstance(requested_object, Candidate) and text and (DEFAULT_PREFERENCES_URL_MERGETAG in text):
-            text = do_prefs_url_replacement(text, requested_object.id)
+            text = do_prefs_url_replacement(text, requested_object, candidate_address)
         new_texts.append(text)
 
     return new_texts
 
 
-def do_prefs_url_replacement(text, candidate_id):
+def do_prefs_url_replacement(text, candidate, candidate_address):
     """
     Here we do the replacement of merge tag "*|PREFERENCES_URL|*". After replacement this will become the
     URL for the candidate to unsubscribe the email-campaign.
     :param string text: This maybe subject, body_html or body_text of email-campaign
-    :param int|long candidate_id: Id of candidate to which email-campaign is supposed to be sent
+    :param Candidate candidate: Object of candidate to which email-campaign is supposed to be sent
+    :param basestring candidate_address: Address of Candidate to which email campaign is being sent
     :rtype: string
     """
+    candidate_id = candidate.id
+
     if not (isinstance(text, basestring) and text):
         raise InvalidUsage('Text should be non-empty string')
     if not (isinstance(candidate_id, (int, long)) and candidate_id):
@@ -139,7 +142,8 @@ def do_prefs_url_replacement(text, candidate_id):
     }
 
     unsubscribe_url = host_name + ('/candidates/%s/preferences?%s' % (str(candidate_id), urllib.urlencode({
-        'token': '%s.%s' % (s.dumps(payload), secret_key_id)
+        'token': '%s.%s' % (s.dumps(payload), secret_key_id),
+        'email': candidate_address or ''
     })))
 
     # In case the user accidentally wrote http://*|PREFERENCES_URL|* or https://*|PREFERENCES_URL|*
