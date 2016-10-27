@@ -4,6 +4,7 @@ __author__ = 'erikfarmer'
 # Standard Library
 import hashlib
 import json
+import re
 from cStringIO import StringIO
 # Third Party
 from contracts import contract
@@ -232,3 +233,7 @@ def extra_skills_parsing(encoded_text):
 
     loaded_response = json.loads(skills_response.content)
     return loaded_response.get('skills')
+
+
+def string_scrubber(text):
+    return re.sub(r"\s+", " ", text).strip()

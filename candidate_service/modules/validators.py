@@ -363,10 +363,31 @@ def is_backward_compatible(key):
     return key
 
 
+def get_value(data, key):
+    """
+    This method will get value from a ImmutableMulti or Python Dict using given key value
+    :param dict|ImmutableMultiDict data: Python Dictionary
+    :param str key: Value of Key
+    :return:
+    """
+    try:
+        # ImmutableMultiDict (request.args) has a method getlist to get array query string params
+        value = data.getlist(key)
+        if isinstance(value, list) and len(value) == 1:
+            value = value[0]
+    except Exception:
+        # Get value from a python Dict
+        value = data.get(key)
+
+    return value
+
+
 def validate_and_format_data(request_data):
     request_vars = {}
-    for key, value in request_data.iteritems():
+    for key in request_data.keys():
         key = is_backward_compatible(key)
+        value = get_value(request_data, key)
+
         if key == -1 or not value or (isinstance(value, basestring) and not value.strip()):
             continue
         if is_number(value):
