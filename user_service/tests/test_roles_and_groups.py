@@ -61,25 +61,24 @@ def test_user_scoped_roles_put(access_token_first, user_first, user_second):
     db.session.commit()
 
 
-def test_get_all_roles(access_token_first, user_first):
-
-    user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
-    db.session.commit()
-
-    headers = {'Authorization': 'Bearer %s' % access_token_first}
-
-    # Logged-in user trying to get all given roles in DB
-    response = requests.get(UserServiceApiUrl.ALL_ROLES_API, headers=headers)
-    assert response.status_code == 200
-    assert len(response.json().get('roles')) == Role.query.count()
-
-    user_first.role_id = Role.get_by_name('USER').id
-    db.session.commit()
-
-    # Logged-in user trying to get all given roles in DB
-    response = requests.get(UserServiceApiUrl.ALL_ROLES_API, headers=headers)
-    assert response.status_code == 401
-
+# def test_get_all_roles(access_token_first, user_first):
+#
+#     user_first.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+#     db.session.commit()
+#
+#     headers = {'Authorization': 'Bearer %s' % access_token_first}
+#
+#     # Logged-in user trying to get all given roles in DB
+#     response = requests.get(UserServiceApiUrl.ALL_ROLES_API, headers=headers)
+#     assert response.status_code == 200
+#     assert len(response.json().get('roles')) == Role.query.count()
+#
+#     user_first.role_id = Role.get_by_name('USER').id
+#     db.session.commit()
+#
+#     # Logged-in user trying to get all given roles in DB
+#     response = requests.get(UserServiceApiUrl.ALL_ROLES_API, headers=headers)
+#     assert response.status_code == 401
 
 def test_user_groups_get(access_token_first, user_first, user_second, first_group, second_group):
 
