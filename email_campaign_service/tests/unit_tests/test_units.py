@@ -27,8 +27,10 @@ def test_mergetag_replacements(user_first, candidate_first):
 
     # Merge tags for candidate
     campaign = create_email_campaign_with_merge_tags(user_first)
+    candidate_address = candidate_first.emails[0].address
+
     [subject, body_text, body_html] = do_mergetag_replacements([campaign.subject, campaign.body_text,
-                                                                campaign.body_html], candidate_first)
+                                                                campaign.body_html], candidate_first, candidate_address)
     for item in [subject, body_text, body_html]:
         assert candidate_first.first_name in item
         assert candidate_first.last_name in item
