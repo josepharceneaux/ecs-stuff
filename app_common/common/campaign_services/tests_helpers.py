@@ -461,18 +461,19 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=300):
+    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=300, count=None):
         """
         This polls the result of blasts of a campaign for given timeout (default 300s).
         :param type(t) campaign: Campaign object
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
+        :param int|None count: Expected number of blasts
         :param positive timeout: No of seconds for retry function
         """
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         attempts = timeout / 3 + 1
         return retry(CampaignsTestsHelpers.get_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
-                     args=(campaign, access_token, blasts_url), retry_exceptions=(AssertionError,))
+                     args=(campaign, access_token, blasts_url, count), retry_exceptions=(AssertionError,))
 
     @staticmethod
     @contract

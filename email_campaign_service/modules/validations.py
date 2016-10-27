@@ -80,7 +80,10 @@ def validate_and_format_request_data(data, current_user):
     # If frequency is there then there must be a send time
     frequency = Frequency.get_seconds_from_id(frequency_id)
     if frequency and not start_datetime:
-        raise UnprocessableEntity("Frequency requires send time.")
+        raise UnprocessableEntity("Frequency requires send_datetime.")
+
+    if frequency and not end_datetime:
+        raise UnprocessableEntity("Frequency requires end_datetime.")
 
     if start_datetime and end_datetime:
         job_send_datetime = validate_datetime(start_datetime, '`send_datetime`')
