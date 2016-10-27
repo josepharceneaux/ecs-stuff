@@ -79,7 +79,7 @@ class TalentPoolApi(Resource):
                 if not is_number(domain_id) or not Domain.query.get(int(domain_id)):
                     raise InvalidUsage("Invalid Domain Id is provided")
 
-            talent_pools = TalentPool.query.filter_by(domain_id=domain_id).all()
+            talent_pools = TalentPool.query.filter_by(domain_id=int(domain_id)).all()
             return {
                 'talent_pools': [
                     {
