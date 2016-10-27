@@ -90,7 +90,7 @@ def do_mergetag_replacements(texts, requested_object=None, candidate_address=Non
     It also replaces preferences URL only for candidate.
     :param list[> 0](string) texts: List of e.g. subject, body_text and body_html
     :param User | Candidate requested_object: User or Candidate Object
-    :param basestring candidate_address: Address of Candidate
+    :param basestring | None candidate_address: Address of Candidate
     :rtype: list[> 0](string)
     """
     if requested_object and not isinstance(requested_object, (Candidate, User)):
