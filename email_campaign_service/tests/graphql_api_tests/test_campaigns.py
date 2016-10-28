@@ -12,7 +12,7 @@ from email_campaign_service.common.models.email_campaign import EmailCampaign
 __author__ = 'basit'
 
 
-class TestQueryCampaigns(object):
+class TestCampaignsGet(object):
     """
     This contains tests to get multiple email-campaigns
     """

@@ -14,10 +14,11 @@ from email_campaign_service.common.models.email_campaign import EmailCampaign, E
 __author__ = 'basit'
 
 
-class TestQuerySends(object):
+class TestCampaignSends(object):
     """
     This contains tests to get sends of an email-campaign
     """
+    expected_campaign_sends = 2
     expected_fields_list = EmailCampaignSend.get_fields()
     query_string = "query{email_campaign_query{sends(campaign_id:%s){edges{node{%s}}}}}" \
                    % ('%d', ' '.join(expected_fields_list))
@@ -39,7 +40,6 @@ class TestQuerySends(object):
         query = {'query': self.query_string % email_campaign_of_user_first.id}
         response = send_request('get', GRAPHQL_BASE_URL, access_token_first, data=query)
         assert response.status_code == requests.codes.ok
-        assert response.status_code == requests.codes.ok
         assert 'errors' not in response.json()
         sends_edges = response.json()['data']['email_campaign_query']['sends']['edges']
         assert len(sends_edges) == expected_sends
@@ -49,15 +49,14 @@ class TestQuerySends(object):
         Test to get sends of an email-campaign created by logged-in user with auth header. It should not get any
         error. It also gets sends by some other user of same domain. Total number of sends should be 2.
         """
-        expected_sends = 2
-        CampaignsTestsHelpers.assert_blast_sends(sent_campaign, expected_sends)
+        CampaignsTestsHelpers.assert_blast_sends(sent_campaign, self.expected_campaign_sends)
         query = {'query': self.query_string % sent_campaign.id}
         for access_token in (access_token_first, access_token_same):
             response = send_request('get', GRAPHQL_BASE_URL, access_token, data=query)
             assert response.status_code == requests.codes.ok
             assert 'errors' not in response.json()
             sends_edges = response.json()['data']['email_campaign_query']['sends']['edges']
-            assert len(sends_edges) == expected_sends
+            assert len(sends_edges) == self.expected_campaign_sends
             for blast_edge in sends_edges:
                 for expected_field in self.expected_fields_list:
                     assert expected_field in blast_edge['node'], '%s not present in response' % expected_field
@@ -67,8 +66,7 @@ class TestQuerySends(object):
         """
         Test to get sends by user of some other domain. It should not get any sends.
         """
-        expected_sends = 2
-        CampaignsTestsHelpers.assert_blast_sends(sent_campaign, expected_sends)
+        CampaignsTestsHelpers.assert_blast_sends(sent_campaign, self.expected_campaign_sends)
         query = {'query': self.query_string % sent_campaign.id}
         response = send_request('get', GRAPHQL_BASE_URL, access_token_other, data=query)
         assert response.status_code == requests.codes.ok

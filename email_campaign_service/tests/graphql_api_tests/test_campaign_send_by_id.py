@@ -14,7 +14,7 @@ from email_campaign_service.common.models.email_campaign import (EmailCampaignSe
 __author__ = 'basit'
 
 
-class TestQuerySend(object):
+class TestCampaignSend(object):
     """
     This contains tests to get particular send of an email-campaign
     """

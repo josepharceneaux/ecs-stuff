@@ -14,7 +14,7 @@ from email_campaign_service.common.campaign_services.tests_helpers import Campai
 __author__ = 'basit'
 
 
-class TestQueryCampaign(object):
+class TestCampaignGet(object):
     """
     This contains tests to get single email-campaigns
     """

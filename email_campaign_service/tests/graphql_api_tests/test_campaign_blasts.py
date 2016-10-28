@@ -14,7 +14,7 @@ from email_campaign_service.common.models.email_campaign import EmailCampaignBla
 __author__ = 'basit'
 
 
-class TestQueryBlasts(object):
+class TestCampaignBlasts(object):
     """
     This contains tests to get blasts of an email-campaign
     """
