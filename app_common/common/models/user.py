@@ -19,7 +19,7 @@ from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
-from email_campaign import EmailCampaign, EmailClientCredentials, EmailConversations
+from email_campaign import EmailCampaign, EmailClientCredentials, EmailConversations, EmailTemplateFolder
 from ..error_handling import *
 from ..redis_cache import redis_store
 from ..utils.validators import is_number
@@ -302,6 +302,7 @@ class Domain(db.Model):
     candidate_sources = relationship('CandidateSource', backref='domain')
     areas_of_interest = relationship('AreaOfInterest', backref='domain')
     custom_fields = relationship('CustomField', backref='domain')
+    email_template_folders = relationship('EmailTemplateFolder', backref='domain')
 
     def get_id(self):
         return unicode(self.id)

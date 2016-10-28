@@ -252,12 +252,12 @@ class CampaignsTestsHelpers(object):
         """
         This methods returns the non-existing id for given db Model.
         If last record is found, it adds 1000 in its id and return it.
-        Otherwise it returns sys.maxint which ensures that returned number is a non-existing id for
+        Otherwise it returns 100000 which ensures that returned number is a non-existing id for
         given model.
         """
         assert db.Model in model.__mro__
         last_id = cls.get_last_id(model)
-        return last_id + 1000 if last_id else sys.maxint
+        return last_id + 1000 if last_id else 100000
 
     @classmethod
     def get_non_existing_ids(cls, model):
