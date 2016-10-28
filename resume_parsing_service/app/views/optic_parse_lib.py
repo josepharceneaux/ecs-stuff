@@ -26,7 +26,6 @@ from resume_parsing_service.app.views.oauth_client2 import get_authorization_str
 from resume_parsing_service.app.views.utils import extra_skills_parsing, string_scrubber, parse_email_from_string
 from resume_parsing_service.common.error_handling import InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
-from resume_parsing_service.common.utils.handy_functions import normalize_value
 
 
 ISO8601_DATE_FORMAT = "%Y-%m-%d"

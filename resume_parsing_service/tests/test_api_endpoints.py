@@ -382,6 +382,13 @@ def test_bad_email(token_fixture, user_fixture):
     assert_non_create_content_and_status(content, status)
 
 
+def test_email_with_punctuation(token_fixture, user_fixture):
+    # Burning Glass is currently returning the wrong email so this test will not get expanded.
+    # It is returning `Leary@domain.com` instead of `O'Leary@domain.com
+    content, status = fetch_resume_post_response(token_fixture, 'email_with_punctuation.PDF')
+    assert_non_create_content_and_status(content, status)
+
+
 ####################################################################################################
 # Test Candidate Creation
 ####################################################################################################
