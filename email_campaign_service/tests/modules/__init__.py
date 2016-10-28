@@ -23,3 +23,11 @@ CAMPAIGN_OPTIONAL_FIELDS = ['from',
                             'description',
                             'start_datetime',
                             'end_datetime']
+
+EMAIL_CLIENTS_ALL_FIELDS = ['name',
+                            'host',
+                            'port',
+                            'email',
+                            'password']
+
+EMAIL_CLIENTS_OPTIONAL_FIELDS = ['port']

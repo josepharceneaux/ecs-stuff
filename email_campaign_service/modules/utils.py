@@ -430,6 +430,7 @@ def get_priority_emails(user, candidate_ids):
     return filtered_email_rows
 
 
+@contract
 def format_email_client_data(email_client_data):
     """
     It returns the formatted data with leading and trailing white spaces stripped. It also encrypts the
@@ -438,9 +439,15 @@ def format_email_client_data(email_client_data):
     :return: Dictionary of formatted data
     :rtype: dict
     """
-    return {key: value.strip() for key, value in email_client_data.iteritems()}
+    return dict(host=email_client_data.get('host').strip(),  # required
+                port=email_client_data.get('port', '').strip(),
+                email=email_client_data.get('email').strip(),  # required
+                password=email_client_data.get('password').strip(),  # required
+                name=email_client_data.get('name').strip(),  # required
+                )
 
 
+@contract
 def decrypt_password(password):
     """
     This decrypts the given password

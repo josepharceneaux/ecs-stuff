@@ -32,7 +32,7 @@ def validate_datetime(datetime_text, field_name=None):
         raise InvalidUsage("%s should be in valid format `2016-03-05T04:30:00.000Z`"
                            % field_name if field_name else 'Datetime')
     if parsed_date < datetime.datetime.utcnow():
-        raise UnprocessableEntity("The %s cannot be before today.")
+        raise UnprocessableEntity("The parsed_date:%s cannot be before today." % parsed_date)
     return parsed_date
 
 
@@ -80,7 +80,10 @@ def validate_and_format_request_data(data, current_user):
     # If frequency is there then there must be a send time
     frequency = Frequency.get_seconds_from_id(frequency_id)
     if frequency and not start_datetime:
-        raise UnprocessableEntity("Frequency requires send time.")
+        raise UnprocessableEntity("Frequency requires send_datetime.")
+
+    if frequency and not end_datetime:
+        raise UnprocessableEntity("Frequency requires end_datetime.")
 
     if start_datetime and end_datetime:
         job_send_datetime = validate_datetime(start_datetime, '`send_datetime`')
