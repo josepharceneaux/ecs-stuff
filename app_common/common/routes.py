@@ -961,3 +961,11 @@ class TalentBotApiUrl(object):
     SLACK_AUTH = HOST_NAME % ('/' + VERSION + '/slack-auth')
     SLACK_BOT_STATUS = HOST_NAME % ('/' + VERSION + '/slackbot-status')
     HOME = HOST_NAME % ('/' + VERSION + '/index')
+
+
+class GraphqlServiceApiUrl(object):
+    """
+    API URL for Graphql service
+    """
+    HOST_NAME = _get_host_name(GTApis.GRAPHQL_SERVICE_NAME, GTApis.GRAPHQL_SERVICE_PORT)
+    GRAPHQL = HOST_NAME % '/graphql'
