@@ -87,14 +87,14 @@ def reset_password(token, password='', action='GET'):
         return response.status_code
 
 
-def user_api(access_token, user_id='', data='', action='GET'):
+def user_api(access_token, user_id='', data='', action='GET', params=None):
     headers = {'Authorization': 'Bearer %s' % access_token}
     if action == 'GET':
         if user_id:
             response = requests.get(url=UserServiceApiUrl.USER % user_id, headers=headers)
             return response.json(), response.status_code
         else:
-            response = requests.get(url=UserServiceApiUrl.USERS, headers=headers)
+            response = requests.get(url=UserServiceApiUrl.USERS, headers=headers, params=params)
             return response.json(), response.status_code
     elif action == 'DELETE':
         response = requests.delete(url=UserServiceApiUrl.USER % user_id, headers=headers)

@@ -16,6 +16,7 @@ def fetch_candidate_edits(candidate_id):
         all_edits.append(
             {
                 'user_id': edit.user_id,
+                'table_name': table_and_field_names_tuple[0],
                 'field_name': table_and_field_names_tuple[1],
                 'old_value': edit.old_value,
                 'new_value': edit.new_value,
