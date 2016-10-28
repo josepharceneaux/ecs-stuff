@@ -55,7 +55,6 @@ from push_campaign_service.common.utils.test_utils import (invalid_data_test, un
 from push_campaign_service.common.utils.handy_functions import (send_request)
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.common.models.misc import Frequency, Activity
-from push_campaign_service.common.utils.datetime_utils import DatetimeUtils
 
 URL = PushCampaignApiUrl.SCHEDULE
 
@@ -229,18 +228,12 @@ class TestScheduleCampaignUsingPOST(object):
                                                                   smartlist_first['id'], data)
 
     @pytest.mark.qa
-    def test_schedule_campaign_with_start_time_greater_than_end_time(self, token_first, campaign_in_db):
+    def test_schedule_campaign_with_start_datetime_greater_than_end_datetime(self, token_first, campaign_in_db):
         """
         The test is to validate that, if start_datetime is greater than end_datetime then
         scheduler endpoint should throw invalid usage exception.
         """
-        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
-        start_datetime = datetime.utcnow() + timedelta(minutes=50)
-        end_datetime = datetime.utcnow() + timedelta(minutes=40)
-        data['start_datetime'] = DatetimeUtils.to_utc_str(start_datetime)
-        data['end_datetime'] = DatetimeUtils.to_utc_str(end_datetime)
-        schedule_campaign(campaign_in_db['id'], data, token_first,
-                          expected_status=(codes.BAD_REQUEST,))
+        CampaignsTestsHelpers.start_datetime_greater_than_end_datetime('post', URL % campaign_in_db['id'], token_first)
 
 
 class TestRescheduleCampaignUsingPUT(object):
@@ -425,19 +418,13 @@ class TestRescheduleCampaignUsingPUT(object):
                                                                   smartlist_first['id'], data)
 
     @pytest.mark.qa
-    def test_reschedule_campaign_with_start_time_greater_than_end_time(self, token_first, campaign_in_db,
-                                                                       schedule_a_campaign):
+    def test_reschedule_campaign_with_start_datetime_greater_than_end_datetime(self, token_first, campaign_in_db,
+                                                                               schedule_a_campaign):
         """
         Reschedule a campaign with start_time greater than end_time.
         Api should raise InvalidUsage error 400
         """
-        data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
-        start_datetime = datetime.utcnow() + timedelta(minutes=50)
-        end_datetime = datetime.utcnow() + timedelta(minutes=40)
-        data['start_datetime'] = DatetimeUtils.to_utc_str(start_datetime)
-        data['end_datetime'] = DatetimeUtils.to_utc_str(end_datetime)
-        reschedule_campaign(campaign_in_db['id'], data, token_first,
-                            expected_status=(codes.BAD_REQUEST,))
+        CampaignsTestsHelpers.start_datetime_greater_than_end_datetime('put', URL % campaign_in_db['id'], token_first)
 
 
 class TestUnscheduleCamapignUsingDELETE(object):
