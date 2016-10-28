@@ -782,6 +782,24 @@ class CampaignsTestsHelpers(object):
         assert resp.status_code == requests.codes.BAD
         assert 'deleted' in resp.json()['error']['message']
 
+    @staticmethod
+    @contract
+    def start_datetime_greater_than_end_datetime(method, url, access_token):
+        """
+        Here we pass start_datetime greater than end_datetime to schedule a campaign. API raised InvalidUsage 400 error.
+        :param http_method method: Name of HTTP method: GET or POST
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
+        """
+        data = {}
+        start_datetime = datetime.utcnow() + timedelta(minutes=50)
+        end_datetime = datetime.utcnow() + timedelta(minutes=40)
+        data['start_datetime'] = DatetimeUtils.to_utc_str(start_datetime)
+        data['end_datetime'] = DatetimeUtils.to_utc_str(end_datetime)
+        data['frequency_id'] = Frequency.DAILY
+        resp = send_request(method, url, access_token, data=data)
+        assert resp.status_code == requests.codes.BAD
+
 
 class FixtureHelpers(object):
     """

@@ -5,6 +5,7 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 """
 # Third Party Imports
 import requests
+import pytest
 
 # Service Specific
 from sms_campaign_service.common.models.misc import Frequency
@@ -184,6 +185,17 @@ class TestSmsCampaignScheduleHTTPPOST(object):
                                                                access_token_first,
                                                                generate_campaign_schedule_data())
 
+    @pytest.mark.qa
+    def test_schedule_campaign_with_start_time_greater_than_end_time(self, access_token_first,
+                                                                     sms_campaign_of_user_first):
+        """
+        The test is to validate that, if start_datetime is greater than end_datetime then
+        scheduler endpoint should throw invalid usage exception.
+        """
+        CampaignsTestsHelpers.start_datetime_greater_than_end_datetime(self.HTTP_METHOD,
+                                                                       self.URL % sms_campaign_of_user_first['id'],
+                                                                       access_token_first)
+
 
 class TestSmsCampaignScheduleHTTPPUT(object):
     """
@@ -326,6 +338,18 @@ class TestSmsCampaignScheduleHTTPPUT(object):
         data = generate_campaign_schedule_data()
         CampaignsTestsHelpers.campaign_schedule_or_reschedule_with_invalid_frequency_id(
             self.HTTP_METHOD, self.URL % scheduled_sms_campaign_of_user_first['id'], access_token_first, data)
+
+    @pytest.mark.qa
+    def test_reschedule_campaign_with_start_time_greater_than_end_time(self, access_token_first,
+                                                                       scheduled_sms_campaign_of_user_first):
+        """
+        Reschedule a campaign with start_time greater than end_time.
+        Api should raise InvalidUsage error 400
+        """
+        CampaignsTestsHelpers.start_datetime_greater_than_end_datetime(self.HTTP_METHOD,
+                                                                       self.URL %
+                                                                       scheduled_sms_campaign_of_user_first['id'],
+                                                                       access_token_first)
 
 
 class TestSmsCampaignScheduleHTTPDELETE(object):
