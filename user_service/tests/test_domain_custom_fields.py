@@ -156,14 +156,6 @@ class TestUpdateDomainCustomFields(object):
         print response_info(update_resp)
         assert update_resp.status_code == requests.codes.UNAUTHORIZED
 
-    def test_update_custom_field_without_user_permission(self, access_token_first):
-        """
-        Test: Access endpoint without user's appropriate permission
-        """
-        update = send_request('put', self.CFS_URL, access_token_first)
-        print response_info(update)
-        assert update.status_code == requests.codes.UNAUTHORIZED
-
     def test_update_domains_custom_fields(self, access_token_first, user_first, domain_custom_fields):
         """
         Test:  Update domain custom fields

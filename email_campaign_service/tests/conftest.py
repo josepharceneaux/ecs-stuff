@@ -408,7 +408,7 @@ def data_for_email_conversation_importer(email_clients, headers, user_first, can
     email_client_response = response.json()['email_client_credentials']
     email_campaign = create_email_campaign_with_merge_tags(user_first, add_preference_url=False)
     [subject, body_text] = do_mergetag_replacements([email_campaign.subject, email_campaign.body_text],
-                                                    candidate_first)
+                                                    candidate_first, candidate_email.address)
     # Send email
     print 'Sending email with SMTP server'
     client = SMTP(email_client_response['host'], email_client_response['port'],
