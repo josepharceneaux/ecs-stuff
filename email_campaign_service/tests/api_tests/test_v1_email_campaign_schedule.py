@@ -2,11 +2,11 @@
 Here we have test for scheduling an email-campaign.
 """
 # Packages
+import requests
 from requests import codes
 from datetime import datetime, timedelta
 
 # Application Specific
-import requests
 from email_campaign_service.common.models.misc import Frequency
 from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
@@ -19,7 +19,7 @@ __author__ = 'basit'
 
 class TestCampaignSchedule(object):
     """
-    This is the test for scheduling a campaign ans verify it is sent to candidate as per send time.
+    This is the test for scheduling a campaign and verify it is sent to candidate as per send time.
     """
     EXPECTED_SENDS = 1
     BLASTS_URL = EmailCampaignApiUrl.BLASTS
@@ -122,7 +122,7 @@ class TestCampaignSchedule(object):
     def test_schedule_campaign_with_no_start_datetime(self, access_token_first, talent_pipeline):
         """
         This is test to schedule an email campaign periodically with no start_datetime. It should result in
-        invalid usage error.
+        unprocessable entity.
         """
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, fake.uuid4())
         campaign_data['frequency_id'] = Frequency.DAILY
@@ -133,10 +133,22 @@ class TestCampaignSchedule(object):
     def test_schedule_campaign_with_no_end_datetime(self, access_token_first, talent_pipeline):
         """
         This is test to schedule an email campaign periodically with no end_datetime. It should result in
-        invalid usage error.
+        unprocessable entity.
         """
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, fake.uuid4())
         campaign_data['frequency_id'] = Frequency.DAILY
         campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
+        response = create_email_campaign_via_api(access_token_first, campaign_data)
+        assert response.status_code == codes.unprocessable_entity
+
+    def test_with_start_datetime_greater_than_end_datetime(self, access_token_first, talent_pipeline):
+        """
+        This is test to schedule an email campaign periodically with start_datetime to be greater than end_datetime.
+        It should result in unprocessable entity.
+        """
+        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, fake.uuid4())
+        campaign_data['frequency_id'] = Frequency.DAILY
+        campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(days=10))
+        campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == codes.unprocessable_entity
