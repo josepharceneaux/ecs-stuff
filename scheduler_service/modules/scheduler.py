@@ -257,7 +257,10 @@ def run_job(user_id, access_token, url, content_type, post_data, is_jwt_request=
 
     logger.info('Queueing data send. User ID: %s, URL: %s, Content-Type: %s', user_id, url, content_type)
     # Call celery task to send post_data to URL
-    send_request.apply_async([access_token, url, content_type, post_data, is_jwt_request, request_method],
+    send_request.apply_async(kwargs={'access_token': access_token,
+                                     'url': url, 'content_type': content_type,
+                                     'post_data': post_data, 'is_jwt_request': is_jwt_request,
+                                     'request_method': request_method },
                              serializer='json',
                              queue=SchedulerUtils.QUEUE,
                              routing_key=SchedulerUtils.CELERY_ROUTING_KEY)
