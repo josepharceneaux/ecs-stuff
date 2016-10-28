@@ -39,7 +39,7 @@ def test_user_service_get(access_token_first, user_first, user_second):
     db.session.commit()
 
     # Logged-in user trying to get all users of a domain
-    response, status_code = user_api(access_token_first)
+    response, status_code = user_api(access_token_first, params={'domain_id': user_first.domain_id})
     assert status_code == 200
     assert len(response['users']) == 2
 

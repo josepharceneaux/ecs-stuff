@@ -17,6 +17,7 @@ from datetime import datetime
 import requests
 from flask import current_app
 from dateutil.tz import tzutc
+from contracts import contract
 from ska import (sign_url, Signature)
 
 # Database Models
@@ -412,6 +413,7 @@ class CampaignUtils(object):
         return dict(message='%d campaign(s) deleted successfully.' % len(campaign_ids)), requests.codes.OK
 
 
+@contract
 def get_model(file_name, model_name, service_name=None):
     """
     This function is used to import module from given parameters.
@@ -420,23 +422,18 @@ def get_model(file_name, model_name, service_name=None):
     :param file_name: Name of file from which we want to import some model
     :param model_name: Name of model we want to import
     :param service_name: Name of service. e.g. sms_campaign_service etc
-    :type file_name: str
-    :type model_name: str
-    :type service_name: str
+    :type file_name: string
+    :type model_name: string
+    :type service_name: string|None
     :exception: Invalid usage
     :exception: AttributeError
     :exception: ImportError
     :return: import the required class and return it
     """
-    raise_if_not_instance_of(file_name, basestring)
-    raise_if_not_instance_of(model_name, basestring)
     logger = current_app.config[TalentConfigKeys.LOGGER]
     model_name = snake_case_to_pascal_case(model_name)
-    if service_name:
-        raise_if_not_instance_of(model_name, basestring)
-        module_name = service_name + '_service.common.models.' + file_name
-    else:
-        module_name = file_name + '_service.common.models.' + file_name
+    service_name = service_name if service_name else current_app.name.split('_service')[0]
+    module_name = service_name + '_service.common.models.' + file_name
     try:
         module = importlib.import_module(module_name)
         _class = getattr(module, model_name)

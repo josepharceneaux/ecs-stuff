@@ -683,7 +683,10 @@ class TestSendCampaign(object):
         """
         campaign, candidate = email_campaign_with_merge_tags
         response = requests.post(self.URL % campaign.id, headers=headers)
-        [modified_subject] = do_mergetag_replacements([campaign.subject], Candidate.get_by_id(candidate['id']))
+        candidate_object = Candidate.get_by_id(candidate['id'])
+        candidate_address = candidate_object.emails[0].address
+
+        [modified_subject] = do_mergetag_replacements([campaign.subject], candidate_object, candidate_address)
         campaign.update(subject=modified_subject)
         msg_ids = assert_campaign_send(response, campaign, user_first, 1, delete_email=False, via_amazon_ses=False)
         # TODO: Emails are being delayed, commenting for now

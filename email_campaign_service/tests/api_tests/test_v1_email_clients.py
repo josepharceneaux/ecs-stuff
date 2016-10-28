@@ -20,6 +20,7 @@ from email_campaign_service.common.routes import EmailCampaignApiUrl
 from email_campaign_service.json_schema.email_clients import EMAIL_CLIENTS_SCHEMA
 from email_campaign_service.common.models.email_campaign import EmailClientCredentials
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.tests.modules import EMAIL_CLIENTS_ALL_FIELDS, EMAIL_CLIENTS_OPTIONAL_FIELDS
 from email_campaign_service.tests.modules.handy_functions import (data_for_creating_email_clients,
                                                                   assert_email_client_fields)
 
@@ -111,11 +112,27 @@ class TestCreateEmailClients(object):
 
     def test_create_email_client_with_unexpected_field_in_data(self, access_token_first):
         """
-        Here we GET only email-clients from endpoint using invalid ids. It should result in Bad request error.
+        Here we try to make POST request with unexpected field in data. It should result in Bad request error.
         """
         for email_client_data in data_for_creating_email_clients():
             CampaignsTestsHelpers.test_api_with_with_unexpected_field_in_data(self.HTTP_METHOD, self.URL,
                                                                               access_token_first, email_client_data)
+
+    def test_create_email_client_with_missing_field(self, headers):
+        """
+        This tests API with missing required and optional fields. It should result in Bad request error if required
+        field is missing and should not get any error in case of missing optional field.
+        """
+        for email_client_data in data_for_creating_email_clients():
+            for key in EMAIL_CLIENTS_ALL_FIELDS:
+                value = email_client_data[key]
+                del email_client_data[key]
+                response = requests.post(self.URL, headers=headers, data=json.dumps(email_client_data))
+                if key in EMAIL_CLIENTS_OPTIONAL_FIELDS:
+                    assert response.status_code == codes.CREATED, response.text
+                else:
+                    assert response.status_code == codes.BAD, response.text
+                email_client_data[key] = value
 
 
 class TestGetEmailClients(object):

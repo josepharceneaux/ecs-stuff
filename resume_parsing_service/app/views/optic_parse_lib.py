@@ -23,7 +23,7 @@ from flask import current_app
 from resume_parsing_service.app import logger
 from resume_parsing_service.app.constants import error_constants
 from resume_parsing_service.app.views.oauth_client2 import get_authorization_string
-from resume_parsing_service.app.views.utils import extra_skills_parsing
+from resume_parsing_service.app.views.utils import extra_skills_parsing, string_scrubber
 from resume_parsing_service.common.error_handling import InternalServerError
 from resume_parsing_service.common.utils.validators import sanitize_zip_code
 from resume_parsing_service.common.utils.handy_functions import normalize_value
@@ -218,8 +218,9 @@ def parse_candidate_phones(bs_contact_xml_list):
             if raw_phone and len(raw_phone) <= 20:
 
                 try:
-                    unused_validated_phone = phonenumbers.parse(raw_phone, region='US')
-                    output.append({'value': raw_phone, 'label': gt_phone_type})
+                    scrubbed = string_scrubber(raw_phone)
+                    unused_validated_phone = phonenumbers.parse(scrubbed, region='US')
+                    output.append({'value': scrubbed, 'label': gt_phone_type})
 
                 except UnicodeEncodeError:
                     logger.error('Issue parsing phonenumber: {}'.format(raw_phone))

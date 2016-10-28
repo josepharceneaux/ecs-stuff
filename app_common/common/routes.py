@@ -121,7 +121,7 @@ class GTApis(object):
     ATS_SERVICE_NAME = 'ats-service'
     MOCK_SERVICE_NAME = 'mock-service'
     TALENTBOT_SERVICE_NAME = 'talentbot-service'
-    GRAPHQL_SERVICE = 'graphql-service'
+    GRAPHQL_SERVICE_NAME = 'graphql-service'
 
     # CORS headers
     CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com$",
@@ -934,7 +934,7 @@ class MockServiceApiUrl(object):
     MOCK_SERVICE = HOST_NAME % ('/' + VERSION + '/%s/%s')
 
 
-class TalentBotApiUrl(object):
+class TalentBotApi(object):
     """
     URLs for Talentbot service
     """
@@ -944,4 +944,28 @@ class TalentBotApiUrl(object):
     FACEBOOK_LISTEN = '/' + VERSION + '/facebook-callback'
     SLACK_LISTEN = '/' + VERSION + '/slack-callback'
     SLACK_AUTH = '/' + VERSION + '/slack-auth'
-    INDEX = '/' + VERSION + '/index'
+    SLACK_BOT_STATUS = '/' + VERSION + '/slackbot-status'
+    HOME = '/' + VERSION + '/index'
+
+
+class TalentBotApiUrl(object):
+    """
+    URLs for Talentbot service
+    """
+    HOST_NAME = _get_host_name(GTApis.TALENTBOT_SERVICE_NAME, GTApis.TALENTBOT_PORT)
+    VERSION = 'v1'
+    SMS_LISTEN = HOST_NAME % ('/' + VERSION + '/sms-callback')
+    EMAIL_LISTEN = HOST_NAME % ('/' + VERSION + '/email-callback')
+    FACEBOOK_LISTEN = HOST_NAME % ('/' + VERSION + '/facebook-callback')
+    SLACK_LISTEN = HOST_NAME % ('/' + VERSION + '/slack-callback')
+    SLACK_AUTH = HOST_NAME % ('/' + VERSION + '/slack-auth')
+    SLACK_BOT_STATUS = HOST_NAME % ('/' + VERSION + '/slackbot-status')
+    HOME = HOST_NAME % ('/' + VERSION + '/index')
+
+
+class GraphqlServiceApiUrl(object):
+    """
+    API URL for Graphql service
+    """
+    HOST_NAME = _get_host_name(GTApis.GRAPHQL_SERVICE_NAME, GTApis.GRAPHQL_SERVICE_PORT)
+    GRAPHQL = HOST_NAME % '/graphql'

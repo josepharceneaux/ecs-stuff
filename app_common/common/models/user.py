@@ -4,6 +4,7 @@ import os
 import time
 import uuid
 
+from contracts import contract
 from flask import request, current_app
 from dateutil.parser import parse
 from sqlalchemy.dialects.mysql import TINYINT
@@ -18,7 +19,7 @@ from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
-from email_campaign import EmailCampaign, EmailClientCredentials, EmailConversations
+from email_campaign import EmailCampaign, EmailClientCredentials, EmailConversations, EmailTemplateFolder
 from ..error_handling import *
 from ..redis_cache import redis_store
 from ..utils.validators import is_number
@@ -140,6 +141,7 @@ class User(db.Model):
             'registration_id': self.registration_id,
             'dice_user_id': self.dice_user_id,
             'user_group_id': self.user_group_id,
+            'role': self.role.name,
             'added_time': self.added_time.replace(
                     tzinfo=pytz.UTC).isoformat() if self.added_time else None,
             'updated_time': self.updated_time.replace(
@@ -215,13 +217,13 @@ class User(db.Model):
         return User.query.filter_by(email=email).first()
 
     @staticmethod
+    @contract
     def get_domain_name_and_its_users(user_id):
         """
         This method returns users in a domain and domain name
-        :param int user_id: User Id
-        :rtype: tuple[(list, str)]
+        :param int|long user_id: User Id
+        :rtype: tuple(list, string)
         """
-        assert isinstance(user_id, (int, long)) and user_id, "Invalid user Id"
         domain_name, domain_id = User.query.with_entities(Domain.name, Domain.id).filter(User.domain_id == Domain.id).\
             filter(User.id == user_id).first()
         users = User.query.filter(User.domain_id == domain_id).all()
@@ -289,7 +291,7 @@ class Domain(db.Model):
     default_culture_id = db.Column('DefaultCultureId', db.Integer, default=1)
     settings_json = db.Column('SettingsJson', db.Text)
     expiration = db.Column('Expiration', db.TIMESTAMP)
-    added_time = db.Column('AddedTime', db.DateTime)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
     default_from_name = db.Column('DefaultFromName', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
     dice_company_id = db.Column('DiceCompanyId', db.Integer, index=True)
@@ -300,6 +302,7 @@ class Domain(db.Model):
     candidate_sources = relationship('CandidateSource', backref='domain')
     areas_of_interest = relationship('AreaOfInterest', backref='domain')
     custom_fields = relationship('CustomField', backref='domain')
+    email_template_folders = relationship('EmailTemplateFolder', backref='domain')
 
     def get_id(self):
         return unicode(self.id)
@@ -511,6 +514,12 @@ class Permission(db.Model):
         CAN_ADD_DOMAINS = "CAN_ADD_DOMAINS"
         CAN_DELETE_DOMAINS = "CAN_DELETE_DOMAINS"
         CAN_EDIT_DOMAINS = "CAN_EDIT_DOMAINS"
+
+        # Domain Custom Fields
+        CAN_GET_DOMAIN_CUSTOM_FIELDS = "CAN_GET_DOMAIN_CUSTOM_FIELDS"
+        CAN_ADD_DOMAIN_CUSTOM_FIELDS = "CAN_ADD_DOMAIN_CUSTOM_FIELDS"
+        CAN_DELETE_DOMAIN_CUSTOM_FIELDS = "CAN_DELETE_DOMAIN_CUSTOM_FIELDS"
+        CAN_EDIT_DOMAIN_CUSTOM_FIELDS = "CAN_EDIT_DOMAIN_CUSTOM_FIELDS"
 
         # Domain Groups
         CAN_GET_DOMAIN_GROUPS = "CAN_GET_DOMAIN_GROUPS"

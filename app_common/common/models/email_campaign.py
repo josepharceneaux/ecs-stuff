@@ -1,5 +1,6 @@
-import datetime
+from datetime import datetime
 
+from contracts import contract
 from sqlalchemy.orm import relationship
 from sqlalchemy import or_, desc, extract, and_
 
@@ -37,13 +38,12 @@ class EmailCampaign(db.Model):
     custom_html = db.Column('CustomHtml', db.Text)
     custom_url_params_json = db.Column('CustomUrlParamsJson', db.String(512))
     is_subscription = db.Column('isSubscription', db.Boolean, default=False)
-    added_datetime = db.Column('addedTime', db.DateTime, default=datetime.datetime.utcnow)
+    added_datetime = db.Column('addedTime', db.DateTime, default=datetime.utcnow)
     email_client_id = db.Column('EmailClientId', db.Integer, db.ForeignKey('email_client.id'))
     email_client_credentials_id = db.Column('EmailClientCredentialsId', db.Integer,
                                             db.ForeignKey('email_client_credentials.id'))
 
     # Relationships
-    frequency = relationship("Frequency", backref="frequency")
     blasts = relationship('EmailCampaignBlast', lazy='dynamic', cascade='all, delete-orphan',
                           passive_deletes=True, backref='campaign')
     sends = relationship('EmailCampaignSend', cascade='all, delete-orphan',
@@ -127,7 +127,7 @@ class EmailCampaignSmartlist(db.Model):
                              db.ForeignKey('smart_list.Id', ondelete='CASCADE'))
     campaign_id = db.Column('EmailCampaignId', db.Integer,
                             db.ForeignKey('email_campaign.Id', ondelete='CASCADE'))
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.utcnow)
 
     @classmethod
     def get_smartlists_of_campaign(cls, campaign_id, smartlist_ids_only=False):
@@ -158,7 +158,7 @@ class EmailCampaignBlast(db.Model):
     bounces = db.Column('Bounces', db.Integer, default=0)
     complaints = db.Column('Complaints', db.Integer, default=0)
     sent_datetime = db.Column('SentTime', db.DateTime)
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.utcnow)
 
     # Relationships
     blast_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan',
@@ -200,19 +200,20 @@ class EmailCampaignBlast(db.Model):
         return "<EmailCampaignBlast (Sends: %s, Opens: %s)>" % (self.sends, self.opens)
 
     @classmethod
+    @contract
     def top_performing_email_campaign(cls, datetime_value, user_id):
         """
         This method returns top performing email campaign from a specific datetime
-        :param int user_id: User Id
-        :param str|datetime|None datetime_value: date during campaign started or updated
-        :rtype: EmailCampaignBlast
+        :param int|long user_id: User Id
+        :param string|datetime|None datetime_value: date during campaign started or updated
+        :rtype: type(z)
         """
-        assert isinstance(datetime_value, (datetime.datetime, basestring)) or datetime_value is None,\
+        assert isinstance(datetime_value, (datetime, basestring)) or datetime_value is None,\
             "Invalid datetime value"
         assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
         from .user import User
         domain_id = User.get_domain_id(user_id)
-        if isinstance(datetime_value, datetime.datetime):
+        if isinstance(datetime_value, datetime):
             return cls.query.filter(or_(cls.updated_datetime >= datetime_value,
                                         cls.sent_datetime >= datetime_value)). \
                 filter(EmailCampaign.id == cls.campaign_id). \
@@ -226,8 +227,8 @@ class EmailCampaignBlast(db.Model):
                 filter(cls.sends > 0). \
                 order_by(desc(cls.opens/cls.sends)).first()
         return cls.query.filter(EmailCampaign.id == cls.campaign_id).\
-            filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)).filter(cls.sends > 0).\
-            order_by(desc(cls.opens/cls.sends)).first()
+            filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)).\
+            filter(cls.sends > 0).order_by(desc(cls.opens/cls.sends)).first()
 
 
 class EmailCampaignSend(db.Model):
@@ -241,7 +242,7 @@ class EmailCampaignSend(db.Model):
     ses_request_id = db.Column('sesRequestId', db.String(63))
     is_ses_bounce = db.Column('isSesBounce', db.Boolean, default=False)
     is_ses_complaint = db.Column('isSesComplaint', db.Boolean, default=False)
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, default=datetime.utcnow)
     email_campaign = relationship('EmailCampaign', backref="email_campaign")
 
     # Relationships
@@ -339,7 +340,7 @@ class UserEmailTemplate(db.Model):
     template_folder_id = db.Column('EmailTemplateFolderId', db.Integer,
                                    db.ForeignKey('email_template_folder.id', ondelete=u'SET NULL'), index=True)
     is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, default=0)
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, default=datetime.utcnow)
 
     # Relationships
     template_folder = relationship(u'EmailTemplateFolder', backref=db.backref('user_email_template',
@@ -398,9 +399,9 @@ class EmailTemplateFolder(db.Model):
                           index=True)
     is_immutable = db.Column('IsImmutable', db.Integer, nullable=False, default=0)
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
-    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, default=datetime.utcnow)
 
-    domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
+    # Relationships
     parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                       cascade="all, delete-orphan"))
 
@@ -449,7 +450,7 @@ class EmailClientCredentials(db.Model):
     name = db.Column('name', db.String(20), nullable=False)
     email = db.Column('email', db.String(60), nullable=False)
     password = db.Column('password', db.String(512), nullable=False)
-    updated_datetime = db.Column('updated_datetime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column('updated_datetime', db.DateTime, nullable=False, default=datetime.utcnow)
 
     # Relationship
     email_campaign = relationship('EmailCampaign', cascade='all, delete-orphan',
@@ -529,7 +530,7 @@ class EmailConversations(db.Model):
     subject = db.Column('subject', db.String(100), nullable=False)
     body = db.Column('body', db.String(1000), nullable=False)
     email_received_datetime = db.Column('email_received_datetime', db.DateTime, nullable=False)
-    updated_datetime = db.Column('updated_datetime', db.DateTime, nullable=False, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column('updated_datetime', db.DateTime, nullable=False, default=datetime.utcnow)
 
     def __repr__(self):
         return "<EmailConversations (id:%s)>" % self.id
