@@ -466,6 +466,54 @@ class RefreshTokenResource(Resource):
             raise ForbiddenError("Unable to refresh access token")
 
 
+@api.route(SocialNetworkApi.DISCONNECT)
+class DisconnectSocialNetworkResource(Resource):
+    """
+        This resource remove access and refresh token of given social network from gt database which makes user
+        disconnected from this social network.
+    """
+
+    decorators = [require_oauth()]
+
+    def post(self, social_network_id):
+        """
+        Remove access and refresh token for specified user and social network.
+        :return:
+
+        :Example:
+
+
+            headers = {
+                        'Authorization': 'Bearer <access_token>',
+                       }
+            response = requests.get(
+                                        API_URL + '/social-networks/13/disconnect',
+                                        headers=headers
+                                    )
+
+        .. Response::
+
+            {
+                "message" : 'Access token and refresh has been removed'
+            }
+
+        .. HTTP Status:: 201 (Resource Created)
+                         404 (Social network not found)
+                         500 (Internal Server Error)
+        """
+        user_id = request.user.id
+        social_network = SocialNetwork.get_by_id(social_network_id)
+        if not social_network:
+            raise ResourceNotFound("Social Network not found")
+        # creating class object for respective social network
+        user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_id, social_network.id)
+        if user_credentials:
+            UserSocialNetworkCredential.delete(user_credentials)
+            return dict(messsage='User has been disconnected from social network (name: %s)' % social_network.name)
+
+        return dict(messsage='User is already disconnected from social network (name: %s)' % social_network.name)
+
+
 @api.route(SocialNetworkApi.VENUES)
 class VenuesResource(Resource):
     """
