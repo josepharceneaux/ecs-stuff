@@ -662,6 +662,7 @@ class SocialNetworkApi(object):
     # URL for Twitter authentication
     TWITTER_AUTH = '/' + VERSION + '/twitter-auth'
     TWITTER_CALLBACK = '/' + VERSION + '/twitter-callback/<int:user_id>'
+    DISCONNECT = '/' + VERSION + '/social-networks/<int:social_network_id>/disconnect'
     GRAPHQL = '/graphql'
 
 
@@ -678,7 +679,7 @@ class SocialNetworkApiUrl(object):
     else:
         UI_APP_URL = 'https://staging.gettalent.com/%s'
 
-    SUBSCRIBE = UI_APP_URL % 'events/subscribe?code=%s'
+    SUBSCRIBE = UI_APP_URL % 'account/integrations?code=%s'
     EVENTS = HOST_NAME % ('/' + VERSION + '/events')
     EVENT = HOST_NAME % ('/' + VERSION + '/events/%s')
     SOCIAL_NETWORKS = HOST_NAME % ('/' + VERSION + '/social-networks')
@@ -695,6 +696,7 @@ class SocialNetworkApiUrl(object):
     CODE = HOST_NAME % ('/' + VERSION + '/code')
     IMPORTER = HOST_NAME % ('/' + VERSION + '/import/%s/%s')
     TWITTER_CALLBACK = HOST_NAME % ('/' + VERSION + '/twitter-callback/%s')
+    DISCONNECT = HOST_NAME % ('/' + VERSION + '/social-networks/%s/disconnect')
     GRAPHQL = HOST_NAME % '/graphql'
 
 
