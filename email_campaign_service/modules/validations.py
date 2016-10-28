@@ -1,10 +1,23 @@
-from email_campaign_service.common.models.misc import Frequency
-from email_campaign_service.common.models.smartlist import Smartlist
-from email_campaign_service.common.models.email_campaign import EmailClient
-from email_campaign_service.common.models.user import User
-from email_campaign_service.common.error_handling import InvalidUsage, UnprocessableEntity, ForbiddenError
+"""
+ Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Um-I-Hani, QC-Technologies, <haniqadri.qc@gmail.com>
+         Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
+    Here are the validator functions used in email-campaign-service
+"""
+
+# Standard Library
 import datetime
-__author__ = 'jitesh'
+from collections import Counter
+
+# Application Specific
+from email_campaign_service.common.models.user import User
+from email_campaign_service.common.models.misc import Frequency
+from email_campaign_service.modules.email_clients import EmailClientBase
+from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity)
+from email_campaign_service.common.campaign_services.validators import validate_smartlist_ids
+from email_campaign_service.common.models.email_campaign import (EmailClientCredentials, EmailClient)
 
 
 def validate_datetime(datetime_text, field_name=None):
@@ -14,24 +27,27 @@ def validate_datetime(datetime_text, field_name=None):
     :type datetime_text: unicode | basestring
     """
     try:
-        parsed_date = datetime.datetime.strptime(datetime_text, "%Y-%m-%dT%H:%M:%S.%fZ")
+        parsed_date = datetime.datetime.strptime(datetime_text, DatetimeUtils.ISO8601_FORMAT)
     except ValueError:
-        raise InvalidUsage("%s should be in valid format `2016-03-05T04:30:00.000Z`" % field_name if field_name else 'Datetime')
+        raise InvalidUsage("%s should be in valid format `2016-03-05T04:30:00.000Z`"
+                           % field_name if field_name else 'Datetime')
     if parsed_date < datetime.datetime.utcnow():
         raise UnprocessableEntity("The %s cannot be before today.")
     return parsed_date
 
 
-def validate_and_format_request_data(data, user_id):
+def validate_and_format_request_data(data, current_user):
     """
     Validates the request form data and returns the formatted data with leading and trailing
     white spaces stripped.
-    :param data:
+    :param dict data: Data received from UI
+    :param User current_user: Logged-in user's object
     :return: Dictionary of formatted data
     :rtype: dict
     """
     name = data.get('name')  # required
     subject = data.get('subject')        # required
+    description = data.get('description', '')        # required
     _from = data.get('from')
     reply_to = data.get('reply_to')
     body_html = data.get('body_html')    # required
@@ -42,12 +58,15 @@ def validate_and_format_request_data(data, user_id):
     end_datetime = data.get('end_datetime')
     frequency_id = data.get('frequency_id')         # required
     template_id = data.get('template_id')
+    email_client_credentials_id = data.get('email_client_credentials_id')
 
     # Raise errors if invalid input
     if name is None or name.strip() == '':
         raise InvalidUsage('name is required')  # 400 Bad request
     if subject is None or subject.strip() == '':
         raise InvalidUsage('subject is required')
+    # if description is None or description.strip() == '':
+    #     raise InvalidUsage('description is required')
     if body_html is None or body_html.strip() == '':
         raise InvalidUsage('body_html is required')
     if not list_ids:
@@ -78,13 +97,23 @@ def validate_and_format_request_data(data, user_id):
         # If email_client_id is there then set template_id to None. Why??
         template_id = None
 
+    # In case user wants to send email-campaign with its own account
+    if email_client_credentials_id:
+        email_client_credentials = EmailClientCredentials.get_by_id(email_client_credentials_id)
+        if not EmailClientBase.is_outgoing(email_client_credentials.host):
+            raise InvalidUsage("Selected email-client must be of type `outgoing`")
+    # Validation for duplicate `list_ids`
+    if [item for item, count in Counter(list_ids).items() if count > 1]:
+        raise InvalidUsage('Duplicate `list_ids` found in data.')
+
     # Validation for list ids belonging to same domain
-    validate_lists_belongs_to_domain(list_ids, user_id)
+    validate_smartlist_ids(list_ids, current_user)
 
     # strip whitespaces and return data
     return {
         'name': name.strip(),
         'subject': subject.strip(),
+        'description': description.strip(),
         'from': get_or_set_valid_value(_from, basestring, '').strip(),
         'reply_to': get_or_set_valid_value(reply_to, basestring, '').strip(),
         'body_html': body_html.strip(),
@@ -94,25 +123,9 @@ def validate_and_format_request_data(data, user_id):
         'start_datetime': start_datetime,
         'end_datetime': end_datetime,
         'frequency_id': frequency_id,
-        'template_id': template_id
+        'template_id': template_id,
+        'email_client_credentials_id': email_client_credentials_id
     }
-
-
-def validate_lists_belongs_to_domain(list_ids, user_id):
-    """
-    Validates if list ids belongs to user's domain
-    :param list_ids:
-    :param user_id:
-    :return:False, if any of list given not belongs to current user domain else True
-    """
-    user = User.query.get(user_id)
-    smartlists = Smartlist.query.with_entities(Smartlist.id).join(Smartlist.user).filter(
-        User.domain_id == user.domain_id).all()
-
-    smartlist_ids = [smartlist.id for smartlist in smartlists]
-    list_ids_not_in_domain = set(list_ids) - set(smartlist_ids)
-    if not len(list_ids_not_in_domain) == 0:
-        raise ForbiddenError("list ids: %s does not belong to user's domain" % list_ids_not_in_domain)
 
 
 def get_or_set_valid_value(required_value, required_instance, default):

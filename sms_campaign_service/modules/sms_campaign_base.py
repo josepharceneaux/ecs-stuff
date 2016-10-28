@@ -54,8 +54,7 @@ from sms_campaign_service.modules.validators import (validate_url_format,
 from sms_campaign_service.modules.handy_functions import (TwilioSMS, replace_localhost_with_ngrok,
                                                           get_formatted_phone_number,
                                                           search_urls_in_text)
-from sms_campaign_service.modules.sms_campaign_app_constants import (MOBILE_PHONE_LABEL, TWILIO,
-                                                                     TWILIO_TEST_NUMBER)
+from sms_campaign_service.modules.constants import (MOBILE_PHONE_LABEL, TWILIO, TWILIO_TEST_NUMBER)
 from sms_campaign_service.modules.custom_exceptions import (TwilioApiError,
                                                             MultipleUsersFound,
                                                             ErrorUpdatingBodyText,
@@ -178,6 +177,8 @@ class SmsCampaignBase(CampaignBase):
     **See Also**
         .. see also:: CampaignBase class in app_common/common/utils/campaign_base.py.
     """
+
+    REQUIRED_FIELDS = ('name', 'body_text', 'smartlist_ids')
 
     def __init__(self, user_id, campaign_id=None):
         """
@@ -375,8 +376,6 @@ class SmsCampaignBase(CampaignBase):
         )
         # get scheduler task_id created on scheduler_service
         scheduler_task_id = super(SmsCampaignBase, self).schedule(data_to_schedule)
-        # update sms_campaign record with task_id
-        self.campaign.update(scheduler_task_id=scheduler_task_id)
         return scheduler_task_id
 
     @staticmethod
@@ -452,6 +451,7 @@ class SmsCampaignBase(CampaignBase):
         :param candidates: list of candidates to whom we want to send campaign
         :type candidates: list[Candidate]
         """
+        candidates = super(SmsCampaignBase, self).pre_process_celery_task(candidates)
         not_owned_ids = []
         multiple_records_ids = []
         candidates_and_phones = []
@@ -476,7 +476,9 @@ class SmsCampaignBase(CampaignBase):
                                             self.user.id))
         logger.info('user_phone %s' % self.user_phone.value)
         candidates_and_phones = filter(lambda obj: obj is not None, candidates_and_phones)
-        super(SmsCampaignBase, self).pre_process_celery_task(candidates_and_phones)
+        if not candidates_and_phones:
+            logger.warn('There is no valid candidate associated with this campaign. SmsCampaign id (%s)'
+                        % self.campaign.id)
         return candidates_and_phones
 
     @celery_app.task(name='send_campaign_to_candidate')
@@ -597,6 +599,27 @@ class SmsCampaignBase(CampaignBase):
     @celery_app.task(name='celery_error_handler')
     def celery_error_handler(uuid):
         db.session.rollback()
+
+    @staticmethod
+    @celery_app.task(name='send_callback')
+    def send_callback(celery_result, campaign_obj):
+        """
+        When all celery tasks to retrieve smartlist candidates are finished, celery chord calls this function
+        with an array or data (candidates) from all tasks. This function will further call super class method
+        to process this data and send campaigns to all candidates.
+        :param list[list[Candidate]] celery_result: list of lists of candidate ids
+        :param SmsCampaignBase campaign_obj: PushCampaignBase object
+        """
+        with app.app_context():
+            campaign_obj.process_campaign_send(celery_result)
+
+    @celery_app.task(name='get_smartlist_candidates_via_celery')
+    def get_smartlist_candidates_via_celery(self, smartlist_id):
+        """
+        This method will retrieve smartlist candidate from candidate pool service in a celery task.
+        :param int | long smartlist_id: campaign smartlist id
+        """
+        return self.get_smartlist_candidates(smartlist_id)
 
     def process_urls_in_sms_body_text(self, candidate_id):
         """
@@ -922,6 +945,39 @@ class SmsCampaignBase(CampaignBase):
                             _type=Activity.MessageIds.CAMPAIGN_SMS_REPLY,
                             source=sms_campaign_reply,
                             params=params)
+
+    @classmethod
+    @celery_app.task(name='create_activity_for_campaign_creation')
+    def create_activity_for_campaign_creation(cls, source, user):
+        """
+        - Here we set "params" and "type" of activity to be stored in db table "Activity"
+            for created Campaign.
+        - Activity will appear as (e.g)
+           "'Harvey Specter' created an SMS campaign: 'Hiring at getTalent'"
+        - This method is called from save() method of class
+            CampaignBase inside common/campaign_services/sms_campaign_base.py.
+        :param source: "sms_campaign" obj
+        :type source: SmsCampaign
+        :param User user: User object
+        :exception: InvalidUsage
+        """
+        CampaignBase.create_activity_for_campaign_creation(source, user)
+
+    @celery_app.task(name='create_activity_for_campaign_delete')
+    def create_activity_for_campaign_delete(self, source):
+        """
+        - when a user deletes a campaign, here we set "params" and "type" of activity to
+            be stored in db table "Activity" when a user deletes a campaign.
+        - Activity will appear as " Michal has deleted an SMS campaign 'Jobs at Oculus'.
+        - This method is called from delete() method of class CampaignBase.
+        :param source: sms_campaign obj
+        :type source: SmsCampaign
+        :exception: InvalidUsage
+
+        **See Also**
+        .. see also:: schedule() method in CampaignBase class.
+        """
+        super(SmsCampaignBase, self).create_activity_for_campaign_delete(source)
 
 
 def _get_valid_user_phone(user_phone_value):

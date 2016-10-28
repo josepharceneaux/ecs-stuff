@@ -16,12 +16,13 @@ from flask.ext.restful import Resource
 from scheduler_service import logger, SchedulerUtils
 from scheduler_service.api.scheduler_tests_api import raise_if_scheduler_not_running, check_job_state, \
     dummy_request_method, test_dummy_endpoint_hits
-from scheduler_service.common.models.user import DomainRole, User
+from scheduler_service.common.models.user import Permission, User
 from scheduler_service.common.routes import SchedulerApi
-from scheduler_service.common.utils.api_utils import api_route, ApiResponse, get_pagination_params
+from scheduler_service.common.utils.api_utils import api_route, ApiResponse, get_pagination_params, \
+    generate_pagination_headers
 from scheduler_service.common.talent_api import TalentApi
 from scheduler_service.common.error_handling import InvalidUsage, ResourceNotFound
-from scheduler_service.common.utils.auth_utils import require_oauth, require_all_roles
+from scheduler_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from scheduler_service.custom_exceptions import SchedulerServiceApiException
 from scheduler_service.modules.scheduler import scheduler, schedule_job, serialize_task, remove_tasks, \
     scheduler_remove_job, serialize_task_admin, get_user_job_ids, get_all_general_job_ids, get_general_job_id
@@ -92,27 +93,7 @@ class Tasks(Resource):
         # In case of higher number of scheduled task running for a particular user and user want to get only
         # a limited number of jobs by specifying page and per_page parameter, then return only specified jobs
 
-        # Limit the jobs to 50 if user requests for more than 50
-        max_per_page = 50
-
-        # Default per_page size
-        default_per_page = 10
-
-        # If user didn't specify page or per_page, then it should be set to default 1 and 10 respectively.
-        page, per_page = request.args.get('page', 1), request.args.get('per_page', default_per_page)
-
-        if not (str(page).isdigit() and int(page) > 0):
-            raise InvalidUsage(error_message="'page' arg should be a digit (greater than or equal to 1)")
-
-        if not (str(per_page).isdigit() and int(per_page) >= default_per_page):
-            raise InvalidUsage(
-                error_message="'per_page' arg should be a digit and its value should be greater or equal to 10")
-
-        page, per_page = int(page), int(per_page)
-
-        # Limit the jobs if user requests jobs greater than 50
-        if per_page > max_per_page:
-            per_page = max_per_page
+        page, per_page = get_pagination_params(request)
 
         user_id = request.user.id if request.user else None
 
@@ -131,11 +112,7 @@ class Tasks(Resource):
                  for index in task_indices if index < tasks_count and tasks[index]]
 
         tasks = [task for task in tasks if task]
-        header = {
-            'X-Total': tasks_count,
-            'X-Per-Page': per_page,
-            'X-Page': page
-        }
+        header = generate_pagination_headers(tasks_count, per_page, page)
         return ApiResponse(response=dict(tasks=tasks), headers=header)
 
     @require_oauth(allow_null_user=True)
@@ -349,7 +326,7 @@ class PauseTasks(Resource):
                 'ids': [fasdff12n22m2jnr5n6skf,ascv3h5k1j43k6k8k32k345jmn,123n23n4n43m2kkcj53vdsxc]
             }
             headers = {'Authorization': 'Bearer <access_token>', 'Content-Type' : 'application/json'}
-            response = requests.post(API_URL + '/v1/tasks/resume/', headers=headers, data=json.dumps(task_ids))
+            response = requests.post(API_URL + '/v1/tasks/pause/', headers=headers, data=json.dumps(task_ids))
 
         .. Response::
             {
@@ -680,7 +657,7 @@ class PauseTaskById(Resource):
 
         :Example:
             headers = {'Authorization': 'Bearer <access_token>'}
-            response = requests.post(API_URL + '/v1/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/resume/', headers=headers)
+            response = requests.post(API_URL + '/v1/tasks/5das76nbv950nghg8j8-33ddd3kfdw2/pause/', headers=headers)
 
         .. Response::
             {
@@ -713,7 +690,6 @@ class AdminTasks(Resource):
     decorators = [require_oauth()]
     # a parent class and put all the core pagination functionality in its get() and then we can later override that
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_ALL_SCHEDULER_JOBS)
     def get(self):
         """
         This action returns a list of apscheduler scheduled tasks.
@@ -854,12 +830,7 @@ class AdminTasks(Resource):
 
         tasks = [task for task in tasks if task]
 
-        header = {
-            'X-Total': tasks_count,
-            'X-Per-Page': per_page,
-            'X-Page': page,
-            'Access-Control-Expose-Headers': 'X-Page, X-Total, X-Per-Page'
-        }
+        header = generate_pagination_headers(tasks_count, per_page, page)
         return ApiResponse(response=dict(tasks=tasks), headers=header)
 
 

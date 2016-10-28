@@ -5,9 +5,10 @@ import json
 import requests
 from ..models.user import User
 from ..routes import CandidateApiUrl
-from ..utils.handy_functions import create_oauth_headers, http_request
+from ..utils.handy_functions import create_oauth_headers, http_request, send_request
 from ..error_handling import InternalServerError, InvalidUsage, ForbiddenError
 from ..utils.validators import raise_if_not_positive_int_or_long
+from ..constants import CANDIDATE_ALREADY_EXIST
 
 __author__ = 'jitesh'
 
@@ -22,9 +23,8 @@ def search_candidates_from_params(search_params, access_token, url_args=None, us
     :return: search result based on search criteria.
     """
     if not access_token:
-        secret_key_id, jw_token = User.generate_jw_token(user_id=user_id)
+        jw_token = User.generate_jw_token(user_id=user_id)
         headers = {'Authorization': jw_token,
-                   'X-Talent-Secret-Key-ID': secret_key_id,
                    'Content-Type': 'application/json'}
     else:
         access_token = access_token if 'Bearer' in access_token else 'Bearer %s' % access_token
@@ -32,9 +32,9 @@ def search_candidates_from_params(search_params, access_token, url_args=None, us
 
     url = CandidateApiUrl.CANDIDATE_SEARCH_URI
     response = requests.get(
-            url=(url + url_args) if url_args else url,
-            params=search_params,
-            headers=headers
+        url=(url + url_args) if url_args else url,
+        params=search_params,
+        headers=headers
     )
     if not response.ok:
         raise InvalidUsage("Couldn't get candidates from Search API because %s" % response)
@@ -79,8 +79,7 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
 
     headers = dict()
     if not oauth_token and user_id:
-        secret_key_id, oauth_token = User.generate_jw_token(user_id=user_id)
-        headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
+        oauth_token = User.generate_jw_token(user_id=user_id)
         headers.update({'Authorization': oauth_token})
     else:
         headers.update({'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s' % oauth_token})
@@ -88,15 +87,53 @@ def create_candidates_from_candidate_api(oauth_token, data, return_candidate_ids
     headers.update({'content-type': 'application/json'})
 
     resp = requests.post(
-            url=CandidateApiUrl.CANDIDATES,
-            headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s'
-                                                                                  % oauth_token,
-                     'content-type': 'application/json'},
-            data=json.dumps(data)
+        url=CandidateApiUrl.CANDIDATES,
+        headers={'Authorization': oauth_token if 'Bearer' in oauth_token else 'Bearer %s'
+                                                                              % oauth_token,
+                 'content-type': 'application/json'},
+        data=json.dumps(data)
     )
     assert resp.status_code == 201
     if return_candidate_ids_only:
         return [candidate['id'] for candidate in resp.json()['candidates']]
+    return resp.json()
+
+
+def create_or_update_candidate(oauth_token, data, return_candidate_ids_only=False):
+    """
+    Function sends a request to CandidateResource/post()
+    Call candidate api using oauth token or user_id
+
+    :param oauth_token: Oauth token, if None, then create a secret X-Talent-Key oauth token (JWT)
+    :type oauth_token: str
+    :param data: Candidates object data to create candidate
+    :type data: dict
+    :param return_candidate_ids_only: If true it will only return the created candidate ids
+    :type return_candidate_ids_only: bool
+    else it will return the created candidate response json object
+    Returns: list of created candidate ids
+    :rtype: list
+    """
+    resp = send_request('post',
+                        url=CandidateApiUrl.CANDIDATES, access_token=oauth_token,
+                        data=data
+                        )
+    data_resp = resp.json()
+    # Candidate already exists. So, we update candidate data and return candidate id
+    # 3013 error code represents candidate already exists.
+    if resp.status_code == requests.codes.bad and data_resp['error']['code'] == CANDIDATE_ALREADY_EXIST:
+        data['candidates'][0]['id'] = data_resp['error']['id']
+        patch_resp = send_request('patch',
+                                  url=CandidateApiUrl.CANDIDATES, access_token=oauth_token,
+                                  data=data
+                                  )
+        if return_candidate_ids_only:
+            return patch_resp.json()['candidates'][0]['id']
+        else:
+            return patch_resp.json()
+    assert resp.status_code == requests.codes.created
+    if return_candidate_ids_only:
+        return resp.json()['candidates'][0]['id']
     return resp.json()
 
 

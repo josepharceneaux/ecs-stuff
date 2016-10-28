@@ -1,19 +1,29 @@
+"""
+ Author: Jitesh Karesia, New Vision Software, <jitesh.karesia@newvisionsoftware.in>
+         Um-I-Hani, QC-Technologies, <haniqadri.qc@gmail.com>
+         Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
+    Here are the helper functions used in tests of email-campaign-service
+"""
+
 # Standard Imports
+import re
 import json
 import uuid
+import email
 import imaplib
 import datetime
 
 # Third Party
 import requests
 from redo import retry
+from requests import codes
 
 # Application Specific
 from __init__ import ALL_EMAIL_CAMPAIGN_FIELDS
 from email_campaign_service.common.models.db import db
-from email_campaign_service.email_campaign_app import app
+from email_campaign_service.email_campaign_app import app, logger
 from email_campaign_service.common.tests.conftest import fake
-from email_campaign_service.common.models.user import DomainRole
 from email_campaign_service.common.models.misc import (Activity,
                                                        UrlConversion,
                                                        Frequency)
@@ -22,46 +32,106 @@ from email_campaign_service.common.routes import (EmailCampaignApiUrl,
 from email_campaign_service.common.utils.amazon_ses import (send_email,
                                                             get_default_email_info)
 from email_campaign_service.common.models.email_campaign import (EmailCampaign,
-                                                                 EmailClient, EmailCampaignSend)
+                                                                 EmailClient, EmailCampaignSend,
+                                                                 EmailClientCredentials)
 from email_campaign_service.common.talent_config_manager import TalentConfigKeys
-from email_campaign_service.common.utils.handy_functions import (add_role_to_test_user,
-                                                                 define_and_send_request)
+from email_campaign_service.common.utils.handy_functions import define_and_send_request
 from email_campaign_service.modules.email_marketing import create_email_campaign_smartlists
 from email_campaign_service.common.tests.fake_testing_data_generator import FakeCandidatesData
 from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
+from email_campaign_service.modules.utils import (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_PREFERENCES_URL_MERGETAG,
+                                                  DEFAULT_LAST_NAME_MERGETAG)
+
 
 __author__ = 'basit'
-TEST_EMAIL_ID = 'test.gettalent@gmail.com'
 
-def create_email_campaign(user):
+TEST_EMAIL_ID = 'test.gettalent@gmail.com'
+ON = 1  # Global variable for comparing value of is_immutable in the functions to avoid hard-coding 1
+EMAIL_TEMPLATE_BODY = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
+                      '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
+                      '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through ' \
+                      'script</p>\r\n</body>\r\n</html>\r\n'
+EMAIL_CAMPAIGN_OPTIONAL_PARAMETERS = [{'from': fake.safe_email()}, {'from': fake.safe_email(),
+                                      'reply_to': fake.safe_email()}, {'from': fake.safe_email(),
+                                      'reply_to': fake.safe_email(), 'body_text': fake.sentence()},
+                                      {'from': fake.safe_email(), 'reply_to': fake.safe_email(),
+                                       'description': fake.sentence(), 'body_text': fake.sentence(),
+                                       'start_datetime': DatetimeUtils.to_utc_str(datetime.datetime.utcnow()
+                                                                                  + datetime.timedelta(minutes=20))},
+                                      {'from': fake.safe_email(), 'reply_to': fake.safe_email(),
+                                       'body_text': fake.sentence(), 'start_datetime': DatetimeUtils.to_utc_str(
+                                         datetime.datetime.utcnow() + datetime.timedelta(minutes=20)),
+                                       'end_datetime': DatetimeUtils.to_utc_str(datetime.datetime.utcnow()
+                                                                                + datetime.timedelta(minutes=40))}]
+EMAIL_TEMPLATE_INVALID_DATA_TYPES = [{'name': fake.random_number(), 'is_immutable': 1},
+                                     {'name': fake.word(), 'is_immutable': fake.random_int(2,)},
+                                     {'name': fake.word(), 'is_immutable': fake.word()}, {'name': fake.word(),
+                                     'is_immutable': ON, 'parent_id': fake.word()}]
+
+SPECIAL_CHARACTERS = '!@#$%^&*()_+'
+TEST_MAIL_DATA = {
+    "subject": "Test Email-%s-%s" % (fake.uuid4(), SPECIAL_CHARACTERS),
+    "from": fake.name(),
+    "body_html": "<html><body><h1>Welcome to email campaign service "
+                 "<a href=https://www.github.com>Github</a></h1></body></html>",
+    "body_text": fake.sentence() + fake.uuid4() + SPECIAL_CHARACTERS,
+    "email_address_list": [app.config[TalentConfigKeys.GT_GMAIL_ID]]
+}
+
+
+class EmailCampaignTypes(object):
+    """
+    This defines 2 types of email-campaigns
+    """
+    WITH_CLIENT = 'with_client'
+    WITHOUT_CLIENT = 'without_client'
+
+
+def create_email_campaign(user, add_subject=True):
     """
     This creates an email campaign for given user
     """
     email_campaign = EmailCampaign(name=fake.name(),
                                    user_id=user.id,
                                    is_hidden=0,
-                                   subject=uuid.uuid4().__str__()[0:8] + ' It is a test campaign',
+                                   subject=fake.uuid4()[0:8] + 'It is a test campaign' if add_subject else '',
+                                   description=fake.paragraph(),
                                    _from=TEST_EMAIL_ID,
                                    reply_to=TEST_EMAIL_ID,
                                    body_html="<html><body>Email campaign test</body></html>",
-                                   body_text="Email campaign test"
+                                   body_text=fake.sentence()
                                    )
     EmailCampaign.save(email_campaign)
     return email_campaign
 
 
-def create_email_campaign_smartlist(access_token, talent_pipeline, campaign,
-                                    emails_list=True, count=1, assert_candidates=True):
+def create_email_campaign_with_merge_tags(user, add_preference_url=True):
+    """
+    This function creates an email-campaign containing merge tags.
+    """
+    email_campaign = create_email_campaign(user, add_subject=False)
+    # Update email-campaign's body text
+    starting_string = 'Hello %s %s' % (DEFAULT_FIRST_NAME_MERGETAG, DEFAULT_LAST_NAME_MERGETAG)
+    email_campaign.update(subject=starting_string + email_campaign.subject)
+    if add_preference_url:
+        starting_string += ', Unsubscribe URL is:%s' % DEFAULT_PREFERENCES_URL_MERGETAG
+    email_campaign.update(body_text=starting_string + email_campaign.body_text,
+                          body_html=starting_string + email_campaign.body_html)
+
+    return email_campaign
+
+
+def create_email_campaign_smartlist(access_token, talent_pipeline, campaign, emails_list=True, count=1,
+                                    assert_candidates=True):
     """
     This associates smartlist ids with given campaign
     """
     # create candidate
-    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(
-        access_token, talent_pipeline, count=count, emails_list=emails_list,
-        assert_candidates=assert_candidates)
-
-    create_email_campaign_smartlists(smartlist_ids=[smartlist_id],
-                                     email_campaign_id=campaign.id)
+    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token, talent_pipeline,
+                                                                            count=count, emails_list=emails_list,
+                                                                            assert_candidates=assert_candidates)
+    create_email_campaign_smartlists(smartlist_ids=[smartlist_id], email_campaign_id=campaign.id)
     return campaign
 
 
@@ -88,21 +158,6 @@ def create_smartlist_with_given_email_candidate(access_token, campaign,
                                      email_campaign_id=campaign.id)
 
     return campaign
-
-
-def delete_campaign(campaign):
-    """
-    This deletes the campaign created during tests from database
-    :param campaign: EmailCampaign object
-    """
-    try:
-        with app.app_context():
-            if isinstance(campaign, dict):
-                EmailCampaign.delete(campaign['id'])
-            else:
-                EmailCampaign.delete(campaign.id)
-    except Exception:
-        pass
 
 
 def assert_valid_campaign_get(email_campaign_dict, referenced_campaigns, fields=None):
@@ -181,26 +236,72 @@ def assert_talent_pipeline_response(talent_pipeline, access_token, fields=None):
             "Response's email campaign fields should match the expected email campaign fields"
 
 
-def assert_and_delete_email(subject):
+def assert_and_delete_email(subject, username=app.config[TalentConfigKeys.GT_GMAIL_ID],
+                            password=app.config[TalentConfigKeys.GT_GMAIL_PASSWORD], delete_email=True):
     """
     Asserts that the user received the email in his inbox which has the given subject.
     It then deletes the email from the inbox.
-    :param subject:       Email subject
+    :param string subject:       Email subject
+    :param string username: Username for login
+    :param string password: Password to login to given account
+    :param bool delete_email: If True, emails with given subject will be delete from given account
     """
-    mail_connection = imaplib.IMAP4_SSL('imap.gmail.com')
-    try:
-        mail_connection.login(app.config[TalentConfigKeys.GT_GMAIL_ID],
-                              app.config[TalentConfigKeys.GT_GMAIL_PASSWORD])
-    except Exception as error:
-        print error.message
-        pass  # Maybe already login when running on Jenkins on multiple cores
+    mail_connection = get_mail_connection(username, password)
     print "Checking for Email with subject: %s" % subject
     mail_connection.select("inbox")  # connect to inbox.
     # search the inbox for given email-subject
-    result, [msg_ids] = mail_connection.search(None, '(SUBJECT "%s")' % subject)
-    if msg_ids:
-        print "Email(s) found with subject: %s" % subject
-        msg_ids = ','.join(msg_ids.split(' '))
+    search_criteria = '(SUBJECT "%s")' % subject
+    result, [msg_ids] = mail_connection.search(None, search_criteria)
+    assert msg_ids, "Email with subject %s was not found at time: %s." % (subject, str(datetime.datetime.utcnow()))
+    print "Email(s) found with subject: %s" % subject
+    if delete_email:
+        # This is kind of finalizer which removes email from inbox. It shouldn't affect our test. So we are not
+        # raising it.
+        delete_emails(mail_connection, msg_ids, subject)
+    return msg_ids
+
+
+def get_mail_connection(username, password):
+    """
+    This connects with IMAP server and authenticates to email-account.
+    """
+    try:
+        mail_connection = imaplib.IMAP4_SSL('imap.gmail.com')
+        if mail_connection.state == 'NONAUTH':  # Makes sure not we are not logged-in already
+            mail_connection.login(username, password)
+    except imaplib.IMAP4_SSL.error as error:
+        print error.message
+        raise  # Raise any error raised by IMAP server
+    return mail_connection
+
+
+def fetch_emails(mail_connection, msg_ids):
+    """
+    This fetches emails with given msg_ids
+    """
+    assert msg_ids, 'msg_ids cannot be empty'
+    mail_connection.select("inbox")  # connect to inbox.
+    msg_ids = [msg_id for msg_id in msg_ids.split()]
+    body = []
+    for num in msg_ids:
+        typ, data = mail_connection.fetch(num, '(RFC822)')
+        raw_email = data[0][1]
+        raw_email_string = raw_email.decode('utf-8')
+        # converts byte literal to string removing b''
+        email_message = email.message_from_string(raw_email_string)
+        # this will loop through all the available multiparts in mail
+        for part in email_message.walk():
+            if part.get_content_type() == "text/plain":  # ignore attachments/html
+                body.append(part.get_payload(decode=True))
+    return body
+
+
+def delete_emails(mail_connection, msg_ids, subject):
+    """
+    This deletes email(s) with given message ids and subject
+    """
+    try:
+        msg_ids = msg_ids.replace(' ', ',')
         # Change the Deleted flag to delete the email from Inbox
         mail_connection.store(msg_ids, '+FLAGS', r'(\Deleted)')
         status, response = mail_connection.expunge()
@@ -208,17 +309,18 @@ def assert_and_delete_email(subject):
         print "Email(s) deleted with subject: %s" % subject
         mail_connection.close()
         mail_connection.logout()
-    assert msg_ids
-    return msg_ids
+    except imaplib.IMAP4_SSL.error as error:
+        logger.exception(error.message)
 
 
-def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False,
-                         expected_status=200, abort_time_for_sends=300):
+def assert_campaign_send(response, campaign, user, expected_count=1, email_client=False, expected_status=codes.OK,
+                         abort_time_for_sends=300, via_amazon_ses=True, delete_email=True):
     """
     This assert that campaign has successfully been sent to candidates and campaign blasts and
     sends have been updated as expected. It then checks the source URL is correctly formed or
     in database table "url_conversion".
     """
+    msg_ids = ''
     assert response.status_code == expected_status
     assert response.json()
     if not email_client:
@@ -238,38 +340,40 @@ def assert_campaign_send(response, campaign, user, expected_count=1, email_clien
         # Get "email_campaign_send_url_conversion" records
         sends_url_conversions.extend(campaign_send.url_conversions)
         if not email_client:
-            CampaignsTestsHelpers.assert_for_activity(user.id,
-                                                      Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
+            if via_amazon_ses:  # If email-campaign is sent via Amazon SES, we should have message_id and request_id
+                                # saved in database table "email_campaign_sends"
+                assert campaign_send.ses_message_id
+                assert campaign_send.ses_request_id
+            CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
                                                       campaign_send.id)
     if campaign_sends:
         # assert on activity for whole campaign send
-        CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_SEND,
-                                                  campaign.id)
-        if not email_client:
-            assert retry(assert_and_delete_email, sleeptime=3, attempts=130, sleepscale=1,
-                         args=(campaign.subject,), retry_exceptions=(AssertionError,)),\
-                   "Email with subject %s was not found at time: %s." % (campaign.subject,
-                                                                         str(datetime.datetime.utcnow()))
-
+        CampaignsTestsHelpers.assert_for_activity(user.id, Activity.MessageIds.CAMPAIGN_SEND, campaign.id)
+        # TODO: Emails are being delayed, commenting for now
+        # if not email_client:
+        #     msg_ids = retry(assert_and_delete_email, sleeptime=5, attempts=80, sleepscale=1,
+        #                     args=(campaign.subject,), kwargs=dict(delete_email=delete_email),
+        #                     retry_exceptions=(AssertionError, imaplib.IMAP4_SSL.error))
+        #
+        #     assert msg_ids, "Email with subject %s was not found at time: %s." % (campaign.subject,
+        #                                                               str(datetime.datetime.utcnow()))
     # For each url_conversion record we assert that source_url is saved correctly
     for send_url_conversion in sends_url_conversions:
         # get URL conversion record from database table 'url_conversion' and delete it
         # delete url_conversion record
-        assert str(
-            send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
+        assert str(send_url_conversion.url_conversion.id) in send_url_conversion.url_conversion.source_url
         UrlConversion.delete(send_url_conversion.url_conversion)
+    return msg_ids
 
 
-def post_to_email_template_resource(access_token, data):
+def post_to_email_template_resource(headers, data):
     """
     Function sends a post request to email-templates,
     i.e. EmailTemplate/post()
+    It then returns Id of created EmailTemplate
     """
-    response = requests.post(url=EmailCampaignApiUrl.TEMPLATES,
-                             data=json.dumps(data),
-                             headers={'Authorization': 'Bearer %s' % access_token,
-                                      'Content-type': 'application/json'}
-                             )
+    response = requests.post(url=EmailCampaignApiUrl.TEMPLATES, data=json.dumps(data), headers=headers)
+    print response.json()
     return response
 
 
@@ -281,58 +385,52 @@ def request_to_email_template_resource(access_token, request, email_template_id,
     :param email_template_id: Id of email template
     :param data: data in form of dictionary
     """
-    url = EmailCampaignApiUrl.TEMPLATES + '/' + str(email_template_id)
+    url = EmailCampaignApiUrl.TEMPLATE % email_template_id
     return define_and_send_request(access_token, request, url, data)
 
 
-def get_template_folder(token):
+def get_template_folder(headers):
     """
     Function will create and retrieve template folder
-    :param token:
+    :type headers: dict
     :return: template_folder_id, template_folder_name
+    :rtype: tuple[int, str]
     """
     template_folder_name = 'test_template_folder_%i' % datetime.datetime.now().microsecond
 
-    data = {'name': template_folder_name}
-    response = requests.post(url=EmailCampaignApiUrl.TEMPLATES_FOLDER, data=json.dumps(data),
-                             headers={'Authorization': 'Bearer %s' % token,
-                                      'Content-type': 'application/json'})
+    data = {'name': template_folder_name,
+            'is_immutable': ON}
+    response = requests.post(url=EmailCampaignApiUrl.TEMPLATE_FOLDERS, data=json.dumps(data),
+                             headers=headers)
     assert response.status_code == requests.codes.CREATED
     response_obj = response.json()
-    template_folder_id = response_obj["template_folder_id"][0]
-    return template_folder_id['id'], template_folder_name
+    template_folder_id = response_obj["id"]
+    return template_folder_id, template_folder_name
 
 
-def create_email_template(token, user_id, template_name, body_html, body_text, is_immutable=1,
-                          folder_id=None):
+def data_to_create_email_template(headers, template_owner, body_html='', body_text=''):
     """
-    Creates a email campaign template with params provided
-
-    :param token
-    :param user_id:                 User id
-    :param template_name:           Template name
-    :param body_html:               Body html
-    :param body_text:               Body text
-    :param is_immutable:            1 if immutable, otherwise 0
-    :param folder_id:               folder id
+    This returns data to create an email-template with params provided
+    :rtype: dict
     """
+    # Get Template Folder Id
+    template_folder_id, template_folder_name = get_template_folder(headers)
+    template_name = 'test_email_template_%i' % datetime.datetime.utcnow().microsecond
+    is_immutable = ON
     data = dict(
         name=template_name,
-        template_folder_id=folder_id,
-        user_id=user_id,
+        template_folder_id=template_folder_id,
+        user_id=template_owner.id,
         type=0,
         body_html=body_html,
         body_text=body_text,
         is_immutable=is_immutable
     )
-
-    create_resp = post_to_email_template_resource(token, data=data)
-    return create_resp
+    return data
 
 
 def update_email_template(email_template_id, request, token, user_id, template_name, body_html,
-                          body_text='',
-                          folder_id=None, is_immutable=1):
+                          body_text='', folder_id=None, is_immutable=ON):
     """
         Update existing email template fields using values provided by user.
         :param email_template_id: id of email template
@@ -359,41 +457,22 @@ def update_email_template(email_template_id, request, token, user_id, template_n
     return create_resp
 
 
-def add_email_template(token, template_owner, template_body):
+def add_email_template(headers, template_owner):
     """
-    This function will create email template
+    This function will create email template with valid data.
+    :rtype: dict
     """
-    domain_id = template_owner.domain_id
-
-    # Add 'CAN_CREATE_EMAIL_TEMPLATE' to template_owner
-    add_role_to_test_user(template_owner, [DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE,
-                                           DomainRole.Roles.CAN_CREATE_EMAIL_TEMPLATE_FOLDER])
-
-    # Get Template Folder Id
-    template_folder_id, template_folder_name = get_template_folder(token)
-
-    template_name = 'test_email_template%i' % datetime.datetime.now().microsecond
-    is_immutable = 1
-    resp = create_email_template(token, template_owner.id, template_name, template_body, '',
-                                 is_immutable,
-                                 folder_id=template_folder_id)
-    db.session.commit()
-    resp_obj = resp.json()
-    resp_dict = resp_obj['template_id'][0]
-
-    return {"template_id": resp_dict['id'],
-            "template_folder_id": template_folder_id,
-            "template_folder_name": template_folder_name,
-            "template_name": template_name,
-            "is_immutable": is_immutable,
-            "domain_id": domain_id}
-
-
-def template_body():
-    return '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" ' \
-           '"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\r\n<html>\r\n<head>' \
-           '\r\n\t<title></title>\r\n</head>\r\n<body>\r\n<p>test campaign mail testing through script</p>' \
-           '\r\n</body>\r\n</html>\r\n'
+    data = data_to_create_email_template(headers, template_owner, EMAIL_TEMPLATE_BODY)
+    response = post_to_email_template_resource(headers, data=data)
+    json_response = response.json()
+    assert response.status_code == codes.CREATED, response.text
+    assert response.json()
+    assert 'id' in json_response
+    return {"id": json_response['id'],
+            "name": data['name'],
+            "template_folder_id": data['template_folder_id'],
+            "is_immutable": data['is_immutable'],
+            "domain_id": template_owner.domain_id}
 
 
 def create_email_campaign_via_api(access_token, data, is_json=True):
@@ -418,31 +497,26 @@ def create_email_campaign_via_api(access_token, data, is_json=True):
 
 
 def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
-                                      campaign_name=fake.name(), assert_candidates=True):
+                                      campaign_name=fake.name(), assert_candidates=True, create_smartlist=True):
     """
     This function returns the required data to create an email campaign
-    :param access_token: access token of user
-    :param talent_pipeline: talent_pipeline of user
-    :param subject: Subject of campaign
-    :param campaign_name: Name of campaign
     """
+    smartlist_id = ''
     email_from = 'no-reply@gettalent.com'
     reply_to = fake.safe_email()
     body_text = fake.sentence()
+    description = fake.paragraph()
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
-    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
-                                                                            talent_pipeline,
-                                                                            emails_list=True,
-                                                                            assert_candidates=assert_candidates,
-                                                                            )
+    if create_smartlist:
+        smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
+                                                                                talent_pipeline,
+                                                                                emails_list=True,
+                                                                                assert_candidates=assert_candidates)
     return {'name': campaign_name,
             'subject': subject,
-            'from': email_from,
-            'reply_to': reply_to,
             'body_html': body_html,
-            'body_text': body_text,
             'frequency_id': Frequency.ONCE,
-            'list_ids': [smartlist_id]
+            'list_ids': [smartlist_id] if smartlist_id else []
             }
 
 
@@ -485,9 +559,177 @@ def send_campaign_helper(request, email_campaign, access_token):
     """
     This is a helper function to send campaign with and without email_client_id
     """
-    if request.param == 'with_client':
+    if request.param == EmailCampaignTypes.WITH_CLIENT:
         email_campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
     # send campaign
-    CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND,
-                                        email_campaign, access_token)
+    CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND, email_campaign, access_token)
     return email_campaign
+
+
+def assert_valid_template_object(template_dict, user_id, expected_template_ids, expected_name='', expected_html=''):
+    """
+    Here we are asserting that response from API /v1/email-templates/:id
+    :param dict template_dict: object received from above API endpoints
+    :param int|long user_id: Id of user
+    :param list[int|long] expected_template_ids: List of email-template ids
+    :param string|None expected_name: Expected name of email-template
+    :param string|None expected_html: Expected body_html of email-template
+    """
+    assert template_dict['id'] in expected_template_ids
+    if expected_name:
+        assert template_dict['name'] == expected_name
+    else:
+        assert template_dict['name']
+    if expected_html:
+        assert template_dict['body_html'] == expected_html
+    else:
+        assert template_dict['body_html']
+    assert template_dict['user_id'] == user_id
+    assert template_dict['template_folder_id']
+    assert template_dict['updated_datetime']
+    assert template_dict['is_immutable'] == ON
+
+    # Following fields may have empty values
+    assert 'type' in template_dict
+    assert 'body_text' in template_dict
+
+
+def assert_valid_template_folder(template_folder_dict, domain_id, expected_name):
+    """
+    Here we are asserting that response from API /v1/email-template-folders/:id
+    :param dict template_folder_dict: object received from above API endpoints
+    :param int|long domain_id: Id of user's domain
+    :param string expected_name: Expected name of email-template-folder
+    """
+    assert template_folder_dict['id']
+    assert template_folder_dict['name'] == expected_name
+    assert template_folder_dict['domain_id'] == domain_id
+    assert template_folder_dict['updated_datetime']
+    assert template_folder_dict['is_immutable'] == ON
+    # Following fields may have empty values
+    assert 'parent_id' in template_folder_dict
+
+
+def create_data_for_campaign_creation_with_all_parameters(access_token, talent_pipeline, subject,
+                                                          campaign_name=fake.name(), assert_candidates=True):
+    """
+    This function returns the all data to create an email campaign
+    :param access_token: access token of user
+    :param talent_pipeline: talent_pipeline of user
+    :param subject: Subject of campaign
+    :param campaign_name: Name of campaign
+    :param assert_candidates: allow to assert candidate
+    """
+    email_from = 'no-reply@gettalent.com'
+    reply_to = fake.safe_email()
+    body_text = fake.sentence()
+    description = fake.paragraph()
+    body_html = "<html><body><h1>%s</h1></body></html>" % body_text
+    smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,
+                                                                            talent_pipeline,
+                                                                            emails_list=True,
+                                                                            assert_candidates=assert_candidates,
+                                                                            )
+    start_datetime = DatetimeUtils.to_utc_str(datetime.datetime.utcnow() + datetime.timedelta(minutes=20))
+    end_datetime = DatetimeUtils.to_utc_str(datetime.datetime.utcnow() + datetime.timedelta(minutes=40))
+
+    return {'name': campaign_name,
+            'from': email_from,
+            'reply_to': reply_to,
+            'description': description,
+            'body_text': body_text,
+            'subject': subject,
+            'body_html': body_html,
+            'frequency_id': Frequency.ONCE,
+            'list_ids': [smartlist_id],
+            'start_datetime': start_datetime,
+            'end_datetime': end_datetime
+            }
+
+
+def assert_and_delete_template_folder(template_folder_id, headers, data=None):
+    """
+    Here we are asserting the  response code that folder is deleted not.
+    :param template_folder_id: Contain id of folder which you want to delete.
+    :param data: Contain multiple folder id's to delete more than one folder.
+    :param headers: Contain access token and authentication.
+    """
+    response = requests.delete(url=EmailCampaignApiUrl.TEMPLATE_FOLDER % template_folder_id,
+                               data=json.dumps(data), headers=headers)
+    assert response.status_code == requests.codes.NO_CONTENT
+
+
+def data_for_creating_email_clients(key=None):
+    """
+    This returns data to create email-clients.
+    :rtype: list[dict]
+    """
+    data = {
+        EmailClientCredentials.CLIENT_TYPES['outgoing']: [{
+            "host": "smtp.gmail.com",
+            "port": "465",
+            "name": "Gmail",
+            "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
+            "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
+        }],
+        EmailClientCredentials.CLIENT_TYPES['incoming']: [{
+            "host": "imap.gmail.com",
+            "port": "",
+            "name": "Gmail",
+            "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
+            "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD]
+        },
+            {
+                "host": "pop.gmail.com",
+                "port": "",
+                "name": "Gmail",
+                "email": app.config[TalentConfigKeys.GT_GMAIL_ID],
+                "password": app.config[TalentConfigKeys.GT_GMAIL_PASSWORD],
+            }
+        ]
+    }
+    if key:
+        return data[key]
+    email_clients_data = []
+    for client_type in EmailClientCredentials.CLIENT_TYPES:
+        for email_client_data in data_for_creating_email_clients(key=client_type):
+            email_clients_data.append(email_client_data)
+    return email_clients_data
+
+
+def assert_email_client_fields(email_client_data, user_id):
+    """
+    Here we are asserting that response from API GET /v1/email-clients
+    :param dict email_client_data: object received from above API endpoint
+    :param int|long user_id: Id of user's domain
+    """
+    assert email_client_data['id']
+    assert email_client_data['user_id'] == user_id
+    assert email_client_data['host']
+    assert 'port' in email_client_data
+    assert email_client_data['name']
+    assert email_client_data['email']
+    assert email_client_data['password']
+    assert email_client_data['updated_datetime']
+
+
+def send_campaign_with_client_id(email_campaign, access_token):
+    """
+    This make given campaign a client-campaign, sends it and asserts valid response.
+    """
+    email_campaign.update(email_client_id=EmailClient.get_id_by_name('Browser'))
+    response = CampaignsTestsHelpers.send_campaign(EmailCampaignApiUrl.SEND, email_campaign, access_token)
+    json_response = response.json()
+    assert 'email_campaign_sends' in json_response
+    email_campaign_sends = json_response['email_campaign_sends'][0]
+    assert 'new_html' in email_campaign_sends
+    new_html = email_campaign_sends['new_html']
+    matched = re.search(r'&\w+;', new_html)  # check the new_html for escaped HTML characters using regex
+    assert not matched  # Fail if HTML escaped characters found, as they render the URL useless
+    assert 'new_text' in email_campaign_sends  # Check if there is email text which candidate would see in email
+    assert 'email_campaign_id' in email_campaign_sends  # Check if there is email campaign id in response
+    assert email_campaign.id == email_campaign_sends['email_campaign_id']  # Check if both IDs are same
+    return_value = dict()
+    return_value['response'] = response
+    return_value['campaign'] = email_campaign
+    return return_value

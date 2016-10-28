@@ -1,7 +1,7 @@
 
 __author__ = 'Erik Farmer'
 
-from activities_app import app
+from activity_service.app import app
 from activity_service.common.routes import GTApis
 
 if __name__ == '__main__':

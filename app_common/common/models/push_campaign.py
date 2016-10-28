@@ -18,9 +18,12 @@ This module contains model classes that are related to push campaign service.
         to a campaign send via this table
 
 """
-import datetime
+from datetime import datetime
+from contracts import contract
+
 from db import db
 from sqlalchemy.orm import relationship
+from sqlalchemy import desc, extract, and_
 from candidate import Candidate
 from ..error_handling import InvalidUsage
 
@@ -40,7 +43,7 @@ class PushCampaign(db.Model):
     body_text = db.Column(db.String(1000))
     url = db.Column(db.String(255))
     scheduler_task_id = db.Column(db.String(50))
-    added_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    added_datetime = db.Column(db.TIMESTAMP, default=datetime.utcnow)
     start_datetime = db.Column(db.DateTime)
     end_datetime = db.Column(db.DateTime)
     frequency_id = db.Column(db.Integer, db.ForeignKey('frequency.id'))
@@ -55,7 +58,18 @@ class PushCampaign(db.Model):
                               passive_deletes=True, backref='campaign', lazy='dynamic')
 
     def __repr__(self):
-        return "<PushCampaign ( = %r)>" % self.body_text
+        return "<PushCampaign (body_text = %r)>" % self.body_text
+
+    def to_json(self, include_fields=None):
+        """
+        This returns required fields when an push-campaign object is requested.
+        :param list[str] | None include_fields: List of fields to include, or None for all.
+        :rtype: dict[str, T]
+        """
+        return_dict = super(PushCampaign, self).to_json(include_fields=include_fields)
+        if not include_fields or "smartlist_ids" in include_fields:
+            return_dict["smartlist_ids"] = [campaign_smartlist.smartlist_id for campaign_smartlist in self.smartlists]
+        return return_dict
 
     @classmethod
     def get_by_user_id(cls, user_id):
@@ -94,7 +108,7 @@ class PushCampaignBlast(db.Model):
     sends = db.Column(db.Integer, default=0)
     clicks = db.Column(db.Integer, default=0)
     campaign_id = db.Column(db.Integer, db.ForeignKey('push_campaign.id', ondelete='CASCADE'))
-    updated_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
     # Relationships
     blast_sends = relationship('PushCampaignSend', cascade='all, delete-orphan',
@@ -102,6 +116,35 @@ class PushCampaignBlast(db.Model):
 
     def __repr__(self):
         return "<PushCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
+
+    @classmethod
+    @contract
+    def top_performing_push_campaign(cls, datetime_value, user_id):
+        """
+        This method returns top performing push campaign
+        :param int|long user_id: User Id
+        :param string|datetime|None datetime_value: Year of campaign started or updated
+        :rtype: type(z)
+        """
+        assert isinstance(datetime_value, (datetime, basestring)) or datetime_value is None, \
+            "Invalid datetime value"
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
+        from .user import User
+        domain_id = User.get_domain_id(user_id)
+        if isinstance(datetime_value, datetime):
+            return cls.query.filter(cls.updated_datetime >= datetime_value). \
+                filter(PushCampaign.id == cls.campaign_id).\
+                filter(and_(PushCampaign.user_id == User.id, User.domain_id == domain_id)). \
+                filter(cls.sends > 0).order_by(desc(cls.clicks/cls.sends)).first()
+        if isinstance(datetime_value, basestring):
+            return cls.query.filter(extract("year", cls.updated_datetime) == datetime_value). \
+                filter(PushCampaign.id == cls.campaign_id).\
+                filter(and_(PushCampaign.user_id == User.id, User.domain_id == domain_id)). \
+                filter(cls.sends > 0). \
+                order_by(desc(cls.clicks/cls.sends)).first()
+        return cls.query.filter(PushCampaign.id == cls.campaign_id).\
+            filter(and_(PushCampaign.user_id == User.id, User.domain_id == domain_id)).\
+            filter(cls.sends > 0).order_by(desc(cls.clicks/cls.sends)).first()
 
 
 class PushCampaignSend(db.Model):
@@ -112,7 +155,7 @@ class PushCampaignSend(db.Model):
     __tablename__ = 'push_campaign_send'
     id = db.Column(db.Integer, primary_key=True)
     candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
-    sent_datetime = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    sent_datetime = db.Column(db.DateTime, default=datetime.utcnow)
     blast_id = db.Column(db.Integer, db.ForeignKey("push_campaign_blast.id", ondelete='CASCADE'),
                          nullable=False)
 
@@ -136,7 +179,7 @@ class PushCampaignSmartlist(db.Model):
     smartlist_id = db.Column(db.Integer, db.ForeignKey("smart_list.Id", ondelete='CASCADE'),
                              nullable=False)
     campaign_id = db.Column(db.Integer, db.ForeignKey("push_campaign.id", ondelete='CASCADE'), nullable=False)
-    updated_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_datetime = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
     def __repr__(self):
         return '<PushCampaignSmartlist (id = %s, smartlist_id: %s)>' % (self.id, self.smartlist_id)

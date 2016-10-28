@@ -2,6 +2,8 @@
 """
 test_utilities.py: helper methods for testing social network service endpoints
 """
+
+
 __author__ = 'zohaib'
 
 # Standard Library
@@ -16,7 +18,7 @@ from dateutil.parser import parse
 from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.common.routes import SocialNetworkApiUrl
 from social_network_service.modules.utilities import unix_time
-from social_network_service.modules.utilities import snake_case_to_camel_case
+from social_network_service.common.utils.handy_functions import snake_case_to_camel_case
 from social_network_service.modules.utilities import camel_case_to_title_case
 from social_network_service.modules.utilities import camel_case_to_snake_case
 from social_network_service.modules.utilities import convert_keys_to_snake_case
@@ -27,7 +29,7 @@ from social_network_service.modules.utilities import milliseconds_since_epoch_to
 
 TEST_DATE = datetime(2015, 1, 1)
 UTC_TIMEZONE = timezone('UTC')
-# TODO Should we not select the time zone of the machine???
+# Use any time zone here. (Just for testing)
 LOCAL_TIMEZONE = timezone('Asia/Karachi')
 UTC_TEST_DATE = UTC_TIMEZONE.localize(TEST_DATE, is_dst=None)
 LOCAL_TEST_DATE = LOCAL_TIMEZONE.localize(TEST_DATE, is_dst=None)
@@ -50,23 +52,6 @@ def test_camel_case_to_snake_case():
     assert camel_case_to_snake_case('get2HTTPResponseCode') == 'get_2_http_response_code'
     assert camel_case_to_snake_case('HTTPResponseCode') == 'http_response_code'
     assert camel_case_to_snake_case('HTTPResponseCodeXYZ') == 'http_response_code_xyz'
-
-
-def test_snake_case_to_camel_case():
-    """
-    In this test, we will verify that snake_case_to_camel_case() method converts strings
-    according to our requirements, i.e. converts from snake case to camel case
-    :return:
-    """
-    # test one
-    assert snake_case_to_camel_case('social_network_id') == 'socialNetworkId'
-    assert snake_case_to_camel_case('start_date') == 'startDate'
-    assert snake_case_to_camel_case('address_line_1') == 'addressLine1'
-    assert snake_case_to_camel_case('social_network_event_id') == 'socialNetworkEventId'
-    assert snake_case_to_camel_case('event_id') == 'eventId'
-    assert snake_case_to_camel_case('access_token') == 'accessToken'
-    assert snake_case_to_camel_case('refresh__token') == 'refreshToken'
-    assert snake_case_to_camel_case('_refresh_token') == 'RefreshToken'
 
 
 def test_camel_case_to_title_case():

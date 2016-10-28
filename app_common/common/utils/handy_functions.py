@@ -3,28 +3,30 @@
 __author__ = 'erikfarmer'
 
 # Standard Imports
-import re
 import json
 import random
+import re
 import string
 
 # Third Party
 import requests
-from itertools import izip_longest
-
 from flask import Flask
-
+from itertools import izip_longest
 from requests import ConnectionError
 from flask import current_app, request
+from werkzeug.exceptions import BadRequest
+from contracts import contract
 
 # Application Specific
-from ..models.db import db
-from werkzeug.exceptions import BadRequest
+from ..models.user import User
 from ..talent_config_manager import TalentConfigKeys
-from ..models.user import (User, UserScopedRoles, DomainRole)
 from ..utils.validators import raise_if_not_positive_int_or_long
 from ..error_handling import (UnauthorizedError, ResourceNotFound,
                               InvalidUsage, InternalServerError)
+from ..custom_contracts import define_custom_contracts
+
+
+define_custom_contracts()
 
 
 JSON_CONTENT_TYPE_HEADER = {'content-type': 'application/json'}
@@ -38,23 +40,6 @@ def random_word(length):
 def random_letter_digit_string(size=6, chars=string.lowercase + string.digits):
     """Creates a random string of lowercase/uppercase letter and digits."""
     return ''.join(random.choice(chars) for _ in range(size))
-
-
-def add_role_to_test_user(test_user, role_names):
-    """
-    This function will add roles to a test_user just for testing purpose
-    :param User test_user: User object
-    :param list[str] role_names: List of role names
-    :return:
-    """
-    for role_name in role_names:
-        try:
-            DomainRole.save(role_name)
-        except Exception:
-            db.session.rollback()
-            pass
-
-    UserScopedRoles.add_roles(test_user, role_names)
 
 
 def camel_case_to_snake_case(name):
@@ -84,6 +69,23 @@ def snake_case_to_pascal_case(name):
     # use string's class to work on the string to keep its type
     class_ = name.__class__
     return class_.join('', map(class_.capitalize, splitted_string))
+
+
+def snake_case_to_camel_case(name):
+    """ Convert string or unicode from lower-case underscore to camel-case
+        e.g. appt_type_id --> apptTypeId
+
+            :Example:
+
+                result = snake_case_to_camel_case('social_network_id')
+                assert result == 'socialNetworkId'
+    """
+    if not isinstance(name, basestring):
+        raise InvalidUsage('Include name as str.')
+    splitted_string = name.split('_')
+    # use string's class to work on the string to keep its type
+    class_ = name.__class__
+    return splitted_string[0] + str.join('', map(class_.capitalize, splitted_string[1:]))
 
 
 def url_conversion(long_url):
@@ -310,18 +312,18 @@ def find_missing_items(data_dict, required_fields=None, verify_all=False):
     """
     if not isinstance(data_dict, dict):
         raise InvalidUsage('include data_dict as dict.')
+    check_value = lambda value: not str(value).strip() and not value == 0
     if not data_dict:  # If data_dict is empty, return all the required_fields as missing_item
         return [{item: ''} for item in required_fields]
     elif verify_all:
         # verify that all keys in the data_dict have valid values
-        missing_items = [{key: value} for key, value in data_dict.iteritems()
-                         if not value and not value == 0]
+        missing_items = [{key: value} for key, value in data_dict.iteritems() if check_value(value)]
     else:
         # verify if required fields are present as keys in data_dict
         validate_required_fields(data_dict, required_fields)
         # verify that keys of data_dict present in required_field have valid values
         missing_items = [{key: value} for key, value in data_dict.iteritems()
-                         if key in required_fields and not value and not value == 0]
+                         if key in required_fields and check_value(value)]
     return [missing_item for missing_item in missing_items]
 
 
@@ -347,9 +349,9 @@ def generate_jwt_headers(content_type=None, user_id=None):
     """
     if user_id:
         raise_if_not_positive_int_or_long(user_id)
-    secret_key_id, jw_token = User.generate_jw_token(
+    jw_token = User.generate_jw_token(
         user_id=request.user.id if hasattr(request, 'user') else user_id)
-    headers = {'Authorization': jw_token, 'X-Talent-Secret-Key-ID': secret_key_id}
+    headers = {'Authorization': jw_token}
     if content_type:
         headers['Content-Type'] = content_type
     return headers
@@ -381,7 +383,7 @@ def validate_json_header(request):
     If header of request is not proper, it raises InvalidUsage exception
     :return:
     """
-    if not request.content_type == JSON_CONTENT_TYPE_HEADER['content-type']:
+    if JSON_CONTENT_TYPE_HEADER['content-type'] not in request.content_type:
         raise InvalidUsage('Invalid header provided. Kindly send request with JSON data '
                            'and application/json content-type header')
 
@@ -429,13 +431,15 @@ def define_and_send_request(access_token, request, url, data=None):
                       data=json.dumps(data))
 
 
-def purge_dict(dictionary, strip=True, remove_empty_strings_only=False):
+def purge_dict(dictionary, strip=True, keep_false=True, remove_empty_strings_only=False):
     """
     Function will "remove" dict's keys with empty values
     :param strip: if True, it will strip each value
     :type strip: bool
-    :type remove_empty_strings_only: bool
+    :param keep_false: if keep_false is True, keys with values equaling 0 or False will not be removed
+    :type keep_false: bool
     :param remove_empty_strings_only: if True, keys with None values will not be removed
+    :type remove_empty_strings_only: bool
     :type dictionary:  dict
     :rtype:  dict
     """
@@ -445,11 +449,25 @@ def purge_dict(dictionary, strip=True, remove_empty_strings_only=False):
 
     # strip all values & return all keys except keys with empty-string values
     if remove_empty_strings_only:
-        return {k: clean(v) for k, v in dictionary.items() if (clean(v) or v is None)}
+        return {k: clean(v) for k, v in dictionary.items() if clean(v) != ''}
+
     # strip all values & return keys with values that aren't None
-    elif strip and not remove_empty_strings_only:
+    elif strip and not remove_empty_strings_only and not keep_false:
+        return {k: clean(v) for k, v in dictionary.items() if v is not None}
+
+    # removes keys with None and empty string values
+    elif strip and keep_false:
+        for k, v in dictionary.items():
+            cleaned_value = clean(v)
+            if cleaned_value is None or cleaned_value == '':
+                del dictionary[k]
+        return dictionary
+
+    # strip key-values and keep keys with truthy values
+    elif strip and not keep_false:
         return {k: clean(v) for k, v in dictionary.items() if (v or clean(v))}
-    # return keys with values that aren't None
+
+    # keep keys with truthy values, but doesn't strip values
     else:
         return {k: v for k, v in dictionary.items() if (v or clean(v))}
 
@@ -465,3 +483,31 @@ def normalize_value(value):
     assert isinstance(value, basestring), "value must be of type string"
     return value.strip().lower()
 
+
+@contract
+def send_request(method, url, access_token, data=None, params=None, is_json=True, verify=True):
+    """
+    This is a generic method to send HTTP request. We can just pass our data/ payload
+    and it will make it json and send it to target url with application/json as content-type
+    header.
+    :param http_method method: standard HTTP method like post, get (in lowercase)
+    :param string url: target url
+    :param (string | None)  access_token: authentication token, token can be empty, None or invalid
+    :param (dict | None) data: payload data for request
+    :param (dict | None) params: query params
+    :param bool is_json: a flag to determine, whether we need to dump given data or not.
+            default value is true because most of the APIs are using json content-type.
+    :param bool verify: set this to false
+    :return: request method i.e POST, GET, DELETE, PATCH
+    :rtype: Response
+    """
+    method = method.lower()
+    request_method = getattr(requests, method)
+    if access_token:
+        headers = dict(Authorization=access_token if 'Bearer' in access_token else 'Bearer %s' % access_token)
+    else:
+        headers = dict(Authorization='Bearer %s' % access_token)
+    if is_json:
+        headers['Content-Type'] = 'application/json'
+        data = json.dumps(data)
+    return request_method(url, data=data, params=params, headers=headers, verify=verify)

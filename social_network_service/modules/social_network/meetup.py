@@ -6,10 +6,19 @@ class. Meetup contains methods like refresh_access_token(), get_member_id() etc.
 # Standard Library
 import json
 
-# Application Specific
-from urllib import urlencode
+# 3rd party imports
+from requests import codes
 
+# Application Specific
+from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.common.error_handling import InternalServerError, InvalidUsage
+from social_network_service.modules import custom_codes
+from social_network_service.modules.constants import MEETUP_VENUE
+from social_network_service.modules.custom_codes import (VENUE_EXISTS_IN_GT_DATABASE,
+                                                         INVALID_MEETUP_RESPONSE)
+from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
+from social_network_service.modules.urls import get_url
 from social_network_service.modules.utilities import logger
 from base import SocialNetworkBase
 from social_network_service.social_network_app import app
@@ -78,6 +87,7 @@ class Meetup(SocialNetworkBase):
 
         .. seealso:: __init__() method of SocialNetworkBase class.
         """
+        # TODO: Need to add this for mocking while fixing importer tests
         self.api_relative_url = '/member/self'
         super(Meetup, self).get_member_id()
 
@@ -102,45 +112,17 @@ class Meetup(SocialNetworkBase):
         .. seealso:: GET method of class MeetupGroups() inside
             social_network_service/app/restful/social_network.py
         """
-        url = self.api_url + '/groups/'
+        url = get_url(self, SocialNetworkUrls.GROUPS)
         params = {'member_id': 'self'}
-        response = http_request('GET', url, params=params,
-                                headers=self.headers,
-                                user_id=self.user.id)
+        response = http_request('GET', url, params=params, headers=self.headers, user_id=self.user.id)
         if response.ok:
             # If some error occurs during HTTP call,
             # we log it inside http_request()
-            meta_data = json.loads(response.text)['meta']
+            meta_data = response.json()['meta']
             member_id = meta_data['url'].split('=')[1].split('&')[0]
             data = json.loads(response.text)['results']
-            groups = filter(lambda item: item['organizer']['member_id']
-                                         == int(member_id), data)
+            groups = filter(lambda item: item['organizer']['member_id'] == int(member_id), data)
             return groups
-
-    def validate_token(self, payload=None):
-        """
-        :param payload is None in case of Meetup as we pass access token
-                    in headers:
-        :return: True if access token is valid otherwise False
-        :rtype: bool
-        - Here we set the value of "self.api_relative_url". We then call super
-            class method validate_token() to validate the access token.
-            validate_token() in SocialNetworkBase makes url like
-                url = self.social_network.api_url + self.api_relative_url
-            (This will evaluate in case of Meetup as
-                url = 'https://api.meetup.com/2' + '/member/self')
-            After this, it makes a POST call on this url and check if status
-            of response is 2xx.
-
-        - This method is called from validate_and_refresh_access_token() defined in
-            SocialNetworkBase class inside social_network_service/base.py.
-
-        **See Also**
-        .. seealso:: validate_token() function defined in SocialNetworkBase
-            class inside social_network_service/base.py.
-        """
-        self.api_relative_url = '/member/self'
-        return super(Meetup, self).validate_token()
 
     def refresh_access_token(self):
         """
@@ -169,7 +151,8 @@ class Meetup(SocialNetworkBase):
         """
         status = False
         user_refresh_token = self.user_credentials.refresh_token
-        auth_url = self.social_network.auth_url + "/access?"
+
+        auth_url = get_url(self, SocialNetworkUrls.REFRESH_TOKEN, is_auth=True)
         client_id = self.social_network.client_key
         client_secret = self.social_network.secret_key
 
@@ -251,4 +234,49 @@ class Meetup(SocialNetworkBase):
         return super(Meetup, cls).get_access_and_refresh_token(
             user_id, social_network, method_type=method_type, payload=payload_data,
             api_relative_url=api_relative_url)
+
+    def add_venue_to_sn(self, venue_data):
+        """
+        This function sends a POST request to Meetup api to create a venue for event.
+        :param dict venue_data: a dictionary containing data required to create a venue
+        """
+        if not venue_data.get('group_url_name'):
+            raise InvalidUsage("Mandatory Input Missing: group_url_name",
+                               error_code=custom_codes.MISSING_REQUIRED_FIELDS)
+        url = get_url(self, SocialNetworkUrls.VENUES, custom_url=MEETUP_VENUE).format(
+            venue_data['group_url_name'])
+        payload = {
+            'address_1': venue_data['address_line_1'],
+            'address_2': venue_data.get('address_line_2'),
+            'city': venue_data['city'],
+            'country': venue_data['country'],
+            'state': venue_data['state'],
+            'name': venue_data['address_line_1']
+        }
+        response = http_request('POST', url, params=payload,
+                                headers=self.headers,
+                                user_id=self.user.id)
+        json_resp = response.json()
+        if response.ok:
+            venue_id = json_resp['id']
+            logger.info('Venue has been Added. Venue Id: %s', venue_id)
+        elif response.status_code == codes.CONFLICT:
+            # 409 is returned when our venue is matching existing
+            # venue/venues.
+            try:
+                match_id = json_resp['errors'][0]['potential_matches'][0]['id']
+            except:
+                raise InternalServerError('Invalid response from Meetup', error_code=INVALID_MEETUP_RESPONSE)
+            venue = Venue.get_by_user_id_and_social_network_venue_id(self.user.id, match_id)
+            if venue:
+                raise InvalidUsage('Venue already exists in getTalent database', additional_error_info=dict(id=venue.id),
+                                   error_code=VENUE_EXISTS_IN_GT_DATABASE)
+            venue_id = json_resp['errors'][0]['potential_matches'][0]['id']
+        else:
+            raise InternalServerError('ApiError: Unable to create venue for Meetup',
+                                      additional_error_info=dict(venue_error=json_resp))
+
+        venue_data['user_id'] = self.user.id
+        venue_data['social_network_venue_id'] = venue_id
+        return SocialNetworkBase.save_venue(venue_data)
 

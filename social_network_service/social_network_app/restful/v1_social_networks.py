@@ -40,13 +40,17 @@ This file contains API endpoints related to social network.
 import types
 
 # 3rd party imports
-from flask import Blueprint, request
+from flask import Blueprint
 from flask.ext.restful import Resource
 
 # application specific imports
+from social_network_service.modules import custom_codes
+from social_network_service.modules.custom_codes import VENUE_EXISTS_IN_GT_DATABASE
+from social_network_service.modules.social_network.base import SocialNetworkBase
 from social_network_service.social_network_app import logger
 from social_network_service.modules.social_network.meetup import Meetup
-from social_network_service.modules.utilities import get_class
+from social_network_service.modules.social_network.eventbrite import Eventbrite
+from social_network_service.modules.utilities import get_class, is_token_valid
 
 from social_network_service.common.error_handling import *
 from social_network_service.common.models.venue import Venue
@@ -59,7 +63,6 @@ from social_network_service.common.models.user import UserSocialNetworkCredentia
 from social_network_service.common.utils.api_utils import api_route, ApiResponse
 
 from social_network_service.common.utils.handy_functions import get_valid_json_data
-
 
 social_network_blueprint = Blueprint('social_network_api', __name__)
 api = TalentApi()
@@ -405,21 +408,8 @@ class GetTokenValidityResource(Resource):
 
         """
         user_id = request.user.id
-        # Get social network specified by social_network_id
-        social_network = SocialNetwork.get_by_id(social_network_id)
-        if social_network:
-            user_social_network_credential = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_id, social_network_id)
-            if user_social_network_credential:
-                # Get social network specific Social Network class
-                social_network_class = get_class(social_network.name, 'social_network')
-                # create social network object which will validate
-                # and refresh access token (if possible)
-                sn = social_network_class(user_id=user_id,
-                                          social_network=social_network
-                                          )
-                return dict(status=sn.access_token_status)
-        else:
-            raise ResourceNotFound("Invalid social network id given")
+        status = is_token_valid(social_network_id, user_id)
+        return dict(status=status)
 
 
 @api.route(SocialNetworkApi.TOKEN_REFRESH)
@@ -566,9 +556,32 @@ class VenuesResource(Resource):
         """
         user_id = request.user.id
         venue_data = get_valid_json_data(request)
-        venue_data['user_id'] = user_id
-        venue = Venue(**venue_data)
-        Venue.save(venue)
+        mandatory_input_data = ['address_line_1', 'city', 'country', 'state', 'social_network_id']
+        # gets fields which are missing
+        missing_items = [key for key in mandatory_input_data if
+                         not venue_data.get(key)]
+        if missing_items:
+            raise InvalidUsage("Mandatory Input Missing: %s" % missing_items,
+                               error_code=custom_codes.MISSING_REQUIRED_FIELDS)
+        social_network_id = venue_data['social_network_id']
+        social_network_venue_id = venue_data.get('social_network_venue_id')
+        if social_network_venue_id:
+            venue = Venue.get_by_user_id_and_social_network_venue_id(user_id, social_network_venue_id)
+            if venue:
+                raise InvalidUsage('Venue already exists in getTalent database',
+                                   error_code=VENUE_EXISTS_IN_GT_DATABASE)
+            venue_data['user_id'] = user_id
+            venue = SocialNetworkBase.save_venue(venue_data)
+        else:
+            social_network = SocialNetwork.get(social_network_id)
+            if social_network:
+                # creating class object for respective social network
+                social_network_class = get_class(social_network.name.lower(),
+                                                 'social_network')
+                social_network = social_network_class(user_id=user_id)
+            else:
+                raise InvalidUsage('Unable to find social network with given id: %s' % social_network_id)
+            venue = social_network.add_venue_to_sn(venue_data)
         headers = {'Location': '{url}/{id}'.format(url=SocialNetworkApi.VENUES,
                                                    id=venue.id)}
         return ApiResponse(dict(message='Venue created successfully', id=venue.id),
@@ -840,7 +853,13 @@ class EventOrganizersResource(Resource):
 
         """
         organizer_data = get_valid_json_data(request)
-        organizer_data['user_id'] = request.user.id
+        user_id = request.user.id
+        social_network = SocialNetwork.get_by_name('Eventbrite')
+        eventbrite = Eventbrite(user_id, social_network_id=social_network.id)
+        organizer_id = eventbrite.create_event_organizer(organizer_data)
+        organizer_data['social_network_organizer_id'] = organizer_id
+        organizer_data['social_network_id'] = social_network.id
+        organizer_data['user_id'] = user_id
         organizer = EventOrganizer(**organizer_data)
         EventOrganizer.save(organizer)
         headers = {'Location': '{url}/{id}'.format(url=SocialNetworkApi.EVENT_ORGANIZERS,
@@ -1093,5 +1112,3 @@ class ProcessAccessTokenResource(Resource):
             return dict(message='User credentials added successfully'), 201
         else:
             raise ResourceNotFound('Social Network not found')
-
-

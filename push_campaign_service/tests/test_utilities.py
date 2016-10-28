@@ -1,80 +1,17 @@
 from datetime import datetime, timedelta
+from dateutil.parser import parse
 from faker import Faker
-from requests import codes
 from contracts import contract
-from push_campaign_service.common.campaign_services.custom_errors import CampaignException
 from push_campaign_service.common.routes import PushCampaignApiUrl, PushCampaignApi, CandidateApiUrl
 from push_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from push_campaign_service.common.utils.api_utils import DEFAULT_PAGE, DEFAULT_PAGE_SIZE
-from push_campaign_service.common.utils.test_utils import (send_request, get_fake_dict)
+from push_campaign_service.common.utils.handy_functions import (send_request)
 from push_campaign_service.push_campaign_app import logger
 
 fake = Faker()
 
 API_URL = PushCampaignApiUrl.HOST_NAME
 VERSION = PushCampaignApi.VERSION
-
-
-@contract
-def missing_key_test(data, key, token):
-    """
-    This function sends a put request to api with data with one required field
-    missing and checks that it InvalidUsage 400
-    :param dict data: campaign data
-    :param string key: field key
-    :param string token: auth token
-    """
-    del data[key]
-    response = send_request('post', PushCampaignApiUrl.CAMPAIGNS, token, data)
-    assert response.status_code == codes.BAD_REQUEST
-    response = response.json()
-    error = response['error']
-    assert error['code'] == CampaignException.MISSING_REQUIRED_FIELD
-    assert error['missing_fields'] == [key]
-
-
-@contract
-def invalid_value_test(data, key, token, campaign_id):
-    """
-    This function sends a put request to api with required one required field
-    with an invalid value (empty string) and checks that it returns InvalidUsage 400
-    :param dict data: campaign data
-    :param string key: field key
-    :param string token: auth token
-    :param int | long campaign_id: push campaign id
-    """
-    data.update(**generate_campaign_data())
-    data[key] = ''
-    response = send_request('put', PushCampaignApiUrl.CAMPAIGN % campaign_id, token, data)
-    assert response.status_code == codes.BAD_REQUEST
-    response = response.json()
-    error = response['error']
-    assert error['field'] == key
-    assert error['invalid_value'] == data[key]
-
-
-@contract
-def invalid_data_test(method, url, token):
-    """
-    This functions sends http request to a given url with different
-    invalid data and checks for InvalidUsage
-    :param http_method method: http method e.g. POST, PUT
-    :param string url: api url
-    :param string token: auth token
-    """
-    data = None
-    response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == codes.BAD_REQUEST
-    response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == codes.BAD_REQUEST
-    data = {}
-    response = send_request(method, url, token, data, is_json=True)
-    assert response.status_code == codes.BAD_REQUEST
-    response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == codes.BAD_REQUEST
-    data = get_fake_dict()
-    response = send_request(method, url, token, data, is_json=False)
-    assert response.status_code == codes.BAD_REQUEST
 
 
 def generate_campaign_data():
@@ -95,11 +32,11 @@ def generate_campaign_schedule_data(frequency_id=1):
     """
     This method generates data (dict) for scheduling a campaign.
     This data contains start_date, end_datetime and frequency id
-    :type frequency_id: int
+    :type frequency_id: type(t)
     :return: data
     :rtype dict
     """
-    start = datetime.utcnow() + timedelta(seconds=20)
+    start = datetime.utcnow() + timedelta(seconds=10)
     end = datetime.utcnow() + timedelta(days=10)
     data = {
         "frequency_id": frequency_id,
@@ -110,16 +47,32 @@ def generate_campaign_schedule_data(frequency_id=1):
 
 
 @contract
-def compare_campaign_data(campaign_first, campaign_second):
+def compare_campaign_data(campaign_first, campaign_second, ignore_keys=None):
     """
     This function compares two push campaign dictionaries
     It raises assertion error if respective keys' values do not match.
     :type campaign_first: dict
     :type campaign_second: dict
+    :type ignore_keys: None | tuple | list
     """
-    assert campaign_first['body_text'] == campaign_second['body_text']
-    assert campaign_first['name'] == campaign_second['name']
-    assert campaign_first['url'] == campaign_second['url']
+    campaign_keys = ['id', 'name', 'body_text', 'url', 'smartlist_ids']
+    for key in set(campaign_keys) - (set(ignore_keys) if ignore_keys else set()):
+        assert campaign_first[key] == campaign_second[key], 'value1 = %s, value2= %s, key = %s' \
+                                                            % (campaign_first[key], campaign_second[key], key)
+
+
+@contract
+def match_schedule_data(schedule_data, campaign):
+    """
+    This function takes schedule data and campaign object and matched schedule values like start_datetine,
+    end_datetime and frequency_id.
+    :param dict schedule_data: data used to schedule a campaign
+    :param dict campaign: campaign object
+    """
+    diff = timedelta(seconds=1)
+    assert (parse(schedule_data['start_datetime'].split('.')[0]) - parse(campaign['start_datetime'])) < diff
+    assert (parse(schedule_data['end_datetime'].split('.')[0]) - parse(campaign['end_datetime'])) < diff
+    assert schedule_data['frequency_id'] == campaign['frequency_id']
 
 
 @contract
@@ -234,7 +187,8 @@ def send_campaign(campaign_id, token, expected_status=(200,)):
     :type expected_status: tuple[int]
     :rtype dict
     """
-    response = send_request('post', PushCampaignApiUrl.SEND % campaign_id, token)
+    url = PushCampaignApiUrl.SEND % campaign_id
+    response = send_request('post', url, token)
     logger.info('tests : send_campaign: %s', response.content)
     print('tests : send_campaign: %s', response.content)
     assert response.status_code in expected_status
@@ -383,64 +337,5 @@ def unschedule_campaign(campaign_id, token, expected_status=(200,)):
     response = send_request('delete', PushCampaignApiUrl.SCHEDULE % campaign_id, token)
     logger.info('tests : unschedule_campaign: %s', response.content)
     print('tests : unschedule_campaign: %s', response.content)
-    assert response.status_code in expected_status
-    return response.json()
-
-
-@contract
-def associate_device_to_candidate(candidate_id, device_id, token, expected_status=(201,)):
-    """
-    This method sends a POST request to Candidate API to associate a OneSignal Device Id to a candidate.
-
-    :type candidate_id: int | long
-    :type device_id: string
-    :type token: string
-    :type expected_status: tuple[int]
-    :rtype dict
-    """
-    data = {
-        'one_signal_device_id': device_id
-    }
-    response = send_request('post', CandidateApiUrl.DEVICES % candidate_id, token, data=data)
-    logger.info('tests : associate_device_to_candidate: %s', response.content)
-    print('tests : associate_device_to_candidate: %s', response.content)
-    assert response.status_code in expected_status
-    return response.json()
-
-
-@contract
-def get_candidate_devices(candidate_id, token, expected_status=(200,)):
-    """
-    This method sends a GET request to Candidate API to get all associated OneSignal Device Ids to a candidate.
-
-    :type candidate_id: int | long
-    :type token: string
-    :type expected_status: tuple[int]
-    :rtype dict
-    """
-    response = send_request('get', CandidateApiUrl.DEVICES % candidate_id, token)
-    logger.info('tests : get_candidate_devices: %s', response.content)
-    print('tests : get_candidate_devices: %s', response.content)
-    assert response.status_code in expected_status
-    return response.json()
-
-
-@contract
-def delete_candidate_device(candidate_id, device_id,  token, expected_status=(200,)):
-    """
-    This method sends a DELETE request to Candidate API to delete  OneSignal Device that is associated to a candidate.
-
-    :type candidate_id: int | long
-    :type device_id: string
-    :type token: string
-    :type expected_status: tuple[int]
-    :rtype dict
-    """
-    data = {
-        'one_signal_device_id': device_id
-    }
-    response = send_request('delete', CandidateApiUrl.DEVICES % candidate_id, token, data=data)
-    logger.info('tests : delete_candidate_devices: %s', response.content)
-    print('tests : delete_candidate_devices: %s', response.content)
     assert response.status_code in expected_status
     return response.json()

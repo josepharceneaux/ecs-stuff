@@ -1,10 +1,6 @@
-from flask.ext.cors import CORS
-
 from candidate_service.common.utils.models_utils import init_talent_app
-from candidate_service.common.talent_config_manager import load_gettalent_config, TalentConfigKeys
-from candidate_service.common.routes import CandidateApi, GTApis
-from candidate_service.common.utils.talent_ec2 import get_ec2_instance_id
-from candidate_service.common.talent_flask import TalentFlask
+from candidate_service.common.talent_config_manager import TalentConfigKeys
+from candidate_service.common.routes import CandidateApi
 from candidate_service.common.talent_celery import init_celery_app
 from candidate_service.common.models.db import db
 
@@ -20,7 +16,7 @@ try:
         CandidateWorkExperienceResource, CandidateWorkExperienceBulletResource, CandidateWorkPreferenceResource,
         CandidateEmailResource, CandidatePhoneResource, CandidateMilitaryServiceResource,
         CandidatePreferredLocationResource, CandidateSkillResource, CandidateSocialNetworkResource,
-        CandidateEditResource, CandidatesResource, CandidateOpenWebResource, CandidateViewResource,
+        CandidatesResource, CandidateOpenWebResource, CandidateViewResource,
         CandidatePreferenceResource, CandidateClientEmailCampaignResource,
         CandidateDeviceResource, CandidatePhotosResource, CandidateLanguageResource
     )
@@ -31,6 +27,7 @@ try:
     from candidate_service.candidate_app.api.candidate_custom_fields import CandidateCustomFieldResource
     from candidate_service.candidate_app.api.statuses import CandidateStatusesResources
     from candidate_service.candidate_app.api.notes import CandidateNotesResource
+    from candidate_service.candidate_app.api.edits import CandidateEditResource
 
     from candidate_service.common.talent_api import TalentApi
     api = TalentApi(app=app)
@@ -163,6 +160,8 @@ try:
                      endpoint='candidate_social_networks_1')
     api.add_resource(CandidateSocialNetworkResource, CandidateApi.SOCIAL_NETWORK,
                      endpoint='candidate_social_networks_2')
+    api.add_resource(CandidateSocialNetworkResource, CandidateApi.CHECK_SOCIAL_NETWORK,
+                     endpoint='candidate_check_social_network')
 
     # ****** CandidateWorkPreferenceResource ******
     api.add_resource(CandidateWorkPreferenceResource, CandidateApi.WORK_PREFERENCES,

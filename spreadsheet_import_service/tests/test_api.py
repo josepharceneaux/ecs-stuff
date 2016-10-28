@@ -9,7 +9,6 @@ from time import sleep
 from spreadsheet_import_service.common.tests.conftest import *
 from spreadsheet_import_service.common.utils.test_utils import send_request, response_info
 from spreadsheet_import_service.common.routes import CandidateApiUrl
-from spreadsheet_import_service.common.utils.handy_functions import add_role_to_test_user
 from common_functions import candidate_test_data, import_spreadsheet_candidates, SpreadsheetImportApiUrl
 
 
@@ -18,14 +17,6 @@ def test_convert_spreadsheet_to_table(access_token_first, user_first, domain_cus
     print "user: {}".format(user_first)
     domain_custom_field = domain_custom_fields[0]
     candidate_data = candidate_test_data()
-
-    # Logged-in user trying to convert a csv spreadsheet to table without appropriate roles
-    response, status_code = import_spreadsheet_candidates(talent_pool,
-                                                          access_token_first, candidate_data=candidate_data,
-                                                          domain_custom_field=domain_custom_field)
-    assert status_code == 401
-
-    add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
 
     # Logged-in user trying to convert a csv spreadsheet to table
     # from candidate_service.tests.api.helpers import response_info
@@ -40,8 +31,9 @@ def test_convert_spreadsheet_to_table(access_token_first, user_first, domain_cus
 
     # Logged-in user trying to convert a excel spreadsheet to table
     response, status_code = import_spreadsheet_candidates(talent_pool,
-            access_token_first, spreadsheet_file_name='test_spreadsheet_2.xls', is_csv=False,
-            domain_custom_field=domain_custom_field)
+                                                          access_token_first,
+                                                          spreadsheet_file_name='test_spreadsheet_2.xls', is_csv=False,
+                                                          domain_custom_field=domain_custom_field)
 
     assert status_code == 200
     assert len(response.get('table')) == 10
@@ -52,16 +44,7 @@ def test_import_candidates_from_spreadsheet(access_token_first, user_first, tale
     print "user: {}".format(user_first)
     candidate_data = candidate_test_data()
 
-    # Logged-in user trying to import 15 candidates from a csv spreadsheet without appropriate roles
-    response, status_code = import_spreadsheet_candidates(talent_pool.id, access_token_first,
-                                                          candidate_data=candidate_data, import_candidates=True,
-                                                          domain_custom_field=domain_custom_fields[0])
-    print "\nresponse_content_401: {}".format(response)
-    assert status_code == 401
-
-    add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
-
-    # Logged-in user trying to import 15 candidates from a csv spreadsheet
+    # Logged-in user trying to import 5 candidates from a csv spreadsheet
     response, status_code = import_spreadsheet_candidates(talent_pool.id, access_token=access_token_first,
                                                           candidate_data=candidate_data, import_candidates=True,
                                                           domain_custom_field=domain_custom_fields[0])
@@ -91,9 +74,7 @@ def test_health_check():
     assert response.status_code == 200
 
 
-def test_import_candidates_from_file(access_token_first, user_first, talent_pool, domain_custom_fields):
-    add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
-
+def test_import_candidates_from_file(access_token_first, talent_pool, domain_custom_fields):
     # Logged-in user trying to import 15 candidates from a csv spreadsheet
     # Candidates with erroneous data will not be added, so the count will reflect only successfully added candidates
     response, status_code = import_spreadsheet_candidates(
@@ -116,13 +97,11 @@ def test_import_candidates_from_file(access_token_first, user_first, talent_pool
     assert response.get('status') == 'complete'
 
 
-def test_create_candidate_from_excel_file(access_token_first, user_first, talent_pool, domain_custom_fields):
+def test_create_candidate_from_excel_file(access_token_first, talent_pool, domain_custom_fields):
     """
     Test:  Import, parse, and create candidates from excel file. If a candidate already exists, it should
              still continue with the rest of the candidates
     """
-    add_role_to_test_user(user_first, ['CAN_ADD_CANDIDATES'])
-
     # Create candidate
     data = {'candidates': [{'talent_pool_ids': {'add': [talent_pool.id]},
                             'emails': [{'address': 'Wadlejitu86+22222@gmail.com'}]}]}
@@ -138,3 +117,41 @@ def test_create_candidate_from_excel_file(access_token_first, user_first, talent
     print "\nresponse_content: {}".format(response)
     assert status_code == 201
     assert response.get('status') == 'complete'
+
+
+class TestCreateCandidateFromExcelFile(object):
+    """
+    Class contains functional tests that attempt to create candidate(s) via an excel file
+    """
+    #  TODO: flaky tests in builds 5258-5260+
+    # def test_candidate_with_tags_and_skills(self, access_token_first, talent_pool, domain_custom_fields):
+    #     """
+    #     Test: Add candidates with tags & skills column
+    #     """
+    #     response, status_code = import_spreadsheet_candidates(talent_pool_id=talent_pool.id,
+    #                                                           access_token=access_token_first,
+    #                                                           spreadsheet_file_name="tags_skills.xls",
+    #                                                           is_csv=False,
+    #                                                           import_candidates=True,
+    #                                                           domain_custom_field=domain_custom_fields[0])
+    #     print "\nstatus_code: {}".format(status_code)
+    #     print "\nresponse: {}".format(response)
+    #     assert status_code == requests.codes.CREATED
+    #     assert response.get('status') == 'complete'
+
+    #  TODO: flaky tests in builds 5273, 5277
+    # def test_candidate_with_tags_provided_in_args(self, access_token_first, talent_pool):
+    #     """
+    #     Test: Add candidate by providing candidate's tags in arguments
+    #     """
+    #     response, status_code = import_spreadsheet_candidates(talent_pool_id=talent_pool.id,
+    #                                                           access_token=access_token_first,
+    #                                                           spreadsheet_file_name="tags_skills.xls",
+    #                                                           is_csv=False,
+    #                                                           import_candidates=True,
+    #                                                           tags=[fake.word(), fake.word(), fake.word()])
+    #
+    #     print "\nstatus_code: {}".format(status_code)
+    #     print "\nresponse: {}".format(response)
+    #     assert status_code == requests.codes.CREATED
+    #     assert response.get('status') == 'complete'

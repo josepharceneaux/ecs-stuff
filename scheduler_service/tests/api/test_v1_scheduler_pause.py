@@ -6,10 +6,13 @@ Also try to pause jobs without using token and it should give 401 status code
 # Third party imports
 import json
 import requests
+import pytest
 
 # Application imports
 from scheduler_service.common.routes import SchedulerApiUrl
 from scheduler_service.custom_exceptions import SchedulerServiceApiException
+from scheduler_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+
 
 __author__ = 'saad'
 
@@ -187,3 +190,38 @@ class TestSchedulerPause(object):
         # Setting up job_cleanup to be used in finalizer to delete all jobs created in this test
         job_cleanup['header'] = auth_header
         job_cleanup['job_ids'] = jobs_id
+
+    @pytest.mark.qa
+    def test_pause_job_with_invalid_id(self, auth_header):
+        """
+        Try to pause job with invalid id's. Should return 404(not found).
+        """
+        for invalid_job_id in CampaignsTestsHelpers.INVALID_IDS[:3]:
+            response = requests.post(SchedulerApiUrl.PAUSE_TASK % invalid_job_id,
+                                     headers=auth_header)
+            assert response.status_code == requests.codes.NOT_FOUND
+
+    @pytest.mark.qa
+    def test_pause_scheduled_task_by_other_domain_user(self, auth_header, job_config, access_token_other):
+        """
+        Schedule a job from a user and then try to pause same task from a different user in different domain
+        """
+        response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config),
+                                 headers=auth_header)
+        assert response.status_code == requests.codes.CREATED
+        data = response.json()
+        auth_header['Authorization'] = 'Bearer %s' % access_token_other
+        # Now pause the job from other user in different domain
+        response = requests.post(SchedulerApiUrl.PAUSE_TASK % data['id'],
+                                 headers=auth_header)
+        assert response.status_code == requests.codes.NOT_FOUND
+
+    @pytest.mark.qa
+    def test_pause_multiple_jobs_with_invalid_ids(self, auth_header):
+        """
+        Try to pause multiple tasks with invalid id's. Should return 400 (bad request).
+        """
+        invalid_job_ids = CampaignsTestsHelpers.INVALID_IDS
+        response = requests.post(SchedulerApiUrl.PAUSE_TASKS, data=json.dumps(dict(ids=invalid_job_ids)),
+                                 headers=auth_header)
+        assert response.status_code == requests.codes.BAD_REQUEST

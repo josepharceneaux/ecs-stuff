@@ -18,9 +18,12 @@ from faker import Faker
 from redo import retry
 from requests import codes
 
+from push_campaign_service.common.constants import SLEEP_INTERVAL, RETRY_ATTEMPTS
 from push_campaign_service.common.models.misc import Frequency
+from push_campaign_service.common.talent_config_manager import TalentConfigKeys, TalentEnvs
 from push_campaign_service.common.utils.test_utils import (delete_scheduler_task,
-                                                           create_smartlist, get_smartlist_candidates, delete_smartlist)
+                                                           create_smartlist, get_smartlist_candidates,
+                                                           associate_device_to_candidate)
 from push_campaign_service.common.test_config_manager import load_test_config
 from push_campaign_service.common.tests.api_conftest import (token_first, token_same_domain,
                                                              token_second, user_first,
@@ -29,17 +32,18 @@ from push_campaign_service.common.tests.api_conftest import (token_first, token_
                                                              candidate_second, smartlist_first,
                                                              smartlist_same_domain, smartlist_second,
                                                              talent_pool, talent_pool_second, talent_pipeline,
-                                                             talent_pipeline_second)
+                                                             talent_pipeline_second, test_data, candidate_device_first)
+
 from push_campaign_service.common.routes import PushCampaignApiUrl
 from push_campaign_service.tests.test_utilities import (generate_campaign_data, send_request,
                                                         generate_campaign_schedule_data,
                                                         get_campaigns, create_campaign,
                                                         delete_campaign, send_campaign,
                                                         get_blasts, schedule_campaign,
-                                                        associate_device_to_candidate,
-                                                        delete_campaigns, delete_candidate_device, get_campaign_sends)
+                                                        delete_campaigns, get_campaign_sends)
 
 fake = Faker()
+
 test_config = load_test_config()
 
 
@@ -245,10 +249,9 @@ def campaign_blast(token_first, campaign_in_db, smartlist_first, candidate_devic
     :return: campaign's blast dict object
     """
     send_campaign(campaign_in_db['id'], token_first)
-    response = get_blasts(campaign_in_db['id'], token_first)
-    blasts = response['blasts']
-    assert len(blasts) == 1
-    blast = blasts[0]
+    response = retry(get_blasts, sleeptime=SLEEP_INTERVAL, attempts=RETRY_ATTEMPTS, sleepscale=1,
+                     retry_exceptions=(AssertionError,), args=(campaign_in_db['id'], token_first), kwargs={'count': 1})
+    blast = response['blasts'][0]
     blast['campaign_id'] = campaign_in_db['id']
     return blast
 
@@ -265,8 +268,11 @@ def campaign_blasts(campaign_in_db, token_first, smartlist_first, candidate_devi
     blasts_counts = 3
     for num in range(blasts_counts):
         send_campaign(campaign_in_db['id'], token_first)
-    blasts = get_blasts(campaign_in_db['id'], token_first)['blasts']
-    return blasts
+
+    response = retry(get_blasts, sleeptime=SLEEP_INTERVAL, attempts=RETRY_ATTEMPTS * 2, sleepscale=1,
+                     retry_exceptions=(AssertionError,), args=(campaign_in_db['id'], token_first),
+                     kwargs={'count': blasts_counts})
+    return response['blasts']
 
 
 @pytest.fixture()
@@ -340,27 +346,6 @@ def url_conversion(request, token_first, campaign_in_db, smartlist_first, candid
 
 
 @pytest.fixture(scope='function')
-def candidate_device_first(request, token_first, candidate_first):
-    """
-    This fixture associates a device with test candidate which is required to
-    send push campaign to candidate.
-    :param token_first: authentication token
-    :param candidate_first: candidate dict object
-    """
-    candidate_id = candidate_first['id']
-    device_id = test_config['PUSH_CONFIG']['device_id_1']
-    device = {'id':  associate_device_to_candidate(candidate_id, device_id, token_first),
-              'one_signal_id': device_id}
-
-    def tear_down():
-        delete_candidate_device(candidate_id, device_id, token_first, expected_status=(codes.OK,
-                                                                                       codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
-    return device
-
-
-@pytest.fixture(scope='function')
 def candidate_device_same_domain(request, token_same_domain, candidate_same_domain):
     """
     This fixture associates a device with  candidate from domain first which is required to
@@ -370,14 +355,10 @@ def candidate_device_same_domain(request, token_same_domain, candidate_same_doma
     """
     candidate_id = candidate_same_domain['id']
     device_id = test_config['PUSH_CONFIG']['device_id_1']
-    device = {'id':  associate_device_to_candidate(candidate_id, device_id, token_same_domain),
-              'one_signal_id': device_id}
 
-    def tear_down():
-        delete_candidate_device(candidate_id, device_id, token_same_domain,
-                                expected_status=(codes.OK, codes.NOT_FOUND))
+    associate_device_to_candidate(candidate_id, device_id, token_same_domain)
+    device = {'one_signal_id': device_id}
 
-    request.addfinalizer(tear_down)
     return device
 
 
@@ -391,14 +372,10 @@ def candidate_device_second(request, token_second, candidate_second):
     """
     candidate_id = candidate_second['id']
     device_id = test_config['PUSH_CONFIG']['device_id_1']
-    device = {'id':  associate_device_to_candidate(candidate_id, device_id, token_second),
-              'one_signal_id': device_id}
 
-    def tear_down():
-        delete_candidate_device(candidate_id, device_id, token_second, expected_status=(codes.OK,
-                                                                                        codes.NOT_FOUND))
+    associate_device_to_candidate(candidate_id, device_id, token_second)
+    device = {'one_signal_id': device_id}
 
-    request.addfinalizer(tear_down)
     return device
 
 
@@ -421,12 +398,6 @@ def smartlist_with_two_candidates_with_and_without_device_associated(request, to
     smartlist_id = smartlist['id']
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_first), kwargs={'count': 2})
-
-    def tear_down():
-        delete_smartlist(smartlist_id, token_first,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return smartlist
 
 
@@ -448,10 +419,4 @@ def smartlist_with_two_candidates_with_no_device_associated(request, token_first
     smartlist_id = smartlist['id']
     retry(get_smartlist_candidates, sleeptime=3, attempts=50, sleepscale=1, retry_exceptions=(AssertionError,),
           args=(smartlist_id, token_first), kwargs={'count': 2})
-
-    def tear_down():
-        delete_smartlist(smartlist_id, token_first,
-                         expected_status=(codes.OK, codes.NOT_FOUND))
-
-    request.addfinalizer(tear_down)
     return smartlist

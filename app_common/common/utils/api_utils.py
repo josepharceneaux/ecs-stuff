@@ -15,18 +15,24 @@ Here we also have functions which are useful for APIs to implement pagination.
 import json
 
 # Third Part
+from requests import codes
 from flask import Response
+from contracts import contract
 
 # Application Specific
 from sqlalchemy.orm import Query
 from models_utils import to_json
 from ..error_handling import InvalidUsage
 from .handy_functions import JSON_CONTENT_TYPE_HEADER
+from ..custom_contracts import define_custom_contracts
 from ..utils.validators import raise_if_not_instance_of
+
+define_custom_contracts()
 
 DEFAULT_PAGE = 1
 DEFAULT_PAGE_SIZE = 10
 MAX_PAGE_SIZE = 50
+SORT_TYPES = ('ASC', 'DESC')
 
 
 class ApiResponse(Response):
@@ -90,7 +96,7 @@ def get_pagination_params(request, default_page=DEFAULT_PAGE, default_per_page=D
         assert 0 < per_page <= max_per_page, 'Give per_page value %s' % per_page
     except:
         raise InvalidUsage('per_page should be a number with maximum value %s. Given %s'
-                           % (default_per_page, per_page))
+                           % (max_per_page, per_page))
 
     return page, per_page
 
@@ -102,8 +108,9 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
     JSON serializable list of objects by applying pagination on query using given
     constraints (page, per_page) as response body.
     Response object has extra pagination headers like
-        X-Total    :  Total number of results found
-        X-Page-Count :  Number of total pages for given page size
+        X-Total: Total number of results.
+        X-Per-Page: Number of results per page.
+        X-Page: Current page number.
 
     List of object is packed in a dictionary where key is specified by user/developer.
     :param key: final dictionary will contain this key where value will be list if items.
@@ -141,16 +148,43 @@ def get_paginated_response(key, query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_
         }
     """
     raise_if_not_instance_of(key, basestring)
-    raise_if_not_instance_of(query, Query)
-    # error_out=false, do nor raise error if these is no object to return but return an empty list
-    results = query.paginate(page, per_page, error_out=False)
+    results = get_paginated_list(query, page, per_page)
     # convert model objects to serializable dictionaries
     items = [parser(item, include_fields) for item in results.items]
-    headers = {
-        'X-Total': results.total,
-        'X-Page-Count': results.pages
-    }
+    headers = generate_pagination_headers(results.total, per_page, page)
     response = {
         key: items
     }
-    return ApiResponse(response, headers=headers, status=200)
+    return ApiResponse(response, headers=headers, status= codes.OK)
+
+
+@contract
+def generate_pagination_headers(results_count, results_per_page, current_page):
+    """
+    This function generates pagination response headers containing following parameters.
+    :param (int|long) results_count: Total number of results
+    :param int results_per_page: Number of results per page
+    :param (int|long) current_page: Current page number
+    :rtype: dict
+    """
+    return {
+        'X-Total': results_count,
+        'X-Per-Page': results_per_page,
+        'X-Page': current_page,
+        'Access-Control-Expose-Headers': 'X-Total, X-Per-Page, X-Page'
+    }
+
+
+@contract
+def get_paginated_list(query, page=DEFAULT_PAGE, per_page=DEFAULT_PAGE_SIZE):
+    """
+    This function just applies pagination params an query and returns results.
+    :param type(t) query:
+    :param int | long page: page number
+    :param int per_page: number items per page
+    :rtype: type(s)
+    """
+    raise_if_not_instance_of(query, Query)
+    # error_out=false, do nor raise error if these is no object to return but return an empty list
+    results = query.paginate(page, per_page, error_out=False)
+    return results

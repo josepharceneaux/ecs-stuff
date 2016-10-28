@@ -25,19 +25,19 @@ class TestEmailCampaignBlasts(object):
     # Resource for this endpoint
     ENTITY = 'blasts'
 
-    def test_get_with_invalid_token(self, campaign_with_valid_candidate):
+    def test_get_with_invalid_token(self, campaign_with_two_candidates):
         """
          User auth token is invalid. It should get Unauthorized error.
         """
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL
-                                                         % campaign_with_valid_candidate.id, None)
+                                                         % campaign_with_two_candidates.id, None)
 
-    def test_get_with_no_campaign_sent(self, access_token_first, campaign_with_valid_candidate):
+    def test_get_with_no_campaign_sent(self, access_token_first, campaign_with_two_candidates):
         """
         Here we assume that there is no blast saved for given campaign. We should get OK
         response and count should be 0.
         """
-        response = requests.get(self.URL % campaign_with_valid_candidate.id,
+        response = requests.get(self.URL % campaign_with_two_candidates.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY)
 
@@ -58,24 +58,22 @@ class TestEmailCampaignBlasts(object):
         assert json_resp['campaign_id'] == sent_campaign.id
         assert json_resp['sends'] == expected_count
 
-    # TODO: Commenting this flaky test for Um-i-Hani (basit)
-    # def test_get_blasts_for_primary_candidate_emails(self, access_token_first,
-    #                                                  sent_campaign_multiple_email):
-    #     """
-    #     The test sends email to two candidates each having two emails.
-    #     But email-campaign should be sent to only primary-email-addresses of candidates.
-    #     If primary email is not found then email-campaign will be sent to latest emails added for candidates.
-    #     """
-    #     expected_count = 2
-    #     CampaignsTestsHelpers.assert_blast_sends(sent_campaign_multiple_email, expected_count)
-    #     response = requests.get(
-    #         self.URL % sent_campaign_multiple_email.id,
-    #         headers=dict(Authorization='Bearer %s' % access_token_first))
-    #     CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY,
-    #                                                         check_count=False)
-    #     json_resp = response.json()[self.ENTITY]
-    #     assert json_resp[0]['campaign_id'] == int(sent_campaign_multiple_email.id)
-    #     assert json_resp[0]['sends'] == expected_count
+    def test_get_blasts_for_primary_candidate_emails(self, access_token_first, sent_campaign_multiple_email):
+        """
+        The test sends email to two candidates each having two emails.
+        But email-campaign should be sent to only primary-email-addresses of candidates.
+        If primary email is not found then email-campaign will be sent to latest emails added for candidates.
+        """
+        expected_count = 2
+        CampaignsTestsHelpers.assert_blast_sends(sent_campaign_multiple_email, expected_count)
+        response = requests.get(
+            self.URL % sent_campaign_multiple_email.id,
+            headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, entity=self.ENTITY,
+                                                            check_count=False)
+        json_resp = response.json()[self.ENTITY]
+        assert json_resp[0]['campaign_id'] == int(sent_campaign_multiple_email.id)
+        assert json_resp[0]['sends'] == expected_count
 
     def test_get_blasts_with_paginated_response(self, access_token_first, sent_campaign):
         """

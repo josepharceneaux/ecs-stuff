@@ -184,19 +184,19 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict, authed
     work_experiences = []
     social_profile_dict_experience = social_profile_dict.get('experience') or {}
     history_dicts = social_profile_dict_experience.get('history') or []
-    start_year = 1970
+    start_year = None
     start_month = 1
-    end_year = 1970
+    end_year = None
     end_month = 1
     for i, history_dict in enumerate(history_dicts):
         # Parse startedAt and endedAt
         start_date_obj = parse_openweb_date(history_dict.get('startedAt'))
         if start_date_obj:
-            start_year = start_date_obj.year or 1970
+            start_year = start_date_obj.year or None
             start_month = start_date_obj.month or 1
         end_date_obj = parse_openweb_date(history_dict.get('endedAt'))
         if end_date_obj:
-            end_year = end_date_obj.year or 1970
+            end_year = end_date_obj.year or None
             end_month = end_date_obj.month or 1
 
         # Parse out candidate_experience_bullets.
@@ -212,6 +212,9 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict, authed
                                      end_month=end_month,
                                      is_current=i == 0,  # Assume the very first element is the current one
                                      bullets=candidate_experience_bullets))
+
+        start_year, start_month, end_year, end_month = None, None, None, None
+        
     employment_history_list = dice_profile_dict.get('employmentHistoryList') or []
     for i, employment_dict in enumerate(employment_history_list):
         # Parse out candidate_experience_bullets.
@@ -220,9 +223,9 @@ def convert_dice_candidate_dict_to_gt_candidate_dict(dice_candidate_dict, authed
             # using TalentCore._split_description
             candidate_experience_bullets.append(dict(text=employment_dict['description']))
 
-        start_year = int(employment_dict.get('startYear', 1970)) or 1970
+        start_year = int(employment_dict.get('startYear')) or None
         start_month = int(employment_dict.get('startMonth', 1)) or 1
-        end_year = int(employment_dict.get('endYear', 1970)) or 1970
+        end_year = int(employment_dict.get('endYear')) or None
         end_month = int(employment_dict.get('endMonth', 1)) or 1
 
         work_experiences.append(dict(organization=history_dict.get('company'),

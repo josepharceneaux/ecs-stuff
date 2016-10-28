@@ -20,10 +20,7 @@ import requests
 from requests import codes
 
 # Common Utils
-from sms_campaign_service.common.inter_service_calls.candidate_pool_service_calls import \
-    get_candidates_of_smartlist
-from sms_campaign_service.common.models.user import DomainRole
-from sms_campaign_service.common.routes import SmsCampaignApiUrl, CandidateApiUrl
+from sms_campaign_service.common.routes import (SmsCampaignApiUrl, CandidateApiUrl)
 from sms_campaign_service.common.campaign_services.custom_errors import (CampaignException,
                                                                          EmptyDestinationUrl)
 from sms_campaign_service.common.error_handling import (ResourceNotFound, InternalServerError,
@@ -33,23 +30,23 @@ from sms_campaign_service.common.campaign_services.campaign_utils import Campaig
 from sms_campaign_service.common.campaign_services.validators import \
     validate_blast_candidate_url_conversion_in_db
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from sms_campaign_service.common.inter_service_calls.candidate_pool_service_calls import get_candidates_of_smartlist
 
 
 # Database Models
 from sms_campaign_service.common.models.db import db
+from sms_campaign_service.common.models.user import Role
 from sms_campaign_service.common.models.sms_campaign import SmsCampaign, SmsCampaignBlast
-from sms_campaign_service.common.models.misc import (UrlConversion, Frequency, Activity)
+from sms_campaign_service.common.models.misc import (UrlConversion, Activity, Frequency)
 
 # Service Specific
 from sms_campaign_service.sms_campaign_app import app
 from sms_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from sms_campaign_service.modules.sms_campaign_base import SmsCampaignBase
-from sms_campaign_service.common.utils.handy_functions import add_role_to_test_user
 from sms_campaign_service.modules.handy_functions import replace_ngrok_link_with_localhost
-from sms_campaign_service.tests.conftest import generate_campaign_schedule_data
 from sms_campaign_service.tests.modules.common_functions import \
-    (assert_on_blasts_sends_url_conversion_and_activity, assert_for_activity,
-     assert_api_send_response, assert_campaign_schedule, delete_test_scheduled_task)
+    (assert_on_blasts_sends_url_conversion_and_activity, assert_api_send_response, generate_campaign_schedule_data,
+     assert_campaign_schedule, delete_test_scheduled_task)
 
 
 class TestCeleryTasks(object):
@@ -124,15 +121,15 @@ class TestCeleryTasks(object):
         should be sent to both of the candidates. Sms-campaign was created by some other user
         of same domain.
         """
-        CampaignsTestsHelpers.assign_roles(user_same_domain)
         campaign_id = sms_campaign_of_user_first['id']
         response_send = self.send_campaign(sms_campaign_of_user_first, access_token_same)
         assert_api_send_response(sms_campaign_of_user_first, response_send, codes.OK)
         assert_on_blasts_sends_url_conversion_and_activity(user_same_domain.id, self.EXPECTED_SENDS,
                                                            campaign_id, access_token_same)
 
-    def test_campaign_send_with_two_candidates_with_different_phones_no_link_in_text(
-            self, access_token_first, user_first, sms_campaign_of_user_first):
+    def test_campaign_send_with_two_candidates_with_different_phones_no_link_in_text(self, access_token_first,
+                                                                                     user_first,
+                                                                                     sms_campaign_of_user_first):
         """
         User auth token is valid, campaign has one smart list associated. Smartlist has two
         candidates. Both candidates have different phone numbers associated. SMS Campaign
@@ -162,8 +159,7 @@ class TestCeleryTasks(object):
                                                            campaign_id, access_token_first)
 
     def test_campaign_send_with_same_candidate_in_multiple_smartlists(
-            self, access_token_first, user_first,
-            sms_campaign_with_same_candidate_in_multiple_smartlists):
+            self, access_token_first, user_first, sms_campaign_with_same_candidate_in_multiple_smartlists):
         """
         - This tests the endpoint /v1/sms-campaigns/:id/send
 
@@ -174,88 +170,77 @@ class TestCeleryTasks(object):
         campaign_id = sms_campaign_with_same_candidate_in_multiple_smartlists['id']
         response_post = self.send_campaign(sms_campaign_with_same_candidate_in_multiple_smartlists,
                                            access_token_first)
-        assert_api_send_response(sms_campaign_with_same_candidate_in_multiple_smartlists,
+        assert_api_send_response(sms_campaign_with_same_candidate_in_multiple_smartlists, response_post, codes.OK)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS, campaign_id,
+                                                           access_token_first)
 
-                                 response_post, codes.OK)
+
+class TestCampaignSchedule(object):
+    """
+    This is the test for scheduling a campaign ans verify it is sent to candidate as
+    per send time.
+    """
+    EXPECTED_SENDS = 2
+
+    def test_one_time_campaign_schedule_and_validate_task_run(self, headers, user_first,
+                                                              access_token_first, sms_campaign_of_user_first):
+        """
+        Here we schedule SMS campaign one time with all valid parameters. Then we check
+        that task is run fine and assert the blast, sends and activity have been created
+        in database.
+        """
+        data = generate_campaign_schedule_data()
+        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
+        response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'], headers=headers,
+                                 data=json.dumps(data))
+        task_id = assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
+        CampaignsTestsHelpers.get_blasts_with_polling(sms_campaign_of_user_first, access_token_first,
+                                                      blasts_url=
+                                                      SmsCampaignApiUrl.BLASTS % sms_campaign_of_user_first['id'],
+                                                      timeout=30)
         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
-                                                           campaign_id, access_token_first)
+                                                           sms_campaign_of_user_first['id'], access_token_first)
+        delete_test_scheduled_task(task_id, headers)
 
-# TODO: Assigned a JIRA GET-1277 to saad for these
-# class TestCampaignSchedule(object):
-#     """
-#     This is the test for scheduling a campaign ans verify it is sent to candidate as
-#     per send time.
-#     """
-#
-#     def test_one_time_campaign_schedule_and_validate_task_run(
-#             self, headers, user_first, access_token_first, sms_campaign_of_user_first):
-#         """
-#         Here we schedule SMS campaign one time with all valid parameters. Then we check
-#         that task is run fine and assert the blast, sends and activity have been created
-#         in database.
-#         """
-#         data = generate_campaign_schedule_data()
-#         data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=5))
-#         response = requests.post(
-#             SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'],
-#             headers=headers, data=json.dumps(data))
-#         task_id = assert_campaign_schedule(response, user_first.id,
-#                                            sms_campaign_of_user_first['id'])
-#         CampaignsTestsHelpers.get_blasts_with_polling(
-#             sms_campaign_of_user_first, access_token_first,
-#             blasts_url=SmsCampaignApiUrl.BLASTS % sms_campaign_of_user_first['id'], timeout=30)
-#         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2,
-#                                                            sms_campaign_of_user_first['id'],
-#                                                            access_token_first,
-#                                                            blast_timeout=60)
-#         delete_test_scheduled_task(task_id, headers)
-#
-#     def test_periodic_campaign_schedule_and_validate_run(self, headers, user_first,
-#                                                          access_token_first,
-#                                                          sms_campaign_of_user_first):
-#         """
-#         This is test to schedule SMS campaign with all valid parameters. This should get OK
-#         response.
-#         """
-#         data = generate_campaign_schedule_data().copy()
-#         data['frequency_id'] = Frequency.CUSTOM
-#         data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=5))
-#         response = requests.post(
-#             SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'],
-#             headers=headers, data=json.dumps(data))
-#         task_id = assert_campaign_schedule(response, user_first.id,
-#                                            sms_campaign_of_user_first['id'])
-#         # assert that scheduler has sent the campaign for the first time
-#         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2,
-#                                                            sms_campaign_of_user_first['id'],
-#                                                            access_token_first,
-#                                                            blast_timeout=60)
-#
-#         # assert that scheduler has sent the campaign for the second time
-#         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2,
-#                                                            sms_campaign_of_user_first['id'],
-#                                                            access_token_first,
-#                                                            expected_blasts=2,
-#                                                            blast_index=1, blast_timeout=60)
-#         delete_test_scheduled_task(task_id, headers)
-#
-#     def test_campaign_daily_schedule_and_validate_task_run(
-#             self, headers, user_first, access_token_first, sms_campaign_of_user_first):
-#         """
-#         Here we schedule SMS campaign on daily basis. Then we check whether that task runs fine
-#         and assert the blast, sends and activity have been created in database. It should run only
-#         once during tests.
-#         """
-#         data = generate_campaign_schedule_data()
-#         data['frequency_id'] = Frequency.DAILY
-#         data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=5))
-#         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'],
-#                                  headers=headers, data=json.dumps(data))
-#         task_id = assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'])
-#         assert_on_blasts_sends_url_conversion_and_activity(user_first.id, 2,
-#                                                            sms_campaign_of_user_first['id'],
-#                                                            access_token_first)
-#         delete_test_scheduled_task(task_id, headers)
+    def test_periodic_campaign_schedule_and_validate_run(self, headers, user_first, access_token_first,
+                                                         sms_campaign_of_user_first):
+        """
+        This is test to schedule SMS campaign with all valid parameters. This should get OK
+        response.
+        """
+        data = generate_campaign_schedule_data().copy()
+        data['frequency_id'] = Frequency.CUSTOM
+        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
+        response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'],
+                                 headers=headers, data=json.dumps(data))
+        task_id = assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
+        # assert that scheduler has sent the campaign for the first time
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
+                                                           sms_campaign_of_user_first['id'], access_token_first,
+                                                           blast_timeout=80)
+
+        # assert that scheduler has sent the campaign for the second time
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
+                                                           sms_campaign_of_user_first['id'], access_token_first,
+                                                           expected_blasts=2, blast_index=1,  blast_timeout=80)
+        delete_test_scheduled_task(task_id, headers)
+
+    def test_campaign_daily_schedule_and_validate_task_run(self, headers, user_first,
+                                                           access_token_first, sms_campaign_of_user_first):
+        """
+        Here we schedule SMS campaign on daily basis. Then we check whether that task runs fine
+        and assert the blast, sends and activity have been created in database. It should run only
+        once during tests.
+        """
+        data = generate_campaign_schedule_data()
+        data['frequency_id'] = Frequency.DAILY
+        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
+        response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'], headers=headers,
+                                 data=json.dumps(data))
+        task_id = assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
+        assert_on_blasts_sends_url_conversion_and_activity(user_first.id, self.EXPECTED_SENDS,
+                                                           sms_campaign_of_user_first['id'], access_token_first)
+        delete_test_scheduled_task(task_id, headers)
 
 
 class TestURLRedirectionApi(object):
@@ -286,8 +271,8 @@ class TestURLRedirectionApi(object):
             campaign_in_db)
         assert hit_count_after == hit_count + 1
         assert clicks_after == clicks + 1
-        assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_SMS_CLICK,
-                            campaign_in_db.id)
+        CampaignsTestsHelpers.assert_for_activity(user_first.id, Activity.MessageIds.CAMPAIGN_SMS_CLICK,
+                                                  campaign_in_db.id)
 
     def test_get_with_no_signature(self, url_conversion_by_send_test_sms_campaign):
         """
@@ -329,7 +314,7 @@ class TestURLRedirectionApi(object):
         But candidate should only get internal server error. So this test asserts we get internal
         server error.
         """
-        [smartlist_id] = sms_campaign_of_user_first['list_ids']
+        [smartlist_id] = sms_campaign_of_user_first['smartlist_ids']
         candidates = get_candidates_of_smartlist(smartlist_id, True, access_token_first)
         candidate_ids = [candidate_id for candidate_id in candidates]
         for candidate_id in candidate_ids:
@@ -388,7 +373,7 @@ class TestURLRedirectionMethods(object):
         as it uses candidate as primary key. We then test functionality of url_redirect().
         It should get ResourceNotFound Error.
         """
-        [smartlist_id] = sms_campaign_of_user_first['list_ids']
+        [smartlist_id] = sms_campaign_of_user_first['smartlist_ids']
         candidates = get_candidates_of_smartlist(smartlist_id, True, access_token_first)
         candidate_ids = [candidate_id for candidate_id in candidates]
         for candidate_id in candidate_ids:
@@ -504,10 +489,8 @@ def _delete_candidate(candidate_id, headers, user):
     """
     This deletes the given candidate from candidate_service API.
     """
-    try:
-        add_role_to_test_user(user, [DomainRole.Roles.CAN_DELETE_CANDIDATES])
-    except InvalidUsage:
-        pass  # Maybe roll has been assigned already to given user
+    user.role_id = Role.get_by_name('DOMAIN_ADMIN').id
+    db.session.commit()
     response = requests.delete(CandidateApiUrl.CANDIDATE % candidate_id, headers=headers)
     assert response.status_code == 204
     db.session.commit()

@@ -5,7 +5,6 @@ from candidate_service.candidate_app import app
 from candidate_service.common.tests.conftest import *
 
 # Helpers
-from candidate_service.tests.api.helpers import AddUserRoles
 from candidate_service.common.utils.test_utils import send_request, response_info
 from candidate_service.common.routes import CandidateApiUrl
 
@@ -13,27 +12,11 @@ URL = CandidateApiUrl.NOTES
 
 
 class TestAddNotes(object):
-    def test_user_authentication_and_permission(self, access_token_first):
-        """
-        Test:
-            - Access endpoint without valid access token
-            - Access endpoint without valid user permission
-        """
-        # Access endpoint without valid access token
-        resp = send_request('post', URL % '5', access_token=None)
-        print response_info(resp)
-        assert resp.status_code == requests.codes.UNAUTHORIZED
 
-        # Access endpoint without setting user permission
-        resp = send_request('post', URL % '5', access_token_first)
-        print response_info(resp)
-        assert resp.status_code == requests.codes.UNAUTHORIZED
-
-    def test_add_candidate_notes(self, user_first, access_token_first, candidate_first):
+    def test_add_candidate_notes(self, access_token_first, candidate_first):
         """
         Test:  Add notes to candidate
         """
-        AddUserRoles.add_get_edit(user_first)
 
         # Create notes for candidate
         notes_data = {'notes': [
@@ -45,11 +28,10 @@ class TestAddNotes(object):
         assert create_resp.status_code == requests.codes.CREATED
         assert len(create_resp.json()['candidate_notes']) == len(notes_data['notes'])
 
-    def test_add_note_without_title(self, user_first, access_token_first, candidate_first):
+    def test_add_note_without_title(self, access_token_first, candidate_first):
         """
         Test: Add note for candidate without providing a note title
         """
-        AddUserRoles.add_get_edit(user_first)
 
         notes_data = {'notes': [{'comment': fake.bs()}, {'comment': fake.bs()}]}
         create_resp = send_request('post', CandidateApiUrl.NOTES % candidate_first.id, access_token_first, notes_data)
@@ -59,27 +41,11 @@ class TestAddNotes(object):
 
 
 class TestGetNotes(object):
-    def test_user_authentication_and_permission(self, access_token_first):
-        """
-        Test:
-            - Access endpoint without valid access token
-            - Access endpoint without valid user permission
-        """
-        # Access endpoint without valid access token
-        resp = send_request('get', URL % '5', access_token=None)
-        print response_info(resp)
-        assert resp.status_code == requests.codes.UNAUTHORIZED
-
-        # Access endpoint without setting user permission
-        resp = send_request('get', URL % '5', access_token_first)
-        print response_info(resp)
-        assert resp.status_code == requests.codes.UNAUTHORIZED
 
     def test_get_candidate_notes(self, notes_first, access_token_first):
         """
         Test: Retrieve all of candidate's notes
         """
-        AddUserRoles.get(notes_first['user'])
 
         get_resp = send_request('get', CandidateApiUrl.NOTES % notes_first['candidate'].id, access_token_first)
         print response_info(get_resp)
@@ -90,8 +56,6 @@ class TestGetNotes(object):
         """
         Test: Retrieve one of candidate's notes
         """
-        AddUserRoles.get(notes_first['user'])
-
         candidate_id = notes_first['candidate'].id
         note_id = notes_first['notes']['candidate_notes'][0]['id']
 
@@ -104,31 +68,15 @@ class TestGetNotes(object):
         assert get_resp.json()['candidate_note']['title'] == note_data['title'].lower()
         assert get_resp.json()['candidate_note']['candidate_id'] == notes_first['candidate'].id
         assert get_resp.json()['candidate_note']['id'] == note_id
-        assert get_resp.json()['candidate_note']['owner_id'] == notes_first['user'].id
+        assert get_resp.json()['candidate_note']['owner_user_id'] == notes_first['user'].id
 
 
 class TestDeleteNotes(object):
-    def test_user_authentication_and_permission(self, access_token_first):
-        """
-        Test:
-            - Access endpoint without valid access token
-            - Access endpoint without valid user permission
-        """
-        # Access endpoint without valid access token
-        resp = send_request('get', URL % '5', access_token=None)
-        print response_info(resp)
-        assert resp.status_code == requests.codes.UNAUTHORIZED
-
-        # Access endpoint without setting user permission
-        resp = send_request('get', URL % '5', access_token_first)
-        print response_info(resp)
-        assert resp.status_code == requests.codes.UNAUTHORIZED
 
     def test_delete_candidate_notes(self, notes_first, access_token_first):
         """
         Test: Delete all of candidate's notes
         """
-        AddUserRoles.get(notes_first['user'])
 
         del_resp = send_request('delete', CandidateApiUrl.NOTES % notes_first['candidate'].id, access_token_first)
         print response_info(del_resp)
@@ -143,7 +91,6 @@ class TestDeleteNotes(object):
         """
         Test: Delete one of candidate's notes
         """
-        AddUserRoles.get(notes_first['user'])
 
         candidate_id = notes_first['candidate'].id
         note_id = notes_first['notes']['candidate_notes'][0]['id']
@@ -158,4 +105,5 @@ class TestDeleteNotes(object):
         # Retrieve candidate notes
         get_resp = send_request('get', CandidateApiUrl.NOTE % (candidate_id, note_id), access_token_first)
         print response_info(get_resp)
+
         assert get_resp.status_code == requests.codes.NOT_FOUND

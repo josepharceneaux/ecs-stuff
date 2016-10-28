@@ -31,13 +31,12 @@ def send_request(*args, **kwargs):
         access_token: authorization token for user
         url: the URL where to send post request
         content_type: the content type i.e json or xml
-        secret_key_id: Redis key which have a corresponding secret value to decrypt data
         post_data: Data to post with post request
         is_jwt_request: If true, then request will be send using JWT authorization
         request_method: The type of request i.e POST, DELETE, GET, UPDATE, PATCH
     :return:
     """
-    access_token, secret_key_id = kwargs['access_token'], kwargs['secret_key_id']
+    access_token = kwargs['access_token']
     url, content_type = kwargs['url'], kwargs['content_type']
     post_data, is_jwt_request, request_method = kwargs['post_data'], kwargs.get('is_jwt_request', False), \
                                                 kwargs.get('request_method', 'post')
@@ -51,11 +50,6 @@ def send_request(*args, **kwargs):
         # If content_type is json then it should dump json data
         if content_type == 'application/json':
             post_data = json.dumps(post_data)
-        if secret_key_id:
-            headers.update({'X-Talent-Secret-Key-ID': secret_key_id})
-            # If user doesn't want to send jwt request, then delete 'X-Talent-Secret-Key-ID' key to avoid jwt auth
-            if not is_jwt_request:
-                del headers['X-Talent-Secret-Key-ID']
 
         # Send request to URL with job post data
         logger.info("Sending %s request to %s" % (request_method, url))

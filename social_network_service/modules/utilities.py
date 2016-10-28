@@ -15,16 +15,19 @@ import traceback
 from datetime import datetime
 
 # Third Party
-import pytz
 from flask import request
 from pytz import timezone
 
 # Application Specific Imports
+from social_network_service.common.error_handling import InvalidUsage, ResourceNotFound
 from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 from social_network_service.common.models.misc import Activity
+from social_network_service.common.models.user import UserSocialNetworkCredential
+from social_network_service.common.utils.handy_functions import snake_case_to_camel_case
 from social_network_service.custom_exceptions import *
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.candidate import SocialNetwork
+from social_network_service.common.constants import MEETUP
 from social_network_service.social_network_app import logger
 
 
@@ -260,30 +263,25 @@ def process_event(data, user_id, method='Create'):
         social_network = SocialNetwork.get(social_network_id)
         if social_network:
             # creating class object for respective social network
-            social_network_class = get_class(social_network.name.lower(),
-                                             'social_network')
+            social_network_class = get_class(social_network.name.lower(), 'social_network')
             event_class = get_class(social_network.name.lower(), 'event')
             sn = social_network_class(user_id=user_id)
-            event_obj = event_class(user=sn.user,
-                                    headers=sn.headers,
-                                    social_network=social_network)
+            event_obj = event_class(user=sn.user, headers=sn.headers, social_network=social_network)
         else:
             raise SocialNetworkError('Unable to find social network')
         data['user_id'] = user_id
+        if social_network.name.lower() == MEETUP and data.get('organizer_id'):
+            raise InvalidUsage('organizer_id is not a valid field in case of meetup')
         event_obj.event_gt_to_sn_mapping(data)
 
-        activity_data = {'username': request.user.name,
-                         }
+        activity_data = {'username': request.user.name}
 
         if method == 'Create':
             event_id = event_obj.create_event()
 
             # Create activity of event object creation
-            event_obj = Event.get_by_user_and_event_id(user_id=user_id,
-                                                       event_id=event_id)
-
+            event_obj = Event.get_by_user_and_event_id(user_id=user_id, event_id=event_id)
             activity_data.update({'event_title': event_obj.title})
-
             add_activity(user_id=user_id,
                          activity_type=Activity.MessageIds.EVENT_CREATE,
                          source_id=event_id,
@@ -410,21 +408,6 @@ def camel_case_to_title_case(name):
     """
     name_ = camel_case_to_snake_case(name)
     return ' '.join(name_.split('_')).title()
-
-
-def snake_case_to_camel_case(name):
-    """ Convert string or unicode from lower-case underscore to camel-case
-        e.g. appt_type_id --> apptTypeId
-
-            :Example:
-
-                result = snake_case_to_camel_case('social_network_id')
-                assert result == 'socialNetworkId'
-    """
-    splitted_string = name.split('_')
-    # use string's class to work on the string to keep its type
-    class_ = name.__class__
-    return splitted_string[0] + class_.join('', map(class_.capitalize, splitted_string[1:]))
 
 
 def convert_keys_to_camel_case(dictionary):
@@ -576,4 +559,24 @@ def get_random_word(length):
     :return:
     """
     return ''.join(random.choice(string.lowercase) for _ in xrange(length))
+
+
+def is_token_valid(social_network_id, user_id):
+    # Get social network specified by social_network_id
+    social_network = SocialNetwork.get_by_id(social_network_id)
+    if social_network:
+        user_social_network_credential = UserSocialNetworkCredential.get_by_user_and_social_network_id(
+            user_id, social_network_id)
+        if user_social_network_credential:
+            # Get social network specific Social Network class
+            social_network_class = get_class(social_network.name, 'social_network')
+            # create social network object which will validate
+            # and refresh access token (if possible)
+            sn = social_network_class(user_id=user_id,
+                                      social_network=social_network
+                                      )
+            return sn.access_token_status, social_network.name
+        return False, social_network.name
+    else:
+        raise ResourceNotFound("Invalid social network id given")
 

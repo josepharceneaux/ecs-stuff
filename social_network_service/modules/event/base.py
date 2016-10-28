@@ -95,29 +95,28 @@ To add another social network for events management, following are steps:
 """
 
 # Standard Library
-import re
 from abc import ABCMeta
 from abc import abstractmethod
-# Application Specific
-from dateutil.parser import parse
+
+# 3rd party
 from flask import request
 
-from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
-from social_network_service.common.models.event_organizer import EventOrganizer
+# Application Specific
 from social_network_service.common.models.user import User
 from social_network_service.common.models.event import Event
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.social_network_app import logger
 from social_network_service.common.models.venue import Venue
 from social_network_service.modules.utilities import log_error
 from social_network_service.modules.utilities import get_class
-from social_network_service.custom_exceptions import NoUserFound, VenueNotFound, EventOrganizerNotFound
-from social_network_service.custom_exceptions import InvalidDatetime
+from social_network_service.custom_exceptions import NoUserFound, VenueNotFound
 from social_network_service.custom_exceptions import EventNotSaveInDb
 from social_network_service.custom_exceptions import EventNotUnpublished
 from social_network_service.custom_exceptions import UserCredentialsNotFound
+from social_network_service.common.inter_service_calls.activity_service_calls import add_activity
 
 
 class EventBase(object):
@@ -269,16 +268,11 @@ class EventBase(object):
         social_network_id = data['social_network_id']
         user_id = data['user_id']
         venue_id = data['venue_id']
-        event_organizer_id = data['organizer_id']
         venue = Venue.get_by_user_id_social_network_id_venue_id(
             user_id, social_network_id, venue_id)
-        event_organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, event_organizer_id)
         if not venue:
             raise VenueNotFound('Venue not found in database. Kindly create'
                                 ' venue first.')
-        if not event_organizer:
-            raise EventOrganizerNotFound('Event organizer not found in database. Kindly create'
-                                         ' event organizer first.')
         
     @abstractmethod
     def event_gt_to_sn_mapping(self, data):
@@ -290,18 +284,10 @@ class EventBase(object):
         """
         # converting incoming Datetime object from Form submission into the
         # required format for API call
-        try:
-            start = data.get('start_datetime')
-            end = data.get('end_datetime')
-            utc_pattern = '\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z'
-            if not (re.match(utc_pattern, start) and re.match(utc_pattern, end)):
-                raise InvalidDatetime('Invalid DateTime: Kindly specify datetime '
-                                      'in UTC format like 2015-10-08T06:16:55Z')
-            data['start_datetime'] = parse(start) if start else ''
-            data['end_datetime'] = parse(end) if end else ''
-        except:
-            raise InvalidDatetime('Invalid DateTime: Kindly specify datetime '
-                                  'in UTC format like 2015-10-08T06:16:55Z')
+        start = data.get('start_datetime')
+        end = data.get('end_datetime')
+        data['start_datetime'] = DatetimeUtils.get_datetime_obj_if_format_is_valid(start)
+        data['end_datetime'] = DatetimeUtils.get_datetime_obj_if_format_is_valid(end)
 
     def pre_process_events(self, events):
         """
@@ -443,8 +429,7 @@ class EventBase(object):
         # create url to publish event
         url = self.url_to_delete_event
         # params are None. Access token is present in self.headers
-        response = http_request(method, url, headers=self.headers,
-                                user_id=self.user.id)
+        response = http_request(method, url, headers=self.headers, user_id=self.user.id)
         if response.ok:
             logger.info('|  Event has been unpublished (deleted)  |')
         else:
@@ -465,19 +450,22 @@ class EventBase(object):
         """
         pass
 
-    def get_events_from_db(self, start_date):
+    def get_events_from_db(self, start_date=None):
         """
-        This gets the events from database which starts after the specified
-        start_date
+        This gets the events from database which starts after the specified start_date
+        or incase date is None, return all events
         :param start_date:
         :type start_date: datetime
-        :return:
+        :return: list of events
         """
         if start_date:
             return Event.get_by_user_id_vendor_id_start_date(
                 self.user.id, self.social_network.id, start_date)
+        else:
+            return Event.filter_by_keywords(**{'user_id': self.user.id,
+                                      'social_network_id': self.social_network.id})
 
-    def process_events_rsvps(self, user_credentials, rsvp_data=None):
+    def process_events_rsvps(self, user_credentials, **kwargs):
         """
         We get events against a particular user_credential.
         Then we get the rsvps of all events present in database and process
@@ -491,7 +479,8 @@ class EventBase(object):
         # create object of selected rsvp class
         sn_rsvp_obj = sn_rsvp_class(user_credentials=user_credentials,
                                     headers=self.headers,
-                                    social_network=self.social_network
+                                    social_network=self.social_network,
+                                    **kwargs
                                     )
 
         # gets events of given Social Network from database
@@ -546,3 +535,4 @@ class EventBase(object):
             raise EventNotSaveInDb('Error occurred while saving event '
                                    'in database')
         return event.id
+

@@ -6,6 +6,7 @@ from datetime import datetime
 
 MAX_INT = sys.maxint
 CURRENT_YEAR = datetime.now().year
+MAX_SOURCE_PRODUCT_ID = 4
 
 candidates_resource_schema_post = {
     "$schema": "http://json-schema.org/draft-04/schema#",
@@ -49,6 +50,11 @@ candidates_resource_schema_post = {
                         "type": ["integer", "null"],
                         "minimum": 1,
                         "maximum": MAX_INT
+                    },
+                    "source_product_id": {
+                        "type": ["integer", "null"],
+                        "minimum": 1,
+                        "maximum": MAX_SOURCE_PRODUCT_ID
                     },
                     "objective": {
                         "type": ["string", "null"]
@@ -152,8 +158,13 @@ candidates_resource_schema_post = {
                                     "type": ["integer", "null"]
                                 },
                                 "value": {
-                                    "type": ["string", "null"],
-                                    "maxLength": 255
+                                    "type": ["string", "null"]
+                                },
+                                "values": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
                                 }
                             }
                         }
@@ -246,7 +257,7 @@ candidates_resource_schema_post = {
                                 },
                                 "country_code": {
                                     "type": ["string", "null"],
-                                    "maxLength": 2
+                                    "maxLength": 100
                                 },
                                 "po_box": {
                                     "type": ["string", "null"],
@@ -524,6 +535,22 @@ candidates_resource_schema_post = {
                                     "type": ["string", "null"],
                                     # "format": "date-time"
                                 },
+                                "start_year": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
+                                },
+                                "start_month": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1, "maximum": 12
+                                },
+                                "end_year": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
+                                },
+                                "end_month": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1, "maximum": 12
+                                },
                                 "comments": {
                                     "type": ["string", "null"],
                                     "maxLength": 5000
@@ -605,6 +632,11 @@ candidates_resource_schema_patch = {
                         "type": ["integer", "null"],
                         "minimum": 1,
                         "maximum": MAX_INT
+                    },
+                    "source_product_id": {
+                        "type": ["integer", "null"],
+                        "minimum": 1,
+                        "maximum": MAX_SOURCE_PRODUCT_ID
                     },
                     "objective": {
                         "type": ["string", "null"]
@@ -712,8 +744,7 @@ candidates_resource_schema_patch = {
                                     "type": ["integer", "null"]
                                 },
                                 "value": {
-                                    "type": ["string", "null"],
-                                    "maxLength": 255
+                                    "type": ["string", "null"]
                                 }
                             }
                         }
@@ -982,6 +1013,7 @@ candidates_resource_schema_patch = {
                         "type": ["array", "null"],
                         "items": {
                             "type": "object",
+                            "additionalProperties": False,
                             "properties": {
                                 "id": {
                                     "type": ["integer"]
@@ -1091,6 +1123,22 @@ candidates_resource_schema_patch = {
                                 "to_date": {
                                     "type": ["string", "null"]
                                 },
+                                "start_year": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
+                                },
+                                "start_month": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1, "maximum": 12
+                                },
+                                "end_year": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1950, "maximum": CURRENT_YEAR
+                                },
+                                "end_month": {
+                                    "type": ["integer", "null"],
+                                    "minimum": 1, "maximum": 12
+                                },
                                 "comments": {
                                     "type": ["string", "null"],
                                     "maxLength": 5000
@@ -1149,7 +1197,7 @@ resource_schema_preferences = {
     "required": ["frequency_id"],
     "properties": {
         "frequency_id": {
-            "type": "integer"
+            "type": ["integer", "string"]
         }
     }
 }

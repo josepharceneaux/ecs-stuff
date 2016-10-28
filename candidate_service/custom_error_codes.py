@@ -91,6 +91,7 @@ class CandidateCustomErrors(object):
     # Error codes for Candidate Reference
     REFERENCE_NOT_FOUND = 3160
     REFERENCE_FORBIDDEN = 3161
+    REFERENCE_EXISTS = 3162
 
     # Error codes for Candidate Tags
     TAG_NOT_FOUND = 3170
@@ -99,6 +100,8 @@ class CandidateCustomErrors(object):
 
     # Error codes for Candidate Source
     INVALID_SOURCE_ID = 3180
+    INVALID_SOURCE_PRODUCT_ID = 3181
+    SOURCE_NOT_FOUND = 3182
 
     # Error codes for Candidate Notes
     NOTE_NOT_FOUND = 3290

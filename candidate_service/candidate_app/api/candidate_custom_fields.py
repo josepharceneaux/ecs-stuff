@@ -1,16 +1,19 @@
 # Standard library
-import requests, json, datetime
+import requests
+import json
+import datetime
+from requests import codes as http_status_codes
+
 # Flask specific
 from flask import request
 from flask_restful import Resource
 # Models
 from candidate_service.common.models.db import db
 from candidate_service.common.models.candidate import CandidateCustomField
-from candidate_service.common.models.user import DomainRole
+from candidate_service.common.models.user import Permission
 from candidate_service.common.models.misc import CustomField
 # Validators
-from candidate_service.common.utils.auth_utils import require_oauth, require_all_roles
-from candidate_service.modules.talent_cloud_search import upload_candidate_documents
+from candidate_service.common.utils.auth_utils import require_oauth, require_all_permissions
 from candidate_service.modules.validators import (
     get_candidate_if_validated, does_candidate_cf_exist, is_custom_field_authorized, get_json_data_if_validated
 )
@@ -25,7 +28,7 @@ from candidate_service.modules.talent_cloud_search import upload_candidate_docum
 class CandidateCustomFieldResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def post(self, **kwargs):
         """
         Endpoints:  POST /v1/candidates/:candidate_id/custom_fields
@@ -45,40 +48,62 @@ class CandidateCustomFieldResource(Resource):
         # Candidate must exists and must belong to user's domain
         candidate = get_candidate_if_validated(authed_user, candidate_id)
 
-        created_ccf_ids = []  # aggregate created CandidateCustomField IDs
+        created_candidate_custom_field_ids = []  # aggregate created CandidateCustomField IDs
         candidate_custom_fields = body_dict['candidate_custom_fields']
-        for ccf_dict in candidate_custom_fields:
 
-            # Custom field value must not be empty
-            value = ccf_dict['value'].strip()
-            if not value:
+        for candidate_custom_field in candidate_custom_fields:
+
+            # Custom field value(s) must not be empty
+            values = filter(None, [value.strip() for value in (candidate_custom_field.get('values') or []) if value]) \
+                     or [candidate_custom_field['value'].strip()]
+            if not values:
                 raise InvalidUsage("Custom field value must be provided.", custom_error.INVALID_USAGE)
 
             # Custom Field must be recognized
-            custom_field_id = ccf_dict['custom_field_id']
+            custom_field_id = candidate_custom_field['custom_field_id']
             custom_field = CustomField.get_by_id(custom_field_id)
             if not custom_field:
                 raise NotFoundError("Custom field ID ({}) not recognized".format(custom_field_id),
                                     custom_error.CUSTOM_FIELD_NOT_FOUND)
 
             # Custom Field must belong to user's domain
-            if custom_field.domain_id != authed_user.domain_id:
+            if custom_field.domain_id != candidate.user.domain_id:
                 raise ForbiddenError("Custom field ID ({}) does not belong to user ({})".format(
                     custom_field_id, authed_user.id), custom_error.CUSTOM_FIELD_FORBIDDEN)
 
-            # Prevent duplicate entries
-            if not does_candidate_cf_exist(candidate=candidate, custom_field_dict=ccf_dict):
-                # Add candidate_id, added_time to ccf_dict; and strip value
-                ccf_dict.update(candidate_id=candidate_id, added_time=datetime.datetime.utcnow(), value=value)
-                candidate_custom_field = CandidateCustomField(**ccf_dict)
-                db.session.add(candidate_custom_field)
-                db.session.commit()
-                created_ccf_ids.append(candidate_custom_field.id)
+            custom_field_dict = dict(
+                values=values,
+                custom_field_id=custom_field_id
+            )
 
-        upload_candidate_documents([candidate_id])
-        return {'candidate_custom_fields': [{'id': custom_field_id} for custom_field_id in created_ccf_ids]}, 201
+            for value in custom_field_dict.get('values'):
 
-    @require_all_roles(DomainRole.Roles.CAN_GET_CANDIDATES)
+                custom_field_id = candidate_custom_field.get('custom_field_id')
+
+                # Prevent duplicate insertions
+                if not does_candidate_cf_exist(candidate, custom_field_id, value):
+
+                    added_time = datetime.datetime.utcnow()
+
+                    candidate_custom_field = CandidateCustomField(
+                        candidate_id=candidate_id,
+                        custom_field_id=custom_field_id,
+                        value=value,
+                        added_time=added_time
+                    )
+                    db.session.add(candidate_custom_field)
+                    db.session.flush()
+
+                    created_candidate_custom_field_ids.append(candidate_custom_field.id)
+
+        db.session.commit()
+        upload_candidate_documents.delay([candidate_id])
+        return {
+                   'candidate_custom_fields': [
+                       {'id': custom_field_id} for custom_field_id in created_candidate_custom_field_ids]
+               }, http_status_codes.CREATED
+
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
     def get(self, **kwargs):
         """
         Endpoints:
@@ -128,7 +153,7 @@ class CandidateCustomFieldResource(Resource):
                     'created_at_datetime': ccf.added_time.isoformat()
                 } for ccf in CandidateCustomField.get_candidate_custom_fields(candidate_id)]}
 
-    @require_all_roles(DomainRole.Roles.CAN_EDIT_CANDIDATES)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def delete(self, **kwargs):
         """
         Endpoints:

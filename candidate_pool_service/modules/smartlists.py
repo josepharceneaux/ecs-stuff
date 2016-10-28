@@ -9,6 +9,7 @@ from candidate_pool_service.common.inter_service_calls.candidate_service_calls i
 
 __all__ = ["create_smartlist_dict", "get_all_smartlists", "save_smartlist"]
 
+
 @cache.memoize(timeout=86400)
 def search_and_count_candidates_from_params(smartlist):
     """
@@ -37,16 +38,15 @@ def create_candidates_dict(candidate_ids):
     return candidates_dict
 
 
-def create_smartlist_dict(smartlist, oauth_token):
+def create_smartlist_dict(smartlist, oauth_token, candidate_count=True):
     """
     Given smartlist object returns the formatted smartlist dict.
     :param smartlist: smartlist row object
     :param oauth_token: oauth token
+    :param candidate_count: Do we want to calculate candidate count for smartlists
     """
-    candidate_count = get_smartlist_candidates(smartlist, oauth_token, {'fields': 'count_only'}).get('total_found')
 
-    return {
-        "total_found": candidate_count,
+    response = {
         "user_id": smartlist.user_id,
         "id": smartlist.id,
         "talent_pipeline_id": smartlist.talent_pipeline_id,
@@ -54,14 +54,21 @@ def create_smartlist_dict(smartlist, oauth_token):
         "search_params": smartlist.search_params
     }
 
+    if candidate_count:
+        response['total_found'] = get_smartlist_candidates(smartlist, oauth_token,
+                                                           {'fields': 'count_only'}).get('total_found')
 
-def get_all_smartlists(auth_user, oauth_token, page=None, page_size=None):
+    return response
+
+
+def get_all_smartlists(auth_user, oauth_token, page=None, page_size=None, candidate_count=True):
     """
     Get all smartlists from user's domain.
     :param oauth_token: Token for authentication.
     :param auth_user: User object
     :param page: Index of Page
     :param page_size: Size of a single page
+    :param candidate_count: Do we want to calculate candidate count for smartlists
     :return: List of dictionary of all smartlists present in user's domain
     """
     if page and page_size:
@@ -73,7 +80,7 @@ def get_all_smartlists(auth_user, oauth_token, page=None, page_size=None):
             User.domain_id == auth_user.domain_id, Smartlist.is_hidden == False).all()
 
     if smartlists:
-        return [create_smartlist_dict(smartlist, oauth_token) for smartlist in smartlists]
+        return [create_smartlist_dict(smartlist, oauth_token, candidate_count) for smartlist in smartlists]
 
     return "Could not find any smartlist in your domain"
 

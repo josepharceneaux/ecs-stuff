@@ -1,10 +1,15 @@
 __author__ = 'ufarooqi'
 
+from contracts import contract
 import json
 from db import db
 from datetime import datetime, timedelta
 from user import Domain, UserGroup, User
 from candidate import Candidate
+from ..error_handling import NotFoundError
+# 3rd party imports
+from sqlalchemy import or_, and_, extract
+from sqlalchemy.dialects.mysql import TINYINT
 
 
 class TalentPool(db.Model):
@@ -32,6 +37,17 @@ class TalentPool(db.Model):
         db.session.delete(self)
         db.session.commit()
 
+    @classmethod
+    @contract
+    def get_talent_pools_in_user_domain(cls, user_id):
+        """
+        This method returns talent pools in a user's domain
+        :param int|long user_id: User Id
+        :rtype: list
+        """
+        domain_id = User.get_domain_id(user_id)
+        return cls.query.filter(cls.domain_id == domain_id).all()
+
 
 class TalentPoolCandidate(db.Model):
     __tablename__ = 'talent_pool_candidate'
@@ -52,6 +68,59 @@ class TalentPoolCandidate(db.Model):
     @classmethod
     def get(cls, candidate_id, talent_pool_id):
         return cls.query.filter_by(candidate_id=candidate_id, talent_pool_id=talent_pool_id).first()
+
+    @classmethod
+    @contract
+    def candidate_imports(cls, user_id, user_name=None, talent_pool_list=None, user_specific_date=None):
+        """
+        Returns number of candidate added by a user in a talent pool during a specific time interval
+        :param string|None user_name: User name
+        :param int|long user_id: User Id
+        :param list|None talent_pool_list: Talent pool name
+        :param datetime|None|string user_specific_date: Datetime this should be later than or equal to updated_time
+        or added_time
+        :rtype: int|long|string
+        """
+        user = None
+        if user_name:
+            if user_name.lower() == 'i':
+                user_name = User.filter_by_keywords(id=user_id)[0].first_name
+            users = User.get_by_name(user_id, user_name)
+            if users:
+                user = users[0]
+            else:
+                raise NotFoundError
+        if user_name is None:
+            user = User.get_by_id(user_id)
+            if user is None:
+                raise NotFoundError
+        # Joining talent_pool table and talent_pool_candidate table on basis of Id.
+        common_query = cls.query.filter(cls.talent_pool_id == TalentPool.id)
+        if isinstance(user_specific_date, datetime):
+            # User's specified time should be smaller or equal to the time when candidate was added or updated
+            common_query = common_query.filter(or_((cls.added_time >= user_specific_date),
+                                                   (cls.updated_time >= user_specific_date)))
+        if isinstance(user_specific_date, basestring):
+            # User's specified year equal to the year when candidate was added or updated
+            common_query = common_query.filter(or_((extract("year", cls.added_time) == user_specific_date),
+                                                   (extract("year", cls.updated_time) == user_specific_date)))
+        if user_name and talent_pool_list:
+            # Querying how many candidates have user added in specified talent pools
+            return common_query.filter(
+                and_(TalentPool.user_id == User.id, TalentPool.name.in_(talent_pool_list)),
+                Candidate.id == TalentPoolCandidate.candidate_id, Candidate.user_id == user.id).distinct().count()
+        if user_name and talent_pool_list is None:
+            # Querying how many candidates have user added in his talent pools
+            return common_query.filter(TalentPool.user_id == User.id, Candidate.id == TalentPoolCandidate.candidate_id,
+                                       Candidate.user_id == user.id).distinct().count()
+        if talent_pool_list and user_name is None:
+            # Querying how many candidates user have added in his all talent pools
+            return common_query.filter(and_(TalentPool.name.in_(talent_pool_list),
+                                            TalentPool.domain_id == user.domain_id)).distinct().count()
+        if talent_pool_list is None and user_name is None:
+            # Querying how many candidates have been added in a domain's talent pools by all users
+            return common_query.filter(TalentPool.domain_id == user.domain_id).distinct().count()
+        return "Something went wrong cant find any imports"
 
 
 class TalentPoolGroup(db.Model):
@@ -79,13 +148,14 @@ class TalentPoolGroup(db.Model):
 class TalentPipeline(db.Model):
     __tablename__ = 'talent_pipeline'
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
     description = db.Column(db.TEXT)
     positions = db.Column(db.Integer, default=1, nullable=False)
     date_needed = db.Column(db.DateTime, nullable=False)
     user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'), nullable=False)
     talent_pool_id = db.Column(db.Integer, db.ForeignKey('talent_pool.id'), nullable=False)
-    search_params = db.Column(db.String(1023))
+    search_params = db.Column(db.TEXT)
+    is_hidden = db.Column(TINYINT, default='0', nullable=False)
     added_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow,
                              nullable=False)
@@ -112,21 +182,23 @@ class TalentPipeline(db.Model):
     def get_email_campaigns(self, page=1, per_page=20):
         from candidate_pool_service.common.models.email_campaign import EmailCampaign, EmailCampaignSmartlist
         from candidate_pool_service.common.models.smartlist import Smartlist
-        return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline). \
-            filter(TalentPipeline.id == self.id).paginate(page=page, per_page=per_page, error_out=False).items
+        return EmailCampaign.query.distinct(EmailCampaign.id).join(EmailCampaignSmartlist).join(Smartlist). \
+            join(TalentPipeline).filter(TalentPipeline.id == self.id).paginate(page=page, per_page=per_page,
+                                                                               error_out=False).items
 
     def get_email_campaigns_count(self):
         from candidate_pool_service.common.models.email_campaign import EmailCampaign, EmailCampaignSmartlist
         from candidate_pool_service.common.models.smartlist import Smartlist
-        return EmailCampaign.query.join(EmailCampaignSmartlist).join(Smartlist).join(TalentPipeline). \
-            filter(TalentPipeline.id == self.id).count()
+        return EmailCampaign.query.distinct(EmailCampaign.id).join(EmailCampaignSmartlist).join(Smartlist).\
+            join(TalentPipeline).filter(TalentPipeline.id == self.id).count()
 
     def delete(self):
         db.session.delete(self)
         db.session.commit()
 
     def to_dict(self, include_stats=False, get_stats_function=None, include_growth=False, interval=None,
-                get_growth_function=None):
+                get_growth_function=None, include_candidate_count=False, get_candidate_count=None,
+                email_campaign_count=False):
 
         talent_pipeline = {
             'id': self.id,
@@ -138,9 +210,14 @@ class TalentPipeline(db.Model):
                 self.search_params) if self.search_params else None,
             'talent_pool_id': self.talent_pool_id,
             'date_needed': self.date_needed.isoformat() if self.date_needed else None,
+            'is_hidden': self.is_hidden,
             'added_time': self.added_time.isoformat(),
             'updated_time': self.updated_time.isoformat()
         }
+        if email_campaign_count:
+            talent_pipeline['total_email_campaigns'] = self.get_email_campaigns_count()
+        if include_candidate_count and get_candidate_count:
+            talent_pipeline['total_candidates'] = get_candidate_count(self, datetime.utcnow())
         if include_growth and interval and get_growth_function:
             talent_pipeline['growth'] = get_growth_function(self, int(interval))
         if include_stats and get_stats_function:

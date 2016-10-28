@@ -55,13 +55,14 @@ from flask.ext.sqlalchemy import BaseQuery
 from sqlalchemy.orm.dynamic import AppenderQuery
 
 # Application Specific
+from ..constants import REDIS2
 from ..models.db import db
 from ..models import migrations
 from ..routes import GTApis, HEALTH_CHECK
-from ..redis_cache import redis_store
+from ..redis_cache import redis_store, redis_store2
 from ..talent_flask import TalentFlask
 from ..utils.talent_ec2 import get_ec2_instance_id
-from ..error_handling import register_error_handlers, InvalidUsage, InternalServerError
+from ..error_handling import register_error_handlers, InvalidUsage
 from ..talent_config_manager import (TalentConfigKeys, load_gettalent_config)
 
 
@@ -154,6 +155,52 @@ def to_json(self, include_fields=None, field_parsers=dict()):
     return data
 
 
+@classmethod
+def get_fields(cls, include=None, exclude=None, relationships=None):
+    """
+    This functions receives db Model and return columns/fields name list. One can get specific fields
+    by using `include` kwarg or he can exclude specific field using `exclude` kwarg.
+    :param type(t) cls: SqlAlchemy model class, e.g. Event, User
+    :param list | tuple | None include: which fields to include, None for all fields
+    :param list | tuple | None exclude: which fields to exclude, None for no exclusion
+    :param list | tuple | None relationships: list of relationships that you want to add in fields like
+    event_organizer for Event fields.
+    :return: list of fields
+    :rtype: list
+
+        ..Example:
+            >>> from app_common.common.models.event import Event
+            >>> Event.get_fields()
+                ['title', 'currency', 'description', 'endDatetime', 'groupUrlName', 'id', 'maxAttendees', 'organizerId',
+                'registrationInstruction', 'socialNetworkEventId', 'socialNetworkGroupId', 'socialNetworkId',
+                'startDatetime', 'ticketsId', 'timezone', 'title', 'url', 'userId', 'venueId']
+            >>> Event.get_fields(include=('title', 'cost'))
+                ['title, 'cost']
+            >>> Event.get_fields(exclude=('title', 'cost'))
+                ['currency', 'description', 'endDatetime', 'groupUrlName', 'id', 'maxAttendees', 'organizerId',
+                'registrationInstruction', 'socialNetworkEventId', 'socialNetworkGroupId', 'socialNetworkId',
+                'startDatetime', 'ticketsId', 'timezone', 'url', 'userId', 'venueId']
+            >>> Event.get_fields(relationships=('event_organizer',))
+                ['cost', 'currency', 'description', 'endDatetime', 'eventOrganizer',
+                ['about', 'email', 'event', 'id', 'name', 'socialNetworkId', 'socialNetworkOrganizerId', 'user',
+                'userId'], 'groupUrlName', 'id', 'maxAttendees', 'organizerId', 'registrationInstruction',
+                'socialNetwork', 'socialNetworkEventId', 'socialNetworkGroupId', 'socialNetworkId', 'startDatetime',
+                'ticketsId', 'timezone', 'title', 'url', 'user', 'userId', 'venue', 'venueId']
+    """
+    fields = []
+    column_keys = inspect(cls).mapper.column_attrs._data._list
+    relationship_keys = inspect(cls).mapper.relationships._data._list
+    for key in column_keys:
+        if (not include or key in include) and (not exclude or key not in exclude):
+            fields.append(key)
+    for key in relationship_keys:
+        if relationships and key in relationships:
+            fields.append(key)
+            relationship_class = getattr(cls, key).mapper.class_
+            fields.append(relationship_class.get_fields())
+    return fields
+
+
 def save(self):
     """
     This method allows a model instance to save itself in database by calling save
@@ -241,6 +288,19 @@ def get_by_id(cls, _id):
 
 
 @classmethod
+def filter_by_keywords(cls, **kwargs):
+    """
+    This method filters the model using kwargs
+    :param cls: model class, some child class of db.Model
+    :param kwargs:
+    :type kwargs: dict
+    :return: list of Model instances
+    :rtype: list
+    """
+    return cls.query.filter_by(**kwargs).all()
+
+
+@classmethod
 def delete(cls, ref, app=None, commit_session=True):
     """
     This method deletes a record from database given by id and the calling Model class.
@@ -288,13 +348,26 @@ def delete(cls, ref, app=None, commit_session=True):
 @classmethod
 def get_invalid_fields(cls, data_to_be_verified):
     """
-    This takes some data in dict from and checks if there is any key which is not a ATTRIBUTE of given model.`
+    This takes some data in dict from and checks if there is any key which is not a ATTRIBUTE of given model.
     It then returns all such fields in a list format.
     :param db.Model cls: Database model class
     :param dict data_to_be_verified: Dictionary of data.
     :rtype: list
     """
     return [key for key in data_to_be_verified if key not in cls.__table__.columns]
+
+
+@classmethod
+def refresh_all(cls, obj_list):
+    """
+    This takes some data in dict from and checks if there is any key which is not a ATTRIBUTE of given model.`
+    It then returns all such fields in a list format.
+    :param db.Model cls: Database model class
+    :param list obj_list: list of Model objects
+    :rtype: list
+    """
+    assert all(isinstance(obj, cls) for obj in obj_list), 'All objects should of type: %s' % cls.__name__
+    return [db.session.merge(obj) for obj in obj_list]
 
 
 def add_model_helpers(cls):
@@ -322,6 +395,8 @@ def add_model_helpers(cls):
     # this method returns model instance given by id
     cls.get_by_id = get_by_id
     cls.get = get_by_id
+
+    cls.filter_by_keywords = filter_by_keywords
     # This method deletes an instance
     cls.delete = delete
     # Register get_unexpected_fields() on model instance
@@ -333,6 +408,15 @@ def add_model_helpers(cls):
     # blasts = campaigns.blasts.paginate(1, 15, False).items
     # or we can call `get_paginated_response` and pass `campaign.blasts` as query.
     AppenderQuery.paginate = BaseQuery.__dict__['paginate']
+
+    # When working with celery tasks, when Model objects are passed to a celery session, object becomes detached
+    # and on accessing backref attributes casuses DetachedInstanceError. So by calling this method one can refresh the
+    # expired objects
+    cls.refresh_all = refresh_all
+
+    # Add get_fields() class method to all models by adding it to base class model
+    # this method returns list od Model's columns and relationships
+    cls.get_fields = get_fields
 
 
 def init_talent_app(app_name):
@@ -393,6 +477,12 @@ def init_talent_app(app_name):
 
         # Initialize Redis Cache
         redis_store.init_app(flask_app)
+
+        flask_app.config[REDIS2 + '_URL'] = flask_app.config[TalentConfigKeys.REDIS_URL_KEY]
+        flask_app.config['{0}_DATABASE'.format(REDIS2)] = 1
+        # Initialize Redis Cache for db 2
+        redis_store2.init_app(flask_app, REDIS2)
+
         # noinspection PyProtectedMember
         logger.info("Redis connection pool on app startup: %s", repr(redis_store._redis_client.connection_pool))
         # noinspection PyProtectedMember
@@ -417,6 +507,17 @@ def init_talent_app(app_name):
         except Exception as e:
             logger.exception("Exception running migrations: {}".format(e.message))
             db.session.rollback()
+
+        @flask_app.teardown_request
+        def teardown_request(exception):
+            """
+            This callback handles all SqlAlchemy exceptions and rolls back the previous exception to avoid further
+            code failure.
+            :param exception: exception object if there is some SqlAlchemy exception occurred otherwise None
+            """
+            if exception:
+                db.session.rollback()
+                db.session.remove()
 
         return flask_app, logger
 

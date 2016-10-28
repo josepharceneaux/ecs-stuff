@@ -26,15 +26,16 @@ from celery import chord
 from flask import current_app
 
 # Database Models
-from ..utils.auth_utils import refresh_token
+from ..models.db import db
 from ..models.user import (Token, User)
 from ..models.candidate import Candidate
+from ..models.misc import (UrlConversion, Activity)
 from ..models.push_campaign import PushCampaignBlast
 from ..models.email_campaign import EmailCampaignBlast
-from ..models.misc import (UrlConversion, Frequency, Activity)
 from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
 
 # Common Utils
+from ..utils.auth_utils import refresh_token
 from ..utils.datetime_utils import DatetimeUtils
 from ..utils.scheduler_utils import SchedulerUtils
 from ..talent_config_manager import TalentConfigKeys
@@ -47,7 +48,7 @@ from ..inter_service_calls.candidate_pool_service_calls import get_candidates_of
 from validators import (validate_form_data,
                         validation_of_data_to_schedule_campaign,
                         validate_blast_candidate_url_conversion_in_db,
-                        raise_if_dict_values_are_not_int_or_long)
+                        raise_if_dict_values_are_not_int_or_long, validate_smartlist_ids)
 from ..utils.handy_functions import (http_request, find_missing_items, JSON_CONTENT_TYPE_HEADER,
                                      generate_jwt_headers)
 
@@ -159,6 +160,19 @@ class CampaignBase(object):
         This method is used send the campaign to candidates. This has the common functionality
         for all campaigns.
 
+    * process_campaign_send(self, celery_result)
+        This method flattens candidates' lists and then sends campaign to every candidate by calling
+        `send_campaign_to_candidates()`
+
+    * get_smartlist_candidates_via_celery(self, smartlist_id)
+        This is an abstract method and child classes will implement it as celery task.
+        This method will retrieve smartlist candidates over celery
+
+    * send_callback(celery_result, campaign_obj)
+        This method is abstract method and child classes will implement this as celery task.
+        This method is called when all celery tasks are done with retrieving candidates of all smartlists. It call
+        `process_send_campaign()` method to send campaign to those candidates.
+
     * create_campaign_blast(campaign): [static]
         For each campaign, here we create blast obj for given campaign
 
@@ -237,8 +251,15 @@ class CampaignBase(object):
 
     * create_activity(self, type_=None, source_table=None, source_id=None, params=None):
         This makes HTTP POST call to "activity_service" to create activity in database.
+
+    * refresh_all_db_objects(self)
+        When working with celery tasks, db/model objects get expired. This method attaches them to current session.
+        
     """
     __metaclass__ = ABCMeta
+
+    # Child classes will set value of this.
+    REQUIRED_FIELDS = ()
 
     def __init__(self, user_id, campaign_id=None):
         """
@@ -258,7 +279,8 @@ class CampaignBase(object):
         # This gets the access_token of current user to communicate with other services.
         self.oauth_header = self.get_authorization_header(user_id)
         # It will be instance of model e.g. SmsCampaign or PushNotification etc.
-        self.campaign = None
+        self.campaign = None  # campaign model object to be processed
+        self.smartlist_ids = None  # this contains smartlist ids associated with campaign to be processed
         self.campaign_blast_id = None  # Campaign's blast id in database
         self.campaign_type = self.get_campaign_type()
         CampaignUtils.raise_if_not_valid_campaign_type(self.campaign_type)
@@ -339,10 +361,8 @@ class CampaignBase(object):
         if not campaign_data:
             raise InvalidUsage('No data received from UI to save/update campaign.')
         logger = current_app.config[TalentConfigKeys.LOGGER]
-        # if frequency_id not provided or is 0, set to id of ONCE
-        if not campaign_data.get('frequency_id'):
-            campaign_data.update({'frequency_id': Frequency.ONCE})
-        validate_form_data(campaign_data, self.user)
+        required_fields = self.__class__.REQUIRED_FIELDS
+        validate_form_data(campaign_data, self.user, required_fields=required_fields)
         logger.info('Campaign data has been validated.')
         validated_data = campaign_data.copy()
         # get respective campaign model. e.g. sms_campaign or push_campaign etc
@@ -350,10 +370,6 @@ class CampaignBase(object):
         # 'smartlist_ids' is not a field of sms_campaign or push_campaign tables, so
         # need to remove it from data.
         del validated_data['smartlist_ids']
-        # If there exists any unexpected field in data from UI, raise invalid usage error.
-        unexpected_fields = campaign_model.get_invalid_fields(validated_data)
-        if unexpected_fields:
-            raise InvalidUsage('Unexpected field(s) `%s` found in data.' % unexpected_fields)
         return campaign_model, validated_data
 
     def save(self, form_data):
@@ -378,11 +394,10 @@ class CampaignBase(object):
         campaign_model.save(campaign_obj)
         # Create record in database table e.g. "sms_campaign_smartlist"
         self.create_campaign_smartlist(campaign_obj, form_data['smartlist_ids'])
-        # Create activity, and If we get any error, we log it.
-        try:
-            self.create_activity_for_campaign_creation(campaign_obj, self.user)
-        except Exception:
-            logger.exception('Error creating campaign creation activity.')
+        # Create activity, and if we get any error, we log it.
+        klass = self.__class__
+        klass.create_activity_for_campaign_creation.apply_async((klass, campaign_obj,
+                                                                 self.user), queue=self.campaign_type)
         return campaign_obj.id
 
     def update(self, form_data, campaign_id):
@@ -441,6 +456,7 @@ class CampaignBase(object):
                 campaign_smartlist_model.save(new_record)
 
     @classmethod
+    @abstractmethod
     def create_activity_for_campaign_creation(cls, source, user):
         """
         - Here we set "params" and "type" of activity to be stored in db table "Activity"
@@ -448,14 +464,17 @@ class CampaignBase(object):
         - Activity will appear as (e.g)
            "'Harvey Specter' created an SMS campaign: 'Hiring at getTalent'"
         - This method is called from save() method of class
-            SmsCampaignBase inside sms_campaign_service/sms_campaign_base.py.
+            CampaignBase inside campaign_services/campaign_base.py.
         :param source: "sms_campaign" obj
         :type source: SmsCampaign
+        :param User user: User object
         :exception: InvalidUsage
 
         **See Also**
         .. see also:: save() method in SmsCampaignBase class.
         """
+        source = db.session.merge(source)
+        user = db.session.merge(user)
         CampaignUtils.raise_if_not_instance_of_campaign_models(source)
         raise_if_not_instance_of(user, User)
         # set params
@@ -652,13 +671,11 @@ class CampaignBase(object):
             logger.error("%s(id:%s) couldn't be deleted." % (self.campaign_type, self.campaign.id))
             raise InternalServerError("%s(id:%s) couldn't be deleted." % (self.campaign_type, self.campaign.id),
                                       error_code=CampaignException.ERROR_DELETING_CAMPAIGN)
-        try:
-            self.create_activity_for_campaign_delete(self.campaign)
-        except Exception:
-            # In case activity_service is not running, we proceed normally and log the error.
-            logger.exception('delete: Error creating campaign delete activity.')
+
+        self.create_activity_for_campaign_delete.apply_async((self, self.campaign), queue=self.campaign_type)
         logger.info('delete: %s(id:%s) has been deleted successfully.' % (self.campaign_type, self.campaign.id))
 
+    @abstractmethod
     def create_activity_for_campaign_delete(self, source):
         """
         - when a user deletes a campaign, here we set "params" and "type" of activity to
@@ -672,6 +689,8 @@ class CampaignBase(object):
         **See Also**
         .. see also:: schedule() method in CampaignBase class.
         """
+        self.refresh_all_db_objects()
+        source = db.session.merge(source)
         # any other campaign will update this line
         CampaignUtils.raise_if_not_instance_of_campaign_models(source)
         raise_if_not_instance_of(self.user, User)
@@ -706,10 +725,9 @@ class CampaignBase(object):
             end_datetime as we did in step 2 for start_datetime.
         9- Removes the frequency_id from given dict of data and put frequency (number of seconds)
             in it.
-        :exception: Forbidden error
-        :exception: Resource not found
-        :exception: Bad request
-        :exception: Invalid usage
+        :param flask.request request: request from UI
+        :param int|long campaign_id: id of campaign
+        :param string campaign_type: Type of campaign
         :return: dictionary containing Campaign obj, data to schedule SMS campaign,
                     scheduled_task and auth header
         :rtype: dict
@@ -719,9 +737,10 @@ class CampaignBase(object):
         """
         CampaignUtils.raise_if_not_valid_campaign_type(campaign_type)
         # get campaign obj, scheduled task data and oauth_header
-        campaign_obj, scheduled_task, oauth_header = \
-            cls.get_campaign_and_scheduled_task(campaign_id, request.user,
-                                                campaign_type)
+        campaign_obj, scheduled_task, oauth_header = cls.get_campaign_and_scheduled_task(campaign_id, request.user,
+                                                                                         campaign_type)
+        smartlist_ids = [campaign_smartlist.smartlist_id for campaign_smartlist in campaign_obj.smartlists]
+        validate_smartlist_ids(smartlist_ids, request.user)
         # Updating scheduled task should not be allowed in POST request
         if scheduled_task and request.method == 'POST':
             raise ForbiddenError('Use PUT method instead to update already scheduled task')
@@ -729,7 +748,7 @@ class CampaignBase(object):
         if not scheduled_task and request.method == 'PUT':
             raise ForbiddenError('Use POST method instead to schedule campaign first time')
         # get JSON data from request
-        data_to_schedule_campaign = validation_of_data_to_schedule_campaign(campaign_obj, request)
+        data_to_schedule_campaign = validation_of_data_to_schedule_campaign(request)
         return {'campaign': campaign_obj,
                 'data_to_schedule': data_to_schedule_campaign,
                 'scheduled_task': scheduled_task,
@@ -812,6 +831,11 @@ class CampaignBase(object):
                                 headers=self.oauth_header)
         # If any error occurs on POST call, we log the error inside http_request().
         if 'id' in response.json():
+            # Update campaign object with scheduler data
+            self.campaign.update(frequency_id=data_to_schedule['frequency_id'],
+                                 start_datetime=data_to_schedule['start_datetime'],
+                                 end_datetime=data_to_schedule['end_datetime'],
+                                 scheduler_task_id=response.json()['id'])
             # create campaign scheduled activity
             try:
                 self.create_campaign_schedule_activity(self.user, self.campaign, self.oauth_header)
@@ -1046,10 +1070,9 @@ class CampaignBase(object):
                 data or we need to schedule new one.
             3) If we need to schedule again, we call schedule() method.
 
-        :param _request: request from UI
-        :param campaign_id: id of campaign
-        :type campaign_id: int | long
-        :return:
+        :param flask.request _request: request from UI
+        :param int|long campaign_id: id of campaign
+        :rtype: str
         """
         task_id = None
         # validate data to schedule
@@ -1082,7 +1105,6 @@ class CampaignBase(object):
         5- Create campaign blast record in e.g. sms_campaign_blast database table.
         6- Call send_campaign_to_candidates() to send the campaign to candidates via Celery
             task.
-
         :Example:
 
             1- Create class object
@@ -1113,26 +1135,27 @@ class CampaignBase(object):
                                                                      self.campaign.id),
                                error_code=CampaignException.EMPTY_BODY_TEXT)
         # Get smartlists associated to this campaign
-        campaign_smartlists = self.campaign.smartlists
+        campaign_smartlists = self.campaign.smartlists.all()
         if not campaign_smartlists:
             raise InvalidUsage('No smartlist is associated with %s(id:%s). (User(id:%s))' % (self.campaign_type,
                                                                                              self.campaign.id,
                                                                                              self.user.id),
                                error_code=CampaignException.NO_SMARTLIST_ASSOCIATED_WITH_CAMPAIGN)
-        # GET smartlist candidates
-        lists_of_smartlist_candidates = map(self.get_smartlist_candidates, campaign_smartlists)
-        # Making a flat list out of "lists_of_smartlist_candidates" and removing duplicate candidate ids
-        # which ensures that if one candidate is associated with multiple smartlists, then that candidate receives
-        # only one campaign.
-        candidates = list(set(itertools.chain(*lists_of_smartlist_candidates)))
-        if not candidates:
-            raise InvalidUsage('No candidate is associated with smartlist(s). %s(id:%s). campaign smartlist ids are %s'
-                               % (self.campaign_type, self.campaign.id,
-                                  [smartlist.id for smartlist in campaign_smartlists]),
-                               error_code=CampaignException.NO_CANDIDATE_ASSOCIATED_WITH_SMARTLIST)
-        # create campaign blast object
-        self.campaign_blast_id = self.create_campaign_blast(self.campaign)
-        self.send_campaign_to_candidates(candidates)
+        self.smartlist_ids = [campaign_smartlist.smartlist_id for campaign_smartlist in campaign_smartlists]
+        validate_smartlist_ids(self.smartlist_ids, self.user)
+        # Register function to be called after all candidates are fetched from smartlists
+        callback = self.send_callback.subtask((self,), queue=self.campaign_type)
+
+        # Get candidates present in each smartlist
+        tasks = [self.get_smartlist_candidates_via_celery.subtask(
+            (self, smartlist_id),
+            link_error=self.celery_error_handler.subtask(queue=self.campaign_type),
+            queue=self.campaign_type) for smartlist_id in self.smartlist_ids]
+
+        # This runs all tasks asynchronously and sets callback function to be hit once all
+        # tasks in list finish running without raising any error. Otherwise callback
+        # results in failure status.
+        chord(tasks)(callback)
 
     @staticmethod
     def create_campaign_blast(campaign):
@@ -1160,7 +1183,16 @@ class CampaignBase(object):
         blast_model.save(blast_obj)
         return blast_obj.id
 
-    def get_smartlist_candidates(self, campaign_smartlist):
+    @abstractmethod
+    def get_smartlist_candidates_via_celery(self, smartlist_id):
+        """
+        Child classes will implement this method as celery task because in campaign base there is no celery app.
+        This method will retrieve candidates of a smartlist in a celery task.
+        :param int | long smartlist_id: campaign smartlist id
+        """
+        pass
+
+    def get_smartlist_candidates(self, smartlist_id):
         """
         This will get the candidates associated to a provided smart list. This makes
         HTTP GET call on candidate service API to get the candidate associated candidates.
@@ -1171,8 +1203,8 @@ class CampaignBase(object):
         :Example:
                 SmsCampaignBase.get_candidates(1)
 
-        :param campaign_smartlist: obj (e.g record of "sms_campaign_smartlist" database table)
-        :type campaign_smartlist: object e.g. obj of SmsCampaignSmartlist
+        :param int | long smartlist_id: smartlist id
+        rtype list[list[Candidate]]
         :return: Returns array of candidates in the campaign's smartlists.
         :rtype: list
         :exception: Invalid usage
@@ -1186,17 +1218,53 @@ class CampaignBase(object):
         # we just log the error and move on to next iteration. In case of any error, we return
         # empty list.
         try:
-            raise_if_not_instance_of(campaign_smartlist, CampaignUtils.SMARTLIST_MODELS)
-            candidates_ids = get_candidates_of_smartlist(campaign_smartlist.smartlist_id, candidate_ids_only=True,
+            raise_if_not_instance_of(smartlist_id, (int, long))
+            candidates_ids = get_candidates_of_smartlist(smartlist_id, candidate_ids_only=True,
                                                          access_token=self.auth_token)
             candidates = [Candidate.get_by_id(candidate_id) for candidate_id in candidates_ids]
         except Exception:
             logger.exception('get_smartlist_candidates: Error while fetching candidates for '
-                             'smartlist(id:%s)' % campaign_smartlist.smartlist_id)
+                             'smartlist(id:%s)' % smartlist_id)
         if not candidates:
             logger.error('get_smartlist_candidates: No Candidate found. smartlist id is %s. '
-                         '(User(id:%s))' % (campaign_smartlist.smartlist_id, self.user.id))
+                         '(User(id:%s))' % (smartlist_id, self.user.id))
         return candidates
+
+    @staticmethod
+    @abstractmethod
+    def send_callback(celery_result, campaign_obj):
+        """
+        When all celery tasks to retrieve smartlist candidates are finished, celery chord calls respective child
+         class' function with an array or data (candidates) from all tasks. Child class' function will further
+         call super class method `process_campaign_send` to process this data and send campaigns to all candidates.
+        :param list[list[Candidate]] celery_result: list of lists of candidates
+        :param PushCampaignBase | SmsCampaignBase campaign_obj: campaign object
+        """
+        pass
+
+    def process_campaign_send(self, celery_result):
+        """
+        This method takes `celery_result` input argument which is a list of `lists of candidate ids` and then creates
+        campaign blast and sends campaign to all candidates using celery.
+        :param list[list[Candidate]] list celery_result: list of lists of candidates
+        """
+        logger = current_app.config[TalentConfigKeys.LOGGER]
+        self.refresh_all_db_objects()
+        if not celery_result:
+            logger.error('No candidate(s) found for smartlist_ids %s, campaign_id: %s'
+                         'user_id: %s.' % (self.smartlist_ids, self.campaign.id, self.user.id))
+            return
+        # gather all candidates from various smartlists
+        all_candidates = list(itertools.chain(*celery_result))
+        logger.info('Total candidates:%s' % len(all_candidates))
+        unique_candidates = []
+        # Unique candidates
+        [unique_candidates.append(candidate) for candidate in all_candidates
+         if candidate.id not in [unique_candidate.id for unique_candidate in unique_candidates]]
+        logger.info('Unique candidates:%s' % len(unique_candidates))
+        # create campaign blast object
+        self.campaign_blast_id = self.create_campaign_blast(self.campaign)
+        self.send_campaign_to_candidates(unique_candidates)
 
     def pre_process_celery_task(self, candidates):
         """
@@ -1205,12 +1273,11 @@ class CampaignBase(object):
 
          **See Also**
         .. see also:: pre_process_celery_task() method in SmsCampaignBase class.
-        :param candidates:
+        :param list[Candidate] candidates: list of candidates
         """
         if not candidates:
-            raise InvalidUsage('No candidates with valid data found for %s(id:%s).'
-                               % (self.campaign_type, self.campaign.id),
-                               error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
+            logger = current_app.config[TalentConfigKeys.LOGGER]
+            logger.warn('No candidates with valid data found for %s(id:%s).' % (self.campaign_type, self.campaign.id))
         return candidates
 
     def send_campaign_to_candidates(self, candidates):
@@ -1235,6 +1302,7 @@ class CampaignBase(object):
             raise InvalidUsage('No candidates with valid data found for %s(id:%s).'
                                % (self.campaign_type, self.campaign.id),
                                error_code=CampaignException.NO_VALID_CANDIDATE_FOUND)
+        candidates = Candidate.refresh_all(candidates)
         pre_processed_data = self.pre_process_celery_task(candidates)
         try:
             # callback is a function which will be hit after campaign is sent to all candidates i.e.
@@ -1764,3 +1832,17 @@ class CampaignBase(object):
             return url_conversion
         else:
             raise ForbiddenError("You can not get other domain's url_conversion records")
+
+    def refresh_all_db_objects(self):
+        """
+        In case of celery, when we pass objects from one session to another session, model objects get detached from
+        session or get expired, so we need to attach them to current session. In this method, we are getting all model
+        objects that are attributes on self and attaching them to current session and updating existing with
+        updated values.
+        """
+        # filter self properties that are are not model objects.
+        # filter properties that start with `--` and `auth_token` property
+        for key in [prop for prop in dir(self) if not (prop.startswith('__') or prop == 'auth_token')]:
+            obj = getattr(self, key)
+            if isinstance(obj, db.Model):
+                setattr(self, key, db.session.merge(obj))

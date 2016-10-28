@@ -12,15 +12,16 @@ from ..utils.handy_functions import random_letter_digit_string
 from flask import current_app as app
 from ..models.user import *
 from ..error_handling import *
-from ..routes import AuthApiUrl
+from ..routes import AuthApiUrl, AuthApiUrlV2
+from ..models.user import User, Role
 
 
-def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
+def require_oauth(allow_null_user=False, allow_candidate=False):
     """
     This method will verify Authorization header of request using getTalent AuthService or Basic HTTP secret-key based
     Auth and will set request.user and request.oauth_token
-    :param bool allow_jwt_based_auth: Either JWT based authentication is supported for a particular endpoint or not ?
     :param allow_null_user: Is user necessary for Authorization or not ?
+    :param allow_candidate: Allow Candidate Id in JWT payload
     """
 
     def auth_wrapper(func):
@@ -29,19 +30,19 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
             try:
                 oauth_token = request.headers['Authorization']
             except KeyError:
-                raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
+                raise UnauthorizedError('You are not authorized to access this endpoint')
 
-            # JWT based Authentication
-            if allow_jwt_based_auth:
-                try:
-                    secret_key_id = request.headers['X-Talent-Secret-Key-ID']
-                    json_web_token = oauth_token.replace('Bearer', '').strip()
-                    User.verify_jw_token(secret_key_id, json_web_token, allow_null_user)
-                    request.oauth_token = ''
-                    return func(*args, **kwargs)
-                except KeyError:
-                    pass
+            if len(oauth_token.replace('Bearer', '').strip().split('.')) == 4:
 
+                json_web_token = oauth_token.replace('Bearer', '').strip()
+                json_web_token = json_web_token.split('.')
+                secret_key_id = json_web_token.pop()
+                json_web_token = '.'.join(json_web_token)
+                User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
+                request.oauth_token = oauth_token
+                return func(*args, **kwargs)
+
+            # Olf OAuth2.0 based Authentication
             try:
                 response = requests.get(AuthApiUrl.AUTHORIZE, headers={'Authorization': oauth_token})
             except Exception as e:
@@ -51,14 +52,15 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
             elif not response.ok:
                 error_body = response.json()
                 if error_body['error']:
-                    raise UnauthorizedError(error_message=error_body['error'].get('message'),
-                                            error_code=error_body['error'].get('code'))
+                    raise UnauthorizedError(error_message=error_body['error'].get('message', ''),
+                                            error_code=error_body['error'].get('code', ''))
                 else:
                     raise UnauthorizedError(error_message='You are not authorized to access this endpoint')
             else:
                 valid_user_id = response.json().get('user_id')
                 request.user = User.query.get(valid_user_id)
                 request.oauth_token = oauth_token
+                request.candidate = None
                 return func(*args, **kwargs)
 
         return authenticate
@@ -66,71 +68,97 @@ def require_oauth(allow_jwt_based_auth=True, allow_null_user=False):
     return auth_wrapper
 
 
-def require_all_roles(*role_names):
-    """ This method ensures that user should have all roles given in roles list"""
+def require_jwt_oauth(allow_null_user=False, allow_candidate=False):
+    """
+    This method will verify Authorization header of request using JWT based Authorization and
+    will set request.user, request.oauth_token
+    :param allow_null_user: Is user necessary for Authorization or not ?
+    :param allow_candidate: Allow Candidate Id in JWT payload
+    """
 
-    def domain_roles(func):
+    def auth_wrapper(func):
         @wraps(func)
-        def authenticate_roles(*args, **kwargs):
-            # For server-to-server Auth roles check should be skipped
-            if not request.oauth_token:
-                return func(*args, **kwargs)
-            if not role_names:
-                # Roles list is empty so it means func is not roles protected
-                return func(*args, **kwargs)
-            user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
-                          UserScopedRoles.get_all_roles_of_user(request.user.id)]
-            for role_name in role_names:
-                if role_name not in user_roles:
-                    raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
-                                                          "perform this operation")
-            request.user_can_edit_other_domains = False
-            if DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO in user_roles:
-                request.user_can_edit_other_domains = True
+        def authenticate(*args, **kwargs):
+
+            try:
+                oauth_token = request.headers['Authorization']
+            except KeyError:
+                raise UnauthorizedError('You are not authorized to access this endpoint')
+
+            json_web_token = oauth_token.replace('Bearer', '').strip()
+            json_web_token = json_web_token.split('.')
+            secret_key_id = json_web_token.pop()
+            json_web_token = '.'.join(json_web_token)
+            User.verify_jw_token(secret_key_id, json_web_token, allow_null_user, allow_candidate)
+            request.oauth_token = oauth_token
             return func(*args, **kwargs)
 
-        return authenticate_roles
+        return authenticate
 
-    return domain_roles
+    return auth_wrapper
 
 
-def require_any_role(*role_names):
-    """
-    This method ensures that user should have at least one role from given roles list and set
-    request.domain_independent_role to true if user has some domain independent (ADMIN) role
-    """
+def require_all_permissions(*permission_names):
+    """ This method ensures that user should have all permissions given in permission list"""
 
-    def domain_roles(func):
+    def permissions(func):
         @wraps(func)
-        def authenticate_roles(*args, **kwargs):
-
+        def authenticate_permission(*args, **kwargs):
             # For server-to-server Auth roles check should be skipped
-            if not request.oauth_token:
-                return func(*args, **kwargs)
-            user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
-                          UserScopedRoles.get_all_roles_of_user(request.user.id)]
-            user_roles.append('SELF')
-            if not role_names:
-                # Roles list is empty so it means func is not roles protected
-                return func(*args, **kwargs)
-            else:
-                valid_domain_roles = []
-                # Roles which a logged-in user possess
-                for role_name in role_names:
-                    if role_name in user_roles:
-                        valid_domain_roles.append(role_name)
-                if valid_domain_roles:
-                    request.user_can_edit_other_domains = False
-                    if DomainRole.Roles.CAN_EDIT_OTHER_DOMAIN_INFO in user_roles:
-                        request.user_can_edit_other_domains = True
-                    request.valid_domain_roles = valid_domain_roles
-                    return func(*args, **kwargs)
-                raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
-                                                      "perform this operation")
 
-        return authenticate_roles
+            if not permission_names:
+                # Permission list is empty so it means func is not permission protected
+                return func(*args, **kwargs)
 
-    return domain_roles
+            if not request.user:
+                return func(*args, **kwargs)
+
+            user_permissions = [permission.name for permission in request.user.role.get_all_permissions_of_role()]
+            for permission_name in permission_names:
+                if permission_name not in user_permissions:
+                    raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
+                                                          "perform this operation")
+
+            request.user_permissions = user_permissions
+            return func(*args, **kwargs)
+
+        return authenticate_permission
+
+    return permissions
+
+
+def require_any_permission(*permission_names):
+    """ This method ensures that user should have at least one permission given in permission list"""
+
+    def permissions(func):
+        @wraps(func)
+        def authenticate_permission(*args, **kwargs):
+            # For server-to-server Auth roles check should be skipped
+
+            if not permission_names:
+                # Permission list is empty so it means func is not permission protected
+                return func(*args, **kwargs)
+
+            if not request.user:
+                return func(*args, **kwargs)
+
+            user_permissions = [permission.name for permission in request.user.role.get_all_permissions_of_role()]
+
+            authenticated_permissions = []
+            for permission_name in permission_names:
+                if permission_name in user_permissions:
+                    authenticated_permissions.append(permission_name)
+
+            if authenticated_permissions:
+                request.user_permissions = user_permissions
+                return func(*args, **kwargs)
+
+            raise UnauthorizedError(error_message="User doesn't have appropriate permissions to "
+                                                  "perform this operation")
+
+        return authenticate_permission
+
+    return permissions
 
 
 def get_token_by_client_and_user(client_id, user_id, db):
@@ -177,11 +205,11 @@ def refresh_token(access_token):
     if token and isinstance(token, Token):
         # Sends a refresh request to the Oauth2 server.
         data = {
-                    'client_id': token.client_id,
-                    'client_secret': token.client.client_secret,
-                    'refresh_token': token.refresh_token,
-                    'grant_type': u'refresh_token'
-                }
+            'client_id': token.client_id,
+            'client_secret': token.client.client_secret,
+            'refresh_token': token.refresh_token,
+            'grant_type': u'refresh_token'
+        }
         response = requests.post(AuthApiUrl.TOKEN_CREATE, data=data)
         assert response.status_code == requests.codes.OK, 'Unable to refresh user (id: %s) token' % token.user.id
         return response.json()['access_token']
@@ -197,3 +225,19 @@ def gettalent_generate_password_hash(new_password):
     :rtype: basestring
     """
     return generate_password_hash(new_password, method='pbkdf2:sha512:1000', salt_length=32)
+
+
+def has_role(user, role):
+    """
+    Will return true if user has the specified role, otherwise false
+    :type user: User
+    :param role: A recognized user role such as: 'TALENT_ADMIN', 'DOMAIN_ADMIN'
+    :rtype: bool
+    """
+    role_name = role.upper()
+    accepted_roles = {role.name for role in Role.all()}
+    assert role_name in accepted_roles, "User role not recognized: {role}. " \
+                                        "User role must be one of the following: {roles}".format(
+        role=role, roles=', '.join(accepted_roles))
+
+    return user.role.name == role_name

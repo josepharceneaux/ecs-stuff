@@ -59,11 +59,9 @@ def generate_jwt_header(oauth_token=None, user_id=None):
     """
 
     if not oauth_token:
-        secret_key, oauth_token = User.generate_jw_token(user_id=user_id)
-        headers = {'Authorization': oauth_token, 'X-Talent-Secret-Key-ID': secret_key,
-                   'Content-Type': 'application/json'}
-    else:
-        headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
+        oauth_token = User.generate_jw_token(user_id=user_id)
+
+    headers = {'Authorization': oauth_token, 'Content-Type': 'application/json'}
 
     return headers
 
@@ -378,6 +376,26 @@ def update_smartlist_stats():
 
         smartlist_ids = map(lambda smartlist: smartlist[0], smartlists)
         delete_dangling_stats(smartlist_ids, container='smartlist')
+
+
+def delete_all_stats(container, container_id):
+    """
+    This method will delete all statistics from Redis for each of three containers
+    :param container: Container's name
+    :return:
+    """
+    if container == 'smartlist':
+        redis_key = 'smartlists_growth_stat_v2_'
+    elif container == 'talent-pool':
+        redis_key = 'pools_growth_stat_v2_'
+    elif container == 'talent-pipeline':
+        redis_key = 'pipelines_growth_stat_v2_'
+    else:
+        raise Exception("Container %s is not supported" % container)
+
+    key = redis_key + str(container_id)
+    redis_store.delete(redis_store.get(key))
+    redis_store.delete(key)
 
 
 def delete_dangling_stats(id_list, container):

@@ -8,9 +8,6 @@ Functions in this file are
     - validate_blast_candidate_url_conversion_in_db()
     - raise_if_dict_values_are_not_int_or_long etc.
 """
-# Third Party
-from flask import current_app
-
 # Database Models
 from ..models.user import User
 from ..models.candidate import Candidate
@@ -22,47 +19,41 @@ from ..models.email_campaign import EmailCampaignBlast
 # Common utils
 from ..utils.datetime_utils import DatetimeUtils
 from ..error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
-from ..utils.handy_functions import (find_missing_items,
-                                     validate_required_fields, get_valid_json_data)
+from ..utils.handy_functions import (find_missing_items, get_valid_json_data)
 
 
-def validation_of_data_to_schedule_campaign(campaign_obj, request):
+def validation_of_data_to_schedule_campaign(request):
     """
     This validates the data provided to schedule a campaign.
     1- Get JSON data from request and raise Invalid Usage exception if no data is found or
             data is not JSON serializable.
-    2- If start datetime is not provide/given in valid format, we raise Invalid usage
-        error as start_datetime is required field for both 'periodic' and 'one_time' schedule.
-    3- Get number of seconds by validating given frequency_id
-    4- If end_datetime is not given and frequency is for periodic task, we raise Invalid usage.
-    5- Removes the frequency_id from given dict of data and put frequency (number of seconds) in it.
-    6- Returns data_to_schedule
+    2- Get number of seconds by validating given frequency_id
+    3- If end_datetime is not given and frequency is for periodic task, we raise Invalid usage.
+    4- Returns data_to_schedule
 
     This function is used in data_validation_for_campaign_schedule() of CampaignBase class.
 
-    :param campaign_obj: campaign obj
-    :param request: request received on API
+    :param flask.request request: request received on API
     :return: data_to_schedule
     :rtype: dict
     """
     data_to_schedule_campaign = get_valid_json_data(request)
-    if not data_to_schedule_campaign:
-        raise InvalidUsage('No data provided to schedule %s(id:%s)' % (campaign_obj.__tablename__, campaign_obj.id))
-    # check if data has start_datetime
-    if not data_to_schedule_campaign.get('start_datetime'):
-        raise InvalidUsage('start_datetime is required field.')
-    # validate format of start_datetime
-    DatetimeUtils.validate_datetime_format(data_to_schedule_campaign['start_datetime'])
-    # get number of seconds from frequency id
+    start_datetime = DatetimeUtils.get_datetime_obj_if_format_is_valid(data_to_schedule_campaign.get('start_datetime'))
+    if not DatetimeUtils(start_datetime).is_in_future():
+        raise InvalidUsage('start_datetime must be in future. Given %s' % start_datetime)
+
+    # get number of seconds from frequency_id
     frequency = Frequency.get_seconds_from_id(data_to_schedule_campaign.get('frequency_id'))
     # check if task to be schedule is periodic
     if frequency and not data_to_schedule_campaign.get('end_datetime'):
         raise InvalidUsage("end_datetime is required to schedule a periodic task")
-    if frequency:
-        # validate format of end_datetime
-        DatetimeUtils.validate_datetime_format(data_to_schedule_campaign['end_datetime'])
+    else:
+        end_datetime = DatetimeUtils.get_datetime_obj_if_format_is_valid(data_to_schedule_campaign.get(
+            'end_datetime'))
+        if not DatetimeUtils(end_datetime).is_in_future():
+            raise InvalidUsage('end_datetime must be in future. Given %s' % end_datetime)
+
     data_to_schedule_campaign['frequency'] = frequency
-    # convert end_datetime_str in datetime obj
     return data_to_schedule_campaign
 
 
@@ -129,6 +120,9 @@ def validate_smartlist_ids(smartlist_ids, current_user):
         if not smartlist.user.domain_id == current_user.domain_id:
             raise ForbiddenError("validate_smartlist_ids: Smartlist(id:%s) do not belong to "
                                  "user's domain'" % str(smartlist_id))
+        if smartlist.is_hidden:
+            raise InvalidUsage('Associated Smartlist (id: %s) is deleted and can not be accessed'
+                               % smartlist.id)
 
 
 def validate_form_data(form_data, current_user, required_fields=('name', 'body_text', 'smartlist_ids')):
@@ -148,9 +142,7 @@ def validate_form_data(form_data, current_user, required_fields=('name', 'body_t
         raise InvalidUsage('form_data should be a dictionary.')
     if not isinstance(required_fields, (tuple, list)):
         raise InvalidUsage('required_fields should be tuple|list')
-    # find if any required key is missing from data
-    validate_required_fields(form_data, required_fields)
-    # find if any required key has no value
+    # find if any required key has no valid value
     missing_field_values = find_missing_items(form_data, required_fields)
     if missing_field_values:
         raise InvalidUsage('Required fields not provided to save campaign. Empty fields are %s' % missing_field_values)

@@ -11,8 +11,8 @@ import requests
 from sms_campaign_service.common.routes import SmsCampaignApiUrl
 from sms_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
 from sms_campaign_service.common.models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
-from sms_campaign_service.tests.modules.common_functions import \
-    candidate_ids_associated_with_campaign, assert_valid_send_object, assert_valid_blast_object
+from sms_campaign_service.tests.modules.common_functions import (candidate_ids_associated_with_campaign,
+                                                                 assert_valid_send_object, assert_valid_blast_object)
 
 
 class TestSmsCampaignBlastSends(object):
@@ -44,7 +44,7 @@ class TestSmsCampaignBlastSends(object):
             campaign, SmsCampaignApiUrl.CAMPAIGN,
             self.URL % ('%s', blast_id), self.HTTP_METHOD, access_token_first)
 
-    def test_get_with_one_campaign_send(self, access_token_for_different_users_of_same_domain,
+    def test_get_with_one_campaign_send(self, data_for_different_users_of_same_domain,
                                         sent_campaign_and_blast_ids):
         """
         This is the case where we assume we have sent the campaign to 2 candidates.
@@ -54,16 +54,14 @@ class TestSmsCampaignBlastSends(object):
         """
         campaign, blast_ids = sent_campaign_and_blast_ids
         candidate_ids = candidate_ids_associated_with_campaign(campaign,
-                                                               access_token_for_different_users_of_same_domain)
+                                                               data_for_different_users_of_same_domain['access_token'])
         expected_count = 2
         CampaignsTestsHelpers.assert_blast_sends(campaign, 2,
-                                                 blast_url=SmsCampaignApiUrl.BLAST % (
-                                                 campaign['id'], blast_ids[0]),
-                                                 access_token=access_token_for_different_users_of_same_domain)
+                                                 blast_url=SmsCampaignApiUrl.BLAST % (campaign['id'], blast_ids[0]),
+                                                 access_token=data_for_different_users_of_same_domain['access_token'])
         response = requests.get(
             self.URL % (campaign['id'], blast_ids[0]),
-            headers=dict(
-                Authorization='Bearer %s' % access_token_for_different_users_of_same_domain))
+            headers=data_for_different_users_of_same_domain['headers'])
         CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=expected_count)
         received_send_obj = response.json()[self.ENTITY]
         for send_obj in received_send_obj:
@@ -129,7 +127,7 @@ class TestSmsCampaignBlastSends(object):
                                                  blast_url=SmsCampaignApiUrl.BLAST
                                                            % (sent_campaign['id'], blast_ids[0]),
                                                  access_token=access_token_first,
-                                                 abort_time_for_sends=60)
+                                                 abort_time_for_sends=100)
         response_blasts = requests.get(SmsCampaignApiUrl.BLASTS % sent_campaign['id'],
                                        headers=headers)
         CampaignsTestsHelpers.assert_ok_response_and_counts(response_blasts, count=1,

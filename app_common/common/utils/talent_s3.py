@@ -1,6 +1,7 @@
 __author__ = 'ufarooqi'
-
 import boto
+from urlparse import urlparse
+from cStringIO import StringIO
 from flask import current_app as app
 import boto.exception
 from boto.s3.bucket import Bucket
@@ -8,14 +9,17 @@ from boto.s3.key import Key
 from ..error_handling import InternalServerError, InvalidUsage
 from ..talent_config_manager import TalentConfigKeys
 from boto.s3.connection import OrdinaryCallingFormat, S3Connection
+from botocore.exceptions import ClientError
 import boto3
 
 
 def get_s3_bucket_and_conn():
     """
-
-    :rtype: (Bucket, S3Connection)
+    :param region: Name of Region
+    :param bucket: Name of Bucket
+    :return: (Bucket, S3Connection)
     """
+
     c = get_s3_conn()
     try:
         b = c.get_bucket(app.config[TalentConfigKeys.S3_BUCKET_KEY], validate=False)
@@ -103,6 +107,44 @@ def get_s3_url(folder_path, name):
         key="%s/%s" % (folder_path, os.path.basename(name)),
         query_auth=True
     )
+
+
+def sign_url_for_filepicker_bucket(url):
+    """
+    This method will extract region, bucket and key from a S3 URL and will return a signed one for gettalent-filepicker
+    bucket
+    :param basestring url: S3 URL
+    :return: Signed URL
+    :rtype: basestring
+    """
+
+    try:
+        parsed_url = urlparse(url)
+
+        if 'gettalent-filepicker' not in url:
+            return url
+
+        file_path = parsed_url.path
+        file_path = file_path.split('/')
+        file_path = filter(None, file_path)
+
+        if 'gettalent-filepicker' in file_path:
+            file_path.pop(0)
+
+        key_name = '/'.join(file_path)
+
+        connection = get_s3_conn("us-west-1")
+        return connection.generate_url(
+                expires_in=3600 * 24 * 365,
+                method='GET',
+                bucket="gettalent-filepicker",
+                key=key_name,
+                query_auth=True
+        )
+    except Exception as e:
+        app.config[TalentConfigKeys.LOGGER].exception("Couldn't signed gettalent-filepicker URL: "
+                                                      "(%s) because (%s)", url, e.message)
+        return url
 
 
 def is_file_existing(folder_path, name):
@@ -233,12 +275,18 @@ def boto3_get_file(bucket, filename):
         aws_access_key_id=app.config[TalentConfigKeys.AWS_KEY],
         aws_secret_access_key=app.config[TalentConfigKeys.AWS_SECRET]
     )
+
+    CLIENT_ERROR_MSG = "There has been an error retrieving the uploaded file. Please try again"
+
     try:
         s3_file = client.get_object(Bucket=bucket, Key=filename)
+    except ClientError as e:
+        app.logger.exception("boto3 ClientError. Error retrieving {} from {}. Exception: {}".format(filename, bucket, e.message))
+        raise InvalidUsage(error_message=CLIENT_ERROR_MSG)
     except Exception as e:
-        app.logger.exception("S3 error. Error retrieving {} from {}. Exception: {}".format(filename, bucket, e.message))
-        raise InvalidUsage(error_message="Error retrieving uploaded file.")
-    from cStringIO import StringIO
+        app.logger.exception("boto3 Exception. Error retrieving {} from {}. Exception: {}".format(filename, bucket, e.message))
+        raise InternalServerError(error_message=CLIENT_ERROR_MSG)
+
     return StringIO(s3_file['Body'].read())
 
 

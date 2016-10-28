@@ -6,9 +6,9 @@ from auth_service.oauth import app, logger
 from auth_service.oauth import gt_oauth
 from auth_service.common.error_handling import *
 from auth_service.common.routes import AuthApi, AuthApiV2
-from auth_service.common.models.user import DomainRole, UserScopedRoles
-from auth_service.common.utils.auth_utils import require_all_roles, require_oauth
+from auth_service.common.models.user import Permission
 from auth_service.common.models.user import User
+from auth_service.common.utils.auth_utils import require_jwt_oauth
 from auth_service.oauth.oauth_utilities import (authenticate_user, save_token_v2,
                                                 redis_store, authenticate_request, load_client, save_token_v1)
 
@@ -35,6 +35,7 @@ def refresh_token_v2():
 
     secret_key_id, authenticated_user = authenticate_request()
     redis_store.delete(secret_key_id)
+
     return save_token_v2(authenticated_user)
 
 
@@ -43,6 +44,7 @@ def revoke_token_v2():
     """ Revoke an access_token """
     secret_key_id, authenticated_user = authenticate_request()
     redis_store.delete(secret_key_id)
+
     return '', 200
 
 
@@ -54,6 +56,7 @@ def authorize_v2():
 
 
 @app.route(AuthApiV2.TOKEN_OF_ANY_USER)
+@require_jwt_oauth()
 def access_token_of_user_v2(user_id):
     """
     GET /users/<user_id>/access_token Create Access token for a user
@@ -62,12 +65,9 @@ def access_token_of_user_v2(user_id):
     :rtype: dict
     """
 
-    secret_key_id, authenticated_user = authenticate_request()
+    user_permission = [permission.name for permission in request.user.role.get_all_permissions_of_role()]
 
-    user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
-                  UserScopedRoles.get_all_roles_of_user(authenticated_user.id)]
-
-    if DomainRole.Roles.CAN_IMPERSONATE_USERS not in user_roles:
+    if Permission.PermissionNames.CAN_IMPERSONATE_USERS not in user_permission:
         raise UnauthorizedError("User doesn't have appropriate permissions to perform this operation")
 
     user_object = User.query.get(user_id)
@@ -125,10 +125,9 @@ def access_token_of_user(user_id):
             error_code = request.oauth.error_code or None
             raise UnauthorizedError(error_message=error_message, error_code=error_code)
 
-    user_roles = [DomainRole.query.get(user_role.role_id).role_name for user_role in
-                  UserScopedRoles.get_all_roles_of_user(request.oauth.user.id)]
+    user_permission = [permission.name for permission in request.oauth.user.role.get_all_permissions_of_role()]
 
-    if DomainRole.Roles.CAN_IMPERSONATE_USERS not in user_roles:
+    if Permission.PermissionNames.CAN_IMPERSONATE_USERS not in user_permission:
         raise UnauthorizedError("User doesn't have appropriate permissions to perform this operation")
 
     client_id = request.args.get('client_id', '')
@@ -152,4 +151,3 @@ def access_token_of_user(user_id):
 
     save_token_v1(token, request)
     return jsonify(token), 200
-

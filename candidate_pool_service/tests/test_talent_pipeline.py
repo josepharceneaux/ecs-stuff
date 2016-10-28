@@ -3,7 +3,6 @@ __author__ = 'ufarooqi'
 from datetime import timedelta
 from candidate_pool_service.candidate_pool_app import app
 from candidate_pool_service.common.tests.conftest import *
-from candidate_pool_service.common.utils.handy_functions import add_role_to_test_user
 from candidate_pool_service.common.models.talent_pools_pipelines import TalentPipeline
 from candidate_pool_service.common.models.email_campaign import EmailCampaign, EmailCampaignSmartlist
 from candidate_pool_service.common.tests.cloud_search_common_functions import *
@@ -21,13 +20,6 @@ def test_talent_pipeline_api_post(access_token_first, user_first, talent_pool, t
             }
         ]
     }
-
-    # Logged-in user trying to add a new talent-pipeline
-    response, status_code = talent_pipeline_api(access_token_first, data=data, action='POST')
-    assert status_code == 401
-
-    # Adding 'CAN_ADD_TALENT_PIPELINES' in user_first
-    add_role_to_test_user(user_first, ['CAN_ADD_TALENT_PIPELINES'])
 
     # Logged-in user trying to add a new talent-pipeline with empty request body
     response, status_code = talent_pipeline_api(access_token_first, action='POST')
@@ -133,21 +125,10 @@ def test_talent_pipeline_api_put(access_token_first, access_token_second, user_s
 
     talent_pipeline_id = talent_pipeline.id
 
-    # Adding 'CAN_EDIT_TALENT_PIPELINES' in user_second
-    add_role_to_test_user(user_second, ['CAN_EDIT_TALENT_PIPELINES'])
-
     # Logged-in user trying to edit an existing talent-pipeline of different domain
     response, status_code = talent_pipeline_api(access_token_second, talent_pipeline_id=talent_pipeline_id, data=data,
                                                 action='PUT')
     assert status_code == 403
-
-    # Logged-in user trying to edit an existing talent-pipeline of same domain
-    response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id, data=data,
-                                                action='PUT')
-    assert status_code == 401
-
-    # Adding 'CAN_EDIT_TALENT_PIPELINES' in user_first
-    add_role_to_test_user(user_first, ['CAN_EDIT_TALENT_PIPELINES'])
 
     # Logged-in user trying to edit a talent-pipeline with empty request body
     response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id, action='PUT')
@@ -241,14 +222,6 @@ def test_talent_pipeline_api_get(access_token_first, access_token_second, user_s
 
     talent_pipeline_id = talent_pipeline.id
 
-    # Logged-in user trying to get information of a talent_pipeline
-    response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id)
-    assert status_code == 401
-
-    # Adding 'CAN_GET_TALENT_PIPELINES' in user_first and user_second
-    add_role_to_test_user(user_first, ['CAN_GET_TALENT_PIPELINES'])
-    add_role_to_test_user(user_second, ['CAN_GET_TALENT_PIPELINES'])
-
     # Logged-in user trying to get information of a non-existing talent_pipeline
     response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id + 1000)
     assert status_code == 404
@@ -284,14 +257,6 @@ def test_talent_pipeline_api_delete(access_token_first, access_token_second, use
 
     talent_pipeline_id = talent_pipeline.id
 
-    # Logged-in user trying to delete of a talent_pipeline
-    response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id, action='DELETE')
-    assert status_code == 401
-
-    # Adding 'CAN_GET_TALENT_PIPELINES' in user_first and user_second
-    add_role_to_test_user(user_first, ['CAN_DELETE_TALENT_PIPELINES'])
-    add_role_to_test_user(user_second, ['CAN_DELETE_TALENT_PIPELINES'])
-
     # Logged-in user trying to delete a non-existing talent_pipeline
     response, status_code = talent_pipeline_api(access_token_first, talent_pipeline_id=talent_pipeline_id + 1000,
                                                 action='DELETE')
@@ -306,7 +271,7 @@ def test_talent_pipeline_api_delete(access_token_first, access_token_second, use
     assert status_code == 200
 
     db.session.commit()
-    assert not TalentPipeline.query.get(talent_pipeline_id)
+    assert talent_pipeline.is_hidden == 1
 
 
 def test_talent_pipeline_smart_list_api_post(access_token_first, access_token_second, user_second, user_first,
@@ -324,15 +289,6 @@ def test_talent_pipeline_smart_list_api_post(access_token_first, access_token_se
     data = {
         'smartlist_ids': ['a', test_smart_first.id]
     }
-
-    # Logged-in user trying to add smart_lists to a talent_pipeline
-    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data,
-                                                           action='POST')
-    assert status_code == 401
-
-    # Adding 'CAN_ADD_TALENT_PIPELINE_SMART_LISTS' to user_first and user_second
-    add_role_to_test_user(user_first, ['CAN_ADD_TALENT_PIPELINE_SMART_LISTS'])
-    add_role_to_test_user(user_second, ['CAN_ADD_TALENT_PIPELINE_SMART_LISTS'])
 
     # Logged-in user trying to add smart_lists to a talent_pipeline with empty request body
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, action='POST')
@@ -388,15 +344,6 @@ def test_talent_pipeline_smart_list_api_delete(access_token_first, access_token_
         'smartlist_ids': ['a', test_smart_first.id]
     }
 
-    # Logged-in user trying to remove smart_lists from a talent_pipeline
-    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, data=data,
-                                                           action='DELETE')
-    assert status_code == 401
-
-    # Adding 'CAN_DELETE_TALENT_PIPELINE_SMART_LISTS' to user_first and user_second
-    add_role_to_test_user(user_first, ['CAN_DELETE_TALENT_PIPELINE_SMART_LISTS'])
-    add_role_to_test_user(user_second, ['CAN_DELETE_TALENT_PIPELINE_SMART_LISTS'])
-
     # Logged-in user trying to remove smart_lists from a talent_pipeline with empty request body
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id, action='DELETE')
     assert status_code == 400
@@ -441,14 +388,6 @@ def test_talent_pipeline_smart_list_api_get(access_token_first, access_token_sec
     db.session.add(test_smart_first)
     db.session.add(test_smart_second)
     db.session.commit()
-
-    # Logged-in user trying to get all smart_lists of a talent_pipeline
-    response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id)
-    assert status_code == 401
-
-    # Adding 'CAN_GET_TALENT_PIPELINE_SMART_LISTS' to user_first and user_second
-    add_role_to_test_user(user_first, ['CAN_GET_TALENT_PIPELINE_SMART_LISTS'])
-    add_role_to_test_user(user_second, ['CAN_GET_TALENT_PIPELINE_SMART_LISTS'])
 
     # Logged-in user trying to get all smart_lists of a non-existing talent_pipeline
     response, status_code = talent_pipeline_smart_list_api(access_token_first, talent_pipeline_id + 1000)

@@ -1,0 +1,11 @@
+"""
+This script adds 'iso639_language' column to CandidateLanguage
+"""
+
+from candidate_service.common.models.db import db
+from sqlalchemy import text
+from sqlalchemy.dialects.mysql import VARCHAR
+
+db.session.execute(
+    text("ALTER TABLE `candidate_language` add `iso639_language` VARCHAR(2)")
+)

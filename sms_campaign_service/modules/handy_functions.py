@@ -19,17 +19,16 @@ from twilio.rest import TwilioRestClient
 # Service specific
 from sms_campaign_service.sms_campaign_app import logger, app
 from sms_campaign_service.modules.custom_exceptions import TwilioApiError
-from sms_campaign_service.modules.sms_campaign_app_constants import (NGROK_URL, TWILIO_TEST_NUMBER)
+from sms_campaign_service.modules.constants import (NGROK_URL, TWILIO_TEST_NUMBER)
 
 # Common utils
+from sms_campaign_service.common.routes import (GTApis, SmsCampaignApiUrl)
 from sms_campaign_service.common.talent_config_manager import TalentConfigKeys
-from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound,
-                                                        ForbiddenError)
-from sms_campaign_service.common.campaign_services.campaign_utils import \
-    (raise_if_dict_values_are_not_int_or_long, CampaignUtils)
 from sms_campaign_service.common.utils.validators import format_phone_number
 from sms_campaign_service.common.utils.validators import raise_if_not_instance_of
-from sms_campaign_service.common.routes import (GTApis, SmsCampaignApi, SmsCampaignApiUrl)
+from sms_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
+from sms_campaign_service.common.campaign_services.campaign_utils import (raise_if_dict_values_are_not_int_or_long,
+                                                                          CampaignUtils)
 
 # Database models
 from sms_campaign_service.common.models.sms_campaign import SmsCampaignBlast
@@ -172,7 +171,7 @@ def replace_ngrok_link_with_localhost(temp_ngrok_link):
     """
     relative_url = temp_ngrok_link.split(NGROK_URL % '')[1]
     # HOST_NAME is http://127.0.0.1:8011 for dev
-    return SmsCampaignApi.HOST_NAME % relative_url
+    return SmsCampaignApiUrl.HOST_NAME % relative_url
 
 
 # TODO: remove this when app is up

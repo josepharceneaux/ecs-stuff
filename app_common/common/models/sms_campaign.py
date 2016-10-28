@@ -1,12 +1,18 @@
+
 __author__ = 'basit'
 
-import datetime
+from datetime import datetime
+from contracts import contract
 
 from sqlalchemy.orm import relationship
+from sqlalchemy import or_, desc, extract, and_
 
 from db import db
 from ..error_handling import InternalServerError
 from ..utils.datetime_utils import DatetimeUtils
+from ..custom_contracts import define_custom_contracts
+
+define_custom_contracts()
 
 
 class SmsCampaign(db.Model):
@@ -19,14 +25,14 @@ class SmsCampaign(db.Model):
     start_datetime = db.Column(db.DateTime)
     end_datetime = db.Column(db.DateTime)
     scheduler_task_id = db.Column(db.String(255))
-    added_datetime = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    added_datetime = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
     # Relationships
     blasts = relationship('SmsCampaignBlast', cascade='all, delete-orphan',
                           passive_deletes=True, lazy='dynamic', backref='campaign')
     smartlists = relationship('SmsCampaignSmartlist', cascade='all, delete-orphan',
-                              passive_deletes=True, backref='campaign')
+                              passive_deletes=True, backref='campaign', lazy='dynamic')
 
     def __repr__(self):
         return "<SmsCampaign (id = %d, name = %s)>" % (self.id, self.name)
@@ -46,7 +52,7 @@ class SmsCampaign(db.Model):
                        "end_datetime": DatetimeUtils.utc_isoformat(self.end_datetime) if self.end_datetime else None,
                        "added_datetime": DatetimeUtils.utc_isoformat(self.added_datetime) if self.added_datetime else None,
                        "body_text": self.body_text,
-                       "list_ids": [campaign_smartlist.smartlist_id for campaign_smartlist in self.smartlists],
+                       "smartlist_ids": [campaign_smartlist.smartlist_id for campaign_smartlist in self.smartlists],
                        "scheduler_task_id": self.scheduler_task_id}
         return return_dict
 
@@ -85,8 +91,8 @@ class SmsCampaignBlast(db.Model):
     sends = db.Column(db.Integer, default=0)
     clicks = db.Column(db.Integer, default=0)
     replies = db.Column(db.Integer, default=0)
-    sent_datetime = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    sent_datetime = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
     # Relationships
     blast_sends = relationship('SmsCampaignSend', cascade='all,delete-orphan',
@@ -97,6 +103,40 @@ class SmsCampaignBlast(db.Model):
     def __repr__(self):
         return "<SMSCampaignBlast (Sends: %s, Clicks: %s)>" % (self.sends, self.clicks)
 
+    @classmethod
+    @contract
+    def top_performing_sms_campaign(cls, datetime_value, user_id):
+        """
+        This method returns top performing SMS campaign from a specific year
+        :param int|long user_id: User Id
+        :param datetime|string|None datetime_value: Year of campaign started or updated
+        :rtype type(z)|None
+        """
+        from user import UserPhone, User
+        domain_id = User.get_domain_id(user_id)
+        user_ids_in_domain = User.query.with_entities(User.id).filter(User.domain_id == domain_id).all()
+        user_ids_in_domain = [_id[0] for _id in user_ids_in_domain]
+        user_phone_ids = UserPhone.query.with_entities(UserPhone.id).\
+            filter(UserPhone.user_id.in_(user_ids_in_domain)).all()
+        user_phone_ids = [_id[0] for _id in user_phone_ids]
+        if domain_id and isinstance(datetime_value, datetime):
+            return cls.query.filter(or_(cls.updated_time >= datetime_value,
+                                        cls.sent_datetime >= datetime_value)).\
+                filter(cls.sends > 0).\
+                filter(SmsCampaign.id == cls.campaign_id, SmsCampaign.user_phone_id.in_(user_phone_ids)).\
+                order_by(desc(cls.replies/cls.sends)).first()
+        if domain_id and isinstance(datetime_value, basestring):
+            return cls.query.filter(or_(extract("year", cls.updated_time) == datetime_value,
+                                        extract("year", cls.sent_datetime) == datetime_value)). \
+                filter(SmsCampaign.id == cls.campaign_id, cls.sends > 0). \
+                filter(SmsCampaign.user_phone_id.in_(user_phone_ids)). \
+                order_by(desc(cls.replies/cls.sends)).first()
+        if domain_id and not datetime_value:
+            return cls.query.filter(SmsCampaign.id == cls.campaign_id). \
+                filter(SmsCampaign.user_phone_id.in_(user_phone_ids), cls.sends > 0). \
+                order_by(desc(cls.replies/cls.sends)).first()
+        return None
+
 
 class SmsCampaignSend(db.Model):
     __tablename__ = 'sms_campaign_send'
@@ -104,7 +144,7 @@ class SmsCampaignSend(db.Model):
     blast_id = db.Column(db.Integer,  db.ForeignKey('sms_campaign_blast.id', ondelete='CASCADE'))
     candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id'))
     sent_datetime = db.Column(db.DateTime)
-    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
     # Relationships
     url_conversions = relationship('SmsCampaignSendUrlConversion',
@@ -143,7 +183,7 @@ class SmsCampaignReply(db.Model):
     body_text = db.Column(db.Text)
     candidate_phone_id = db.Column(db.BIGINT,
                                    db.ForeignKey('candidate_phone.Id', ondelete='CASCADE'))
-    added_datetime = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    added_datetime = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return "<SmsCampaignReply(id = %r)>" % self.id
@@ -173,7 +213,7 @@ class SmsCampaignSmartlist(db.Model):
                              nullable=False)
     campaign_id = db.Column(db.Integer, db.ForeignKey("sms_campaign.id", ondelete='CASCADE'),
                             nullable=False)
-    updated_time = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
+    updated_time = db.Column(db.TIMESTAMP, default=datetime.utcnow)
 
     def __repr__(self):
         return '<SmsCampaignSmartlist(id = %r)>' % self.id

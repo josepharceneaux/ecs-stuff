@@ -1,15 +1,17 @@
-from sqlalchemy import and_
+from contracts import contract
+from sqlalchemy import and_, desc
 from db import db
 from sqlalchemy.orm import relationship, backref
 import datetime
-from ..error_handling import InternalServerError
+from ..error_handling import InternalServerError,  NotFoundError
 from ..utils.validators import raise_if_not_positive_int_or_long
-from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT
+from sqlalchemy.dialects.mysql import TINYINT, YEAR, BIGINT, SMALLINT
 from associations import ReferenceEmail
 from venue import Venue
 from event import Event
 from sms_campaign import SmsCampaignReply
-from email_campaign import (EmailCampaign, EmailCampaignSend)
+from tag import CandidateTag
+from email_campaign import EmailCampaign, EmailCampaignSend
 
 
 class Candidate(db.Model):
@@ -31,7 +33,7 @@ class Candidate(db.Model):
     dice_profile_id = db.Column('DiceProfileId', db.String(128))
     source_id = db.Column('SourceId', db.Integer, db.ForeignKey('candidate_source.Id'))
     source_product_id = db.Column('SourceProductId', db.Integer, db.ForeignKey('product.Id'),
-                                  nullable=False, default=2)  # Web = 2
+                                  nullable=True, default=2)  # Web = 2
     filename = db.Column('Filename', db.String(100))
     objective = db.Column('Objective', db.Text)
     summary = db.Column('Summary', db.Text)
@@ -64,6 +66,7 @@ class Candidate(db.Model):
     skills = relationship('CandidateSkill', cascade='all, delete-orphan', passive_deletes=True)
     social_networks = relationship('CandidateSocialNetwork', cascade='all, delete-orphan', passive_deletes=True)
     text_comments = relationship('CandidateTextComment', cascade='all, delete-orphan', passive_deletes=True)
+    tags = relationship('CandidateTag', cascade='all, delete-orphan', passive_deletes=True)
     work_preferences = relationship('CandidateWorkPreference', cascade='all, delete-orphan', passive_deletes=True)
     unidentifieds = relationship('CandidateUnidentified', cascade='all, delete-orphan', passive_deletes=True)
     email_campaign_sends = relationship('EmailCampaignSend', cascade='all, delete-orphan', passive_deletes=True)
@@ -71,7 +74,6 @@ class Candidate(db.Model):
                                       backref='candidate')
     push_campaign_sends = relationship('PushCampaignSend', cascade='all, delete-orphan', passive_deletes=True,
                                        backref='candidate')
-
     voice_comments = relationship('VoiceComment', cascade='all, delete-orphan', passive_deletes=True)
     devices = relationship('CandidateDevice', cascade='all, delete-orphan', passive_deletes=True,
                            backref='candidate', lazy='dynamic')
@@ -97,15 +99,11 @@ class Candidate(db.Model):
                                                                source_id,
                                                                product_id):
         assert user_id
-        return cls.query.filter(
-            and_(
-                Candidate.first_name == first_name,
-                Candidate.last_name == last_name,
-                Candidate.user_id == user_id,
-                Candidate.source_id == source_id,
-                Candidate.source_product_id == product_id
-            )
-        ).first()
+        return cls.query.filter_by(first_name=first_name,
+                                   last_name=last_name,
+                                   user_id=user_id,
+                                   source_id=source_id,
+                                   source_product_id=product_id).first()
 
     @classmethod
     def set_is_web_hidden_to_true(cls, candidate_id):
@@ -114,6 +112,53 @@ class Candidate(db.Model):
         """
         cls.query.filter_by(id=candidate_id).first().is_web_hidden = 1
         db.session.commit()
+
+    @staticmethod
+    def get_candidate_count_with_skills(skills, user_id):
+        """
+        This method returns number of candidates who have certain skills
+        :param int|long user_id: User Id
+        :param list skills: Candidate skills
+        :rtype: int: Number of candidates with certain skills
+        """
+        assert isinstance(skills, list) and skills, "Invalid skills"
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid user_id"
+        from .user import User  # This has to be here to avoid circular import
+        domain_id = User.get_domain_id(user_id)
+        if domain_id:
+            return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
+                .filter(and_(User.id == Candidate.user_id, User.domain_id == domain_id)).\
+                filter(CandidateSkill.description.in_(skills)).distinct().count()
+        raise NotFoundError('No domain found')
+
+    @staticmethod
+    @contract
+    def get_candidate_count_from_zipcode(zipcode, user_id):
+        """
+        This method returns number of candidates from a certain zipcode
+        :param int|long user_id: User Id
+        :param string zipcode: Candidate zipcode
+        :rtype: int|long
+        """
+        assert isinstance(zipcode, basestring) and zipcode, "Invalid zipcode"
+        assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
+        from .user import User  # This has to be here to avoid circular import
+        domain_id = User.get_domain_id(user_id)
+        if domain_id:
+            return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
+                filter(and_(Candidate.user_id == User.id, User.domain_id == domain_id)).\
+                filter(CandidateAddress.zip_code == zipcode).distinct().count()
+        raise NotFoundError('No domain found')
+
+    @classmethod
+    def get_all_in_user_domain(cls, domain_id):
+        """
+        This method returns number of candidates from a certain zipcode
+        :param int|long domain_id: Domain Id
+        """
+        assert domain_id, 'domain_id not provided'
+        from user import User  # This has to be here to avoid circular import
+        return cls.query.join(User, User.domain_id == domain_id).filter(Candidate.user_id == User.id).all()
 
 
 class CandidateStatus(db.Model):
@@ -153,6 +198,10 @@ class PhoneLabel(db.Model):
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     DEFAULT_LABEL = 'Home'
+    MOBILE_LABEL = 'Mobile'
+    WORK_LABEL = 'Work'
+    HOME_FAX = 'Home Fax'
+    OFFICE_FAX = 'Office Fax'
     OTHER_LABEL = 'Other'
 
     # Relationships
@@ -290,8 +339,8 @@ class CandidatePhone(db.Model):
         from user import User  # This has to be here to avoid circular import
         if not isinstance(current_user, User):
             raise InternalServerError('Invalid User object given')
-        return cls.query.join(Candidate).\
-            join(User, User.domain_id == current_user.domain_id).\
+        return cls.query.join(Candidate). \
+            join(User, User.domain_id == current_user.domain_id). \
             filter(Candidate.user_id == User.id, cls.value == phone_value.strip()).all()
 
 
@@ -306,6 +355,8 @@ class EmailLabel(db.Model):
     reference_emails = relationship('ReferenceEmail', backref='email_label')
 
     PRIMARY_DESCRIPTION = "Primary"
+    HOME_DESCRIPTION = 'Home'
+    WORK_DESCRIPTION = 'Work'
     OTHER_DESCRIPTION = "Other"
 
     def __repr__(self):
@@ -353,6 +404,16 @@ class CandidateEmail(db.Model):
     def __repr__(self):
         return "<CandidateEmail (address = '{}')".format(self.address)
 
+    # labels_mapping = {1: 'Primary', 2: 'Home', 3: 'Work', 4: 'Other'}
+    labels_mapping = {'Primary': 1, 'Home': 2, 'Work': 3, 'Other': 4}
+
+    @classmethod
+    def identify_label_id(cls, label):
+        for k, v in cls.labels_mapping.iteritems():
+            if label.title() == v:
+                return k
+            return cls.labels_mapping['Other']
+
     @classmethod
     def get_by_id(cls, _id):
         return cls.query.filter_by(id=_id).first()
@@ -361,6 +422,15 @@ class CandidateEmail(db.Model):
     def set_is_default_to_false(cls, candidate_id):
         for email in cls.query.filter_by(candidate_id=candidate_id).all():
             email.is_default = False
+
+    @classmethod
+    def has_default_email(cls, candidate_id):
+        """
+        Return true if any of candidate's existing email is set as default email
+        :type candidate_id: int | long
+        :rtype: None | CandidateEmail
+        """
+        return cls.query.filter_by(candidate_id=candidate_id, is_default=True).first()
 
     @classmethod
     def search_email_in_user_domain(cls, user_model, user, email):
@@ -434,6 +504,34 @@ class CandidateEmail(db.Model):
         return cls.query.join(Candidate).join(User). \
             filter(User.domain_id == domain_id). \
             filter(cls.address == email_address).first()
+
+    @classmethod
+    def get_emails_in_domain(cls, domain_id, email_addresses):
+        from user import User
+        return cls.query.join(Candidate).join(User). \
+            filter(User.domain_id == domain_id). \
+            filter(cls.address.in_(email_addresses)).all()
+
+    @classmethod
+    def get_emails_by_updated_time_candidate_id_desc(cls, candidate_ids):
+        """
+        Get candidate emails sorted by updated time and then by candidate_id
+        :param list candidate_ids: List of candidate Ids
+        :rtype: list
+        """
+        assert isinstance(candidate_ids, list) and candidate_ids, 'list of candidate_ids cannot be empty'
+        candidate_email_rows = cls.query.with_entities(cls.candidate_id,
+                                                       cls.address, cls.updated_time, cls.email_label_id) \
+            .filter(CandidateEmail.candidate_id.in_(candidate_ids)).order_by(desc(CandidateEmail.updated_time),
+                                                                             CandidateEmail.candidate_id)
+        """
+            candidate_email_rows data will be
+            1   candidate0_ryk@gmail.com    2016-02-20T11:22:00Z    1
+            1   candidate0_lhr@gmail.com    2016-03-20T11:22:00Z    2
+            2   candidate1_isb@gmail.com    2016-02-20T11:22:00Z    4
+            2   candidate1_lhr@gmail.com    2016-03-20T11:22:00Z    3
+        """
+        return candidate_email_rows
 
 
 class CandidatePhoto(db.Model):
@@ -519,11 +617,12 @@ class CandidateTextComment(db.Model):
     __tablename__ = 'candidate_text_comment'
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
+    owner_user_id = db.Column(db.BIGINT, db.ForeignKey('user.Id'))  # ID of the user that created the note
     list_order = db.Column('ListOrder', db.Integer)
     title = db.Column(db.String(255))
     comment = db.Column('Comment', db.Text)
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<CandidateTextComment (id = {})>".format(self.id)
@@ -543,8 +642,8 @@ class VoiceComment(db.Model):
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     list_order = db.Column('ListOrder', db.Integer)
     filename = db.Column('Filename', db.String(260))
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<VoiceComment (id = {})>".format(self.id)
@@ -555,8 +654,8 @@ class CandidateDocument(db.Model):
     id = db.Column('Id', db.BIGINT, primary_key=True)
     candidate_id = db.Column('CandidateId', db.BIGINT, db.ForeignKey('candidate.Id'))
     filename = db.Column('Filename', db.String(260))
-    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.now)
-    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.now)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
+    updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
         return "<CandidateDocument (id = {})>".format(self.id)
@@ -586,12 +685,12 @@ class SocialNetwork(db.Model):
     @classmethod
     def get_by_name(cls, name):
         assert name
-        return cls.query.filter(SocialNetwork.name == name.strip()).one()
+        return cls.query.filter(SocialNetwork.name == name.strip()).first()
 
     @classmethod
     def get_by_id(cls, id):
         assert isinstance(id, (int, long))
-        return cls.query.filter(SocialNetwork.id == id).one()
+        return cls.query.filter(SocialNetwork.id == id).first()
 
     @classmethod
     def get_all(cls):
@@ -605,12 +704,26 @@ class SocialNetwork(db.Model):
         else:
             # Didn't input 'ids' it means we we need list of all, the following
             # probably help us avoid the expensive in_ with empty sequence
-            SocialNetwork.get_all()
+            return SocialNetwork.get_all()
 
     @classmethod
     def get_by_ids(cls, ids):
         assert isinstance(ids, list)
         return cls.query.filter(SocialNetwork.id.in_(ids)).all()
+
+    @classmethod
+    def get_subscribed_social_networks(cls, user_id):
+        """
+        This method returns those social networks that a user has subscribed.
+        :param int | long user_id: user id
+        :return: list of social networks
+        :rtype: list
+        """
+        # Due to circular dependency, importing here
+        from user import UserSocialNetworkCredential
+        assert user_id and isinstance(user_id, (int, long)), 'user_id must be a positive number, given: %s' % user_id
+        subscribed_data = UserSocialNetworkCredential.get_by_user_id(user_id=user_id)
+        return cls.query.filter(cls.id.in_([sn.social_network_id for sn in subscribed_data])).all()
 
 
 class CandidateSocialNetwork(db.Model):
@@ -783,6 +896,15 @@ class CandidateReference(db.Model):
     def __repr__(self):
         return "<CandidateReference (candidate_id=' %r')>" % self.candidate_id
 
+    @classmethod
+    def get_all(cls, candidate_id):
+        """
+        Will return a list of candidate references
+        :type candidate_id:  int | long
+        :rtype:  list[CandidateReference]
+        """
+        return cls.query.filter_by(candidate_id=candidate_id).all()
+
 
 class ReferenceWebAddress(db.Model):
     __tablename__ = 'reference_web_address'
@@ -849,6 +971,10 @@ class CandidateMilitaryService(db.Model):
     comments = db.Column('Comments', db.String(5000))
     from_date = db.Column('FromDate', db.DateTime)
     to_date = db.Column('ToDate', db.DateTime)
+    start_year = db.Column(SMALLINT)
+    start_month = db.Column(TINYINT)
+    end_year = db.Column(SMALLINT)
+    end_month = db.Column(SMALLINT)
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     # TODO: Below are necessary for now, but should remove once all tables have been defined
@@ -1211,7 +1337,7 @@ class CandidateDevice(db.Model):
     __tablename__ = 'candidate_device'
     id = db.Column(db.Integer, primary_key=True)
     one_signal_device_id = db.Column(db.String(100))
-    candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id'))
+    candidate_id = db.Column(db.BIGINT, db.ForeignKey('candidate.Id', ondelete='CASCADE'))
     registered_at_datetime = db.Column(db.TIMESTAMP, default=datetime.datetime.utcnow)
 
     def __repr__(self):
