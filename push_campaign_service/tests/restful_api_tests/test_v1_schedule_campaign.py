@@ -40,9 +40,10 @@ from time import sleep
 from datetime import datetime, timedelta
 
 # 3rd party imports
+import pytest
 from redo import retry
 from requests import codes
-import pytest
+
 
 # Application specific imports
 from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers

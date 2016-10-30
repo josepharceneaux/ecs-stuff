@@ -31,8 +31,9 @@ Delete Multiple Campaigns: /v1/push-campaigns [DELETE]
 import sys
 
 # 3rd party imports
-from requests import codes
 import pytest
+from requests import codes
+
 
 # Application specific imports
 from push_campaign_service.common.models.misc import Activity
