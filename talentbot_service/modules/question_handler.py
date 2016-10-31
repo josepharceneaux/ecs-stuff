@@ -35,38 +35,23 @@ class QuestionHandler(object):
         pass
 
     @staticmethod
-    def find_word_in_message(word, message_tokens):
+    def find_word_in_message(word, message_tokens, exact_word=False):
         """
         Finds a specific word in user message and returns it's index
+        :param boole exact_word: Weather find partially or completely
         :param str word: Word to be found in message_tokens
         :param list message_tokens: Tokens of user message
         :rtype: int|None
         """
-        try:
-            word_index = None
-            for idx, token in enumerate(message_tokens):
-                if word in token.lower():
-                    word_index = idx
-            return word_index
-        except IndexError:
-            return None
-
-    @staticmethod
-    def find_exact_word_in_message(word, message_tokens):
-        """
-        Finds a specific exact word in user message and returns it's index
-        :param str word: Word to be found in message_tokens
-        :param list message_tokens: Tokens of user message
-        :rtype: int|None
-        """
-        try:
-            word_index = None
-            for idx, token in enumerate(message_tokens):
+        word_index = None
+        for idx, token in enumerate(message_tokens):
+            if exact_word:
                 if word == token.lower():
                     word_index = idx
-            return word_index
-        except IndexError:
-            return None
+            else:
+                if word in token.lower():
+                    word_index = idx
+        return word_index
 
     @staticmethod
     def append_list_with_spaces(_list):
@@ -141,7 +126,7 @@ class QuestionHandler(object):
         zip_index = cls.find_word_in_message('zip', message_tokens)
         if zip_index is None:
             raise IndexError
-        code_index = cls.find_exact_word_in_message('code', message_tokens)
+        code_index = cls.find_word_in_message('code', message_tokens, exact_word=True)
         if code_index is not None:
             message_tokens.pop(code_index)
         zipcode = message_tokens[zip_index + 1]
@@ -256,7 +241,7 @@ class QuestionHandler(object):
         :rtype: str
         """
         user_specific_date = None
-        talent_index = self.find_exact_word_in_message('talent', message_tokens)
+        talent_index = self.find_word_in_message('talent', message_tokens, exact_word=True)
         import_index = self.find_optional_word(message_tokens, ['import', 'add'])
         if import_index is None:
             return "Your question is vague"
@@ -411,7 +396,7 @@ class QuestionHandler(object):
         :rtype: str
         """
         belong_index = cls.find_optional_word(message_tokens, ['belong', 'part'])
-        is_user_asking_about_himself = cls.find_exact_word_in_message('i', message_tokens)
+        is_user_asking_about_himself = cls.find_word_in_message('i', message_tokens, exact_word=True)
         if belong_index is not None and is_user_asking_about_himself is None:
             user_name = message_tokens[belong_index - 1]
             users = User.get_by_name(user_id, user_name)
@@ -549,9 +534,8 @@ class QuestionHandler(object):
         :param optional_words: list of optional words to be found
         :rtype: int|None
         """
-        word_finding_method = cls.find_exact_word_in_message if exact_word else cls.find_word_in_message
         for word in optional_words:
-            index = word_finding_method(word, message_tokens)
+            index = cls.find_word_in_message(word, message_tokens,  exact_word)
             if index is not None:
                 return index
         return None
