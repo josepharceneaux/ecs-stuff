@@ -20,6 +20,7 @@ from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
 from email_campaign import EmailCampaign, EmailClientCredentials, EmailConversations, EmailTemplateFolder
+from base_campaign import BaseCampaign
 from ..error_handling import *
 from ..redis_cache import redis_store
 from ..utils.validators import is_number
@@ -67,6 +68,7 @@ class User(db.Model):
     role = relationship('Role', backref='user')
     user_phones = relationship('UserPhone', cascade='all,delete-orphan', passive_deletes=True,
                                backref='user')
+    base_campaigns = relationship('BaseCampaign', backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
     email_templates = relationship('UserEmailTemplate', backref='user', cascade='all, delete-orphan')
     email_client_credentials = relationship('EmailClientCredentials', backref='user')

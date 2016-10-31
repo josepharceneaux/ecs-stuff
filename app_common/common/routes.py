@@ -854,6 +854,9 @@ class EmailCampaignApi(object):
     EMAIL_CLIENT_WITH_ID = '/' + VERSION + '/email-clients/<int:email_client_id>'
     EMAIL_CONVERSATIONS = '/' + VERSION + '/email-conversations'
 
+    """ URLs for base-campaigns """
+    BASE_CAMPAIGNS = '/' + VERSION + '/base-campaigns'
+
 
 class EmailCampaignApiUrl(object):
     """
