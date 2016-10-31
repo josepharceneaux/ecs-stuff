@@ -114,15 +114,14 @@ class Candidate(db.Model):
         db.session.commit()
 
     @staticmethod
+    @contract
     def get_candidate_count_with_skills(skills, user_id):
         """
         This method returns number of candidates who have certain skills
         :param int|long user_id: User Id
         :param list skills: Candidate skills
-        :rtype: int: Number of candidates with certain skills
+        :rtype: int|long
         """
-        assert isinstance(skills, list) and skills, "Invalid skills"
-        assert isinstance(user_id, (int, long)) and user_id, "Invalid user_id"
         from .user import User  # This has to be here to avoid circular import
         domain_id = User.get_domain_id(user_id)
         if domain_id:
