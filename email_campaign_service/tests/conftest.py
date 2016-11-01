@@ -12,12 +12,8 @@ __author__ = 'basit'
 from datetime import timedelta
 
 # Application Specific
+# Common fixtures
 from email_campaign_service.common.tests.conftest import *
-from email_campaign_service.common.campaign_services.conftest import (token_first, user_first_dict, test_data,
-                                                                      meetup, meetup_event, base_campaign,
-                                                                      meetup_venue, test_meetup_credentials,
-                                                                      meetup_event_data, meetup_group,
-                                                                      user_first_auth_header)
 from email_campaign_service.modules.email_clients import SMTP
 from email_campaign_service.email_campaign_app import app
 from email_campaign_service.common.models.misc import Frequency

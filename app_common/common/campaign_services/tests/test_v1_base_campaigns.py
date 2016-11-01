@@ -1,15 +1,17 @@
 """
 Here we have tests for API /v1/base-campaigns
 """
+# Packages
 import json
 import requests
 from requests import codes
-from email_campaign_service.common.models.base_campaign import BaseCampaign
-from email_campaign_service.common.models.event import Event
 
-from email_campaign_service.common.routes import EmailCampaignApiUrl
-from email_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
-from email_campaign_service.common.tests.sample_data import fake
+# Service Specific
+from ...models.event import Event
+from ...tests.sample_data import fake
+from ...routes import EmailCampaignApiUrl
+from ...models.base_campaign import BaseCampaign
+from ..tests_helpers import CampaignsTestsHelpers
 
 __author__ = 'basit'
 
@@ -92,28 +94,26 @@ class TestBaseCampaignEvent(object):
         """
         CampaignsTestsHelpers.request_with_invalid_token('post', self.URL % (fake.random_int(), fake.random_int()))
 
-    def test_with_valid_data(self, base_campaign, meetup_event, user_first_auth_header):
+    def test_with_valid_data(self, base_campaign, meetup_event, headers):
         """
         This hits the API with valid event and base campaign.
         """
-        response = requests.post(self.URL % (base_campaign['id'], meetup_event['id']), headers=user_first_auth_header)
+        response = requests.post(self.URL % (base_campaign['id'], meetup_event['id']), headers=headers)
         assert response.status_code == codes.CREATED, response.text
         assert response.json()['id']
 
-    def test_with_non_existing_event(self, base_campaign, user_first_auth_header):
+    def test_with_non_existing_event(self, base_campaign, headers):
         """
         This should result in resource not found error.
         """
         non_existing_event_id = CampaignsTestsHelpers.get_non_existing_ids(Event)
-        response = requests.post(self.URL % (base_campaign['id'], non_existing_event_id),
-                                 headers=user_first_auth_header)
+        response = requests.post(self.URL % (base_campaign['id'], non_existing_event_id), headers=headers)
         assert response.status_code == codes.NOT_FOUND, response.text
 
-    def test_with_non_existing_base_campaign(self, meetup_event, user_first_auth_header):
+    def test_with_non_existing_base_campaign(self, meetup_event, headers):
         """
         This should result in resource not found error.
         """
         non_existing_base_campaign_id = CampaignsTestsHelpers.get_non_existing_ids(BaseCampaign)
-        response = requests.post(self.URL % (non_existing_base_campaign_id, meetup_event['id']),
-                                 headers=user_first_auth_header)
+        response = requests.post(self.URL % (non_existing_base_campaign_id, meetup_event['id']), headers=headers)
         assert response.status_code == codes.NOT_FOUND, response.text

@@ -1,24 +1,27 @@
+"""
+Here are fixtures to be used across campaign-services.
+"""
 import json
 import pytest
 from requests import codes
 from datetime import datetime, timedelta
 
-from ..models.db import db
-from ..constants import MEETUP
-from ..tests.app import test_app
-from ..redis_cache import redis_store2
-from ..models.candidate import SocialNetwork
-from .tests_helpers import CampaignsTestsHelpers
-from ..talent_config_manager import TalentConfigKeys
-from ..utils.handy_functions import send_request
-from ..utils.datetime_utils import DatetimeUtils
-from ..models.user import UserSocialNetworkCredential
-from ..routes import SocialNetworkApiUrl, EmailCampaignApiUrl
+from ...models.db import db
+from ...constants import MEETUP
+from ...tests.app import test_app
+from ...redis_cache import redis_store2
+from ...models.candidate import SocialNetwork
+from ..tests_helpers import CampaignsTestsHelpers
+from ...talent_config_manager import TalentConfigKeys
+from ...utils.handy_functions import send_request
+from ...utils.datetime_utils import DatetimeUtils
+from ...models.user import UserSocialNetworkCredential
+from ...routes import SocialNetworkApiUrl, EmailCampaignApiUrl
 from social_network_service.modules.social_network.meetup import Meetup
 
-from ..tests.api_conftest import (user_first as user_first_dict, token_first,
-                                  talent_pool_session_scope, user_same_domain,
-                                  token_same_domain, user_second, token_second, test_data)
+from ...tests.api_conftest import (user_first, token_first, talent_pool_session_scope, user_same_domain,
+                                   token_same_domain, user_second, token_second, test_data,
+                                   headers, headers_other)
 
 __author__ = 'basit'
 
@@ -43,27 +46,6 @@ EVENT_DATA = {
 }
 
 
-@pytest.fixture()
-def user_first_auth_header(token_first):
-    """
-    Returns the header which contains bearer token and content type
-    :rtype: dict
-    """
-    header = {'Authorization': 'Bearer %s' % token_first,
-              'Content-Type': 'application/json'}
-    return header
-
-
-@pytest.fixture()
-def auth_header(token_first):
-    """
-    Returns the header which contains bearer token and content type
-    :return: header dict object
-    """
-    header = {'Authorization': 'Bearer %s' % token_first,
-              'Content-Type': 'application/json'}
-    return header
-
 @pytest.fixture(scope="session")
 def meetup():
     """
@@ -73,14 +55,14 @@ def meetup():
 
 
 @pytest.fixture(scope="session")
-def meetup_venue(meetup, user_first_dict, token_first):
+def meetup_venue(meetup, user_first, token_first):
     """
     This fixture returns meetup venue in getTalent database
     """
     social_network_id = meetup['id']
     venue = {
         "social_network_id": social_network_id,
-        "user_id": user_first_dict['id'],
+        "user_id": user_first['id'],
         "zip_code": "95014",
         "group_url_name": 'Python-Learning-Meetup',
         "address_line_2": "",
@@ -105,7 +87,7 @@ def meetup_venue(meetup, user_first_dict, token_first):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def test_meetup_credentials(user_first_dict, meetup):
+def test_meetup_credentials(user_first, meetup):
     """
     Create meetup social network credentials for this user so we can create event on Meetup.com
     """
@@ -124,26 +106,26 @@ def test_meetup_credentials(user_first_dict, meetup):
     meetup_kv = json.loads(redis_store2.get(meetup_key))
 
     social_network_id = meetup['id']
-    user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_first_dict['id'],
+    user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_first['id'],
                                                                                      social_network_id)
 
     if not user_credentials:
         user_credentials = UserSocialNetworkCredential(
             social_network_id=social_network_id,
-            user_id=int(user_first_dict['id']),
+            user_id=int(user_first['id']),
             access_token=meetup_kv['access_token'],
             refresh_token=meetup_kv['refresh_token'])
         UserSocialNetworkCredential.save(user_credentials)
 
     with test_app.app_context():
         # Validate token expiry and generate a new token if expired
-        Meetup(user_id=int(user_first_dict['id']))
+        Meetup(user_id=int(user_first['id']))
         db.session.commit()
 
     # Get the updated user_credentials
     user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(
         social_network_id=social_network_id,
-        user_id=int(user_first_dict['id']))
+        user_id=int(user_first['id']))
 
     # If token is changed, then update the new token in redis too
     if meetup_kv['access_token'] != user_credentials.access_token:
@@ -158,7 +140,7 @@ def test_meetup_credentials(user_first_dict, meetup):
 @pytest.fixture(scope="session")
 def meetup_group(test_meetup_credentials, token_first):
     """
-    This gets all the groups of user_first_dict created on Meetup website. It then picks first group and returns it.
+    This gets all the groups of user_first created on Meetup website. It then picks first group and returns it.
     """
     resp = send_request('get', SocialNetworkApiUrl.MEETUP_GROUPS, token_first)
     assert resp.status_code == codes.OK
