@@ -6,8 +6,6 @@ Here we have three endpoints
 
 - POST /v1/base-campaigns to create a base campaign
 - POST /v1/base-campaigns/:base_campaign_id/link-event/:event_id to associate an event with a base campaign
-- GET /v1/base-campaigns/:id to get all the chained events and campaigns (email, SMS, push etc)
-
 """
 from requests import codes
 from email_campaign_service.common.models.event import Event

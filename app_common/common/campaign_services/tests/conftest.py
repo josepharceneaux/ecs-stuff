@@ -341,7 +341,7 @@ def base_campaign(token_first):
 @pytest.fixture()
 def base_campaign_event(base_campaign, event_in_db, token_first):
     """
-    This hits the API with valid event and base campaign.
+    This hits the API with valid event and base campaign and link both of them with each other.
     """
     response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGN_EVENT % (base_campaign['id'],
                                                                                event_in_db['id']),
