@@ -67,7 +67,7 @@ class CandidateTagResource(Resource):
         created_tag_ids = create_tags(candidate_id=candidate_id, tags=body_dict['tags'])
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
 
         return {'tags': [{'id': tag_id} for tag_id in created_tag_ids]}, 201
 
@@ -137,7 +137,7 @@ class CandidateTagResource(Resource):
         updated_tag_ids = update_candidate_tags(candidate_id=candidate_id, tags=tags)
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
 
         return {'updated_tags': [{'id': tag_id} for tag_id in updated_tag_ids]}
 
@@ -174,7 +174,7 @@ class CandidateTagResource(Resource):
         deleted_tag_ids = delete_tags(candidate_id)
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
 
         # Delete all of candidate's tags
         return {'deleted_tags': deleted_tag_ids}
