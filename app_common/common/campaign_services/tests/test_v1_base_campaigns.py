@@ -99,23 +99,23 @@ class TestBaseCampaignEvent(object):
         """
         CampaignsTestsHelpers.request_with_invalid_token('post', self.URL % (fake.random_int(), fake.random_int()))
 
-    def test_with_valid_data(self, base_campaign, meetup_event, headers):
+    def test_with_valid_data(self, base_campaign, event_in_db, headers):
         """
         This hits the API with valid event and base campaign.
         """
-        response = requests.post(self.URL % (base_campaign['id'], meetup_event['id']), headers=headers)
+        response = requests.post(self.URL % (base_campaign['id'], event_in_db['id']), headers=headers)
         assert response.status_code == codes.CREATED, response.text
         assert response.json()['id']
         db.session.commit()
         base_campaign_event = BaseCampaignEvent.get_by_id(response.json()['id'])
-        assert base_campaign_event.event_id == meetup_event['id']
+        assert base_campaign_event.event_id == event_in_db['id']
         assert base_campaign_event.base_campaign_id == base_campaign['id']
 
-    def test_with_not_owned_event(self, base_campaign, meetup_event, headers_other):
+    def test_with_not_owned_event(self, base_campaign, event_in_db, headers_other):
         """
         This hits the API with valid event and base campaign.
         """
-        response = requests.post(self.URL % (base_campaign['id'], meetup_event['id']), headers=headers_other)
+        response = requests.post(self.URL % (base_campaign['id'], event_in_db['id']), headers=headers_other)
         assert response.status_code == codes.FORBIDDEN, response.text
 
     def test_with_non_existing_event(self, base_campaign, headers):
@@ -126,10 +126,10 @@ class TestBaseCampaignEvent(object):
         response = requests.post(self.URL % (base_campaign['id'], non_existing_event_id), headers=headers)
         assert response.status_code == codes.NOT_FOUND, response.text
 
-    def test_with_non_existing_base_campaign(self, meetup_event, headers):
+    def test_with_non_existing_base_campaign(self, event_in_db, headers):
         """
         This should result in resource not found error.
         """
         non_existing_base_campaign_id = CampaignsTestsHelpers.get_non_existing_ids(BaseCampaign)
-        response = requests.post(self.URL % (non_existing_base_campaign_id, meetup_event['id']), headers=headers)
+        response = requests.post(self.URL % (non_existing_base_campaign_id, event_in_db['id']), headers=headers)
         assert response.status_code == codes.NOT_FOUND, response.text
