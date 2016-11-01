@@ -44,13 +44,13 @@ class QuestionHandler(object):
         :rtype: int|None
         """
         word_index = None
-        for idx, token in enumerate(message_tokens):
+        for index, token in enumerate(message_tokens):
             if exact_word:
                 if word == token.lower():
-                    word_index = idx
+                    word_index = index
             else:
                 if word in token.lower():
-                    word_index = idx
+                    word_index = index
         return word_index
 
     @staticmethod

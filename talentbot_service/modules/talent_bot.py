@@ -17,6 +17,7 @@ from talentbot_service import logger
 # 3rd party imports
 from fuzzywuzzy import fuzz
 import stopwords
+from contracts import contract
 # TODO: There is a class TwilioSMS in sms-campaign-service, move sms related code there in future
 
 
@@ -261,11 +262,12 @@ class TalentBot(object):
         return response_message
 
     @staticmethod
+    @contract
     def remove_stopwords(message):
         """
         Removes stopwords from message
-        :param str message: User message
-        :rtype: str
+        :param string message: User message
+        :rtype: string
         """
         split_message = message.split(' ')
         stop_words = stopwords.get_stopwords('en')
