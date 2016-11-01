@@ -1,0 +1,11 @@
+"""
+This script adds column base_campaign_id in email-campaign table
+"""
+
+from email_campaign_service.common.models.db import db
+from sqlalchemy import text
+
+db.session.execute(
+    text("ALTER TABLE `email_campaign` ADD COLUMN `BaseCampaignId` INT NULL AFTER `EmailClientCredentialsId`, \
+    ADD CONSTRAINT `email_campaign_base_campaign` FOREIGN KEY (`BaseCampaignId`) REFERENCES `base_campaign`(`id`) ON DELETE CASCADE;")
+)

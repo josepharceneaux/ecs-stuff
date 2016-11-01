@@ -1,0 +1,11 @@
+"""
+This script adds column base_campaign_id in event table
+"""
+
+from social_network_service.common.models.db import db
+from sqlalchemy import text
+from sqlalchemy.dialects.mysql import VARCHAR
+
+db.session.execute(
+    text("ALTER TABLE `event` ADD COLUMN `baseCampaignId` INT NULL AFTER `socialNetworkId`,\
+    ADD CONSTRAINT `event_ibfk_5` FOREIGN KEY (`baseCampaignId`) REFERENCES `base_campaign`(`id`) ON DELETE CASCADE;"))
