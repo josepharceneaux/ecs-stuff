@@ -62,7 +62,7 @@ class TestCreateBaseCampaigns(object):
             response = requests.post(self.URL, headers=headers, data=json.dumps(data))
             assert response.status_code == codes.BAD
 
-    def test_with_same_name(self, headers):
+    def test_with_same_name(self, headers, headers_same_domain):
         """
         Tries to create base-campaign with existing name. It should result in bad request error.
         """
@@ -72,6 +72,10 @@ class TestCreateBaseCampaigns(object):
         assert response.status_code == codes.CREATED
         # Create campaign second time
         response = requests.post(self.URL, headers=headers, data=json.dumps(data))
+        assert response.status_code == codes.BAD
+
+        # Create campaign second time with other user of same domain
+        response = requests.post(self.URL, headers=headers_same_domain, data=json.dumps(data))
         assert response.status_code == codes.BAD
 
     def test_with_same_name_in_other_domain(self, headers, headers_other):

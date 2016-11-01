@@ -24,7 +24,6 @@ from ...talent_config_manager import TalentConfigKeys
 from ...models.user import UserSocialNetworkCredential
 from ..tests.modules.helper_functions import EVENT_DATA
 from ...routes import SocialNetworkApiUrl, EmailCampaignApiUrl
-from social_network_service.modules.social_network.meetup import Meetup
 from ...tests.api_conftest import (user_first, token_first, talent_pool_session_scope,
                                    user_same_domain, token_same_domain, user_second,
                                    token_second, test_data, headers, headers_other, headers_same_domain)
@@ -111,6 +110,8 @@ def test_meetup_credentials(user_first, meetup):
         UserSocialNetworkCredential.save(user_credentials)
 
     with test_app.app_context():
+        # This is put here so Meetup object is not created unwillingly
+        from social_network_service.modules.social_network.meetup import Meetup
         # Validate token expiry and generate a new token if expired
         Meetup(user_id=int(user_first['id']))
         db.session.commit()

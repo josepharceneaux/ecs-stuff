@@ -246,7 +246,7 @@ class SocialNetworkBase(object):
         raise_if_not_positive_int_or_long(user_id)
         user = User.query.get(user_id)
         if not user:
-            raise NoUserFound("No User found in database with id %(user_id)s" % user_id)
+            raise NoUserFound("No User found in database with id %s." % user_id)
         if social_network_id:
             raise_if_not_positive_int_or_long(social_network_id)
             social_network = SocialNetwork.get_by_id(social_network_id)

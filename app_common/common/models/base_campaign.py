@@ -1,6 +1,8 @@
+
 __author__ = 'basit'
 
 from datetime import datetime
+from contracts import contract
 from sqlalchemy.orm import relationship
 
 from db import db
@@ -22,6 +24,18 @@ class BaseCampaign(db.Model):
 
     email_campaigns = relationship('EmailCampaign', lazy='dynamic', cascade='all, delete-orphan',
                                    passive_deletes=True, backref='base_campaign')
+
+    @classmethod
+    @contract
+    def search_by_name_in_domain(cls, domain_id, name):
+        """
+        This returns all base campaigns for given name in given domain.
+        :param positive domain_id: Id of domain
+        :param string name: Name of base campaign
+        :rtype: list
+        """
+        from user import User  # This has to be here to avoid circular import
+        return cls.query.filter_by(name=name).join(User).filter(User.domain_id == domain_id).all()
 
 
 class BaseCampaignEvent(db.Model):
