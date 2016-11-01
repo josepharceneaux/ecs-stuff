@@ -22,3 +22,11 @@ class BaseCampaign(db.Model):
 
     email_campaigns = relationship('EmailCampaign', lazy='dynamic', cascade='all, delete-orphan',
                                    passive_deletes=True, backref='base_campaign')
+
+
+class BaseCampaignEvent(db.Model):
+    __tablename__ = 'base_campaign_event'
+    id = db.Column(db.Integer, primary_key=True)
+    base_campaign_id = db.Column('base_campaign_id', db.Integer, db.ForeignKey('base_campaign.id', ondelete='CASCADE'))
+    event_id = db.Column('event_id', db.Integer, db.ForeignKey('event.id', ondelete='CASCADE'))
+    added_datetime = db.Column('added_datetime', db.DateTime, default=datetime.utcnow)
