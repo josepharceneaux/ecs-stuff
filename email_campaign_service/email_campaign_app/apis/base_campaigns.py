@@ -25,7 +25,7 @@ from flask import request, Blueprint
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.routes import EmailCampaignApi
 from email_campaign_service.common.utils.api_utils import api_route
-from email_campaign_service.common.error_handling import InvalidUsage, ResourceNotFound
+from email_campaign_service.common.error_handling import InvalidUsage, ResourceNotFound, ForbiddenError
 from email_campaign_service.common.utils.auth_utils import require_oauth
 from email_campaign_service.common.models.base_campaign import BaseCampaign, BaseCampaignEvent
 
@@ -83,9 +83,12 @@ class BaseCampaignLinkEvent(Resource):
         """
         This links an event with base-campaign.
         """
-        event_in_db = Event.get_by_user_and_event_id(request.user.id, event_id)
+        event_in_db = Event.get_by_id(event_id)
         if not event_in_db:
-            raise ResourceNotFound('Requested event not found in database for user')
+            raise ResourceNotFound('Requested event not found in database')
+        is_user_owner = Event.get_by_user_and_event_id(request.user.id, event_id)
+        if not is_user_owner:
+            raise ForbiddenError('Requested event does not belong to requested user')
         base_campaign_in_db = BaseCampaign.get_by_id(base_campaign_id)
         if not base_campaign_in_db:
             raise ResourceNotFound('Requested base-campaign not found in database for user')

@@ -1,5 +1,9 @@
 """
-Here we have tests for API /v1/base-campaigns
+Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
+Here we have tests for API
+    - /v1/base-campaigns
+    - /v1/base-campaigns/:base-campaign_id/link-event/:event_id
 """
 # Packages
 import json
@@ -7,11 +11,12 @@ import requests
 from requests import codes
 
 # Service Specific
+from ...models.db import db
 from ...models.event import Event
 from ...tests.sample_data import fake
 from ...routes import EmailCampaignApiUrl
-from ...models.base_campaign import BaseCampaign
 from ..tests_helpers import CampaignsTestsHelpers
+from ...models.base_campaign import (BaseCampaign, BaseCampaignEvent)
 
 __author__ = 'basit'
 
@@ -101,6 +106,17 @@ class TestBaseCampaignEvent(object):
         response = requests.post(self.URL % (base_campaign['id'], meetup_event['id']), headers=headers)
         assert response.status_code == codes.CREATED, response.text
         assert response.json()['id']
+        db.session.commit()
+        base_campaign_event = BaseCampaignEvent.get_by_id(response.json()['id'])
+        assert base_campaign_event.event_id == meetup_event['id']
+        assert base_campaign_event.base_campaign_id == base_campaign['id']
+
+    def test_with_not_owned_event(self, base_campaign, meetup_event, headers_other):
+        """
+        This hits the API with valid event and base campaign.
+        """
+        response = requests.post(self.URL % (base_campaign['id'], meetup_event['id']), headers=headers_other)
+        assert response.status_code == codes.FORBIDDEN, response.text
 
     def test_with_non_existing_event(self, base_campaign, headers):
         """

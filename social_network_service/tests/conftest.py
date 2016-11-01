@@ -8,9 +8,8 @@ Author:
 """
 # Standard Library
 import json
-from copy import deepcopy
-from datetime import datetime, timedelta
 from uuid import uuid4
+from copy import deepcopy
 
 # Third Party
 import pytest
@@ -118,28 +117,6 @@ def eventbrite_event_data(eventbrite, eventbrite_venue, test_eventbrite_credenti
     data['organizer_id'] = organizer_in_db['id']
 
     return data
-
-
-@pytest.fixture(scope="session")
-def meetup_event(test_meetup_credentials, meetup, meetup_venue, organizer_in_db, token_first,
-                 meetup_event_data):
-    """
-    This creates an event for Meetup for user_first
-    """
-    response = send_request('post', url=SocialNetworkApiUrl.EVENTS, access_token=token_first, data=meetup_event_data)
-    assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
-    data = response.json()
-    assert data['id']
-
-    response_get = send_request('get', url=SocialNetworkApiUrl.EVENT % data['id'], access_token=token_first)
-    assert response_get.status_code == codes.OK, response_get.text
-
-    _event = response_get.json()['event']
-    _event['venue_id'] = _event['venue']['id']
-    del _event['venue']
-    del _event['event_organizer']
-
-    return _event
 
 
 @pytest.fixture(scope="function")

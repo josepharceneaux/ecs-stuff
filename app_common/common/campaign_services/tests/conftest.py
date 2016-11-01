@@ -1,49 +1,32 @@
 """
+Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
+
 Here are fixtures to be used across campaign-services.
 """
+# Packages
 import json
 import pytest
 from requests import codes
-from datetime import datetime, timedelta
 
+
+# Application Specific
 from ...models.db import db
 from ...constants import MEETUP
 from ...tests.app import test_app
 from ...redis_cache import redis_store2
 from ...models.candidate import SocialNetwork
 from ..tests_helpers import CampaignsTestsHelpers
-from ...talent_config_manager import TalentConfigKeys
 from ...utils.handy_functions import send_request
-from ...utils.datetime_utils import DatetimeUtils
+from ...talent_config_manager import TalentConfigKeys
 from ...models.user import UserSocialNetworkCredential
+from ..tests.modules.helper_functions import EVENT_DATA
 from ...routes import SocialNetworkApiUrl, EmailCampaignApiUrl
 from social_network_service.modules.social_network.meetup import Meetup
-
-from ...tests.api_conftest import (user_first, token_first, talent_pool_session_scope, user_same_domain,
-                                   token_same_domain, user_second, token_second, test_data,
-                                   headers, headers_other)
+from ...tests.api_conftest import (user_first, token_first, talent_pool_session_scope,
+                                   user_same_domain, token_same_domain, user_second,
+                                   token_second, test_data, headers, headers_other, headers_same_domain)
 
 __author__ = 'basit'
-
-
-# This is common data for creating test events
-
-EVENT_DATA = {
-    "organizer_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
-    "venue_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
-    "title": "Test Event",
-    "description": "Test Event Description",
-    "registration_instruction": "Just Come",
-    "start_datetime": (datetime.utcnow() + timedelta(days=2)).strftime(DatetimeUtils.ISO8601_FORMAT),
-    "end_datetime": (datetime.utcnow() + timedelta(days=3)).strftime(DatetimeUtils.ISO8601_FORMAT),
-    "group_url_name": "QC-Python-Learning",
-    "social_network_id": '',  # will be updated in fixture 'meetup_event_data' or 'eventbrite_event_data'
-    "timezone": "Asia/Karachi",
-    "cost": 0,
-    "currency": "USD",
-    "social_network_group_id": 18837246,
-    "max_attendees": 10
-}
 
 
 @pytest.fixture(scope="session")
@@ -196,5 +179,17 @@ def base_campaign(token_first):
     data = CampaignsTestsHelpers.base_campaign_data()
     response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGNS, token_first, data)
     assert response.status_code == codes.CREATED
+    assert response.json()['id']
+    return response.json()
+
+
+@pytest.fixture()
+def base_campaign_event(base_campaign, meetup_event, token_first):
+    """
+    This hits the API with valid event and base campaign.
+    """
+    response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGN_EVENT % (base_campaign['id'],
+                                                                               meetup_event['id']), token_first)
+    assert response.status_code == codes.CREATED, response.text
     assert response.json()['id']
     return response.json()
