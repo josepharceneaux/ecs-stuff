@@ -9,6 +9,7 @@ Here we have three endpoints
 - GET /v1/base-campaigns/:id to get all the chained events and campaigns (email, SMS, push etc)
 
 """
+from requests import codes
 
 __author__ = 'basit'
 
@@ -64,4 +65,4 @@ class EmailCampaigns(Resource):
             raise InvalidUsage('Campaign with same name found in database')
         base_campaign = BaseCampaign(user_id=user.id, name=name, description=description)
         base_campaign.save()
-        return {'id': base_campaign.id}
+        return {'id': base_campaign.id}, codes.CREATED

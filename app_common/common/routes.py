@@ -884,6 +884,7 @@ class EmailCampaignApiUrl(object):
     EMAIL_CLIENTS = HOST_NAME % ('/' + VERSION + '/email-clients')
     EMAIL_CLIENT_WITH_ID = HOST_NAME % ('/' + VERSION + '/email-clients/%s')
     EMAIL_CONVERSATIONS = HOST_NAME % ('/' + VERSION + '/email-conversations')
+    BASE_CAMPAIGNS = HOST_NAME % ('/' + VERSION + '/base-campaigns')
 
 
 class ATSServiceApi(object):
