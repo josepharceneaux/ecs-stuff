@@ -463,6 +463,14 @@ def test_create_from_jpgTxtPdf(token_fixture, user_fixture):
     assert_create_or_update_content_and_status(content, status)
 
 
+def test_create_poorly_parsed_phonenumber(token_fixture, user_fixture):
+    """
+    Test for GET-1799. POST'd JSON. Phone number is parsed by BG as 'xxx xxx xxxx *'.
+    """
+    content, status = fetch_resume_post_response(token_fixture, 'GET_1799.pdf', create_mode=True)
+    assert_create_or_update_content_and_status(content, status)
+
+
 ####################################################################################################
 # Test Candidate Updating
 ####################################################################################################

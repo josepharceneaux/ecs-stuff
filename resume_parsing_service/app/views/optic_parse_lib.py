@@ -217,8 +217,15 @@ def parse_candidate_phones(bs_contact_xml_list):
 
                 try:
                     scrubbed = string_scrubber(raw_phone)
-                    unused_validated_phone = phonenumbers.parse(scrubbed, region='US')
-                    output.append({'value': scrubbed, 'label': gt_phone_type})
+                    # This is parsing parity with candidate service to ensure no issues.
+                    phone_number_obj = phonenumbers.parse(scrubbed, region='US')
+                    if phone_number_obj:
+                        if not phone_number_obj.country_code:
+                            value = str(phone_number_obj.national_number)
+                        else:
+                            value = str(phonenumbers.format_number(phone_number_obj,
+                                                                   phonenumbers.PhoneNumberFormat.E164))
+                    output.append({'value': value, 'label': gt_phone_type})
 
                 except UnicodeEncodeError:
                     logger.error('Issue parsing phonenumber: {}'.format(raw_phone))
