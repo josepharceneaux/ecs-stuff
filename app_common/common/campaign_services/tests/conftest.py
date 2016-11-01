@@ -113,6 +113,7 @@ def test_meetup_credentials(user_first, meetup):
         # This is put here so Meetup object is not created unwillingly
         from social_network_service.modules.social_network.meetup import Meetup
         # Validate token expiry and generate a new token if expired
+        db.session.commit()
         Meetup(user_id=int(user_first['id']))
         db.session.commit()
 
