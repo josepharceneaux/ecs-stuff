@@ -163,7 +163,8 @@ class EmailCampaigns(Resource):
                                          start_datetime=data['start_datetime'],
                                          end_datetime=data['end_datetime'],
                                          frequency_id=data['frequency_id'],
-                                         email_client_credentials_id=data['email_client_credentials_id'])
+                                         email_client_credentials_id=data['email_client_credentials_id'],
+                                         base_campaign_id=data['base_campaign_id'])
 
         return {'campaign': campaign}, requests.codes.CREATED
 

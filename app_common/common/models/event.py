@@ -1,4 +1,6 @@
+from sqlalchemy.orm import relationship
 from db import db
+from rsvp import RSVP
 
 
 class Event(db.Model):
@@ -23,6 +25,9 @@ class Event(db.Model):
     timezone = db.Column(db.String(100))
     max_attendees = db.Column('maxAttendees', db.Integer)
     tickets_id = db.Column('ticketsId', db.Integer, nullable=True)
+
+    # Relationship
+    rsvps = relationship('RSVP', lazy='dynamic', cascade='all, delete-orphan', passive_deletes=True, backref='event')
 
     def __ne__(self, other_event):
         return (self.social_network_event_id != other_event.social_network_event_id and

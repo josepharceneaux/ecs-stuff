@@ -117,8 +117,7 @@ class CampaignsTestsHelpers(object):
     @classmethod
     @contract
     def assert_campaign_schedule_or_reschedule(cls, method, url, access_token, user_id, campaign_id,
-                                               url_to_get_campaign,
-                                               data):
+                                               url_to_get_campaign, data):
         """
         This function is expected to schedule a campaign with all valid parameters.
         It then gets the campaign and validates that requested fields have been saved in database.
@@ -849,7 +848,7 @@ def send_request(method, url, access_token, data=None, is_json=True, data_dumps=
     """
     # This method is being used for test cases, so it is sure that method has
     #  a valid value like 'get', 'post' etc.test_reschedule_with_invalid_token
-    request_method = getattr(requests, method)
+    request_method = getattr(requests, method.lower())
     headers = dict(Authorization='Bearer %s' % access_token)
     if is_json:
         headers['Content-Type'] = JSON_CONTENT_TYPE_HEADER['content-type']

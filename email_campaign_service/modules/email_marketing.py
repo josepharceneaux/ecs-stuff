@@ -75,6 +75,7 @@ def create_email_campaign(user_id, oauth_token, name, subject, description,
                           body_text, list_ids, email_client_id=None,
                           frequency_id=None,
                           email_client_credentials_id=None,
+                          base_campaign_id=None,
                           start_datetime=None,
                           end_datetime=None,
                           template_id=None):
@@ -99,15 +100,14 @@ def create_email_campaign(user_id, oauth_token, name, subject, description,
                                    frequency_id=frequency_id if frequency_id else None,
                                    email_client_id=email_client_id,
                                    email_client_credentials_id=email_client_credentials_id
-                                   if email_client_credentials_id else None
+                                   if email_client_credentials_id else None,
+                                   base_campaign_id=base_campaign_id if base_campaign_id else None
                                    )
     EmailCampaign.save(email_campaign)
 
     # Create activity in a celery task
-    celery_create_activity(user_id,
-                           Activity.MessageIds.CAMPAIGN_CREATE,
-                           email_campaign,
-                           dict(id=email_campaign.id, name=name),
+    celery_create_activity(user_id, Activity.MessageIds.CAMPAIGN_CREATE, email_campaign, dict(id=email_campaign.id,
+                                                                                              name=name),
                            'Error occurred while creating activity for email-campaign creation. User(id:%s)' % user_id
                            )
 

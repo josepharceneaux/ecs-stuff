@@ -12,8 +12,8 @@ are some fixture that are postfixed with '_same_domain', actually belong to doma
 but user is different.
 
 """
-import pytest
 import time
+import pytest
 from redo import retry
 from requests import codes
 
@@ -153,11 +153,10 @@ def candidate_first(talent_pool, token_first):
 
 
 @pytest.fixture(scope='function')
-def candidate_same_domain(request, talent_pool, token_same_domain):
+def candidate_same_domain(talent_pool, token_same_domain):
     """
     This fixture created a candidate in domain first  and it will be deleted
     after test has run.
-    :param request: request object
     :param talent_pool: talent pool dict object
     :param token_same_domain: authentication token
     """
@@ -170,11 +169,10 @@ def candidate_same_domain(request, talent_pool, token_same_domain):
 
 
 @pytest.fixture(scope='function')
-def candidate_second(request, token_second, talent_pool_second):
+def candidate_second(token_second, talent_pool_second):
     """
     This fixture creates a test candidate in domain second and it will be deleted
     after test has run.
-    :param request: request object
     :param token_second: authentication token for user_second
     :param talent_pool_second: talent pool dict object from domain second
     """
@@ -187,10 +185,9 @@ def candidate_second(request, token_second, talent_pool_second):
 
 
 @pytest.fixture(scope='function')
-def smartlist_first(request, token_first, candidate_first, talent_pipeline):
+def smartlist_first(token_first, candidate_first, talent_pipeline):
     """
     This fixture creates a smartlist that contains a candidate from domain_first.
-    :param request: request object
     :param candidate_first: candidate object
     :param token_first: access token for user_first
     :param talent_pipeline: talent_pipeline object for user_first
@@ -207,10 +204,9 @@ def smartlist_first(request, token_first, candidate_first, talent_pipeline):
 
 
 @pytest.fixture(scope='function')
-def smartlist_second(request, token_second, candidate_second, talent_pipeline_second):
+def smartlist_second(token_second, candidate_second, talent_pipeline_second):
     """
     This fixture creates a smartlist that is associated contains a candidate from domain_second.
-    :param request: request object
     :param token_second: access token for user_second
     :param candidate_second: candidate object
     :param talent_pipeline_second: talent_pipeline associated with user_second
@@ -227,10 +223,9 @@ def smartlist_second(request, token_second, candidate_second, talent_pipeline_se
 
 
 @pytest.fixture(scope='function')
-def smartlist_same_domain(request, token_same_domain, candidate_same_domain, talent_pipeline):
+def smartlist_same_domain(token_same_domain, candidate_same_domain, talent_pipeline):
     """
     This fixture creates a smartlist that belongs to "user_same_domain"
-    :param request: request object
     :param token_same_domain: auth token for user_same_domain from domain_first
     :param candidate_same_domain: candidate from domain as of user_same_domain
     :param talent_pipeline: talent pipeline associated with user_first
@@ -247,10 +242,9 @@ def smartlist_same_domain(request, token_same_domain, candidate_same_domain, tal
 
 
 @pytest.fixture(scope='function')
-def talent_pool(request, token_first):
+def talent_pool(token_first):
     """
     This fixture created a talent pool that is associated to user_first
-    :param request: request object
     :param token_first: authentication token for user_first
     """
     talent_pools = create_talent_pools(token_first)
@@ -272,10 +266,9 @@ def talent_pool_session_scope(token_first):
 
 
 @pytest.fixture(scope='function')
-def talent_pool_second(request, token_second):
+def talent_pool_second(token_second):
     """
     This fixture created a talent pool that is associated to user_second of domain_second
-    :param request: request object
     :param token_second: authentication token for user_second
     """
     talent_pools = create_talent_pools(token_second)
@@ -285,10 +278,9 @@ def talent_pool_second(request, token_second):
 
 
 @pytest.fixture(scope='function')
-def talent_pipeline(request, token_first, talent_pool):
+def talent_pipeline(token_first, talent_pool):
     """
     This fixture creates a talent pipeline that is associated to user_first of domain_first
-    :param request: request object
     :param token_first: authentication token for user_first
     :param talent_pool: talent_pool associated with user_first
     """
@@ -299,10 +291,9 @@ def talent_pipeline(request, token_first, talent_pool):
 
 
 @pytest.fixture(scope='function')
-def talent_pipeline_second(request, token_second, talent_pool_second):
+def talent_pipeline_second(token_second, talent_pool_second):
     """
     This fixture creates a talent pipeline that is associated to user_second of domain_second
-    :param request: request object
     :param token_second: authentication token for user_second
     :param talent_pool_second: talent_pool associated with user_second
     """
@@ -313,7 +304,7 @@ def talent_pipeline_second(request, token_second, talent_pool_second):
 
 
 @pytest.fixture(scope='function')
-def candidate_device_first(request, token_first, candidate_first):
+def candidate_device_first(token_first, candidate_first):
     """
     This fixture associates a device with test candidate which is required to
     send push campaign to candidate.
