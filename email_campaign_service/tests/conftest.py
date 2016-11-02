@@ -12,6 +12,7 @@ __author__ = 'basit'
 from datetime import timedelta
 
 # Application Specific
+# Common fixtures
 from email_campaign_service.common.tests.conftest import *
 from email_campaign_service.modules.email_clients import SMTP
 from email_campaign_service.email_campaign_app import app

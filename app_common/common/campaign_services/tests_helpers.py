@@ -800,6 +800,16 @@ class CampaignsTestsHelpers(object):
         resp = send_request(method, url, access_token, data=data)
         assert resp.status_code == requests.codes.BAD
 
+    @staticmethod
+    def base_campaign_data():
+        """
+        This returns data to create base-campaign.
+        """
+        return {
+            'name': fake.name(),
+            'description': fake.sentence()
+        }
+
 
 class FixtureHelpers(object):
     """
