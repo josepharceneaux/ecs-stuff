@@ -8,9 +8,10 @@ from requests import codes
 from datetime import datetime, timedelta
 
 # Application Specific
+from ....models.rsvp import RSVP
 from ....models.misc import Frequency
 from ....tests.sample_data import fake
-from ....routes import EmailCampaignApiUrl
+from ....routes import EmailCampaignApiUrl, SocialNetworkApiUrl
 from ....utils.test_utils import send_request
 from ....utils.datetime_utils import DatetimeUtils
 
@@ -64,24 +65,64 @@ def create_email_campaign_with_base_id(smartlist_id, base_campaign_id, access_to
     return resp_object['campaign']
 
 
-def assert_email_campaign_overview(response, sent_campaigns_count=1, expected_blasts=0, expected_sends=0,
+def assert_email_campaign_overview(response, sent_campaigns_count=0, expected_blasts=0, expected_sends=0,
                                    expected_opens=0, expected_html_clicks=0, expected_text_clicks=0,
                                    expected_bounces=0):
     """
-    Here we assert expected fields returned from campaign overview API
+    Here we assert expected fields returned from campaign overview API for email campaigns.
     """
     assert response.status_code == codes.OK, response.text
     assert response.json()
     json_response = response.json()
-    assert json_response['email_campaigns']
-    email_campaigns = json_response['email_campaigns']
-    for expected_campaign_index in xrange(0, sent_campaigns_count):
-        assert email_campaigns[expected_campaign_index]['blasts']
-        blasts = email_campaigns[expected_campaign_index]['blasts']
-        assert len(blasts) == expected_blasts
-        for expected_blast_index in xrange(0, expected_blasts):
-            assert blasts[expected_blast_index]['sends'] == expected_sends
-            assert blasts[expected_blast_index]['opens'] == expected_opens
-            assert blasts[expected_blast_index]['html_clicks'] == expected_html_clicks
-            assert blasts[expected_blast_index]['text_clicks'] == expected_text_clicks
-            assert blasts[expected_blast_index]['bounces'] == expected_bounces
+    assert 'email_campaigns' in json_response
+    if sent_campaigns_count:
+        assert json_response['email_campaigns']
+        email_campaigns = json_response['email_campaigns']
+        for expected_campaign_index in xrange(0, sent_campaigns_count):
+            assert 'blasts' in email_campaigns[expected_campaign_index]
+            if expected_blasts:
+                assert email_campaigns[expected_campaign_index]['blasts']
+                blasts = email_campaigns[expected_campaign_index]['blasts']
+                assert len(blasts) == expected_blasts
+                for expected_blast_index in xrange(0, expected_blasts):
+                    assert blasts[expected_blast_index]['sends'] == expected_sends
+                    assert blasts[expected_blast_index]['opens'] == expected_opens
+                    assert blasts[expected_blast_index]['html_clicks'] == expected_html_clicks
+                    assert blasts[expected_blast_index]['text_clicks'] == expected_text_clicks
+                    assert blasts[expected_blast_index]['bounces'] == expected_bounces
+
+
+def assert_event_overview(response, expected_events=0, expected_invites=0):
+    """
+    Here we assert expected fields returned from campaign overview API for an event.
+    """
+    assert response.status_code == codes.OK, response.text
+    assert response.json()
+    json_response = response.json()
+    assert 'event_details' in json_response
+    if expected_events:
+        assert json_response['event_details']['event']
+        event_details = json_response['event_details']
+        assert 'rsvps' in event_details
+        if expected_invites:
+            rsvps = event_details['rsvps']
+            assert len(rsvps) == expected_invites
+            for rsvp in rsvps:
+                assert rsvp['event_id'] == event_details['event']['id']
+
+
+def create_an_rsvp_in_database(candidate_id, event_id, access_token, expected_status='yes'):
+    """
+    This saves an RSVP in database
+    """
+    response = send_request('get', SocialNetworkApiUrl.EVENT % event_id, access_token)
+    assert response.ok
+    data = {
+        'candidate_id': candidate_id,
+        'event_id': event_id,
+        'social_network_rsvp_id': fake.random_int(),
+        'social_network_id': response.json()['event']['social_network_id'],
+        'status': expected_status,
+    }
+    rsvp = RSVP(**data)
+    RSVP.save(rsvp)

@@ -109,21 +109,167 @@ class BaseCampaignOverview(Resource):
 
     def get(self, base_campaign_id):
         """
-        This resource returns event and all chained campaigns with given base_campaign_id
+        This resource returns event and all chained campaigns with given base_campaign_id.
+        ..Response::
+
+            {
+                 "event_details": {
+                        "event": {
+                              "cost": 0,
+                              "start_datetime": "2016-08-13 16:21:42",
+                              "venue_id": 307,
+                              "user_id": 1,
+                              "description": "Test Event Description",
+                              "social_network_id": 13,
+                              "url": "",
+                              "title": "Eventbrite Test Event",
+                              "registration_instruction": "Just Come",
+                              "max_attendees": 10,
+                              "timezone": "Asia/Karachi",
+                              "currency": "USD",
+                              "tickets_id": 53364240,
+                              "social_network_group_id": "18837246",
+                              "group_url_name": "QC-Python-Learning",
+                              "organizer_id": 33,
+                              "base_campaign_id": 1,
+                              "id": 1,
+                              "social_network_event_id": "27067814562",
+                              "end_datetime": "2016-08-14 16:21:42"
+                            },
+                        "rsvps": [
+                              {
+                                "social_network_rsvp_id": "6956",
+                                "status": "yes",
+                                "social_network_id": 13,
+                                "event_id": 1,
+                                "payment_status": "",
+                                "datetime": "",
+                                "candidate_id": 362553,
+                                "id": 2
+                              },
+                              {
+                                "social_network_rsvp_id": "2983",
+                                "status": "yes",
+                                "social_network_id": 13,
+                                "event_id": 1,
+                                "payment_status": "",
+                                "datetime": "",
+                                "candidate_id": 362555,
+                                "id": 3
+                              },
+                              {
+                                "social_network_rsvp_id": "5146",
+                                "status": "yes",
+                                "social_network_id": 13,
+                                "event_id": 1,
+                                "payment_status": "",
+                                "datetime": "",
+                                "candidate_id": 362557,
+                                "id": 4
+                              }
+                            ]
+                        },
+                "email_campaigns": [
+                      {
+                          "blasts": [
+                                {
+                                  "updated_datetime": "2016-02-10 20:35:57",
+                                  "sends": 1000,
+                                  "bounces": 50,
+                                  "campaign_id": 11,
+                                  "text_clicks": 155,
+                                  "html_clicks": 876,
+                                  "complaints": 0,
+                                  "id": 15,
+                                  "opens": 900,
+                                  "sent_datetime": "2016-02-10 20:38:39"
+                                },
+                                {
+                                  "updated_datetime": "2016-02-10 20:35:57",
+                                  "sends": 200,
+                                  "bounces": 112,
+                                  "campaign_id": 11,
+                                  "text_clicks": 0,
+                                  "html_clicks": 0,
+                                  "complaints": 0,
+                                  "id": 17,
+                                  "opens": 134,
+                                  "sent_datetime": "2016-02-10 20:38:42"
+                                }
+                              ],
+                          "email_campaign": {
+                                            "email_client_credentials_id": null,
+                                            "start_datetime": null,
+                                            "user_id": 1,
+                                            "name": "Email campaign",
+                                            "body_text": null,
+                                            "description": null,
+                                            "list_ids": [1],
+                                            "body_html": null,
+                                            "added_datetime": "2016-02-10T20:35:57+00:00",
+                                            "frequency": null,
+                                            "end_datetime": null,
+                                            "talent_pipelines": [],
+                                            "reply_to": "basit.gettalent@gmail.com",
+                                            "from": "basit",
+                                            "is_hidden": false,
+                                            "base_campaign_id": 1,
+                                            "id": 11,
+                                            "subject": "email campaign sample subject"
+                                          }
+                      },
+                      {
+                           "blasts": [
+                                {
+                                  "updated_datetime": "2016-02-10 20:39:54",
+                                  "sends": 1,
+                                  "bounces": 0,
+                                  "campaign_id": 12,
+                                  "text_clicks": 0,
+                                  "html_clicks": 0,
+                                  "complaints": 0,
+                                  "id": 18,
+                                  "opens": 0,
+                                  "sent_datetime": "2016-02-10 20:39:44"
+                                }
+                              ],
+                           "email_campaign": {
+                                                "email_client_credentials_id": null,
+                                                "start_datetime": null,
+                                                "user_id": 1,
+                                                "name": "Email campaign",
+                                                "body_text": null,
+                                                "description": null,
+                                                "list_ids": [1],
+                                                "body_html": null,
+                                                "added_datetime": "2016-02-10T20:35:57+00:00",
+                                                "frequency": null,
+                                                "end_datetime": null,
+                                                "talent_pipelines": [],
+                                                "reply_to": "basit.gettalent@gmail.com",
+                                                "from": "basit",
+                                                "is_hidden": false,
+                                                "base_campaign_id": 1,
+                                                "id": 12,
+                                                "subject": "email campaign sample subject"
+                                              }
+                                }
+                           ]
+            }
         """
-        event_data = None
+        event_details = None
         validate_base_campaign_id(base_campaign_id, request.user.domain_id)
         base_campaign = BaseCampaign.get_by_id(base_campaign_id)
         base_campaign_event = BaseCampaignEvent.filter_by_keywords(base_campaign_id=base_campaign_id)
         if base_campaign_event:
-            event = base_campaign_event[0]  # Pick first associated event
-            event_data = {'event': event.to_json(),
-                          'rsvps': event.rsvps().all()}
+            event = base_campaign_event[0].event  # Pick first associated event
+            event_details = {'event': event.to_json(),
+                             'rsvps': [rsvp.to_json() for rsvp in event.rsvps.all()]}
         email_campaigns = base_campaign.email_campaigns
-        if not event_data and not email_campaigns:
+        if not event_details and not email_campaigns:
             raise InvalidUsage('Requested base campaign is orphaned')
         email_campaigns_data = [{'email_campaign': email_campaign.to_dict(),
                                  'blasts': [blast.to_json() for blast in email_campaign.blasts.all()]}
                                 for email_campaign in email_campaigns.all()]
-        return {'event': event_data,
+        return {'event_details': event_details,
                 'email_campaigns': email_campaigns_data}

@@ -501,7 +501,8 @@ class TestCreateCampaign(object):
             assert resp_object['campaign']['id']
 
     @pytest.mark.qa
-    def test_create_email_campaign_except_single_parameter(self, access_token_first, talent_pipeline):
+    def test_create_email_campaign_except_single_parameter(self, access_token_first, talent_pipeline,
+                                                           outgoing_email_client):
         """
         Here we provide valid data to create an email-campaign with all parameter except single parameter.
         It should get OK response.

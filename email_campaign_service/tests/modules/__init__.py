@@ -24,9 +24,7 @@ CAMPAIGN_OPTIONAL_FIELDS = ['from',
                             'body_text',
                             'description',
                             'start_datetime',
-                            'end_datetime',
-                            "email_client_credentials_id",
-                            "base_campaign_id"]
+                            'end_datetime']
 
 EMAIL_CLIENTS_ALL_FIELDS = ['name',
                             'host',

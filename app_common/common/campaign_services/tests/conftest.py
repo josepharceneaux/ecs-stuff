@@ -23,7 +23,8 @@ from ...models.event_organizer import EventOrganizer
 from ...talent_config_manager import TalentConfigKeys
 from ...models.user import UserSocialNetworkCredential
 from ...routes import (SocialNetworkApiUrl, EmailCampaignApiUrl)
-from ..tests.modules.helper_functions import (EVENT_DATA, create_email_campaign_with_base_id)
+from ..tests.modules.helper_functions import (EVENT_DATA, create_email_campaign_with_base_id,
+                                              create_an_rsvp_in_database)
 from ...tests.api_conftest import (user_first, token_first, talent_pool_session_scope, smartlist_first, talent_pool,
                                    candidate_first, talent_pipeline, user_same_domain, token_same_domain, user_second,
                                    token_second, test_data, headers, headers_other, headers_same_domain,
@@ -362,6 +363,20 @@ def base_campaign_event(base_campaign, event_in_db, token_first):
                             token_first)
     assert response.status_code == codes.CREATED, response.text
     assert response.json()['id']
+    return response.json()
+
+
+@pytest.fixture()
+def base_campaign_event_with_rsvp(base_campaign, candidate_first, event_in_db, token_first):
+    """
+    This links such an event with base-campaign. which has one RSVP associated with it.
+    """
+    response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGN_EVENT % (base_campaign['id'],
+                                                                               event_in_db['id']),
+                            token_first)
+    assert response.status_code == codes.CREATED, response.text
+    assert response.json()['id']
+    create_an_rsvp_in_database(candidate_first['id'], event_in_db['id'], token_first)
     return response.json()
 
 

@@ -16,7 +16,8 @@ from ...routes import EmailCampaignApiUrl
 from ...constants import HttpMethods
 from ..tests_helpers import CampaignsTestsHelpers, send_request
 from ...models.base_campaign import (BaseCampaign, BaseCampaignEvent)
-from modules.helper_functions import (create_data_for_campaign_creation, assert_email_campaign_overview)
+from modules.helper_functions import (create_data_for_campaign_creation, assert_email_campaign_overview,
+                                      assert_event_overview)
 
 __author__ = 'basit'
 
@@ -200,6 +201,11 @@ class TestCampaignOverview(object):
     """
     URL = EmailCampaignApiUrl.BASE_CAMPAIGN
     HTTP_METHOD = HttpMethods.GET
+    EXPECTED_BLASTS = 1
+    EXPECTED_SENDS = 1
+    SENT_ONE_EMAIL_CAMPAIGN = 1
+    EXPECTED_EVENTS = 1
+    EXPECTED_INVITES = 1
 
     def test_with_invalid_token(self):
         """
@@ -216,22 +222,49 @@ class TestCampaignOverview(object):
 
     def test_with_email_campaign(self, base_campaign, token_first, email_campaign_with_base_id):
         """
-        This gets overview of a base campaign associated with an email-campaign. It should get email-campaign's stats.
+        This gets overview of a base campaign associated with an email-campaign. It should get email-campaign's
+        statistics.
         """
-        expected_blasts = 1
-        expected_sends = 1
         response = send_request(self.HTTP_METHOD, self.URL % base_campaign['id'], token_first)
-        assert_email_campaign_overview(response, expected_blasts=expected_blasts, expected_sends=expected_sends)
+        assert_email_campaign_overview(response, sent_campaigns_count=self.SENT_ONE_EMAIL_CAMPAIGN,
+                                       expected_blasts=self.EXPECTED_BLASTS, expected_sends=self.EXPECTED_SENDS)
 
     def test_with_two_email_campaigns(self, base_campaign, token_first, email_campaign_with_base_id,
                                       email_campaign_same_domain):
         """
         This gets overview of a base campaign associated with two email campaigns. It should get email-campaigns'
-        stats.
+        statistics.
         """
-        associated_campaigns = len[email_campaign_same_domain, email_campaign_with_base_id]
-        expected_blasts = 1
-        expected_sends = 1
+        associated_campaigns = len([email_campaign_same_domain, email_campaign_with_base_id])
         response = send_request(self.HTTP_METHOD, self.URL % base_campaign['id'], token_first)
+        assert_event_overview(response)
         assert_email_campaign_overview(response, sent_campaigns_count=associated_campaigns,
-                                       expected_blasts=expected_blasts, expected_sends=expected_sends)
+                                       expected_blasts=self.EXPECTED_BLASTS, expected_sends=self.EXPECTED_SENDS)
+
+    def test_with_linked_event_with_no_rsvp(self, base_campaign, token_first, base_campaign_event):
+        """
+        This gets overview of a base campaign associated with one event. It should get event's statistics.
+        """
+        expected_events = 1
+        response = send_request(self.HTTP_METHOD, self.URL % base_campaign['id'], token_first)
+        assert_event_overview(response, expected_events=expected_events)
+        assert_email_campaign_overview(response)
+
+    def test_with_linked_event_with_one_rsvp(self, base_campaign, token_first, base_campaign_event_with_rsvp):
+        """
+        This gets overview of a base campaign associated with one event. It should get event's statistics.
+        """
+        response = send_request(self.HTTP_METHOD, self.URL % base_campaign['id'], token_first)
+        assert_event_overview(response, expected_events=self.EXPECTED_EVENTS, expected_invites=self.EXPECTED_INVITES)
+        assert_email_campaign_overview(response)
+
+    def test_with_linked_event_and_email_campaign(self, base_campaign, token_first, base_campaign_event_with_rsvp,
+                                                  email_campaign_with_base_id):
+        """
+        This gets overview of a base campaign associated with one event and an email-campaign.
+        It should get event's and email-campaign's statistics.
+        """
+        response = send_request(self.HTTP_METHOD, self.URL % base_campaign['id'], token_first)
+        assert_event_overview(response, expected_events=self.EXPECTED_EVENTS, expected_invites=self.EXPECTED_INVITES)
+        assert_email_campaign_overview(response, sent_campaigns_count=self.SENT_ONE_EMAIL_CAMPAIGN,
+                                       expected_blasts=self.EXPECTED_BLASTS, expected_sends=self.EXPECTED_SENDS)
