@@ -22,10 +22,10 @@ from ...utils.handy_functions import send_request
 from ...models.event_organizer import EventOrganizer
 from ...talent_config_manager import TalentConfigKeys
 from ...models.user import UserSocialNetworkCredential
-from ..tests.modules.helper_functions import EVENT_DATA
-from ...routes import SocialNetworkApiUrl, EmailCampaignApiUrl
-from ...tests.api_conftest import (user_first, token_first, talent_pool_session_scope,
-                                   user_same_domain, token_same_domain, user_second,
+from ...routes import (SocialNetworkApiUrl, EmailCampaignApiUrl)
+from ..tests.modules.helper_functions import (EVENT_DATA, create_data_for_campaign_creation)
+from ...tests.api_conftest import (user_first, token_first, talent_pool_session_scope, smartlist_first, talent_pool,
+                                   candidate_first, talent_pipeline, user_same_domain, token_same_domain, user_second,
                                    token_second, test_data, headers, headers_other, headers_same_domain)
 
 __author__ = 'basit'
@@ -330,10 +330,22 @@ Fixtures related to base-campaign
 @pytest.fixture()
 def base_campaign(token_first):
     """
-    Data is valid. Base campaign should be created
+    Data is valid. Base campaign should be created.
     """
     data = CampaignsTestsHelpers.base_campaign_data()
     response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGNS, token_first, data)
+    assert response.status_code == codes.CREATED
+    assert response.json()['id']
+    return response.json()
+
+
+@pytest.fixture()
+def base_campaign_other(token_second):
+    """
+    Data is valid. Base campaign should be created.
+    """
+    data = CampaignsTestsHelpers.base_campaign_data()
+    response = send_request('post', EmailCampaignApiUrl.BASE_CAMPAIGNS, token_second, data)
     assert response.status_code == codes.CREATED
     assert response.json()['id']
     return response.json()
@@ -350,3 +362,18 @@ def base_campaign_event(base_campaign, event_in_db, token_first):
     assert response.status_code == codes.CREATED, response.text
     assert response.json()['id']
     return response.json()
+
+
+@pytest.fixture()
+def email_campaign_with_base_id(smartlist_first, base_campaign, token_first):
+    """
+    This creates an email-campaign with base_campaign_id
+    """
+    campaign_data = create_data_for_campaign_creation(fake.uuid4(), smartlist_first['id'])
+    campaign_data['base_campaign_id'] = base_campaign['id']
+    response = send_request('post', EmailCampaignApiUrl.CAMPAIGNS, token_first, campaign_data)
+    assert response.status_code == codes.CREATED
+    resp_object = response.json()
+    assert 'campaign' in resp_object
+    assert resp_object['campaign']['id']
+    return resp_object['campaign']

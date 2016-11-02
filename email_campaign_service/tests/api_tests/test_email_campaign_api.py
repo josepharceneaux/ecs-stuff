@@ -291,7 +291,7 @@ class TestCreateCampaign(object):
         Here we provide valid data to create an email-campaign without email_client_id.
         It should get OK response.
         """
-        subject =  '%s-test_create_email_campaign' % fake.uuid4()
+        subject = '%s-test_create_email_campaign' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject)
         response = create_email_campaign_via_api(access_token_first, campaign_data)

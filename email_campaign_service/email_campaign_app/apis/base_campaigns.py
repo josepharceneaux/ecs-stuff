@@ -23,9 +23,10 @@ from flask import request, Blueprint
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.routes import EmailCampaignApi
 from email_campaign_service.common.utils.api_utils import api_route
-from email_campaign_service.common.error_handling import InvalidUsage, ResourceNotFound, ForbiddenError
 from email_campaign_service.common.utils.auth_utils import require_oauth
-from email_campaign_service.common.models.base_campaign import BaseCampaign, BaseCampaignEvent
+from email_campaign_service.common.models.base_campaign import (BaseCampaign, BaseCampaignEvent)
+from email_campaign_service.common.campaign_services.validators import validate_base_campaign_id
+from email_campaign_service.common.error_handling import (InvalidUsage, ResourceNotFound, ForbiddenError)
 
 
 # Blueprint for base-campaign API
@@ -87,9 +88,7 @@ class BaseCampaignLinkEvent(Resource):
         is_user_owner = Event.get_by_user_and_event_id(request.user.id, event_id)
         if not is_user_owner:
             raise ForbiddenError('Requested event does not belong to requested user')
-        base_campaign_in_db = BaseCampaign.get_by_id(base_campaign_id)
-        if not base_campaign_in_db:
-            raise ResourceNotFound('Requested base-campaign not found in database for user')
+        validate_base_campaign_id(base_campaign_id, request.user.domain_id)
         record_in_db = BaseCampaignEvent.filter_by_keywords(base_campaign_id=base_campaign_id, event_id=event_id)
         if record_in_db:
             return {'id': record_in_db.id}

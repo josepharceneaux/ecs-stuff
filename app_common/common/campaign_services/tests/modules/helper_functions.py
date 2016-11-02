@@ -4,6 +4,9 @@ Author: Hafiz Muhammad Basit, QC-Technologies, <basit.gettalent@gmail.com>
 Here we have helper functions to be used in tests
 """
 from datetime import datetime, timedelta
+from app_common.common.campaign_services.tests_helpers import CampaignsTestsHelpers
+from app_common.common.models.misc import Frequency
+from app_common.common.tests.sample_data import fake
 from ....utils.datetime_utils import DatetimeUtils
 
 __author__ = 'basit'
@@ -26,3 +29,17 @@ EVENT_DATA = {
     "social_network_group_id": 18837246,
     "max_attendees": 10
 }
+
+
+def create_data_for_campaign_creation(subject, smartlist_id, campaign_name=fake.name()):
+    """
+    This function returns the required data to create an email campaign.
+    """
+    body_text = fake.sentence()
+    body_html = "<html><body><h1>%s</h1></body></html>" % body_text
+    return {'name': campaign_name,
+            'subject': subject,
+            'body_html': body_html,
+            'frequency_id': Frequency.ONCE,
+            'list_ids': [smartlist_id] if smartlist_id else []
+            }

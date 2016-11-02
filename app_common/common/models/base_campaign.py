@@ -37,6 +37,18 @@ class BaseCampaign(db.Model):
         from user import User  # This has to be here to avoid circular import
         return cls.query.filter_by(name=name).join(User).filter(User.domain_id == domain_id).all()
 
+    @classmethod
+    @contract
+    def search_by_id_in_domain(cls, domain_id, base_campaign_id):
+        """
+        This returns all base campaigns for given name in given domain.
+        :param positive domain_id: Id of domain
+        :param positive base_campaign_id: Id of base campaign
+        :rtype: list
+        """
+        from user import User  # This has to be here to avoid circular import
+        return cls.query.filter_by(id=base_campaign_id).join(User).filter(User.domain_id == domain_id).all()
+
 
 class BaseCampaignEvent(db.Model):
     __tablename__ = 'base_campaign_event'
