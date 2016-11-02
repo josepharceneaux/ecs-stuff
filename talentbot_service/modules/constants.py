@@ -31,31 +31,19 @@ STANDARD_MSG_LENGTH = 160
 MAILGUN_SENDING_ENDPOINT = "https://api.mailgun.net/v3/sandbox59cbb160934f43d7839e1788604c2c06." \
                            "mailgun.org/messages"
 MAILGUN_FROM = "TalentBot <postmaster@sandbox59cbb160934f43d7839e1788604c2c06.mailgun.org>"
-QUESTIONS = ['how many users are in my domain', 'how many candidates are there with skills',
-             'how many candidates from zipcode',
-             'what is the top performing campaign from',
-             'how many candidates leads did',
-             'what is your name', 'hint', 'help', 'what are your features', 'what can you do',
-             'users in my domain', 'how many users exist in my domain',
-             'how many candidates know', 'candidates who know',
-             'number of candidates who has grasp on', 'candidates having skills',
-             'tell me the number of candidates who has mastered in skills',
-             'which were the top performing email campaign last',
-             'show me the top email sms push campaigns from', 'how many candidates aeiou added into',
-             'candidates who has grasp on', 'candidates having grasp on',
-             'tell me the number of candidates from zipcode', 'candidates with skills',
-             'what is the top performing email campaign', 'what is the top performing sms campaign',
-             'what is the top performing push campaign', 'which was the top smsemailpush campaign',
-             'how many candidates are there in my domain', 'candidates in my domain',
-             'how many candidates has grasp on', 'what are the talent pools in my domain',
-             'which talent pools exist in my domain', 'what talent pools my domain has',
-             'what talent pools are there in my domain', 'what talent pools in my domain', 'talent pools in my domain',
-             'what is my group', 'what group am I part of', 'my group', 'what group', 'which group',
-             'which group do i belong to', 'how many candidates did every user added',
-             'how many candidate leads did', 'how many users in my domain',
-             'how many candidates in my domain', 'how many users are there in my domain', 'candidates from zip',
-             'top campaigns', 'candidates aeiou added', 'talent pools in domain', 'how many candidates in zipcode',
-             'candidates in zipcode']
+QUESTIONS = ['many users domain', 'many candidates skills', 'many candidates zipcode', 'top performing campaign',
+             'many candidates leads', 'name', 'hint', 'help', 'features', 'can', 'users domain',
+             'many users exist domain', 'many candidates know', 'candidates know', 'number candidates grasp',
+             'candidates skills', 'tell number candidates mastered skills', 'top performing email campaign last',
+             'show top email sms push campaigns', 'many candidates aeiou added', 'candidates grasp',
+             'candidates grasp', 'tell number candidates zipcode', 'candidates skills', 'top performing email campaign',
+             'top performing sms campaign', 'top performing push campaign', 'top smsemailpush campaign',
+             'many candidates domain', 'candidates domain', 'many candidates grasp', 'talent pools domain',
+             'talent pools exist domain', 'talent pools domain', 'talent pools domain', 'talent pools domain',
+             'talent pools domain', 'group', 'group part', 'group', 'group', 'group', 'group belong',
+             'many candidates every user added', 'many candidate leads', 'many users domain', 'many candidates domain',
+             'many users domain', 'candidates zip', 'top campaigns', 'candidates aeiou added', 'talent pools domain',
+             'many candidates zipcode', 'candidates zipcode']
 POSITIVE_MESSAGES = ['hmm', 'ok', 'fine', 'whatever', 'yeah', 'ahan', 'so so']
 BEST_QUESTION_MATCH_RATIO = 99
 FACEBOOK_API_URI = "https://graph.facebook.com/v2.6/me/messages"
