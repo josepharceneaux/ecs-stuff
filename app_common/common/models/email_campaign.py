@@ -17,6 +17,7 @@ class EmailCampaign(db.Model):
     __tablename__ = 'email_campaign'
     id = db.Column('Id', db.Integer, primary_key=True)
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
+    base_campaign_id = db.Column('BaseCampaignId', db.BIGINT, db.ForeignKey('base_campaign.id', ondelete='CASCADE'))
     name = db.Column('Name', db.String(127), nullable=False)
     type = db.Column('Type', db.String(63))
     is_hidden = db.Column('IsHidden', db.Boolean, default=False)

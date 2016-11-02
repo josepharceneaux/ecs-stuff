@@ -522,17 +522,17 @@ class EventBase(object):
             # if event exists in database, then update existing one.
             if event:
                 del data['id']
+                data['base_campaign_id'] = data['base_campaign_id'] if data['base_campaign_id'] else None
                 event.update(**data)
             else:
                 # event not found in database, create a new one
                 event = Event(**data)
                 Event.save(event)
-        except Exception as e:
+        except Exception as error:
             logger.exception('save_event: Event was not updated/saved in Database. '
-                             'user_id: %s, event_id: %s, social network: %s(id: %s)'
-                             % (self.user.id, event.id, self.social_network.name,
-                                self.social_network.id))
-            raise EventNotSaveInDb('Error occurred while saving event '
-                                   'in database')
+                             'user_id: %s, event_id: %s, social network: %s(id: %s). Error:%s'
+                             % (self.user.id, event.id, self.social_network.name, self.social_network.id,
+                                error.message))
+            raise EventNotSaveInDb('Error occurred while saving event in database')
         return event.id
 

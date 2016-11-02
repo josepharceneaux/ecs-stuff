@@ -73,6 +73,39 @@ def token_second(test_data):
     return test_data['tokens'][SECOND]['access_token']
 
 
+@pytest.fixture()
+def headers(token_first):
+    """
+    Returns the header which contains bearer token and content type
+    :rtype: dict
+    """
+    header = {'Authorization': 'Bearer %s' % token_first,
+              'Content-Type': 'application/json'}
+    return header
+
+
+@pytest.fixture()
+def headers_same_domain(token_same_domain):
+    """
+    Returns the header which contains bearer token and content type
+    :rtype: dict
+    """
+    header = {'Authorization': 'Bearer %s' % token_same_domain,
+              'Content-Type': 'application/json'}
+    return header
+
+
+@pytest.fixture()
+def headers_other(token_second):
+    """
+    Returns the header which contains bearer token and content type
+    :rtype: dict
+    """
+    header = {'Authorization': 'Bearer %s' % token_second,
+              'Content-Type': 'application/json'}
+    return header
+
+
 @pytest.fixture(scope='session')
 def user_first(test_data):
     """

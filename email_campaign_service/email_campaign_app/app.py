@@ -16,6 +16,7 @@ from flask import request
 from apis.email_templates import template_blueprint
 from apis.email_clients import email_clients_blueprint
 from apis.email_campaigns import email_campaign_blueprint
+from apis.base_campaigns import base_campaign_blueprint
 from email_campaign_service.modules import aws_constants as aws
 from email_campaign_service.email_campaign_app import app, logger
 from email_campaign_service.modules.email_marketing import handle_email_bounce
@@ -24,6 +25,8 @@ from email_campaign_service.modules.email_marketing import handle_email_bounce
 app.register_blueprint(email_campaign_blueprint)
 app.register_blueprint(template_blueprint)
 app.register_blueprint(email_clients_blueprint)
+app.register_blueprint(base_campaign_blueprint)
+
 
 
 @app.route('/amazon_sns_endpoint', methods=['POST'])
