@@ -21,7 +21,6 @@ class BaseCampaign(db.Model):
     # Relationships
     events = relationship('Event', lazy='dynamic', cascade='all, delete-orphan',
                           passive_deletes=True, backref='base_campaign')
-
     email_campaigns = relationship('EmailCampaign', lazy='dynamic', cascade='all, delete-orphan',
                                    passive_deletes=True, backref='base_campaign')
 

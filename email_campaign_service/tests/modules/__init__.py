@@ -16,13 +16,17 @@ ALL_EMAIL_CAMPAIGN_FIELDS = ["id",
                              "is_hidden",
                              "talent_pipelines",
                              "list_ids",
-                             "email_client_credentials_id"]
+                             "email_client_credentials_id",
+                             "base_campaign_id"]
+
 CAMPAIGN_OPTIONAL_FIELDS = ['from',
                             'reply_to',
                             'body_text',
                             'description',
                             'start_datetime',
-                            'end_datetime']
+                            'end_datetime',
+                            "email_client_credentials_id",
+                            "base_campaign_id"]
 
 EMAIL_CLIENTS_ALL_FIELDS = ['name',
                             'host',

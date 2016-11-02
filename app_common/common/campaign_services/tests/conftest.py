@@ -23,10 +23,11 @@ from ...models.event_organizer import EventOrganizer
 from ...talent_config_manager import TalentConfigKeys
 from ...models.user import UserSocialNetworkCredential
 from ...routes import (SocialNetworkApiUrl, EmailCampaignApiUrl)
-from ..tests.modules.helper_functions import (EVENT_DATA, create_data_for_campaign_creation)
+from ..tests.modules.helper_functions import (EVENT_DATA, create_email_campaign_with_base_id)
 from ...tests.api_conftest import (user_first, token_first, talent_pool_session_scope, smartlist_first, talent_pool,
                                    candidate_first, talent_pipeline, user_same_domain, token_same_domain, user_second,
-                                   token_second, test_data, headers, headers_other, headers_same_domain)
+                                   token_second, test_data, headers, headers_other, headers_same_domain,
+                                   smartlist_same_domain, candidate_same_domain)
 
 __author__ = 'basit'
 
@@ -367,13 +368,34 @@ def base_campaign_event(base_campaign, event_in_db, token_first):
 @pytest.fixture()
 def email_campaign_with_base_id(smartlist_first, base_campaign, token_first):
     """
-    This creates an email-campaign with base_campaign_id
+    This creates an email-campaign with base_campaign_id. Currently when we create an email-campaign, it is
+    also sent. So we assert on expected number of blasts and expected number of sends.
     """
-    campaign_data = create_data_for_campaign_creation(fake.uuid4(), smartlist_first['id'])
-    campaign_data['base_campaign_id'] = base_campaign['id']
-    response = send_request('post', EmailCampaignApiUrl.CAMPAIGNS, token_first, campaign_data)
-    assert response.status_code == codes.CREATED
-    resp_object = response.json()
-    assert 'campaign' in resp_object
-    assert resp_object['campaign']['id']
-    return resp_object['campaign']
+    expected_blasts = 1
+    expected_sends = 1
+    email_campaign = create_email_campaign_with_base_id(smartlist_first['id'], base_campaign['id'], token_first)
+    campaign_blast = CampaignsTestsHelpers.get_blasts_with_polling(email_campaign, token_first,
+                                                                   EmailCampaignApiUrl.BLASTS % email_campaign['id'],
+                                                                   count=expected_blasts)
+    CampaignsTestsHelpers.assert_blast_sends(email_campaign, expected_sends,
+                                             blast_url=EmailCampaignApiUrl.BLAST % (email_campaign['id'],
+                                                                                    campaign_blast[0]['id']),
+                                             access_token=token_first)
+    return email_campaign
+
+
+@pytest.fixture()
+def email_campaign_same_domain(smartlist_same_domain, base_campaign, token_first):
+    """
+    This sends an email-campaign.
+    """
+    expected_blasts = 1
+    expected_sends = 1
+    email_campaign = create_email_campaign_with_base_id(smartlist_same_domain['id'], base_campaign['id'], token_first)
+    campaign_blast = CampaignsTestsHelpers.get_blasts_with_polling(email_campaign, token_first,
+                                                                   EmailCampaignApiUrl.BLASTS % email_campaign['id'],
+                                                                   count=expected_blasts)
+    CampaignsTestsHelpers.assert_blast_sends(email_campaign, expected_sends,
+                                             blast_url=EmailCampaignApiUrl.BLAST % (email_campaign['id'],
+                                                                                    campaign_blast[0]['id']),
+                                             access_token=token_first)

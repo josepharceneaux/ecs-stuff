@@ -856,6 +856,7 @@ class EmailCampaignApi(object):
 
     """ URLs for base-campaigns """
     BASE_CAMPAIGNS = '/' + VERSION + '/base-campaigns'
+    BASE_CAMPAIGN = '/' + VERSION + '/base-campaigns/<int:base_campaign_id>'
     BASE_CAMPAIGN_EVENT = '/' + VERSION + '/base-campaigns/<int:base_campaign_id>/link-event/<int:event_id>'
 
 
@@ -886,6 +887,7 @@ class EmailCampaignApiUrl(object):
     EMAIL_CLIENT_WITH_ID = HOST_NAME % ('/' + VERSION + '/email-clients/%s')
     EMAIL_CONVERSATIONS = HOST_NAME % ('/' + VERSION + '/email-conversations')
     BASE_CAMPAIGNS = HOST_NAME % ('/' + VERSION + '/base-campaigns')
+    BASE_CAMPAIGN = HOST_NAME % ('/' + VERSION + '/base-campaigns/%s')
     BASE_CAMPAIGN_EVENT = HOST_NAME % ('/' + VERSION + '/base-campaigns/%s/link-event/%s')
 
 

@@ -32,7 +32,7 @@ class TestCampaignSchedule(object):
         """
         subject = '%s-test_schedule_one_time' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, subject)
-        campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
+        campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=15))
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == codes.CREATED
         resp_object = response.json()
@@ -58,7 +58,7 @@ class TestCampaignSchedule(object):
         subject = '%s-test_schedule_periodic' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, subject)
         campaign_data['frequency_id'] = Frequency.CUSTOM
-        campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
+        campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=15))
         campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(days=10))
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == codes.CREATED
@@ -97,7 +97,7 @@ class TestCampaignSchedule(object):
         subject = '%s-test_schedule_daily' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, subject)
         campaign_data['frequency_id'] = Frequency.DAILY
-        campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
+        campaign_data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=15))
         campaign_data['end_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(days=10))
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == codes.CREATED

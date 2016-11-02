@@ -16,7 +16,7 @@ from ...routes import EmailCampaignApiUrl
 from ...constants import HttpMethods
 from ..tests_helpers import CampaignsTestsHelpers, send_request
 from ...models.base_campaign import (BaseCampaign, BaseCampaignEvent)
-from modules.helper_functions import create_data_for_campaign_creation
+from modules.helper_functions import (create_data_for_campaign_creation, assert_email_campaign_overview)
 
 __author__ = 'basit'
 
@@ -192,3 +192,46 @@ class TestEventEmailCampaign(object):
         campaign_data['base_campaign_id'] = non_existing_base_campaign_id
         response = send_request(self.HTTP_METHOD, self.URL, token_first, campaign_data)
         assert response.status_code == codes.NOT_FOUND
+
+
+class TestCampaignOverview(object):
+    """
+    Here are the tests for Campaign Overview.
+    """
+    URL = EmailCampaignApiUrl.BASE_CAMPAIGN
+    HTTP_METHOD = HttpMethods.GET
+
+    def test_with_invalid_token(self):
+        """
+         User auth token is invalid. It should get Unauthorized error.
+        """
+        CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD, self.URL % fake.random_int())
+
+    def test_orphaned_base_campaign(self, base_campaign, token_first):
+        """
+        This gets overview of an orphaned base campaign. It should result in bad request error.
+        """
+        response = send_request(self.HTTP_METHOD, self.URL % base_campaign['id'], token_first)
+        assert response.status_code == codes.BAD
+
+    def test_with_email_campaign(self, base_campaign, token_first, email_campaign_with_base_id):
+        """
+        This gets overview of a base campaign associated with an email-campaign. It should get email-campaign's stats.
+        """
+        expected_blasts = 1
+        expected_sends = 1
+        response = send_request(self.HTTP_METHOD, self.URL % base_campaign['id'], token_first)
+        assert_email_campaign_overview(response, expected_blasts=expected_blasts, expected_sends=expected_sends)
+
+    def test_with_two_email_campaigns(self, base_campaign, token_first, email_campaign_with_base_id,
+                                      email_campaign_same_domain):
+        """
+        This gets overview of a base campaign associated with two email campaigns. It should get email-campaigns'
+        stats.
+        """
+        associated_campaigns = len[email_campaign_same_domain, email_campaign_with_base_id]
+        expected_blasts = 1
+        expected_sends = 1
+        response = send_request(self.HTTP_METHOD, self.URL % base_campaign['id'], token_first)
+        assert_email_campaign_overview(response, sent_campaigns_count=associated_campaigns,
+                                       expected_blasts=expected_blasts, expected_sends=expected_sends)

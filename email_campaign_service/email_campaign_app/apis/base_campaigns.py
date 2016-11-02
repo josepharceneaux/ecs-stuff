@@ -6,9 +6,9 @@ Here we have three endpoints
 
 - POST /v1/base-campaigns to create a base campaign
 - POST /v1/base-campaigns/:base_campaign_id/link-event/:event_id to associate an event with a base campaign
+- GET /v1/base-campaigns/:base_campaign_id to get chained events abd campaigns
+
 """
-from requests import codes
-from email_campaign_service.common.models.event import Event
 
 __author__ = 'basit'
 
@@ -16,10 +16,12 @@ __author__ = 'basit'
 import types
 
 # Third Party
+from requests import codes
 from flask_restful import Resource
 from flask import request, Blueprint
 
 # Common utils
+from email_campaign_service.common.models.event import Event
 from email_campaign_service.common.talent_api import TalentApi
 from email_campaign_service.common.routes import EmailCampaignApi
 from email_campaign_service.common.utils.api_utils import api_route
@@ -39,7 +41,7 @@ api.route = types.MethodType(api_route, api)
 @api.route(EmailCampaignApi.BASE_CAMPAIGNS)
 class BaseCampaigns(Resource):
     """
-    This resource created a base-campaign in database table base-campaign.
+    This resource creates a base-campaign in database table base-campaign.
     """
     # Access token decorator
     decorators = [require_oauth()]
@@ -95,3 +97,33 @@ class BaseCampaignLinkEvent(Resource):
         base_campaign_event = BaseCampaignEvent(base_campaign_id=base_campaign_id, event_id=event_id)
         base_campaign_event.save()
         return {'id': base_campaign_event.id}, codes.CREATED
+
+
+@api.route(EmailCampaignApi.BASE_CAMPAIGN)
+class BaseCampaignOverview(Resource):
+    """
+    This resource returns event and all chained campaigns with given base_campaign_id
+    """
+    # Access token decorator
+    decorators = [require_oauth()]
+
+    def get(self, base_campaign_id):
+        """
+        This resource returns event and all chained campaigns with given base_campaign_id
+        """
+        event_data = None
+        validate_base_campaign_id(base_campaign_id, request.user.domain_id)
+        base_campaign = BaseCampaign.get_by_id(base_campaign_id)
+        base_campaign_event = BaseCampaignEvent.filter_by_keywords(base_campaign_id=base_campaign_id)
+        if base_campaign_event:
+            event = base_campaign_event[0]  # Pick first associated event
+            event_data = {'event': event.to_json(),
+                          'rsvps': event.rsvps().all()}
+        email_campaigns = base_campaign.email_campaigns
+        if not event_data and not email_campaigns:
+            raise InvalidUsage('Requested base campaign is orphaned')
+        email_campaigns_data = [{'email_campaign': email_campaign.to_dict(),
+                                 'blasts': [blast.to_json() for blast in email_campaign.blasts.all()]}
+                                for email_campaign in email_campaigns.all()]
+        return {'event': event_data,
+                'email_campaigns': email_campaigns_data}
