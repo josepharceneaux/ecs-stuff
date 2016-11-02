@@ -1383,11 +1383,8 @@ def _add_or_update_candidate_custom_field_ids(candidate, custom_fields, added_ti
                 # Update CandidateCustomField
                 can_custom_field_obj.update(**dict(value=value))
 
-        else:  # Add
-            custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
-
-            for value in custom_field_dict.get('values'):
-
+            else:  # Add
+                custom_field_dict.update(dict(added_time=added_time, candidate_id=candidate_id))
                 custom_field_id = custom_field_dict.get('custom_field_id')
 
                 # Prevent duplicate insertions

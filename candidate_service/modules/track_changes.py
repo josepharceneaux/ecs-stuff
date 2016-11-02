@@ -49,7 +49,8 @@ def track_edits(update_dict, table_name, candidate_id, user_id, edit_action=None
             old_value=old_value,
             new_value=new_value,
             edit_action=edit_action,
-            edit_datetime=datetime.utcnow()
+            edit_datetime=datetime.utcnow(),
+            is_custom_field=True if table_name == 'candidate_custom_field' else False
         ))
 
 
