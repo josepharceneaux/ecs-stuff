@@ -6,7 +6,7 @@ Here we have three endpoints
 
 - POST /v1/base-campaigns to create a base campaign
 - POST /v1/base-campaigns/:base_campaign_id/link-event/:event_id to associate an event with a base campaign
-- GET /v1/base-campaigns/:base_campaign_id to get chained events abd campaigns
+- GET /v1/base-campaigns/:base_campaign_id to get chained events and campaigns(email, sms, push etc)
 
 """
 
