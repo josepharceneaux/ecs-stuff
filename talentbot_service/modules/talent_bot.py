@@ -16,6 +16,8 @@ from talentbot_service.modules.question_handler import QuestionHandler
 from talentbot_service import logger
 # 3rd party imports
 from fuzzywuzzy import fuzz
+import stopwords
+from contracts import contract
 # TODO: There is a class TwilioSMS in sms-campaign-service, move sms related code there in future
 
 
@@ -170,6 +172,7 @@ class TalentBot(object):
         if len(message.split()) < MIN_WORDS_IN_QUESTION:
             return random.choice(self.error_messages)
         message_tokens = self.tokenize_message(message)
+        message = self.remove_stopwords(message)
         max_match_ratio = 0
         message_handler = None
         for question_key in self.question_dict:
@@ -199,7 +202,7 @@ class TalentBot(object):
         """
         Matches user message with predefined messages and returns matched ratio
         :param str message: User message
-        :param dict question:
+        :param str question:
         :rtype: int
         """
         match_ratio = fuzz.partial_ratio(question, message.lower())
@@ -244,7 +247,7 @@ class TalentBot(object):
         """
         hint_questions = self.list_of_questions[6:10]
         for question in hint_questions:
-            if self.match_question(message, question) >= BEST_QUESTION_MATCH_RATIO:
+            if message.lower() in question:
                 return HINT
         return None
 
@@ -255,7 +258,18 @@ class TalentBot(object):
         :param str response_message:
         :rtype: str
         """
-        response_message = response_message.replace('*', '')
-        response_message = response_message.replace('`', '"')
-        response_message = response_message.replace('>>>', '')
+        response_message = response_message.replace('*', '').replace('`', '"').replace('>>>', '')
         return response_message
+
+    @staticmethod
+    @contract
+    def remove_stopwords(message):
+        """
+        Removes stopwords from message
+        :param string message: User message
+        :rtype: string
+        """
+        split_message = message.split(' ')
+        stop_words = stopwords.get_stopwords('en')
+        filtered_message = [token.lower() for token in split_message if token.lower() not in stop_words]
+        return ' '.join(filtered_message)
