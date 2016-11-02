@@ -1,4 +1,7 @@
-
+"""
+Here are the models for creating a base campaign. Event, EmailCampaigns, SMS Campaigns or Push Campaigns
+needs to be associated with base campaign for new design.
+"""
 __author__ = 'basit'
 
 # Packages

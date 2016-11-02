@@ -265,11 +265,11 @@ class BaseCampaignOverview(Resource):
             event = base_campaign_event[0].event  # Pick first associated event
             event_details = {'event': event.to_json(),
                              'rsvps': [rsvp.to_json() for rsvp in event.rsvps.all()]}
-        email_campaigns = base_campaign.email_campaigns
+        email_campaigns = base_campaign.email_campaigns.all()
         if not event_details and not email_campaigns:
             raise InvalidUsage('Requested base campaign is orphaned')
         email_campaigns_data = [{'email_campaign': email_campaign.to_dict(),
                                  'blasts': [blast.to_json() for blast in email_campaign.blasts.all()]}
-                                for email_campaign in email_campaigns.all()]
+                                for email_campaign in email_campaigns]
         return {'event_details': event_details,
                 'email_campaigns': email_campaigns_data}

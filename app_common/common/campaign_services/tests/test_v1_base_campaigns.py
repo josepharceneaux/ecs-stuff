@@ -163,7 +163,7 @@ class TestEventEmailCampaign(object):
 
     def test_create_email_campaign_with_base_id(self, smartlist_first, base_campaign, token_first):
         """
-        This creates an email-campaign with base_campaign_id
+        This creates an email-campaign with base_campaign_id.
         """
         campaign_data = create_data_for_campaign_creation(fake.uuid4(), smartlist_first['id'])
         campaign_data['base_campaign_id'] = base_campaign['id']
@@ -218,7 +218,7 @@ class TestCampaignOverview(object):
         This gets overview of an orphaned base campaign. It should result in bad request error.
         """
         response = send_request(self.HTTP_METHOD, self.URL % base_campaign['id'], token_first)
-        assert response.status_code == codes.BAD
+        assert response.status_code == codes.BAD, response.text
 
     def test_with_email_campaign(self, base_campaign, token_first, email_campaign_with_base_id):
         """

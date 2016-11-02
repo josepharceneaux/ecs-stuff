@@ -33,7 +33,8 @@ from ...tests.api_conftest import (user_first, token_first, talent_pool_session_
 __author__ = 'basit'
 
 # Add new vendor here to run tests for that particular social-network
-VENDORS = [EVENTBRITE.title(), MEETUP.title()]
+# VENDORS = [EVENTBRITE.title(), MEETUP.title()]
+VENDORS = [MEETUP.title()]
 
 """
 Fixtures related to Meetup

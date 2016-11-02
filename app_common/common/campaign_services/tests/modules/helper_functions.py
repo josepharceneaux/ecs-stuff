@@ -11,9 +11,9 @@ from datetime import datetime, timedelta
 from ....models.rsvp import RSVP
 from ....models.misc import Frequency
 from ....tests.sample_data import fake
-from ....routes import EmailCampaignApiUrl, SocialNetworkApiUrl
 from ....utils.test_utils import send_request
 from ....utils.datetime_utils import DatetimeUtils
+from ....routes import (EmailCampaignApiUrl, SocialNetworkApiUrl)
 
 __author__ = 'basit'
 
@@ -106,7 +106,7 @@ def assert_event_overview(response, expected_events=0, expected_invites=0):
         assert 'rsvps' in event_details
         if expected_invites:
             rsvps = event_details['rsvps']
-            assert len(rsvps) == expected_invites
+            assert len(rsvps) >= expected_invites  # Due to session based event
             for rsvp in rsvps:
                 assert rsvp['event_id'] == event_details['event']['id']
 
@@ -117,11 +117,12 @@ def create_an_rsvp_in_database(candidate_id, event_id, access_token, expected_st
     """
     response = send_request('get', SocialNetworkApiUrl.EVENT % event_id, access_token)
     assert response.ok
+    social_network_id = response.json()['event']['social_network_id']
     data = {
         'candidate_id': candidate_id,
         'event_id': event_id,
         'social_network_rsvp_id': fake.random_int(),
-        'social_network_id': response.json()['event']['social_network_id'],
+        'social_network_id': social_network_id,
         'status': expected_status,
     }
     rsvp = RSVP(**data)
