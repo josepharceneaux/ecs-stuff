@@ -16,7 +16,7 @@ from ...routes import EmailCampaignApiUrl
 from ...constants import HttpMethods
 from ..tests_helpers import CampaignsTestsHelpers, send_request
 from ...models.base_campaign import (BaseCampaign, BaseCampaignEvent)
-from modules.helper_functions import (create_data_for_campaign_creation, assert_email_campaign_overview,
+from modules.helper_functions import (get_email_campaign_data, assert_email_campaign_overview,
                                       assert_event_overview)
 
 __author__ = 'basit'
@@ -165,7 +165,7 @@ class TestEventEmailCampaign(object):
         """
         This creates an email-campaign with base_campaign_id.
         """
-        campaign_data = create_data_for_campaign_creation(fake.uuid4(), smartlist_first['id'])
+        campaign_data = get_email_campaign_data(fake.uuid4(), smartlist_first['id'])
         campaign_data['base_campaign_id'] = base_campaign['id']
         response = send_request(self.HTTP_METHOD, self.URL, token_first, campaign_data)
         assert response.status_code == codes.CREATED
@@ -178,7 +178,7 @@ class TestEventEmailCampaign(object):
         """
         This creates an email-campaign with not owned base_campaign_id. This should result in Forbidden error.
         """
-        campaign_data = create_data_for_campaign_creation(fake.uuid4(), smartlist_first['id'])
+        campaign_data = get_email_campaign_data(fake.uuid4(), smartlist_first['id'])
         campaign_data['base_campaign_id'] = base_campaign_other['id']
         response = send_request(self.HTTP_METHOD, self.URL, token_first, campaign_data)
         assert response.status_code == codes.FORBIDDEN
@@ -188,7 +188,7 @@ class TestEventEmailCampaign(object):
         This creates an email-campaign with non-existing base_campaign_id. This should result in ResourceNotFound
         error.
         """
-        campaign_data = create_data_for_campaign_creation(fake.uuid4(), smartlist_first['id'])
+        campaign_data = get_email_campaign_data(fake.uuid4(), smartlist_first['id'])
         non_existing_base_campaign_id = CampaignsTestsHelpers.get_non_existing_id(BaseCampaign)
         campaign_data['base_campaign_id'] = non_existing_base_campaign_id
         response = send_request(self.HTTP_METHOD, self.URL, token_first, campaign_data)
@@ -245,9 +245,8 @@ class TestCampaignOverview(object):
         """
         This gets overview of a base campaign associated with one event. It should get event's statistics.
         """
-        expected_events = 1
         response = send_request(self.HTTP_METHOD, self.URL % base_campaign['id'], token_first)
-        assert_event_overview(response, expected_events=expected_events)
+        assert_event_overview(response, expected_events=self.EXPECTED_EVENTS)
         assert_email_campaign_overview(response)
 
     def test_with_linked_event_with_one_rsvp(self, base_campaign, token_first, base_campaign_event_with_rsvp):

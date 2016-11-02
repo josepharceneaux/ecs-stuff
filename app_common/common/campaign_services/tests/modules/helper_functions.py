@@ -37,7 +37,7 @@ EVENT_DATA = {
 }
 
 
-def create_data_for_campaign_creation(subject, smartlist_id, campaign_name=fake.name()):
+def get_email_campaign_data(subject, smartlist_id, campaign_name=fake.name()):
     """
     This function returns the required data to create an email campaign.
     """
@@ -55,7 +55,7 @@ def create_email_campaign_with_base_id(smartlist_id, base_campaign_id, access_to
     """
     This creates an email-campaign with base_campaign_id
     """
-    campaign_data = create_data_for_campaign_creation(fake.uuid4(), smartlist_id)
+    campaign_data = get_email_campaign_data(fake.uuid4(), smartlist_id)
     campaign_data['base_campaign_id'] = base_campaign_id
     response = send_request('post', EmailCampaignApiUrl.CAMPAIGNS, access_token, campaign_data)
     assert response.status_code == codes.CREATED
@@ -85,11 +85,12 @@ def assert_email_campaign_overview(response, sent_campaigns_count=0, expected_bl
                 blasts = email_campaigns[expected_campaign_index]['blasts']
                 assert len(blasts) == expected_blasts
                 for expected_blast_index in xrange(0, expected_blasts):
-                    assert blasts[expected_blast_index]['sends'] == expected_sends
-                    assert blasts[expected_blast_index]['opens'] == expected_opens
-                    assert blasts[expected_blast_index]['html_clicks'] == expected_html_clicks
-                    assert blasts[expected_blast_index]['text_clicks'] == expected_text_clicks
-                    assert blasts[expected_blast_index]['bounces'] == expected_bounces
+                    blast = blasts[expected_blast_index]
+                    assert blast['sends'] == expected_sends
+                    assert blast['opens'] == expected_opens
+                    assert blast['html_clicks'] == expected_html_clicks
+                    assert blast['text_clicks'] == expected_text_clicks
+                    assert blast['bounces'] == expected_bounces
 
 
 def assert_event_overview(response, expected_events=0, expected_invites=0):
@@ -99,16 +100,16 @@ def assert_event_overview(response, expected_events=0, expected_invites=0):
     assert response.status_code == codes.OK, response.text
     assert response.json()
     json_response = response.json()
-    assert 'event_details' in json_response
+    assert 'event' in json_response
     if expected_events:
-        assert json_response['event_details']['event']
-        event_details = json_response['event_details']
-        assert 'rsvps' in event_details
+        assert json_response['event']
+        event = json_response['event']
+        assert 'rsvps' in event
         if expected_invites:
-            rsvps = event_details['rsvps']
+            rsvps = event['rsvps']
             assert len(rsvps) >= expected_invites  # Due to session based event
             for rsvp in rsvps:
-                assert rsvp['event_id'] == event_details['event']['id']
+                assert rsvp['event_id'] == event['id']
 
 
 def create_an_rsvp_in_database(candidate_id, event_id, access_token, expected_status='yes'):
