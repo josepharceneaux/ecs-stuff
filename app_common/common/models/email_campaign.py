@@ -117,6 +117,16 @@ class EmailCampaign(db.Model):
         return cls.query.join(User).filter(User.domain_id == domain_id, cls.name.ilike(
                 '%' + search_keyword + '%'), cls.is_hidden == is_hidden).order_by(sort_by_object)
 
+    @classmethod
+    @contract()
+    def get_by_user_id(cls, user_id):
+        """
+        Returns EmailCampaigns against a User Id
+        :param positive user_id: User Id
+        :rtype: list
+        """
+        return cls.query.filter(cls.user_id == user_id).all()
+
     def __repr__(self):
         return "<EmailCampaign(name=' %r')>" % self.name
 

@@ -83,6 +83,21 @@ class SmsCampaign(db.Model):
         return cls.query.join(UserPhone, cls.user_phone_id == UserPhone.id).\
             join(User, UserPhone.user_id == User.id).filter(User.domain_id == domain_id)
 
+    @classmethod
+    @contract()
+    def get_by_user_id(cls, user_id):
+        """
+        Returns SmsCampaign against a User Id
+        :param positive user_id: User Id
+        :rtype: list|None
+        """
+        from user import UserPhone  # To avoid circular import
+        user_phones = UserPhone.get_by_user_id(user_id)
+        if user_phones:
+            user_phone_ids = [user_phone.id for user_phone in user_phones]
+            return cls.query.filter(cls.user_phone_id.in_(user_phone_ids)).all()
+        return None
+
 
 class SmsCampaignBlast(db.Model):
     __tablename__ = 'sms_campaign_blast'

@@ -135,6 +135,9 @@ class TalentBot(object):
                                      'handler': self.handler.question_7_handler},
                               '42': {'question': self.list_of_questions[42], 'threshold': 95,
                                      'handler': self.handler.question_7_handler},
+                              # What are my campaigns
+                              '54': {'question': self.list_of_questions[54], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler}
                               }
         self.bot_name = bot_name
         self.error_messages = error_messages
@@ -172,7 +175,6 @@ class TalentBot(object):
         if len(message.split()) < MIN_WORDS_IN_QUESTION:
             return random.choice(self.error_messages)
         message_tokens = self.tokenize_message(message)
-        message = self.remove_stopwords(message)
         max_match_ratio = 0
         message_handler = None
         for question_key in self.question_dict:
@@ -261,15 +263,15 @@ class TalentBot(object):
         response_message = response_message.replace('*', '').replace('`', '"').replace('>>>', '')
         return response_message
 
-    @staticmethod
-    @contract
-    def remove_stopwords(message):
-        """
-        Removes stopwords from message
-        :param string message: User message
-        :rtype: string
-        """
-        split_message = message.split(' ')
-        stop_words = stopwords.get_stopwords('en')
-        filtered_message = [token.lower() for token in split_message if token.lower() not in stop_words]
-        return ' '.join(filtered_message)
+    # @staticmethod
+    # @contract
+    # def remove_stopwords(message):
+    #     """
+    #     Removes stopwords from message
+    #     :param string message: User message
+    #     :rtype: string
+    #     """
+    #     split_message = message.split(' ')
+    #     stop_words = stopwords.get_stopwords('en')
+    #     filtered_message = [token.lower() for token in split_message if token.lower() not in stop_words]
+    #     return ' '.join(filtered_message)

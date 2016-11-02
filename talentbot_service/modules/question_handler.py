@@ -15,6 +15,8 @@ response
 # Builtin imports
 import re
 from datetime import datetime
+
+from contracts import contract
 from dateutil.relativedelta import relativedelta
 # Common utils
 from talentbot_service.common.error_handling import NotFoundError
@@ -22,6 +24,9 @@ from talentbot_service.common.models.user import User
 from talentbot_service.common.models.candidate import Candidate
 from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate
 from talentbot_service.common.models.talent_pools_pipelines import TalentPool
+from talentbot_service.common.models.email_campaign import EmailCampaign
+from talentbot_service.common.models.sms_campaign import SmsCampaign
+from talentbot_service.common.models.push_campaign import PushCampaign
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
     QUESTION_HANDLER_NUMBERS
@@ -112,7 +117,7 @@ class QuestionHandler(object):
         if count == 1:
             response_message = response_message.replace('are', 'is').replace('candidates', 'candidate')
         if len(extracted_skills) > 1:
-            response_message = cls.append_count_with_mesage(response_message, extracted_skills, 1, user_id)
+            response_message = cls.append_count_with_message(response_message, extracted_skills, 1, user_id)
         # Not removing 'and' in actual skills for better response generation, just replacing 'and' with commas
         #  around it with simple 'and'.
         return response_message.replace(', and,', ' and').replace('and,', 'and')
@@ -294,8 +299,8 @@ class QuestionHandler(object):
                 response_message = response_message.replace('`Everyone totally`', '`Everyone` totally')
             if isinstance(talent_pool_list, list) and len(talent_pool_list) > 1 and user_name is not None \
                     and user_name != 'Everyone totally':
-                response_message = self.append_count_with_mesage(response_message, talent_pool_list, 4, user_id,
-                                                                 user_name, user_specific_date)
+                response_message = self.append_count_with_message(response_message, talent_pool_list, 4, user_id,
+                                                                  user_name, user_specific_date)
             return re.sub(r'`i`|`I`', '`You`', response_message)
         if is_valid_year == -1:
             return "Please enter a valid year greater than 1900 and smaller than current year."
@@ -328,8 +333,8 @@ class QuestionHandler(object):
                     response_message = response_message.replace('candidates', 'candidate')
                 if isinstance(talent_pool_list, list) and len(talent_pool_list) > 1 and user_name is not None \
                         and user_name != 'Everyone totally':
-                    response_message = self.append_count_with_mesage(response_message, talent_pool_list, 4, user_id,
-                                                                     user_name, user_specific_date)
+                    response_message = self.append_count_with_message(response_message, talent_pool_list, 4, user_id,
+                                                                      user_name, user_specific_date)
                 return re.sub(r'`i`|`I`', '`You`', response_message)
         talent_pool_list = self.create_list_of_talent_pools(spaced_talent_pool_name)
         try:
@@ -356,8 +361,8 @@ class QuestionHandler(object):
             response_message = 'No valid time duration found, showing result from all the times\n %s' % response_message
         if isinstance(talent_pool_list, list) and len(talent_pool_list) > 1 and user_name is not None \
                 and user_name != 'Everyone totally':
-            response_message = self.append_count_with_mesage(response_message, talent_pool_list, 4, user_id,
-                                                             user_name, user_specific_date)
+            response_message = self.append_count_with_message(response_message, talent_pool_list, 4, user_id,
+                                                              user_name, user_specific_date)
         return re.sub(r'`i`|`I`', '`You`', response_message)
 
     @classmethod
@@ -416,6 +421,33 @@ class QuestionHandler(object):
             return response
         response = "Something went wrong you do not exist as a user contact the developer"
         return response
+
+    @classmethod
+    @contract
+    def question_8_handler(cls, message_tokens, user_id):
+        """
+        Handles question 'What are my campaigns'
+        :param list message_tokens: Tokens of User message
+        :param positive user_id:
+        :rtype: string
+        """
+        response = ["Your campaigns are following:"]
+        email_campaigns = EmailCampaign.get_by_user_id(user_id)
+        push_campaigns = PushCampaign.get_by_user_id(user_id)
+        sms_campaigns = SmsCampaign.get_by_user_id(user_id)
+        if email_campaigns:
+            response.append("*Email Campaigns*")
+            for index, email_campaign in enumerate(email_campaigns):
+                response.append("%d: `%s`" % (index + 1, email_campaign.name))
+        if push_campaigns:
+            response.append("*Push Campaigns*")
+            for index, push_campaign in enumerate(push_campaigns):
+                response.append("%d: `%s`" % (index + 1, push_campaign.name))
+        if sms_campaigns:
+            response.append("*SMS Campaigns*")
+            for index, sms_campaign in enumerate(sms_campaigns):
+                response.append("%d: `%s`" % (index + 1, sms_campaign.name))
+        return '\n'.join(response)
 
     @staticmethod
     def is_valid_year(year):
@@ -493,8 +525,8 @@ class QuestionHandler(object):
         return None
 
     @classmethod
-    def append_count_with_mesage(cls, message, _list,  handler_number, user_id, user_name=None,
-                                 user_specific_date=None):
+    def append_count_with_message(cls, message, _list, handler_number, user_id, user_name=None,
+                                  user_specific_date=None):
         """
         This method appends number of imports or number of candidates with skills with the given message
         :param str message: Response message
