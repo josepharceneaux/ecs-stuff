@@ -502,10 +502,7 @@ def create_data_for_campaign_creation(access_token, talent_pipeline, subject,
     This function returns the required data to create an email campaign
     """
     smartlist_id = ''
-    email_from = 'no-reply@gettalent.com'
-    reply_to = fake.safe_email()
     body_text = fake.sentence()
-    description = fake.paragraph()
     body_html = "<html><body><h1>%s</h1></body></html>" % body_text
     if create_smartlist:
         smartlist_id, _ = CampaignsTestsHelpers.create_smartlist_with_candidate(access_token,

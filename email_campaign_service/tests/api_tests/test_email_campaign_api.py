@@ -268,8 +268,7 @@ class TestGetCampaigns(object):
         """
         for param in PAGINATION_EXCEPT_SINGLE_FIELD:
             # sort_by name is for email campaign pagination
-            param % 'name'
-            response = requests.get(url=EmailCampaignApiUrl.CAMPAIGNS + param, headers=headers)
+            response = requests.get(url=EmailCampaignApiUrl.CAMPAIGNS + param % 'name', headers=headers)
             assert response.status_code == requests.codes.OK
 
 
