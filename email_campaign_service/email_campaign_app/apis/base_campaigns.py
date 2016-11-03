@@ -87,13 +87,10 @@ class BaseCampaignLinkEvent(Resource):
         event_in_db = Event.get_by_id(event_id)
         if not event_in_db:
             raise ResourceNotFound('Requested event not found in database')
-        is_user_owner = Event.get_by_user_and_event_id(request.user.id, event_id)
-        if not is_user_owner:
-            raise ForbiddenError('Requested event does not belong to requested user')
+        is_event_in_domain = Event.get_by_event_id_and_domain_id(event_id, request.user.domain_id)
+        if not is_event_in_domain:
+            raise ForbiddenError('Requested event does not belong to requested user`s domain')
         validate_base_campaign_id(base_campaign_id, request.user.domain_id)
-        record_in_db = BaseCampaignEvent.filter_by_keywords(base_campaign_id=base_campaign_id, event_id=event_id)
-        if record_in_db:
-            return {'id': record_in_db.id}
         base_campaign_event = BaseCampaignEvent(base_campaign_id=base_campaign_id, event_id=event_id)
         base_campaign_event.save()
         return {'id': base_campaign_event.id}, codes.CREATED
