@@ -463,7 +463,7 @@ class QuestionHandler(object):
         if name_index is None:
             return "No name specified"
         name = ' '.join(message_tokens[name_index + 1::])  # User specified name
-        try:  # Finding EmailCampaigns and TalentPipelines against this name
+        try:  # Finding (Email|SMS|Push)Campaigns and TalentPipelines against this name
             email_campaigns = EmailCampaign.get_by_name(user_id, name)
             push_campaigns = PushCampaign.get_by_name(user_id, name)
             talent_pipelines = TalentPipeline.get_by_name(user_id, name)
@@ -475,6 +475,7 @@ class QuestionHandler(object):
         if nothing_found:
             return "Nothing found with name `%s`" % name
         response = []
+        # Preparing response against each Entity
         response += cls.prepare_blast_results(email_campaigns, name, EMAIL_CAMPAIGN)
         response += cls.prepare_blast_results(push_campaigns, name, PUSH_CAMPAIGN)
         response += cls.prepare_blast_results(sms_campaigns, name, SMS_CAMPAIGN)
@@ -484,7 +485,7 @@ class QuestionHandler(object):
                                                  TalentPoolCandidate.candidate_imports
                                                  (user_id, talent_pool_list=[pipeline.talent_pool.name]),
                                                  pipeline.user.name))
-        return '\n'.join(response)
+        return '\n'.join(response)  # Converting list to string
 
     @staticmethod
     def is_valid_year(year):
@@ -622,16 +623,16 @@ class QuestionHandler(object):
         :rtype: list
         """
         blasts = []
-        for campaign in campaigns:
+        for campaign in campaigns:  # Getting all blasts for all campaigns
             blasts += (campaign.blasts.all())
         response = []
-        if len(blasts) < 1 and len(campaigns) > ZERO:
+        if len(blasts) < 1 and len(campaigns) > ZERO:  # If Campaign exists but has no blasts
             response.append("%s `%s` has not been sent yet" % (campaign_type.title(), name))
             return response
         # Appending all found CampaignBlasts' result
         total_sends = ZERO
         total_opens = ZERO
-        for blast in blasts:
+        for blast in blasts:  # Campaigns with more than one blasts are being summed as a single blast
             total_sends += blast.sends
             if campaign_type == EMAIL_CAMPAIGN:
                 total_opens += blast.opens
@@ -639,8 +640,11 @@ class QuestionHandler(object):
                 total_opens += blast.replies
             else:
                 total_opens += blast.clicks
-        if len(blasts) > ZERO:
+        if len(blasts) > ZERO:  # Preparing representable response
+            # interaction_rate means open_rate in case of EmailCampaign and reply_rate or click_rate in case of SMS
+            # and Push Campaigns
             interaction_rate = cls.calculate_percentage(total_opens, total_sends)
+            # What text should be displayed in response (click rate, open rate or reply rate)
             interaction_type = 'open' if campaign_type == EMAIL_CAMPAIGN else 'click' if \
                 campaign_type == SMS_CAMPAIGN else 'reply'
             response.append("%s `%s` has been sent to `%d` %s with %s rate of `%d%%`"
