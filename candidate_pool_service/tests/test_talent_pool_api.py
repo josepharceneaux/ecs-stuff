@@ -195,7 +195,7 @@ def test_talent_pool_api_get(access_token_first, access_token_second, user_first
     assert response['talent_pool']['name'] == talent_pool.name
 
     # GET all talent-pools of a domain using talent-pool-manager user
-    response, status_code = talent_pool_api(access_token_first)
+    response, status_code = talent_pool_api(access_token_first, params={'domain_id': user_first.domain_id})
     assert status_code == 200
     assert len(response['talent_pools']) == 1
     assert response['talent_pools'][0]['name'] == talent_pool.name

@@ -686,7 +686,7 @@ class CandidateAddressResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -735,7 +735,7 @@ class CandidateAreaOfInterestResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -777,7 +777,7 @@ class CandidateEducationResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -827,7 +827,7 @@ class CandidateEducationDegreeResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -890,7 +890,7 @@ class CandidateEducationDegreeBulletResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -936,7 +936,7 @@ class CandidateWorkExperienceResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -993,7 +993,7 @@ class CandidateWorkExperienceBulletResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1035,7 +1035,7 @@ class CandidateEmailResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1077,7 +1077,7 @@ class CandidateMilitaryServiceResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1119,7 +1119,7 @@ class CandidatePhoneResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1162,7 +1162,7 @@ class CandidatePreferredLocationResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1205,7 +1205,7 @@ class CandidateSkillResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1273,7 +1273,7 @@ class CandidateSocialNetworkResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1302,7 +1302,7 @@ class CandidateWorkPreferenceResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1572,7 +1572,7 @@ class CandidatePreferenceResource(Resource):
         add_or_update_candidate_subs_preference(candidate_id, frequency_id)
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
     def put(self, **kwargs):
@@ -1608,7 +1608,7 @@ class CandidatePreferenceResource(Resource):
         add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_update=True)
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
     def delete(self, **kwargs):
@@ -1629,7 +1629,7 @@ class CandidatePreferenceResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1802,7 +1802,7 @@ class CandidatePhotosResource(Resource):
         add_photos(candidate_id, body_dict['photos'])
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
@@ -1877,7 +1877,7 @@ class CandidatePhotosResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
@@ -1917,7 +1917,7 @@ class CandidatePhotosResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1944,6 +1944,8 @@ class CandidateLanguageResource(Resource):
 
         add_languages(candidate_id=candidate_id, data=body_dict['candidate_languages'])
         db.session.commit()
+
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
@@ -1994,6 +1996,8 @@ class CandidateLanguageResource(Resource):
 
         update_candidate_languages(candidate_id, body_dict['candidate_languages'], authed_user.id)
         db.session.commit()
+
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
@@ -2031,4 +2035,6 @@ class CandidateLanguageResource(Resource):
             map(db.session.delete, candidate_languages)
 
         db.session.commit()
+
+        upload_candidate_documents.delay([candidate_id])
         return '', 204

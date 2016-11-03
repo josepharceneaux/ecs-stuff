@@ -237,3 +237,16 @@ def extra_skills_parsing(encoded_text):
 
 def string_scrubber(text):
     return re.sub(r"\s+", " ", text).strip()
+
+def parse_email_from_string(text):
+    address = re.compile(r"[a-zA-Z0-9\u00C0-\u017F`'_.+-]")
+    at_sign = re.compile(r"@")
+    domain = re.compile(r"[a-zA-Z0-9-]")
+    end_domain = re.compile(r".[a-zA-Z0-9-.]+")
+    regexes = (address, at_sign, domain, end_domain)
+    pattern_combined = '+'.join(x.pattern for x in regexes)
+    email =  re.search(pattern_combined, text)
+    if email:
+        return email.group(0)
+    else:
+        return None

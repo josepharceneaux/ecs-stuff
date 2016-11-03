@@ -17,6 +17,7 @@ class EmailCampaign(db.Model):
     __tablename__ = 'email_campaign'
     id = db.Column('Id', db.Integer, primary_key=True)
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
+    base_campaign_id = db.Column('BaseCampaignId', db.BIGINT, db.ForeignKey('base_campaign.id', ondelete='CASCADE'))
     name = db.Column('Name', db.String(127), nullable=False)
     type = db.Column('Type', db.String(63))
     is_hidden = db.Column('IsHidden', db.Boolean, default=False)
@@ -44,7 +45,6 @@ class EmailCampaign(db.Model):
                                             db.ForeignKey('email_client_credentials.id'))
 
     # Relationships
-    frequency = relationship("Frequency", backref="frequency")
     blasts = relationship('EmailCampaignBlast', lazy='dynamic', cascade='all, delete-orphan',
                           passive_deletes=True, backref='campaign')
     sends = relationship('EmailCampaignSend', cascade='all, delete-orphan',
@@ -82,7 +82,8 @@ class EmailCampaign(db.Model):
                        "is_hidden": self.is_hidden,
                        "talent_pipelines": talent_pipelines,
                        "list_ids": [smart_list.id for smart_list in smart_lists],
-                       "email_client_credentials_id": self.email_client_credentials_id}
+                       "email_client_credentials_id": self.email_client_credentials_id,
+                       "base_campaign_id": self.base_campaign_id}
 
         # Only include the fields that are supposed to be included
         if include_fields:
@@ -402,7 +403,7 @@ class EmailTemplateFolder(db.Model):
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
     updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, default=datetime.utcnow)
 
-    domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
+    # Relationships
     parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                       cascade="all, delete-orphan"))
 

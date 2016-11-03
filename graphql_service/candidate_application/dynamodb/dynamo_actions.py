@@ -18,7 +18,7 @@ class DynamoDB(object):
           via the AWS-DynamoDB's console: https://console.aws.amazon.com/dynamodb/home?region=us-east-1
     """
     # Connection to candidates' table
-    if app.config['GT_ENVIRONMENT'] == TalentEnvs.DEV:
+    if app.config['GT_ENVIRONMENT'] in [TalentEnvs.DEV, TalentEnvs.JENKINS]:
         connection = boto3.resource('dynamodb', endpoint_url='http://localhost:8000', region_name='us-west-2')
     else:
         connection = boto3.resource('dynamodb')

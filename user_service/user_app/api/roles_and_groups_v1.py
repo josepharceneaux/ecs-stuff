@@ -17,7 +17,7 @@ class GetAllRolesApi(Resource):
     @require_all_permissions(Permission.PermissionNames.CAN_GET_USER_ROLE)
     def get(self, **kwargs):
         """
-        GET /users/roles Fetch all roles in the system which can be assigned to a user (except TALENT-ADMIN)
+        GET /users/roles Fetch all roles in the system which can be assigned to a user
         :param kwargs:
         :return:
         """
@@ -44,7 +44,8 @@ class UserRolesApi(Resource):
         if not requested_user:
             raise NotFoundError("User with user_id %s doesn't exist" % requested_user_id)
 
-        if request.user.role.name != 'TALENT_ADMIN' and requested_user.domain_id != request.user.domain_id:
+        if (request.user.role.name == 'USER' and requested_user.id != request.user.id) or (
+                        request.user.role.name != 'TALENT_ADMIN' and requested_user.domain_id != request.user.domain_id):
             raise UnauthorizedError("User %s doesn't have appropriate permission to get roles of user %s" % (
                 request.user.id, requested_user.id))
 
@@ -122,24 +123,7 @@ class UserGroupsApi(Resource):
                                     "group %s" % (request.user.id, requested_group_id))
 
         all_users_of_group = UserGroup.all_users_of_group(requested_group_id)
-        return {"users": [{
-                              'id': user.id,
-                              'domain_id': user.domain_id,
-                              'email': user.email,
-                              'first_name': user.first_name,
-                              'last_name': user.last_name,
-                              'phone': user.phone,
-                              'registration_id': user.registration_id,
-                              'dice_user_id': user.dice_user_id,
-                              'added_time': user.added_time.replace(
-                                tzinfo=pytz.UTC).isoformat() if user.added_time else None,
-                              'updated_time': user.updated_time.replace(
-                                tzinfo=pytz.UTC).isoformat() if user.updated_time else None,
-                              'last_read_datetime': user.last_read_datetime.replace(
-                                tzinfo=pytz.UTC).isoformat() if user.last_read_datetime else None,
-                              'thumbnail_url': user.thumbnail_url,
-                              'locale': user.locale
-                          } for user in all_users_of_group]}
+        return {"users": [user.to_dict() for user in all_users_of_group]}
 
     @require_any_permission(Permission.PermissionNames.CAN_ADD_DOMAIN_GROUPS)
     def post(self, **kwargs):

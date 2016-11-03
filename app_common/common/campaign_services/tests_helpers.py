@@ -117,8 +117,7 @@ class CampaignsTestsHelpers(object):
     @classmethod
     @contract
     def assert_campaign_schedule_or_reschedule(cls, method, url, access_token, user_id, campaign_id,
-                                               url_to_get_campaign,
-                                               data):
+                                               url_to_get_campaign, data):
         """
         This function is expected to schedule a campaign with all valid parameters.
         It then gets the campaign and validates that requested fields have been saved in database.
@@ -252,12 +251,12 @@ class CampaignsTestsHelpers(object):
         """
         This methods returns the non-existing id for given db Model.
         If last record is found, it adds 1000 in its id and return it.
-        Otherwise it returns sys.maxint which ensures that returned number is a non-existing id for
+        Otherwise it returns 100000 which ensures that returned number is a non-existing id for
         given model.
         """
         assert db.Model in model.__mro__
         last_id = cls.get_last_id(model)
-        return last_id + 1000 if last_id else sys.maxint
+        return last_id + 1000 if last_id else 100000
 
     @classmethod
     def get_non_existing_ids(cls, model):
@@ -461,18 +460,19 @@ class CampaignsTestsHelpers(object):
 
     @staticmethod
     @contract
-    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=300):
+    def get_blasts_with_polling(campaign, access_token=None, blasts_url=None, timeout=300, count=None):
         """
         This polls the result of blasts of a campaign for given timeout (default 300s).
         :param type(t) campaign: Campaign object
         :param string|None access_token: Access token of user
         :param string|None blasts_url: URL to get blasts of campaign
+        :param int|None count: Expected number of blasts
         :param positive timeout: No of seconds for retry function
         """
         raise_if_not_instance_of(campaign, (dict, CampaignUtils.MODELS))
         attempts = timeout / 3 + 1
         return retry(CampaignsTestsHelpers.get_blasts, sleeptime=3, attempts=attempts, sleepscale=1,
-                     args=(campaign, access_token, blasts_url), retry_exceptions=(AssertionError,))
+                     args=(campaign, access_token, blasts_url, count), retry_exceptions=(AssertionError,))
 
     @staticmethod
     @contract
@@ -781,6 +781,34 @@ class CampaignsTestsHelpers(object):
         assert resp.status_code == requests.codes.BAD
         assert 'deleted' in resp.json()['error']['message']
 
+    @staticmethod
+    @contract
+    def start_datetime_greater_than_end_datetime(method, url, access_token):
+        """
+        Here we pass start_datetime greater than end_datetime to schedule a campaign. API raised InvalidUsage 400 error.
+        :param http_method method: Name of HTTP method: GET or POST
+        :param string url: URL to to make HTTP request
+        :param string access_token: access access_token of user
+        """
+        data = {}
+        start_datetime = datetime.utcnow() + timedelta(minutes=50)
+        end_datetime = datetime.utcnow() + timedelta(minutes=40)
+        data['start_datetime'] = DatetimeUtils.to_utc_str(start_datetime)
+        data['end_datetime'] = DatetimeUtils.to_utc_str(end_datetime)
+        data['frequency_id'] = Frequency.DAILY
+        resp = send_request(method, url, access_token, data=data)
+        assert resp.status_code == requests.codes.BAD
+
+    @staticmethod
+    def base_campaign_data():
+        """
+        This returns data to create base-campaign.
+        """
+        return {
+            'name': fake.name(),
+            'description': fake.sentence()
+        }
+
 
 class FixtureHelpers(object):
     """
@@ -820,7 +848,7 @@ def send_request(method, url, access_token, data=None, is_json=True, data_dumps=
     """
     # This method is being used for test cases, so it is sure that method has
     #  a valid value like 'get', 'post' etc.test_reschedule_with_invalid_token
-    request_method = getattr(requests, method)
+    request_method = getattr(requests, method.lower())
     headers = dict(Authorization='Bearer %s' % access_token)
     if is_json:
         headers['Content-Type'] = JSON_CONTENT_TYPE_HEADER['content-type']

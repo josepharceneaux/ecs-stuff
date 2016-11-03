@@ -24,20 +24,25 @@ from scheduler_service import celery_app as celery, flask_app as app, TalentConf
 
 
 @celery.task(name="send_request", queue=SchedulerUtils.QUEUE)
-def send_request(access_token, url, content_type, post_data, is_jwt_request=False, request_method='post'):
+def send_request(*args, **kwargs):
     """
     This method will be called by run_job asynchronously
-    :param access_token: authorization token for user
-    :param url: the URL where to send post request
-    :param content_type: the content type i.e json or xml
-    :param secret_key_id: Redis key which have a corresponding secret value to decrypt data
-    :param post_data: Data to post with post request
-    :param is_jwt_request: If true, then request will be send using JWT authorization
-    :param request_method: The type of request i.e POST, DELETE, GET, UPDATE, PATCH
+    :param kwargs:
+        access_token: authorization token for user
+        url: the URL where to send post request
+        content_type: the content type i.e json or xml
+        post_data: Data to post with post request
+        is_jwt_request: If true, then request will be send using JWT authorization
+        request_method: The type of request i.e POST, DELETE, GET, UPDATE, PATCH
     :return:
     """
+    access_token = kwargs['access_token']
+    url, content_type = kwargs['url'], kwargs['content_type']
+    post_data, is_jwt_request, request_method = kwargs['post_data'], kwargs.get('is_jwt_request', False), \
+                                                kwargs.get('request_method', 'post')
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
+        logger.info('Celery Task (send_request): kwargs passed: {}'.format(kwargs))
         headers = {
             'Content-Type': content_type,
             'Authorization': access_token

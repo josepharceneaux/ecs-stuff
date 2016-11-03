@@ -1,0 +1,23 @@
+from user_service.common.models.user import Permission, Role, db, PermissionsOfRole
+
+permission_names = [Permission.PermissionNames.CAN_EDIT_DOMAIN_CUSTOM_FIELDS,
+                    Permission.PermissionNames.CAN_ADD_DOMAIN_CUSTOM_FIELDS,
+                    Permission.PermissionNames.CAN_GET_DOMAIN_CUSTOM_FIELDS,
+                    Permission.PermissionNames.CAN_DELETE_DOMAIN_CUSTOM_FIELDS]
+
+for permission_name in permission_names:
+    db.session.add(Permission(name=permission_name))
+db.session.commit()
+
+role_names = ['USER', 'ADMIN', 'DOMAIN_ADMIN', 'TALENT_ADMIN']
+for role_name in role_names:
+    role_id = Role.get_by_name(role_name).id
+    for permission_name in permission_names:
+        if permission_name != Permission.PermissionNames.CAN_ADD_DOMAIN_CUSTOM_FIELDS or role_name != 'USER':
+            db.session.add(PermissionsOfRole(role_id=role_id, permission_id=Permission.get_by_name(permission_name).id))
+
+db.session.add(PermissionsOfRole(role_id=Role.get_by_name("USER").id,
+permission_id=Permission.get_by_name(Permission.PermissionNames.CAN_GET_USER_ROLE).id))
+
+db.session.commit()
+

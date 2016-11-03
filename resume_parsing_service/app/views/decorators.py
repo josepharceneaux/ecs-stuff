@@ -25,9 +25,9 @@ def upload_failed_IO(f):
             return f(*args, **kwargs)
         except Exception as e:
             if not isinstance(e, TalentError):
-                logger.exception('Uncaught error occured during Resume Processing: {}'.format(e.message))
                 fileIO = args[0]
                 key = args[1]
+                logger.exception('ResumeParsingService::UncaughtError::upload_failed_IO Key {} Exception'.format(key, e.message))
                 boto3_put(fileIO.getvalue(), current_app.config['S3_BUCKET_NAME'], key, 'FailedResumes')
                 fileIO.close()
                 raise InternalServerError(
