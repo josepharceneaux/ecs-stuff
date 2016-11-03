@@ -8,7 +8,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import or_, desc, extract, and_
 
 from db import db
-from ..error_handling import InternalServerError
+from ..error_handling import InternalServerError, NotFoundError
 from ..utils.datetime_utils import DatetimeUtils
 from ..custom_contracts import define_custom_contracts
 
@@ -97,6 +97,21 @@ class SmsCampaign(db.Model):
             user_phone_ids = [user_phone.id for user_phone in user_phones]
             return cls.query.filter(cls.user_phone_id.in_(user_phone_ids)).all()
         return None
+
+    @classmethod
+    @contract()
+    def get_by_name(cls, user_id, name):
+        """
+        Gets SmsCampaign against campaign name
+        :param positive user_id: User Id
+        :param string name: SmsCampaign name
+        :rtype: list
+        """
+        from user import User, UserPhone
+        domain_id = User.get_domain_id(user_id)
+        if domain_id:
+            return cls.query.join(UserPhone, User).filter(cls.name == name, User.domain_id == domain_id).all()
+        raise NotFoundError
 
 
 class SmsCampaignBlast(db.Model):

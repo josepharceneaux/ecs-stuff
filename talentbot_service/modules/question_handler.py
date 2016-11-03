@@ -22,14 +22,14 @@ from dateutil.relativedelta import relativedelta
 from talentbot_service.common.error_handling import NotFoundError
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.candidate import Candidate
-from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate
+from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPipeline
 from talentbot_service.common.models.talent_pools_pipelines import TalentPool
 from talentbot_service.common.models.email_campaign import EmailCampaign
 from talentbot_service.common.models.sms_campaign import SmsCampaign
 from talentbot_service.common.models.push_campaign import PushCampaign
 # App specific imports
 from talentbot_service.modules.constants import BOT_NAME, CAMPAIGN_TYPES, MAX_NUMBER_FOR_DATE_GENERATION,\
-    QUESTION_HANDLER_NUMBERS
+    QUESTION_HANDLER_NUMBERS, EMAIL_CAMPAIGN, PUSH_CAMPAIGN, ZERO, SMS_CAMPAIGN
 
 
 class QuestionHandler(object):
@@ -449,6 +449,43 @@ class QuestionHandler(object):
                 response.append("%d: `%s`" % (index + 1, sms_campaign.name))
         return '\n'.join(response)
 
+    @classmethod
+    @contract
+    def question_9_handler(cls, message_tokens, user_id):
+        """
+        This method handles question 'show me <x>'
+        :param list message_tokens:
+        :param positive user_id:
+        :rtype: string
+        """
+        # Getting index before meaningful data
+        name_index = cls.find_optional_word(message_tokens, ['about', 'me', 'show'], True)
+        if name_index is None:
+            return "No name specified"
+        name = ' '.join(message_tokens[name_index + 1::])  # User specified name
+        try:  # Finding EmailCampaigns and TalentPipelines against this name
+            email_campaigns = EmailCampaign.get_by_name(user_id, name)
+            push_campaigns = PushCampaign.get_by_name(user_id, name)
+            talent_pipelines = TalentPipeline.get_by_name(user_id, name)
+            sms_campaigns = SmsCampaign.get_by_name(user_id, name)
+        except NotFoundError:
+            return "Something went wrong"
+        nothing_found = (len(email_campaigns) < 1 and len(talent_pipelines) < 1
+                         and len(push_campaigns) < 1 and len(sms_campaigns) < 1)
+        if nothing_found:
+            return "Nothing found with name `%s`" % name
+        response = []
+        response += cls.prepare_blast_results(email_campaigns, name, EMAIL_CAMPAIGN)
+        response += cls.prepare_blast_results(push_campaigns, name, PUSH_CAMPAIGN)
+        response += cls.prepare_blast_results(sms_campaigns, name, SMS_CAMPAIGN)
+        for pipeline in talent_pipelines:  # Appending all found TalentPipelines' results
+            response.append("Pipeline `%s` exists in `%s` talent pool which has `%d` candidates and this pipeline was "
+                            "created by `%s`" % (pipeline.name, pipeline.talent_pool.name,
+                                                 TalentPoolCandidate.candidate_imports
+                                                 (user_id, talent_pool_list=[pipeline.talent_pool.name]),
+                                                 pipeline.user.name))
+        return '\n'.join(response)
+
     @staticmethod
     def is_valid_year(year):
         """
@@ -500,12 +537,12 @@ class QuestionHandler(object):
     def create_ordered_list(_list):
         """
         This method creates an ordered list
-        :param list _list: List of same string elements
+        :param list _list: List of string elements
         :rtype: str
         """
-        for list_element in _list:
-            ordered_talent_pool_name = "%d- %s" % (_list.index(list_element) + 1, list_element)
-            _list[_list.index(list_element)] = ordered_talent_pool_name
+        for index, list_element in enumerate(_list):
+            ordered_talent_pool_name = "%d- %s" % (index + 1, list_element)
+            _list[index] = ordered_talent_pool_name
         return '\n\n'.join(_list)
 
     @staticmethod
@@ -573,3 +610,40 @@ class QuestionHandler(object):
             if index is not None:
                 return index
         return None
+
+    @classmethod
+    @contract()
+    def prepare_blast_results(cls, campaigns, name, campaign_type):
+        """
+        Generates a representable result of a Campaign Blast
+        :param string name: Campaign name specified by User
+        :param string campaign_type: Campaign Name
+        :param list campaigns:
+        :rtype: list
+        """
+        blasts = []
+        for campaign in campaigns:
+            blasts += (campaign.blasts.all())
+        response = []
+        if len(blasts) < 1 and len(campaigns) > ZERO:
+            response.append("%s `%s` has not been sent yet" % (campaign_type.title(), name))
+            return response
+        # Appending all found CampaignBlasts' result
+        total_sends = ZERO
+        total_opens = ZERO
+        for blast in blasts:
+            total_sends += blast.sends
+            if campaign_type == EMAIL_CAMPAIGN:
+                total_opens += blast.opens
+            elif campaign_type == SMS_CAMPAIGN:
+                total_opens += blast.replies
+            else:
+                total_opens += blast.clicks
+        if len(blasts) > ZERO:
+            interaction_rate = cls.calculate_percentage(total_opens, total_sends)
+            interaction_type = 'open' if campaign_type == EMAIL_CAMPAIGN else 'click' if \
+                campaign_type == SMS_CAMPAIGN else 'reply'
+            response.append("%s `%s` has been sent to `%d` %s with %s rate of `%d%%`"
+                            % (campaign_type.title(), name, total_sends, 'candidate' if total_sends == 1 else
+                               'candidates', interaction_type, interaction_rate))
+        return response

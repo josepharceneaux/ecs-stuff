@@ -8,7 +8,7 @@ from db import db
 from ..utils.datetime_utils import DatetimeUtils
 from ..utils.validators import (raise_if_not_instance_of,
                                 raise_if_not_positive_int_or_long)
-from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError, InvalidUsage)
+from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError, InvalidUsage, NotFoundError)
 
 __author__ = 'jitesh'
 
@@ -125,7 +125,22 @@ class EmailCampaign(db.Model):
         :param positive user_id: User Id
         :rtype: list
         """
-        return cls.query.filter(cls.user_id == user_id).all()
+        return cls.query.filter(cls.user_id == user_id, cls.is_hidden == 0).all()
+
+    @classmethod
+    @contract()
+    def get_by_name(cls, user_id, name):
+        """
+        Gets EmailCampaign against campaign name
+        :param positive user_id:
+        :param string name:
+        :rtype: list
+        """
+        from user import User
+        domain_id = User.get_domain_id(user_id)
+        if domain_id:
+            return cls.query.join(User).filter(cls.name == name, User.domain_id == domain_id, cls.is_hidden == 0).all()
+        raise NotFoundError
 
     def __repr__(self):
         return "<EmailCampaign(name=' %r')>" % self.name
@@ -227,17 +242,17 @@ class EmailCampaignBlast(db.Model):
         if isinstance(datetime_value, datetime):
             return cls.query.filter(or_(cls.updated_datetime >= datetime_value,
                                         cls.sent_datetime >= datetime_value)). \
-                filter(EmailCampaign.id == cls.campaign_id). \
+                filter(EmailCampaign.id == cls.campaign_id, EmailCampaign.is_hidden == 0). \
                 filter(cls.sends > 0).filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)). \
                 order_by(desc(cls.opens/cls.sends)).first()
         if isinstance(datetime_value, basestring):
             return cls.query.filter(or_(extract("year", cls.updated_datetime) == datetime_value,
                                         extract("year", cls.sent_datetime) == datetime_value)). \
-                filter(EmailCampaign.id == cls.campaign_id). \
+                filter(EmailCampaign.id == cls.campaign_id, EmailCampaign.is_hidden == 0). \
                 filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)). \
                 filter(cls.sends > 0). \
                 order_by(desc(cls.opens/cls.sends)).first()
-        return cls.query.filter(EmailCampaign.id == cls.campaign_id).\
+        return cls.query.filter(EmailCampaign.id == cls.campaign_id, EmailCampaign.is_hidden == 0).\
             filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)).\
             filter(cls.sends > 0).order_by(desc(cls.opens/cls.sends)).first()
 

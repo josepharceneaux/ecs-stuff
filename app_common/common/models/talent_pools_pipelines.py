@@ -241,3 +241,17 @@ class TalentPipeline(db.Model):
         assert user_id, 'user_id not provided'
         assert talent_pool_id, 'talent_pool_id not provided'
         return cls.query.filter_by(user_id=user_id, talent_pool_id=talent_pool_id).first()
+
+    @classmethod
+    @contract()
+    def get_by_name(cls, user_id, name):
+        """
+        Returns TalentPipelines against name in user's domain
+        :param positive user_id: User Id
+        :param string name: TalentPipeline name
+        :rtype: list
+        """
+        domain_id = User.get_domain_id(user_id)
+        if domain_id:
+            return cls.query.join(User).filter(cls.name == name, User.domain_id == domain_id, cls.is_hidden == 0).all()
+        raise NotFoundError

@@ -25,8 +25,7 @@ from db import db
 from sqlalchemy.orm import relationship
 from sqlalchemy import desc, extract, and_
 from candidate import Candidate
-from ..error_handling import InvalidUsage
-
+from ..error_handling import InvalidUsage, NotFoundError
 
 __author__ = 'Zohaib Ijaz <mzohaib.qc@gmail.com>'
 
@@ -97,6 +96,21 @@ class PushCampaign(db.Model):
         assert isinstance(user_id, (int, long)) and user_id > 0, 'User id is not valid integer'
         return cls.query.filter_by(id=_id, user_id=user_id).first()
 
+    @classmethod
+    @contract()
+    def get_by_name(cls, user_id, name):
+        """
+        Gets PushCampaign against campaign name
+        :param positive user_id: User Id
+        :param string name: PushCampaign name
+        :rtype: list
+        """
+        from user import User
+        domain_id = User.get_domain_id(user_id)
+        if domain_id:
+            return cls.query.join(User).filter(cls.name == name, User.domain_id == domain_id).all()
+        raise NotFoundError
+
 
 class PushCampaignBlast(db.Model):
     """
@@ -129,7 +143,7 @@ class PushCampaignBlast(db.Model):
         assert isinstance(datetime_value, (datetime, basestring)) or datetime_value is None, \
             "Invalid datetime value"
         assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
-        from .user import User
+        from user import User
         domain_id = User.get_domain_id(user_id)
         if isinstance(datetime_value, datetime):
             return cls.query.filter(cls.updated_datetime >= datetime_value). \

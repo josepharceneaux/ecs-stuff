@@ -55,7 +55,7 @@ QUESTIONS = ['how many users are in my domain', 'how many candidates are there w
              'how many candidate leads did', 'how many users in my domain',
              'how many candidates in my domain', 'how many users are there in my domain', 'candidates from zip',
              'top campaigns', 'candidates aeiou added', 'talent pools in domain', 'how many candidates in zipcode',
-             'candidates in zipcode', 'what are my campaigns']
+             'candidates in zipcode', 'what are my campaigns', 'show me']
 POSITIVE_MESSAGES = ['hmm', 'ok', 'fine', 'whatever', 'yeah', 'ahan', 'so so']
 BEST_QUESTION_MATCH_RATIO = 99
 FACEBOOK_API_URI = "https://graph.facebook.com/v2.6/me/messages"
@@ -68,6 +68,10 @@ CAMPAIGN_TYPES = {'sms': SmsCampaignBlast.top_performing_sms_campaign,
 MIN_WORDS_IN_QUESTION = 3
 MAX_NUMBER_FOR_DATE_GENERATION = 9999
 QUESTION_HANDLER_NUMBERS = {'question_handler_1': 1, 'question_handler_4': 4}
+EMAIL_CAMPAIGN = 'Email Campaign'
+PUSH_CAMPAIGN = 'Push Campaign'
+SMS_CAMPAIGN = 'SMS Campaign'
+ZERO = 0
 # TODO: Remove this when we move to prod
 TWILIO_AUTH_TOKEN = "09e1a6e40b9d6588f8a6050dea6bbd98"
 TWILIO_ACCOUNT_SID = "AC7f332b44c4a2d893d34e6b340dbbf73f"
