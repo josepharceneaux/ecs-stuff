@@ -539,7 +539,7 @@ class TestCreateCampaign(object):
          possible, only valid data is acceptable. Should return 400 bad request on invalid data.
         """
         campaign_id = email_campaign_of_user_first.id
-        update_with_invalid_data = [fake.word(), fake.random_number(2)]
+        update_with_invalid_data = [fake.word(), fake.random_int(2,)]
         for param in update_with_invalid_data:
             data = {'is_hidden': param}
             response = send_request('patch', EmailCampaignApiUrl.CAMPAIGN % campaign_id, access_token_first, data)
