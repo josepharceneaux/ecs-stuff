@@ -258,6 +258,7 @@ class BaseCampaignOverview(Resource):
         base_campaign_event = BaseCampaignEvent.filter_by_keywords(base_campaign_id=base_campaign_id)
         if base_campaign_event:
             event = base_campaign_event[0].event  # Pick first associated event
+            event['venue'] = event.venue.to_json() if event.venue else {}
             json_event = event.to_json()
             json_event['rsvps'] = [rsvp.to_json() for rsvp in event.rsvps.all()]
         email_campaigns = base_campaign.email_campaigns.all()
