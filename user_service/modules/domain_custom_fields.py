@@ -47,10 +47,9 @@ def create_custom_fields(custom_fields, domain_id):
     created_custom_fields = []
     for custom_field in custom_fields:
 
-        # Normalize custom field name
-        cf_name = normalize_value(custom_field['name'])
+        cf_name = custom_field['name'].strip()
         if not cf_name:  # In case name is just a whitespace
-            raise InvalidUsage("Name is required for creating custom field.")
+            raise InvalidUsage("Custom field name is required for creating custom field(s).")
 
         cf_category_id = custom_field.get('category_id')
 

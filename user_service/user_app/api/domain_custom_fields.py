@@ -38,7 +38,7 @@ class DomainCustomFieldsResource(Resource):
         :return: {"custom_fields": [{"id": int}, {"id": int}, ...]}
         :rtype: dict[list[dict]]
         Usage:
-            >>> data = {"custom_fields": [{"name": "job status"}]}
+            >>> data = {"custom_fields": [{"category_id": 1, "name": "job status"}]}
             >>> headers = {"Authorization": "Bearer {access_token}", "content-type": "application/json"}
             >>> requests.post(url="host/v1/custom_fields", data=json.dumps(data), headers=headers)
             <Response [201]>
