@@ -55,7 +55,8 @@ QUESTIONS = ['how many users are in my domain', 'how many candidates are there w
              'how many candidate leads did', 'how many users in my domain',
              'how many candidates in my domain', 'how many users are there in my domain', 'candidates from zip',
              'top campaigns', 'candidates aeiou added', 'talent pools in domain', 'how many candidates in zipcode',
-             'candidates in zipcode', 'what are my campaigns', 'show me']
+             'candidates in zipcode', 'what are my campaigns', 'show me', 'give me more info about', 'tell me about',
+             'what are all campaigns', 'campaigns in my domain', 'what campaigns in my domain']
 POSITIVE_MESSAGES = ['hmm', 'ok', 'fine', 'whatever', 'yeah', 'ahan', 'so so']
 BEST_QUESTION_MATCH_RATIO = 99
 FACEBOOK_API_URI = "https://graph.facebook.com/v2.6/me/messages"

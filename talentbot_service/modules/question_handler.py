@@ -431,23 +431,31 @@ class QuestionHandler(object):
         :param positive user_id:
         :rtype: string
         """
-        response = ["Your campaigns are following:"]
-        email_campaigns = EmailCampaign.get_by_user_id(user_id)
-        push_campaigns = PushCampaign.get_by_user_id(user_id)
-        sms_campaigns = SmsCampaign.get_by_user_id(user_id)
-        if email_campaigns:
+        # Checking weather user's asking about all campaigns or his/her campaigns
+        asking_about_all_campaigns = not bool(re.search(r'my camp*|my all camp*', ' '.join(message_tokens).lower()))
+        response = ["All campaigns in your domain are following:"] if asking_about_all_campaigns else\
+            ["Your campaigns are following:"]
+        domain_id = User.get_domain_id(user_id) if asking_about_all_campaigns else None
+        # Getting campaigns
+        email_campaigns = EmailCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else \
+            EmailCampaign.get_by_user_id(user_id)
+        push_campaigns = PushCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
+            PushCampaign.get_by_user_id(user_id)
+        sms_campaigns = SmsCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
+            SmsCampaign.get_by_user_id(user_id)
+        if email_campaigns:  # Appending email campaigns in a representable response list
             response.append("*Email Campaigns*")
             for index, email_campaign in enumerate(email_campaigns):
                 response.append("%d: `%s`" % (index + 1, email_campaign.name))
-        if push_campaigns:
+        if push_campaigns:  # Appending push campaigns in a representable response list
             response.append("*Push Campaigns*")
             for index, push_campaign in enumerate(push_campaigns):
                 response.append("%d: `%s`" % (index + 1, push_campaign.name))
-        if sms_campaigns:
+        if sms_campaigns:  # Appending sms campaigns in a representable response list
             response.append("*SMS Campaigns*")
             for index, sms_campaign in enumerate(sms_campaigns):
                 response.append("%d: `%s`" % (index + 1, sms_campaign.name))
-        return '\n'.join(response)
+        return '\n'.join(response)  # Returning string
 
     @classmethod
     @contract

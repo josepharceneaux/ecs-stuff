@@ -97,7 +97,7 @@ class EmailCampaign(db.Model):
     def get_by_domain_id(cls, domain_id):
         assert domain_id, 'domain_id not given'
         from user import User  # This has to be here to avoid circular import
-        return cls.query.join(User).filter(User.domain_id == domain_id)
+        return cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)
 
     @classmethod
     def get_by_domain_id_and_filter_by_name(cls, domain_id, search_keyword, sort_by, sort_type, is_hidden):

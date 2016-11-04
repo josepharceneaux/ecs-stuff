@@ -138,8 +138,18 @@ class TalentBot(object):
                               # What are my campaigns
                               '54': {'question': self.list_of_questions[54], 'threshold': 95,
                                      'handler': self.handler.question_8_handler},
+                              '58': {'question': self.list_of_questions[58], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '59': {'question': self.list_of_questions[59], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '60': {'question': self.list_of_questions[60], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
                               # Show me <x>
                               '55': {'question': self.list_of_questions[55], 'threshold': 95,
+                                     'handler': self.handler.question_9_handler},
+                              '56': {'question': self.list_of_questions[56], 'threshold': 95,
+                                     'handler': self.handler.question_9_handler},
+                              '57': {'question': self.list_of_questions[57], 'threshold': 95,
                                      'handler': self.handler.question_9_handler}
                               }
         self.bot_name = bot_name

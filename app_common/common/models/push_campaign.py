@@ -111,6 +111,17 @@ class PushCampaign(db.Model):
             return cls.query.join(User).filter(cls.name == name, User.domain_id == domain_id).all()
         raise NotFoundError
 
+    @classmethod
+    @contract()
+    def get_by_domain_id(cls, domain_id):
+        """
+        Returns all PushCampaigns with same domain_id
+        :param positive domain_id: Domain Id
+        :rtype: list
+        """
+        from user import User
+        return cls.query.join(User).filter(User.domain_id == domain_id).all()
+
 
 class PushCampaignBlast(db.Model):
     """
