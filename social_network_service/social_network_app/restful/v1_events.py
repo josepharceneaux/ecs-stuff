@@ -10,7 +10,6 @@ from flask.ext.restful import Resource
 
 # Application specific imports
 from social_network_service.common.error_handling import *
-from social_network_service.common.models.db import db
 from social_network_service.common.models.event import Event
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.routes import SocialNetworkApi
@@ -77,22 +76,18 @@ class Events(Resource):
                     500 (Internal Server Error)
 
         """
-
         data = request.values
         per_page = data.get('per_page', 10)
         page = data.get('page', 1)
 
-        events = request.user.events.order_by(Event.start_datetime.desc())
-        events = events.paginate(per_page=per_page,
-                                 page=page).items
+        events = Event.get_by_domain_id(request.user.domain_id).order_by(Event.start_datetime.desc())
+        events = events.paginate(per_page=per_page, page=page).items
         events = map(add_organizer_venue_data, events)
         headers = generate_pagination_headers(len(events), per_page, page)
         if events:
-            return ApiResponse(response=dict(events=events),
-                               headers=headers)
+            return ApiResponse(response=dict(events=events), headers=headers)
         else:
-            return ApiResponse(headers=headers,
-                               response=dict(events=[]))
+            return ApiResponse(headers=headers, response=dict(events=[]))
 
     def post(self):
         """
@@ -202,8 +197,7 @@ class Events(Resource):
             if not not_deleted:
                 return dict(message='%s Events deleted successfully' % len(deleted))
 
-            return dict(message='Unable to delete %s events' % len(not_deleted),
-                        deleted=deleted,
+            return dict(message='Unable to delete %s events' % len(not_deleted), deleted=deleted,
                         not_deleted=not_deleted), 207
         raise InvalidUsage('Bad request, include event_ids as list data')
 
@@ -258,9 +252,9 @@ class EventById(Resource):
         :param event_id: integer, unique id representing event in GT database
         :return: json for required event
         """
-        event = Event.get_by_user_and_event_id(request.user.id, event_id)
+        event = Event.get_by_event_id_and_domain_id(event_id, request.user.domain_id)
         if not event:
-            raise ResourceNotFound('Event does not exist with id %s' % event_id)
+            raise ResourceNotFound('Event does not exist with id %s in user`s domain.' % event_id)
         event_data = add_organizer_venue_data(event)
         return dict(event=event_data)
 
@@ -366,4 +360,3 @@ class EventById(Resource):
         if len(deleted) == 1:
             return dict(message='Event deleted successfully')
         raise ForbiddenError('Forbidden: Unable to delete event')
-

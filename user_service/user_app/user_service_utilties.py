@@ -184,7 +184,7 @@ def create_user(email, domain_id, first_name, last_name, expiration, phone="", d
     user_data_dict = dict(
             email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, expiration=expiration,
             dice_user_id=dice_user_id, password=hashed_password, phone=phone, thumbnail_url=thumbnail_url,
-            user_group_id=user_group.id, locale=locale, is_disabled=True, role_id=role_id)
+            user_group_id=user_group.id, locale=locale, is_disabled=False, role_id=role_id)
 
     user_data_dict = {k: v for k, v in user_data_dict.items() if v}
 

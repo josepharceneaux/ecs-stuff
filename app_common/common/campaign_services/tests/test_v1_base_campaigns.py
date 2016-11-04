@@ -107,19 +107,21 @@ class TestBaseCampaignEvent(object):
         CampaignsTestsHelpers.request_with_invalid_token(self.HTTP_METHOD,
                                                          self.URL % (fake.random_int(), fake.random_int()))
 
-    def test_with_valid_data(self, base_campaign, event_in_db, token_first):
+    def test_with_valid_data(self, base_campaign, event_in_db, token_first, token_same_domain):
         """
-        This hits the API with valid event and base campaign.
+        This hits the API with valid event and base campaign. This requests with two different users of same domain.
         """
-        response = send_request(self.HTTP_METHOD, self.URL % (base_campaign['id'], event_in_db['id']), token_first)
-        assert response.status_code == codes.CREATED, response.text
-        assert response.json()['id']
-        db.session.commit()
-        base_campaign_event = BaseCampaignEvent.get_by_id(response.json()['id'])
-        assert base_campaign_event.event_id == event_in_db['id']
-        assert base_campaign_event.base_campaign_id == base_campaign['id']
+        for access_token in (token_first, token_same_domain):
+            response = send_request(self.HTTP_METHOD, self.URL % (base_campaign['id'], event_in_db['id']),
+                                    access_token)
+            assert response.status_code == codes.CREATED, response.text
+            assert response.json()['id']
+            db.session.commit()
+            base_campaign_event = BaseCampaignEvent.get_by_id(response.json()['id'])
+            assert base_campaign_event.event_id == event_in_db['id']
+            assert base_campaign_event.base_campaign_id == base_campaign['id']
 
-    def test_with_not_owned_event(self, base_campaign, event_in_db, token_second):
+    def test_with_user_of_other_domain(self, base_campaign, event_in_db, token_second):
         """
         Requested event does not belong to user. It should result in Forbidden Error.
         """

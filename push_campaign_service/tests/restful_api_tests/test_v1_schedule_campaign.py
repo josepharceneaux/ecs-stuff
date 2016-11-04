@@ -332,11 +332,11 @@ class TestRescheduleCampaignUsingPUT(object):
                             expected_status=(codes.BAD_REQUEST,))
 
     def test_reschedule_campaign_with_valid_data(self, token_first, campaign_in_db, talent_pool, candidate_first,
-                                             smartlist_first, schedule_a_campaign, candidate_device_first):
+                                                 smartlist_first, schedule_a_campaign, candidate_device_first):
         """
         Reschedule a campaign with valid data and it should return 200 response.
         """
-        sleep(10)
+        sleep(15)
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
         assert response.status_code == codes.OK
