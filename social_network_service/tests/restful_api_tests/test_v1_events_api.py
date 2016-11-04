@@ -55,6 +55,17 @@ class TestResourceEvents(object):
         events = response.json()['events']
         assert len(events) >= 1, 'There should be some events for test user'
 
+    def test_events_get_in_domain_of_user(self, token_same_domain, event_in_db, event_in_db_second):
+        """
+        Here one user tries to get events in its domain. It should get 2 events created by some other user of
+        same domain.
+        """
+        response = requests.get(SocialNetworkApiUrl.EVENTS, headers=auth_header(token_same_domain))
+        logger.info(response.text)
+        assert response.status_code == codes.OK, 'Status should be Ok (200)'
+        events = response.json()['events']
+        assert len(events) >= 2, 'There should be 2 events for user of same domain'
+
     def test_events_post_with_invalid_token(self):
         """
         Post event using invalid token and response should be 401 (unauthorized user)

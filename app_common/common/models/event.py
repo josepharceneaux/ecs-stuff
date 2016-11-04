@@ -41,6 +41,25 @@ class Event(db.Model):
                 self.start_datetime == other_event.start_datetime)
 
     @classmethod
+    def get_by_domain_id(cls, domain_id):
+        """
+        This returns Query object for all the events in user's domain(given domain_id)
+        :param int|long domain_id: Id of domain of user
+        """
+        assert domain_id, 'domain_id is required param'
+        from user import User  # This has to be here to avoid circular import
+        return cls.query.join(User).filter(User.domain_id == domain_id)
+
+    @classmethod
+    def get_by_event_id_and_domain_id(cls, event_id, domain_id):
+        """
+        This searches given event_id in given domain_id of user
+        """
+        assert event_id and domain_id
+        from user import User  # This has to be here to avoid circular import
+        return cls.query.filter_by(id=event_id).join(User).filter(User.domain_id == domain_id).first()
+
+    @classmethod
     def get_by_user_and_social_network_event_id(cls, user_id, social_network_event_id):
         assert user_id and social_network_event_id
         return cls.query.filter(
