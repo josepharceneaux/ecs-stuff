@@ -34,13 +34,11 @@ class UserInviteApi(Resource):
         if not requested_user:
             raise NotFoundError("User with user id %s is not found" % requested_user_id)
 
-        if requested_user.is_disabled == 0:
-            raise InvalidUsage("User %s is already active" % requested_user_id)
-
         temp_password = gen_salt(8)
         requested_user.password = gettalent_generate_password_hash(temp_password)
         requested_user.password_reset_time = datetime.utcnow()
         requested_user.is_disabled = 0
+        requested_user.registration_id = 'Invited'
         db.session.commit()
 
         send_new_account_email(requested_user.email, temp_password, requested_user.email)
@@ -240,6 +238,10 @@ class UserApi(Resource):
             'locale': locale
         }
         update_user_dict = dict((k, v) for k, v in update_user_dict.iteritems() if v)
+
+        if is_disabled:
+            update_user_dict['registration_id'] = ''
+
         User.query.filter(User.id == requested_user_id).update(update_user_dict)
         db.session.commit()
 
