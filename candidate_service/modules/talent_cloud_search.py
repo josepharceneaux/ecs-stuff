@@ -408,8 +408,9 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
             # Add tag
             tag_ids = field_name_to_sql_value.get('tag_ids')
             if tag_ids:
+                tag_ids = tag_ids.split(group_concat_separator)
                 tags = session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
-                field_name_to_sql_value['tags'] = [tag.name for tag in tags]
+                field_name_to_sql_value['tags'] = group_concat_separator.join([tag.name for tag in tags])
 
             # Massage 'field_name_to_sql_value' values into the types they are supposed to be
             resume_text = ''
