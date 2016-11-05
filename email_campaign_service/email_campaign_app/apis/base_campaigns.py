@@ -123,6 +123,21 @@ class BaseCampaignOverview(Resource):
                 "max_attendees": 10,
                 "timezone": "Asia/Karachi",
                 "currency": "USD",
+                "venue": {
+                              "city": "Lahore",
+                              "user_id": 1,
+                              "social_network_id": 18,
+                              "country": "",
+                              "longitude": 0,
+                              "social_network_venue_id": "16271034",
+                              "state": "Punjab",
+                              "latitude": 0,
+                              "zip_code": "",
+                              "address_line_2": "H# 163, Block A",
+                              "id": 307,
+                              "address_line_1": "New Muslim Town"
+                            },
+
                 "rsvps": [
                           {
                             "social_network_rsvp_id": "6956",
@@ -257,6 +272,7 @@ class BaseCampaignOverview(Resource):
             event = base_campaign_event[0].event  # Pick first associated event
             json_event = event.to_json()
             json_event['rsvps'] = [rsvp.to_json() for rsvp in event.rsvps.all()]
+            json_event['venue'] = event.venue.to_json() if event.venue else {}
         email_campaigns = base_campaign.email_campaigns.all()
         if not json_event and not email_campaigns:
             raise InvalidUsage('Requested base campaign is orphaned')
