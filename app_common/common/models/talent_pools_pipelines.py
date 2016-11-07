@@ -48,6 +48,22 @@ class TalentPool(db.Model):
         domain_id = User.get_domain_id(user_id)
         return cls.query.filter(cls.domain_id == domain_id).all()
 
+    @classmethod
+    @contract()
+    def get_by_name(cls, user_id, names):
+        """
+        This returns TalentPool list against names if no names are specified it returns all talent pools in usr domain
+        :param positive user_id:
+        :param list|None names:
+        :rtype: list
+        """
+        domain_id = User.get_domain_id(user_id)
+        if domain_id:
+            if names is not None:
+                return cls.query.join(User).filter(cls.name.in_(names), User.domain_id == domain_id).all()
+            return cls.query.join(User).filter(User.domain_id == domain_id).all()
+        raise NotFoundError
+
 
 class TalentPoolCandidate(db.Model):
     __tablename__ = 'talent_pool_candidate'

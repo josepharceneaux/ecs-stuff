@@ -9,6 +9,7 @@ from ..utils.datetime_utils import DatetimeUtils
 from ..utils.validators import (raise_if_not_instance_of,
                                 raise_if_not_positive_int_or_long)
 from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError, InvalidUsage, NotFoundError)
+from ..constants import OWNED
 
 __author__ = 'jitesh'
 
@@ -159,6 +160,26 @@ class EmailCampaign(db.Model):
             if user.user_group_id:
                 return cls.query.join(User).filter(User.user_group_id == user.user_group_id, cls.is_hidden == 0).all()
         raise NotFoundError
+
+    @classmethod
+    @contract()
+    def email_campaigns_in_talent_pool(cls, user_id, scope=None, talentpool_names=None):
+        """
+        Returns EmailCampaigns in talent pool
+        :param int scope: Number which determines weather user asking about all domain campaigns or only his campaigns
+        :param positive user_id:
+        :param list|None talentpool_names:
+        :rtype: list
+        """
+        from smartlist import SmartlistCandidate
+        from user import User
+        smartlist_ids = SmartlistCandidate.get_smartlist_ids_in_talent_pools(user_id, talentpool_names)
+        email_campaign_ids = EmailCampaignSmartlist.query.with_entities(EmailCampaignSmartlist.campaign_id).\
+            filter(EmailCampaignSmartlist.smartlist_id.in_(smartlist_ids)).all()
+        email_campaign_ids = [email_campaign_id[0] for email_campaign_id in email_campaign_ids]
+        scope_dependant_filter = cls.query.join(User).filter(cls.id.in_(email_campaign_ids), cls.user_id == user_id)\
+            if scope == OWNED else cls.query.filter(cls.id.in_(email_campaign_ids))
+        return scope_dependant_filter.all()
 
 
 class EmailCampaignSmartlist(db.Model):

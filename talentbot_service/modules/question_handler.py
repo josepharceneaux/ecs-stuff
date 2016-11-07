@@ -19,6 +19,7 @@ from datetime import datetime
 from contracts import contract
 from dateutil.relativedelta import relativedelta
 # Common utils
+from talentbot_service.common.constants import OWNED, DOMAIN_SPECIFIC
 from talentbot_service.common.error_handling import NotFoundError
 from talentbot_service.common.models.user import User
 from talentbot_service.common.models.candidate import Candidate
@@ -458,23 +459,55 @@ class QuestionHandler(object):
     @contract
     def question_8_handler(cls, message_tokens, user_id):
         """
-        Handles question 'What are my campaigns'
+        Handles question 'What are my campaigns, What are my campaigns in <x> talent pool'
         :param list message_tokens: Tokens of User message
         :param positive user_id:
         :rtype: string
         """
+        asking_about_his_pool = bool(re.search(r'my talent pool*|my all talent pool*',
+                                               ' '.join(message_tokens).lower()))
+        asking_about_all_pools = bool(re.search(r'([^m][^m][ ])all talent pool*', ' '.join(message_tokens).lower()))
         # Checking weather user's asking about all campaigns or his/her campaigns
         asking_about_all_campaigns = not bool(re.search(r'my camp*|my all camp*', ' '.join(message_tokens).lower()))
-        response = ["All campaigns in your domain are following:"] if asking_about_all_campaigns else\
+        talent_pool_index = cls.find_word_in_message('talent', message_tokens, True)
+        asking_about_specific_pool = (not asking_about_all_pools and
+                                      not asking_about_his_pool and talent_pool_index is not None)
+        email_campaigns, sms_campaigns, push_campaigns = (None, None, None)
+        if asking_about_specific_pool:
+            campaign_index = cls.find_word_in_message('camp', message_tokens)
+            if campaign_index is not None and talent_pool_index is not None:
+                if len(message_tokens) > campaign_index:
+                    if message_tokens[campaign_index + 1].lower() == 'in':
+                        campaign_index += 1
+                talent_pool_names = message_tokens[campaign_index + 1::talent_pool_index]
+                talent_pool_names_list = cls.create_list_of_talent_pools(' '.join(talent_pool_names))
+                email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, OWNED, talent_pool_names_list)\
+                    if not asking_about_all_campaigns else\
+                    EmailCampaign.email_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, talent_pool_names_list)
+                push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, OWNED, talent_pool_names_list) \
+                    if not asking_about_all_campaigns else \
+                    PushCampaign.push_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, talent_pool_names_list)
+        if asking_about_all_pools:
+            email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, OWNED) if not\
+                asking_about_all_campaigns else EmailCampaign.email_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC)
+            push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, OWNED) \
+                if not asking_about_all_campaigns else \
+                PushCampaign.push_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC)
+        is_asking_for_campaigns_in_pool = asking_about_all_campaigns and not asking_about_specific_pool and not\
+            asking_about_all_pools and not asking_about_his_pool
+        response = ["All campaigns in your domain are following:"] if is_asking_for_campaigns_in_pool else\
+            ["Campaigns in all Talent pools"] if asking_about_all_pools else ["Campaigns in your Talent pools"] if \
+            asking_about_his_pool else ["Campaigns in specified talent pool"] if asking_about_specific_pool else \
             ["Campaigns in your group are following:"]
-        domain_id = User.get_domain_id(user_id) if asking_about_all_campaigns else None
+        domain_id = User.get_domain_id(user_id) if is_asking_for_campaigns_in_pool else None
         # Getting campaigns
-        email_campaigns = EmailCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
-            EmailCampaign.get_by_user_id(user_id)
-        push_campaigns = PushCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
-            PushCampaign.get_by_user_id(user_id)
-        sms_campaigns = SmsCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
-            SmsCampaign.get_by_user_id(user_id)
+        if is_asking_for_campaigns_in_pool:
+            email_campaigns = EmailCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
+                EmailCampaign.get_by_user_id(user_id)
+            push_campaigns = PushCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
+                PushCampaign.get_by_user_id(user_id)
+            sms_campaigns = SmsCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
+                SmsCampaign.get_by_user_id(user_id)
         if email_campaigns:  # Appending email campaigns in a representable response list
             response.append("*Email Campaigns*")
             for index, email_campaign in enumerate(email_campaigns):
@@ -487,7 +520,7 @@ class QuestionHandler(object):
             response.append("*SMS Campaigns*")
             for index, sms_campaign in enumerate(sms_campaigns):
                 response.append("%d: `%s`" % (index + 1, sms_campaign.name))
-        return '\n'.join(response)  # Returning string
+        return '\n'.join(response) if len(response) > 1 else "No Campaign found"  # Returning string
 
     @classmethod
     @contract

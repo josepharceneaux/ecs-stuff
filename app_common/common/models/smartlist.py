@@ -1,4 +1,7 @@
 import json
+
+from contracts import contract
+
 from db import db
 import datetime
 from talent_pools_pipelines import TalentPipeline
@@ -67,3 +70,23 @@ class SmartlistCandidate(db.Model):
 
     def __repr__(self):
         return "<SmartListCandidate> (id = {})".format(self.id)
+
+    @classmethod
+    @contract()
+    def get_smartlist_ids_in_talent_pools(cls, user_id, talentpool_names=None):
+        """
+        This returns smartlist Ids in a pipeline which is in specified talentpool
+        :param positive user_id: User Id
+        :param list|None talentpool_names: Talnet pool names
+        :rtype: list
+        """
+        from talent_pools_pipelines import TalentPool, TalentPoolCandidate
+        talent_pools = TalentPool.get_by_name(user_id, talentpool_names)
+        talent_pool_ids = [talent_pool.id for talent_pool in talent_pools]  # Extracting data from tuple
+        candidate_ids = TalentPoolCandidate.query.with_entities(TalentPoolCandidate.candidate_id). \
+            filter(TalentPoolCandidate.talent_pool_id.in_(talent_pool_ids)).distinct().all()
+        candidate_ids = [candidate_id[0] for candidate_id in candidate_ids]  # Extracting data from tuple
+        smartlist_ids = SmartlistCandidate.query.with_entities(SmartlistCandidate.smartlist_id). \
+            filter(SmartlistCandidate.candidate_id.in_(candidate_ids)).distinct().all()
+        smartlist_ids = [smartlist_id[0] for smartlist_id in smartlist_ids]  # Extracting data from tuple
+        return smartlist_ids
