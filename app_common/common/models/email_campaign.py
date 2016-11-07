@@ -145,6 +145,21 @@ class EmailCampaign(db.Model):
     def __repr__(self):
         return "<EmailCampaign(name=' %r')>" % self.name
 
+    @classmethod
+    @contract()
+    def email_campaigns_user_group(cls, user_id):
+        """
+        Gets EmailCampaigns in user's group against User Id
+        :param positive user_id: User Id
+        :rtype: list
+        """
+        from user import User
+        user = User.query.filter(User.id == user_id).first()
+        if user:
+            if user.user_group_id:
+                return cls.query.join(User).filter(User.user_group_id == user.user_group_id, cls.is_hidden == 0).all()
+        raise NotFoundError
+
 
 class EmailCampaignSmartlist(db.Model):
     __tablename__ = 'email_campaign_smart_list'

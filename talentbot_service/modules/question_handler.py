@@ -397,11 +397,43 @@ class QuestionHandler(object):
     @classmethod
     def question_7_handler(cls, message_tokens, user_id):
         """
-        This method handles question What is my group and what group a user belongs to
+        This method handles question What is my group, what group a user belongs to and what are my group campaigns
         :param message_tokens:
         :param int user_id: User Id
         :rtype: str
         """
+        # Checking if user's asking about group campaigns
+        group_campaigns = True if cls.find_word_in_message('campa', message_tokens) is not None else False
+        group_pipelines = True if cls.find_word_in_message('pipeline', message_tokens) is not None else False
+        if group_campaigns:
+            response = ["Campaigns in your group are following:"]
+            try:
+                email_campaigns = EmailCampaign.email_campaigns_user_group(user_id)
+                push_campaigns = PushCampaign.push_campaigns_user_group(user_id)
+                sms_campaigns = SmsCampaign.sms_campaign_user_group(user_id)
+            except NotFoundError:
+                return "Seems like you don't belong to a group"
+            if email_campaigns:  # Appending email campaigns in a representable response list
+                response.append("*Email Campaigns*")
+                for index, email_campaign in enumerate(email_campaigns):
+                    response.append("%d: `%s`" % (index + 1, email_campaign.name))
+            if push_campaigns:  # Appending push campaigns in a representable response list
+                response.append("*Push Campaigns*")
+                for index, push_campaign in enumerate(push_campaigns):
+                    response.append("%d: `%s`" % (index + 1, push_campaign.name))
+            if sms_campaigns:  # Appending sms campaigns in a representable response list
+                response.append("*SMS Campaigns*")
+                for index, sms_campaign in enumerate(sms_campaigns):
+                    response.append("%d: `%s`" % (index + 1, sms_campaign.name))
+            return '\n'.join(response) if len(response) > 1 else 'No campaigns exist in your group'
+        if group_pipelines:
+            pipelines = TalentPipeline.pipelines_user_group(user_id)
+            response = ["Pipelines in your group are following:"]
+            if pipelines:
+                response.append("*Pipelines*")
+                for index, pipeline in enumerate(pipelines):
+                    response.append("%d: `%s`" % (index + 1, pipeline.name))
+            return '\n'.join(response) if len(response) > 1 else 'No pipelines exist in your group'
         belong_index = cls.find_optional_word(message_tokens, ['belong', 'part'])
         is_user_asking_about_himself = cls.find_word_in_message('i', message_tokens, exact_word=True)
         if belong_index is not None and is_user_asking_about_himself is None:
@@ -434,10 +466,10 @@ class QuestionHandler(object):
         # Checking weather user's asking about all campaigns or his/her campaigns
         asking_about_all_campaigns = not bool(re.search(r'my camp*|my all camp*', ' '.join(message_tokens).lower()))
         response = ["All campaigns in your domain are following:"] if asking_about_all_campaigns else\
-            ["Your campaigns are following:"]
+            ["Campaigns in your group are following:"]
         domain_id = User.get_domain_id(user_id) if asking_about_all_campaigns else None
         # Getting campaigns
-        email_campaigns = EmailCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else \
+        email_campaigns = EmailCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
             EmailCampaign.get_by_user_id(user_id)
         push_campaigns = PushCampaign.get_by_domain_id(domain_id) if asking_about_all_campaigns else\
             PushCampaign.get_by_user_id(user_id)

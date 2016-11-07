@@ -87,7 +87,7 @@ class SmsCampaign(db.Model):
     @contract()
     def get_by_user_id(cls, user_id):
         """
-        Returns SmsCampaign against a User Id
+        Returns SmsCampaign list against a User Id
         :param positive user_id: User Id
         :rtype: list|None
         """
@@ -111,6 +111,21 @@ class SmsCampaign(db.Model):
         domain_id = User.get_domain_id(user_id)
         if domain_id:
             return cls.query.join(UserPhone, User).filter(cls.name == name, User.domain_id == domain_id).all()
+        raise NotFoundError
+
+    @classmethod
+    @contract()
+    def sms_campaign_user_group(cls, user_id):
+        """
+        Returns SmsCampaign list against user group Id
+        :param positive user_id: User Id
+        :rtype: list
+        """
+        from user import User, UserPhone
+        user = User.query.filter(User.id == user_id).first()
+        if user:
+            if user.user_group_id:
+                return cls.query.join(UserPhone, User).filter(User.user_group_id == user.user_group_id).distinct().all()
         raise NotFoundError
 
 

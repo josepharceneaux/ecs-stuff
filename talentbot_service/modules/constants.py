@@ -23,7 +23,8 @@ HINT = '''>>>I am `%s`. @osman is teaching me new things, right now I can answer
 7- Which group does `[user name]` belong to?
 8- What are the talent pools in my domain?
 9- What campaigns in my domain?
-10- Show me more about `[Talent pool name|Campaign name]`?''' % BOT_NAME
+10- Show me more about `[Talent pool name|Campaign name]`?
+11- What are my group `[Campaigns|Pipelines]`?''' % BOT_NAME
 OK_RESPONSE = ['hmm', '**nodes**']
 TWILIO_NUMBER = "+12015617985"
 FACEBOOK_MESSAGE_LIMIT = 319

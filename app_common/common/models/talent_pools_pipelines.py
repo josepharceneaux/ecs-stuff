@@ -255,3 +255,18 @@ class TalentPipeline(db.Model):
         if domain_id:
             return cls.query.join(User).filter(cls.name == name, User.domain_id == domain_id, cls.is_hidden == 0).all()
         raise NotFoundError
+
+    @classmethod
+    @contract()
+    def pipelines_user_group(cls, user_id):
+        """
+        This returns list of Pipelines in user's group
+        :param positive user_id: User Id
+        :rtype: list
+        """
+        from user import User
+        user = User.query.filter(User.id == user_id).first()
+        if user:
+            if user.user_group_id:
+                return cls.query.join(User).filter(User.user_group_id == user.user_group_id).all()
+        raise NotFoundError
