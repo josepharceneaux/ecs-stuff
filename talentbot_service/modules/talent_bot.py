@@ -38,7 +38,7 @@ class TalentBot(object):
                                     'handler': self.handler.question_3_handler},
                               '4': {'question': self.list_of_questions[4], 'threshold': 69,
                                     'handler': self.handler.question_4_handler},
-                              '5': {'question': self.list_of_questions[5], 'threshold': 70,
+                              '5': {'question': self.list_of_questions[5], 'threshold': 90,
                                     'handler': self.handler.question_5_handler},
                               # Domain question alternates
                               '10': {'question': self.list_of_questions[10], 'threshold': 90,
