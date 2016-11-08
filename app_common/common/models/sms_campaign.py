@@ -11,6 +11,7 @@ from db import db
 from ..error_handling import InternalServerError, NotFoundError
 from ..utils.datetime_utils import DatetimeUtils
 from ..custom_contracts import define_custom_contracts
+from ..constants import OWNED
 
 define_custom_contracts()
 
@@ -127,6 +128,27 @@ class SmsCampaign(db.Model):
             if user.user_group_id:
                 return cls.query.join(UserPhone, User).filter(User.user_group_id == user.user_group_id).distinct().all()
         raise NotFoundError
+
+    @classmethod
+    @contract()
+    def sms_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None):
+        """
+        Returns SmsCampaigns in talent pool
+        :param int scope: Number which determines weather user asking about all domain campaigns or only his campaigns
+        :param positive user_id:
+        :param list|None talentpool_names:
+        :rtype: list
+        """
+        from smartlist import SmartlistCandidate
+        from user import User, UserPhone
+        smartlist_ids = SmartlistCandidate.get_smartlist_ids_in_talent_pools(user_id, talentpool_names)
+        sms_campaign_ids = SmsCampaignSmartlist.query.with_entities(SmsCampaignSmartlist.campaign_id).\
+            filter(SmsCampaignSmartlist.smartlist_id.in_(smartlist_ids)).all()
+        sms_campaign_ids = [sms_campaign_id[0] for sms_campaign_id in sms_campaign_ids]
+        scope_dependant_filter = cls.query.join(UserPhone, User).filter(cls.id.in_(sms_campaign_ids),
+                                                                        User.id == user_id)\
+            if scope == OWNED else cls.query.filter(cls.id.in_(sms_campaign_ids))
+        return scope_dependant_filter.all()
 
 
 class SmsCampaignBlast(db.Model):

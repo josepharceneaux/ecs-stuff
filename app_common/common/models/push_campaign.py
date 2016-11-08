@@ -140,7 +140,7 @@ class PushCampaign(db.Model):
 
     @classmethod
     @contract()
-    def push_campaigns_in_talent_pool(cls, user_id, scope=None, talentpool_names=None):
+    def push_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None):
         """
         Returns PushCampaigns in talent pool
         :param int scope: Number which determines weather user asking about all domain campaigns or only his campaigns
