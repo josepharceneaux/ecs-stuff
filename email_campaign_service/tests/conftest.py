@@ -331,7 +331,7 @@ def email_clients(request, headers):
     for email_client_data in data_for_creating_email_clients():
         print 'connecting with host:%s' % email_client_data['host']
         response = requests.post(EmailCampaignApiUrl.EMAIL_CLIENTS, headers=headers, data=json.dumps(email_client_data))
-        assert response.ok
+        assert response.ok, response.text
         assert 'id' in response.json()
         email_client_ids.append(response.json()['id'])
 
@@ -353,7 +353,7 @@ def outgoing_email_client(headers):
     email_clients_data = data_for_creating_email_clients(key='outgoing')
     for email_client_data in email_clients_data:
         response = requests.post(EmailCampaignApiUrl.EMAIL_CLIENTS, headers=headers, data=json.dumps(email_client_data))
-        assert response.ok
+        assert response.ok, response.text
         assert 'id' in response.json()
         return response.json()['id']
 
