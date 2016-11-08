@@ -464,19 +464,23 @@ class QuestionHandler(object):
         :param positive user_id:
         :rtype: string
         """
+        is_group_campaigns = True if cls.find_word_in_message('group', message_tokens, True) is not None else False
+        if is_group_campaigns:  # If user's asking for campaigns in his group we already have handler for that
+            return cls.question_7_handler(message_tokens, user_id)
         asking_about_his_pool = bool(re.search(r'my talent pool*|my all talent pool*',
                                                ' '.join(message_tokens).lower()))
         asking_about_all_pools = bool(re.search(r'([^m][^y][ ])(all talent pool*|our talent pool*)', ' '.
                                                 join(message_tokens).lower()))
         # Checking weather user's asking about all campaigns or his/her campaigns
         asking_about_all_campaigns = not bool(re.search(r'my camp*|my all camp*', ' '.join(message_tokens).lower()))
+        # Extracting talentpool names
         talent_pool_index = cls.find_word_in_message('talent', message_tokens, True)
         asking_about_specific_pool = (not asking_about_all_pools and
                                       not asking_about_his_pool and talent_pool_index is not None)
         email_campaigns, sms_campaigns, push_campaigns = (None, None, None)
         response = []
-        if asking_about_specific_pool:
-            campaign_index = cls.find_word_in_message('camp', message_tokens)
+        if asking_about_specific_pool:  # If user has specified some talent pool's name
+            campaign_index = cls.find_word_in_message('camp', message_tokens)  # Extracting Talentpool names
             if campaign_index is not None and talent_pool_index is not None:
                 if len(message_tokens) > campaign_index:
                     if message_tokens[campaign_index + 1].lower() == 'in':
@@ -495,7 +499,7 @@ class QuestionHandler(object):
                 sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_id, OWNED, talent_pool_names_list) \
                     if not asking_about_all_campaigns else \
                     SmsCampaign.sms_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, talent_pool_names_list)
-        if asking_about_all_pools:
+        if asking_about_all_pools:  # If user's asking about all talent pools in his/her domain
             email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, OWNED) if not\
                 asking_about_all_campaigns else EmailCampaign.email_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC)
             push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, OWNED) \
@@ -506,6 +510,7 @@ class QuestionHandler(object):
                 SmsCampaign.sms_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC)
         is_asking_for_campaigns_in_pool = not asking_about_specific_pool and not \
             asking_about_all_pools and not asking_about_his_pool
+        # Appending suitable response header
         response = ["All campaigns in your domain are following:"] if is_asking_for_campaigns_in_pool else\
             ["Campaigns in all Talent pools"] if asking_about_all_pools else ["Campaigns in your Talent pools"] if \
             asking_about_his_pool else ["Campaigns in your group are following:"] if len(response) == 0 else response
