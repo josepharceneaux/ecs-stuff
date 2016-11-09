@@ -16,12 +16,7 @@ from ...routes import EmailCampaignApiUrl
 from ..campaign_utils import INVITATION_STATUSES
 from ...models.email_campaign import EmailCampaignSend, EmailCampaign
 from ..tests_helpers import (CampaignsTestsHelpers, send_request)
-
-from ...models.db import db
-from ...models.event import Event
-from ...models.base_campaign import (BaseCampaign, BaseCampaignEvent)
-from modules.helper_functions import (get_email_campaign_data, assert_email_campaign_overview,
-                                      assert_event_overview, create_an_rsvp_in_database)
+from modules.helper_functions import create_an_rsvp_in_database
 
 __author__ = 'basit'
 
