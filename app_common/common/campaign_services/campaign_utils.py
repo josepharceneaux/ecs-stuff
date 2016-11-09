@@ -40,6 +40,12 @@ from ..utils.handy_functions import (http_request, snake_case_to_pascal_case)
 from ..error_handling import (InvalidUsage, ResourceNotFound, InternalServerError)
 from ..utils.validators import raise_if_not_instance_of, get_json_data_if_validated
 
+INVITATION_STATUSES = {'Delivered': 'Delivered',
+                       'Not-Delivered': 'Not-Delivered',
+                       'Opened': 'Opened',
+                       'Accepted': 'Accepted',
+                       'Rejected': 'Rejected'}
+
 
 def _get_campaign_type_prefix(campaign_type):
     """
