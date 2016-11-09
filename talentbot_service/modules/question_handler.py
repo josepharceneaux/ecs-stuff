@@ -429,7 +429,10 @@ class QuestionHandler(object):
                     response.append("%d: `%s`" % (index + 1, sms_campaign.name))
             return '\n'.join(response) if len(response) > 1 else 'No campaigns exist in your group'
         if group_pipelines:
-            pipelines = TalentPipeline.pipelines_user_group(user_id)
+            try:
+                pipelines = TalentPipeline.pipelines_user_group(user_id)
+            except NotFoundError:
+                return "Something went wrong"
             response = ["Pipelines in your group are following:"]
             if pipelines:
                 response.append("*Pipelines*")
@@ -593,8 +596,11 @@ class QuestionHandler(object):
         asking_about_all_pipelines = not bool(re.search(r'my pipe*|my all pipe*', ' '.join(message_tokens).lower()))
         response = ["Your pipelines are following:"] if not asking_about_all_pipelines else\
             ["Pipelines in your domain are following:"]
-        pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, DOMAIN_SPECIFIC if
-                                                               asking_about_all_pipelines else OWNED)
+        try:
+            pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, DOMAIN_SPECIFIC if
+                                                                   asking_about_all_pipelines else OWNED)
+        except NotFoundError:
+            return "Something went wrong"
         for index, pipeline in enumerate(pipelines):
             response.append("%d- `%s`" % (index + 1, pipeline.name))
         return '\n'.join(response) if len(response) > 1 else "No pipeline found"

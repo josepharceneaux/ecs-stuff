@@ -235,7 +235,7 @@ class User(db.Model):
         This method returns user against a name
         :param str name: User's first or last name
         :param int user_id: User Id
-        :rtype: list
+        :rtype: list|None
         """
         assert isinstance(user_id, (int, long)) and user_id, "Invalid user Id %r" % user_id
         assert isinstance(name, basestring) and name, "Invalid name %r" % name
@@ -243,6 +243,7 @@ class User(db.Model):
         if user:
             return cls.query.filter(or_(cls.first_name == name, cls.last_name == name)).\
                 filter(cls.domain_id == user.domain_id).all()
+        return None
 
 
 class UserPhone(db.Model):
