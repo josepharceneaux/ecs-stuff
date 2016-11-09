@@ -398,7 +398,8 @@ class QuestionHandler(object):
     @classmethod
     def question_7_handler(cls, message_tokens, user_id):
         """
-        This method handles question What is my group, what group a user belongs to and what are my group campaigns
+        This method handles question What is my group, what group a user belongs to and what are my group
+        campaigns|pipelines
         :param message_tokens:
         :param int user_id: User Id
         :rtype: str
@@ -511,9 +512,11 @@ class QuestionHandler(object):
         is_asking_for_campaigns_in_pool = not asking_about_specific_pool and not \
             asking_about_all_pools and not asking_about_his_pool
         # Appending suitable response header
-        response = ["All campaigns in your domain are following:"] if is_asking_for_campaigns_in_pool else\
-            ["Campaigns in all Talent pools"] if asking_about_all_pools else ["Campaigns in your Talent pools"] if \
-            asking_about_his_pool else ["Campaigns in your group are following:"] if len(response) == 0 else response
+        response = ["All campaigns in your domain are following:"] if (is_asking_for_campaigns_in_pool
+                                                                       and asking_about_all_campaigns) else \
+            ["Your Campaigns are following:"] if not asking_about_all_campaigns and is_asking_for_campaigns_in_pool\
+            else ["Campaigns in all Talent pools"] if asking_about_all_pools else ["Campaigns in your Talent pools"] \
+            if asking_about_his_pool else ["Campaigns in your group are following:"] if len(response) == 0 else response
         domain_id = User.get_domain_id(user_id) if is_asking_for_campaigns_in_pool else None
         # Getting campaigns
         if is_asking_for_campaigns_in_pool:
@@ -547,9 +550,11 @@ class QuestionHandler(object):
         :rtype: string
         """
         # Getting index before meaningful data
-        name_index = cls.find_optional_word(message_tokens, ['about', 'me', 'show'], True)
+        name_index = cls.find_optional_word(message_tokens, ['about', 'me', 'show', 'is'], True)
         if name_index is None:
             return "No name specified"
+        if message_tokens[-1].lower() in 'performing':
+            message_tokens.pop(-1)
         name = ' '.join(message_tokens[name_index + 1::])  # User specified name
         try:  # Finding (Email|SMS|Push)Campaigns and TalentPipelines against this name
             email_campaigns = EmailCampaign.get_by_name(user_id, name)
@@ -574,6 +579,25 @@ class QuestionHandler(object):
                                                  (user_id, talent_pool_list=[pipeline.talent_pool.name]),
                                                  pipeline.user.name))
         return '\n'.join(response)  # Converting list to string
+
+    @classmethod
+    @contract
+    def question_10_handler(cls, message_tokens, user_id):
+        """
+        Handles question 'What are my|all pipelines'
+        :param list message_tokens: Tokens of User message
+        :param positive user_id:
+        :rtype: string
+        """
+        # Checking weather user's asking about all pipelines or his/her pipelines
+        asking_about_all_pipelines = not bool(re.search(r'my pipe*|my all pipe*', ' '.join(message_tokens).lower()))
+        response = ["Your pipelines are following:"] if not asking_about_all_pipelines else\
+            ["Pipelines in your domain are following:"]
+        pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, DOMAIN_SPECIFIC if
+                                                               asking_about_all_pipelines else OWNED)
+        for index, pipeline in enumerate(pipelines):
+            response.append("%d- `%s`" % (index + 1, pipeline.name))
+        return '\n'.join(response) if len(response) > 1 else "No pipeline found"
 
     @staticmethod
     def is_valid_year(year):

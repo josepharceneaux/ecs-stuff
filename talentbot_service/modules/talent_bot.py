@@ -148,13 +148,30 @@ class TalentBot(object):
                                      'handler': self.handler.question_8_handler},
                               '62': {'question': self.list_of_questions[62], 'threshold': 95,
                                      'handler': self.handler.question_8_handler},
+                              '63': {'question': self.list_of_questions[63], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '64': {'question': self.list_of_questions[64], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
                               # Show me <x>
                               '55': {'question': self.list_of_questions[55], 'threshold': 95,
                                      'handler': self.handler.question_9_handler},
                               '56': {'question': self.list_of_questions[56], 'threshold': 95,
                                      'handler': self.handler.question_9_handler},
                               '57': {'question': self.list_of_questions[57], 'threshold': 95,
-                                     'handler': self.handler.question_9_handler}
+                                     'handler': self.handler.question_9_handler},
+                              '65': {'question': self.list_of_questions[65], 'threshold': 100,
+                                     'handler': self.handler.question_9_handler},
+                              # What are my pipelines
+                              '66': {'question': self.list_of_questions[66], 'threshold': 95,
+                                     'handler': self.handler.question_10_handler},
+                              '67': {'question': self.list_of_questions[67], 'threshold': 95,
+                                     'handler': self.handler.question_10_handler},
+                              '68': {'question': self.list_of_questions[68], 'threshold': 95,
+                                     'handler': self.handler.question_10_handler},
+                              '69': {'question': self.list_of_questions[69], 'threshold': 95,
+                                     'handler': self.handler.question_10_handler},
+                              '70': {'question': self.list_of_questions[70], 'threshold': 95,
+                                     'handler': self.handler.question_10_handler}
                               }
         self.bot_name = bot_name
         self.error_messages = error_messages

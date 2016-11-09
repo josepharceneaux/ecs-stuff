@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from user import Domain, UserGroup, User
 from candidate import Candidate
 from ..error_handling import NotFoundError
+from ..constants import OWNED
 # 3rd party imports
 from sqlalchemy import or_, and_, extract
 from sqlalchemy.dialects.mysql import TINYINT
@@ -185,6 +186,23 @@ class TalentPipeline(db.Model):
 
     def get_id(self):
         return unicode(self.id)
+
+    @classmethod
+    @contract()
+    def get_own_or_domain_pipelines(cls, user_id, scope):
+        """
+        This returns list of Pipelines owned by a specific user or all in domain
+        :param positive user_id: User Id
+        :param int scope: Weather owned or domain specific
+        :rtype: list
+        """
+        if scope == OWNED:
+            return cls.query.join(User).filter(User.id == user_id).all()
+        else:
+            domain_id = User.get_domain_id(user_id)
+            if domain_id:
+                return cls.query.join(User).filter(User.domain_id == domain_id).all()
+        raise NotFoundError
 
     @classmethod
     def get_by_user_id_in_desc_order(cls, user_id):
