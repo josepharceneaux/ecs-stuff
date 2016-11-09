@@ -61,19 +61,22 @@ from email_campaign_service.modules.email_marketing import (create_email_campaig
 from email_campaign_service.modules.validations import validate_and_format_request_data
 
 # Common utils
+from email_campaign_service.common.models.rsvp import RSVP
 from email_campaign_service.common.talent_api import TalentApi
-from email_campaign_service.common.routes import EmailCampaignApiUrl
-from email_campaign_service.common.models.misc import UrlConversion
+from email_campaign_service.common.models.base_campaign import BaseCampaign
+from email_campaign_service.common.utils.handy_functions import send_request
+from email_campaign_service.common.routes import EmailCampaignApiUrl, ActivityApiUrl
+from email_campaign_service.common.models.misc import UrlConversion, Activity
 from email_campaign_service.common.routes import EmailCampaignApi
 from email_campaign_service.common.utils.auth_utils import require_oauth
-from email_campaign_service.common.models.email_campaign import EmailCampaign
+from email_campaign_service.common.models.email_campaign import EmailCampaign, EmailCampaignSend
 from email_campaign_service.common.utils.validators import is_number
 from email_campaign_service.common.error_handling import (InvalidUsage, NotFoundError,
                                                           ForbiddenError, MethodNotAllowedError)
 from email_campaign_service.common.campaign_services.campaign_base import CampaignBase
 from email_campaign_service.common.utils.api_utils import (api_route, get_paginated_response,
                                                            get_pagination_params, SORT_TYPES)
-from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils
+from email_campaign_service.common.campaign_services.campaign_utils import CampaignUtils, INVITATION_STATUSES
 from email_campaign_service.common.campaign_services.validators import \
     raise_if_dict_values_are_not_int_or_long
 
@@ -101,14 +104,7 @@ class EmailCampaigns(Resource):
         email_campaign_id = kwargs.get('id')
         include_fields = request.values['fields'].split(',') if request.values.get('fields') else None
         if email_campaign_id:
-            email_campaign = EmailCampaign.get_by_id(email_campaign_id)
-            """:type : email_campaign_service.common.models.email_campaign.EmailCampaign"""
-
-            if not email_campaign:
-                raise NotFoundError("Email campaign with id: %s does not exist"
-                                    % email_campaign_id)
-            if not email_campaign.user.domain_id == user.domain_id:
-                raise ForbiddenError("Email campaign doesn't belongs to user's domain")
+            email_campaign = EmailCampaign.search_by_id_in_domain(email_campaign_id, user.domain_id)
             return {"email_campaign": email_campaign.to_dict(include_fields=include_fields)}
         else:
             page, per_page = get_pagination_params(request)
@@ -546,3 +542,52 @@ class EmailCampaignSendById(Resource):
         send_obj = get_valid_send_obj(campaign_id, send_id, request.user,
                                       CampaignUtils.EMAIL)
         return dict(send=send_obj.to_json()), 200
+
+
+@api.route(EmailCampaignApi.INVITATION_STATUS)
+class InvitationStatus(Resource):
+    """
+    This returns invitation status of candidate for given campaign.
+    """
+    # Access token decorator
+    decorators = [require_oauth()]
+
+    def get(self, email_campaign_id, candidate_id):
+        """
+        This returns invitation status of candidate for given campaign.
+        Invitations statuses are as:
+            Delivered: Candidate has received the email-campaign
+            Not-Delivered: Candidate has not received the email-campaign
+            Opened: Candidate has opened the email-campaign
+            Accepted: Candidate RSVP'd YES to the promoted event
+            Rejected: Candidate RSVP'd NO to the promoted event
+        """
+        user = request.user
+        email_campaign_send_id = None
+        invitation_status = INVITATION_STATUSES['Not-Delivered']
+        email_campaign = EmailCampaign.search_by_id_in_domain(email_campaign_id, user.domain_id)
+        # Check if candidate has received the email-campaign
+        for send in email_campaign.sends.all():
+            if candidate_id == send.candidate_id:
+                invitation_status = INVITATION_STATUSES['Delivered']
+                email_campaign_send_id = send.id
+                break
+        # Check if candidate has opened the email-campaign
+        for activity_type in (Activity.MessageIds.CAMPAIGN_EMAIL_OPEN, Activity.MessageIds.CAMPAIGN_EMAIL_CLICK):
+            url = "{}?type={}&source_id={}&source_table={}".format(ActivityApiUrl.ACTIVITIES, activity_type,
+                                                                   email_campaign_send_id,
+                                                                   EmailCampaignSend.__tablename__)
+            response = send_request('get', url, request.headers['Authorization'])
+            if response.ok:
+                invitation_status = INVITATION_STATUSES['Opened']
+        if email_campaign.base_campaign_id:
+            base_campaign = BaseCampaign.search_by_id_in_domain(email_campaign.base_campaign_id, user.domain_id)
+            events = base_campaign.events.all()
+            if events:
+                event = events[0]
+                rsvp_in_db = RSVP.filter_by_keywords(candidate_id=candidate_id, event_id=event.id)
+                if rsvp_in_db and rsvp_in_db[0].status.lower() == 'yes':
+                    invitation_status = INVITATION_STATUSES['Accepted']
+                elif rsvp_in_db and rsvp_in_db[0].status.lower() == 'no':
+                    invitation_status = INVITATION_STATUSES['Rejected']
+        return dict(invitation_status=invitation_status)

@@ -178,6 +178,6 @@ def validate_base_campaign_id(base_campaign_id, domain_id):
     """
     if not BaseCampaign.get_by_id(base_campaign_id):
         raise ResourceNotFound('Requested base-campaign not found in database')
-    base_campaign = BaseCampaign.search_by_id_in_domain(domain_id, base_campaign_id)
+    base_campaign = BaseCampaign.search_by_id_in_domain(base_campaign_id, domain_id)
     if not base_campaign:
         raise ForbiddenError('Requested base-campaign does not belong to user`s domain')

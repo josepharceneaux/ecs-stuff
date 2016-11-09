@@ -858,6 +858,7 @@ class EmailCampaignApi(object):
     BASE_CAMPAIGNS = '/' + VERSION + '/base-campaigns'
     BASE_CAMPAIGN = '/' + VERSION + '/base-campaigns/<int:base_campaign_id>'
     BASE_CAMPAIGN_EVENT = '/' + VERSION + '/base-campaigns/<int:base_campaign_id>/link-event/<int:event_id>'
+    INVITATION_STATUS = '/' + VERSION + '/email-campaigns/<int:email_campaign_id>/<int:candidate_id>'
 
 
 class EmailCampaignApiUrl(object):
@@ -889,6 +890,7 @@ class EmailCampaignApiUrl(object):
     BASE_CAMPAIGNS = HOST_NAME % ('/' + VERSION + '/base-campaigns')
     BASE_CAMPAIGN = HOST_NAME % ('/' + VERSION + '/base-campaigns/%s')
     BASE_CAMPAIGN_EVENT = HOST_NAME % ('/' + VERSION + '/base-campaigns/%s/link-event/%s')
+    INVITATION_STATUS = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/%s')
 
 
 class ATSServiceApi(object):

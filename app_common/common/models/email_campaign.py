@@ -101,6 +101,23 @@ class EmailCampaign(db.Model):
         return cls.query.join(User).filter(User.domain_id == domain_id)
 
     @classmethod
+    def search_by_id_in_domain(cls, email_campaign_id, domain_id):
+        """
+        This searches email-campaign by email_campaign_id in user's domain.
+        It raises 404 error if campaign is not found in database.
+        It raises 403 error if camapign does not belonf to user's domian.
+        :type email_campaign_id: int|long
+        :type domain_id: int|long
+        :rtype: EmailCampaign|None
+        """
+        email_campaign = cls.get_by_id(email_campaign_id)
+        if not email_campaign:
+            raise ResourceNotFound("Email campaign with id: %s does not exist" % email_campaign_id)
+        if not email_campaign.user.domain_id == domain_id:
+            raise ForbiddenError("Email campaign doesn't belongs to user's domain")
+        return email_campaign
+
+    @classmethod
     def get_by_domain_id_and_filter_by_name(cls, domain_id, search_keyword, sort_by, sort_type, is_hidden):
         assert domain_id, 'domain_id not given'
         from user import User  # This has to be here to avoid circular import
