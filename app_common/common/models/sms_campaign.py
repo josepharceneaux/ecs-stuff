@@ -125,7 +125,7 @@ class SmsCampaign(db.Model):
         from user import User, UserPhone
         user = User.query.filter(User.id == user_id).first()
         if user:
-            if user.user_group_id:
+            if user.user_group_id: # TODO: verify query
                 return cls.query.join(UserPhone, User).filter(User.user_group_id == user.user_group_id).distinct().all()
         raise NotFoundError
 

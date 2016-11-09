@@ -123,6 +123,7 @@ class TalentPoolCandidate(db.Model):
                                                    (extract("year", cls.updated_time) == user_specific_date)))
         if user_name and talent_pool_list:
             # Querying how many candidates have user added in specified talent pools
+            # TODO: Join, count ?
             return common_query.filter(
                 and_(TalentPool.user_id == User.id, TalentPool.name.in_(talent_pool_list)),
                 Candidate.id == TalentPoolCandidate.candidate_id, Candidate.user_id == user.id).distinct().count()
@@ -137,7 +138,7 @@ class TalentPoolCandidate(db.Model):
         if talent_pool_list is None and user_name is None:
             # Querying how many candidates have been added in a domain's talent pools by all users
             return common_query.filter(TalentPool.domain_id == user.domain_id).distinct().count()
-        return "Something went wrong cant find any imports"
+        return "Something went wrong cant find any imports"  # TODO Raise
 
 
 class TalentPoolGroup(db.Model):
@@ -196,6 +197,7 @@ class TalentPipeline(db.Model):
         :param int scope: Weather owned or domain specific
         :rtype: list
         """
+        # TODO: is_hidden check
         if scope == OWNED:
             return cls.query.join(User).filter(User.id == user_id).all()
         else:
@@ -302,5 +304,5 @@ class TalentPipeline(db.Model):
         user = User.query.filter(User.id == user_id).first()
         if user:
             if user.user_group_id:
-                return cls.query.join(User).filter(User.user_group_id == user.user_group_id).all()
+                return cls.query.join(User).filter(User.user_group_id == user.user_group_id, cls.is_hidden == 0).all()
         raise NotFoundError
