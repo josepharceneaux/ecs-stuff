@@ -64,9 +64,6 @@ class BaseCampaigns(Resource):
         description = data.get('description', '')
         if not name or not description:
             raise InvalidUsage('Name and description are required fields')
-        base_campaign_in_db = BaseCampaign.search_by_name_in_domain(domain_id=user.domain.id, name=name)
-        if base_campaign_in_db:
-            raise InvalidUsage('Campaign with same name found in database')
         base_campaign = BaseCampaign(user_id=user.id, name=name, description=description)
         base_campaign.save()
         return {'id': base_campaign.id}, codes.CREATED

@@ -31,18 +31,6 @@ class BaseCampaign(db.Model):
 
     @classmethod
     @contract
-    def search_by_name_in_domain(cls, domain_id, name):
-        """
-        This returns all base campaigns for given name in given domain.
-        :param positive domain_id: Id of domain
-        :param string name: Name of base campaign
-        :rtype: list
-        """
-        from user import User  # This has to be here to avoid circular import
-        return cls.query.filter_by(name=name).join(User).filter(User.domain_id == domain_id).all()
-
-    @classmethod
-    @contract
     def search_by_id_in_domain(cls, domain_id, base_campaign_id):
         """
         This returns all base campaigns for given name in given domain.

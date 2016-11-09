@@ -66,7 +66,7 @@ class TestCreateBaseCampaigns(object):
 
     def test_with_same_name(self, token_first, token_same_domain):
         """
-        Tries to create base-campaign with existing name. It should result in bad request error.
+        Tries to create base-campaign with existing name. It should not get any error.
         """
         data = CampaignsTestsHelpers.base_campaign_data()
         # Create campaign first time
@@ -74,11 +74,11 @@ class TestCreateBaseCampaigns(object):
         assert response.status_code == codes.CREATED
         # Create campaign second time
         response = send_request(self.HTTP_METHOD, self.URL, token_first, data)
-        assert response.status_code == codes.BAD
+        assert response.status_code == codes.CREATED
 
-        # Create campaign second time with other user of same domain
+        # Create campaign third time with other user of same domain
         response = send_request(self.HTTP_METHOD, self.URL, token_same_domain, data)
-        assert response.status_code == codes.BAD
+        assert response.status_code == codes.CREATED
 
     def test_with_same_name_in_other_domain(self, token_first, token_second):
         """

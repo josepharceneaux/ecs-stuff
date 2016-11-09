@@ -3,34 +3,35 @@
     We register blueprints for different APIs with this app.
     Error handlers are added at the end of file.
 """
-
 # 3rd party imports
 from flask import request, redirect
 from flask.ext.graphql import GraphQLView
 
 # Application specific imports
+from ..social_network_app import app
 from restful.v1_data import data_blueprint
+from restful.v1_importer import rsvp_blueprint
 from restful.v1_events import events_blueprint
-from social_network_service.common.error_handling import InternalServerError
-from social_network_service.common.redis_cache import redis_store
-from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
-from social_network_service.common.talent_config_manager import TalentEnvs, TalentConfigKeys
-from social_network_service.modules.constants import MEETUP_CODE_LENGTH
-from social_network_service.modules.social_network.twitter import Twitter
-from social_network_service.common.utils.auth_utils import require_oauth
-from social_network_service.social_network_app import app
-from restful.v1_social_networks import social_network_blueprint
+from restful.v1_subscription import subscription_blueprint
 from social_network_service.common.talent_api import TalentApi
+from restful.v1_social_networks import social_network_blueprint
+from social_network_service.common.redis_cache import redis_store
+from social_network_service.common.constants import MEETUP, EVENTBRITE
+from social_network_service.modules.constants import MEETUP_CODE_LENGTH
+from social_network_service.common.utils.auth_utils import require_oauth
 from social_network_service.common.models.candidate import SocialNetwork
-from social_network_service.social_network_app.restful.v1_importer import rsvp_blueprint
+from social_network_service.modules.social_network.twitter import Twitter
 from social_network_service.social_network_app.graphql.schema import schema
+from social_network_service.common.error_handling import InternalServerError
+from social_network_service.common.routes import SocialNetworkApiUrl, SocialNetworkApi
+from social_network_service.common.talent_config_manager import (TalentEnvs, TalentConfigKeys)
 
 # Register Blueprints for different APIs
-
 app.register_blueprint(data_blueprint)
-app.register_blueprint(events_blueprint)
-app.register_blueprint(social_network_blueprint)
 app.register_blueprint(rsvp_blueprint)
+app.register_blueprint(events_blueprint)
+app.register_blueprint(subscription_blueprint)
+app.register_blueprint(social_network_blueprint)
 api = TalentApi(app)
 
 # Initialize Redis Cache
@@ -57,9 +58,9 @@ def authorize():
     code = request.args.get('code')
     url = SocialNetworkApiUrl.SUBSCRIBE % code
     if len(code) == MEETUP_CODE_LENGTH:
-        social_network = SocialNetwork.get_by_name('Meetup')
+        social_network = SocialNetwork.get_by_name(MEETUP.title())
     else:
-        social_network = SocialNetwork.get_by_name('Eventbrite')
+        social_network = SocialNetwork.get_by_name(EVENTBRITE.title())
     url += '&id=%s' % social_network.id
     return redirect(url)
 
