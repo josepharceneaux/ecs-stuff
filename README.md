@@ -56,3 +56,7 @@ Email Campaign Service
 Push Campaign Service
 -------------
 [README](push_campaign_service/README.md)
+
+Talentbot Service
+-------------
+[README](talentbot_service/README.md)
