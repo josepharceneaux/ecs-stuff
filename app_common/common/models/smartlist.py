@@ -4,7 +4,7 @@ from contracts import contract
 
 from db import db
 import datetime
-from talent_pools_pipelines import TalentPipeline
+from talent_pools_pipelines import TalentPipeline, TalentPool, TalentPoolCandidate
 
 
 class Smartlist(db.Model):
@@ -80,7 +80,6 @@ class SmartlistCandidate(db.Model):
         :param list|None talentpool_names: Talnet pool names
         :rtype: list
         """
-        from talent_pools_pipelines import TalentPool, TalentPoolCandidate
         talent_pools = TalentPool.get_by_name(user_id, talentpool_names)
         talent_pool_ids = [talent_pool.id for talent_pool in talent_pools]  # Extracting data from tuple
         candidate_ids = TalentPoolCandidate.query.with_entities(TalentPoolCandidate.candidate_id). \

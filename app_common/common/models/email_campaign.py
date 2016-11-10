@@ -189,8 +189,8 @@ class EmailCampaign(db.Model):
         :param list|None talentpool_names:
         :rtype: list
         """
-        from smartlist import SmartlistCandidate
-        from user import User
+        from smartlist import SmartlistCandidate  # To avoid circular dependency this has to be here
+        from user import User    # To avoid circular dependency this has to be here
         smartlist_ids = SmartlistCandidate.get_smartlist_ids_in_talent_pools(user_id, talentpool_names)
         email_campaign_ids = EmailCampaignSmartlist.query.with_entities(EmailCampaignSmartlist.campaign_id).\
             filter(EmailCampaignSmartlist.smartlist_id.in_(smartlist_ids)).all()
@@ -291,7 +291,7 @@ class EmailCampaignBlast(db.Model):
         assert isinstance(datetime_value, (datetime, basestring)) or datetime_value is None,\
             "Invalid datetime value"
         assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
-        from .user import User
+        from .user import User    # To avoid circular dependency this has to be here
         domain_id = User.get_domain_id(user_id)
         if isinstance(datetime_value, datetime):
             return cls.query.filter(or_(cls.updated_datetime >= datetime_value,

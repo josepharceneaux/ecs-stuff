@@ -139,8 +139,8 @@ class SmsCampaign(db.Model):
         :param list|None talentpool_names:
         :rtype: list
         """
-        from smartlist import SmartlistCandidate
-        from user import User, UserPhone
+        from smartlist import SmartlistCandidate    # To avoid circular dependency this has to be here
+        from user import User, UserPhone    # To avoid circular dependency this has to be here
         smartlist_ids = SmartlistCandidate.get_smartlist_ids_in_talent_pools(user_id, talentpool_names)
         sms_campaign_ids = SmsCampaignSmartlist.query.with_entities(SmsCampaignSmartlist.campaign_id).\
             filter(SmsCampaignSmartlist.smartlist_id.in_(smartlist_ids)).all()
@@ -179,7 +179,7 @@ class SmsCampaignBlast(db.Model):
         :param datetime|string|None datetime_value: Year of campaign started or updated
         :rtype type(z)|None
         """
-        from user import UserPhone, User
+        from user import UserPhone, User    # To avoid circular dependency this has to be here
         domain_id = User.get_domain_id(user_id)
         user_ids_in_domain = User.query.with_entities(User.id).filter(User.domain_id == domain_id).all()
         user_ids_in_domain = [_id[0] for _id in user_ids_in_domain]

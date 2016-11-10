@@ -131,7 +131,7 @@ class PushCampaign(db.Model):
         :param positive user_id: User Id
         :rtype: list
         """
-        from user import User
+        from user import User    # To avoid circular dependency this has to be here
         user = User.query.filter(User.id == user_id).first()
         if user:
             if user.user_group_id:
@@ -148,8 +148,8 @@ class PushCampaign(db.Model):
         :param list|None talentpool_names:
         :rtype: list
         """
-        from smartlist import SmartlistCandidate
-        from user import User
+        from smartlist import SmartlistCandidate    # To avoid circular dependency this has to be here
+        from user import User    # To avoid circular dependency this has to be here
         smartlist_ids = SmartlistCandidate.get_smartlist_ids_in_talent_pools(user_id, talentpool_names)
         push_campaign_ids = PushCampaignSmartlist.query.with_entities(PushCampaignSmartlist.campaign_id).\
             filter(PushCampaignSmartlist.smartlist_id.in_(smartlist_ids)).all()
@@ -190,7 +190,7 @@ class PushCampaignBlast(db.Model):
         assert isinstance(datetime_value, (datetime, basestring)) or datetime_value is None, \
             "Invalid datetime value"
         assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
-        from user import User
+        from user import User    # To avoid circular dependency this has to be here
         domain_id = User.get_domain_id(user_id)
         if isinstance(datetime_value, datetime):
             return cls.query.filter(cls.updated_datetime >= datetime_value). \

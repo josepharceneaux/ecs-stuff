@@ -310,7 +310,7 @@ class TalentPipeline(db.Model):
         :param positive user_id: User Id
         :rtype: list
         """
-        from user import User
+        from user import User    # To avoid circular dependency this has to be here
         user = User.query.filter(User.id == user_id).first()
         if user:
             if user.user_group_id:
