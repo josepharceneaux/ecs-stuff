@@ -19,7 +19,8 @@ from candidate import CandidateSource
 from associations import CandidateAreaOfInterest
 from event_organizer import EventOrganizer
 from misc import AreaOfInterest
-from email_campaign import EmailCampaign, EmailClientCredentials, EmailConversations
+from email_campaign import EmailCampaign, EmailClientCredentials, EmailConversations, EmailTemplateFolder
+from base_campaign import BaseCampaign
 from ..error_handling import *
 from ..redis_cache import redis_store
 from ..utils.validators import is_number
@@ -67,6 +68,7 @@ class User(db.Model):
     role = relationship('Role', backref='user')
     user_phones = relationship('UserPhone', cascade='all,delete-orphan', passive_deletes=True,
                                backref='user')
+    base_campaigns = relationship('BaseCampaign', backref='user')
     email_campaigns = relationship('EmailCampaign', backref='user')
     email_templates = relationship('UserEmailTemplate', backref='user', cascade='all, delete-orphan')
     email_client_credentials = relationship('EmailClientCredentials', backref='user')
@@ -292,7 +294,7 @@ class Domain(db.Model):
     default_culture_id = db.Column('DefaultCultureId', db.Integer, default=1)
     settings_json = db.Column('SettingsJson', db.Text)
     expiration = db.Column('Expiration', db.TIMESTAMP)
-    added_time = db.Column('AddedTime', db.DateTime)
+    added_time = db.Column('AddedTime', db.DateTime, default=datetime.datetime.utcnow)
     default_from_name = db.Column('DefaultFromName', db.String(255))
     updated_time = db.Column('UpdatedTime', db.TIMESTAMP, default=datetime.datetime.utcnow)
     dice_company_id = db.Column('DiceCompanyId', db.Integer, index=True)
@@ -303,6 +305,7 @@ class Domain(db.Model):
     candidate_sources = relationship('CandidateSource', backref='domain')
     areas_of_interest = relationship('AreaOfInterest', backref='domain')
     custom_fields = relationship('CustomField', backref='domain')
+    email_template_folders = relationship('EmailTemplateFolder', backref='domain')
 
     def get_id(self):
         return unicode(self.id)
@@ -514,6 +517,12 @@ class Permission(db.Model):
         CAN_ADD_DOMAINS = "CAN_ADD_DOMAINS"
         CAN_DELETE_DOMAINS = "CAN_DELETE_DOMAINS"
         CAN_EDIT_DOMAINS = "CAN_EDIT_DOMAINS"
+
+        # Domain Custom Fields
+        CAN_GET_DOMAIN_CUSTOM_FIELDS = "CAN_GET_DOMAIN_CUSTOM_FIELDS"
+        CAN_ADD_DOMAIN_CUSTOM_FIELDS = "CAN_ADD_DOMAIN_CUSTOM_FIELDS"
+        CAN_DELETE_DOMAIN_CUSTOM_FIELDS = "CAN_DELETE_DOMAIN_CUSTOM_FIELDS"
+        CAN_EDIT_DOMAIN_CUSTOM_FIELDS = "CAN_EDIT_DOMAIN_CUSTOM_FIELDS"
 
         # Domain Groups
         CAN_GET_DOMAIN_GROUPS = "CAN_GET_DOMAIN_GROUPS"

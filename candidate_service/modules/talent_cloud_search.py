@@ -395,7 +395,22 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
             field_name_to_sql_value = {k: v for k, v in field_name_to_sql_value.items() if v}
 
             # Set candidate engagement score
-            field_name_to_sql_value['candidate_engagement_score'] = 1.0 if str(candidate_id) in candidate_engagement else 0.0
+            field_name_to_sql_value['candidate_engagement_score'] = (1.0 if str(candidate_id) in
+                                                                            candidate_engagement else 0.0)
+
+            # Add domain ID
+            if not domain_id:
+                field_name_to_sql_value_row = session.query(User).filter_by(id=field_name_to_sql_value['user_id']).first()
+                domain_id = field_name_to_sql_value_row.domain_id
+
+            field_name_to_sql_value['domain_id'] = domain_id
+
+            # Add tag
+            tag_ids = field_name_to_sql_value.get('tag_ids')
+            if tag_ids:
+                tag_ids = tag_ids.split(group_concat_separator)
+                tags = session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+                field_name_to_sql_value['tags'] = group_concat_separator.join([tag.name for tag in tags])
 
             # Massage 'field_name_to_sql_value' values into the types they are supposed to be
             resume_text = ''
@@ -433,19 +448,6 @@ def _build_candidate_documents(candidate_ids, domain_id=None):
                         resume_text += ' ' + field_name_to_sql_value[field_name]
 
             field_name_to_sql_value['resume_text'] = resume_text.strip()
-
-            # Add domain ID
-            if not domain_id:
-                field_name_to_sql_value_row = session.query(User).filter_by(id=field_name_to_sql_value['user_id']).first()
-                domain_id = field_name_to_sql_value_row.domain_id
-
-            # Add tag
-            tag_ids = field_name_to_sql_value.get('tag_ids')
-            if tag_ids:
-                tags = session.query(Tag).filter(Tag.id.in_(tag_ids)).all()
-                field_name_to_sql_value['tags'] = [tag.name for tag in tags]
-
-            field_name_to_sql_value['domain_id'] = domain_id
             action_dict['fields'] = field_name_to_sql_value
             action_dicts.append(action_dict)
 

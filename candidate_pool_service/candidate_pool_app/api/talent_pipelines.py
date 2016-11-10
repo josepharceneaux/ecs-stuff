@@ -63,19 +63,18 @@ class TalentPipelineApi(Resource):
                 raise ForbiddenError("Logged-in user and talent_pipeline belong to different domain")
 
             if not candidate_count:
-                return {
-                    'talent_pipeline': talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
+                talent_pipeline_dict = talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
                                                                get_growth_function=get_pipeline_growth,
                                                                email_campaign_count=email_campaign_count)
-                }
             else:
-                return {
-                    'talent_pipeline': talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
+                talent_pipeline_dict = talent_pipeline.to_dict(include_growth=True, interval=interval_in_days,
                                                                get_growth_function=get_pipeline_growth,
                                                                include_candidate_count=True,
                                                                get_candidate_count=get_talent_pipeline_stat_for_given_day,
                                                                email_campaign_count=email_campaign_count)
-                }
+
+            talent_pipeline_dict.update({'engagement_score': engagement_score_of_pipeline(talent_pipeline_id)})
+            return {'talent_pipeline': talent_pipeline_dict}
 
         else:
             sort_by = request.args.get('sort_by', 'added_time')

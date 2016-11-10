@@ -18,6 +18,7 @@ class EmailCampaign(db.Model):
     __tablename__ = 'email_campaign'
     id = db.Column('Id', db.Integer, primary_key=True)
     user_id = db.Column('UserId', db.BIGINT, db.ForeignKey('user.Id', ondelete='CASCADE'))
+    base_campaign_id = db.Column('BaseCampaignId', db.BIGINT, db.ForeignKey('base_campaign.id', ondelete='CASCADE'))
     name = db.Column('Name', db.String(127), nullable=False)
     type = db.Column('Type', db.String(63))
     is_hidden = db.Column('IsHidden', db.Boolean, default=False)
@@ -45,7 +46,6 @@ class EmailCampaign(db.Model):
                                             db.ForeignKey('email_client_credentials.id'))
 
     # Relationships
-    frequency = relationship("Frequency", backref="frequency")
     blasts = relationship('EmailCampaignBlast', lazy='dynamic', cascade='all, delete-orphan',
                           passive_deletes=True, backref='campaign')
     sends = relationship('EmailCampaignSend', cascade='all, delete-orphan',
@@ -83,7 +83,8 @@ class EmailCampaign(db.Model):
                        "is_hidden": self.is_hidden,
                        "talent_pipelines": talent_pipelines,
                        "list_ids": [smart_list.id for smart_list in smart_lists],
-                       "email_client_credentials_id": self.email_client_credentials_id}
+                       "email_client_credentials_id": self.email_client_credentials_id,
+                       "base_campaign_id": self.base_campaign_id}
 
         # Only include the fields that are supposed to be included
         if include_fields:
@@ -99,6 +100,23 @@ class EmailCampaign(db.Model):
         assert domain_id, 'domain_id not given'
         from user import User  # This has to be here to avoid circular import
         return cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)
+
+    @classmethod
+    def search_by_id_in_domain(cls, email_campaign_id, domain_id):
+        """
+        This searches email-campaign by email_campaign_id in user's domain.
+        It raises 404 error if campaign is not found in database.
+        It raises 403 error if camapign does not belonf to user's domian.
+        :type email_campaign_id: int|long
+        :type domain_id: int|long
+        :rtype: EmailCampaign|None
+        """
+        email_campaign = cls.get_by_id(email_campaign_id)
+        if not email_campaign:
+            raise ResourceNotFound("Email campaign with id: %s does not exist" % email_campaign_id)
+        if not email_campaign.user.domain_id == domain_id:
+            raise ForbiddenError("Email campaign doesn't belongs to user's domain")
+        return email_campaign
 
     @classmethod
     def get_by_domain_id_and_filter_by_name(cls, domain_id, search_keyword, sort_by, sort_type, is_hidden):
@@ -463,7 +481,7 @@ class EmailTemplateFolder(db.Model):
     domain_id = db.Column('DomainId', db.Integer, db.ForeignKey('domain.Id', ondelete='CASCADE'), index=True)
     updated_datetime = db.Column('UpdatedTime', db.DateTime, nullable=False, default=datetime.utcnow)
 
-    domain = relationship('Domain', backref=db.backref('email_template_folder', cascade="all, delete-orphan"))
+    # Relationships
     parent = relationship('EmailTemplateFolder', remote_side=[id], backref=db.backref('email_template_folder',
                                                                                       cascade="all, delete-orphan"))
 

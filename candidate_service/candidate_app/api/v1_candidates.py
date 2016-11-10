@@ -87,6 +87,7 @@ from onesignalsdk.one_signal_sdk import OneSignalSdk
 from candidate_service.common.utils.handy_functions import normalize_value
 
 from candidate_service.common.inter_service_calls.candidate_pool_service_calls import assert_smartlist_candidates
+from candidate_service.common.utils.talent_s3 import sign_url_for_filepicker_bucket
 
 
 class CandidatesResource(Resource):
@@ -685,7 +686,7 @@ class CandidateAddressResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -734,7 +735,7 @@ class CandidateAreaOfInterestResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -776,7 +777,7 @@ class CandidateEducationResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -826,7 +827,7 @@ class CandidateEducationDegreeResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -889,7 +890,7 @@ class CandidateEducationDegreeBulletResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -935,7 +936,7 @@ class CandidateWorkExperienceResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -992,7 +993,7 @@ class CandidateWorkExperienceBulletResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1034,7 +1035,7 @@ class CandidateEmailResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1076,7 +1077,7 @@ class CandidateMilitaryServiceResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1118,7 +1119,7 @@ class CandidatePhoneResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1161,7 +1162,7 @@ class CandidatePreferredLocationResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1204,7 +1205,7 @@ class CandidateSkillResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1272,7 +1273,7 @@ class CandidateSocialNetworkResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1301,7 +1302,7 @@ class CandidateWorkPreferenceResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1571,7 +1572,7 @@ class CandidatePreferenceResource(Resource):
         add_or_update_candidate_subs_preference(candidate_id, frequency_id)
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
     def put(self, **kwargs):
@@ -1607,7 +1608,7 @@ class CandidatePreferenceResource(Resource):
         add_or_update_candidate_subs_preference(candidate_id, frequency_id, is_update=True)
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
     def delete(self, **kwargs):
@@ -1628,7 +1629,7 @@ class CandidatePreferenceResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1801,7 +1802,7 @@ class CandidatePhotosResource(Resource):
         add_photos(candidate_id, body_dict['photos'])
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
@@ -1833,14 +1834,20 @@ class CandidatePhotosResource(Resource):
             if photo.candidate_id != candidate_id:
                 raise ForbiddenError('Not authorized', error_code=custom_error.PHOTO_FORBIDDEN)
 
-            return {'candidate_photo': {'id': photo_id, 'image_url': photo.image_url,
-                                        'is_default': photo.is_default}}
+            return {'candidate_photo': {
+                'id': photo_id,
+                'image_url': sign_url_for_filepicker_bucket(photo.image_url) if photo.image_url else None,
+                'is_default': photo.is_default}
+            }
 
-        else: # Get all of candidate's photos
+        else:  # Get all of candidate's photos
             photos = CandidatePhoto.get_by_candidate_id(candidate_id=candidate_id)
             return {'candidate_photos': [
-                {'id': photo.id, 'image_url': photo.image_url, 'is_default': photo.is_default}
-                for photo in photos]}
+                {
+                    'id': photo.id,
+                    'image_url': sign_url_for_filepicker_bucket(photo.image_url) if photo.image_url else None,
+                    'is_default': photo.is_default
+                } for photo in photos]}
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
     def patch(self, **kwargs):
@@ -1870,7 +1877,7 @@ class CandidatePhotosResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
@@ -1910,7 +1917,7 @@ class CandidatePhotosResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
 
@@ -1937,6 +1944,8 @@ class CandidateLanguageResource(Resource):
 
         add_languages(candidate_id=candidate_id, data=body_dict['candidate_languages'])
         db.session.commit()
+
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
     @require_all_permissions(Permission.PermissionNames.CAN_GET_CANDIDATES)
@@ -1987,6 +1996,8 @@ class CandidateLanguageResource(Resource):
 
         update_candidate_languages(candidate_id, body_dict['candidate_languages'], authed_user.id)
         db.session.commit()
+
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
 
     @require_all_permissions(Permission.PermissionNames.CAN_EDIT_CANDIDATES)
@@ -2024,4 +2035,6 @@ class CandidateLanguageResource(Resource):
             map(db.session.delete, candidate_languages)
 
         db.session.commit()
+
+        upload_candidate_documents.delay([candidate_id])
         return '', 204

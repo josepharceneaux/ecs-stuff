@@ -18,6 +18,7 @@ from email_campaign_service.common.utils.datetime_utils import DatetimeUtils
 from email_campaign_service.common.error_handling import (InvalidUsage, UnprocessableEntity)
 from email_campaign_service.common.campaign_services.validators import validate_smartlist_ids
 from email_campaign_service.common.models.email_campaign import (EmailClientCredentials, EmailClient)
+from email_campaign_service.common.campaign_services.validators import validate_base_campaign_id
 
 
 def validate_datetime(datetime_text, field_name=None):
@@ -32,7 +33,7 @@ def validate_datetime(datetime_text, field_name=None):
         raise InvalidUsage("%s should be in valid format `2016-03-05T04:30:00.000Z`"
                            % field_name if field_name else 'Datetime')
     if parsed_date < datetime.datetime.utcnow():
-        raise UnprocessableEntity("The %s cannot be before today.")
+        raise UnprocessableEntity("The parsed_date:%s cannot be before today." % parsed_date)
     return parsed_date
 
 
@@ -46,19 +47,20 @@ def validate_and_format_request_data(data, current_user):
     :rtype: dict
     """
     name = data.get('name')  # required
-    subject = data.get('subject')        # required
-    description = data.get('description', '')        # required
+    subject = data.get('subject')  # required
+    description = data.get('description', '')  # required
     _from = data.get('from')
     reply_to = data.get('reply_to')
-    body_html = data.get('body_html')    # required
+    body_html = data.get('body_html')  # required
     body_text = data.get('body_text')
-    list_ids = data.get('list_ids')                  # required
+    list_ids = data.get('list_ids')  # required
     email_client_id = data.get('email_client_id')
     start_datetime = data.get('start_datetime')
     end_datetime = data.get('end_datetime')
-    frequency_id = data.get('frequency_id')         # required
+    frequency_id = data.get('frequency_id')  # required
     template_id = data.get('template_id')
     email_client_credentials_id = data.get('email_client_credentials_id')
+    base_campaign_id = data.get('base_campaign_id')
 
     # Raise errors if invalid input
     if name is None or name.strip() == '':
@@ -80,7 +82,10 @@ def validate_and_format_request_data(data, current_user):
     # If frequency is there then there must be a send time
     frequency = Frequency.get_seconds_from_id(frequency_id)
     if frequency and not start_datetime:
-        raise UnprocessableEntity("Frequency requires send time.")
+        raise UnprocessableEntity("Frequency requires send_datetime.")
+
+    if frequency and not end_datetime:
+        raise UnprocessableEntity("Frequency requires end_datetime.")
 
     if start_datetime and end_datetime:
         job_send_datetime = validate_datetime(start_datetime, '`send_datetime`')
@@ -102,6 +107,9 @@ def validate_and_format_request_data(data, current_user):
         email_client_credentials = EmailClientCredentials.get_by_id(email_client_credentials_id)
         if not EmailClientBase.is_outgoing(email_client_credentials.host):
             raise InvalidUsage("Selected email-client must be of type `outgoing`")
+    # Validation for base_campaign_id
+    if base_campaign_id:
+        validate_base_campaign_id(base_campaign_id, current_user.domain_id)
     # Validation for duplicate `list_ids`
     if [item for item, count in Counter(list_ids).items() if count > 1]:
         raise InvalidUsage('Duplicate `list_ids` found in data.')
@@ -124,7 +132,8 @@ def validate_and_format_request_data(data, current_user):
         'end_datetime': end_datetime,
         'frequency_id': frequency_id,
         'template_id': template_id,
-        'email_client_credentials_id': email_client_credentials_id
+        'email_client_credentials_id': email_client_credentials_id,
+        'base_campaign_id': base_campaign_id
     }
 
 

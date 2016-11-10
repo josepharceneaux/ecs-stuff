@@ -330,7 +330,7 @@ class TestSchedulerExceptions(object):
         then scheduler service should throw invalid usage exception.
         """
         job_config_one_time_task = job_config_one_time_task.copy()
-        job_config_one_time_task['frequency'] = fake.random_number(1,)
+        job_config_one_time_task['frequency'] = fake.random_int(2,)
         response = requests.post(SchedulerApiUrl.TASKS, data=json.dumps(job_config_one_time_task),
                                  headers=auth_header)
         # Additional properties are not allowed (u'frequency')

@@ -6,6 +6,7 @@ import requests
 from sqlalchemy.sql import text
 from dateutil.parser import parse
 from datetime import datetime, timedelta, date
+from candidate_pool_service.candidate_pool_app import cache
 from candidate_pool_service.common.utils.validators import is_number
 from candidate_pool_service.candidate_pool_app import logger, app, celery_app, db
 from candidate_pool_service.common.redis_cache import redis_dict, redis_store
@@ -577,6 +578,8 @@ def top_most_engaged_candidates_of_pipeline(talent_pipeline_id, limit):
         return []
 
 
+# Cache engagement score of Pipeline for 2 hours
+@cache.memoize(timeout=7200)
 def engagement_score_of_pipeline(talent_pipeline_id):
     """
     This endpoint will calculate engagement_score of a talent_pipeline

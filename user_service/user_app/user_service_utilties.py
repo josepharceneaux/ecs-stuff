@@ -6,8 +6,9 @@ from flask import render_template
 from user_service.user_app import app
 from werkzeug.security import gen_salt
 
-from user_service.common.error_handling import InvalidUsage, NotFoundError, UnauthorizedError
+from user_service.common.routes import get_web_app_url
 from user_service.common.utils.validators import is_number
+from user_service.common.error_handling import InvalidUsage, NotFoundError, UnauthorizedError
 from user_service.common.talent_config_manager import TalentConfigKeys
 from user_service.common.models.email_campaign import EmailTemplateFolder, UserEmailTemplate
 from user_service.common.models.user import db, Domain, User, UserGroup, Role
@@ -184,7 +185,7 @@ def create_user(email, domain_id, first_name, last_name, expiration, phone="", d
     user_data_dict = dict(
             email=email, domain_id=domain_id, first_name=first_name, last_name=last_name, expiration=expiration,
             dice_user_id=dice_user_id, password=hashed_password, phone=phone, thumbnail_url=thumbnail_url,
-            user_group_id=user_group.id, locale=locale, is_disabled=True, role_id=role_id)
+            user_group_id=user_group.id, locale=locale, is_disabled=False, role_id=role_id)
 
     user_data_dict = {k: v for k, v in user_data_dict.items() if v}
 
@@ -217,7 +218,8 @@ def validate_password(password):
 
 def send_new_account_email(account_email, temp_password, to_email):
     if app.config[TalentConfigKeys.ENV_KEY] in ('prod', 'qa'):
-        new_user_email = render_template('new_user.html', email=account_email, password=temp_password)
+        login_url = '{}/login'.format(get_web_app_url())
+        new_user_email = render_template('new_user.html', email=account_email, password=temp_password, login=login_url)
         send_email(source='"getTalent Registration" <support@gettalent.com>',
                    subject='Setup Your New Account',
                    body=new_user_email, to_addresses=[to_email], email_format='html')

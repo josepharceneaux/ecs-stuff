@@ -101,6 +101,10 @@ def import_from_table():
     if candidates_table and len(candidates_table[0]) != len(header_row):
         raise InvalidUsage("Number of Columns should be equal to header row provided")
 
+    # Disable Multiple Sources in Header Row
+    if header_row.count('candidate.source') > 1:
+        raise InvalidUsage('Multiple Candidate Sources are not allowed')
+
     if len(candidates_table) > 25:
         import_from_spreadsheet.delay(candidates_table, file_picker_key, header_row, talent_pool_ids,
                                       request.oauth_token, request.user.id, True, source_id,

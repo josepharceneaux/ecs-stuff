@@ -8,10 +8,14 @@ Functions in this file are
     - validate_blast_candidate_url_conversion_in_db()
     - raise_if_dict_values_are_not_int_or_long etc.
 """
+# Packages
+from contracts import contract
+
 # Database Models
 from ..models.user import User
 from ..models.candidate import Candidate
 from ..models.smartlist import Smartlist
+from ..models.base_campaign import BaseCampaign
 from ..models.sms_campaign import SmsCampaignBlast
 from ..models.misc import (Frequency, UrlConversion)
 from ..models.email_campaign import EmailCampaignBlast
@@ -162,3 +166,18 @@ def raise_if_dict_values_are_not_int_or_long(data):
     for key, value in data.iteritems():
         if not isinstance(value, (int, long)) or not value:
             raise InvalidUsage('Include %s as int|long. It cannot be 0.' % key)
+
+
+@contract
+def validate_base_campaign_id(base_campaign_id, domain_id):
+    """
+    This raises ResourceNotFound error if given base-campaign-id is not found in database.
+    This raises Forbidden error if given base-campaign-id does not belong to user's domain.
+    :param positive base_campaign_id: BaseCampaign id
+    :param positive domain_id: domain id of user
+    """
+    if not BaseCampaign.get_by_id(base_campaign_id):
+        raise ResourceNotFound('Requested base-campaign not found in database')
+    base_campaign = BaseCampaign.search_by_id_in_domain(base_campaign_id, domain_id)
+    if not base_campaign:
+        raise ForbiddenError('Requested base-campaign does not belong to user`s domain')

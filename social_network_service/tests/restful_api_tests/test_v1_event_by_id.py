@@ -43,35 +43,38 @@ class TestEventById(object):
         response = unauthorize_test(url=SocialNetworkApiUrl.EVENT % non_existing_id, method='get')
         assert 'event' not in response.json()
 
-    def test_get_by_id_with_valid_token(self, token_first, event_in_db_second):
+    def test_get_by_id_with_valid_token(self, token_first, token_same_domain, event_in_db_second):
         """
         - Get event using id and response should be 200
+        - Get event by some other user of same domain using id and response should be 200
         - Delete venue_id and organizer_id from event response data
         - Then compare values from the event data in db table and response event data
         """
         event = copy.deepcopy(event_in_db_second)
+        for access_token in (token_first, token_same_domain):
+            response = requests.get(SocialNetworkApiUrl.EVENT % event['id'], headers=auth_header(access_token))
+            logger.info(response.text)
+            assert response.status_code == codes.OK, "Response: {}".format(response.text)
+            results = response.json()
+            assert 'event' in results
+            api_event = results['event']
+            if event.get('venue_id'):
+                del event['venue_id']
+            if event.get('organizer_id'):
+                del event['organizer_id']
+            comparison = '\n{0: <20}  |  {1: <40} |  {2: <40}\n'.format('Key', 'Expected', 'Found')
+            comparison += '=' * 100 + '\n'
+            status = True
+            for key, val in event.items():
+                mismatch = ''
+                if event[key] == api_event[key]:
+                    mismatch = '**'
+                comparison += '{0: <20}  {1}|  {2: <40} |  {3: <40}\n'.format(key, mismatch, event[key],
+                                                                              api_event[key])
+                comparison += '-' * 100 + '\n'
+                status = status and event[key] == api_event[key]
 
-        response = requests.get(SocialNetworkApiUrl.EVENT % event['id'], headers=auth_header(token_first))
-        logger.info(response.text)
-        assert response.status_code == codes.OK, "Response: {}".format(response.text)
-        results = response.json()
-        assert 'event' in results
-        api_event = results['event']
-        del event['venue_id']
-        if event.get('organizer_id'):
-            del event['organizer_id']
-        comparison = '\n{0: <20}  |  {1: <40} |  {2: <40}\n'.format('Key', 'Expected', 'Found')
-        comparison += '=' * 100 + '\n'
-        status = True
-        for key, val in event.items():
-            mismatch = ''
-            if event[key] == api_event[key]:
-                mismatch = '**'
-            comparison += '{0: <20}  {1}|  {2: <40} |  {3: <40}\n'.format(key, mismatch, event[key], api_event[key])
-            comparison += '-' * 100 + '\n'
-            status = status and event[key] == api_event[key]
-
-        assert status, 'Event values were not matched\n' + comparison
+            assert status, 'Event values were not matched\n' + comparison
 
     def test_put_with_invalid_token(self):
         """

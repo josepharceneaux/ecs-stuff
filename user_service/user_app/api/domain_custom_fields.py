@@ -30,7 +30,7 @@ from user_service.modules.domain_custom_fields import get_custom_field_if_valida
 class DomainCustomFieldsResource(Resource):
     decorators = [require_oauth()]
 
-    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
+    @require_all_permissions(Permission.PermissionNames.CAN_ADD_DOMAIN_CUSTOM_FIELDS)
     def post(self):
         """
         Function will create custom field(s) for user's domain
@@ -38,7 +38,7 @@ class DomainCustomFieldsResource(Resource):
         :return: {"custom_fields": [{"id": int}, {"id": int}, ...]}
         :rtype: dict[list[dict]]
         Usage:
-            >>> data = {"custom_fields": [{"name": "job status"}]}
+            >>> data = {"custom_fields": [{"category_id": 1, "name": "job status"}]}
             >>> headers = {"Authorization": "Bearer {access_token}", "content-type": "application/json"}
             >>> requests.post(url="host/v1/custom_fields", data=json.dumps(data), headers=headers)
             <Response [201]>
@@ -50,7 +50,7 @@ class DomainCustomFieldsResource(Resource):
                    "custom_fields": create_custom_fields(body_dict['custom_fields'], request.user.domain_id)
                }, requests.codes.CREATED
 
-    @require_all_permissions(Permission.PermissionNames.CAN_GET_DOMAINS)
+    @require_all_permissions(Permission.PermissionNames.CAN_GET_DOMAIN_CUSTOM_FIELDS)
     def get(self, **kwargs):
         """
         Function will return domain's custom field(s)
@@ -91,7 +91,7 @@ class DomainCustomFieldsResource(Resource):
                 "added_datetime": str(custom_field.added_time)
             } for custom_field in CustomField.get_domain_custom_fields(request.user.domain_id)]}
 
-    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
+    @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAIN_CUSTOM_FIELDS)
     def put(self, **kwargs):
         """
         Function will update domain's custom field(s)
@@ -160,7 +160,7 @@ class DomainCustomFieldsResource(Resource):
         return {'custom_fields': [{'id': custom_field_id} for custom_field_id in updated_custom_field_ids]}
 
     # TODO: this endpoint should not be used since it will cause further complexity - Amir
-    # @require_all_permissions(Permission.PermissionNames.CAN_EDIT_DOMAINS)
+    # @require_all_permissions(Permission.PermissionNames.CAN_DELETE_DOMAIN_CUSTOM_FIELDS)
     # def delete(self, **kwargs):
     #     """
     #     Function will delete domain's custom field(s)

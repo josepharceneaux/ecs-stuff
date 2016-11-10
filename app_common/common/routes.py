@@ -121,7 +121,7 @@ class GTApis(object):
     ATS_SERVICE_NAME = 'ats-service'
     MOCK_SERVICE_NAME = 'mock-service'
     TALENTBOT_SERVICE_NAME = 'talentbot-service'
-    GRAPHQL_SERVICE = 'graphql-service'
+    GRAPHQL_SERVICE_NAME = 'graphql-service'
 
     # CORS headers
     CORS_HEADERS = {r"*": {"origins": [r".*\.gettalent\.com$",
@@ -662,6 +662,7 @@ class SocialNetworkApi(object):
     # URL for Twitter authentication
     TWITTER_AUTH = '/' + VERSION + '/twitter-auth'
     TWITTER_CALLBACK = '/' + VERSION + '/twitter-callback/<int:user_id>'
+    DISCONNECT = '/' + VERSION + '/social-networks/<int:social_network_id>/disconnect'
     GRAPHQL = '/graphql'
 
 
@@ -678,7 +679,7 @@ class SocialNetworkApiUrl(object):
     else:
         UI_APP_URL = 'https://staging.gettalent.com/%s'
 
-    SUBSCRIBE = UI_APP_URL % 'events/subscribe?code=%s'
+    SUBSCRIBE = UI_APP_URL % 'account/integrations?code=%s'
     EVENTS = HOST_NAME % ('/' + VERSION + '/events')
     EVENT = HOST_NAME % ('/' + VERSION + '/events/%s')
     SOCIAL_NETWORKS = HOST_NAME % ('/' + VERSION + '/social-networks')
@@ -695,6 +696,7 @@ class SocialNetworkApiUrl(object):
     CODE = HOST_NAME % ('/' + VERSION + '/code')
     IMPORTER = HOST_NAME % ('/' + VERSION + '/import/%s/%s')
     TWITTER_CALLBACK = HOST_NAME % ('/' + VERSION + '/twitter-callback/%s')
+    DISCONNECT = HOST_NAME % ('/' + VERSION + '/social-networks/%s/disconnect')
     GRAPHQL = HOST_NAME % '/graphql'
 
 
@@ -852,6 +854,12 @@ class EmailCampaignApi(object):
     EMAIL_CLIENT_WITH_ID = '/' + VERSION + '/email-clients/<int:email_client_id>'
     EMAIL_CONVERSATIONS = '/' + VERSION + '/email-conversations'
 
+    """ URLs for base-campaigns """
+    BASE_CAMPAIGNS = '/' + VERSION + '/base-campaigns'
+    BASE_CAMPAIGN = '/' + VERSION + '/base-campaigns/<int:base_campaign_id>'
+    BASE_CAMPAIGN_EVENT = '/' + VERSION + '/base-campaigns/<int:base_campaign_id>/link-event/<int:event_id>'
+    INVITATION_STATUS = '/' + VERSION + '/email-campaigns/<int:email_campaign_id>/<int:candidate_id>'
+
 
 class EmailCampaignApiUrl(object):
     """
@@ -879,6 +887,10 @@ class EmailCampaignApiUrl(object):
     EMAIL_CLIENTS = HOST_NAME % ('/' + VERSION + '/email-clients')
     EMAIL_CLIENT_WITH_ID = HOST_NAME % ('/' + VERSION + '/email-clients/%s')
     EMAIL_CONVERSATIONS = HOST_NAME % ('/' + VERSION + '/email-conversations')
+    BASE_CAMPAIGNS = HOST_NAME % ('/' + VERSION + '/base-campaigns')
+    BASE_CAMPAIGN = HOST_NAME % ('/' + VERSION + '/base-campaigns/%s')
+    BASE_CAMPAIGN_EVENT = HOST_NAME % ('/' + VERSION + '/base-campaigns/%s/link-event/%s')
+    INVITATION_STATUS = HOST_NAME % ('/' + VERSION + '/email-campaigns/%s/%s')
 
 
 class ATSServiceApi(object):
@@ -961,3 +973,11 @@ class TalentBotApiUrl(object):
     SLACK_AUTH = HOST_NAME % ('/' + VERSION + '/slack-auth')
     SLACK_BOT_STATUS = HOST_NAME % ('/' + VERSION + '/slackbot-status')
     HOME = HOST_NAME % ('/' + VERSION + '/index')
+
+
+class GraphqlServiceApiUrl(object):
+    """
+    API URL for Graphql service
+    """
+    HOST_NAME = _get_host_name(GTApis.GRAPHQL_SERVICE_NAME, GTApis.GRAPHQL_SERVICE_PORT)
+    GRAPHQL = HOST_NAME % '/graphql'

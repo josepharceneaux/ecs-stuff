@@ -10,14 +10,14 @@ from candidate_service.common.error_handling import NotFoundError
 from candidate_pool_service.common.models.smartlist import Smartlist, SmartlistCandidate
 
 
-def talent_pool_api(access_token, talent_pool_id='', data='', action='GET'):
+def talent_pool_api(access_token, talent_pool_id='', data='', action='GET', params=''):
     headers = {'Authorization': 'Bearer %s' % access_token}
     if action == 'GET':
         if talent_pool_id:
             response = requests.get(url=CandidatePoolApiUrl.TALENT_POOL % talent_pool_id, headers=headers)
             return response.json(), response.status_code
         else:
-            response = requests.get(url=CandidatePoolApiUrl.TALENT_POOLS, headers=headers)
+            response = requests.get(url=CandidatePoolApiUrl.TALENT_POOLS, headers=headers, params=params)
             return response.json(), response.status_code
     elif action == 'DELETE':
         response = requests.delete(url=CandidatePoolApiUrl.TALENT_POOL % talent_pool_id, headers=headers)

@@ -158,5 +158,6 @@ def match_data(graphql_obj, restful_obj, fields):
     :param list | tuple fields: list of fields to be matched
     """
     for field in fields:
+        graphql_obj[field] = '' if graphql_obj[field] is None else graphql_obj[field]
         assert graphql_obj[field] == restful_obj[field], 'field: %s, GraphqlObj: %s\nRestfulObj: %s' \
                                                          % (field, graphql_obj, restful_obj)

@@ -8,7 +8,7 @@ from flask import request, Blueprint
 from user_service.common.routes import UserServiceApi
 from user_service.common.error_handling import *
 from user_service.common.talent_api import TalentApi
-from user_service.common.models.user import User, db, Permission, Token
+from user_service.common.models.user import User, db, Permission, Token, Domain
 from user_service.common.utils.validators import is_valid_email, is_number
 from user_service.common.utils.auth_utils import gettalent_generate_password_hash
 from user_service.common.utils.auth_utils import require_oauth, require_all_permissions
@@ -34,13 +34,11 @@ class UserInviteApi(Resource):
         if not requested_user:
             raise NotFoundError("User with user id %s is not found" % requested_user_id)
 
-        if requested_user.is_disabled == 0:
-            raise InvalidUsage("User %s is already active" % requested_user_id)
-
         temp_password = gen_salt(8)
         requested_user.password = gettalent_generate_password_hash(temp_password)
         requested_user.password_reset_time = datetime.utcnow()
         requested_user.is_disabled = 0
+        requested_user.registration_id = 'Invited'
         db.session.commit()
 
         send_new_account_email(requested_user.email, temp_password, requested_user.email)
@@ -57,8 +55,8 @@ class UserApi(Resource):
     @require_all_permissions(Permission.PermissionNames.CAN_GET_USERS)
     def get(self, **kwargs):
         """
-        GET /users/<id> Fetch user object with user's basic info
-        GET /users      Fetch all user ids of a given domain
+        GET /users/<id>             Fetch user object with user's basic info
+        GET /users?domain_id=1      Fetch all user ids of a given domain
 
         :return A dictionary containing user basic info except safety critical info or a dictionary containing
                 all user_ids of a domain
@@ -81,7 +79,15 @@ class UserApi(Resource):
 
         # User id is not provided so logged-in user wants to get all users of its domain
         else:
-            return {'users': [user.to_dict() for user in User.all_users_of_domain(request.user.domain_id)]}
+            domain_id = request.user.domain_id
+
+            # Get all users of any domain if user is `TALENT_ADMIN`
+            if request.user.role.name == 'TALENT_ADMIN' and request.args.get('domain_id'):
+                domain_id = request.args.get('domain_id')
+                if not is_number(domain_id) or not Domain.query.get(int(domain_id)):
+                    raise InvalidUsage("Invalid Domain Id is provided")
+
+            return {'users': [user.to_dict() for user in User.all_users_of_domain(int(domain_id))]}
 
     @require_all_permissions(Permission.PermissionNames.CAN_ADD_USERS)
     def post(self):
@@ -232,6 +238,10 @@ class UserApi(Resource):
             'locale': locale
         }
         update_user_dict = dict((k, v) for k, v in update_user_dict.iteritems() if v)
+
+        if is_disabled:
+            update_user_dict['registration_id'] = ''
+
         User.query.filter(User.id == requested_user_id).update(update_user_dict)
         db.session.commit()
 

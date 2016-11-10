@@ -75,6 +75,7 @@ def create_email_campaign(user_id, oauth_token, name, subject, description,
                           body_text, list_ids, email_client_id=None,
                           frequency_id=None,
                           email_client_credentials_id=None,
+                          base_campaign_id=None,
                           start_datetime=None,
                           end_datetime=None,
                           template_id=None):
@@ -99,15 +100,14 @@ def create_email_campaign(user_id, oauth_token, name, subject, description,
                                    frequency_id=frequency_id if frequency_id else None,
                                    email_client_id=email_client_id,
                                    email_client_credentials_id=email_client_credentials_id
-                                   if email_client_credentials_id else None
+                                   if email_client_credentials_id else None,
+                                   base_campaign_id=base_campaign_id if base_campaign_id else None
                                    )
     EmailCampaign.save(email_campaign)
 
     # Create activity in a celery task
-    celery_create_activity(user_id,
-                           Activity.MessageIds.CAMPAIGN_CREATE,
-                           email_campaign,
-                           dict(id=email_campaign.id, name=name),
+    celery_create_activity(user_id, Activity.MessageIds.CAMPAIGN_CREATE, email_campaign, dict(id=email_campaign.id,
+                                                                                              name=name),
                            'Error occurred while creating activity for email-campaign creation. User(id:%s)' % user_id
                            )
 
@@ -208,7 +208,7 @@ def send_email_campaign(current_user, campaign, new_candidates_only=False):
             # Loop through each candidate and get new_html and new_text
             for candidate_id, candidate_address in candidate_ids_and_emails:
                 new_text, new_html = get_new_text_html_subject_and_campaign_send(
-                    campaign.id, candidate_id, blast_params=blast_params,
+                    campaign.id, candidate_id, candidate_address, blast_params=blast_params,
                     email_campaign_blast_id=email_campaign_blast_id,
                     blast_datetime=blast_datetime)[:2]
                 logger.info("Marketing email added through client %s", campaign.email_client_id)
@@ -449,7 +449,7 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
     campaign = EmailCampaign.get_by_id(campaign_id)
     candidate = Candidate.get_by_id(candidate_id)
     new_text, new_html, subject, email_campaign_send, blast_params, _ = \
-        get_new_text_html_subject_and_campaign_send(campaign.id, candidate_id,
+        get_new_text_html_subject_and_campaign_send(campaign.id, candidate_id, candidate_address,
                                                     blast_params=blast_params,
                                                     email_campaign_blast_id=email_campaign_blast_id,
                                                     blast_datetime=blast_datetime)
@@ -573,7 +573,7 @@ def send_email_campaign_to_candidate(user_id, campaign, candidate_id, candidate_
             return False
 
 
-def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, blast_params=None,
+def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, candidate_address, blast_params=None,
                                                 email_campaign_blast_id=None, blast_datetime=None):
     """
     This gets new_html and new_text by URL conversion method and returns
@@ -583,11 +583,13 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, blast
     :param blast_params: email_campaign blast params
     :param email_campaign_blast_id:  email campaign blast id
     :param blast_datetime: email campaign blast datetime
+    :param candidate_address: Address of Candidate
     :type campaign_id: int | long
     :type candidate_id: int | long
     :type blast_params: dict | None
     :type email_campaign_blast_id: int | long | None
     :type blast_datetime: datetime.datetime | None
+    :type candidate_address: basestring
     """
     raise_if_not_positive_int_or_long(campaign_id)
     raise_if_not_positive_int_or_long(candidate_id)
@@ -641,7 +643,8 @@ def get_new_text_html_subject_and_campaign_send(campaign_id, candidate_id, blast
     logger.info('get_new_text_html_subject_and_campaign_send: candidate_id: %s' % candidate.id)
 
     # Perform MERGETAG replacements
-    [new_html, new_text, subject] = do_mergetag_replacements([new_html, new_text, campaign.subject], candidate)
+    [new_html, new_text, subject] = do_mergetag_replacements([new_html, new_text, campaign.subject],
+                                                             candidate, candidate_address)
     # Perform URL conversions and add in the custom HTML
     logger.info('get_new_text_html_subject_and_campaign_send: email_campaign_send_id: %s' % email_campaign_send.id)
     new_text, new_html = create_email_campaign_url_conversions(new_html=new_html,

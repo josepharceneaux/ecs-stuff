@@ -37,11 +37,13 @@ Unschedule a campaign: /v1/push-campaigns/:id/schedule [DELETE]
 # Builtin imports
 import sys
 from time import sleep
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # 3rd party imports
+import pytest
 from redo import retry
 from requests import codes
+
 
 # Application specific imports
 from push_campaign_service.common.campaign_services.tests_helpers import CampaignsTestsHelpers
@@ -226,6 +228,14 @@ class TestScheduleCampaignUsingPOST(object):
         CampaignsTestsHelpers.send_request_with_deleted_smartlist('post', URL % campaign_id, token_first,
                                                                   smartlist_first['id'], data)
 
+    @pytest.mark.qa
+    def test_schedule_campaign_with_start_datetime_greater_than_end_datetime(self, token_first, campaign_in_db):
+        """
+        The test is to validate that, if start_datetime is greater than end_datetime then
+        scheduler endpoint should throw invalid usage exception.
+        """
+        CampaignsTestsHelpers.start_datetime_greater_than_end_datetime('post', URL % campaign_in_db['id'], token_first)
+
 
 class TestRescheduleCampaignUsingPUT(object):
 
@@ -322,11 +332,11 @@ class TestRescheduleCampaignUsingPUT(object):
                             expected_status=(codes.BAD_REQUEST,))
 
     def test_reschedule_campaign_with_valid_data(self, token_first, campaign_in_db, talent_pool, candidate_first,
-                                             smartlist_first, schedule_a_campaign, candidate_device_first):
+                                                 smartlist_first, schedule_a_campaign, candidate_device_first):
         """
         Reschedule a campaign with valid data and it should return 200 response.
         """
-        sleep(10)
+        sleep(15)
         data = generate_campaign_schedule_data(frequency_id=Frequency.DAILY)
         response = send_request('put', PushCampaignApiUrl.SCHEDULE % campaign_in_db['id'], token_first, data)
         assert response.status_code == codes.OK
@@ -407,6 +417,15 @@ class TestRescheduleCampaignUsingPUT(object):
         # Reschedule a campaign with deleted smarlist. API will raise 400 error.
         CampaignsTestsHelpers.send_request_with_deleted_smartlist('put', URL % campaign_id, token_first,
                                                                   smartlist_first['id'], data)
+
+    @pytest.mark.qa
+    def test_reschedule_campaign_with_start_datetime_greater_than_end_datetime(self, token_first, campaign_in_db,
+                                                                               schedule_a_campaign):
+        """
+        Reschedule a campaign with start_time greater than end_time.
+        Api should raise InvalidUsage error 400
+        """
+        CampaignsTestsHelpers.start_datetime_greater_than_end_datetime('put', URL % campaign_in_db['id'], token_first)
 
 
 class TestUnscheduleCamapignUsingDELETE(object):

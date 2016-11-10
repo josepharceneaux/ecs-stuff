@@ -34,8 +34,8 @@ class TalentPoolApi(Resource):
     @require_all_permissions(Permission.PermissionNames.CAN_GET_TALENT_POOLS)
     def get(self, **kwargs):
         """
-        GET /talent-pools/<id>          Fetch talent-pool object
-        GET /talent-pools               Fetch all talent-pool objects of domain of logged-in user
+        GET /talent-pools/<id>              Fetch talent-pool object
+        GET /talent-pools?domain_id=1       Fetch all talent-pool objects of domain of logged-in user
 
         :return A dictionary containing talent-pool basic info or a dictionary containing all talent-pools of a domain
         :rtype: dict
@@ -71,7 +71,15 @@ class TalentPoolApi(Resource):
             }
         # Getting all talent-pools of logged-in user's domain
         else:
-            talent_pools = TalentPool.query.filter_by(domain_id=request.user.domain_id).all()
+            domain_id = request.user.domain_id
+
+            # Get all Talent Pools of any domain if user is `TALENT_ADMIN`
+            if request.user.role.name == 'TALENT_ADMIN' and request.args.get('domain_id'):
+                domain_id = request.args.get('domain_id')
+                if not is_number(domain_id) or not Domain.query.get(int(domain_id)):
+                    raise InvalidUsage("Invalid Domain Id is provided")
+
+            talent_pools = TalentPool.query.filter_by(domain_id=int(domain_id)).all()
             return {
                 'talent_pools': [
                     {

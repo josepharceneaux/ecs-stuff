@@ -1,10 +1,13 @@
+from sqlalchemy.orm import relationship
 from db import db
+from rsvp import RSVP
 
 
 class Event(db.Model):
     __tablename__ = 'event'
     id = db.Column(db.Integer, primary_key=True)
     social_network_event_id = db.Column('socialNetworkEventId', db.String(1000))
+    base_campaign_id = db.Column('baseCampaignId', db.BIGINT, db.ForeignKey('base_campaign.id', ondelete='CASCADE'))
     title = db.Column(db.String(500))
     description = db.Column(db.String(1000))
     social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.Id'), nullable=False)
@@ -23,6 +26,9 @@ class Event(db.Model):
     max_attendees = db.Column('maxAttendees', db.Integer)
     tickets_id = db.Column('ticketsId', db.Integer, nullable=True)
 
+    # Relationship
+    rsvps = relationship('RSVP', lazy='dynamic', cascade='all, delete-orphan', passive_deletes=True, backref='event')
+
     def __ne__(self, other_event):
         return (self.social_network_event_id != other_event.social_network_event_id and
                 self.user_id != other_event.user_id)
@@ -33,6 +39,25 @@ class Event(db.Model):
                 self.organizer_id == other_event.organizer_id and
                 self.venue_id == other_event.venue_id and
                 self.start_datetime == other_event.start_datetime)
+
+    @classmethod
+    def get_by_domain_id(cls, domain_id):
+        """
+        This returns Query object for all the events in user's domain(given domain_id)
+        :param int|long domain_id: Id of domain of user
+        """
+        assert domain_id, 'domain_id is required param'
+        from user import User  # This has to be here to avoid circular import
+        return cls.query.join(User).filter(User.domain_id == domain_id)
+
+    @classmethod
+    def get_by_event_id_and_domain_id(cls, event_id, domain_id):
+        """
+        This searches given event_id in given domain_id of user
+        """
+        assert event_id and domain_id
+        from user import User  # This has to be here to avoid circular import
+        return cls.query.filter_by(id=event_id).join(User).filter(User.domain_id == domain_id).first()
 
     @classmethod
     def get_by_user_and_social_network_event_id(cls, user_id, social_network_event_id):

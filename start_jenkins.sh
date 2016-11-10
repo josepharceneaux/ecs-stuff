@@ -30,6 +30,7 @@ cd email_campaign_service && tar -czh . | docker build -t gettalent/email-campai
 cd ats_service && tar -czh . | docker build -t gettalent/ats-service:latest - && cd ../
 cd mock_service && tar -czh . | docker build -t gettalent/mock-service:latest - && cd ../
 cd talentbot_service && tar -czh . | docker build -t gettalent/talentbot-service:latest - && cd ../
+cd graphql_service && tar -czh . | docker build -t gettalent/graphql-service:latest - && cd ../
 
 # TODO: Move scheduler service admin to another repo
 # cd scheduler_service_admin && tar -czh . | docker build -t gettalent/scheduler-service-admin:latest - && cd ../
@@ -42,10 +43,10 @@ python setup_environment/reset_database_and_cloud_search.py
 
 ENV_VARIABLES=("GT_ENVIRONMENT" "AWS_ACCESS_KEY_ID" "AWS_SECRET_ACCESS_KEY")
 
-FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "social-network-service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service" "sms-campaign-service" "push-campaign-service" "email-campaign-service" "ats-service" "mock-service" "talentbot-service")
+FLASK_APPS=("auth-service" "activity-service" "resume-parsing-service" "user-service" "candidate-service" "social-network-service" "candidate-pool-service" "spreadsheet-import-service" "scheduler-service" "sms-campaign-service" "push-campaign-service" "email-campaign-service" "ats-service" "mock-service" "talentbot-service" "graphql-service")
 
 # Note that port 8016 is used for scheduler admin web app
-FLASK_APP_PORTS=("8001" "8002" "8003" "8004" "8005" "8007" "8008" "8009" "8011" "8012" "8013" "8014" "8015" "8016" "8017")
+FLASK_APP_PORTS=("8001" "8002" "8003" "8004" "8005" "8007" "8008" "8009" "8011" "8012" "8013" "8014" "8015" "8016" "8017" "8018")
 
 
 env_variable_parameters=""
@@ -68,7 +69,7 @@ sleep 10
 
 echo "Beginning tests."
 
-py.test -n 48 push_campaign_service/tests scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests resume_parsing_service/tests email_campaign_service/tests social_network_service/tests sms_campaign_service/tests app_common/common/tests talentbot_service/tests
+py.test -n 48 push_campaign_service/tests scheduler_service/tests auth_service/tests user_service/tests activity_service/tests candidate_pool_service/tests spreadsheet_import_service/tests resume_parsing_service/tests email_campaign_service/tests social_network_service/tests sms_campaign_service/tests app_common/common/tests app_common/common/campaign_services/tests talentbot_service/tests
 
 
 
