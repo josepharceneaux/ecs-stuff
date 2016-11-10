@@ -65,6 +65,16 @@ class TalentPool(db.Model):
             return cls.query.join(User).filter(User.domain_id == domain_id).all()
         raise NotFoundError
 
+    @classmethod
+    @contract()
+    def get_talent_pool_owned_by_user(cls, user_id):
+        """
+        This returns Talentpool names owend by a user
+        :param positive user_id: User Id
+        :rtype: list
+        """
+        return cls.query.with_entities(cls.name).filter(cls.user_id == user_id).all()
+
 
 class TalentPoolCandidate(db.Model):
     __tablename__ = 'talent_pool_candidate'

@@ -512,6 +512,18 @@ class QuestionHandler(object):
             sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_id, OWNED) \
                 if not asking_about_all_campaigns else \
                 SmsCampaign.sms_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC)
+        if asking_about_his_pool:  # If user's asking about his talent pools
+            user_talent_pool_names = TalentPool.get_talent_pool_owned_by_user(user_id)
+            user_talent_pool_names = [pool_name[0] for pool_name in user_talent_pool_names]
+            email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_id, OWNED, user_talent_pool_names) \
+                if not asking_about_all_campaigns else \
+                EmailCampaign.email_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, user_talent_pool_names)
+            push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_id, OWNED, user_talent_pool_names) \
+                if not asking_about_all_campaigns else \
+                PushCampaign.push_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, user_talent_pool_names)
+            sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_id, OWNED, user_talent_pool_names) \
+                if not asking_about_all_campaigns else \
+                SmsCampaign.sms_campaigns_in_talent_pool(user_id, DOMAIN_SPECIFIC, user_talent_pool_names)
         is_asking_for_campaigns_in_pool = not asking_about_specific_pool and not \
             asking_about_all_pools and not asking_about_his_pool
         # Appending suitable response header
