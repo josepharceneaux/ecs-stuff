@@ -152,6 +152,8 @@ class TalentBot(object):
                                      'handler': self.handler.question_8_handler},
                               '64': {'question': self.list_of_questions[64], 'threshold': 95,
                                      'handler': self.handler.question_8_handler},
+                              '71': {'question': self.list_of_questions[71], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
                               # Show me <x>
                               '55': {'question': self.list_of_questions[55], 'threshold': 95,
                                      'handler': self.handler.question_9_handler},
