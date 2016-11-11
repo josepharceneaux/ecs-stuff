@@ -50,23 +50,21 @@ class TalentPool(db.Model):
         return cls.query.filter(cls.domain_id == domain_id).all()
 
     @classmethod
-    @contract()
-    def get_by_name(cls, user_id, names):
+    @contract
+    def get_by_user_id_and_name(cls, user_id, names):
         """
         This returns TalentPool list against names if no names are specified it returns all talent pools in usr domain
-        :param positive user_id:
-        :param list|None names:
+        :param positive user_id: User Id
+        :param list|None names: Talentpool names or None
         :rtype: list
         """
         domain_id = User.get_domain_id(user_id)
-        if domain_id:
-            if names is not None:
-                return cls.query.join(User).filter(cls.name.in_(names), User.domain_id == domain_id).all()
-            return cls.query.join(User).filter(User.domain_id == domain_id).all()
-        raise NotFoundError
+        if names is not None:
+            return cls.query.join(User).filter(cls.name.in_(names), User.domain_id == domain_id).all()
+        return cls.query.join(User).filter(User.domain_id == domain_id).all()
 
     @classmethod
-    @contract()
+    @contract
     def get_talent_pool_owned_by_user(cls, user_id):
         """
         This returns Talentpool names owend by a user
@@ -112,7 +110,8 @@ class TalentPoolCandidate(db.Model):
         if user_name:
             if user_name.lower() == 'i':
                 user_name = User.filter_by_keywords(id=user_id)[0].first_name
-            users = User.get_by_name(user_id, user_name)
+            domain_id = User.get_domain_id(user_id)
+            users = User.get_by_domain_id_and_name(domain_id, user_name)
             if users:
                 user = users[0]
             else:
@@ -199,7 +198,7 @@ class TalentPipeline(db.Model):
         return unicode(self.id)
 
     @classmethod
-    @contract()
+    @contract
     def get_own_or_domain_pipelines(cls, user_id, scope):
         """
         This returns list of Pipelines owned by a specific user or all in domain
@@ -207,14 +206,11 @@ class TalentPipeline(db.Model):
         :param int scope: Weather owned or domain specific
         :rtype: list
         """
-        # TODO: is_hidden check
         if scope == OWNED:
-            return cls.query.join(User).filter(User.id == user_id).all()
+            return cls.query.join(User).filter(User.id == user_id, cls.is_hidden == 0).all()
         else:
             domain_id = User.get_domain_id(user_id)
-            if domain_id:
-                return cls.query.join(User).filter(User.domain_id == domain_id).all()
-        raise NotFoundError
+            return cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0).all()
 
     @classmethod
     def get_by_user_id_in_desc_order(cls, user_id):
@@ -289,21 +285,18 @@ class TalentPipeline(db.Model):
         return cls.query.filter_by(user_id=user_id, talent_pool_id=talent_pool_id).first()
 
     @classmethod
-    @contract()
-    def get_by_name(cls, user_id, name):
+    @contract
+    def get_by_domain_id_and_name(cls, domain_id, name):
         """
         Returns TalentPipelines against name in user's domain
-        :param positive user_id: User Id
+        :param positive domain_id: User's Domain Id
         :param string name: TalentPipeline name
         :rtype: list
         """
-        domain_id = User.get_domain_id(user_id)
-        if domain_id:
-            return cls.query.join(User).filter(cls.name == name, User.domain_id == domain_id, cls.is_hidden == 0).all()
-        raise NotFoundError
+        return cls.query.join(User).filter(cls.name == name, User.domain_id == domain_id, cls.is_hidden == 0).all()
 
     @classmethod
-    @contract()
+    @contract
     def pipelines_user_group(cls, user_id):
         """
         This returns list of Pipelines in user's group

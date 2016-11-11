@@ -137,7 +137,7 @@ class EmailCampaign(db.Model):
                 '%' + search_keyword + '%'), cls.is_hidden == is_hidden).order_by(sort_by_object)
 
     @classmethod
-    @contract()
+    @contract
     def get_by_user_id(cls, user_id):
         """
         Returns EmailCampaigns against a User Id
@@ -147,26 +147,23 @@ class EmailCampaign(db.Model):
         return cls.query.filter(cls.user_id == user_id, cls.is_hidden == 0).all()
 
     @classmethod
-    @contract()
-    def get_by_name(cls, user_id, name):
+    @contract
+    def get_by_domain_id_and_name(cls, domain_id, name):
         """
         Gets EmailCampaign against campaign name
-        :param positive user_id:
+        :param positive domain_id: User's domain Id
         :param string name:
         :rtype: list
         """
         from user import User
-        domain_id = User.get_domain_id(user_id)
-        if domain_id:
-            return cls.query.join(User).filter(cls.name == name, User.domain_id == domain_id, cls.is_hidden == 0).all()
-        raise NotFoundError
+        return cls.query.join(User).filter(cls.name == name, User.domain_id == domain_id, cls.is_hidden == 0).all()
 
     def __repr__(self):
         return "<EmailCampaign(name=' %r')>" % self.name
 
     @classmethod
-    @contract()
-    def email_campaigns_user_group(cls, user_id):
+    @contract
+    def email_campaigns_in_user_group(cls, user_id):
         """
         Gets EmailCampaigns in user's group against User Id
         :param positive user_id: User Id
@@ -180,13 +177,13 @@ class EmailCampaign(db.Model):
         raise NotFoundError
 
     @classmethod
-    @contract()
+    @contract
     def email_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None):
         """
         Returns EmailCampaigns in talent pool
         :param int scope: Number which determines weather user asking about all domain campaigns or only his campaigns
-        :param positive user_id:
-        :param list|None talentpool_names:
+        :param positive user_id: User Id
+        :param list|None talentpool_names: list of Talentpool names or None
         :rtype: list
         """
         from smartlist import SmartlistCandidate  # To avoid circular dependency this has to be here

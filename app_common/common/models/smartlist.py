@@ -72,15 +72,15 @@ class SmartlistCandidate(db.Model):
         return "<SmartListCandidate> (id = {})".format(self.id)
 
     @classmethod
-    @contract()
+    @contract
     def get_smartlist_ids_in_talent_pools(cls, user_id, talentpool_names=None):
         """
         This returns smartlist Ids in a pipeline which is in specified talentpool
         :param positive user_id: User Id
-        :param list|None talentpool_names: Talnet pool names
+        :param list|None talentpool_names: Talent pool names
         :rtype: list
         """
-        talent_pools = TalentPool.get_by_name(user_id, talentpool_names)
+        talent_pools = TalentPool.get_by_user_id_and_name(user_id, talentpool_names)
         talent_pool_ids = [talent_pool.id for talent_pool in talent_pools]  # Extracting data from tuple
         candidate_ids = TalentPoolCandidate.query.with_entities(TalentPoolCandidate.candidate_id). \
             filter(TalentPoolCandidate.talent_pool_id.in_(talent_pool_ids)).distinct().all()

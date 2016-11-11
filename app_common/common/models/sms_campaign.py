@@ -85,7 +85,7 @@ class SmsCampaign(db.Model):
             join(User, UserPhone.user_id == User.id).filter(User.domain_id == domain_id)
 
     @classmethod
-    @contract()
+    @contract
     def get_by_user_id(cls, user_id):
         """
         Returns SmsCampaign list against a User Id
@@ -100,23 +100,20 @@ class SmsCampaign(db.Model):
         return None
 
     @classmethod
-    @contract()
-    def get_by_name(cls, user_id, name):
+    @contract
+    def get_by_domain_id_and_name(cls, domain_id, name):
         """
         Gets SmsCampaign against campaign name
-        :param positive user_id: User Id
+        :param positive domain_id: User's Domain Id
         :param string name: SmsCampaign name
         :rtype: list
         """
         from user import User, UserPhone
-        domain_id = User.get_domain_id(user_id)
-        if domain_id:
-            return cls.query.join(UserPhone, User).filter(cls.name == name, User.domain_id == domain_id).all()
-        raise NotFoundError
+        return cls.query.join(UserPhone, User).filter(cls.name == name, User.domain_id == domain_id).all()
 
     @classmethod
-    @contract()
-    def sms_campaign_user_group(cls, user_id):
+    @contract
+    def sms_campaign_in_user_group(cls, user_id):
         """
         Returns SmsCampaign list against user group Id
         :param positive user_id: User Id
@@ -125,12 +122,12 @@ class SmsCampaign(db.Model):
         from user import User, UserPhone
         user = User.query.filter(User.id == user_id).first()
         if user:
-            if user.user_group_id: # TODO: verify query
+            if user.user_group_id:
                 return cls.query.join(UserPhone, User).filter(User.user_group_id == user.user_group_id).distinct().all()
         raise NotFoundError
 
     @classmethod
-    @contract()
+    @contract
     def sms_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None):
         """
         Returns SmsCampaigns in talent pool

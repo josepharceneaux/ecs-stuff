@@ -122,13 +122,11 @@ class Candidate(db.Model):
         :param list skills: Candidate skills
         :rtype: int|long
         """
-        from .user import User  # This has to be here to avoid circular import
+        from user import User  # This has to be here to avoid circular import
         domain_id = User.get_domain_id(user_id)
-        if domain_id:
-            return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
-                .filter(and_(User.id == Candidate.user_id, User.domain_id == domain_id)).\
-                filter(CandidateSkill.description.in_(skills)).distinct().count()
-        raise NotFoundError('No domain found')
+        return Candidate.query.filter(Candidate.id == CandidateSkill.candidate_id) \
+            .filter(and_(User.id == Candidate.user_id, User.domain_id == domain_id)). \
+            filter(CandidateSkill.description.in_(skills)).distinct().count()
 
     @staticmethod
     @contract
@@ -143,11 +141,9 @@ class Candidate(db.Model):
         assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
         from .user import User  # This has to be here to avoid circular import
         domain_id = User.get_domain_id(user_id)
-        if domain_id:
-            return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
-                filter(and_(Candidate.user_id == User.id, User.domain_id == domain_id)).\
-                filter(CandidateAddress.zip_code == zipcode).distinct().count()
-        raise NotFoundError('No domain found')
+        return Candidate.query.filter(CandidateAddress.candidate_id == Candidate.id). \
+            filter(and_(Candidate.user_id == User.id, User.domain_id == domain_id)). \
+            filter(CandidateAddress.zip_code == zipcode).distinct().count()
 
     @classmethod
     def get_all_in_user_domain(cls, domain_id):

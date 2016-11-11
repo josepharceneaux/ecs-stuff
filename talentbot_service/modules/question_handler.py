@@ -109,10 +109,7 @@ class QuestionHandler(object):
         if len(message_tokens) <= skill_index+1:
             return 'Please mention skills properly'
         extracted_skills = map(unicode.strip, [skill for skill in message_tokens[skill_index + 1::] if skill])
-        try:
-            count = Candidate.get_candidate_count_with_skills(extracted_skills, user_id)
-        except NotFoundError:
-            return "You don't belong to a domain"
+        count = Candidate.get_candidate_count_with_skills(extracted_skills, user_id)
         response_message = "There are `%d` candidates with skills %s"
         response_message = response_message % (count, ', '.join(extracted_skills))
         if count == 1:
@@ -140,10 +137,7 @@ class QuestionHandler(object):
         zipcode = message_tokens[zip_index + 1]
         if not zipcode.isdigit():
             return 'Invalid zipcode specified'
-        try:
-            count = Candidate.get_candidate_count_from_zipcode(zipcode, user_id)
-        except NotFoundError:
-            return "You don't belong to a domain"
+        count = Candidate.get_candidate_count_from_zipcode(zipcode, user_id)
         response_message = "Number of candidates from zipcode `%s` : `%d`" % (message_tokens[zip_index + 1], count)
         return response_message
 
@@ -410,9 +404,9 @@ class QuestionHandler(object):
         if group_campaigns:
             response = ["Campaigns in your group are following:"]
             try:
-                email_campaigns = EmailCampaign.email_campaigns_user_group(user_id)
-                push_campaigns = PushCampaign.push_campaigns_user_group(user_id)
-                sms_campaigns = SmsCampaign.sms_campaign_user_group(user_id)
+                email_campaigns = EmailCampaign.email_campaigns_in_user_group(user_id)
+                push_campaigns = PushCampaign.push_campaigns_in_user_group(user_id)
+                sms_campaigns = SmsCampaign.sms_campaign_in_user_group(user_id)
             except NotFoundError:
                 return "Seems like you don't belong to a group"
             if email_campaigns:  # Appending email campaigns in a representable response list
@@ -443,7 +437,8 @@ class QuestionHandler(object):
         is_user_asking_about_himself = cls.find_word_in_message('i', message_tokens, exact_word=True)
         if belong_index is not None and is_user_asking_about_himself is None:
             user_name = message_tokens[belong_index - 1]
-            users = User.get_by_name(user_id, user_name)
+            domain_id = User.get_domain_id(user_id)
+            users = User.get_by_domain_id_and_name(domain_id, user_name)
             if users:
                 user = users[0]
                 if user.user_group:
@@ -571,15 +566,13 @@ class QuestionHandler(object):
         if message_tokens[-1].lower() in 'performing':
             message_tokens.pop(-1)
         name = ' '.join(message_tokens[name_index + 1::])  # User specified name
-        try:  # Finding (Email|SMS|Push)Campaigns and TalentPipelines against this name
-            email_campaigns = EmailCampaign.get_by_name(user_id, name)
-            push_campaigns = PushCampaign.get_by_name(user_id, name)
-            talent_pipelines = TalentPipeline.get_by_name(user_id, name)
-            sms_campaigns = SmsCampaign.get_by_name(user_id, name)
-        except NotFoundError:
-            return "Something went wrong"
-        nothing_found = (len(email_campaigns) < 1 and len(talent_pipelines) < 1
-                         and len(push_campaigns) < 1 and len(sms_campaigns) < 1)
+        # Finding (Email|SMS|Push)Campaigns and TalentPipelines against this name
+        domain_id = User.get_domain_id(user_id)
+        email_campaigns = EmailCampaign.get_by_domain_id_and_name(domain_id, name)
+        push_campaigns = PushCampaign.get_by_domain_id_and_name(domain_id, name)
+        talent_pipelines = TalentPipeline.get_by_domain_id_and_name(domain_id, name)
+        sms_campaigns = SmsCampaign.get_by_domain_id_and_name(domain_id, name)
+        nothing_found = not email_campaigns and not talent_pipelines and not push_campaigns and not sms_campaigns
         if nothing_found:
             return "Nothing found with name `%s`" % name
         response = []
@@ -608,11 +601,8 @@ class QuestionHandler(object):
         asking_about_all_pipelines = not bool(re.search(r'my pipe*|my all pipe*', ' '.join(message_tokens).lower()))
         response = ["Your pipelines are following:"] if not asking_about_all_pipelines else\
             ["Pipelines in your domain are following:"]
-        try:
-            pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, DOMAIN_SPECIFIC if
-                                                                   asking_about_all_pipelines else OWNED)
-        except NotFoundError:
-            return "Something went wrong"
+        pipelines = TalentPipeline.get_own_or_domain_pipelines(user_id, DOMAIN_SPECIFIC if
+                                                               asking_about_all_pipelines else OWNED)
         for index, pipeline in enumerate(pipelines):
             response.append("%d- `%s`" % (index + 1, pipeline.name))
         return '\n'.join(response) if len(response) > 1 else "No pipeline found"
@@ -743,13 +733,13 @@ class QuestionHandler(object):
         return None
 
     @classmethod
-    @contract()
+    @contract
     def prepare_blast_results(cls, campaigns, name, campaign_type):
         """
         Generates a representable result of a Campaign Blast
         :param string name: Campaign name specified by User
         :param string campaign_type: Campaign Name
-        :param list campaigns:
+        :param list campaigns: list of Email|Push|Sms Campaigns
         :rtype: list
         """
         blasts = []

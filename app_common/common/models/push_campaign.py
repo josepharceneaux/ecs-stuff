@@ -98,22 +98,19 @@ class PushCampaign(db.Model):
         return cls.query.filter_by(id=_id, user_id=user_id).first()
 
     @classmethod
-    @contract()
-    def get_by_name(cls, user_id, name):
+    @contract
+    def get_by_domain_id_and_name(cls, domain_id, name):
         """
         Gets PushCampaign against campaign name
-        :param positive user_id: User Id
+        :param positive domain_id: User's Domain Id
         :param string name: PushCampaign name
         :rtype: list
         """
         from user import User
-        domain_id = User.get_domain_id(user_id)
-        if domain_id:
-            return cls.query.join(User).filter(cls.name == name, User.domain_id == domain_id).all()
-        raise NotFoundError
+        return cls.query.join(User).filter(cls.name == name, User.domain_id == domain_id).all()
 
     @classmethod
-    @contract()
+    @contract
     def get_by_domain_id(cls, domain_id):
         """
         Returns all PushCampaigns with same domain_id
@@ -124,8 +121,8 @@ class PushCampaign(db.Model):
         return cls.query.join(User).filter(User.domain_id == domain_id).all()
 
     @classmethod
-    @contract()
-    def push_campaigns_user_group(cls, user_id):
+    @contract
+    def push_campaigns_in_user_group(cls, user_id):
         """
         This returns list of PushCampaigns in user's group
         :param positive user_id: User Id
@@ -139,7 +136,7 @@ class PushCampaign(db.Model):
         raise NotFoundError
 
     @classmethod
-    @contract()
+    @contract
     def push_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None):
         """
         Returns PushCampaigns in talent pool
