@@ -522,7 +522,6 @@ class EventBase(object):
             # if event exists in database, then update existing one.
             if event:
                 del data['id']
-                data['base_campaign_id'] = data['base_campaign_id'] if data['base_campaign_id'] else None
                 event.update(**data)
             else:
                 # event not found in database, create a new one
