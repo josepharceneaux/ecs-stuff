@@ -81,11 +81,11 @@ class SmartlistCandidate(db.Model):
         :rtype: list
         """
         talent_pools = TalentPool.get_by_user_id_and_name(user_id, talentpool_names)
-        talent_pool_ids = [talent_pool.id for talent_pool in talent_pools]  # Extracting data from tuple
+        talent_pool_ids = [talent_pool.id for talent_pool in talent_pools]  # Extracting data on 0th index from tuple
         candidate_ids = TalentPoolCandidate.query.with_entities(TalentPoolCandidate.candidate_id). \
             filter(TalentPoolCandidate.talent_pool_id.in_(talent_pool_ids)).distinct().all()
-        candidate_ids = [candidate_id[0] for candidate_id in candidate_ids]  # Extracting data from tuple
+        candidate_ids = [candidate_id[0] for candidate_id in candidate_ids]  # Extracting data on 0th index from tuple
         smartlist_ids = SmartlistCandidate.query.with_entities(SmartlistCandidate.smartlist_id). \
             filter(SmartlistCandidate.candidate_id.in_(candidate_ids)).distinct().all()
-        smartlist_ids = [smartlist_id[0] for smartlist_id in smartlist_ids]  # Extracting data from tuple
+        smartlist_ids = [smartlist_id[0] for smartlist_id in smartlist_ids]  # Extracting data on 0th index from tuple
         return smartlist_ids
