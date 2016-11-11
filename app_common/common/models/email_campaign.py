@@ -11,6 +11,8 @@ from ..utils.validators import (raise_if_not_instance_of,
 from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError, InvalidUsage, NotFoundError)
 from ..constants import OWNED
 
+from sqlalchemy.dialects.mysql import LONGTEXT
+
 __author__ = 'jitesh'
 
 
@@ -30,14 +32,14 @@ class EmailCampaign(db.Model):
     is_track_html_clicks = db.Column('isTrackHtmlClicks', db.Boolean, default=True)
     is_track_text_clicks = db.Column('isTrackTextClicks', db.Boolean, default=True)
     # body_html and body_text are deferred fields because they could be huge.  Should really be stored in S3.
-    body_html = db.deferred(db.Column('EmailBodyHtml', db.Text(65535)), group='email_body')
-    body_text = db.deferred(db.Column('EmailBodyText', db.Text(65535)), group='email_body')
+    body_html = db.deferred(db.Column('EmailBodyHtml', LONGTEXT), group='email_body')
+    body_text = db.deferred(db.Column('EmailBodyText', LONGTEXT), group='email_body')
     is_personalized_to_field = db.Column('isPersonalizedToField', db.Boolean, default=False)
     frequency_id = db.Column('frequencyId', db.Integer, db.ForeignKey('frequency.id'))
     start_datetime = db.Column('SendTime', db.DateTime)
     end_datetime = db.Column('StopTime', db.DateTime)
     scheduler_task_id = db.Column('SchedulerTaskIds', db.String(255))
-    custom_html = db.Column('CustomHtml', db.Text)
+    custom_html = db.Column('CustomHtml', LONGTEXT)
     custom_url_params_json = db.Column('CustomUrlParamsJson', db.String(512))
     is_subscription = db.Column('isSubscription', db.Boolean, default=False)
     added_datetime = db.Column('addedTime', db.DateTime, default=datetime.utcnow)
