@@ -49,3 +49,28 @@ def test_mergetag_replacements(user_first, candidate_first):
             assert None, 'It should raise ContractNotRespected exception for param:%s' % invalid_param
         except ContractNotRespected as error:
             assert error.error
+
+
+def test_candidate_name(candidate_first):
+    """
+    Here we test different scenarios for Candidate model's method name().
+    """
+    # Test with first_name and last_name as None
+    candidate_first.update(first_name=None)
+    candidate_first.update(last_name=None)
+    assert not candidate_first.name
+
+    # Test with non-empty first_name and last_name as None
+    candidate_first.update(first_name=fake.first_name())
+    candidate_first.update(last_name=None)
+    assert candidate_first.name
+
+    # Test with first_name as None and non-empty last_name
+    candidate_first.update(first_name=None)
+    candidate_first.update(last_name=fake.last_name())
+    assert candidate_first.name
+
+    # Test with non-empty first_name and non-empty last_name
+    candidate_first.update(first_name=fake.first_name())
+    candidate_first.update(last_name=fake.last_name())
+    assert candidate_first.name

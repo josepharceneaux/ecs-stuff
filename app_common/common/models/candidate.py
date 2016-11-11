@@ -86,7 +86,18 @@ class Candidate(db.Model):
 
     @property
     def name(self):
-        return self.first_name + " " + self.last_name
+        """
+        This returns candidate's name by joining first_name and last_name
+        """
+        name = ""
+        if isinstance(self.first_name, basestring):
+            name += self.first_name
+        if isinstance(self.last_name, basestring):
+            if name:
+                name += " " + self.last_name
+            else:
+                name += self.last_name
+        return name
 
     @classmethod
     def get_by_id(cls, candidate_id):
