@@ -8,7 +8,8 @@ from db import db
 from ..utils.datetime_utils import DatetimeUtils
 from ..utils.validators import (raise_if_not_instance_of,
                                 raise_if_not_positive_int_or_long)
-from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError, InvalidUsage)
+from ..error_handling import (ResourceNotFound, ForbiddenError, InternalServerError, InvalidUsage, NotFoundError)
+from ..constants import OWNED
 
 __author__ = 'jitesh'
 
@@ -98,7 +99,7 @@ class EmailCampaign(db.Model):
     def get_by_domain_id(cls, domain_id):
         assert domain_id, 'domain_id not given'
         from user import User  # This has to be here to avoid circular import
-        return cls.query.join(User).filter(User.domain_id == domain_id)
+        return cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0)
 
     @classmethod
     def search_by_id_in_domain(cls, email_campaign_id, domain_id):
@@ -135,8 +136,65 @@ class EmailCampaign(db.Model):
         return cls.query.join(User).filter(User.domain_id == domain_id, cls.name.ilike(
                 '%' + search_keyword + '%'), cls.is_hidden == is_hidden).order_by(sort_by_object)
 
+    @classmethod
+    @contract
+    def get_by_user_id(cls, user_id):
+        """
+        Returns EmailCampaigns against a User Id
+        :param positive user_id: User Id
+        :rtype: list
+        """
+        return cls.query.filter(cls.user_id == user_id, cls.is_hidden == 0).all()
+
+    @classmethod
+    @contract
+    def get_by_domain_id_and_name(cls, domain_id, name):
+        """
+        Gets EmailCampaign against campaign name
+        :param positive domain_id: User's domain Id
+        :param string name:
+        :rtype: list
+        """
+        from user import User
+        return cls.query.join(User).filter(cls.name == name, User.domain_id == domain_id, cls.is_hidden == 0).all()
+
     def __repr__(self):
         return "<EmailCampaign(name=' %r')>" % self.name
+
+    @classmethod
+    @contract
+    def email_campaigns_in_user_group(cls, user_id):
+        """
+        Gets EmailCampaigns in user's group against User Id
+        :param positive user_id: User Id
+        :rtype: list
+        """
+        from user import User
+        user = User.query.filter(User.id == user_id).first()
+        if user:
+            if user.user_group_id:
+                return cls.query.join(User).filter(User.user_group_id == user.user_group_id, cls.is_hidden == 0).all()
+        raise NotFoundError
+
+    @classmethod
+    @contract
+    def email_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None):
+        """
+        Returns EmailCampaigns in talent pool
+        :param int scope: Number which determines weather user asking about all domain campaigns or only his campaigns
+        :param positive user_id: User Id
+        :param list|None talentpool_names: list of Talentpool names or None
+        :rtype: list
+        """
+        from smartlist import SmartlistCandidate  # To avoid circular dependency this has to be here
+        from user import User    # To avoid circular dependency this has to be here
+        smartlist_ids = SmartlistCandidate.get_smartlist_ids_in_talent_pools(user_id, talentpool_names)
+        email_campaign_ids = EmailCampaignSmartlist.query.with_entities(EmailCampaignSmartlist.campaign_id).\
+            filter(EmailCampaignSmartlist.smartlist_id.in_(smartlist_ids)).all()
+        email_campaign_ids = [email_campaign_id[0] for email_campaign_id in email_campaign_ids]
+        scope_dependant_filter = cls.query.join(User).filter(cls.id.in_(email_campaign_ids), cls.user_id == user_id)\
+            if scope == OWNED else cls.query.filter(cls.id.in_(email_campaign_ids))
+        return scope_dependant_filter.all()
 
 
 class EmailCampaignSmartlist(db.Model):
@@ -230,22 +288,22 @@ class EmailCampaignBlast(db.Model):
         assert isinstance(datetime_value, (datetime, basestring)) or datetime_value is None,\
             "Invalid datetime value"
         assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
-        from .user import User
+        from .user import User    # To avoid circular dependency this has to be here
         domain_id = User.get_domain_id(user_id)
         if isinstance(datetime_value, datetime):
             return cls.query.filter(or_(cls.updated_datetime >= datetime_value,
                                         cls.sent_datetime >= datetime_value)). \
-                filter(EmailCampaign.id == cls.campaign_id). \
+                filter(EmailCampaign.id == cls.campaign_id, EmailCampaign.is_hidden == 0). \
                 filter(cls.sends > 0).filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)). \
                 order_by(desc(cls.opens/cls.sends)).first()
         if isinstance(datetime_value, basestring):
             return cls.query.filter(or_(extract("year", cls.updated_datetime) == datetime_value,
                                         extract("year", cls.sent_datetime) == datetime_value)). \
-                filter(EmailCampaign.id == cls.campaign_id). \
+                filter(EmailCampaign.id == cls.campaign_id, EmailCampaign.is_hidden == 0). \
                 filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)). \
                 filter(cls.sends > 0). \
                 order_by(desc(cls.opens/cls.sends)).first()
-        return cls.query.filter(EmailCampaign.id == cls.campaign_id).\
+        return cls.query.filter(EmailCampaign.id == cls.campaign_id, EmailCampaign.is_hidden == 0).\
             filter(and_(EmailCampaign.user_id == User.id, User.domain_id == domain_id)).\
             filter(cls.sends > 0).order_by(desc(cls.opens/cls.sends)).first()
 

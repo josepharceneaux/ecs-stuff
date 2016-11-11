@@ -34,3 +34,9 @@ class HttpMethods(object):
     PUT = 'PUT'
     PATCH = 'PATCH'
     DELETE = 'DELETE'
+
+"""
+GTBot Shared constants
+"""
+OWNED = 1
+DOMAIN_SPECIFIC = 2
