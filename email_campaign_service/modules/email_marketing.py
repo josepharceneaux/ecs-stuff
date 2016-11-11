@@ -137,7 +137,7 @@ def create_email_campaign(user_id, oauth_token, name, subject, description,
         if send_response.status_code != codes.OK:
             raise InternalServerError("Error occurred while sending email-campaign. Status Code: %s, Response: %s"
                                       % (send_response.status_code, send_response.json()))
-        logger.info('Email campaign(id:%s) is being sent.' % email_campaign.id)
+        logger.info('Email campaign(id:%s) is being sent immediately.' % email_campaign.id)
     else:  # Schedule the sending of emails & update email_campaign scheduler fields
         schedule_task_params = {"url": send_url}
         schedule_task_params.update(JSON_CONTENT_TYPE_HEADER)
