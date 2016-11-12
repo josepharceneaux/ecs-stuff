@@ -76,8 +76,7 @@ class CandidatePipelineResource(Resource):
             found_candidate_ids.extend(candidate['id'] for candidate in search_response['candidates'])
 
             # Return if candidate_id is found in one of the Pipelines AND 5 or more requests have been made
-            found = unicode(candidate_id) in found_candidate_ids
-            if found:
+            if search_response.get('candidates'):
                 talent_pipeline_ids.append(talent_pipeline.id)
                 if number_of_requests >= 5:
                     break
