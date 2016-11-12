@@ -413,10 +413,11 @@ class TalentPipelineSmartListApi(Resource):
 
         headers = generate_pagination_headers(total_number_of_smartlists, per_page, page)
 
+
         response = {
             'page_number': page, 'smartlists_per_page': per_page,
             'total_number_of_smartlists': total_number_of_smartlists,
-            'smartlists': [smartlist.to_dict(True, get_stats_generic_function) for smartlist in smartlists]
+            'smartlists': [smartlist.to_dict() for smartlist in smartlists]
         }
 
         return ApiResponse(response=response, headers=headers, status=200)

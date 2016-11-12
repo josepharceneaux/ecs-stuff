@@ -134,10 +134,9 @@ class UserApi(Resource):
                     raise InvalidUsage("User with email=%s already exists in Database" % email)
 
             if request.user.role.name == 'TALENT_ADMIN':
-                domain_id = int(user_dict.get('domain_id', request.user.domain_id))
+                domain_id = user_dict.get('domain_id', request.user.domain_id)
             else:
                 domain_id = request.user.domain_id
-
             user_dict['domain_id'] = domain_id
 
             role = user_dict.get('role', '')
@@ -162,8 +161,9 @@ class UserApi(Resource):
                 raise InvalidUsage('A valid Locale value should be provided')
 
             user_id = create_user_for_company(first_name=first_name, last_name=last_name, email=email, phone=phone,
-                                              domain_id=domain_id, dice_user_id=dice_user_id, thumbnail_url=thumbnail_url,
-                                              user_group_id=user_group_id, locale=locale, role_id=role_id)
+                                              domain_id=int(domain_id), dice_user_id=dice_user_id,
+                                              thumbnail_url=thumbnail_url, user_group_id=user_group_id, locale=locale,
+                                              role_id=role_id)
             user_ids.append(user_id)
 
         return {'users': user_ids}
