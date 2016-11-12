@@ -134,9 +134,10 @@ class UserApi(Resource):
                     raise InvalidUsage("User with email=%s already exists in Database" % email)
 
             if request.user.role.name == 'TALENT_ADMIN':
-                domain_id = user_dict.get('domain_id', request.user.domain_id)
+                domain_id = int(user_dict.get('domain_id', request.user.domain_id))
             else:
                 domain_id = request.user.domain_id
+
             user_dict['domain_id'] = domain_id
 
             role = user_dict.get('role', '')
