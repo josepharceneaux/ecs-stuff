@@ -232,19 +232,16 @@ class User(db.Model):
         return users, domain_name
 
     @classmethod
-    def get_by_name(cls, user_id, name):
+    @contract
+    def get_by_domain_id_and_name(cls, domain_id, name):
         """
         This method returns user against a name
-        :param str name: User's first or last name
-        :param int user_id: User Id
-        :rtype: list
+        :param string name: User's first or last name
+        :param positive domain_id: User's Domain Id
+        :rtype: list|None
         """
-        assert isinstance(user_id, (int, long)) and user_id, "Invalid user Id %r" % user_id
-        assert isinstance(name, basestring) and name, "Invalid name %r" % name
-        user = cls.get_by_id(user_id)
-        if user:
-            return cls.query.filter(or_(cls.first_name == name, cls.last_name == name)).\
-                filter(cls.domain_id == user.domain_id).all()
+        return cls.query.filter(or_(cls.first_name == name, cls.last_name == name)). \
+            filter(cls.domain_id == domain_id).all()
 
 
 class UserPhone(db.Model):

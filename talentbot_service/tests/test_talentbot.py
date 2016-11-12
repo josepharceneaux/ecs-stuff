@@ -5,6 +5,7 @@ This module tests talentbot_service
 import datetime
 from dateutil.relativedelta import relativedelta
 # Common utils
+from talentbot_service.common.constants import OWNED, DOMAIN_SPECIFIC
 from talentbot_service.common.tests.conftest import domain_first, first_group, domain_second, second_group,\
     access_token_first, user_first, candidate_first, talent_pool, user_same_domain, user_second, candidate_second,\
     user_second_candidate, candidate_same_domain, email_campaign_first, email_campaign_first_blast,\
@@ -12,12 +13,14 @@ from talentbot_service.common.tests.conftest import domain_first, first_group, d
     email_campaign_second_domain_blast, sms_campaign_first, sms_campaign_first_blast, user_phone_first, \
     sms_campaign_second, sms_campaign_second_blast, user_phone_second,push_campaign_first, push_campaign_first_blast,\
     user_phone_same_domain, sms_campaign_same_domain, sms_campaign_same_domain_blast, push_campaign_same_domain,\
-    push_campaign_same_domain_blast, push_campaign_second, push_campaign_second_blast, talent_pool_second, fake
-from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool
+    push_campaign_same_domain_blast, push_campaign_second, push_campaign_second_blast, talent_pool_second, fake,\
+    talent_pipeline, talent_pool_candidate_first, smartlist_first, smartlist_candidate_first,\
+    email_campaign_smartlist_first, sms_campaign_smartlist_first, push_campaign_smartlist_first
+from talentbot_service.common.models.talent_pools_pipelines import TalentPoolCandidate, TalentPool, TalentPipeline
 from talentbot_service.common.models.user import User
-from talentbot_service.common.models.email_campaign import EmailCampaignBlast
-from talentbot_service.common.models.sms_campaign import SmsCampaignBlast
-from talentbot_service.common.models.push_campaign import PushCampaignBlast
+from talentbot_service.common.models.email_campaign import EmailCampaignBlast, EmailCampaign
+from talentbot_service.common.models.sms_campaign import SmsCampaignBlast, SmsCampaign
+from talentbot_service.common.models.push_campaign import PushCampaignBlast, PushCampaign
 from talentbot_service.common.models.candidate import Candidate, CandidateSkill, CandidateAddress
 
 
@@ -298,3 +301,153 @@ def test_get_talent_pools_in_my_domain(talent_pool, user_second, user_first, use
     # Talent pool in second domain should be visible to user from second domain
     talent_pools = TalentPool.get_talent_pools_in_user_domain(user_second.id)
     assert talent_pools[0].id == talent_pool_second.id
+
+
+def test_campaigns_in_user_group(user_first, user_second, user_same_domain, email_campaign_first, sms_campaign_first,
+                                 push_campaign_first, talent_pipeline):
+    # Asserting campaigns in user_first's group
+    email_campaigns = EmailCampaign.email_campaigns_in_user_group(user_first.id)
+    assert email_campaigns[0].id == email_campaign_first.id
+    sms_campaigns = SmsCampaign.sms_campaign_in_user_group(user_first.id)
+    assert sms_campaigns[0].id == sms_campaign_first.id
+    push_campaigns = PushCampaign.push_campaigns_in_user_group(user_first.id)
+    assert push_campaigns[0].id == push_campaign_first.id
+    # Asserting that campaigns in user_first's group are not accessible to user_second with different group and domain
+    email_campaigns = EmailCampaign.email_campaigns_in_user_group(user_second.id)
+    assert not email_campaigns or email_campaigns[0].id != email_campaign_first.id
+    sms_campaigns = SmsCampaign.sms_campaign_in_user_group(user_second.id)
+    assert not sms_campaigns or sms_campaigns[0].id != sms_campaign_first.id
+    push_campaigns = PushCampaign.push_campaigns_in_user_group(user_second.id)
+    assert not push_campaigns or push_campaigns[0].id != push_campaign_first.id
+    # Asserting that campaigns are accessible to user_same_domain because he exists in the first_groups well
+    email_campaigns = EmailCampaign.email_campaigns_in_user_group(user_same_domain.id)
+    assert email_campaigns[0].id == email_campaign_first.id
+    sms_campaigns = SmsCampaign.sms_campaign_in_user_group(user_same_domain.id)
+    assert sms_campaigns[0].id == sms_campaign_first.id
+    push_campaigns = PushCampaign.push_campaigns_in_user_group(user_same_domain.id)
+    assert push_campaigns[0].id == push_campaign_first.id
+    # Asserting pipeline in user_first group
+    pipelines = TalentPipeline.pipelines_user_group(user_first.id)
+    assert pipelines[0].id == talent_pipeline.id
+    # Asserting that this pipeline is not accessible to user with different group and different domain
+    pipelines = TalentPipeline.pipelines_user_group(user_second.id)
+    assert not pipelines or pipelines[0].id != talent_pipeline.id
+
+
+def test_get_user_by_name(user_first, user_second, user_same_domain):
+    # Asserting that user_same_domain can be get by user_first by name
+    user_same_domain.first_name = fake.word()
+    User.save(user_same_domain)
+    users = User.get_by_domain_id_and_name(user_first.domain_id, user_same_domain.name)
+    assert users[0].name == user_same_domain.name
+    # Asserting that user_same_domain is not accessible by user_second
+    users = User.get_by_domain_id_and_name(user_second.domain_id, user_same_domain.name)
+    assert not users or users[0].id != user_same_domain.id
+
+
+def test_email_campaigns_in_talent_pools(talent_pool, user_first, email_campaign_first, talent_pool_candidate_first,
+                                   smartlist_first, smartlist_candidate_first, email_campaign_first_blast,
+                                   email_campaign_smartlist_first, user_second, user_same_domain):
+    # Asserting that email campaigns which are sent to smartlists whos pipelines are in talentpool
+    email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_first.id, OWNED, [talent_pool.name])
+    assert email_campaigns[0].id == email_campaign_first.id
+    email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_first.id, DOMAIN_SPECIFIC, [talent_pool.name])
+    assert email_campaigns[0].id == email_campaign_first.id
+    email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_same_domain.id, DOMAIN_SPECIFIC,
+                                                                   [talent_pool.name])
+    assert email_campaigns[0].id == email_campaign_first.id
+    email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_same_domain.id, OWNED,
+                                                                   [talent_pool.name])
+    assert not email_campaigns or email_campaigns[0].id != email_campaign_first.id
+    # Asserting for second user
+    email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_second.id, DOMAIN_SPECIFIC, [talent_pool.name])
+    assert not email_campaigns or email_campaigns[0].id != email_campaign_first.id
+    email_campaigns = EmailCampaign.email_campaigns_in_talent_pool(user_second.id, OWNED, [talent_pool.name])
+    assert not email_campaigns or email_campaigns[0].id != email_campaign_first.id
+
+
+def test_sms_campaigns_in_talent_pools(talent_pool, user_first, sms_campaign_first, talent_pool_candidate_first,
+                                   smartlist_first, smartlist_candidate_first, sms_campaign_first_blast,
+                                   sms_campaign_smartlist_first, user_second, user_same_domain):
+    # Asserting that email campaigns which are sent to smartlists whos pipelines are in talentpool
+    sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_first.id, OWNED, [talent_pool.name])
+    assert sms_campaigns[0].id == sms_campaign_first.id
+    sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_first.id, DOMAIN_SPECIFIC, [talent_pool.name])
+    assert sms_campaigns[0].id == sms_campaign_first.id
+    sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_same_domain.id, DOMAIN_SPECIFIC,
+                                                             [talent_pool.name])
+    assert sms_campaigns[0].id == sms_campaign_first.id
+    sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_same_domain.id, OWNED,
+                                                             [talent_pool.name])
+    assert not sms_campaigns or sms_campaigns[0].id != sms_campaign_first.id
+    # Asserting for second user
+    sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_second.id, DOMAIN_SPECIFIC, [talent_pool.name])
+    assert not sms_campaigns or sms_campaigns[0].id != sms_campaign_first.id
+    sms_campaigns = SmsCampaign.sms_campaigns_in_talent_pool(user_second.id, OWNED, [talent_pool.name])
+    assert not sms_campaigns or sms_campaigns[0].id != sms_campaign_first.id
+
+
+def test_push_campaigns_in_talent_pools(talent_pool, user_first, push_campaign_first, talent_pool_candidate_first,
+                                   smartlist_first, smartlist_candidate_first, push_campaign_first_blast,
+                                   push_campaign_smartlist_first, user_second, user_same_domain):
+    # Asserting that email campaigns which are sent to smartlists whos pipelines are in talentpool
+    push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_first.id, OWNED, [talent_pool.name])
+    assert push_campaigns[0].id == push_campaign_first.id
+    push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_first.id, DOMAIN_SPECIFIC, [talent_pool.name])
+    assert push_campaigns[0].id == push_campaign_first.id
+    push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_same_domain.id, DOMAIN_SPECIFIC,
+                                                             [talent_pool.name])
+    assert push_campaigns[0].id == push_campaign_first.id
+    push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_same_domain.id, OWNED,
+                                                             [talent_pool.name])
+    assert not push_campaigns or push_campaigns[0].id != push_campaign_first.id
+    # Asserting for second user
+    push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_second.id, DOMAIN_SPECIFIC, [talent_pool.name])
+    assert not push_campaigns or push_campaigns[0].id != push_campaign_first.id
+    push_campaigns = PushCampaign.push_campaigns_in_talent_pool(user_second.id, OWNED, [talent_pool.name])
+    assert not push_campaigns or push_campaigns[0].id != push_campaign_first.id
+
+
+def test_pipelines_in_my_group(talent_pipeline, user_first, user_same_domain, user_second):
+    pipelines = TalentPipeline.pipelines_user_group(user_first.id)
+    assert pipelines[0].id == talent_pipeline.id
+    # Asserting for user_same_domain
+    pipelines = TalentPipeline.pipelines_user_group(user_same_domain.id)
+    assert pipelines[0].id == talent_pipeline.id
+    # Asserting for user_second
+    pipelines = TalentPipeline.pipelines_user_group(user_second.id)
+    assert not pipelines or pipelines[0].id != talent_pipeline.id
+
+
+def test_my_or_all_pipelines(user_first, user_same_domain, user_second, talent_pipeline):
+    pipelines = TalentPipeline.get_own_or_domain_pipelines(user_first.id, OWNED)
+    assert pipelines[0].id == talent_pipeline.id
+    pipelines = TalentPipeline.get_own_or_domain_pipelines(user_same_domain.id, DOMAIN_SPECIFIC)
+    assert pipelines[0].id == talent_pipeline.id
+    pipelines = TalentPipeline.get_own_or_domain_pipelines(user_same_domain.id, OWNED)
+    assert not pipelines or pipelines[0].id != talent_pipeline.id
+    pipelines = TalentPipeline.get_own_or_domain_pipelines(user_second.id, OWNED)
+    assert not pipelines or pipelines[0].id != talent_pipeline.id
+
+
+def test_campaigns_by_name_and_domain_id(domain_first, email_campaign_first, sms_campaign_first, push_campaign_first,
+                                         domain_second):
+    # Asserting Email Campaign
+    email_campaigns = EmailCampaign.get_by_domain_id_and_name(domain_first.id, email_campaign_first.name)
+    assert email_campaigns[0].id == email_campaign_first.id
+    # Asserting Sms Campaigns
+    sms_campaigns = SmsCampaign.get_by_domain_id_and_name(domain_first.id, sms_campaign_first.name)
+    assert sms_campaigns[0].id == sms_campaign_first.id
+    # Asserting Push Campaigns
+    push_campaigns = PushCampaign.get_by_domain_id_and_name(domain_first.id, push_campaign_first.name)
+    assert push_campaigns[0].id == push_campaign_first.id
+    # Testing with second_domain
+    # Asserting Email Campaign
+    email_campaigns = EmailCampaign.get_by_domain_id_and_name(domain_second.id, email_campaign_first.name)
+    assert not email_campaigns or email_campaigns[0].id != email_campaign_first.id
+    # Asserting Sms Campaigns
+    sms_campaigns = SmsCampaign.get_by_domain_id_and_name(domain_second.id, sms_campaign_first.name)
+    assert not sms_campaigns or sms_campaigns[0].id != sms_campaign_first.id
+    # Asserting Push Campaigns
+    push_campaigns = PushCampaign.get_by_domain_id_and_name(domain_second.id, push_campaign_first.name)
+    assert not push_campaigns or push_campaigns[0].id != push_campaign_first.id

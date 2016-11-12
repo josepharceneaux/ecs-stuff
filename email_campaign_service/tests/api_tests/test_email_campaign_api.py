@@ -21,6 +21,7 @@ from datetime import datetime, timedelta
 
 # Third Party
 import requests
+from requests import codes
 
 # Application Specific
 from email_campaign_service.common.utils.test_utils import (PAGINATION_INVALID_FIELDS,
@@ -278,6 +279,7 @@ class TestCreateCampaign(object):
     """
     HTTP_METHOD = 'post'
     URL = EmailCampaignApiUrl.CAMPAIGNS
+    BLASTS_URL = EmailCampaignApiUrl.BLASTS
 
     def test_create_campaign_with_invalid_token(self):
         """
@@ -481,6 +483,30 @@ class TestCreateCampaign(object):
                                                           subject, assert_candidates=False)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
         assert response.status_code == ForbiddenError.http_status_code()
+
+    def test_create_campaign_and_send_now(self, access_token_first, headers, talent_pipeline):
+        """
+        Here we assume user has clicked the button "Send Now" from UI, it should send campaign immediately.
+        """
+        expected_sends = 1
+        subject = '%s-send_campaign_now' % fake.uuid4()
+        campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline, subject)
+        response = create_email_campaign_via_api(access_token_first, campaign_data)
+        assert response.status_code == codes.CREATED
+        resp_object = response.json()
+        assert 'campaign' in resp_object
+        assert resp_object['campaign']['id']
+        url = EmailCampaignApiUrl.CAMPAIGN % resp_object['campaign']['id']
+        response = requests.get(url, headers=headers)
+        assert response.status_code == codes.OK
+        assert response.json()['email_campaign']
+        email_campaign = response.json()['email_campaign']
+        campaign_blast = CampaignsTestsHelpers.get_blasts_with_polling(email_campaign, access_token_first,
+                                                                       self.BLASTS_URL % email_campaign['id'])
+        CampaignsTestsHelpers.assert_blast_sends(
+            email_campaign, expected_sends,
+            blast_url=EmailCampaignApiUrl.BLAST % (email_campaign['id'], campaign_blast[0]['id']),
+            access_token=access_token_first)
 
     @pytest.mark.qa
     def test_create_email_campaign_with_optional_parameters(self, access_token_first, talent_pipeline):

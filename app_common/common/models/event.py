@@ -7,7 +7,6 @@ class Event(db.Model):
     __tablename__ = 'event'
     id = db.Column(db.Integer, primary_key=True)
     social_network_event_id = db.Column('socialNetworkEventId', db.String(1000))
-    base_campaign_id = db.Column('baseCampaignId', db.BIGINT, db.ForeignKey('base_campaign.id', ondelete='CASCADE'))
     title = db.Column(db.String(500))
     description = db.Column(db.String(1000))
     social_network_id = db.Column('socialNetworkId', db.Integer, db.ForeignKey('social_network.Id'), nullable=False)
