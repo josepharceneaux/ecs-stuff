@@ -9,6 +9,8 @@ import json
 from flask import request
 from flask_restful import Resource
 
+from candidate_service.candidate_app import logger
+
 # Validators
 from candidate_service.modules.validators import get_candidate_if_validated
 
@@ -68,10 +70,14 @@ class CandidatePipelineResource(Resource):
         talent_pipeline_ids = []
 
         for number_of_requests, talent_pipeline in enumerate(talent_pipelines, start=1):
+            search_params = format_search_params(talent_pipeline.search_params)
             search_response = search_candidates_from_params(
-                search_params=format_search_params(talent_pipeline.search_params),
+                search_params=search_params,
                 access_token=request.oauth_token,
                 url_args='?id={}&talent_pool_id={}'.format(candidate_id, talent_pipeline.talent_pool_id))
+
+            logger.info("\ncandidate_id: {}\ntalent_pipelines: {}\nsearch_params: {}\nsearch_response: {}".format(
+                candidate_id, talent_pipelines, search_params, search_response))
 
             found_candidate_ids.extend(candidate['id'] for candidate in search_response['candidates'])
 
