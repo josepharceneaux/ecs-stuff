@@ -193,5 +193,5 @@ class CandidateCustomFieldResource(Resource):
         db.session.commit()
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
         return '', 204
