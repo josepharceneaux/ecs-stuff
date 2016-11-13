@@ -97,7 +97,7 @@ class SlackBot(TalentBot):
         """
         token = User.generate_jw_token()
         header = {'Authorization': token, 'Content-Type': 'application/json'}
-        job_config = {"frequency": 147,
+        job_config = {"frequency": 144,
                       "task_type": "periodic",
                       "start_datetime": datetime.utcnow(),
                       "end_datetime": datetime.utcnow() + relativedelta(days=1),

@@ -78,19 +78,18 @@ class TestCampaignSchedule(object):
         campaign_blast = CampaignsTestsHelpers.get_blasts_with_polling(email_campaign, access_token_first,
                                                                        self.BLASTS_URL % email_campaign['id'],
                                                                        count=1)
-        CampaignsTestsHelpers.assert_blast_sends(
-            email_campaign, self.EXPECTED_SENDS,
-            blast_url=EmailCampaignApiUrl.BLAST % (email_campaign['id'], campaign_blast[0]['id']),
-            access_token=access_token_first)
-
+        CampaignsTestsHelpers.assert_blast_sends(email_campaign, self.EXPECTED_SENDS,
+                                                 blast_url=EmailCampaignApiUrl.BLAST % (email_campaign['id'],
+                                                                                        campaign_blast[0]['id']),
+                                                 access_token=access_token_first)
         # assert that scheduler has sent the campaign for the second time
         campaign_blast = CampaignsTestsHelpers.get_blasts_with_polling(email_campaign, access_token_first,
                                                                        self.BLASTS_URL % email_campaign['id'],
                                                                        count=2)
-        CampaignsTestsHelpers.assert_blast_sends(
-            email_campaign, self.EXPECTED_SENDS,
-            blast_url=EmailCampaignApiUrl.BLAST % (email_campaign['id'], campaign_blast[1]['id']),
-            access_token=access_token_first)
+        CampaignsTestsHelpers.assert_blast_sends(email_campaign, self.EXPECTED_SENDS,
+                                                 blast_url=EmailCampaignApiUrl.BLAST % (email_campaign['id'],
+                                                                                        campaign_blast[1]['id']),
+                                                 access_token=access_token_first)
 
     def test_schedule_campaign_daily_and_validate_run(self, headers, access_token_first, talent_pipeline):
         """

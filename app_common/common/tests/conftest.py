@@ -19,13 +19,14 @@ from ..utils.handy_functions import JSON_CONTENT_TYPE_HEADER
 # Application Specific
 from ..models.db import db
 from ..models.user import (Client, Domain, User, UserPhone, Token, Role)
-from ..models.email_campaign import (EmailCampaign, EmailCampaignBlast)
-from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast)
-from ..models.push_campaign import (PushCampaignBlast, PushCampaign)
-from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline)
+from ..models.email_campaign import (EmailCampaign, EmailCampaignBlast, EmailCampaignSmartlist)
+from ..models.sms_campaign import (SmsCampaign, SmsCampaignBlast, SmsCampaignSmartlist)
+from ..models.push_campaign import (PushCampaignBlast, PushCampaign, PushCampaignSmartlist)
+from ..models.talent_pools_pipelines import (TalentPool, TalentPoolGroup, TalentPipeline, TalentPoolCandidate)
 from ..models.misc import (Culture, Organization, AreaOfInterest, CustomField, CustomFieldCategory)
 from ..utils.handy_functions import send_request
 from ..routes import UserServiceApiUrl
+from ..models.smartlist import (SmartlistCandidate, Smartlist)
 
 fake = Faker()
 ISO_FORMAT = '%Y-%m-%d %H:%M'
@@ -724,6 +725,69 @@ def push_campaign_second(user_second):
     push_campaign = PushCampaign(user_id=user_second.id, name=gen_salt(20))
     PushCampaign.save(push_campaign)
     return push_campaign
+
+
+@pytest.fixture()
+def talent_pool_candidate_first(candidate_first, talent_pool):
+    """
+    Fixture adds candidate_first in talent pool
+    """
+    talent_pool_candidate = TalentPoolCandidate(talent_pool_id=talent_pool.id, candidate_id=candidate_first.id)
+    TalentPoolCandidate.save(talent_pool_candidate)
+    return talent_pool_candidate
+
+
+@pytest.fixture()
+def smartlist_first(user_first, talent_pipeline):
+    """
+    Fixture creates a smartlist which is owned by user_first and posses talent_pipeline
+    """
+    smartlist = Smartlist(name=fake.word(), user_id=user_first.id, talent_pipeline_id=talent_pipeline.id)
+    Smartlist.save(smartlist)
+    return smartlist
+
+
+@pytest.fixture()
+def smartlist_candidate_first(smartlist_first, candidate_first):
+    """
+    Fixture creates a SmartlistCandidate which has candidate first and pipeline
+    """
+    smartlist_candidate = SmartlistCandidate(smartlist_id=smartlist_first.id, candidate_id=candidate_first.id)
+    SmartlistCandidate.save(smartlist_candidate)
+    return smartlist_candidate
+
+
+@pytest.fixture()
+def email_campaign_smartlist_first(email_campaign_first, smartlist_first):
+    """
+    Fixture creates EmailCampaignSmartlist which has email_campaign_first and smartlist_first
+    """
+    email_campaign_smartlist = EmailCampaignSmartlist(smartlist_id=smartlist_first.id,
+                                                      campaign_id=email_campaign_first.id)
+    EmailCampaignSmartlist.save(email_campaign_smartlist)
+    return email_campaign_smartlist
+
+
+@pytest.fixture()
+def sms_campaign_smartlist_first(sms_campaign_first, smartlist_first):
+    """
+    Fixture creates SmsCampaignSmartlist which has email_campaign_first and smartlist_first
+    """
+    sms_campaign_smartlist = SmsCampaignSmartlist(smartlist_id=smartlist_first.id,
+                                                    campaign_id=sms_campaign_first.id)
+    SmsCampaignSmartlist.save(sms_campaign_smartlist)
+    return sms_campaign_smartlist
+
+
+@pytest.fixture()
+def push_campaign_smartlist_first(push_campaign_first, smartlist_first):
+    """
+    Fixture creates SmsCampaignSmartlist which has email_campaign_first and smartlist_first
+    """
+    push_campaign_smartlist = PushCampaignSmartlist(smartlist_id=smartlist_first.id,
+                                                    campaign_id=push_campaign_first.id)
+    PushCampaignSmartlist.save(push_campaign_smartlist)
+    return push_campaign_smartlist
 
 
 @pytest.fixture()

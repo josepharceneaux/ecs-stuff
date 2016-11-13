@@ -582,9 +582,9 @@ class InvitationStatus(Resource):
                 invitation_status = INVITATION_STATUSES['Opened']
         if email_campaign.base_campaign_id:
             base_campaign = BaseCampaign.search_by_id_in_domain(email_campaign.base_campaign_id, user.domain_id)
-            events = base_campaign.events.all()
-            if events:
-                event = events[0]
+            base_campaign_events = base_campaign.base_campaign_events.all()
+            if base_campaign_events:
+                event = base_campaign_events[0].event
                 rsvp_in_db = RSVP.filter_by_keywords(candidate_id=candidate_id, event_id=event.id)
                 if rsvp_in_db and rsvp_in_db[0].status.lower() == 'yes':
                     invitation_status = INVITATION_STATUSES['Accepted']

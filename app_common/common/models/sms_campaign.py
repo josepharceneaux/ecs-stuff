@@ -8,9 +8,10 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import or_, desc, extract, and_
 
 from db import db
-from ..error_handling import InternalServerError
+from ..error_handling import InternalServerError, NotFoundError
 from ..utils.datetime_utils import DatetimeUtils
 from ..custom_contracts import define_custom_contracts
+from ..constants import OWNED
 
 define_custom_contracts()
 
@@ -83,6 +84,69 @@ class SmsCampaign(db.Model):
         return cls.query.join(UserPhone, cls.user_phone_id == UserPhone.id).\
             join(User, UserPhone.user_id == User.id).filter(User.domain_id == domain_id)
 
+    @classmethod
+    @contract
+    def get_by_user_id(cls, user_id):
+        """
+        Returns SmsCampaign list against a User Id
+        :param positive user_id: User Id
+        :rtype: list|None
+        """
+        from user import UserPhone  # To avoid circular import
+        user_phones = UserPhone.get_by_user_id(user_id)
+        if user_phones:
+            user_phone_ids = [user_phone.id for user_phone in user_phones]
+            return cls.query.filter(cls.user_phone_id.in_(user_phone_ids)).all()
+        return None
+
+    @classmethod
+    @contract
+    def get_by_domain_id_and_name(cls, domain_id, name):
+        """
+        Gets SmsCampaign against campaign name
+        :param positive domain_id: User's Domain Id
+        :param string name: SmsCampaign name
+        :rtype: list
+        """
+        from user import User, UserPhone
+        return cls.query.join(UserPhone, User).filter(cls.name == name, User.domain_id == domain_id).all()
+
+    @classmethod
+    @contract
+    def sms_campaign_in_user_group(cls, user_id):
+        """
+        Returns SmsCampaign list against user group Id
+        :param positive user_id: User Id
+        :rtype: list
+        """
+        from user import User, UserPhone
+        user = User.query.filter(User.id == user_id).first()
+        if user:
+            if user.user_group_id:
+                return cls.query.join(UserPhone, User).filter(User.user_group_id == user.user_group_id).distinct().all()
+        raise NotFoundError
+
+    @classmethod
+    @contract
+    def sms_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None):
+        """
+        Returns SmsCampaigns in talent pool
+        :param int scope: Number which determines weather user asking about all domain campaigns or only his campaigns
+        :param positive user_id:
+        :param list|None talentpool_names:
+        :rtype: list
+        """
+        from smartlist import SmartlistCandidate    # To avoid circular dependency this has to be here
+        from user import User, UserPhone    # To avoid circular dependency this has to be here
+        smartlist_ids = SmartlistCandidate.get_smartlist_ids_in_talent_pools(user_id, talentpool_names)
+        sms_campaign_ids = SmsCampaignSmartlist.query.with_entities(SmsCampaignSmartlist.campaign_id).\
+            filter(SmsCampaignSmartlist.smartlist_id.in_(smartlist_ids)).all()
+        sms_campaign_ids = [sms_campaign_id[0] for sms_campaign_id in sms_campaign_ids]
+        scope_dependant_filter = cls.query.join(UserPhone, User).filter(cls.id.in_(sms_campaign_ids),
+                                                                        User.id == user_id)\
+            if scope == OWNED else cls.query.filter(cls.id.in_(sms_campaign_ids))
+        return scope_dependant_filter.all()
+
 
 class SmsCampaignBlast(db.Model):
     __tablename__ = 'sms_campaign_blast'
@@ -112,7 +176,7 @@ class SmsCampaignBlast(db.Model):
         :param datetime|string|None datetime_value: Year of campaign started or updated
         :rtype type(z)|None
         """
-        from user import UserPhone, User
+        from user import UserPhone, User    # To avoid circular dependency this has to be here
         domain_id = User.get_domain_id(user_id)
         user_ids_in_domain = User.query.with_entities(User.id).filter(User.domain_id == domain_id).all()
         user_ids_in_domain = [_id[0] for _id in user_ids_in_domain]

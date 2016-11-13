@@ -7,6 +7,7 @@ from candidate_service.common.models.candidate import Candidate, CandidateTextCo
 from candidate_service.common.utils.handy_functions import normalize_value
 from candidate_service.common.error_handling import InvalidUsage, NotFoundError, ForbiddenError
 from candidate_service.custom_error_codes import CandidateCustomErrors as custom_error
+from candidate_service.common.utils.datetime_utils import DatetimeUtils
 
 
 def add_notes(candidate_id, user_id, data):
@@ -78,7 +79,7 @@ def get_notes(candidate, note_id=None):
                 'owner_user_id': note.owner_user_id,
                 'title': note.title,
                 'comment': note.comment,
-                'added_time': str(note.added_time)
+                'added_time': DatetimeUtils.to_utc_str(note.added_time) if note.added_time else None
             }
         }
 
@@ -92,7 +93,7 @@ def get_notes(candidate, note_id=None):
                 'owner_user_id': note.owner_user_id,
                 'title': note.title,
                 'comment': note.comment,
-                'added_time': str(note.added_time)
+                'added_time': DatetimeUtils.to_utc_str(note.added_time) if note.added_time else None
             })
 
         return {'candidate_notes': candidate_notes}
@@ -132,4 +133,4 @@ def delete_notes(candidate):
         db.session.delete(note)
 
     db.session.commit()
-    return {'candidate_notes': [{'id': note_id} for note_id in deleted_note_ids]}
+    return [{'id': note_id} for note_id in deleted_note_ids]
