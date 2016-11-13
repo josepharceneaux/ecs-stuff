@@ -81,6 +81,8 @@ class User(db.Model):
                                        cascade='all, delete-orphan', passive_deletes=True)
     venues = db.relationship('Venue', backref='user', lazy='dynamic',
                              cascade='all, delete-orphan', passive_deletes=True)
+    meetup_groups = db.relationship('MeetupGroup', backref='user', lazy='dynamic',
+                                    cascade='all, delete-orphan', passive_deletes=True)
 
     @staticmethod
     def generate_jw_token(expiration=7200, user_id=None):

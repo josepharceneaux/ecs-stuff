@@ -9,10 +9,24 @@ These methods are called by run_job method asynchronously
 """
 # Application imports
 import datetime
+import json
 
+import requests
+
+from social_network_service.common.error_handling import InternalServerError
+from social_network_service.common.models.db import db
 from social_network_service.common.models.candidate import SocialNetwork
+from social_network_service.common.models.event import MeetupGroup, Event
 from social_network_service.common.models.user import UserSocialNetworkCredential
 from social_network_service.common.talent_config_manager import TalentConfigKeys
+from social_network_service.common.utils.handy_functions import http_request
+from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
+from social_network_service.modules.constants import ACTIONS
+from social_network_service.modules.event.meetup import Meetup
+from social_network_service.modules.event.eventbrite import Eventbrite as EventbriteEventBase
+from social_network_service.modules.social_network.meetup import Meetup as MeetupSocialNetwork
+from social_network_service.modules.social_network.eventbrite import Eventbrite as EventbriteSocialNetwork
+from social_network_service.modules.urls import get_url
 from social_network_service.modules.utilities import get_class
 from social_network_service.social_network_app import celery_app as celery, app
 
@@ -49,3 +63,115 @@ def rsvp_events_importer(social_network_name, mode, user_credentials_id, datetim
         except Exception as e:
             logger.exception('start: running %s importer, user_id: %s failed. %s',
                              mode, user_id, e.message)
+
+
+@celery.task(name="import_meetup_events")
+def import_meetup_events(start_datetime=None):
+    """
+    This task starts at service startup and then it keeps fetching events using Meetup stream API.
+    :param string | int | None start_datetime: epoch time , we will import events after this time, None for now
+    """
+    with app.app_context():
+        logger = app.config[TalentConfigKeys.LOGGER]
+        start_datetime = start_datetime or (datetime.datetime.utcnow().strftime("%s") + "000")
+        try:
+            url = "http://stream.meetup.com/2/open_events?since_mtime=%s" % start_datetime
+            meetup = SocialNetwork.get_by_name('Meetup')
+            if not meetup:
+                raise InternalServerError('Unable to find Meetup social network in gt database')
+
+            while True:
+                try:
+                    response = requests.get(url, stream=True)
+                    for raw_event in response.iter_lines():
+                        if raw_event:
+                            try:
+                                event = json.loads(raw_event)
+                                group_id = event['group']['id']
+                                MeetupGroup.session.commit()
+                                group = MeetupGroup.get_by_group_id(group_id)
+                                if group:
+                                    logger.info('Going to save event: %s' % event)
+                                    fetch_event.apply_async((event, group, meetup))
+                            except Exception as e:
+                                logger.exception('Error occurred while parsing event data, Date: %s' % raw_event)
+                except Exception as e:
+                    logger.warning('Some bad data caused main loop to break')
+
+        except Exception as e:
+            logger.exception(e.message)
+
+
+@celery.task(name="fetch_event")
+def fetch_event(event, group, meetup):
+    """
+    This celery task is for an individual event to be processed. When `rsvp_events_importer` task finds that some
+    event belongs to getTalent user, it passes this event to this task for further processing.
+
+    In this task, we create meetup objects for social network and event and the finally save this event by mapping
+    meetup event fields to gt event fields. If event already exists in database, it is updated.
+
+    If an event contains venue information, is is save in `venue` table or updated an existing venue.
+    :param dict event: event dictionary from meetup
+    :param MeetupGroup group: MeetupGroup Object
+    :param SocialNetwork meetup: SocialNetwork object for meetup
+    """
+    with app.app_context():
+        logger = app.config[TalentConfigKeys.LOGGER]
+        try:
+            group = db.session.merge(group)
+            meetup = db.session.merge(meetup)
+            meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
+            meetup_event_base = Meetup(user_credentials=meetup_sn.user_credentials, social_network=meetup)
+            event_url = get_url(meetup_sn, SocialNetworkUrls.EVENT).format(event['id'])
+            response = http_request('get', event_url, headers=meetup_sn.headers)
+            if response.ok:
+                event = response.json()
+                event = meetup_event_base.event_sn_to_gt_mapping(event)
+                logger.info('Event imported successfully : %s' % event.to_json())
+        except Exception as e:
+            logger.exception('Failed to save event: %s' % event)
+
+
+@celery.task(name="fetch_eventbrite_event")
+def fetch_eventbrite_event(user_id, member_id, event_url, action_type):
+    """
+    This celery task is for an individual event to be processed. When `rsvp_events_importer` task finds that some
+    event belongs to getTalent user, it passes this event to this task for further processing.
+
+    In this task, we create meetup objects for social network and event and the finally save this event by mapping
+    meetup event fields to gt event fields. If event already exists in database, it is updated.
+
+    If an event contains venue information, is is save in `venue` table or updated an existing venue.
+    :param dict event: event dictionary from meetup
+    :param MeetupGroup group: MeetupGroup Object
+    :param SocialNetwork meetup: SocialNetwork object for meetup
+    """
+    with app.app_context():
+        logger = app.config[TalentConfigKeys.LOGGER]
+        try:
+            eventbrite = SocialNetwork.get_by_name('Eventbrite')
+
+            eventbrite_sn = EventbriteSocialNetwork(user_id=user_id, social_network_id=eventbrite.id)
+            eventbrite_event_base = EventbriteEventBase(headers=eventbrite_sn.headers,
+                                                        user_credentials=eventbrite_sn.user_credentials,
+                                                        social_network=eventbrite_sn.user_credentials.social_network)
+            response = http_request('get', event_url, headers=eventbrite_sn.headers)
+            if response.ok:
+                event = response.json()
+                if action_type in [ACTIONS['created'], ACTIONS['published']]:
+                    event = eventbrite_event_base.event_sn_to_gt_mapping(event)
+                    logger.info('Event imported/updated successfully : %s' % event.to_json())
+                elif action_type == ACTIONS['unpublished']:
+                    event_in_db = Event.get_by_user_id_social_network_id_vendor_event_id(user_id,
+                                                                                         eventbrite.id,
+                                                                                         event['id']
+                                                                                         )
+                    if event_in_db:
+                        Event.delete(event_in_db)
+                        logger.info('Delete event from gt database, event: %s' % event_in_db.to_json())
+                elif action_type == ACTIONS['updated']:
+                    pass   # We are handling update action yet because it causes duplicate entries
+
+        except Exception as e:
+            logger.exception('Failed to save event. URL: %s' % event_url)
