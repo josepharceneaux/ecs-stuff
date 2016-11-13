@@ -92,21 +92,18 @@ class CandidatePipelineResource(Resource):
         if found_talent_pipelines:
             pipeline_engagements = top_most_engaged_pipelines_of_candidate(candidate_id)
             for talent_pipeline in found_talent_pipelines:
-                user_id = talent_pipeline.user_id
-                user_candidate = Candidate.query.filter_by(user_id=user_id, id=candidate_id).first()
-                if user_candidate:
-                    result.append({
-                        "id": talent_pipeline.id,
-                        "candidate_id": user_candidate.id if user_candidate else None,
-                        "name": talent_pipeline.name,
-                        "description": talent_pipeline.description,
-                        "open_positions": talent_pipeline.positions,
-                        "pipeline_engagement": pipeline_engagements.get(int(talent_pipeline.id), None),
-                        "datetime_needed": str(talent_pipeline.date_needed),
-                        'is_hidden': talent_pipeline.is_hidden,
-                        "user_id": user_id,
-                        "added_datetime": str(talent_pipeline.added_time)
-                    })
+                result.append({
+                    "id": talent_pipeline.id,
+                    "candidate_id": candidate_id,
+                    "name": talent_pipeline.name,
+                    "description": talent_pipeline.description,
+                    "open_positions": talent_pipeline.positions,
+                    "pipeline_engagement": pipeline_engagements.get(int(talent_pipeline.id), None),
+                    "datetime_needed": str(talent_pipeline.date_needed),
+                    'is_hidden': talent_pipeline.is_hidden,
+                    "user_id": talent_pipeline.user_id,
+                    "added_datetime": str(talent_pipeline.added_time)
+                })
 
         return {'candidate_pipelines': result}
 
