@@ -25,8 +25,8 @@ from db import db
 from sqlalchemy.orm import relationship
 from sqlalchemy import desc, extract, and_
 from candidate import Candidate
-from ..error_handling import InvalidUsage
-
+from ..error_handling import InvalidUsage, NotFoundError
+from ..constants import OWNED
 
 __author__ = 'Zohaib Ijaz <mzohaib.qc@gmail.com>'
 
@@ -97,6 +97,64 @@ class PushCampaign(db.Model):
         assert isinstance(user_id, (int, long)) and user_id > 0, 'User id is not valid integer'
         return cls.query.filter_by(id=_id, user_id=user_id).first()
 
+    @classmethod
+    @contract
+    def get_by_domain_id_and_name(cls, domain_id, name):
+        """
+        Gets PushCampaign against campaign name
+        :param positive domain_id: User's Domain Id
+        :param string name: PushCampaign name
+        :rtype: list
+        """
+        from user import User
+        return cls.query.join(User).filter(cls.name == name, User.domain_id == domain_id).all()
+
+    @classmethod
+    @contract
+    def get_by_domain_id(cls, domain_id):
+        """
+        Returns all PushCampaigns with same domain_id
+        :param positive domain_id: Domain Id
+        :rtype: list
+        """
+        from user import User
+        return cls.query.join(User).filter(User.domain_id == domain_id).all()
+
+    @classmethod
+    @contract
+    def push_campaigns_in_user_group(cls, user_id):
+        """
+        This returns list of PushCampaigns in user's group
+        :param positive user_id: User Id
+        :rtype: list
+        """
+        from user import User    # To avoid circular dependency this has to be here
+        user = User.query.filter(User.id == user_id).first()
+        if user:
+            if user.user_group_id:
+                return cls.query.join(User).filter(User.user_group_id == user.user_group_id).all()
+        raise NotFoundError
+
+    @classmethod
+    @contract
+    def push_campaigns_in_talent_pool(cls, user_id, scope, talentpool_names=None):
+        """
+        Returns PushCampaigns in talent pool
+        :param int scope: Number which determines weather user asking about all domain campaigns or only his campaigns
+        :param positive user_id:
+        :param list|None talentpool_names:
+        :rtype: list
+        """
+        from smartlist import SmartlistCandidate    # To avoid circular dependency this has to be here
+        from user import User    # To avoid circular dependency this has to be here
+        smartlist_ids = SmartlistCandidate.get_smartlist_ids_in_talent_pools(user_id, talentpool_names)
+        push_campaign_ids = PushCampaignSmartlist.query.with_entities(PushCampaignSmartlist.campaign_id).\
+            filter(PushCampaignSmartlist.smartlist_id.in_(smartlist_ids)).all()
+        push_campaign_ids = [email_campaign_id[0] for email_campaign_id in push_campaign_ids]
+        scope_dependant_filter = cls.query.join(User).filter(cls.id.in_(push_campaign_ids), cls.user_id == user_id)\
+            if scope == OWNED else cls.query.filter(cls.id.in_(push_campaign_ids))
+        return scope_dependant_filter.all()
+
 
 class PushCampaignBlast(db.Model):
     """
@@ -129,7 +187,7 @@ class PushCampaignBlast(db.Model):
         assert isinstance(datetime_value, (datetime, basestring)) or datetime_value is None, \
             "Invalid datetime value"
         assert isinstance(user_id, (int, long)) and user_id, "Invalid User Id"
-        from .user import User
+        from user import User    # To avoid circular dependency this has to be here
         domain_id = User.get_domain_id(user_id)
         if isinstance(datetime_value, datetime):
             return cls.query.filter(cls.updated_datetime >= datetime_value). \

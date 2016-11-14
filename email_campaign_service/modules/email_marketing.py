@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 # Third Party
 from celery import chord
 from redo import retrier
+from requests import codes
 
 # Service Specific
 from email_campaign_service.modules.email_clients import SMTP
@@ -127,40 +128,44 @@ def create_email_campaign(user_id, oauth_token, name, subject, description,
         # TODO: Update campaign status to 'completed'
         return {'id': email_campaign.id}
 
-    # Schedule the sending of emails & update email_campaign scheduler fields
-    schedule_task_params = {"url": EmailCampaignApiUrl.SEND % email_campaign.id}
-    schedule_task_params.update(JSON_CONTENT_TYPE_HEADER)
-    if frequency:  # It means its a periodic job, because frequency is 0 in case of one time job.
-        schedule_task_params["frequency"] = frequency
-        schedule_task_params["task_type"] = SchedulerUtils.PERIODIC  # Change task_type to periodic
-        schedule_task_params["start_datetime"] = start_datetime
-        schedule_task_params["end_datetime"] = end_datetime
-    else:  # It means its a one time Job
-        schedule_task_params["task_type"] = SchedulerUtils.ONE_TIME
-        schedule_task_params["run_datetime"] = start_datetime if start_datetime else \
-            (datetime.utcnow() +
-             timedelta(seconds=10)).strftime("%Y-%m-%d %H:%M:%S")
-    schedule_task_params['is_jwt_request'] = True
-    # Schedule email campaign; call Scheduler API
     headers = {'Authorization': oauth_token}
     headers.update(JSON_CONTENT_TYPE_HEADER)
-    try:
-        scheduler_response = http_request('post', SchedulerApiUrl.TASKS,
-                                          headers=headers,
-                                          data=json.dumps(schedule_task_params),
-                                          user_id=user_id)
-    except Exception as ex:
-        logger.exception('Exception occurred while calling scheduler. Exception: %s' % ex)
-        raise
-    if scheduler_response.status_code != 201:
-        raise InternalServerError("Error occurred while scheduling email campaign. "
-                                  "Status Code: %s, Response: %s"
-                                  % (scheduler_response.status_code, scheduler_response.json()))
-    scheduler_id = scheduler_response.json()['id']
-    # add scheduler task id to email_campaign.
-    email_campaign.scheduler_task_id = scheduler_id
-    db.session.commit()
+    send_url = EmailCampaignApiUrl.SEND % email_campaign.id
 
+    if not start_datetime:  # Send campaign immediately
+        send_response = http_request('post', send_url, headers=headers, user_id=user_id)
+        if send_response.status_code != codes.OK:
+            raise InternalServerError("Error occurred while sending email-campaign. Status Code: %s, Response: %s"
+                                      % (send_response.status_code, send_response.json()))
+        logger.info('Email campaign(id:%s) is being sent immediately.' % email_campaign.id)
+    else:  # Schedule the sending of emails & update email_campaign scheduler fields
+        schedule_task_params = {"url": send_url}
+        schedule_task_params.update(JSON_CONTENT_TYPE_HEADER)
+        if frequency:  # It means its a periodic job, because frequency is 0 in case of one time job.
+            schedule_task_params["frequency"] = frequency
+            schedule_task_params["task_type"] = SchedulerUtils.PERIODIC  # Change task_type to periodic
+            schedule_task_params["start_datetime"] = start_datetime
+            schedule_task_params["end_datetime"] = end_datetime
+        else:  # It means its a one time Job
+            schedule_task_params["task_type"] = SchedulerUtils.ONE_TIME
+            schedule_task_params["run_datetime"] = start_datetime
+        schedule_task_params['is_jwt_request'] = True
+        # Schedule email campaign; call Scheduler API
+        try:
+            scheduler_response = http_request('post', SchedulerApiUrl.TASKS, headers=headers,
+                                              data=json.dumps(schedule_task_params), user_id=user_id)
+        except Exception as ex:
+            logger.exception('Exception occurred while calling scheduler. Exception: %s' % ex)
+            raise
+        if scheduler_response.status_code != codes.CREATED:
+            raise InternalServerError("Error occurred while scheduling email campaign. "
+                                      "Status Code: %s, Response: %s"
+                                      % (scheduler_response.status_code, scheduler_response.json()))
+        scheduler_id = scheduler_response.json()['id']
+        # add scheduler task id to email_campaign.
+        email_campaign.scheduler_task_id = scheduler_id
+
+    db.session.commit()
     return {'id': email_campaign.id}
 
 

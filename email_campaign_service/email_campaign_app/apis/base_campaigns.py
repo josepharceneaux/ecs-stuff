@@ -90,7 +90,6 @@ class BaseCampaignLinkEvent(Resource):
         validate_base_campaign_id(base_campaign_id, request.user.domain_id)
         base_campaign_event = BaseCampaignEvent(base_campaign_id=base_campaign_id, event_id=event_id)
         base_campaign_event.save()
-        event_in_db.update(base_campaign_id=base_campaign_id)
         return {'id': base_campaign_event.id}, codes.CREATED
 
 

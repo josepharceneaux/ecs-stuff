@@ -181,6 +181,7 @@ class TestCampaignSchedule(object):
     per send time.
     """
     EXPECTED_SENDS = 2
+    START_DATETIME_OFFSET = 15
 
     def test_one_time_campaign_schedule_and_validate_task_run(self, headers, user_first,
                                                               access_token_first, sms_campaign_of_user_first):
@@ -190,7 +191,8 @@ class TestCampaignSchedule(object):
         in database.
         """
         data = generate_campaign_schedule_data()
-        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
+        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow()
+                                                          + timedelta(seconds=self.START_DATETIME_OFFSET))
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'], headers=headers,
                                  data=json.dumps(data))
         task_id = assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
@@ -210,7 +212,8 @@ class TestCampaignSchedule(object):
         """
         data = generate_campaign_schedule_data().copy()
         data['frequency_id'] = Frequency.CUSTOM
-        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
+        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow()
+                                                          + timedelta(seconds=self.START_DATETIME_OFFSET))
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'],
                                  headers=headers, data=json.dumps(data))
         task_id = assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
@@ -234,7 +237,8 @@ class TestCampaignSchedule(object):
         """
         data = generate_campaign_schedule_data()
         data['frequency_id'] = Frequency.DAILY
-        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow() + timedelta(seconds=10))
+        data['start_datetime'] = DatetimeUtils.to_utc_str(datetime.utcnow()
+                                                          + timedelta(seconds=self.START_DATETIME_OFFSET))
         response = requests.post(SmsCampaignApiUrl.SCHEDULE % sms_campaign_of_user_first['id'], headers=headers,
                                  data=json.dumps(data))
         task_id = assert_campaign_schedule(response, user_first.id, sms_campaign_of_user_first['id'], headers)
@@ -250,9 +254,7 @@ class TestURLRedirectionApi(object):
     candidate should only get internal server error.
     """
 
-    def test_for_get(self, user_first,
-                     url_conversion_by_send_test_sms_campaign,
-                     sms_campaign_of_user_first):
+    def test_for_get(self, user_first, url_conversion_by_send_test_sms_campaign, sms_campaign_of_user_first):
         """
         GET method should give OK response. We check the "hit_count" and "clicks" before
         hitting the endpoint and after hitting the endpoint. Then we assert that both

@@ -24,8 +24,8 @@ class BaseCampaign(db.Model):
     added_datetime = db.Column('added_datetime', db.DateTime, default=datetime.utcnow)
 
     # Relationships
-    events = relationship('Event', lazy='dynamic', cascade='all, delete-orphan',
-                          passive_deletes=True, backref='base_campaign')
+    base_campaign_events = relationship('BaseCampaignEvent', lazy='dynamic', cascade='all, delete-orphan',
+                                        passive_deletes=True)
     email_campaigns = relationship('EmailCampaign', lazy='dynamic', cascade='all, delete-orphan',
                                    passive_deletes=True, backref='base_campaign')
 

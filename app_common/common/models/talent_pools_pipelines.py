@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from user import Domain, UserGroup, User
 from candidate import Candidate
 from ..error_handling import NotFoundError
+from ..constants import OWNED
 # 3rd party imports
 from sqlalchemy import or_, and_, extract
 from sqlalchemy.dialects.mysql import TINYINT
@@ -48,6 +49,30 @@ class TalentPool(db.Model):
         domain_id = User.get_domain_id(user_id)
         return cls.query.filter(cls.domain_id == domain_id).all()
 
+    @classmethod
+    @contract
+    def get_by_user_id_and_name(cls, user_id, names):
+        """
+        This returns TalentPool list against names if no names are specified it returns all talent pools in usr domain
+        :param positive user_id: User Id
+        :param list|None names: Talentpool names or None
+        :rtype: list
+        """
+        domain_id = User.get_domain_id(user_id)
+        if names is not None:
+            return cls.query.join(User).filter(cls.name.in_(names), User.domain_id == domain_id).all()
+        return cls.query.join(User).filter(User.domain_id == domain_id).all()
+
+    @classmethod
+    @contract
+    def get_talent_pool_owned_by_user(cls, user_id):
+        """
+        This returns Talentpool names owend by a user
+        :param positive user_id: User Id
+        :rtype: list
+        """
+        return cls.query.with_entities(cls.name).filter(cls.user_id == user_id).all()
+
 
 class TalentPoolCandidate(db.Model):
     __tablename__ = 'talent_pool_candidate'
@@ -85,7 +110,8 @@ class TalentPoolCandidate(db.Model):
         if user_name:
             if user_name.lower() == 'i':
                 user_name = User.filter_by_keywords(id=user_id)[0].first_name
-            users = User.get_by_name(user_id, user_name)
+            domain_id = User.get_domain_id(user_id)
+            users = User.get_by_domain_id_and_name(domain_id, user_name)
             if users:
                 user = users[0]
             else:
@@ -106,6 +132,7 @@ class TalentPoolCandidate(db.Model):
                                                    (extract("year", cls.updated_time) == user_specific_date)))
         if user_name and talent_pool_list:
             # Querying how many candidates have user added in specified talent pools
+            # TODO: Join, count ?
             return common_query.filter(
                 and_(TalentPool.user_id == User.id, TalentPool.name.in_(talent_pool_list)),
                 Candidate.id == TalentPoolCandidate.candidate_id, Candidate.user_id == user.id).distinct().count()
@@ -120,7 +147,7 @@ class TalentPoolCandidate(db.Model):
         if talent_pool_list is None and user_name is None:
             # Querying how many candidates have been added in a domain's talent pools by all users
             return common_query.filter(TalentPool.domain_id == user.domain_id).distinct().count()
-        return "Something went wrong cant find any imports"
+        return "Something went wrong cant find any imports"  # TODO Raise
 
 
 class TalentPoolGroup(db.Model):
@@ -169,6 +196,21 @@ class TalentPipeline(db.Model):
 
     def get_id(self):
         return unicode(self.id)
+
+    @classmethod
+    @contract
+    def get_own_or_domain_pipelines(cls, user_id, scope):
+        """
+        This returns list of Pipelines owned by a specific user or all in domain
+        :param positive user_id: User Id
+        :param int scope: Weather owned or domain specific
+        :rtype: list
+        """
+        if scope == OWNED:
+            return cls.query.join(User).filter(User.id == user_id, cls.is_hidden == 0).all()
+        else:
+            domain_id = User.get_domain_id(user_id)
+            return cls.query.join(User).filter(User.domain_id == domain_id, cls.is_hidden == 0).all()
 
     @classmethod
     def get_by_user_id_in_desc_order(cls, user_id):
@@ -241,3 +283,29 @@ class TalentPipeline(db.Model):
         assert user_id, 'user_id not provided'
         assert talent_pool_id, 'talent_pool_id not provided'
         return cls.query.filter_by(user_id=user_id, talent_pool_id=talent_pool_id).first()
+
+    @classmethod
+    @contract
+    def get_by_domain_id_and_name(cls, domain_id, name):
+        """
+        Returns TalentPipelines against name in user's domain
+        :param positive domain_id: User's Domain Id
+        :param string name: TalentPipeline name
+        :rtype: list
+        """
+        return cls.query.join(User).filter(cls.name == name, User.domain_id == domain_id, cls.is_hidden == 0).all()
+
+    @classmethod
+    @contract
+    def pipelines_user_group(cls, user_id):
+        """
+        This returns list of Pipelines in user's group
+        :param positive user_id: User Id
+        :rtype: list
+        """
+        from user import User    # To avoid circular dependency this has to be here
+        user = User.query.filter(User.id == user_id).first()
+        if user:
+            if user.user_group_id:
+                return cls.query.join(User).filter(User.user_group_id == user.user_group_id, cls.is_hidden == 0).all()
+        raise NotFoundError

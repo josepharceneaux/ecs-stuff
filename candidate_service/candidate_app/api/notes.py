@@ -51,7 +51,7 @@ class CandidateNotesResource(Resource):
         note_ids = add_notes(candidate_id=candidate_id, user_id=authed_user.id, data=body_dict['notes'])
 
         # Update cloud search
-        upload_candidate_documents([candidate_id])
+        upload_candidate_documents.delay([candidate_id])
 
         return {'candidate_notes': [{'id': note_id} for note_id in note_ids]}, requests.codes.CREATED
 
@@ -97,6 +97,15 @@ class CandidateNotesResource(Resource):
 
         # Delete candidate's note if note ID is provided, otherwise delete all of candidate's notes
         if note_id:
-            return {'candidate_note': {'id': delete_note(candidate_id, note_id)}}
+
+            # Delete note from DB & update cloud search
+            delete_note(candidate_id, note_id)
+            upload_candidate_documents.delay([candidate_id])
+
+            return {'candidate_note': {'id': note_id}}
         else:
-            return delete_notes(candidate)
+            # Delete notes from DB & update cloud search
+            deleted_notes = delete_notes(candidate)
+            upload_candidate_documents.delay([candidate_id])
+
+            return {'candidate_notes': deleted_notes}

@@ -38,7 +38,7 @@ class TalentBot(object):
                                     'handler': self.handler.question_3_handler},
                               '4': {'question': self.list_of_questions[4], 'threshold': 69,
                                     'handler': self.handler.question_4_handler},
-                              '5': {'question': self.list_of_questions[5], 'threshold': 70,
+                              '5': {'question': self.list_of_questions[5], 'threshold': 90,
                                     'handler': self.handler.question_5_handler},
                               # Domain question alternates
                               '10': {'question': self.list_of_questions[10], 'threshold': 90,
@@ -135,6 +135,45 @@ class TalentBot(object):
                                      'handler': self.handler.question_7_handler},
                               '42': {'question': self.list_of_questions[42], 'threshold': 95,
                                      'handler': self.handler.question_7_handler},
+                              # What are my campaigns
+                              '54': {'question': self.list_of_questions[54], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '58': {'question': self.list_of_questions[58], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '59': {'question': self.list_of_questions[59], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '60': {'question': self.list_of_questions[60], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '61': {'question': self.list_of_questions[61], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '62': {'question': self.list_of_questions[62], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '63': {'question': self.list_of_questions[63], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '64': {'question': self.list_of_questions[64], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              '71': {'question': self.list_of_questions[71], 'threshold': 95,
+                                     'handler': self.handler.question_8_handler},
+                              # Show me <x>
+                              '55': {'question': self.list_of_questions[55], 'threshold': 95,
+                                     'handler': self.handler.question_9_handler},
+                              '56': {'question': self.list_of_questions[56], 'threshold': 95,
+                                     'handler': self.handler.question_9_handler},
+                              '57': {'question': self.list_of_questions[57], 'threshold': 95,
+                                     'handler': self.handler.question_9_handler},
+                              '65': {'question': self.list_of_questions[65], 'threshold': 100,
+                                     'handler': self.handler.question_9_handler},
+                              # What are my pipelines
+                              '66': {'question': self.list_of_questions[66], 'threshold': 95,
+                                     'handler': self.handler.question_10_handler},
+                              '67': {'question': self.list_of_questions[67], 'threshold': 95,
+                                     'handler': self.handler.question_10_handler},
+                              '68': {'question': self.list_of_questions[68], 'threshold': 95,
+                                     'handler': self.handler.question_10_handler},
+                              '69': {'question': self.list_of_questions[69], 'threshold': 95,
+                                     'handler': self.handler.question_10_handler},
+                              '70': {'question': self.list_of_questions[70], 'threshold': 95,
+                                     'handler': self.handler.question_10_handler}
                               }
         self.bot_name = bot_name
         self.error_messages = error_messages
@@ -172,7 +211,6 @@ class TalentBot(object):
         if len(message.split()) < MIN_WORDS_IN_QUESTION:
             return random.choice(self.error_messages)
         message_tokens = self.tokenize_message(message)
-        message = self.remove_stopwords(message)
         max_match_ratio = 0
         message_handler = None
         for question_key in self.question_dict:
@@ -260,16 +298,3 @@ class TalentBot(object):
         """
         response_message = response_message.replace('*', '').replace('`', '"').replace('>>>', '')
         return response_message
-
-    @staticmethod
-    @contract
-    def remove_stopwords(message):
-        """
-        Removes stopwords from message
-        :param string message: User message
-        :rtype: string
-        """
-        split_message = message.split(' ')
-        stop_words = stopwords.get_stopwords('en')
-        filtered_message = [token.lower() for token in split_message if token.lower() not in stop_words]
-        return ' '.join(filtered_message)
