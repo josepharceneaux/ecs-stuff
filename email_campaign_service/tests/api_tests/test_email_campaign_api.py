@@ -292,7 +292,7 @@ class TestCreateCampaign(object):
         Here we provide valid data to create an email-campaign without email_client_id.
         It should get OK response.
         """
-        subject =  '%s-test_create_email_campaign' % fake.uuid4()
+        subject = '%s-test_create_email_campaign' % fake.uuid4()
         campaign_data = create_data_for_campaign_creation(access_token_first, talent_pipeline,
                                                           subject)
         response = create_email_campaign_via_api(access_token_first, campaign_data)
@@ -660,6 +660,16 @@ class TestSendCampaign(object):
         """
         no_of_sends = 2
         campaign = campaign_with_two_candidates
+        response = requests.post(self.URL % campaign.id, headers=headers)
+        assert_campaign_send(response, campaign, user_first, no_of_sends)
+
+    def test_campaign_send_with_no_href_in_anchor_tag(self, campaign_with_two_candidates, headers, user_first):
+        """
+        Here we put an empty anchor tag in body_text of email-campaign. It should not result in any error.
+        """
+        no_of_sends = 2
+        campaign = campaign_with_two_candidates
+        campaign.update(body_html='<html><body><a>%s</a></body></html>' % fake.sentence())
         response = requests.post(self.URL % campaign.id, headers=headers)
         assert_campaign_send(response, campaign, user_first, no_of_sends)
 
