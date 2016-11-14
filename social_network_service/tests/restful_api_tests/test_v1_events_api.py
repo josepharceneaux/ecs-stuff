@@ -223,13 +223,12 @@ class TestResourceEvents(object):
         assert response.status_code == codes.NOT_FOUND, 'Venue not Found in database'
 
     def test_events_get_with_query(self, token_first, token_same_domain, user_first, user_same_domain,
-                                   eventbrite_event_data, meetup_event_data, meetup, eventbrite,
-                                   test_eventbrite_credentials_same_domain, eventbrite_venue_same_domain):
+                                   eventbrite_event_data, meetup, eventbrite, eventbrite_venue_same_domain,
+                                   test_eventbrite_credentials_same_domain):
         """
         In this test, we will create three events, two for user_first, one for user_same_domain.
         Then we will try all search and filter options.
         """
-        time.sleep(10)  # Need to wait for app session to update otherwise getting 404 for venue
         title = fake.sentence() + str(datetime.now())
         title_first = 'ABC' + title
         title_second = 'XYZ' + title
@@ -238,7 +237,7 @@ class TestResourceEvents(object):
         start_datetime_second = (datetime.now() + timedelta(days=10)).replace(microsecond=0)
         start_datetime_third = (datetime.now() + timedelta(days=15)).replace(microsecond=0)
         create_event(token_first, eventbrite_event_data, title_first, start_datetime_first)
-        create_event(token_first, meetup_event_data, title_second, start_datetime_second)
+        create_event(token_first, eventbrite_event_data, title_second, start_datetime_second)
         eventbrite_event_data['venue_id'] = eventbrite_venue_same_domain['id']
         create_event(token_same_domain, eventbrite_event_data, title_third, start_datetime_third)
 
@@ -284,9 +283,9 @@ class TestResourceEvents(object):
         assert len(events) == 1
 
         events = get_events_with_query(token_first, social_network_id=eventbrite['id'])
-        assert len(events) == 2
+        assert len(events) == 3
         events = get_events_with_query(token_first, social_network_id=meetup['id'])
-        assert len(events) == 1
+        assert len(events) == 0
 
 
 def get_events_with_query(token, search=None, social_network_id=None,  sort_by=None, sort_type=None, user_id=None):

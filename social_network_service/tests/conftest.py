@@ -25,7 +25,7 @@ from social_network_service.common.campaign_services.tests.conftest import (meet
                                                                             test_eventbrite_credentials, eventbrite,
                                                                             eventbrite_venue, event_in_db, VENDORS,
                                                                             test_eventbrite_credentials_same_domain,
-                                                                            eventbrite_venue_same_domain)
+                                                                            eventbrite_venue_same_domain, organizer_in_db)
 
 # Models
 from social_network_service.common.models.db import db
