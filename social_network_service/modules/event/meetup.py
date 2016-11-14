@@ -374,7 +374,7 @@ class Meetup(EventBase):
             event_id = event['id']
             logger.info('|  Event %s created Successfully  |' % self.payload['name'])
             self.data['social_network_event_id'] = event_id
-            self.data['url'] = event['event_url']
+            self.data['url'] = event.get('event_url', '')
             return self.save_event()
         else:
             error_message = 'Event was not Created. Error occurred during draft creation'

@@ -119,6 +119,7 @@ def fetch_meetup_event(event, group, meetup):
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
+        logger.info('Going to process Meetup Event: %s' % event)
         try:
             time.sleep(10)  # wait for event creation api to save event in database otherwise there can be duplicate
             # event created in database (one by api and other by importer)
@@ -152,6 +153,7 @@ def fetch_eventbrite_event(user_id, event_url, action_type):
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
+        logger.info('Going to process Evenbrite Event: %s' % event_url)
         try:
             eventbrite = SocialNetwork.get_by_name('Eventbrite')
 

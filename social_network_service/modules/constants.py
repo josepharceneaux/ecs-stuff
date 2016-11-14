@@ -23,7 +23,6 @@ MEETUP_VENUE = 'https://api.meetup.com/{}'
 
 # Vendors to be mocked goes here
 MOCK_VENDORS = [MEETUP]
-EVENTBRITE_WEBHOOK_URL = 'https://emails.ngrok.io'
 ACTIONS = {
     'created': 'event.created',
     'published': 'event.published',

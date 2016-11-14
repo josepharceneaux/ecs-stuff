@@ -5,6 +5,8 @@ Here are fixtures to be used across campaign-services.
 """
 # Packages
 import json
+import os
+
 import pytest
 from copy import deepcopy
 from requests import codes
@@ -22,7 +24,7 @@ from ...models.candidate import SocialNetwork
 from ..tests_helpers import CampaignsTestsHelpers
 from ...utils.handy_functions import send_request
 from ...models.event_organizer import EventOrganizer
-from ...talent_config_manager import TalentConfigKeys
+from ...talent_config_manager import TalentConfigKeys, TalentEnvs
 from ...models.user import UserSocialNetworkCredential
 from ...routes import (SocialNetworkApiUrl, EmailCampaignApiUrl)
 from ..tests.modules.helper_functions import (EVENT_DATA, create_email_campaign_with_base_id,
@@ -240,18 +242,20 @@ def test_eventbrite_credentials(request, user_first, eventbrite):
     social_network_id = eventbrite['id']
     user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_first['id'],
                                                                                      social_network_id)
-    payload = {'endpoint_url': SocialNetworkApiUrl.WEBHOOK % user_credentials.user_id,
-               'actions': 'event.published'}
-    url = user_credentials.social_network.api_url + "/webhooks/"
-    response = send_request('post', url, user_credentials.access_token, params=payload, is_json=False)
-    print('Webhook Creation', payload, response.text, url, user_credentials.access_token)
-    assert response.status_code == codes.OK
-    webhook_id = response.json()['id']
+    env = os.getenv(TalentConfigKeys.ENV_KEY) or TalentEnvs.DEV
+    if env == TalentEnvs.DEV:
+        payload = {'endpoint_url': SocialNetworkApiUrl.WEBHOOK % user_credentials.user_id,
+                   'actions': 'event.published'}
+        url = user_credentials.social_network.api_url + "/webhooks/"
+        response = send_request('post', url, user_credentials.access_token, params=payload, is_json=False)
+        print('Webhook Creation', payload, response.text, url, user_credentials.access_token)
+        assert response.status_code == codes.OK
+        webhook_id = response.json()['id']
 
-    def finalizer():
-        send_request('delete', url + '/%s' % webhook_id, user_credentials.access_token)
+        def finalizer():
+            send_request('delete', url + '/%s' % webhook_id, user_credentials.access_token)
 
-    request.addfinalizer(finalizer)
+        request.addfinalizer(finalizer)
     return user_credentials
 
 

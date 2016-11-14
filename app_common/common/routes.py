@@ -699,9 +699,7 @@ class SocialNetworkApiUrl(object):
     TWITTER_CALLBACK = HOST_NAME % ('/' + VERSION + '/twitter-callback/%s')
     DISCONNECT = HOST_NAME % ('/' + VERSION + '/social-networks/%s/disconnect')
     GRAPHQL = HOST_NAME % '/graphql'
-    if env == TalentEnvs.JENKINS:
-        WEBHOOK = 'http://jenkins.gettalent.com:%s/webhook/%s' % (GTApis.SOCIAL_NETWORK_SERVICE_PORT, '%s')
-    elif env == TalentEnvs.DEV:
+    if env == TalentEnvs.DEV:
         WEBHOOK = 'https://emails.ngrok.io/webhook/%s'
     else:
         WEBHOOK = HOST_NAME % '/webhook/%s'
