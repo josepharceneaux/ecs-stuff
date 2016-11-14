@@ -83,11 +83,12 @@ def callback(user_id):
 
 @app.route(SocialNetworkApi.WEBHOOK, methods=['POST'])
 def eventbrite_webhook_endpoint(user_id):
-    data = request.json
-    action_type = data['config']['action']
-    member_id = data['config']['user_id']
-    event_url = data['api_url']
-    if action_type != ACTIONS['updated']:
-        logger.info('Eventbrite Alert, Event: %s' % data)
-        fetch_eventbrite_event.apply_async((user_id, member_id, event_url, action_type))
+    if 'Eventbrite Webhooks' in str(request.user_agent):
+        data = request.json
+        action_type = data['config']['action']
+        # member_id = data['config']['user_id']
+        event_url = data['api_url']
+        if action_type != ACTIONS['updated']:
+            logger.info('Eventbrite Alert, Event: %s' % data)
+            fetch_eventbrite_event.apply_async((user_id, event_url, action_type))
     return 'Thanks a lot!'

@@ -10,6 +10,7 @@ These methods are called by run_job method asynchronously
 # Application imports
 import datetime
 import json
+import time
 
 import requests
 
@@ -92,7 +93,7 @@ def import_meetup_events(start_datetime=None):
                                 group = MeetupGroup.get_by_group_id(group_id)
                                 if group:
                                     logger.info('Going to save event: %s' % event)
-                                    fetch_event.apply_async((event, group, meetup))
+                                    fetch_meetup_event.apply_async((event, group, meetup))
                             except Exception as e:
                                 logger.exception('Error occurred while parsing event data, Date: %s' % raw_event)
                 except Exception as e:
@@ -102,8 +103,8 @@ def import_meetup_events(start_datetime=None):
             logger.exception(e.message)
 
 
-@celery.task(name="fetch_event")
-def fetch_event(event, group, meetup):
+@celery.task(name="fetch_meetup_event")
+def fetch_meetup_event(event, group, meetup):
     """
     This celery task is for an individual event to be processed. When `rsvp_events_importer` task finds that some
     event belongs to getTalent user, it passes this event to this task for further processing.
@@ -119,6 +120,8 @@ def fetch_event(event, group, meetup):
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
         try:
+            time.sleep(10)  # wait for event creation api to save event in database otherwise there can be duplicate
+            # event created in database (one by api and other by importer)
             group = db.session.merge(group)
             meetup = db.session.merge(meetup)
             meetup_sn = MeetupSocialNetwork(user_id=group.user.id, social_network_id=meetup.id)
@@ -134,7 +137,7 @@ def fetch_event(event, group, meetup):
 
 
 @celery.task(name="fetch_eventbrite_event")
-def fetch_eventbrite_event(user_id, member_id, event_url, action_type):
+def fetch_eventbrite_event(user_id, event_url, action_type):
     """
     This celery task is for an individual event to be processed. When `rsvp_events_importer` task finds that some
     event belongs to getTalent user, it passes this event to this task for further processing.
