@@ -430,9 +430,7 @@ def get_priority_emails(user, candidate_ids):
                              % (len(search_result), email, user.id, user.domain_id,
                                 [candidate_email.candidate_id for candidate_email in search_result]))
                 filtered_email_rows.append((_id, email))
-    logger.info("lenght of filtered emails: %d", len(filtered_email_rows))
-    if len(filtered_email_rows) > 2:
-        logger.info("filtered emails exceeded")
+    
     return filtered_email_rows
 
 
