@@ -2,6 +2,7 @@
 This module contains utility methods will be used in API based tests.
 """
 # Standard imports
+import json
 import uuid
 import operator
 from time import sleep
@@ -16,9 +17,13 @@ from contracts import contract
 from dateutil.parser import parse
 
 # Service specific imports
+from ..routes import SocialNetworkApiUrl
 from ..error_codes import ErrorCodes
+from ..redis_cache import redis_store2
 from ..tests.conftest import randomword
-from ..constants import SLEEP_TIME, SLEEP_INTERVAL, RETRY_ATTEMPTS
+from ..models.user import UserSocialNetworkCredential
+from ..talent_config_manager import TalentConfigKeys
+from ..constants import SLEEP_TIME, SLEEP_INTERVAL, RETRY_ATTEMPTS, EVENTBRITE
 from ..routes import (UserServiceApiUrl, AuthApiUrl, CandidateApiUrl,
                       CandidatePoolApiUrl, SchedulerApiUrl, ActivityApiUrl)
 from ..custom_contracts import define_custom_contracts
@@ -700,3 +705,51 @@ def delete_candidate_device(candidate_id, device_id,  token, expected_status=(20
     return response.json()
 
 
+def add_social_network_credentials(app, eventbrite, user):
+    eventbrite_key = EVENTBRITE.title()
+    # Store and use redis for eventbrite access_token
+    if not redis_store2.get(eventbrite_key):
+        redis_store2.set(eventbrite_key,
+                         json.dumps(dict(
+                             access_token=app.config[TalentConfigKeys.EVENTBRITE_ACCESS_TOKEN]
+                         )))
+
+    # Get the key value pair of access_token and refresh_token
+    eventbrite_kv = json.loads(redis_store2.get(eventbrite_key))
+
+    social_network_id = eventbrite['id']
+    user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user['id'],
+                                                                                     social_network_id)
+
+    if not user_credentials:
+        user_credentials = UserSocialNetworkCredential(
+            social_network_id=social_network_id,
+            user_id=int(user['id']),
+            access_token=eventbrite_kv['access_token'])
+        UserSocialNetworkCredential.save(user_credentials)
+
+    social_network_id = eventbrite['id']
+    user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user['id'],
+                                                                                     social_network_id)
+    return user_credentials
+
+
+def add_test_venue(token, user, social_network):
+    social_network_id = social_network['id']
+    venue = {
+        "social_network_id": social_network_id,
+        "user_id": user['id'],
+        "zip_code": "54600",
+        "address_line_2": "H# 163, Block A",
+        "address_line_1": "New Muslim Town",
+        "latitude": 0,
+        "longitude": 0,
+        "state": "Punjab",
+        "city": "Lahore",
+        "country": "Pakistan"
+    }
+
+    response_post = send_request('POST', SocialNetworkApiUrl.VENUES, access_token=token, data=venue)
+    assert response_post.status_code == codes.created, response_post.text
+    venue_id = response_post.json()['id']
+    return {'id': venue_id}

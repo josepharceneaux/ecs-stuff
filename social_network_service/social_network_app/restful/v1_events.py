@@ -10,9 +10,12 @@ from flask.ext.restful import Resource
 
 # Application specific imports
 from social_network_service.common.error_handling import *
+from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.common.models.event import Event
+from social_network_service.common.models.user import User
 from social_network_service.common.talent_api import TalentApi
 from social_network_service.common.routes import SocialNetworkApi
+from social_network_service.modules.constants import SORT_TYPES
 from social_network_service.modules.utilities import add_organizer_venue_data
 from social_network_service.common.utils.auth_utils import require_oauth
 from social_network_service.modules.utilities import process_event, delete_events
@@ -79,9 +82,26 @@ class Events(Resource):
         data = request.values
         per_page = data.get('per_page', 10)
         page = data.get('page', 1)
+        search = request.args.get('search')
+        sort_by = request.args.get('sort_by', 'start_datetime')
+        sort_type = request.args.get('sort_type', 'desc')
+        user_id = request.args.get('user_id')
+        if user_id:
+            if user_id.isdigit():
+                user_id = long(user_id)
+            else:
+                raise InvalidUsage('user_id is not a valid number, Given: %s' % user_id)
 
-        events = Event.get_by_domain_id(request.user.domain_id).order_by(Event.start_datetime.desc())
-        events = events.paginate(per_page=per_page, page=page).items
+        social_network_id = request.args.get('social_network_id')
+        if social_network_id:
+            if social_network_id.isdigit():
+                social_network_id = long(social_network_id)
+            else:
+                raise InvalidUsage('social_network_id is not a valid number, Given: %s' % social_network_id)
+        query = Event.get_events_query(request.user, search=search, sort_type=sort_type, sort_by=sort_by,
+                                       user_id=user_id, social_network_id=social_network_id)
+
+        events = query.paginate(per_page=per_page, page=page).items
         events = map(add_organizer_venue_data, events)
         headers = generate_pagination_headers(len(events), per_page, page)
         if events:

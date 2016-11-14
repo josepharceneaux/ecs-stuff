@@ -656,7 +656,7 @@ class Eventbrite(EventBase):
             are not found
         """
         mandatory_input_data = ['title', 'description', 'end_datetime', 'max_attendees',
-                                'timezone', 'start_datetime', 'currency', 'venue_id', 'organizer_id']
+                                'timezone', 'start_datetime', 'currency', 'venue_id']
         # gets fields which are missing
         missing_items = [key for key in mandatory_input_data
                          if not data.get(key)]
@@ -725,12 +725,6 @@ class Eventbrite(EventBase):
         # provided DateTime accordingly.
         start_time = DatetimeUtils.get_utc_datetime(data['start_datetime'], data['timezone'])
         end_time = DatetimeUtils.get_utc_datetime(data['end_datetime'], data['timezone'])
-        event_organizer_id = data['organizer_id']
-        user_id = data['user_id']
-        event_organizer = EventOrganizer.get_by_user_id_organizer_id(user_id, event_organizer_id)
-        if not event_organizer:
-            raise EventOrganizerNotFound('Event organizer not found in database. Kindly create'
-                                         ' event organizer first.')
         # This dict is used to create an event as a draft on vendor
         self.event_payload = {
             'event.start.utc': start_time,
@@ -739,8 +733,7 @@ class Eventbrite(EventBase):
             'event.end.timezone': data['timezone'],
             'event.currency': data['currency'],
             'event.name.html': data['title'],
-            'event.description.html': data['description'],
-            'event.organizer_id': event_organizer.social_network_organizer_id
+            'event.description.html': data['description']
         }
         self.venue_id = data['venue_id']
         # Creating ticket data as Eventbrite wants us to associate tickets with

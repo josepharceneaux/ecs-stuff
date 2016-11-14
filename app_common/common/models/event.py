@@ -1,4 +1,6 @@
 from sqlalchemy.orm import relationship
+
+from ..error_handling import InvalidUsage, ForbiddenError
 from db import db
 from rsvp import RSVP
 
@@ -111,3 +113,47 @@ class Event(db.Model):
                 Event.id == event_id
             )).first()
 
+    @classmethod
+    def get_events_query(cls, user, search=None, social_network_id=None, sort_by='start_datetime',
+                         sort_type='desc', user_id=None):
+        """
+        This method return query object for events after applying all filters
+        :param type(t) user: user object
+        :param string | None search: search query, based on title
+        :param int | long | None social_network_id: social network id, if want to get events of a specific vendor
+        :param string sort_by: on which field you want to order
+        :param string sort_type: acs or desc, sort order
+        :param int| long | None user_id: events' owner user id, None for all event in domain
+        :return: returns a query object
+        """
+        from user import User  # This has to be here to avoid circular import
+        from candidate import SocialNetwork
+        sort_types = ('asc', 'desc')
+        if sort_by not in ('start_datetime', 'title'):
+            raise InvalidUsage('Value of sort_by parameter is not valid')
+
+        if sort_type.lower() not in sort_types:
+            raise InvalidUsage('Value of sort_type parameter is not valid. Valid values are %s'
+                               % list(sort_types))
+
+        eventbrite = SocialNetwork.get_by_name('Eventbrite')
+        meetup = SocialNetwork.get_by_name('Meetup')
+        if social_network_id and social_network_id not in [eventbrite.id, meetup.id]:
+            raise InvalidUsage('Invalid social_network_id provided. Given: %s, Expected: %s'
+                               % (social_network_id, [eventbrite.id, meetup.id]))
+
+        if user_id and User.get_domain_id(user_id) != user.domain_id:
+                raise ForbiddenError("Not authorized to access users' events outside of your domain")
+
+        query = Event.get_by_domain_id(user.domain_id)
+        if social_network_id:
+            query = query.filter(Event.social_network_id == social_network_id)
+        if user_id:
+            query = query.filter(Event.user_id == user_id)
+        if search:
+            query = query.filter(Event.title.ilike('%' + search + '%'))
+        if sort_by == 'title':
+            query = query.order_by(getattr(Event.title, sort_type)())
+        else:
+            query = query.order_by(getattr(Event.start_datetime, sort_type)())
+        return query

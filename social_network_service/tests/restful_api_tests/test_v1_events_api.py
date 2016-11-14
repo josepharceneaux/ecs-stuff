@@ -4,14 +4,18 @@ This file contain tests for events api
 # Std imports
 import sys
 import json
+import time
 
 # Third-Part imports
 import requests
+from datetime import datetime, timedelta
 from requests import codes
 
 # App specific imports
 from social_network_service.common.models import db
 from social_network_service.common.constants import MEETUP
+from social_network_service.common.tests.conftest import fake
+from social_network_service.common.utils.datetime_utils import DatetimeUtils
 from social_network_service.social_network_app import logger
 from social_network_service.common.models.misc import Activity
 from social_network_service.common.routes import SocialNetworkApiUrl
@@ -127,11 +131,7 @@ class TestResourceEvents(object):
             assert response.status_code == codes.BAD_REQUEST, "Response: {}".format(response.text)
             return
         else:
-            assert response.status_code == codes.NOT_FOUND, "Response: {}".format(response.text)
-        response = response.json()
-
-        assert 'error' in response and response['error']['code'] == EventOrganizerNotFound.error_code, \
-            'Event organizer not found'
+            assert response.status_code == codes.CREATED, "Response: {}".format(response.text)
 
     def test_events_post_no_venue(self, token_first, test_event):
         """
@@ -221,3 +221,101 @@ class TestResourceEvents(object):
         response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token_first)
         logger.info(response.text)
         assert response.status_code == codes.NOT_FOUND, 'Venue not Found in database'
+
+    def test_events_get_with_query(self, token_first, token_same_domain, user_first, user_same_domain,
+                                   eventbrite_event_data, meetup_event_data, meetup, eventbrite,
+                                   test_eventbrite_credentials_same_domain, eventbrite_venue_same_domain):
+        """
+        In this test, we will create three events, two for user_first, one for user_same_domain.
+        Then we will try all search and filter options.
+        """
+        time.sleep(10)  # Need to wait for app session to update otherwise getting 404 for venue
+        title = fake.sentence() + str(datetime.now())
+        title_first = 'ABC' + title
+        title_second = 'XYZ' + title
+        title_third = 'DEF' + title
+        start_datetime_first = (datetime.now() + timedelta(days=5)).replace(microsecond=0)
+        start_datetime_second = (datetime.now() + timedelta(days=10)).replace(microsecond=0)
+        start_datetime_third = (datetime.now() + timedelta(days=15)).replace(microsecond=0)
+        create_event(token_first, eventbrite_event_data, title_first, start_datetime_first)
+        create_event(token_first, meetup_event_data, title_second, start_datetime_second)
+        eventbrite_event_data['venue_id'] = eventbrite_venue_same_domain['id']
+        create_event(token_same_domain, eventbrite_event_data, title_third, start_datetime_third)
+
+        events = get_events_with_query(token_first)
+        assert len(events) == 3
+        events = get_events_with_query(token_first, search=title)
+        assert len(events) == 3
+        for search in [title_first, title_second, title_third]:
+            events = get_events_with_query(token_first, search=search)
+            assert len(events) == 1, 'Expected: %s, Actual: %s, search: %s' % (1, len(events), search)
+        events = get_events_with_query(token_first, search=fake.sentence())
+        assert len(events) == 0
+        events = get_events_with_query(token_first, sort_by='title', sort_type='asc')
+        assert len(events) == 3
+        for index, search in enumerate([title_first, title_third, title_second]):
+            assert events[index]['title'] == search, 'Expected: %s, Actual: %s, search: %s' % (search,
+                                                                                               events[index]['title'],
+                                                                                               search)
+        events = get_events_with_query(token_first, sort_by='title', sort_type='desc')
+        assert len(events) == 3
+        for index, search in enumerate([title_second, title_third, title_first]):
+            assert events[index]['title'] == search
+
+        events = get_events_with_query(token_first, sort_by='start_datetime')
+        events_desc = get_events_with_query(token_first, sort_by='start_datetime', sort_type='desc')
+        assert len(events) == 3
+        assert len(events_desc) == 3
+        assert events == events_desc
+        for index, date in enumerate([start_datetime_third, start_datetime_second, start_datetime_first]):
+            assert events[index]['start_datetime'] == date.strftime("%Y-%m-%d %H:%M:%S")
+
+        events = get_events_with_query(token_first, sort_by='start_datetime', sort_type='asc')
+        assert len(events) == 3
+        events_desc.reverse()
+        assert events_desc == events
+        for index, date in enumerate([start_datetime_first, start_datetime_second, start_datetime_third]):
+            assert events[index]['start_datetime'] == date.strftime("%Y-%m-%d %H:%M:%S")
+
+        events = get_events_with_query(token_first, user_id=user_first['id'])
+        assert len(events) == 2
+
+        events = get_events_with_query(token_first, user_id=user_same_domain['id'])
+        assert len(events) == 1
+
+        events = get_events_with_query(token_first, social_network_id=eventbrite['id'])
+        assert len(events) == 2
+        events = get_events_with_query(token_first, social_network_id=meetup['id'])
+        assert len(events) == 1
+
+
+def get_events_with_query(token, search=None, social_network_id=None,  sort_by=None, sort_type=None, user_id=None):
+    url = SocialNetworkApiUrl.EVENTS
+    if search:
+        url += '?search=%s' % search
+    if social_network_id:
+        url += '?social_network_id=%s' % social_network_id if url.find('?') == -1 \
+            else '&social_network_id=%s' % social_network_id
+    if sort_by:
+        url += '?sort_by=%s' % sort_by if url.find('?') == -1 else '&sort_by=%s' % sort_by
+    if sort_type:
+        url += '?sort_type=%s' % sort_type if url.find('?') == -1 else '&sort_type=%s' % sort_type
+    if user_id:
+        url += '?user_id=%s' % user_id if url.find('?') == -1 else '&user_id=%s' % user_id
+    response = requests.get(url, headers=auth_header(token))
+    logger.info(response.text)
+    assert response.status_code == codes.OK, 'Status should be Ok (200)'
+    return response.json()['events']
+
+
+def create_event(token, event_data, title, start_datetime):
+    end_datetime = start_datetime + timedelta(hours=3)
+    data = dict(
+        title=title,
+        start_datetime=start_datetime.strftime(DatetimeUtils.ISO8601_FORMAT),
+        end_datetime=end_datetime.strftime(DatetimeUtils.ISO8601_FORMAT)
+    )
+    event_data.update(data)
+    response = send_post_request(SocialNetworkApiUrl.EVENTS, event_data, token)
+    logger.info(response.text)
+    assert response.status_code == codes.CREATED, response.text

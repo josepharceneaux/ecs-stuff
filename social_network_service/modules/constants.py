@@ -23,3 +23,4 @@ MEETUP_VENUE = 'https://api.meetup.com/{}'
 
 # Vendors to be mocked goes here
 MOCK_VENDORS = [MEETUP]
+SORT_TYPES = ('asc', 'desc')

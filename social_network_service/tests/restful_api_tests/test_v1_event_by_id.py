@@ -115,7 +115,7 @@ class TestEventById(object):
         logger.info(response.text)
         assert response.status_code == codes.NOT_FOUND, 'Event not found with this social network event id'
 
-    def test_put_with_valid_token(self, token_first, event_in_db_second, organizer_in_db):
+    def test_put_with_valid_token(self, token_first, event_in_db_second):
         """
         - Get event data from db (using fixture - event_in_db)
         - Using event id, send PUT request to update event data
