@@ -99,7 +99,7 @@ def create_email_campaign(user, add_subject=True):
                                    description=fake.paragraph(),
                                    _from=TEST_EMAIL_ID,
                                    reply_to=TEST_EMAIL_ID,
-                                   body_html="<html><body>Email campaign test</body></html>",
+                                   body_html="<html><body><a href=%s>Email campaign test</a></body></html>" % fake.url(),
                                    body_text=fake.sentence()
                                    )
     EmailCampaign.save(email_campaign)
