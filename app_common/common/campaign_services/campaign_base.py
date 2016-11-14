@@ -1803,16 +1803,14 @@ class CampaignBase(object):
         """
         if not isinstance(params, dict):
             raise InvalidUsage('params should be dictionary.')
+        source = db.session.merge(source)  # Added due to detached instance error while calling from Celery
         raise_if_dict_values_are_not_int_or_long(dict(source_id=source.id, type=_type))
         auth_header = generate_jwt_headers(content_type='application/json',
                                            user_id=user_id)
-        json_data = json.dumps({'source_table': source.__tablename__,
-                                'source_id': source.id,
-                                'type': _type,
-                                'params': params})
+        json_data = json.dumps({'source_table': source.__tablename__, 'source_id': source.id,
+                                'type': _type, 'params': params})
         # POST call to activity_service to create activity
-        http_request('POST', ActivityApiUrl.ACTIVITIES, headers=auth_header,
-                     data=json_data, user_id=user_id)
+        http_request('POST', ActivityApiUrl.ACTIVITIES, headers=auth_header, data=json_data, user_id=user_id)
 
     @staticmethod
     def get_url_conversion_by_send_id(send_id, campaign_type, user):
