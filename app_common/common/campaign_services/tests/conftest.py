@@ -20,7 +20,7 @@ from ...constants import (MEETUP, EVENTBRITE)
 from ...models.event import MeetupGroup
 from ...models.candidate import SocialNetwork
 from ..tests_helpers import CampaignsTestsHelpers
-from ...utils.handy_functions import send_request, http_request
+from ...utils.handy_functions import send_request
 from ...models.event_organizer import EventOrganizer
 from ...talent_config_manager import TalentConfigKeys
 from ...models.user import UserSocialNetworkCredential
@@ -242,10 +242,9 @@ def test_eventbrite_credentials(request, user_first, eventbrite):
                                                                                      social_network_id)
     payload = {'endpoint_url': SocialNetworkApiUrl.WEBHOOK % user_credentials.user_id,
                'actions': 'event.published'}
-    headers = {'Authorization': 'Bearer ' + user_credentials.access_token}
     url = user_credentials.social_network.api_url + "/webhooks/"
-    response = http_request('POST', url, params=payload, headers=headers,
-                            user_id=user_credentials.user.id)
+    response = send_request('post', url, user_credentials.access_token, params=payload, is_json=False)
+    assert response.ok, 'Unable to add webhook'
     webhook_id = response.json()['id']
 
     def finalizer():
