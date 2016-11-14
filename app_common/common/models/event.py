@@ -111,3 +111,36 @@ class Event(db.Model):
                 Event.id == event_id
             )).first()
 
+
+class MeetupGroup(db.Model):
+    __tablename__ = 'meetup_group'
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(db.String(100), unique=True)
+    user_id = db.Column('userId', db.BIGINT, db.ForeignKey('user.Id'), nullable=False)
+    name = db.Column(db.String(500))
+    url_name = db.Column(db.String(500))
+    description = db.Column(db.String(1000))
+    visibility = db.Column(db.String(20))
+    country = db.Column(db.String(20))
+    state = db.Column(db.String(20))
+    city = db.Column(db.String(30))
+    timezone = db.Column(db.String(100))
+    created_datetime = db.Column(db.DateTime)
+
+    @classmethod
+    def get_by_group_id(cls, group_id):
+        """
+        :param string | int group_id: group unique id
+        :return: first matching group record
+        """
+        return cls.query.filter_by(group_id=group_id).first()
+
+    @classmethod
+    def get_by_user_id_and_group_id(cls, user_id, group_id):
+        """
+        Search a group by user_id and group unique id
+        :param int user_id: user id
+        :param string | int group_id:
+        :return: returns a group record
+        """
+        return cls.query.filter_by(user_id=user_id, group_id=group_id).first()

@@ -664,6 +664,7 @@ class SocialNetworkApi(object):
     TWITTER_CALLBACK = '/' + VERSION + '/twitter-callback/<int:user_id>'
     DISCONNECT = '/' + VERSION + '/social-networks/<int:social_network_id>/disconnect'
     GRAPHQL = '/graphql'
+    WEBHOOK = '/webhook/<int:user_id>'
 
 
 class SocialNetworkApiUrl(object):
@@ -698,6 +699,10 @@ class SocialNetworkApiUrl(object):
     TWITTER_CALLBACK = HOST_NAME % ('/' + VERSION + '/twitter-callback/%s')
     DISCONNECT = HOST_NAME % ('/' + VERSION + '/social-networks/%s/disconnect')
     GRAPHQL = HOST_NAME % '/graphql'
+    if env == TalentEnvs.DEV:
+        WEBHOOK = 'https://emails.ngrok.io/webhook/%s'
+    else:
+        WEBHOOK = HOST_NAME % '/webhook/%s'
 
 
 class SmsCampaignApi(object):

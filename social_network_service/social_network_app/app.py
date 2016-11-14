@@ -8,16 +8,17 @@ from flask import request, redirect
 from flask.ext.graphql import GraphQLView
 
 # Application specific imports
-from ..social_network_app import app
+from ..social_network_app import app, logger
 from restful.v1_data import data_blueprint
 from restful.v1_importer import rsvp_blueprint
 from restful.v1_events import events_blueprint
 from restful.v1_subscription import subscription_blueprint
+from social_network_service.tasks import fetch_eventbrite_event
 from social_network_service.common.talent_api import TalentApi
 from restful.v1_social_networks import social_network_blueprint
 from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.constants import MEETUP, EVENTBRITE
-from social_network_service.modules.constants import MEETUP_CODE_LENGTH
+from social_network_service.modules.constants import MEETUP_CODE_LENGTH, ACTIONS, EVENTBRITE_USER_AGENT
 from social_network_service.common.utils.auth_utils import require_oauth
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.modules.social_network.twitter import Twitter
@@ -78,3 +79,15 @@ def callback(user_id):
         twitter_obj = Twitter(user_id=user_id, validate_credentials=False)
         return twitter_obj.callback(request.args['oauth_verifier'])
     raise InternalServerError('You did not provide valid credentials. Unable to connect! Please try again.')
+
+
+@app.route(SocialNetworkApi.WEBHOOK, methods=['POST'])
+def eventbrite_webhook_endpoint(user_id):
+    if EVENTBRITE_USER_AGENT in str(request.user_agent):
+        data = request.json
+        action_type = data['config']['action']
+        event_url = data['api_url']
+        if action_type in [ACTIONS['published'], ACTIONS['unpublished']]:
+            logger.info('Eventbrite Alert, Event: %s' % data)
+            fetch_eventbrite_event.apply_async((user_id, event_url, action_type))
+    return 'Thanks a lot!'
