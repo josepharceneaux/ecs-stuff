@@ -160,7 +160,7 @@ def fetch_eventbrite_event(user_id, event_url, action_type):
                     event = eventbrite_event_base.event_sn_to_gt_mapping(event)
                     logger.info('Event imported/updated successfully : %s' % event.to_json())
             elif action_type == ACTIONS['unpublished']:
-                event_id = event_url.split('/')[-1]
+                event_id = event_url.split('/')[-2]
                 event_id = int(event_id)
                 event_in_db = Event.get_by_user_id_social_network_id_vendor_event_id(user_id,
                                                                                      eventbrite.id,
