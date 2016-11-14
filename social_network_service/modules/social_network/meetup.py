@@ -126,8 +126,12 @@ class Meetup(SocialNetworkBase):
             return groups
 
     def import_meetup_groups(self):
-        url = 'https://api.meetup.com/self/groups'
-        response = http_request('GET', url, headers=self.headers, user_id=self.user.id)
+        """
+        This method is to fetch user's meetup groups and save them in gt database.
+        """
+        url = get_url(self, SocialNetworkUrls.GROUPS)
+        params = {'member_id': 'self'}
+        response = http_request('GET', url, params=params, headers=self.headers, user_id=self.user.id)
         meetup_groups = []
         if response.ok:
             groups = response.json()
@@ -149,7 +153,7 @@ class Meetup(SocialNetworkBase):
                     )
                     MeetupGroup.save(meetup_group)
                 else:
-                    logger.info('Meetup Group (id: %s) is already in gt database' % meetup_group.group_id)
+                    logger.info('Meetup Group (group_id: %s) is already in gt database' % meetup_group.group_id)
                 meetup_groups.append(meetup_group.to_json())
         return meetup_groups
 
@@ -308,7 +312,3 @@ class Meetup(SocialNetworkBase):
         venue_data['user_id'] = self.user.id
         venue_data['social_network_venue_id'] = venue_id
         return SocialNetworkBase.save_venue(venue_data)
-
-
-
-

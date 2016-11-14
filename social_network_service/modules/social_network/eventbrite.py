@@ -242,6 +242,8 @@ class Eventbrite(SocialNetworkBase):
                                 user_id=user_credentials.user.id)
         if response.ok:
             webhooks = response.json()['webhooks']
+            # Deleting all existing webhooks for this user because we don't know about their action types.
+            # Need to register a webhook with `event.published` and `event.unpublished` actions and correct callback url
             for webhook in webhooks:
                 http_request('DELETE', webhook['resource_uri'], headers=headers, user_id=user_credentials.user.id)
 
@@ -254,7 +256,7 @@ class Eventbrite(SocialNetworkBase):
         try:
             webhook_id = response.json()['id']
             user_credentials.update(webhook=webhook_id)
-        except:
+        except Exception:
             logger.exception('create_webhook: user_id: %s' % user_credentials.user.id)
             raise InternalServerError("Eventbrite Webhook wasn't created successfully")
 

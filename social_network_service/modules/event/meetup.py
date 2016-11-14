@@ -98,7 +98,7 @@ class Meetup(EventBase):
                 time passed after epoch till end_time
 
         :param args:
-        :param kwargs:meetup_event_base.headers)
+        :param kwargs:
         """
         super(Meetup, self).__init__(*args, **kwargs)
         # calling super constructor sets the api_url and access_token

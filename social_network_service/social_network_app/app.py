@@ -18,7 +18,7 @@ from social_network_service.common.talent_api import TalentApi
 from restful.v1_social_networks import social_network_blueprint
 from social_network_service.common.redis_cache import redis_store
 from social_network_service.common.constants import MEETUP, EVENTBRITE
-from social_network_service.modules.constants import MEETUP_CODE_LENGTH, ACTIONS
+from social_network_service.modules.constants import MEETUP_CODE_LENGTH, ACTIONS, EVENTBRITE_USER_AGENT
 from social_network_service.common.utils.auth_utils import require_oauth
 from social_network_service.common.models.candidate import SocialNetwork
 from social_network_service.modules.social_network.twitter import Twitter
@@ -83,12 +83,11 @@ def callback(user_id):
 
 @app.route(SocialNetworkApi.WEBHOOK, methods=['POST'])
 def eventbrite_webhook_endpoint(user_id):
-    if 'Eventbrite Webhooks' in str(request.user_agent):
+    if EVENTBRITE_USER_AGENT in str(request.user_agent):
         data = request.json
         action_type = data['config']['action']
-        # member_id = data['config']['user_id']
         event_url = data['api_url']
-        if action_type != ACTIONS['updated']:
+        if action_type in [ACTIONS['published'], ACTIONS['unpublished']]:
             logger.info('Eventbrite Alert, Event: %s' % data)
             fetch_eventbrite_event.apply_async((user_id, event_url, action_type))
     return 'Thanks a lot!'

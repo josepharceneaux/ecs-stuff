@@ -7,13 +7,15 @@ These methods are called by run_job method asynchronously
     celery -A social_network_service.social_network_app.celery_app worker  worker --concurrency=4 --loglevel=info
 
 """
-# Application imports
+# Builtin imports
 import datetime
 import json
 import time
 
+# 3rd party imports
 import requests
 
+# Application imports
 from social_network_service.common.error_handling import InternalServerError
 from social_network_service.common.models.db import db
 from social_network_service.common.models.candidate import SocialNetwork
@@ -22,7 +24,7 @@ from social_network_service.common.models.user import UserSocialNetworkCredentia
 from social_network_service.common.talent_config_manager import TalentConfigKeys
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls
-from social_network_service.modules.constants import ACTIONS
+from social_network_service.modules.constants import ACTIONS, MEETUP_STREAM_API_URL
 from social_network_service.modules.event.meetup import Meetup
 from social_network_service.modules.event.eventbrite import Eventbrite as EventbriteEventBase
 from social_network_service.modules.social_network.meetup import Meetup as MeetupSocialNetwork
@@ -76,7 +78,7 @@ def import_meetup_events(start_datetime=None):
         logger = app.config[TalentConfigKeys.LOGGER]
         start_datetime = start_datetime or (datetime.datetime.utcnow().strftime("%s") + "000")
         try:
-            url = "http://stream.meetup.com/2/open_events?since_mtime=%s" % start_datetime
+            url = MEETUP_STREAM_API_URL % start_datetime
             meetup = SocialNetwork.get_by_name('Meetup')
             if not meetup:
                 raise InternalServerError('Unable to find Meetup social network in gt database')
@@ -94,10 +96,10 @@ def import_meetup_events(start_datetime=None):
                                 if group:
                                     logger.info('Going to save event: %s' % event)
                                     fetch_meetup_event.apply_async((event, group, meetup))
-                            except Exception as e:
+                            except Exception:
                                 logger.exception('Error occurred while parsing event data, Date: %s' % raw_event)
                 except Exception as e:
-                    logger.warning('Some bad data caused main loop to break')
+                    logger.warning('Some bad data caused main loop to break. Cause: %s' % e)
 
         except Exception as e:
             logger.exception(e.message)
@@ -140,43 +142,35 @@ def fetch_meetup_event(event, group, meetup):
 @celery.task(name="fetch_eventbrite_event")
 def fetch_eventbrite_event(user_id, event_url, action_type):
     """
-    This celery task is for an individual event to be processed. When `rsvp_events_importer` task finds that some
-    event belongs to getTalent user, it passes this event to this task for further processing.
-
-    In this task, we create meetup objects for social network and event and the finally save this event by mapping
-    meetup event fields to gt event fields. If event already exists in database, it is updated.
-
-    If an event contains venue information, is is save in `venue` table or updated an existing venue.
-    :param dict event: event dictionary from meetup
-    :param MeetupGroup group: MeetupGroup Object
-    :param SocialNetwork meetup: SocialNetwork object for meetup
+    This celery task retrieves user event from eventbrite and then saves or
     """
     with app.app_context():
         logger = app.config[TalentConfigKeys.LOGGER]
         logger.info('Going to process Evenbrite Event: %s' % event_url)
         try:
             eventbrite = SocialNetwork.get_by_name('Eventbrite')
-
-            eventbrite_sn = EventbriteSocialNetwork(user_id=user_id, social_network_id=eventbrite.id)
-            eventbrite_event_base = EventbriteEventBase(headers=eventbrite_sn.headers,
-                                                        user_credentials=eventbrite_sn.user_credentials,
-                                                        social_network=eventbrite_sn.user_credentials.social_network)
-            response = http_request('get', event_url, headers=eventbrite_sn.headers)
-            if response.ok:
-                event = response.json()
-                if action_type in [ACTIONS['created'], ACTIONS['published']]:
+            if action_type in [ACTIONS['created'], ACTIONS['published']]:
+                eventbrite_sn = EventbriteSocialNetwork(user_id=user_id, social_network_id=eventbrite.id)
+                eventbrite_event_base = EventbriteEventBase(headers=eventbrite_sn.headers,
+                                                            user_credentials=eventbrite_sn.user_credentials,
+                                                            social_network=eventbrite_sn.user_credentials.social_network)
+                response = http_request('get', event_url, headers=eventbrite_sn.headers)
+                if response.ok:
+                    event = response.json()
                     event = eventbrite_event_base.event_sn_to_gt_mapping(event)
                     logger.info('Event imported/updated successfully : %s' % event.to_json())
-                elif action_type == ACTIONS['unpublished']:
-                    event_in_db = Event.get_by_user_id_social_network_id_vendor_event_id(user_id,
-                                                                                         eventbrite.id,
-                                                                                         event['id']
-                                                                                         )
-                    if event_in_db:
-                        Event.delete(event_in_db)
-                        logger.info('Delete event from gt database, event: %s' % event_in_db.to_json())
-                elif action_type == ACTIONS['updated']:
-                    pass   # We are handling update action yet because it causes duplicate entries
+            elif action_type == ACTIONS['unpublished']:
+                event_id = event_url.split('/')[-1]
+                event_id = int(event_id)
+                event_in_db = Event.get_by_user_id_social_network_id_vendor_event_id(user_id,
+                                                                                     eventbrite.id,
+                                                                                     event_id
+                                                                                     )
+                if event_in_db:
+                    Event.delete(event_in_db)
+                    logger.info('Delete event from gt database, event: %s' % event_in_db.to_json())
+            elif action_type == ACTIONS['updated']:
+                pass  # We are handling update action yet because it causes duplicate entries
 
-        except Exception as e:
+        except Exception:
             logger.exception('Failed to save event. URL: %s' % event_url)

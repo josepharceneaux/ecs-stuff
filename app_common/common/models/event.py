@@ -129,8 +129,18 @@ class MeetupGroup(db.Model):
 
     @classmethod
     def get_by_group_id(cls, group_id):
+        """
+        :param string | int group_id: group unique id
+        :return: first matching group record
+        """
         return cls.query.filter_by(group_id=group_id).first()
 
     @classmethod
     def get_by_user_id_and_group_id(cls, user_id, group_id):
+        """
+        Search a group by user_id and group unique id
+        :param int user_id: user id
+        :param string | int group_id:
+        :return: returns a group record
+        """
         return cls.query.filter_by(user_id=user_id, group_id=group_id).first()
