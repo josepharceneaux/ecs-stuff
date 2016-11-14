@@ -268,14 +268,14 @@ class Eventbrite(EventBase):
                 social_network_id=self.social_network.id,
                 social_network_venue_id=event['venue_id'],
                 user_id=self.user.id,
-                address_line_1=venue['address']['address_1'] if venue and venue.has_key('address') else '',
-                address_line_2=venue['address']['address_2'] if venue and venue.has_key('address') else '',
-                city=venue['address']['city'] if venue and venue.has_key('address') else '',
-                state=venue['address']['region'] if venue and venue.has_key('address') else '',
-                zip_code=None,
-                country=venue['address']['country'] if venue and venue.has_key('address') else '',
+                address_line_1=venue['address']['address_1'],
+                address_line_2=venue['address']['address_2'],
+                city=venue['address']['city'],
+                state=venue['address']['region'],
+                zip_code=venue['address']['postal_code'],
+                country=venue['address']['country'],
                 longitude=float(venue['address']['longitude']) if venue and venue.has_key('address') else 0,
-                latitude=float(venue['address']['latitude']) if venue and venue.has_key('address') else 0,
+                latitude=float(venue['address']['latitude']) if venue and venue.has_key('address') else 0
             )
             venue_in_db = \
                 Venue.get_by_user_id_and_social_network_venue_id(self.user.id,
@@ -288,14 +288,14 @@ class Eventbrite(EventBase):
                 Venue.save(venue)
                 venue_id = venue.id
         # return Event object
-        return Event(
+        event_data = dict(
             social_network_event_id=event['id'],
             title=event['name']['text'],
-            description=event['description']['text'],
+            description=event['description']['html'],
             social_network_id=self.social_network.id,
             user_id=self.user.id,
             social_network_group_id=0,
-            url='',
+            url=event.get('url'),
             group_url_name='',
             organizer_id=organizer_id,
             venue_id=venue_id,
@@ -307,6 +307,14 @@ class Eventbrite(EventBase):
             timezone=event['start']['timezone'],
             max_attendees=event['capacity']
         )
+        event = Event.get_by_user_id_social_network_id_vendor_event_id(self.user.id, self.social_network.id,
+                                                                       event['id'])
+        if event:
+            event.update(**event_data)
+        else:
+            event = Event(**event_data)
+            Event.save(event)
+        return event
 
     def create_event(self):
         """
@@ -355,7 +363,8 @@ class Eventbrite(EventBase):
         if response.ok:
             # Event has been created on vendor and saved in draft there.
             # Now we need to create tickets for it and then publish it.
-            event_id = response.json()['id']
+            event = response.json()
+            event_id = event['id']
             # Ticket are going to be created/updated
             ticket_id = self.create_tickets(event_id)
             # Ticket(s) have been created for newly created Event
@@ -364,6 +373,7 @@ class Eventbrite(EventBase):
                         % self.event_payload['event.name.html'])
             self.data['social_network_event_id'] = event_id
             self.data['tickets_id'] = ticket_id
+            self.data['url'] = event['url']
             return self.save_event()
         else:
             error_message = 'Event was not created Successfully as draft'
@@ -725,6 +735,7 @@ class Eventbrite(EventBase):
         # provided DateTime accordingly.
         start_time = DatetimeUtils.get_utc_datetime(data['start_datetime'], data['timezone'])
         end_time = DatetimeUtils.get_utc_datetime(data['end_datetime'], data['timezone'])
+
         # This dict is used to create an event as a draft on vendor
         self.event_payload = {
             'event.start.utc': start_time,

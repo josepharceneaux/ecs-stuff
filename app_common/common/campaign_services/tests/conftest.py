@@ -5,22 +5,26 @@ Here are fixtures to be used across campaign-services.
 """
 # Packages
 import json
+import os
+
 import pytest
 from copy import deepcopy
 from requests import codes
 
 
 # Application Specific
+
 from ...models.db import db
 from ...tests.app import test_app
 from ...tests.sample_data import fake
 from ...redis_cache import redis_store2
 from ...constants import (MEETUP, EVENTBRITE)
+from ...models.event import MeetupGroup
 from ...models.candidate import SocialNetwork
 from ..tests_helpers import CampaignsTestsHelpers
 from ...utils.handy_functions import send_request
 from ...models.event_organizer import EventOrganizer
-from ...talent_config_manager import TalentConfigKeys
+from ...talent_config_manager import TalentConfigKeys, TalentEnvs
 from ...models.user import UserSocialNetworkCredential
 from ...utils.test_utils import add_social_network_credentials, add_test_venue
 from ...routes import (SocialNetworkApiUrl, EmailCampaignApiUrl)
@@ -136,14 +140,23 @@ def test_meetup_credentials(user_first, meetup):
 
 
 @pytest.fixture(scope="session")
-def meetup_group(test_meetup_credentials, token_first):
+def meetup_group(request, test_meetup_credentials, token_first, user_first):
     """
     This gets all the groups of user_first created on Meetup website. It then picks first group and returns it.
     """
     resp = send_request('get', SocialNetworkApiUrl.MEETUP_GROUPS, token_first)
     assert resp.status_code == codes.OK
     # return first group
-    return resp.json()['groups'][0]
+    json_group = resp.json()['groups'][0]
+    MeetupGroup.query.filter_by(name='test_group', group_id=json_group['id']).delete(synchronize_session=False)
+    MeetupGroup.session.commit()
+    group = MeetupGroup.save(MeetupGroup(group_id=json_group['id'], user_id=user_first['id'],
+                                         url_name=json_group['urlname'], name='test_group'))
+
+    def finalizer():
+        MeetupGroup.delete(group)
+    request.addfinalizer(finalizer)
+    return json_group
 
 
 @pytest.fixture(scope="session")
@@ -198,7 +211,7 @@ def eventbrite():
 
 
 @pytest.fixture(scope="session", autouse=True)
-def test_eventbrite_credentials(user_first, eventbrite):
+def test_eventbrite_credentials(request, user_first, eventbrite):
     """
     Create eventbrite social network credentials for this user so
     we can create event on Eventbrite.com

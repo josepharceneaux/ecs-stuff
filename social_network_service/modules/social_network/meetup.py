@@ -10,6 +10,7 @@ import json
 from requests import codes
 
 # Application Specific
+from social_network_service.common.models.event import MeetupGroup
 from social_network_service.common.models.venue import Venue
 from social_network_service.common.utils.handy_functions import http_request
 from social_network_service.common.error_handling import InternalServerError, InvalidUsage
@@ -123,6 +124,38 @@ class Meetup(SocialNetworkBase):
             data = json.loads(response.text)['results']
             groups = filter(lambda item: item['organizer']['member_id'] == int(member_id), data)
             return groups
+
+    def import_meetup_groups(self):
+        """
+        This method is to fetch user's meetup groups and save them in gt database.
+        """
+        url = get_url(self, SocialNetworkUrls.GROUPS)
+        params = {'member_id': 'self'}
+        response = http_request('GET', url, params=params, headers=self.headers, user_id=self.user.id)
+        meetup_groups = []
+        if response.ok:
+            groups = response.json()
+            for group in groups:
+                meetup_group = MeetupGroup.get_by_user_id_and_group_id(self.user.id, group['id'])
+                if not meetup_group:
+                    meetup_group = MeetupGroup(
+                        group_id=group['id'],
+                        user_id=self.user.id,
+                        name=group['name'],
+                        url_name=group['urlname'],
+                        description=group.get('description'),
+                        created_datetime=group.get('created'),
+                        visibility=group.get('visibility'),
+                        country=group.get('country'),
+                        state=group.get('state'),
+                        city=group.get('city'),
+                        timezone=group.get('timezone')
+                    )
+                    MeetupGroup.save(meetup_group)
+                else:
+                    logger.info('Meetup Group (group_id: %s) is already in gt database' % meetup_group.group_id)
+                meetup_groups.append(meetup_group.to_json())
+        return meetup_groups
 
     def refresh_access_token(self):
         """
@@ -279,4 +312,3 @@ class Meetup(SocialNetworkBase):
         venue_data['user_id'] = self.user.id
         venue_data['social_network_venue_id'] = venue_id
         return SocialNetworkBase.save_venue(venue_data)
-

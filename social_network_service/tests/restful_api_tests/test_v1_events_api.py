@@ -114,7 +114,7 @@ class TestResourceEvents(object):
 
     def test_events_post_no_event_organizer(self, token_first, test_event):
         """
-        Post event using invalid event_organizer i.e equal to -1. response should be 500 with 4054 error code
+        Post event using invalid event_organizer i.e equal to -1. response should be 201
         (Event organizer not found)
             url -> localhost:8007/v1/events
         """
