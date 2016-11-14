@@ -134,7 +134,7 @@ class Meetup(SocialNetworkBase):
         response = http_request('GET', url, params=params, headers=self.headers, user_id=self.user.id)
         meetup_groups = []
         if response.ok:
-            groups = response.json()
+            groups = response.json()['results']
             for group in groups:
                 meetup_group = MeetupGroup.get_by_user_id_and_group_id(self.user.id, group['id'])
                 if not meetup_group:
