@@ -244,7 +244,8 @@ def test_eventbrite_credentials(request, user_first, eventbrite):
                'actions': 'event.published'}
     url = user_credentials.social_network.api_url + "/webhooks/"
     response = send_request('post', url, user_credentials.access_token, params=payload, is_json=False)
-    assert response.ok, 'Unable to add webhook'
+    print('Webhook Creation', payload, response.text, url, user_credentials.access_token)
+    assert response.status_code == codes.OK
     webhook_id = response.json()['id']
 
     def finalizer():
