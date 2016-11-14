@@ -66,8 +66,7 @@ class CandidatePipelineResource(Resource):
         ).order_by(TalentPipeline.added_time.desc()).limit(max_requests).all()
 
         # Use Search API to retrieve candidate's domain-pipeline inclusion
-        found_candidate_ids = []
-        talent_pipeline_ids = []
+        found_talent_pipelines = []
 
         for number_of_requests, talent_pipeline in enumerate(talent_pipelines, start=1):
             search_params = format_search_params(talent_pipeline.search_params)
@@ -79,36 +78,32 @@ class CandidatePipelineResource(Resource):
             logger.info("\ncandidate_id: {}\ntalent_pipeline_id: {}\nsearch_params: {}\nsearch_response: {}".format(
                 candidate_id, talent_pipeline.id, search_params, search_response))
 
-            found_candidate_ids.extend(candidate['id'] for candidate in search_response['candidates'])
-
             # Return if candidate_id is found in one of the Pipelines AND 5 or more requests have been made
             if search_response.get('candidates'):
-                talent_pipeline_ids.append(talent_pipeline.id)
+                found_talent_pipelines.append(talent_pipeline)
                 if number_of_requests >= 5:
                     break
 
         result = []
 
+        logger.info("\nfound_talent_pipelines: {}".format(found_talent_pipelines))
+
         # Only return pipeline data if candidate is found from pipeline's search params
-        if talent_pipeline_ids:
+        if found_talent_pipelines:
             pipeline_engagements = top_most_engaged_pipelines_of_candidate(candidate_id)
-            candidates_talent_pipelines = TalentPipeline.query.filter(TalentPipeline.id.in_(talent_pipeline_ids)).all()
-            for talent_pipeline in candidates_talent_pipelines:
-                user_id = talent_pipeline.user_id
-                user_candidate = Candidate.query.filter_by(user_id=user_id, id=candidate_id).first()
-                if user_candidate:
-                    result.append({
-                        "id": talent_pipeline.id,
-                        "candidate_id": user_candidate.id if user_candidate else None,
-                        "name": talent_pipeline.name,
-                        "description": talent_pipeline.description,
-                        "open_positions": talent_pipeline.positions,
-                        "pipeline_engagement": pipeline_engagements.get(int(talent_pipeline.id), None),
-                        "datetime_needed": str(talent_pipeline.date_needed),
-                        'is_hidden': talent_pipeline.is_hidden,
-                        "user_id": user_id,
-                        "added_datetime": str(talent_pipeline.added_time)
-                    })
+            for talent_pipeline in found_talent_pipelines:
+                result.append({
+                    "id": talent_pipeline.id,
+                    "candidate_id": candidate_id,
+                    "name": talent_pipeline.name,
+                    "description": talent_pipeline.description,
+                    "open_positions": talent_pipeline.positions,
+                    "pipeline_engagement": pipeline_engagements.get(int(talent_pipeline.id), None),
+                    "datetime_needed": str(talent_pipeline.date_needed),
+                    'is_hidden': talent_pipeline.is_hidden,
+                    "user_id": talent_pipeline.user_id,
+                    "added_datetime": str(talent_pipeline.added_time)
+                })
 
         return {'candidate_pipelines': result}
 
