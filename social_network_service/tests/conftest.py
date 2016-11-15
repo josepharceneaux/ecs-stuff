@@ -282,8 +282,16 @@ def test_event(request):
     return request.getfuncargvalue("get_test_event_{}".format(request.param.lower()))
 
 
+@pytest.fixture(params=VENDORS)
+def event_data(request):
+    """
+    This fixture returns an event (function based scope) on vendor basis and returns it.
+    """
+    return request.getfuncargvalue("{}_event_data".format(request.param.lower()))
+
+
 @pytest.fixture(params=['title', 'description', 'end_datetime', 'timezone', 'start_datetime', 'currency',
-                        'venue_id', 'organizer_id'], scope='function')
+                        'venue_id'], scope='function')
 def eventbrite_missing_data(request, eventbrite_event_data):
     """
     This fixture returns eventbrite data and a key will be deleted from data to test

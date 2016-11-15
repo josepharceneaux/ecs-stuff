@@ -209,13 +209,7 @@ class Meetup(EventBase):
         :return: event: Event object
         :rtype event: common.models.event.Event
         """
-        organizer = None
         venue = None
-        group_organizer = None
-        organizer_id = None
-        venue_id = None
-        start_time = None
-        end_time = None
         if event.get('venue'):
             # venue data looks like
             # {
@@ -225,105 +219,45 @@ class Meetup(EventBase):
             #       u'lat': 37.33167, u'id': 24062708
             # }
             venue = event['venue']
-        # Get organizer info. First get the organizer from group info and
-        # then get organizer's information which will be used to store
-        # in the event.
+        start_time = milliseconds_since_epoch_to_dt(float(event['time']))
+        end_time = event.get('duration', None)
+        if end_time:
+            end_time = \
+                milliseconds_since_epoch_to_dt(
+                    (float(event['time'])) + (float(end_time) * 1000))
 
-        if event.has_key('group') and \
-                event['group'].has_key('id'):
-
-            url = get_url(self, Urls.GROUPS) + '/?sign=true'
-            response = http_request('GET', url,
-                                    params={
-                                        'group_id': event['group']['id']
-                                    },
-                                    headers=self.headers,
-                                    user_id=self.user.id
-                                    )
-            if response.ok:
-                group = response.json()
-                if group.has_key('results'):
-                    # contains a dict that has member_id and name
-                    # Organizer data looks like
-                    # { u'name': u'Waqas Younas', u'member_id': 183366764}
-                    group_organizer = group['results'][0]['organizer']
-                    # TODO: Need to add this for mocking while fixing importer tests
-                    url = '{}/member/{}'.format(self.api_url, str(group_organizer['member_id']) + '?sign=true')
-                    response = http_request('GET', url, headers=self.headers,
-                                            user_id=self.user.id)
-                    if response.ok:
-                        organizer = response.json()
-            start_time = milliseconds_since_epoch_to_dt(float(event['time']))
-            end_time = event['duration'] if event.has_key('duration') else None
-            if end_time:
-                end_time = \
-                    milliseconds_since_epoch_to_dt(
-                        (float(event['time'])) + (float(end_time) * 1000))
-
-        if group_organizer:
-            organizer_data = dict(
-                user_id=self.user.id,
-                name=group_organizer['name']
-                if group_organizer.has_key('name') else '',
-                email='',
-                about=organizer['bio']
-                if organizer and organizer.has_key('bio') else ''
-
-            )
-            organizer_in_db = EventOrganizer.get_by_user_id_and_name(
-                self.user.id,
-                group_organizer['name'] if group_organizer.has_key(
-                    'name') else ''
-            )
-            if organizer_in_db:
-                organizer_in_db.update(**organizer_data)
-                organizer_id = organizer_in_db.id
-            else:
-                organizer_instance = EventOrganizer(**organizer_data)
-                EventOrganizer.save(organizer_instance)
-                organizer_id = organizer_instance.id
         if venue:
             venue_data = dict(
                 social_network_id=self.social_network.id,
                 social_network_venue_id=venue['id'],
                 user_id=self.user.id,
-                address_line_1=venue['address_1'] if venue else '',
+                address_line_1=venue.get('address_1', ''),
                 address_line_2='',
-                city=venue['city'].title().strip()
-                if venue and venue.has_key('city') else '',
-                state=venue['state'].title().strip()
-                if venue and venue.has_key('state') else '',
-                zip_code=venue['zip']
-                if venue and venue.has_key('zip') else None,
-                country=venue['country'].title().strip()
-                if venue and venue.has_key('country') else '',
-                longitude=float(venue['lon'])
-                if venue and venue.has_key('lon') else 0,
-                latitude=float(venue['lat'])
-                if venue and venue.has_key('lat') else 0,
+                city=venue.get('city', '').title().strip(),
+                state=venue.get('state', '').title().strip(),
+                zip_code=venue.get('zip'),
+                country=venue.get('country', '').title().strip(),
+                longitude=float(venue.get('lon', 0)),
+                latitude=float(venue.get('lat', 0))
             )
-            venue_in_db = Venue.get_by_user_id_and_social_network_venue_id(
+            venue = Venue.get_by_user_id_and_social_network_venue_id(
                 self.user.id, venue['id'])
-            if venue_in_db:
-                venue_in_db.update(**venue_data)
-                venue_id = venue_in_db.id
+            if venue:
+                venue.update(**venue_data)
             else:
                 venue = Venue(**venue_data)
                 Venue.save(venue)
-                venue_id = venue.id
 
-        return Event(
+        event_data = dict(
             social_network_event_id=event['id'],
             title=event['name'],
-            description=event['description']
-            if event.has_key('description') else '',
+            description=event.get('description', ''),
             social_network_id=self.social_network.id,
             user_id=self.user.id,
-            organizer_id=organizer_id,
-            venue_id=venue_id,
+            venue_id=venue.id,
             # group id and urlName are required fields to edit an event
             # so should raise exception if Null
-            social_network_group_id=event['group']['id'] if event.has_key('group') else '',
+            social_network_group_id=event['group']['id'],
             group_url_name=event['group']['urlname'],
             # Let's drop error logs if venue has no address, or if address
             # has no longitude/latitude
@@ -338,6 +272,14 @@ class Meetup(EventBase):
                           event.get('yes_rsvp_count', 0) +
                           event.get('waitlist_count', 0)
         )
+        event = Event.get_by_user_id_social_network_id_vendor_event_id(self.user.id, self.social_network.id,
+                                                                       event['id'])
+        if event:
+            event.update(**event_data)
+        else:
+            event = Event(**event_data)
+            Event.save(event)
+        return event
 
     def add_location(self):
         """
@@ -428,9 +370,11 @@ class Meetup(EventBase):
                      % (self.user.name, self.user.id, url, self.social_network.name))
         response = http_request('POST', url, params=self.payload, headers=self.headers, user_id=self.user.id)
         if response.ok:
-            event_id = response.json().get('id')
+            event = response.json()
+            event_id = event['id']
             logger.info('|  Event %s created Successfully  |' % self.payload['name'])
             self.data['social_network_event_id'] = event_id
+            self.data['url'] = event.get('event_url', '')
             return self.save_event()
         else:
             error_message = 'Event was not Created. Error occurred during draft creation'

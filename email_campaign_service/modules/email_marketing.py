@@ -107,10 +107,10 @@ def create_email_campaign(user_id, oauth_token, name, subject, description,
     EmailCampaign.save(email_campaign)
 
     # Create activity in a celery task
-    celery_create_activity(user_id, Activity.MessageIds.CAMPAIGN_CREATE, email_campaign, dict(id=email_campaign.id,
-                                                                                              name=name),
-                           'Error occurred while creating activity for email-campaign creation. User(id:%s)' % user_id
-                           )
+    celery_create_activity.delay(user_id, Activity.MessageIds.CAMPAIGN_CREATE, email_campaign,
+                                 dict(id=email_campaign.id, name=name),
+                                 'Error occurred while creating activity for email-campaign creation. User(id:%s)'
+                                 % user_id)
 
     # create email_campaign_smartlist record
     create_email_campaign_smartlists(smartlist_ids=list_ids,
@@ -519,13 +519,12 @@ def send_campaign_emails_to_candidate(user_id, campaign_id, candidate_id, candid
         email_campaign_send.update(ses_message_id=message_id, ses_request_id=request_id)
 
     # Create activity in a celery task
-    celery_create_activity(campaign.user.id,
-                           Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
-                           email_campaign_send,
-                           dict(campaign_name=campaign.name, candidate_name=candidate.name),
-                           'Could not add `campaign send activity` for email-campaign(id:%s) and User(id:%s)' %
-                           (campaign.id, campaign.user.id))
-
+    celery_create_activity.delay(campaign.user.id,
+                                 Activity.MessageIds.CAMPAIGN_EMAIL_SEND,
+                                 email_campaign_send,
+                                 dict(campaign_name=campaign.name, candidate_name=candidate.name),
+                                 'Could not add `campaign send activity` for email-campaign(id:%s) and User(id:%s)' %
+                                 (campaign.id, campaign.user.id))
     return True
 
 
@@ -697,15 +696,15 @@ def update_hit_count(url_conversion):
                         email_campaign_send.candidate_id, email_campaign_send.id)
         else:
             # Create activity in a celery task
-            celery_create_activity(candidate.user_id,
-                                   Activity.MessageIds.CAMPAIGN_EMAIL_OPEN if is_open
-                                   else Activity.MessageIds.CAMPAIGN_EMAIL_CLICK,
-                                   email_campaign_send,
-                                   dict(candidateId=candidate.id,
-                                        campaign_name=email_campaign_send.email_campaign.name,
-                                        candidate_name=candidate.formatted_name),
-                                   'Error occurred while creating activity for email-campaign(id:%s) open/click.' %
-                                   email_campaign_send.campaign_id
+            celery_create_activity.delay(candidate.user_id,
+                                         Activity.MessageIds.CAMPAIGN_EMAIL_OPEN if is_open
+                                         else Activity.MessageIds.CAMPAIGN_EMAIL_CLICK,
+                                         email_campaign_send,
+                                         dict(candidateId=candidate.id,
+                                              campaign_name=email_campaign_send.email_campaign.name,
+                                              candidate_name=candidate.formatted_name),
+                                         'Error occurred while creating activity for email-campaign(id:%s) '
+                                         'open/click.' % email_campaign_send.campaign_id
                                    )
 
             logger.info("Activity is being added for URL redirect for candidate(id:%s). "
@@ -813,8 +812,8 @@ def _update_blast_sends(blast_id, new_sends, campaign, new_candidates_only):
     # This will be needed later
     # update_candidate_document_on_cloud(user, candidate_ids_and_emails)
     logger.info("Marketing email batch completed, emails sent=%s, "
-                "campaign=%s, user=%s, new_candidates_only=%s",
-                new_sends, campaign.name, campaign.user.email, new_candidates_only)
+                "campaign_name=%s, campaign_id=%s, user=%s, new_candidates_only=%s",
+                new_sends, campaign.name, campaign.id, campaign.user.email, new_candidates_only)
 
 
 def handle_email_bounce(message_id, bounce, emails):
@@ -1018,22 +1017,22 @@ def notify_and_get_blast_params(campaign, new_candidates_only, candidate_ids_and
     with app.app_context():
         email_notification_to_admins(
             subject='Marketing batch about to send',
-            body="Marketing email batch about to send, campaign.name=%s, user=%s, "
+            body="Marketing email batch about to send, campaign.name=%s, campaign.id=%s, user=%s, "
                  "new_candidates_only=%s, address list size=%s"
-                 % (campaign.name, campaign.user.email, new_candidates_only, len(candidate_ids_and_emails))
+                 % (campaign.name, campaign.id, campaign.user.email, new_candidates_only,
+                    len(candidate_ids_and_emails))
                 )
-        logger.info("Marketing email batch about to send, campaign.name=%s, user=%s, "
+        logger.info("Marketing email batch about to send, campaign.name=%s, campaign.id=%s, user=%s, "
                     "new_candidates_only=%s, address list size=%s"
-                    % (campaign.name, campaign.user.email, new_candidates_only,
+                    % (campaign.name, campaign.id, campaign.user.email, new_candidates_only,
                         len(candidate_ids_and_emails)))
     # Create activity in a celery task
-    celery_create_activity(campaign.user.id,
-                           Activity.MessageIds.CAMPAIGN_SEND,
-                           campaign,
-                           dict(id=campaign.id, name=campaign.name, num_candidates=len(candidate_ids_and_emails)),
-                           'Error occurred while creating activity for email-campaign(id:%s) batch send.'
-                           % campaign.id
-                           )
+    celery_create_activity.delay(campaign.user.id, Activity.MessageIds.CAMPAIGN_SEND, campaign,
+                                 dict(id=campaign.id, name=campaign.name,
+                                      num_candidates=len(candidate_ids_and_emails)),
+                                 'Error occurred while creating activity for email-campaign(id:%s) batch send.'
+                                 % campaign.id
+                                 )
     # Create the email_campaign_blast for this blast
     blast_datetime = datetime.utcnow()
     email_campaign_blast = EmailCampaignBlast(campaign_id=campaign.id,

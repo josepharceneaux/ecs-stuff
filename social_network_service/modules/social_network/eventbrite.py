@@ -8,6 +8,8 @@ import requests
 
 # Application Specific
 from base import SocialNetworkBase
+from social_network_service.common.routes import SocialNetworkApiUrl
+from social_network_service.modules.constants import ACTIONS
 from social_network_service.modules.urls import get_url
 from social_network_service.social_network_app import logger
 from social_network_service.common.vendor_urls.sn_relative_urls import SocialNetworkUrls as Urls
@@ -68,6 +70,32 @@ class Eventbrite(SocialNetworkBase):
         """
         self.api_relative_url = "/users/me/"
         super(Eventbrite, self).get_member_id()
+
+    @staticmethod
+    def save_user_credentials_in_db(user_credentials):
+        """
+        :param user_credentials: User's social network credentials for which
+                we need to create webhook. Webhook is created to be updated
+                about any RSVP on an event of Eventbrite.
+        :type user_credentials: dict
+        - This overrides the SocialNetworkBase class method
+            save_user_credentials_in_db() because in case of user credentials
+            related to Eventbrite, we also need to create webhook.
+        - It first saves the credentials in db, gets the webhook id by calling
+            create_webhook()using Eventbrite's API and updates the record in db.
+        - This method is called from POST method of end point ProcessAccessToken()
+            defined in social network Rest API inside
+            social_network_service/app/restful/social_network.py.
+        **See Also**
+        .. seealso:: save_user_credentials_in_db() function defined in
+            SocialNetworkBase class inside social_network_service/base.py.
+        .. seealso::POST method of end point ProcessAccessToken()
+            defined in social network Rest API inside
+            social_network_service/app/restful/social_network.py.
+        """
+        user_credentials_in_db = super(Eventbrite,
+                                       Eventbrite).save_user_credentials_in_db(user_credentials)
+        Eventbrite.create_webhook(user_credentials_in_db)
 
     @classmethod
     def get_access_and_refresh_token(cls, user_id, social_network,
@@ -184,4 +212,51 @@ class Eventbrite(SocialNetworkBase):
             raise InvalidUsage('Organizer name `{}` already exists on Eventbrite'.format(data['name']), error_code=ORGANIZER_ALREADY_EXISTS)
         raise InternalServerError('Error occurred while creating organizer.',
                                   additional_error_info=dict(error=json_response))
+
+    @classmethod
+    def create_webhook(cls, user_credentials):
+        """
+        :param user_credentials: User's social network credentials for which
+                we need to create webhook. Webhook is created to be updated
+                about any RSVP on an
+                event of Eventbrite.
+        :type user_credentials:  common.models.user.UserSocialNetworkCredential
+        - This method creates a webhook to stream the live feed of RSVPs of
+            Eventbrite events to the getTalent app. Once we have the webhook
+            id for given user, we update user credentials in db.
+        - It also performs a check which ensures that webhook is not generated
+            every time code passes through this flow once a webhook has been
+            created for a user (since webhook don't expire and are unique for
+            every user).
+        - This method is called from save_user_credentials_in_db() defined in
+            Eventbrite class inside social_network_service/eventbrite.py.
+        **See Also**
+        .. seealso:: save_user_credentials_in_db() function defined in Eventbrite
+            class inside social_network_service/eventbrite.py.
+        .. seealso:: get_access_and_refresh_token() function defined in Eventbrite
+            class inside social_network_service/eventbrite.py.
+        """
+        url = user_credentials.social_network.api_url + "/webhooks/"
+        headers = {'Authorization': 'Bearer ' + user_credentials.access_token}
+        response = http_request('GET', url, headers=headers,
+                                user_id=user_credentials.user.id)
+        if response.ok:
+            webhooks = response.json()['webhooks']
+            # Deleting all existing webhooks for this user because we don't know about their action types.
+            # Need to register a webhook with `event.published` and `event.unpublished` actions and correct callback url
+            for webhook in webhooks:
+                http_request('DELETE', webhook['resource_uri'], headers=headers, user_id=user_credentials.user.id)
+
+        payload = {'endpoint_url': SocialNetworkApiUrl.WEBHOOK % user_credentials.user_id,
+                   'actions': ','.join([ACTIONS['published'],
+                                        ACTIONS['unpublished']])}
+        headers = {'Authorization': 'Bearer ' + user_credentials.access_token}
+        response = http_request('POST', url, params=payload, headers=headers,
+                                user_id=user_credentials.user.id)
+        try:
+            webhook_id = response.json()['id']
+            user_credentials.update(webhook=webhook_id)
+        except Exception:
+            logger.exception('create_webhook: user_id: %s' % user_credentials.user.id)
+            raise InternalServerError("Eventbrite Webhook wasn't created successfully")
 

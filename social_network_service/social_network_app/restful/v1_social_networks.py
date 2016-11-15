@@ -44,6 +44,8 @@ from flask import Blueprint
 from flask.ext.restful import Resource
 
 # application specific imports
+from social_network_service.common.constants import MEETUP
+from social_network_service.common.models.event import MeetupGroup
 from social_network_service.modules import custom_codes
 from social_network_service.modules.custom_codes import VENUE_EXISTS_IN_GT_DATABASE
 from social_network_service.modules.social_network.base import SocialNetworkBase
@@ -509,6 +511,9 @@ class DisconnectSocialNetworkResource(Resource):
         user_credentials = UserSocialNetworkCredential.get_by_user_and_social_network_id(user_id, social_network.id)
         if user_credentials:
             UserSocialNetworkCredential.delete(user_credentials)
+            if social_network.name == MEETUP.title():
+                MeetupGroup.query.filter_by(user_id=user_credentials.user_id).delete(synchronize_session=False)
+                MeetupGroup.session.commit()
             return dict(messsage='User has been disconnected from social network (name: %s)' % social_network.name)
 
         return dict(messsage='User is already disconnected from social network (name: %s)' % social_network.name)
@@ -1157,6 +1162,9 @@ class ProcessAccessTokenResource(Resource):
                                          access_token=access_token,
                                          refresh_token=refresh_token)
             social_network_class.save_user_credentials_in_db(user_credentials_dict)
+            if social_network.name.lower() == MEETUP:
+                meetup = social_network_class(user_id=user_id)
+                meetup.import_meetup_groups()
             return dict(message='User credentials added successfully'), 201
         else:
             raise ResourceNotFound('Social Network not found')
