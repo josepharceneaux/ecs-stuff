@@ -43,14 +43,37 @@ class TestEmailCampaignSends(object):
         We then assert that sends has been created by making HTTP GET call on
         endpoint /v1/email-campaigns/:id/sends
         """
-        CampaignsTestsHelpers.assert_campaign_blasts(sent_campaign, 1, access_token=access_token_first, timeout=100)
-        CampaignsTestsHelpers.assert_blast_sends(sent_campaign, 2, abort_time_for_sends=300)
+        expected_sends = 2
+        expected_blasts = 1
+        CampaignsTestsHelpers.assert_campaign_blasts(sent_campaign, expected_blasts, access_token=access_token_first,
+                                                     timeout=100)
+        CampaignsTestsHelpers.assert_blast_sends(sent_campaign, expected_sends)
         response = requests.get(self.URL % sent_campaign.id,
                                 headers=dict(Authorization='Bearer %s' % access_token_first))
-        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=2, entity=self.ENTITY)
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=expected_sends, entity=self.ENTITY)
         json_resp = response.json()[self.ENTITY][0]
         assert json_resp['campaign_id'] == sent_campaign.id
         assert json_resp['candidate_id'] == sent_campaign.sends[0].candidate_id
+
+    def test_sends_by_candidates_multiple_emails(self, access_token_first, sent_campaign_multiple_email):
+        """
+        The test sends email to two candidates each having two emails.
+        But email-campaign should be sent to only primary-email-addresses of candidates.
+        If primary email is not found then email-campaign will be sent to latest emails added for candidates.
+        And sends of email campaign should be equal to 2
+        """
+        expected_sends = 2
+        expected_blasts = 1
+        CampaignsTestsHelpers.assert_campaign_blasts(sent_campaign_multiple_email, expected_blasts,
+                                                     access_token=access_token_first,
+                                                     timeout=100)
+        CampaignsTestsHelpers.assert_blast_sends(sent_campaign_multiple_email, expected_sends)
+        response = requests.get(self.URL % sent_campaign_multiple_email.id,
+                                headers=dict(Authorization='Bearer %s' % access_token_first))
+        CampaignsTestsHelpers.assert_ok_response_and_counts(response, count=expected_sends, entity=self.ENTITY)
+        json_resp = response.json()[self.ENTITY][0]
+        assert json_resp['campaign_id'] == sent_campaign_multiple_email.id
+        assert json_resp['candidate_id'] == sent_campaign_multiple_email.sends[0].candidate_id
 
     def test_get_sends_with_paginated_response(self, access_token_first, sent_campaign_to_ten_candidates):
         """
@@ -59,7 +82,7 @@ class TestEmailCampaignSends(object):
         CampaignsTestsHelpers.assert_campaign_blasts(sent_campaign_to_ten_candidates, 1,
                                                      access_token=access_token_first, timeout=100)
 
-        CampaignsTestsHelpers.assert_blast_sends(sent_campaign_to_ten_candidates, 10, abort_time_for_sends=300)
+        CampaignsTestsHelpers.assert_blast_sends(sent_campaign_to_ten_candidates, 10)
         #  Test GET sends of email campaign with 4 results per_page. It should get 4 blast objects
         url = self.URL % sent_campaign_to_ten_candidates.id
         response = requests.get(url + '?per_page=4',

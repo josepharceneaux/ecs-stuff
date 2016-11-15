@@ -12,6 +12,7 @@ from urllib import urlencode
 from datetime import datetime
 from base64 import b64decode
 from urlparse import (parse_qs, urlsplit, urlunsplit)
+from operator import itemgetter
 
 # Third Party
 from bs4 import BeautifulSoup
@@ -383,6 +384,8 @@ def get_priority_emails(user, candidate_ids):
     ids_and_email_and_labels = [(row.candidate_id, row.address, row.email_label_id)
                                 for row in candidate_email_rows]
 
+    # Again sorting on the basis of candidate_id
+    ids_and_email_and_labels = sorted(ids_and_email_and_labels, key=itemgetter(0))
     """
     After running groupby clause, the data will look like
     group_id_and_email_and_labels = [[(candidate_id1, email_address1, email_label1),
@@ -427,6 +430,7 @@ def get_priority_emails(user, candidate_ids):
                              % (len(search_result), email, user.id, user.domain_id,
                                 [candidate_email.candidate_id for candidate_email in search_result]))
                 filtered_email_rows.append((_id, email))
+    
     return filtered_email_rows
 
 
