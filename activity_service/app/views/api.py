@@ -26,6 +26,7 @@ from activity_service.common.campaign_services.campaign_utils import CampaignUti
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M:%S'
 POSTS_PER_PAGE = 20
+EPOCH = datetime(year=1970, month=1, day=1)
 mod = Blueprint('activities_api', __name__)
 
 
@@ -358,8 +359,14 @@ class TalentActivityManager(object):
 
         aggregated_activities = []
         current_activity_count = 0
+        aggregate_start, aggregate_end = datetime.today(), EPOCH
 
         for i, activity in enumerate(activities):
+            if activity.added_time < aggregate_start:
+                aggregate_start = activity.added_time
+            if activity.added_time > aggregate_end:
+                aggregate_end = activity.added_time
+
             current_activity_count += 1
             current_activity_type = activity.type
             if current_activity_type not in self.MESSAGES:
@@ -371,22 +378,24 @@ class TalentActivityManager(object):
             if current_activity_type != next_activity_type:  # next activity is new, or the very last one, so aggregate these ones
                 activity_aggregate = {}
                 activity_aggregate['count'] = current_activity_count
-                activity_aggregate['readable_text'] = self._activity_text(activity,
-                                                                          activity_aggregate[
-                                                                              'count'],
-                                                                          current_user)
+                activity_aggregate['readable_text'] = self.activity_text(activity,
+                                                                         activity_aggregate['count'],
+                                                                         current_user)
                 activity_aggregate['image'] = self.MESSAGES[activity.type][2]
+                activity_aggregate['start'] = aggregate_start
+                activity_aggregate['end'] = aggregate_end
 
+                aggregate_start, aggregate_end = datetime.today(), EPOCH
                 aggregated_activities.append(activity_aggregate)
                 if len(aggregated_activities) == limit:  # if we've got enough activity groups, quit
                     break
 
                 current_activity_count = 0
-        logger.info("{} finished making readable in {} seconds".format(self.call_id, time() - start_time))
 
+        logger.info("{} finished making readable in {} seconds".format(self.call_id, time() - start_time))
         return aggregated_activities
 
-    def _activity_text(self, activity, count, current_user):
+    def activity_text(self, activity, count, current_user):
         if activity.user_id != current_user.id:
             username = User.query.filter_by(id=activity.user_id).value('firstName')
         else:
